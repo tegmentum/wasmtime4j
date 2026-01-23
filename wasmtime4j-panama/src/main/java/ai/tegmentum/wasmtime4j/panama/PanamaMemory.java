@@ -97,10 +97,22 @@ public final class PanamaMemory implements WasmMemory {
   @Override
   public int getSize() {
     ensureNotClosed();
-    if (instance == null) {
-      throw new IllegalStateException("Cannot get size: memory not associated with an instance");
+    if (instance != null) {
+      return instance.getMemorySize(this);
     }
-    return instance.getMemorySize(this);
+    // Memory created directly by store - use native memory pointer
+    if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment sizeOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final int result =
+            NATIVE_BINDINGS.panamaMemorySizePages(nativeMemory, store.getNativeStore(), sizeOutPtr);
+        if (result == 0) {
+          return (int) sizeOutPtr.get(ValueLayout.JAVA_LONG, 0);
+        }
+        throw new IllegalStateException("Failed to get memory size: error code " + result);
+      }
+    }
+    throw new IllegalStateException("Cannot get size: memory not associated with an instance");
   }
 
   @Override
@@ -109,10 +121,26 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException("Pages cannot be negative");
     }
     ensureNotClosed();
-    if (instance == null) {
+
+    int result;
+    if (instance != null) {
+      result = instance.growMemory(this, pages);
+    } else if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
+      // Memory created directly by store - use native memory pointer
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment previousPagesOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final int growResult =
+            NATIVE_BINDINGS.panamaMemoryGrow(
+                nativeMemory, store.getNativeStore(), pages, previousPagesOutPtr);
+        if (growResult == 0) {
+          result = (int) previousPagesOutPtr.get(ValueLayout.JAVA_LONG, 0);
+        } else {
+          result = -1; // Grow failed
+        }
+      }
+    } else {
       throw new IllegalStateException("Cannot grow: memory not associated with an instance");
     }
-    final int result = instance.growMemory(this, pages);
 
     // Invalidate cached direct memory segment since grow may relocate memory
     if (result >= 0) {
@@ -125,8 +153,24 @@ public final class PanamaMemory implements WasmMemory {
   @Override
   public int getMaxSize() {
     ensureNotClosed();
-    // TODO: Implement max size retrieval
-    return -1;
+    if (instance != null) {
+      return instance.getMemoryMaxSize(this);
+    }
+    // Memory created directly by store - use native memory pointer
+    if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment maxOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final int result =
+            NATIVE_BINDINGS.panamaMemoryGetMaximum(nativeMemory, store.getNativeStore(), maxOutPtr);
+        if (result == 0) {
+          final long maxPages = maxOutPtr.get(ValueLayout.JAVA_LONG, 0);
+          // -1 means unlimited, return Integer.MAX_VALUE for API compatibility
+          return maxPages < 0 ? Integer.MAX_VALUE : (int) maxPages;
+        }
+        throw new IllegalStateException("Failed to get memory max size: error code " + result);
+      }
+    }
+    throw new IllegalStateException("Cannot get max size: memory not associated with an instance");
   }
 
   @Override
@@ -497,7 +541,6 @@ public final class PanamaMemory implements WasmMemory {
   private MemorySegment getMemoryPointer() {
     // Performance optimization: return cached pointer if available
     if (cachedMemoryPointer != null) {
-      System.err.println("DEBUG getMemoryPointer: returning cached pointer");
       return cachedMemoryPointer;
     }
 
@@ -505,17 +548,12 @@ public final class PanamaMemory implements WasmMemory {
       // For instance-exported memories, look up by name and cache
       final MemorySegment nameSegment = arena.allocateFrom(memoryName);
       final PanamaStore actualStore = getPanamaStore();
-      System.err.println(
-          "DEBUG getMemoryPointer: calling instanceGetMemoryByName, store="
-              + actualStore.getNativeStore());
       cachedMemoryPointer =
           NATIVE_BINDINGS.instanceGetMemoryByName(
               instance.getNativeInstance(), actualStore.getNativeStore(), nameSegment);
-      System.err.println("DEBUG getMemoryPointer: got memory pointer=" + cachedMemoryPointer);
       return cachedMemoryPointer;
     } else {
       // For store-created memories, use the native pointer directly
-      System.err.println("DEBUG getMemoryPointer: using nativeMemory directly");
       cachedMemoryPointer = nativeMemory;
       return nativeMemory;
     }
@@ -649,7 +687,9 @@ public final class PanamaMemory implements WasmMemory {
             memPtr, storePtr, offset, expected, newValue, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic CAS i32 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -676,7 +716,9 @@ public final class PanamaMemory implements WasmMemory {
             memPtr, storePtr, offset, expected, newValue, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic CAS i64 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_LONG, 0);
@@ -701,7 +743,9 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic load i32 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -726,7 +770,9 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic load i64 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_LONG, 0);
@@ -750,7 +796,9 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicStoreI32(memPtr, storePtr, offset, value);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic store i32 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
   }
 
@@ -772,7 +820,9 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicStoreI64(memPtr, storePtr, offset, value);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic store i64 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
   }
 
@@ -796,7 +846,9 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicAddI32(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic add i32 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -822,7 +874,9 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicAddI64(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic add i64 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_LONG, 0);
@@ -848,7 +902,9 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicAndI32(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic and i32 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -874,7 +930,9 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicOrI32(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic or i32 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -900,7 +958,9 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicXorI32(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic xor i32 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -1106,7 +1166,9 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicFence(memPtr, storePtr);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic fence failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
   }
 
@@ -1133,7 +1195,9 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicNotify(memPtr, storePtr, offset, count, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic notify failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -1163,7 +1227,9 @@ public final class PanamaMemory implements WasmMemory {
             memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic wait32 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -1193,7 +1259,9 @@ public final class PanamaMemory implements WasmMemory {
             memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
 
     if (errorCode != 0) {
-      throw new RuntimeException("Atomic wait64 failed with error code: " + errorCode);
+      // Atomic operations require shared memory - throw UnsupportedOperationException
+      throw new UnsupportedOperationException(
+          "Atomic operations require shared memory (error code: " + errorCode + ")");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);

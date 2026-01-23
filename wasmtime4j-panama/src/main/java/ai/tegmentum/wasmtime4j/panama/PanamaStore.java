@@ -429,6 +429,7 @@ public final class PanamaStore implements Store {
       double f64Value = 0.0;
       int refIdPresent = 0;
       long refId = 0L;
+      MemorySegment v128BytesPtr = MemorySegment.NULL;
 
       switch (valueType) {
         case I32:
@@ -442,6 +443,13 @@ public final class PanamaStore implements Store {
           break;
         case F64:
           f64Value = (Double) initialValue.getValue();
+          break;
+        case V128:
+          final byte[] v128Bytes = (byte[]) initialValue.getValue();
+          if (v128Bytes != null && v128Bytes.length == 16) {
+            v128BytesPtr = arena.allocate(16);
+            MemorySegment.copy(v128Bytes, 0, v128BytesPtr, ValueLayout.JAVA_BYTE, 0, 16);
+          }
           break;
         case FUNCREF:
           if (initialValue.getValue() != null) {
@@ -489,6 +497,7 @@ public final class PanamaStore implements Store {
                   f64Value,
                   refIdPresent,
                   refId,
+                  v128BytesPtr,
                   MemorySegment.NULL, // name = null
                   globalPtr);
 

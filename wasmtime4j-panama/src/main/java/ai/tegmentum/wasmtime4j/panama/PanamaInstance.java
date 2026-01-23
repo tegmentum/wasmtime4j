@@ -311,16 +311,19 @@ public final class PanamaInstance implements Instance {
     }
     ensureNotClosed();
 
-    // Check if the memory export exists by calling native
-    final MemorySegment nameSegment =
-        getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-    final int result =
-        NATIVE_BINDINGS.instanceHasMemoryExport(
-            nativeInstance, store.getNativeStore(), nameSegment);
+    // Check if the export exists and is a memory using moduleGetExportKind
+    // Note: This is more reliable than instanceHasMemoryExport for shared memories
+    // because shared memory exports are Extern::SharedMemory, not Extern::Memory
+    try (final Arena checkArena = Arena.ofConfined()) {
+      final int exportKind =
+          NATIVE_BINDINGS.moduleGetExportKind(
+              module.getNativeModule(),
+              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    // Result is 0 on success (memory exists), non-zero on error/not found
-    if (result != 0) {
-      return Optional.empty();
+      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+      if (exportKind != 3) {
+        return Optional.empty();
+      }
     }
 
     // Return a PanamaMemory that stores just the name
@@ -1611,6 +1614,42 @@ public final class PanamaInstance implements Instance {
       }
 
       return sizeOut.get(ValueLayout.JAVA_INT, 0);
+    }
+  }
+
+  /**
+   * Gets the maximum size of a memory in pages.
+   *
+   * @param memory the memory to query
+   * @return maximum size in pages, or -1 if unlimited
+   */
+  int getMemoryMaxSize(final PanamaMemory memory) {
+    ensureNotClosed();
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+
+      // First get the memory pointer
+      final MemorySegment memoryPtr =
+          NATIVE_BINDINGS.instanceGetMemoryByName(
+              nativeInstance, store.getNativeStore(), nameSegment);
+
+      if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+        return -1; // Memory not found
+      }
+
+      // Now get the max size
+      final MemorySegment maxSizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+      final int result =
+          NATIVE_BINDINGS.panamaMemoryGetMaximum(memoryPtr, store.getNativeStore(), maxSizeOut);
+
+      if (result != 0) {
+        return -1; // Failed to get max size
+      }
+
+      final long maxSize = maxSizeOut.get(ValueLayout.JAVA_LONG, 0);
+      // Return as int, clamping if necessary (though unlikely for page counts)
+      return maxSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxSize;
     }
   }
 

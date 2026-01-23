@@ -229,7 +229,24 @@ impl WasmtimeGcOperations {
                     WasmtimeError::from_string(&format!("Field {} not found in struct definition", i))
                 });
 
-                match Self::convert_gc_value_to_wasmtime_in_scope(&self.gc_objects, &mut scope, value) {
+                // FIX: For reference fields, convert I32(object_id) to I64(object_id)
+                // This handles cases where the FFI layer passes reference object IDs as I32
+                let effective_value: GcValue = if let Ok(field) = field_def {
+                    if matches!(field.field_type, crate::gc_types::FieldType::Reference(_)) {
+                        if let GcValue::I32(id) = value {
+                            eprintln!("[DEBUG] struct_new: field {} is Reference, converting I32({}) to I64", i, id);
+                            GcValue::I64(*id as i64)
+                        } else {
+                            value.clone()
+                        }
+                    } else {
+                        value.clone()
+                    }
+                } else {
+                    value.clone()
+                };
+
+                match Self::convert_gc_value_to_wasmtime_in_scope(&self.gc_objects, &mut scope, &effective_value) {
                     Ok(val) => {
                         eprintln!("[DEBUG] struct_new: field {} - converting {:?} (field_type: {:?}) to {:?}",
                                   i, value, field_def.as_ref().map(|f| &f.field_type), val);
@@ -1414,17 +1431,22 @@ impl WasmtimeGcOperations {
                     GcReferenceType::AnyRef => HeapType::Any,
                     GcReferenceType::EqRef => HeapType::Eq,
                     GcReferenceType::I31Ref => HeapType::I31,
+                    GcReferenceType::ExternRef => HeapType::Extern,
+                    GcReferenceType::FuncRef => HeapType::Func,
+                    GcReferenceType::NullRef => HeapType::None,
+                    GcReferenceType::NullFuncRef => HeapType::NoFunc,
+                    GcReferenceType::NullExternRef => HeapType::NoExtern,
                     GcReferenceType::StructRef(struct_def) => {
-                        // Use registered struct type or fallback to Any
+                        // Use registered struct type or fallback to Struct
                         self.gc_types.get(&struct_def.type_id)
                             .cloned()
-                            .unwrap_or(HeapType::Any)
+                            .unwrap_or(HeapType::Struct)
                     },
                     GcReferenceType::ArrayRef(array_def) => {
-                        // Use registered array type or fallback to Any
+                        // Use registered array type or fallback to Array
                         self.gc_types.get(&array_def.type_id)
                             .cloned()
-                            .unwrap_or(HeapType::Any)
+                            .unwrap_or(HeapType::Array)
                     },
                 };
                 Ok(ValType::Ref(RefType::new(true, heap_type)).into())
@@ -1447,17 +1469,22 @@ impl WasmtimeGcOperations {
                     GcReferenceType::AnyRef => HeapType::Any,
                     GcReferenceType::EqRef => HeapType::Eq,
                     GcReferenceType::I31Ref => HeapType::I31,
+                    GcReferenceType::ExternRef => HeapType::Extern,
+                    GcReferenceType::FuncRef => HeapType::Func,
+                    GcReferenceType::NullRef => HeapType::None,
+                    GcReferenceType::NullFuncRef => HeapType::NoFunc,
+                    GcReferenceType::NullExternRef => HeapType::NoExtern,
                     GcReferenceType::StructRef(struct_def) => {
-                        // Use registered struct type or fallback to Any
+                        // Use registered struct type or fallback to Struct
                         self.gc_types.get(&struct_def.type_id)
                             .cloned()
-                            .unwrap_or(HeapType::Any)
+                            .unwrap_or(HeapType::Struct)
                     },
                     GcReferenceType::ArrayRef(array_def) => {
-                        // Use registered array type or fallback to Any
+                        // Use registered array type or fallback to Array
                         self.gc_types.get(&array_def.type_id)
                             .cloned()
-                            .unwrap_or(HeapType::Any)
+                            .unwrap_or(HeapType::Array)
                     },
                 };
                 Ok(ValType::Ref(RefType::new(true, heap_type)))
@@ -1673,6 +1700,16 @@ impl WasmtimeGcOperations {
             },
             GcReferenceType::StructRef(_) => matches!(gc_ref, GcObjectRef::Struct(_)),
             GcReferenceType::ArrayRef(_) => matches!(gc_ref, GcObjectRef::Array(_)),
+            // ExternRef - only extern references are valid
+            GcReferenceType::ExternRef => false, // GcObjectRef doesn't have extern variant yet
+            // FuncRef - only function references are valid
+            GcReferenceType::FuncRef => false, // GcObjectRef doesn't have func variant yet
+            // Null reference types - these match null values only
+            GcReferenceType::NullRef | GcReferenceType::NullFuncRef | GcReferenceType::NullExternRef => {
+                // Null references can only be validated from null values
+                // This should be handled at the call site
+                false
+            },
         }
     }
 }

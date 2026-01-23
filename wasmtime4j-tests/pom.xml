@@ -56,7 +56,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -66,7 +66,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
-            <scope>test</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.platform</groupId>
@@ -152,8 +152,6 @@
                         <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
                         <wasmtime4j.test.timeout>${test.timeout}</wasmtime4j.test.timeout>
                         <wasmtime4j.test.resources>${project.build.testOutputDirectory}</wasmtime4j.test.resources>
-                        <!-- Force JNI runtime for tests until Panama implementation is complete -->
-                        <wasmtime4j.runtime>jni</wasmtime4j.runtime>
                     </systemPropertyVariables>
                     <argLine>-Xmx${test.memory} -XX:+HeapDumpOnOutOfMemoryError</argLine>
                 </configuration>
@@ -161,13 +159,10 @@
 
             <!-- Maven Failsafe Plugin managed by parent POM -->
 
-            <!-- Skip jar creation for test-only module -->
+            <!-- Create jar for shared test infrastructure (DualRuntimeTest) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
             </plugin>
 
             <!-- Skip source jar creation for test-only module -->
@@ -491,8 +486,6 @@
                                 <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
                                 <wasmtime4j.test.timeout>${test.timeout}</wasmtime4j.test.timeout>
                                 <wasmtime4j.test.resources>${project.build.testOutputDirectory}</wasmtime4j.test.resources>
-                                <!-- Force JNI runtime for tests until Panama implementation is complete -->
-                                <wasmtime4j.runtime>jni</wasmtime4j.runtime>
                             </systemPropertyVariables>
                             <argLine>-Xmx${test.memory} -XX:+HeapDumpOnOutOfMemoryError</argLine>
                         </configuration>

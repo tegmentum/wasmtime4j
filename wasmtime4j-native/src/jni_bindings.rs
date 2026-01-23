@@ -4919,6 +4919,15 @@ pub mod jni_module {
             ModuleValueType::V128 => "V128",
             ModuleValueType::FuncRef => "FUNCREF",
             ModuleValueType::ExternRef => "EXTERNREF",
+            // WasmGC reference types
+            ModuleValueType::AnyRef => "ANYREF",
+            ModuleValueType::EqRef => "EQREF",
+            ModuleValueType::I31Ref => "I31REF",
+            ModuleValueType::StructRef => "STRUCTREF",
+            ModuleValueType::ArrayRef => "ARRAYREF",
+            ModuleValueType::NullRef => "NULLREF",
+            ModuleValueType::NullFuncRef => "NULLFUNCREF",
+            ModuleValueType::NullExternRef => "NULLEXTERNREF",
         }
     }
 

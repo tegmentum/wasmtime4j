@@ -20,6 +20,11 @@ const FFI_ERROR: i32 = 1;
 /// Panama FFI function for creating a GC runtime
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_create_runtime(engine_handle: i64) -> i64 {
+    // DEBUG: Write to file to prove this function is being called
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/gc_debug.txt") {
+        let _ = writeln!(f, "[FFI_CREATE_RUNTIME] engine_handle={}", engine_handle);
+    }
     let runtime_result = create_gc_runtime_internal(engine_handle);
 
     match runtime_result {
@@ -99,6 +104,11 @@ pub extern "C" fn wasmtime4j_gc_struct_new(
     field_values_ptr: *const i64,
     field_count: i32,
 ) -> i64 {
+    // DEBUG: Write to file to prove this function is being called
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/gc_debug.txt") {
+        let _ = writeln!(f, "[FFI_ENTRY] wasmtime4j_gc_struct_new: runtime={}, type={}, count={}", runtime_handle, type_id, field_count);
+    }
     let result = struct_new_internal(runtime_handle, type_id, field_values_ptr, field_count);
 
     match result {
@@ -442,7 +452,11 @@ fn register_struct_type_internal(
                     1 => FieldType::I64,
                     2 => FieldType::F32,
                     3 => FieldType::F64,
-                    _ => FieldType::I32, // Default
+                    4 => FieldType::V128,
+                    5 => FieldType::PackedI8,
+                    6 => FieldType::PackedI16,
+                    7 => FieldType::Reference(GcReferenceType::AnyRef),
+                    _ => FieldType::I32, // Default for unknown types
                 }
             }
         } else {
@@ -501,7 +515,11 @@ fn register_array_type_internal(
         1 => FieldType::I64,
         2 => FieldType::F32,
         3 => FieldType::F64,
-        _ => return Err(WasmtimeError::InvalidParameter { message:"Invalid element type".to_string() }),
+        4 => FieldType::V128,
+        5 => FieldType::PackedI8,
+        6 => FieldType::PackedI16,
+        7 => FieldType::Reference(GcReferenceType::AnyRef), // Default reference type
+        _ => return Err(WasmtimeError::InvalidParameter { message: format!("Invalid element type: {}", element_type) }),
     };
 
     let array_def = ArrayTypeDefinition {
@@ -533,15 +551,60 @@ fn struct_new_internal(
     if !field_values_ptr.is_null() && field_count > 0 {
         unsafe {
             let values_slice = std::slice::from_raw_parts(field_values_ptr, field_count as usize);
-            for &value in values_slice {
-                // For now, treat all values as I32 (simplified)
-                values.push(GcValue::I32(value as i32));
+            for (i, &raw_value) in values_slice.iter().enumerate() {
+                // Convert based on the field type from the struct definition
+                let field_type = if i < struct_def.fields.len() {
+                    &struct_def.fields[i].field_type
+                } else {
+                    &FieldType::I32
+                };
+                eprintln!("[PANAMA_FFI] struct_new_internal: field {} raw_value={}, field_type={:?}", i, raw_value, field_type);
+                let gc_value = if i < struct_def.fields.len() {
+                    match field_type {
+                        FieldType::I32 => GcValue::I32(raw_value as i32),
+                        FieldType::I64 => GcValue::I64(raw_value),
+                        FieldType::F32 => GcValue::F32(f32::from_bits(raw_value as u32)),
+                        FieldType::F64 => GcValue::F64(f64::from_bits(raw_value as u64)),
+                        FieldType::V128 => GcValue::I32(raw_value as i32), // Simplified - V128 needs special handling
+                        FieldType::V256 => GcValue::I32(raw_value as i32), // V256 not yet fully supported
+                        FieldType::V512 => GcValue::I32(raw_value as i32), // V512 not yet fully supported
+                        FieldType::PackedI8 => GcValue::I32(raw_value as i32),
+                        FieldType::PackedI16 => GcValue::I32(raw_value as i32),
+                        // Pass reference object IDs as I64 so gc_operations can look them up
+                        // If raw_value is 0, treat as null reference
+                        FieldType::Reference(_) => {
+                            if raw_value == 0 {
+                                eprintln!("[PANAMA_FFI] struct_new_internal: field {} is Reference with null value", i);
+                                GcValue::Null
+                            } else {
+                                eprintln!("[PANAMA_FFI] struct_new_internal: field {} is Reference, converting raw_value {} to I64", i, raw_value);
+                                GcValue::I64(raw_value)
+                            }
+                        },
+                    }
+                } else {
+                    GcValue::I32(raw_value as i32)
+                };
+                eprintln!("[PANAMA_FFI] struct_new_internal: field {} converted to {:?}", i, gc_value);
+                values.push(gc_value);
             }
         }
     } else {
-        // Create default values
-        for _ in 0..field_count {
-            values.push(GcValue::I32(0));
+        // Create default values based on field types
+        for field in &struct_def.fields {
+            let default_value = match &field.field_type {
+                FieldType::I32 => GcValue::I32(0),
+                FieldType::I64 => GcValue::I64(0),
+                FieldType::F32 => GcValue::F32(0.0),
+                FieldType::F64 => GcValue::F64(0.0),
+                FieldType::V128 => GcValue::I32(0),
+                FieldType::V256 => GcValue::I32(0),
+                FieldType::V512 => GcValue::I32(0),
+                FieldType::PackedI8 => GcValue::I32(0),
+                FieldType::PackedI16 => GcValue::I32(0),
+                FieldType::Reference(_) => GcValue::Null, // Null reference for default
+            };
+            values.push(default_value);
         }
     }
 
@@ -585,12 +648,19 @@ fn struct_get_internal(
     let result = runtime.struct_get(object_id as ObjectId, field_index as u32);
 
     if result.success {
+        // Check if this is a reference field (object_id is set)
+        if let Some(ref_object_id) = result.object_id {
+            // Reference field - return object_id as value with type 5 (Reference)
+            return Ok((ref_object_id as i64, 5));
+        }
+
         if let Some(value) = result.value {
             match value {
                 GcValue::I32(i) => Ok((i as i64, 0)), // Type 0 = I32
                 GcValue::I64(i) => Ok((i, 1)),        // Type 1 = I64
                 GcValue::F32(f) => Ok((f.to_bits() as i64, 2)), // Type 2 = F32
                 GcValue::F64(f) => Ok((f.to_bits() as i64, 3)), // Type 3 = F64
+                GcValue::Null => Ok((0, 6)), // Type 6 = Null
                 _ => Ok((0, 0)),
             }
         } else {
@@ -619,6 +689,14 @@ fn struct_set_internal(
         1 => GcValue::I64(value),
         2 => GcValue::F32(f32::from_bits(value as u32)),
         3 => GcValue::F64(f64::from_bits(value as u64)),
+        5 => { // Reference type
+            if value == 0 {
+                GcValue::Null
+            } else {
+                GcValue::I64(value)
+            }
+        },
+        6 => GcValue::Null, // Null type
         _ => GcValue::I32(value as i32),
     };
 
@@ -655,6 +733,13 @@ fn array_new_internal(runtime_handle: i64, type_id: i32, elements_ptr: *const i6
                     FieldType::I64 => GcValue::I64(element),
                     FieldType::F32 => GcValue::F32(f32::from_bits(element as u32)),
                     FieldType::F64 => GcValue::F64(f64::from_bits(element as u64)),
+                    FieldType::Reference(_) => {
+                        if element == 0 {
+                            GcValue::Null
+                        } else {
+                            GcValue::I64(element)
+                        }
+                    },
                     _ => GcValue::I32(element as i32),
                 };
                 gc_elements.push(gc_value);
@@ -729,6 +814,14 @@ fn array_set_internal(runtime_handle: i64, object_id: i64, element_index: i32, v
         1 => GcValue::I64(value),
         2 => GcValue::F32(f32::from_bits(value as u32)),
         3 => GcValue::F64(f64::from_bits(value as u64)),
+        5 => { // Reference type
+            if value == 0 {
+                GcValue::Null
+            } else {
+                GcValue::I64(value)
+            }
+        },
+        6 => GcValue::Null, // Null type
         _ => GcValue::I32(value as i32),
     };
 
@@ -801,11 +894,26 @@ fn ref_cast_internal(runtime_handle: i64, object_id: i64, target_type: i32) -> W
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
     // Convert target_type to GcReferenceType
+    // Type IDs must match Java's NATIVE_TYPE_* constants
     let gc_target_type = match target_type {
-        0 => GcReferenceType::AnyRef,
-        1 => GcReferenceType::EqRef,
-        2 => GcReferenceType::I31Ref,
-        _ => GcReferenceType::AnyRef,
+        0 => GcReferenceType::AnyRef,     // NATIVE_TYPE_ANY
+        1 => GcReferenceType::EqRef,      // NATIVE_TYPE_EQ
+        2 => GcReferenceType::I31Ref,     // NATIVE_TYPE_I31
+        3 => GcReferenceType::StructRef(StructTypeDefinition {  // NATIVE_TYPE_STRUCT
+            type_id: 0,
+            fields: vec![],
+            name: None,
+            supertype: None,
+        }),
+        4 => GcReferenceType::ArrayRef(Box::new(ArrayTypeDefinition {  // NATIVE_TYPE_ARRAY
+            type_id: 0,
+            element_type: FieldType::I32,
+            mutable: true,
+            name: None,
+        })),
+        _ => return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid target type: {}", target_type)
+        }),
     };
 
     let result = runtime.ref_cast(object_id as ObjectId, gc_target_type);
@@ -825,11 +933,26 @@ fn ref_test_internal(runtime_handle: i64, object_id: i64, target_type: i32) -> W
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
     // Convert target_type to GcReferenceType
+    // Type IDs must match Java's NATIVE_TYPE_* constants
     let gc_target_type = match target_type {
-        0 => GcReferenceType::AnyRef,
-        1 => GcReferenceType::EqRef,
-        2 => GcReferenceType::I31Ref,
-        _ => GcReferenceType::AnyRef,
+        0 => GcReferenceType::AnyRef,     // NATIVE_TYPE_ANY
+        1 => GcReferenceType::EqRef,      // NATIVE_TYPE_EQ
+        2 => GcReferenceType::I31Ref,     // NATIVE_TYPE_I31
+        3 => GcReferenceType::StructRef(StructTypeDefinition {  // NATIVE_TYPE_STRUCT
+            type_id: 0,
+            fields: vec![],
+            name: None,
+            supertype: None,
+        }),
+        4 => GcReferenceType::ArrayRef(Box::new(ArrayTypeDefinition {  // NATIVE_TYPE_ARRAY
+            type_id: 0,
+            element_type: FieldType::I32,
+            mutable: true,
+            name: None,
+        })),
+        _ => return Err(WasmtimeError::InvalidParameter {
+            message: format!("Invalid target type: {}", target_type)
+        }),
     };
 
     let result = runtime.ref_test(object_id as ObjectId, gc_target_type);

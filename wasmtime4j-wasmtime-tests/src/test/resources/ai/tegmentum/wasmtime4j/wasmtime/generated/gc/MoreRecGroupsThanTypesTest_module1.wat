@@ -1,0 +1,13 @@
+(module
+  (rec)
+  (rec)
+  (rec)
+  (rec)
+  (rec)
+  (rec)
+  (rec)
+  (rec)
+  (rec)
+  (rec)
+  (type (func (param i32) (result i32)))
+)

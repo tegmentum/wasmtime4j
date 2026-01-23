@@ -20,4 +20,10 @@
     <suppress-xpath checks="Indentation"
                     query="//*"
                     files=".*wasmtime4j-comparison-tests.*" />
+
+    <!-- Suppress Javadoc requirements for test methods in wasmtime-tests module -->
+    <!-- Test methods use @DisplayName annotations which serve the documentation purpose -->
+    <suppress-xpath checks="MissingJavadocMethod"
+                    query="//METHOD_DEF[.//ANNOTATION/IDENT[@text='ParameterizedTest' or @text='Test' or @text='DisplayName']]"
+                    files=".*wasmtime4j-wasmtime-tests.*" />
 </suppressions>

@@ -651,9 +651,11 @@ public final class PanamaFunctionReference implements FunctionReference {
       wrapper = MethodHandles.filterReturnValue(wrapper, converter);
     } else if (returnType == void.class) {
       // For void return, we need to drop the Object return value
-      wrapper =
-          MethodHandles.filterReturnValue(
-              wrapper, MethodHandles.empty(MethodType.methodType(void.class)));
+      // Create a filter that takes Object and returns void (discards the value)
+      final MethodHandle voidDropper =
+          MethodHandles.dropArguments(
+              MethodHandles.empty(MethodType.methodType(void.class)), 0, Object.class);
+      wrapper = MethodHandles.filterReturnValue(wrapper, voidDropper);
     } else {
       // For non-primitive return types, ensure proper type conversion
       wrapper = wrapper.asType(targetType);

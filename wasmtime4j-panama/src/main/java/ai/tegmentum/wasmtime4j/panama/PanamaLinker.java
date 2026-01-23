@@ -220,12 +220,17 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (panamaMemory.isInstanceExported()) {
       final PanamaInstance owningInstance = panamaMemory.getOwningInstance();
       final String exportName = panamaMemory.getExportName();
+      // Get the instance's store - this is the store that created the instance and is needed
+      // to extract shared memory from it. The linker's store (panamaStore) may be different
+      // (e.g., a thread's store when defining shared memory across threads).
+      final PanamaStore instanceStore = (PanamaStore) owningInstance.getStore();
       final MemorySegment exportNamePtr = arena.allocateFrom(exportName);
 
+      // Use the instance's store to extract the memory, not the linker's store
       result =
           NATIVE_BINDINGS.panamaLinkerDefineMemoryFromInstance(
               nativeLinker,
-              panamaStore.getNativeStore(),
+              instanceStore.getNativeStore(),
               moduleNamePtr,
               namePtr,
               owningInstance.getNativeInstance(),

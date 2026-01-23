@@ -134,7 +134,7 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
       throw new IllegalArgumentException("Value cannot be null");
     }
     if (!mutable) {
-      throw new IllegalStateException("Cannot set value of immutable global");
+      throw new UnsupportedOperationException("Cannot set value of immutable global");
     }
     if (value.getType() != type) {
       throw new WasmTypeException(

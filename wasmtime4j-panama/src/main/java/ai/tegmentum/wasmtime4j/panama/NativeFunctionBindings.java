@@ -3191,6 +3191,7 @@ public final class NativeFunctionBindings {
    * @param f64ValueOutPtr pointer to store f64 value
    * @param refIdPresentOutPtr pointer to store reference presence flag
    * @param refIdOutPtr pointer to store reference ID
+   * @param v128BytesOutPtr pointer to store V128 bytes (16 bytes, can be null)
    * @return 0 on success, negative error code on failure
    */
   public int panamaGlobalGet(
@@ -3201,7 +3202,8 @@ public final class NativeFunctionBindings {
       final MemorySegment f32ValueOutPtr,
       final MemorySegment f64ValueOutPtr,
       final MemorySegment refIdPresentOutPtr,
-      final MemorySegment refIdOutPtr) {
+      final MemorySegment refIdOutPtr,
+      final MemorySegment v128BytesOutPtr) {
     validatePointer(globalPtr, "globalPtr");
     validatePointer(storePtr, "storePtr");
     validatePointer(i32ValueOutPtr, "i32ValueOutPtr");
@@ -3210,6 +3212,7 @@ public final class NativeFunctionBindings {
     validatePointer(f64ValueOutPtr, "f64ValueOutPtr");
     validatePointer(refIdPresentOutPtr, "refIdPresentOutPtr");
     validatePointer(refIdOutPtr, "refIdOutPtr");
+    // v128BytesOutPtr can be null
 
     return callNativeFunction(
         "wasmtime4j_panama_global_get",
@@ -3221,7 +3224,8 @@ public final class NativeFunctionBindings {
         f32ValueOutPtr,
         f64ValueOutPtr,
         refIdPresentOutPtr,
-        refIdOutPtr);
+        refIdOutPtr,
+        v128BytesOutPtr == null ? MemorySegment.NULL : v128BytesOutPtr);
   }
 
   /**
@@ -3236,6 +3240,7 @@ public final class NativeFunctionBindings {
    * @param f64Value f64 value
    * @param refIdPresent reference presence flag
    * @param refId reference ID
+   * @param v128BytesPtr pointer to V128 bytes (16 bytes, can be null)
    * @return 0 on success, negative error code on failure
    */
   public int panamaGlobalSet(
@@ -3247,9 +3252,11 @@ public final class NativeFunctionBindings {
       final double f32Value,
       final double f64Value,
       final int refIdPresent,
-      final long refId) {
+      final long refId,
+      final MemorySegment v128BytesPtr) {
     validatePointer(globalPtr, "globalPtr");
     validatePointer(storePtr, "storePtr");
+    // v128BytesPtr can be null
 
     return callNativeFunction(
         "wasmtime4j_panama_global_set",
@@ -3262,7 +3269,8 @@ public final class NativeFunctionBindings {
         f32Value,
         f64Value,
         refIdPresent,
-        refId);
+        refId,
+        v128BytesPtr == null ? MemorySegment.NULL : v128BytesPtr);
   }
 
   /**
@@ -3285,6 +3293,7 @@ public final class NativeFunctionBindings {
     double f64Value = 0.0;
     int refIdPresent = 0;
     long refId = 0;
+    MemorySegment v128BytesPtr = null;
 
     switch (value.getType()) {
       case I32:
@@ -3298,6 +3307,13 @@ public final class NativeFunctionBindings {
         break;
       case F64:
         f64Value = value.asF64();
+        break;
+      case V128:
+        final byte[] v128Bytes = value.asV128();
+        if (v128Bytes != null && v128Bytes.length == 16) {
+          v128BytesPtr = Arena.global().allocate(16);
+          MemorySegment.copy(v128Bytes, 0, v128BytesPtr, ValueLayout.JAVA_BYTE, 0, 16);
+        }
         break;
       case FUNCREF:
         final Object funcRef = value.asFuncref();
@@ -3340,7 +3356,8 @@ public final class NativeFunctionBindings {
         f32Value,
         f64Value,
         refIdPresent,
-        refId);
+        refId,
+        v128BytesPtr);
   }
 
   /**
@@ -3395,6 +3412,7 @@ public final class NativeFunctionBindings {
     double f64Value = 0.0;
     int refIdPresent = 0;
     long refId = 0;
+    MemorySegment v128BytesPtr = MemorySegment.NULL;
 
     switch (value.getType()) {
       case I32:
@@ -3408,6 +3426,13 @@ public final class NativeFunctionBindings {
         break;
       case F64:
         f64Value = value.asF64();
+        break;
+      case V128:
+        final byte[] v128Bytes = value.asV128();
+        if (v128Bytes != null && v128Bytes.length == 16) {
+          v128BytesPtr = Arena.global().allocate(16);
+          MemorySegment.copy(v128Bytes, 0, v128BytesPtr, ValueLayout.JAVA_BYTE, 0, 16);
+        }
         break;
       case FUNCREF:
         final Object funcRef2 = value.asFuncref();
@@ -3453,6 +3478,7 @@ public final class NativeFunctionBindings {
         f64Value,
         refIdPresent,
         refId,
+        v128BytesPtr,
         namePtr == null ? MemorySegment.NULL : namePtr,
         globalPtrPtr);
   }
@@ -4379,6 +4405,37 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS)); // engine_ptr
 
     addFunctionBinding(
+        "wasmtime4j_panama_engine_is_fuel_enabled",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_is_epoch_interruption_enabled",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_is_coredump_on_trap_enabled",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_get_memory_limit",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_get_stack_limit",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_is_pulley",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_supports_feature",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 1=supported, 0=not supported, -1=error
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS)); // feature_name (C string)
+
+    addFunctionBinding(
         "wasmtime4j_engine_max_instances",
         FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
 
@@ -4545,6 +4602,63 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.JAVA_LONG)); // fuel
 
+    // Panama-prefixed store fuel functions
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // fuel
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_get_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // fuel_out_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_add_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // fuel
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_consume_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // fuel
+            ValueLayout.ADDRESS)); // remaining_out_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_get_fuel_remaining",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // remaining_out_ptr
+
+    // Panama-prefixed store epoch functions
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_epoch_deadline",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // ticks
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_epoch_deadline_trap",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_epoch_deadline_callback",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_clear_epoch_deadline_callback",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
     addFunctionBinding(
         "wasmtime4j_store_set_epoch_deadline",
         FunctionDescriptor.of(
@@ -4589,6 +4703,26 @@ public final class NativeFunctionBindings {
         "wasmtime4j_store_has_wasi_context",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
+    // Panama-prefixed epoch deadline functions
+    addFunctionBinding(
+        "wasmtime4j_panama_store_epoch_deadline_async_yield_and_update",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // delta ticks
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_epoch_deadline_trap",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_epoch_deadline_callback",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_clear_epoch_deadline_callback",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
     // Instance functions - Panama FFI: return instance pointer directly
     addFunctionBinding(
         "wasmtime4j_instance_create",
@@ -4596,6 +4730,15 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // return instance*
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.ADDRESS)); // module_ptr
+
+    // Panama FFI instance creation with output parameter
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS)); // instance_ptr (output)
 
     addFunctionBinding(
         "wasmtime4j_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
@@ -5096,7 +5239,8 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // f32_value out
             ValueLayout.ADDRESS, // f64_value out
             ValueLayout.ADDRESS, // ref_id_present out
-            ValueLayout.ADDRESS)); // ref_id out
+            ValueLayout.ADDRESS, // ref_id out
+            ValueLayout.ADDRESS)); // v128_bytes out (16 bytes)
 
     addFunctionBinding(
         "wasmtime4j_panama_global_set",
@@ -5110,7 +5254,8 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_DOUBLE, // f32_value
             ValueLayout.JAVA_DOUBLE, // f64_value
             ValueLayout.JAVA_INT, // ref_id_present
-            ValueLayout.JAVA_LONG)); // ref_id
+            ValueLayout.JAVA_LONG, // ref_id
+            ValueLayout.ADDRESS)); // v128_bytes ptr (16 bytes, can be null)
 
     addFunctionBinding(
         "wasmtime4j_global_get_type_info",
@@ -5134,6 +5279,7 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_DOUBLE, // f64_value
             ValueLayout.JAVA_INT, // ref_id_present
             ValueLayout.JAVA_LONG, // ref_id
+            ValueLayout.ADDRESS, // v128_bytes ptr (16 bytes, can be null)
             ValueLayout.ADDRESS, // name_ptr (optional)
             ValueLayout.ADDRESS)); // global_ptr (out)
 
@@ -5540,6 +5686,20 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_panama_linker_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // linker_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_allow_shadowing",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.JAVA_INT)); // allow (1=yes, 0=no)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_allow_unknown_exports",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.JAVA_INT)); // allow (1=yes, 0=no)
 
     // InstancePre operations
     addFunctionBinding(
@@ -8480,6 +8640,154 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return c_int (1 if has pending)
             ValueLayout.ADDRESS)); // store_ptr
+
+    // Atomic memory operations
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_compare_and_swap_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT, // expected
+            ValueLayout.JAVA_INT, // new_value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_compare_and_swap_i64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // expected
+            ValueLayout.JAVA_LONG, // new_value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_load_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_load_i64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_store_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT)); // value
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_store_i64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG)); // value
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_add_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT, // value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_add_i64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_and_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT, // value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_or_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT, // value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_xor_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT, // value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_fence",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_notify",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT, // count
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_wait32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_INT, // expected
+            ValueLayout.JAVA_LONG, // timeout_ns
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_wait64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // expected
+            ValueLayout.JAVA_LONG, // timeout_ns
+            ValueLayout.ADDRESS)); // result_out
   }
 
   // Panama Linker Functions
@@ -9125,13 +9433,15 @@ public final class NativeFunctionBindings {
    * @return true if supported, false otherwise
    */
   public boolean engineSupportsFeature(final MemorySegment enginePtr, final String featureName) {
-    try (final Arena arena = Arena.ofAuto()) {
+    try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment featureNameSegment = arena.allocateFrom(featureName);
-      return callNativeFunction(
-          "wasmtime4j_panama_engine_supports_feature",
-          Boolean.class,
-          enginePtr,
-          featureNameSegment);
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_engine_supports_feature",
+              Integer.class,
+              enginePtr,
+              featureNameSegment);
+      return result == 1;
     }
   }
 

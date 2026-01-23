@@ -35,6 +35,16 @@ pub enum GcReferenceType {
     StructRef(StructTypeDefinition),
     /// References to array instances with element type information
     ArrayRef(Box<ArrayTypeDefinition>),
+    /// Reference to external host data
+    ExternRef,
+    /// Reference to a function
+    FuncRef,
+    /// Null reference type - bottom type for nullable GC references
+    NullRef,
+    /// Nullable function reference type
+    NullFuncRef,
+    /// Nullable external reference type
+    NullExternRef,
 }
 
 /// Struct type definition with field metadata
@@ -411,10 +421,12 @@ impl GcTypeConverter {
             ValType::V128 => Ok(FieldType::V128),
             ValType::Ref(ref_type) => {
                 match ref_type.heap_type() {
-                    HeapType::Any => Ok(FieldType::Reference(GcReferenceType::AnyRef)),
+                    HeapType::Any | HeapType::Exn => Ok(FieldType::Reference(GcReferenceType::AnyRef)),
                     HeapType::Eq => Ok(FieldType::Reference(GcReferenceType::EqRef)),
                     HeapType::I31 => Ok(FieldType::Reference(GcReferenceType::I31Ref)),
-                    HeapType::Struct => {
+                    HeapType::Extern => Ok(FieldType::Reference(GcReferenceType::ExternRef)),
+                    HeapType::Func | HeapType::ConcreteFunc(_) => Ok(FieldType::Reference(GcReferenceType::FuncRef)),
+                    HeapType::Struct | HeapType::ConcreteStruct(_) => {
                         // Create a placeholder struct definition for the Wasmtime struct type
                         let struct_def = StructTypeDefinition {
                             type_id: 0, // Will be properly assigned by type registry
@@ -424,7 +436,7 @@ impl GcTypeConverter {
                         };
                         Ok(FieldType::Reference(GcReferenceType::StructRef(struct_def)))
                     },
-                    HeapType::Array => {
+                    HeapType::Array | HeapType::ConcreteArray(_) => {
                         // Create a placeholder array definition for the Wasmtime array type
                         let array_def = ArrayTypeDefinition {
                             type_id: 0, // Will be properly assigned by type registry
@@ -434,6 +446,10 @@ impl GcTypeConverter {
                         };
                         Ok(FieldType::Reference(GcReferenceType::ArrayRef(Box::new(array_def))))
                     },
+                    // Null reference types (bottom types)
+                    HeapType::None => Ok(FieldType::Reference(GcReferenceType::NullRef)),
+                    HeapType::NoFunc => Ok(FieldType::Reference(GcReferenceType::NullFuncRef)),
+                    HeapType::NoExtern => Ok(FieldType::Reference(GcReferenceType::NullExternRef)),
                     _ => Err(WasmtimeError::InvalidParameter { message: format!(
                         "Unsupported reference type: {:?}", ref_type
                     )}),
@@ -533,17 +549,22 @@ impl GcTypeConverter {
                     GcReferenceType::AnyRef => HeapType::Any,
                     GcReferenceType::EqRef => HeapType::Eq,
                     GcReferenceType::I31Ref => HeapType::I31,
-                    GcReferenceType::StructRef(struct_def) => {
+                    GcReferenceType::ExternRef => HeapType::Extern,
+                    GcReferenceType::FuncRef => HeapType::Func,
+                    GcReferenceType::NullRef => HeapType::None,
+                    GcReferenceType::NullFuncRef => HeapType::NoFunc,
+                    GcReferenceType::NullExternRef => HeapType::NoExtern,
+                    GcReferenceType::StructRef(_) => {
                         // In a real implementation, we would convert our struct definition
                         // to a Wasmtime StructType and create the appropriate HeapType
-                        // For now, we fall back to Any but this should be improved
-                        HeapType::Any
+                        // For now, we fall back to Struct but this should be improved
+                        HeapType::Struct
                     },
-                    GcReferenceType::ArrayRef(array_def) => {
+                    GcReferenceType::ArrayRef(_) => {
                         // In a real implementation, we would convert our array definition
                         // to a Wasmtime ArrayType and create the appropriate HeapType
-                        // For now, we fall back to Any but this should be improved
-                        HeapType::Any
+                        // For now, we fall back to Array but this should be improved
+                        HeapType::Array
                     },
                 };
                 Ok(ValType::Ref(RefType::new(true, heap_type)))

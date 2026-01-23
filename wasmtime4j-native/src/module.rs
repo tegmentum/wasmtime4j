@@ -159,6 +159,22 @@ pub enum ModuleValueType {
     ExternRef,
     /// Reference to WebAssembly function
     FuncRef,
+    /// Reference to any GC object (anyref)
+    AnyRef,
+    /// Reference to equality-comparable GC object (eqref)
+    EqRef,
+    /// Reference to i31 value (i31ref)
+    I31Ref,
+    /// Reference to struct type (structref)
+    StructRef,
+    /// Reference to array type (arrayref)
+    ArrayRef,
+    /// Null reference (ref null none) - bottom type
+    NullRef,
+    /// Null function reference (ref null nofunc)
+    NullFuncRef,
+    /// Null extern reference (ref null noextern)
+    NullExternRef,
 }
 
 /// Import kinds with type information
@@ -705,8 +721,17 @@ fn convert_ref_type(ref_type: wasmtime::RefType) -> WasmtimeResult<ModuleValueTy
     match ref_type.heap_type() {
         wasmtime::HeapType::Extern => Ok(ModuleValueType::ExternRef),
         wasmtime::HeapType::Func | wasmtime::HeapType::ConcreteFunc(_) => Ok(ModuleValueType::FuncRef),
+        // GC proposal heap types
+        wasmtime::HeapType::Any | wasmtime::HeapType::Exn => Ok(ModuleValueType::AnyRef),
+        wasmtime::HeapType::Eq => Ok(ModuleValueType::EqRef),
+        wasmtime::HeapType::I31 => Ok(ModuleValueType::I31Ref),
+        wasmtime::HeapType::Struct | wasmtime::HeapType::ConcreteStruct(_) => Ok(ModuleValueType::StructRef),
+        wasmtime::HeapType::Array | wasmtime::HeapType::ConcreteArray(_) => Ok(ModuleValueType::ArrayRef),
+        wasmtime::HeapType::None => Ok(ModuleValueType::NullRef),
+        wasmtime::HeapType::NoFunc => Ok(ModuleValueType::NullFuncRef),
+        wasmtime::HeapType::NoExtern => Ok(ModuleValueType::NullExternRef),
         _ => Err(WasmtimeError::Module {
-            message: format!("Unsupported reference type: {:?}", ref_type),
+            message: format!("Unsupported reference type: {:?} (heap_type: {:?})", ref_type, ref_type.heap_type()),
         })
     }
 }

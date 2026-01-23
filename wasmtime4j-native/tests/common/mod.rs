@@ -205,6 +205,52 @@ mod tests {
     }
 
     #[test]
+    fn test_ref_null_none_heap_type() {
+        // Enable GC for this test
+        let mut config = wasmtime::Config::new();
+        config.wasm_gc(true);
+        config.wasm_function_references(true);
+
+        let wasmtime_engine = wasmtime::Engine::new(&config).unwrap();
+
+        // WAT module with (ref null none) table element type
+        let wat = r#"(module
+          (table $t 10 (ref null none))
+          (func (export "f") (result (ref null none))
+            (i32.const 99)
+            (table.get $t)
+          )
+        )"#;
+
+        let module = wasmtime::Module::new(&wasmtime_engine, wat).unwrap();
+
+        // Check the table export types
+        for export in module.exports() {
+            println!("Export: {:?}", export.name());
+            match export.ty() {
+                wasmtime::ExternType::Func(func_type) => {
+                    println!("  Function type:");
+                    for (i, result) in func_type.results().enumerate() {
+                        println!("    Result {}: {:?}", i, result);
+                        if let wasmtime::ValType::Ref(ref_type) = result {
+                            println!("      RefType: {:?}", ref_type);
+                            println!("      HeapType: {:?}", ref_type.heap_type());
+                            println!("      Is HeapType::None: {}", matches!(ref_type.heap_type(), wasmtime::HeapType::None));
+                        }
+                    }
+                }
+                wasmtime::ExternType::Table(table_type) => {
+                    println!("  Table type:");
+                    println!("    Element: {:?}", table_type.element());
+                    println!("    HeapType: {:?}", table_type.element().heap_type());
+                    println!("    Is HeapType::None: {}", matches!(table_type.element().heap_type(), wasmtime::HeapType::None));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    #[test]
     fn test_store_creation() {
         let mut engine = TestEngine::new().unwrap();
         let store = engine.store();

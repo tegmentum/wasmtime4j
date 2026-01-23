@@ -254,7 +254,9 @@ public class JniModule implements Module {
   @Override
   @SuppressFBWarnings(
       value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
-      justification = "Error details are logged internally only; exception thrown to caller has sanitized message")
+      justification =
+          "Error details are logged internally only; exception thrown to caller has sanitized"
+              + " message")
   public List<ai.tegmentum.wasmtime4j.ModuleExport> getModuleExports() {
     ensureNotClosed();
     if (!isNativeHandleReasonable()) {

@@ -148,6 +148,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
       final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
       final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment v128Bytes = tempArena.allocate(16);
 
       final int result =
           NATIVE_BINDINGS.panamaGlobalGet(
@@ -158,7 +159,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
               f32Value,
               f64Value,
               refIdPresent,
-              refId);
+              refId,
+              v128Bytes);
 
       if (result != 0) {
         throw new RuntimeException("Failed to get global value: error code " + result);
@@ -174,6 +176,10 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
           return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
         case F64:
           return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
+        case V128:
+          final byte[] bytes = new byte[16];
+          MemorySegment.copy(v128Bytes, ValueLayout.JAVA_BYTE, 0, bytes, 0, 16);
+          return WasmValue.v128(bytes);
         case FUNCREF:
           if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
             return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
@@ -196,7 +202,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       throw new IllegalArgumentException("Value cannot be null");
     }
     if (!mutable) {
-      throw new IllegalStateException("Cannot set value of immutable global");
+      throw new UnsupportedOperationException("Cannot set value of immutable global");
     }
     ensureNotClosed();
 

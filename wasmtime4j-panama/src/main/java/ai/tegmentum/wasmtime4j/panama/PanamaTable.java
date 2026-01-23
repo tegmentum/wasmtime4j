@@ -296,6 +296,8 @@ public final class PanamaTable implements WasmTable {
       final long refId = refIdSegment.get(ValueLayout.JAVA_LONG, 0);
       // TODO: Convert refId to appropriate Java object (function reference or external reference)
       return Long.valueOf(refId);
+    } catch (final IndexOutOfBoundsException e) {
+      throw e;
     } catch (final Throwable e) {
       throw new IllegalStateException("Error getting table element: " + e.getMessage(), e);
     }
@@ -354,6 +356,10 @@ public final class PanamaTable implements WasmTable {
       if (result != 0) {
         throw new IndexOutOfBoundsException("Failed to set table element at index " + index);
       }
+    } catch (final IndexOutOfBoundsException e) {
+      throw e;
+    } catch (final IllegalArgumentException e) {
+      throw e;
     } catch (final Throwable e) {
       throw new IllegalStateException("Error setting table element: " + e.getMessage(), e);
     }

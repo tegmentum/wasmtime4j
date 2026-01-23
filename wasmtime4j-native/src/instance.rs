@@ -1121,7 +1121,16 @@ impl Instance {
     fn convert_ref_type(ref_type: &wasmtime::RefType) -> WasmtimeResult<ModuleValueType> {
         match ref_type.heap_type() {
             wasmtime::HeapType::Extern => Ok(ModuleValueType::ExternRef),
-            wasmtime::HeapType::Func => Ok(ModuleValueType::FuncRef),
+            wasmtime::HeapType::Func | wasmtime::HeapType::ConcreteFunc(_) => Ok(ModuleValueType::FuncRef),
+            // GC proposal heap types
+            wasmtime::HeapType::Any | wasmtime::HeapType::Exn => Ok(ModuleValueType::AnyRef),
+            wasmtime::HeapType::Eq => Ok(ModuleValueType::EqRef),
+            wasmtime::HeapType::I31 => Ok(ModuleValueType::I31Ref),
+            wasmtime::HeapType::Struct | wasmtime::HeapType::ConcreteStruct(_) => Ok(ModuleValueType::StructRef),
+            wasmtime::HeapType::Array | wasmtime::HeapType::ConcreteArray(_) => Ok(ModuleValueType::ArrayRef),
+            wasmtime::HeapType::None => Ok(ModuleValueType::NullRef),
+            wasmtime::HeapType::NoFunc => Ok(ModuleValueType::NullFuncRef),
+            wasmtime::HeapType::NoExtern => Ok(ModuleValueType::NullExternRef),
             _ => Err(WasmtimeError::Type {
                 message: format!("Unsupported reference type: {:?}", ref_type),
             }),

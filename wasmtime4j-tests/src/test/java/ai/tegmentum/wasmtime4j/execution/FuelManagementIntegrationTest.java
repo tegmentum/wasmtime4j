@@ -518,24 +518,22 @@ public final class FuelManagementIntegrationTest {
   class FuelBoundaryConditionTests {
 
     @Test
-    @DisplayName("should reject zero fuel setting")
-    void shouldRejectZeroFuelSetting() throws Exception {
+    @DisplayName("should allow zero fuel setting")
+    void shouldAllowZeroFuelSetting() throws Exception {
       assumeTrue(fuelAvailable, "Fuel management not available");
 
-      LOGGER.info("Testing zero fuel setting - should be rejected");
+      LOGGER.info("Testing zero fuel setting - Wasmtime allows setting fuel to 0");
 
       final EngineConfig config = new EngineConfig().consumeFuel(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
 
-        // Zero fuel is not allowed - API requires positive values
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> store.setFuel(0L),
-            "Setting zero fuel should throw IllegalArgumentException");
+        // Zero fuel is valid in Wasmtime - execution will immediately run out of fuel
+        assertDoesNotThrow(() -> store.setFuel(0L), "Setting fuel to 0 should be allowed");
+        assertTrue(store.getFuel() == 0L, "Fuel should be set to zero");
 
-        LOGGER.info("Zero fuel correctly rejected");
+        LOGGER.info("Zero fuel correctly set");
       }
     }
 

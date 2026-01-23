@@ -164,6 +164,8 @@ impl WasmGcRuntime {
         type_def: StructTypeDefinition,
         field_values: Vec<GcValue>,
     ) -> StructOperationResult {
+        // DEBUG: Print to stderr to trace call origin
+        eprintln!("[GC_RS_ENTRY] struct_new: type_def.name={:?}, field_values={:?}", type_def.name, field_values);
         // Generate unique object ID
         let object_id = {
             let mut next_id = match self.next_object_id.lock()
@@ -944,7 +946,9 @@ impl WasmGcRuntime {
         // Validate that the reference type is valid
         match ref_type {
             GcReferenceType::AnyRef | GcReferenceType::EqRef | GcReferenceType::I31Ref |
-            GcReferenceType::StructRef(_) | GcReferenceType::ArrayRef(_) => {
+            GcReferenceType::StructRef(_) | GcReferenceType::ArrayRef(_) |
+            GcReferenceType::ExternRef | GcReferenceType::FuncRef |
+            GcReferenceType::NullRef | GcReferenceType::NullFuncRef | GcReferenceType::NullExternRef => {
                 RefOperationResult {
                     success: true,
                     cast_result: None,
@@ -1289,8 +1293,13 @@ impl WasmGcRuntime {
                     GcReferenceType::AnyRef => Ok(ValType::Ref(RefType::new(true, HeapType::Any))),
                     GcReferenceType::EqRef => Ok(ValType::Ref(RefType::new(true, HeapType::Eq))),
                     GcReferenceType::I31Ref => Ok(ValType::Ref(RefType::new(true, HeapType::I31))),
-                    GcReferenceType::StructRef(_) => Ok(ValType::Ref(RefType::new(true, HeapType::Any))), // Simplified
-                    GcReferenceType::ArrayRef(_) => Ok(ValType::Ref(RefType::new(true, HeapType::Any))), // Simplified
+                    GcReferenceType::ExternRef => Ok(ValType::Ref(RefType::new(true, HeapType::Extern))),
+                    GcReferenceType::FuncRef => Ok(ValType::Ref(RefType::new(true, HeapType::Func))),
+                    GcReferenceType::NullRef => Ok(ValType::Ref(RefType::new(true, HeapType::None))),
+                    GcReferenceType::NullFuncRef => Ok(ValType::Ref(RefType::new(true, HeapType::NoFunc))),
+                    GcReferenceType::NullExternRef => Ok(ValType::Ref(RefType::new(true, HeapType::NoExtern))),
+                    GcReferenceType::StructRef(_) => Ok(ValType::Ref(RefType::new(true, HeapType::Struct))),
+                    GcReferenceType::ArrayRef(_) => Ok(ValType::Ref(RefType::new(true, HeapType::Array))),
                 }
             },
         }

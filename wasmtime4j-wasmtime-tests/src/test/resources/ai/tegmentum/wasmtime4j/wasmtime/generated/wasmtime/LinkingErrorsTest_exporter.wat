@@ -1,0 +1,10 @@
+(module $m
+  (global (export "g i32") i32 (i32.const 0))
+  (global (export "g mut i32") (mut i32) (i32.const 0))
+  (table (export "t funcref") 0 funcref)
+  (table (export "t externref") 0 externref)
+  (memory (export "mem") 1)
+  (func (export "f"))
+  (func (export "f p1r2") (param f32) (result i32 i64)
+    (i32.const 0)
+    (i64.const 0)))
