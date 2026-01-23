@@ -448,7 +448,7 @@ public final class WasiContextBuilder {
 
       // Create WASI context with default configuration
       // TODO: Support custom configuration parameters (allow_network, allow_arbitrary_fs, etc.)
-      MemorySegment contextHandle = bindings.wasiContextNew();
+      MemorySegment contextHandle = bindings.wasiContextCreate();
 
       if (contextHandle == null || contextHandle.equals(MemorySegment.NULL)) {
         throw new RuntimeException("Failed to create native WASI context");
@@ -465,9 +465,7 @@ public final class WasiContextBuilder {
               MemorySegment keySegment = arena.allocateFrom(parts[0]);
               MemorySegment valueSegment = arena.allocateFrom(parts[1]);
 
-              int result =
-                  bindings.wasiContextSetEnvironmentVariable(
-                      contextHandle, keySegment, valueSegment);
+              int result = bindings.wasiContextSetEnv(contextHandle, keySegment, valueSegment);
               if (result != 0) {
                 LOGGER.warning(
                     "Failed to set environment variable: "
@@ -491,7 +489,7 @@ public final class WasiContextBuilder {
             argsArray.setAtIndex(ValueLayout.ADDRESS, i, argString);
           }
 
-          int result = bindings.wasiContextSetArguments(contextHandle, argsArray, arguments.length);
+          int result = bindings.wasiContextSetArgv(contextHandle, argsArray, arguments.length);
           if (result != 0) {
             LOGGER.warning("Failed to set command line arguments (error code: " + result + ")");
           }
@@ -510,17 +508,7 @@ public final class WasiContextBuilder {
 
             // Default directory permissions: read only for both directories and files
             int result =
-                bindings.wasiContextAddDirectory(
-                    contextHandle,
-                    hostSegment,
-                    guestSegment,
-                    0,
-                    1,
-                    0, // dir permissions: no create, read, no remove
-                    1,
-                    0,
-                    0,
-                    0); // file permissions: read only, no write/create/truncate
+                bindings.wasiContextPreopenDirReadonly(contextHandle, hostSegment, guestSegment);
 
             if (result != 0) {
               LOGGER.warning(

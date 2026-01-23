@@ -1985,23 +1985,9 @@ pub unsafe extern "C" fn wasmtime4j_instance_new_without_imports(
 
     match (crate::store::core::get_store_mut(store_ptr), crate::module::core::get_module_ref(module_ptr)) {
         (Ok(store), Ok(module)) => {
-            eprintln!(
-                "DEBUG instance_new: store_ptr={:p}, store_id={}",
-                store_ptr, store.id()
-            );
             match ffi_core::create_instance_without_imports(store, module) {
-                Ok(instance) => {
-                    let instance_ptr = Box::into_raw(instance) as *mut c_void;
-                    eprintln!(
-                        "DEBUG instance_new: created instance_ptr={:p}",
-                        instance_ptr
-                    );
-                    instance_ptr
-                },
-                Err(e) => {
-                    eprintln!("DEBUG instance_new: error creating instance: {:?}", e);
-                    std::ptr::null_mut()
-                },
+                Ok(instance) => Box::into_raw(instance) as *mut c_void,
+                Err(_) => std::ptr::null_mut(),
             }
         },
         _ => std::ptr::null_mut(),
@@ -2574,6 +2560,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function_async(
 ///
 /// IMPORTANT: This function returns a wrapped crate::memory::Memory, NOT a raw wasmtime::Memory.
 /// All callers must treat the returned pointer as a crate::memory::Memory pointer.
+/// This function handles both regular and shared memory exports (threads proposal).
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
     instance_ptr: *const c_void,
@@ -2589,35 +2576,9 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
         Err(_) => return std::ptr::null_mut(),
     };
 
-    // Write debug to file since stderr may be captured
-    {
-        use std::io::Write;
-        if let Ok(mut f) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("/tmp/wasmtime4j_debug.log")
-        {
-            let _ = writeln!(f,
-                "DEBUG get_memory_by_name: instance_ptr={:p}, store_ptr={:p}, name={}",
-                instance_ptr, store_ptr, name_str
-            );
-        }
-    }
-
     match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
         (Ok(instance), Ok(store)) => {
-            {
-                use std::io::Write;
-                if let Ok(mut f) = std::fs::OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open("/tmp/wasmtime4j_debug.log")
-                {
-                    let _ = writeln!(f,
-                        "DEBUG get_memory_by_name: store_id={}", store.id()
-                    );
-                }
-            }
+            // First try to get regular memory
             match core::get_exported_memory(instance, store, name_str) {
                 Ok(Some(wasmtime_memory)) => {
                     // Get the memory type from the wasmtime::Memory using store context
@@ -2628,14 +2589,12 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
                     match memory_type_result {
                         Ok(memory_type) => {
                             // Wrap the raw wasmtime::Memory in our Memory wrapper
-                            // This ensures type consistency across all memory operations
                             let wrapped_memory = crate::memory::Memory::from_wasmtime_memory(
                                 wasmtime_memory,
                                 memory_type,
                             );
 
                             // Wrap in ValidatedMemory to match JNI's nativeGetMemory behavior
-                            // This is required because get_memory_ref expects ValidatedMemory
                             match crate::memory::core::create_validated_memory(wrapped_memory) {
                                 Ok(validated_ptr) => validated_ptr as *mut c_void,
                                 Err(_) => std::ptr::null_mut(),
@@ -2644,7 +2603,23 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
                         Err(_) => std::ptr::null_mut(),
                     }
                 }
-                _ => std::ptr::null_mut(),
+                _ => {
+                    // Regular memory not found, try shared memory (for threads proposal)
+                    // SharedMemory is exported as Extern::SharedMemory, not Extern::Memory
+                    match instance.get_shared_memory(store, name_str) {
+                        Ok(Some(shared_memory)) => {
+                            // Wrap shared memory in our Memory wrapper
+                            let wrapped_memory = crate::memory::Memory::from_shared_memory(shared_memory);
+
+                            // Wrap in ValidatedMemory to match JNI's nativeGetMemory behavior
+                            match crate::memory::core::create_validated_memory(wrapped_memory) {
+                                Ok(validated_ptr) => validated_ptr as *mut c_void,
+                                Err(_) => std::ptr::null_mut(),
+                            }
+                        }
+                        _ => std::ptr::null_mut(),
+                    }
+                }
             }
         }
         _ => std::ptr::null_mut(),

@@ -56,7 +56,8 @@ import org.junit.jupiter.api.io.TempDir;
  * @since 1.0.0
  */
 @DisplayName("Panama WasiInputStream Integration Tests")
-@Disabled("Panama native WASI context creation not fully implemented")
+@Disabled(
+    "JVM crash in wasmtime4j_panama_wasi_stdio_get_stdin - Panama WASI CLI FFI needs investigation")
 class WasiInputStreamIntegrationTest {
 
   private static final Logger LOGGER =

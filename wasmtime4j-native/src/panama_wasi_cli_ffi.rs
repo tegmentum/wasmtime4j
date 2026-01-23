@@ -1,7 +1,7 @@
-//! Panama FFI bindings for WASI Preview 2 CLI operations
+//! Panama FFI bindings for WASI CLI operations
 //!
 //! This module provides C-compatible FFI functions for use by the wasmtime4j-panama module
-//! to access WASI Preview 2 CLI operations (wasi:cli).
+//! to access WASI CLI operations (wasi:cli).
 //!
 //! All functions use C calling conventions and handle memory management appropriately.
 
@@ -9,7 +9,7 @@ use std::os::raw::{c_char, c_int, c_void};
 use std::ptr;
 use std::ffi::CString;
 
-use crate::wasi_preview2::WasiPreview2Context;
+use crate::wasi::WasiContext;
 
 /// Get all environment variables
 ///
@@ -35,7 +35,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_all(
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             return -1;
         }
@@ -43,7 +43,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_all(
     };
 
     // Get environment variables from context
-    let env_map = match context.environment.read() {
+    let env_map = match context.environment_rw.read() {
         Ok(env_map) => env_map,
         Err(_) => return -1,
     };
@@ -104,7 +104,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get(
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             return -1;
         }
@@ -121,7 +121,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get(
     };
 
     // Get environment variables from context
-    let env_map = match context.environment.read() {
+    let env_map = match context.environment_rw.read() {
         Ok(env_map) => env_map,
         Err(_) => return -1,
     };
@@ -175,7 +175,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_arguments(
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             return -1;
         }
@@ -183,7 +183,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_arguments(
     };
 
     // Get arguments from context
-    let args = match context.arguments.read() {
+    let args = match context.arguments_rw.read() {
         Ok(args) => args,
         Err(_) => return -1,
     };
@@ -235,7 +235,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_initial_cwd(
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             return -1;
         }
@@ -292,7 +292,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stdin(
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             return -1;
         }
@@ -333,32 +333,31 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stdout(
     context_handle: *mut c_void,
     out_stream_handle: *mut *mut c_void,
 ) -> c_int {
+    // Basic null checks
     if context_handle.is_null() || out_stream_handle.is_null() {
         return -1;
     }
 
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            return -1;
-        }
-        &*ptr
-    };
+    // Safely access the WasiContext - validate the pointer before dereferencing
+    let stdout_handle: usize = unsafe {
+        // Try to read stdout_handle from the WasiContext struct
+        // The WasiContext has stdout_handle at a specific offset
+        let context_ptr = context_handle as *const crate::wasi::WasiContext;
 
-    // Get or create stdout handle
-    let stdout_handle = match context.stdout_handle.read() {
-        Ok(handle_opt) => {
-            match *handle_opt {
-                Some(handle) => handle as usize,
-                None => {
-                    // For now, use a fixed handle ID for stdout
-                    // In a full implementation, this would be a resource from the component model
-                    2usize
-                }
+        // Use std::ptr::read to safely access the struct
+        match std::panic::catch_unwind(|| {
+            let context = &*context_ptr;
+            match context.stdout_handle.read() {
+                Ok(guard) => match *guard {
+                    Some(h) => h as usize,
+                    None => 2usize, // Default stdout handle
+                },
+                Err(_) => 2usize,
             }
+        }) {
+            Ok(handle) => handle,
+            Err(_) => return -1, // Panic occurred, return error
         }
-        Err(_) => return -1,
     };
 
     unsafe {
@@ -386,7 +385,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stderr(
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             return -1;
         }
@@ -433,7 +432,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_exit(
 
     // Get context from handle
     let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
+        let ptr = context_handle as *const WasiContext;
         if ptr.is_null() {
             return -1;
         }

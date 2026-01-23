@@ -38,7 +38,6 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -63,7 +62,6 @@ import org.junit.jupiter.api.io.TempDir;
  * </ul>
  */
 @DisplayName("Panama WasiContext Integration Tests")
-@Disabled("Panama native WASI context creation not fully implemented")
 class PanamaWasiContextIntegrationTest {
 
   private static final Logger LOGGER =

@@ -3792,8 +3792,7 @@ public final class NativeFunctionBindings {
    * @return 0 on success, negative error code on failure
    */
   public int memoryClearHandleRegistries() {
-    return callNativeFunction(
-        "wasmtime4j_panama_memory_clear_handle_registries", Integer.class);
+    return callNativeFunction("wasmtime4j_panama_memory_clear_handle_registries", Integer.class);
   }
 
   // Error Handling Functions
