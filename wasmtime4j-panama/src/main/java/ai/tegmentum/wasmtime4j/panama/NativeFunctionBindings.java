@@ -1557,94 +1557,6 @@ public final class NativeFunctionBindings {
         "wasmtime4j_store_consume_fuel", Integer.class, storePtr, fuel, remainingPtr);
   }
 
-  // WASI Functions
-
-  /**
-   * Creates a new WASI context.
-   *
-   * @return pointer to the created WASI context, or null pointer on failure
-   */
-  public MemorySegment wasiContextNew() {
-    return callNativeFunction("wasmtime4j_wasi_context_new", MemorySegment.class);
-  }
-
-  /**
-   * Sets an environment variable in a WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @param keyPtr pointer to the environment variable key string
-   * @param valuePtr pointer to the environment variable value string
-   * @return 0 on success, negative error code on failure
-   */
-  public int wasiContextSetEnvironmentVariable(
-      final MemorySegment contextPtr, final MemorySegment keyPtr, final MemorySegment valuePtr) {
-    validatePointer(contextPtr, "contextPtr");
-    validatePointer(keyPtr, "keyPtr");
-    validatePointer(valuePtr, "valuePtr");
-    return callNativeFunction(
-        "wasmtime4j_wasi_context_set_env", Integer.class, contextPtr, keyPtr, valuePtr);
-  }
-
-  /**
-   * Sets command line arguments in a WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @param argsPtr pointer to the arguments array
-   * @param argsCount number of arguments
-   * @return 0 on success, negative error code on failure
-   */
-  public int wasiContextSetArguments(
-      final MemorySegment contextPtr, final MemorySegment argsPtr, final int argsCount) {
-    validatePointer(contextPtr, "contextPtr");
-    validatePointer(argsPtr, "argsPtr");
-    return callNativeFunction(
-        "wasmtime4j_wasi_context_set_args", Integer.class, contextPtr, argsPtr, argsCount);
-  }
-
-  /**
-   * Adds a directory mapping to a WASI context.
-   *
-   * @param contextPtr pointer to the WASI context
-   * @param hostPtr pointer to the host path string
-   * @param guestPtr pointer to the guest path string
-   * @param dirCreate whether directory creation is allowed
-   * @param dirRead whether directory reading is allowed
-   * @param dirRemove whether directory removal is allowed
-   * @param fileCreate whether file creation is allowed
-   * @param fileRead whether file reading is allowed
-   * @param fileWrite whether file writing is allowed
-   * @param fileTruncate whether file truncation is allowed
-   * @return 0 on success, negative error code on failure
-   */
-  public int wasiContextAddDirectory(
-      final MemorySegment contextPtr,
-      final MemorySegment hostPtr,
-      final MemorySegment guestPtr,
-      final int dirCreate,
-      final int dirRead,
-      final int dirRemove,
-      final int fileCreate,
-      final int fileRead,
-      final int fileWrite,
-      final int fileTruncate) {
-    validatePointer(contextPtr, "contextPtr");
-    validatePointer(hostPtr, "hostPtr");
-    validatePointer(guestPtr, "guestPtr");
-    return callNativeFunction(
-        "wasmtime4j_wasi_context_add_directory",
-        Integer.class,
-        contextPtr,
-        hostPtr,
-        guestPtr,
-        dirCreate,
-        dirRead,
-        dirRemove,
-        fileCreate,
-        fileRead,
-        fileWrite,
-        fileTruncate);
-  }
-
   // Instance Functions
 
   /**
@@ -3868,6 +3780,20 @@ public final class NativeFunctionBindings {
         storePtr,
         dataPtrOutPtr,
         sizeOutPtr);
+  }
+
+  /**
+   * Clears all memory and store handle registries (for testing purposes).
+   *
+   * <p>This function clears both memory and store handle registries to prevent stale handles from
+   * interfering with subsequent tests. Should only be called in test teardown after all handles
+   * have been properly destroyed.
+   *
+   * @return 0 on success, negative error code on failure
+   */
+  public int memoryClearHandleRegistries() {
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_clear_handle_registries", Integer.class);
   }
 
   // Error Handling Functions
@@ -8329,6 +8255,10 @@ public final class NativeFunctionBindings {
 
     addFunctionBinding(
         "wasmtime4j_panama_memory_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_clear_handle_registries",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT));
 
     // Panama Component Functions
     addFunctionBinding(

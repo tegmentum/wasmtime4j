@@ -3095,6 +3095,7 @@ pub mod memory {
     }
 
     /// Get memory size in pages by looking up memory fresh
+    /// Handles both regular and shared memory exports
     #[no_mangle]
     pub extern "C" fn wasmtime4j_instance_get_memory_size_pages(
         instance_ptr: *const c_void,
@@ -3114,22 +3115,32 @@ pub mod memory {
                     })?
             };
 
-            let memory = crate::instance::core::get_exported_memory(instance, store, name_str)?
-                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
-                    message: format!("Memory '{}' not found", name_str),
-                })?;
-
-            let size = store.with_context_ro(|ctx| Ok(memory.size(ctx)))?;
-
-            unsafe {
-                *size_out = size as c_uint;
+            // First try regular memory
+            if let Some(memory) = crate::instance::core::get_exported_memory(instance, store, name_str)? {
+                let size = store.with_context_ro(|ctx| Ok(memory.size(ctx)))?;
+                unsafe {
+                    *size_out = size as c_uint;
+                }
+                return Ok(());
             }
 
-            Ok(())
+            // Try shared memory (for threads proposal)
+            if let Some(shared_memory) = instance.get_shared_memory(store, name_str)? {
+                let size = shared_memory.size();
+                unsafe {
+                    *size_out = size as c_uint;
+                }
+                return Ok(());
+            }
+
+            Err(crate::error::WasmtimeError::ImportExport {
+                message: format!("Memory '{}' not found (neither regular nor shared)", name_str),
+            })
         })
     }
 
     /// Get memory size in bytes by looking up memory fresh
+    /// Handles both regular and shared memory exports
     #[no_mangle]
     pub extern "C" fn wasmtime4j_instance_get_memory_size_bytes(
         instance_ptr: *const c_void,
@@ -3149,18 +3160,27 @@ pub mod memory {
                     })?
             };
 
-            let memory = crate::instance::core::get_exported_memory(instance, store, name_str)?
-                .ok_or_else(|| crate::error::WasmtimeError::ImportExport {
-                    message: format!("Memory '{}' not found", name_str),
-                })?;
-
-            let size = store.with_context_ro(|ctx| Ok(memory.data_size(ctx)))?;
-
-            unsafe {
-                *size_out = size;
+            // First try regular memory
+            if let Some(memory) = crate::instance::core::get_exported_memory(instance, store, name_str)? {
+                let size = store.with_context_ro(|ctx| Ok(memory.data_size(ctx)))?;
+                unsafe {
+                    *size_out = size;
+                }
+                return Ok(());
             }
 
-            Ok(())
+            // Try shared memory (for threads proposal)
+            if let Some(shared_memory) = instance.get_shared_memory(store, name_str)? {
+                let size = shared_memory.data().len();
+                unsafe {
+                    *size_out = size;
+                }
+                return Ok(());
+            }
+
+            Err(crate::error::WasmtimeError::ImportExport {
+                message: format!("Memory '{}' not found (neither regular nor shared)", name_str),
+            })
         })
     }
 
@@ -3754,6 +3774,22 @@ pub mod memory {
                 let _ = Box::from_raw(registry_ptr as *mut MemoryRegistry);
             }
             log::debug!("Memory registry destroyed successfully");
+        }
+    }
+
+    /// Clear all memory and store handle registries (for testing purposes)
+    ///
+    /// This function clears both memory and store handle registries to prevent
+    /// stale handles from interfering with subsequent tests. Should only be
+    /// called in test teardown after all handles have been properly destroyed.
+    ///
+    /// # Returns
+    /// 0 on success, negative error code on failure
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_clear_handle_registries() -> c_int {
+        match crate::memory::core::clear_handle_registries() {
+            Ok(()) => 0,
+            Err(_) => -1,
         }
     }
 }

@@ -2115,7 +2115,7 @@ pub mod core {
                 message: "Failed to acquire store handle registry lock".to_string(),
             }
         })?;
-        
+
         if handles.remove(&(ptr as usize)) {
             log::debug!("Unregistered store handle: {:p}", ptr);
             Ok(())
@@ -2125,7 +2125,42 @@ pub mod core {
             })
         }
     }
-    
+
+    /// Clear all handle registries (for testing purposes)
+    ///
+    /// This function clears both memory and store handle registries.
+    /// It should only be used in test teardown to prevent stale handles
+    /// from interfering with subsequent tests.
+    ///
+    /// # Safety
+    /// Calling this function while handles are still in use will cause
+    /// validation errors when those handles are accessed.
+    pub fn clear_handle_registries() -> WasmtimeResult<()> {
+        // Clear memory handles
+        let mut memory_handles = VALID_MEMORY_HANDLES.write().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire memory handle registry lock".to_string(),
+            }
+        })?;
+        let memory_count = memory_handles.len();
+        memory_handles.clear();
+        drop(memory_handles);
+
+        // Clear store handles
+        let mut store_handles = VALID_STORE_HANDLES.write().map_err(|_| {
+            WasmtimeError::Concurrency {
+                message: "Failed to acquire store handle registry lock".to_string(),
+            }
+        })?;
+        let store_count = store_handles.len();
+        store_handles.clear();
+        drop(store_handles);
+
+        log::debug!("Cleared handle registries: {} memory handles, {} store handles",
+                   memory_count, store_count);
+        Ok(())
+    }
+
     /// Validate memory handle with comprehensive checks
     pub unsafe fn validate_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
         // Basic null check
@@ -3301,6 +3336,22 @@ pub extern "C" fn wasmtime4j_platform_memory_get_info(
 pub extern "C" fn wasmtime4j_platform_memory_allocator_destroy(allocator: *mut PlatformMemoryAllocator) {
     if !allocator.is_null() {
         unsafe { drop(Box::from_raw(allocator)) };
+    }
+}
+
+/// Clears all handle registries (for testing purposes)
+///
+/// This function clears both memory and store handle registries to prevent
+/// stale handles from interfering with subsequent tests. Should only be
+/// called in test teardown after all handles have been properly destroyed.
+///
+/// # Returns
+/// 0 on success, negative error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_memory_clear_handle_registries() -> i32 {
+    match core::clear_handle_registries() {
+        Ok(()) => 0,
+        Err(_) => -1,
     }
 }
 
