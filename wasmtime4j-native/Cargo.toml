@@ -14,15 +14,15 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 # Wasmtime WebAssembly runtime
-wasmtime = { version = "40.0.1", features = ["component-model", "component-model-async", "async", "coredump", "gc"] }
-wasmtime-wasi = { version = "40.0.1", optional = true }
-wasmtime-wasi-http = { version = "40.0.1", optional = true }
-wasmtime-wasi-nn = { version = "40.0.1", optional = true }
-wasmtime-wasi-threads = { version = "40.0.1", optional = true }
-wasmtime-wasi-keyvalue = { version = "40.0.1", optional = true }
-wasmtime-wasi-config = { version = "40.0.1", optional = true }
-wasi-common = { version = "40.0.1", optional = true }
-wasmtime-wast = { version = "40.0.1", features = ["component-model", "component-model-async"] }
+wasmtime = { version = "41.0.0", features = ["component-model", "component-model-async", "async", "coredump", "gc"] }
+wasmtime-wasi = { version = "41.0.0", optional = true }
+wasmtime-wasi-http = { version = "41.0.0", optional = true }
+wasmtime-wasi-nn = { version = "41.0.0", optional = true }
+wasmtime-wasi-threads = { version = "41.0.0", optional = true }
+wasmtime-wasi-keyvalue = { version = "41.0.0", optional = true }
+wasmtime-wasi-config = { version = "41.0.0", optional = true }
+wasi-common = { version = "41.0.0", optional = true }
+wasmtime-wast = { version = "41.0.0", features = ["component-model", "component-model-async"] }
 
 # WebAssembly text format parser
 wat = "1.0"
