@@ -76,6 +76,14 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
     config.wasm_exceptions(true);
     config.wasm_wide_arithmetic(true);
 
+    // CRITICAL: Disable signal-based traps to avoid conflict with JVM signal handlers
+    // JVM and Wasmtime both install SIGSEGV/SIGILL handlers which conflict
+    // This forces explicit bounds checks instead of using signals
+    config.signals_based_traps(false);
+
+    // Configure stack size for proper overflow handling
+    config.max_wasm_stack(2 * 1024 * 1024); // 2 MiB
+
     let engine = Engine::new(&config)
         .context("Failed to create Wasmtime engine")?;
 
@@ -148,6 +156,14 @@ pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> Result<WastExecuti
     config.wasm_component_model(true);
     config.wasm_exceptions(true);
     config.wasm_wide_arithmetic(true);
+
+    // CRITICAL: Disable signal-based traps to avoid conflict with JVM signal handlers
+    // JVM and Wasmtime both install SIGSEGV/SIGILL handlers which conflict
+    // This forces explicit bounds checks instead of using signals
+    config.signals_based_traps(false);
+
+    // Configure stack size for proper overflow handling
+    config.max_wasm_stack(2 * 1024 * 1024); // 2 MiB
 
     let engine = Engine::new(&config)
         .context("Failed to create Wasmtime engine")?;

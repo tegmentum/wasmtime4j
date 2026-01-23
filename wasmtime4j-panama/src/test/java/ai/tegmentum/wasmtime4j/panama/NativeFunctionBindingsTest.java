@@ -761,17 +761,18 @@ class NativeFunctionBindingsTest {
   class WasiContextMethodsTests {
 
     @Test
-    @DisplayName("Should have wasiContextNew method")
-    void shouldHaveWasiContextNewMethod() {
+    @DisplayName("Should have wasiContextCreate method")
+    void shouldHaveWasiContextCreateMethod() {
       assertDoesNotThrow(
           () -> {
-            Method method = getTestedClass().getDeclaredMethod("wasiContextNew");
-            assertNotNull(method, "wasiContextNew method should exist");
-            assertTrue(Modifier.isPublic(method.getModifiers()), "wasiContextNew should be public");
+            Method method = getTestedClass().getDeclaredMethod("wasiContextCreate");
+            assertNotNull(method, "wasiContextCreate method should exist");
+            assertTrue(
+                Modifier.isPublic(method.getModifiers()), "wasiContextCreate should be public");
             assertEquals(
                 MemorySegment.class,
                 method.getReturnType(),
-                "wasiContextNew should return MemorySegment");
+                "wasiContextCreate should return MemorySegment");
           });
     }
   }

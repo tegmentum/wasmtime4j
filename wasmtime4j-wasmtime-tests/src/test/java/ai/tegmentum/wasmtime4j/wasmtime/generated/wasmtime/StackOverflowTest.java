@@ -39,7 +39,10 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * <p>Source:
  * https://github.com/bytecodealliance/wasmtime/blob/main/tests/misc_testsuite/stack_overflow.wast
  */
-@Disabled("Stack overflow signal handling causes JVM crash (SIGILL) on aarch64")
+@Disabled(
+    "Stack overflow detection causes JVM crash (SIGILL) on aarch64. "
+        + "The signals_based_traps(false) config helps with memory traps but stack overflow "
+        + "detection still conflicts with JVM signal handlers on ARM64 Darwin.")
 public final class StackOverflowTest extends DualRuntimeTest {
   private static String loadResource(final String path) throws IOException {
     try (final InputStream is = StackOverflowTest.class.getResourceAsStream(path)) {

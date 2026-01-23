@@ -745,32 +745,35 @@ class WasmValueTest {
     @DisplayName("should create null anyref")
     void shouldCreateNullAnyref() {
       final WasmValue value = WasmValue.nullAnyRef();
-      assertEquals(WasmValueType.EXTERNREF, value.getType(), "Type should be EXTERNREF");
-      assertNull(value.asExternref(), "Value should be null");
+      assertEquals(WasmValueType.ANYREF, value.getType(), "Type should be ANYREF");
+      assertNull(value.asAnyref(), "Value should be null");
     }
 
     @Test
     @DisplayName("should create null eqref")
     void shouldCreateNullEqref() {
       final WasmValue value = WasmValue.nullEqRef();
-      assertEquals(WasmValueType.EXTERNREF, value.getType(), "Type should be EXTERNREF");
-      assertNull(value.asExternref(), "Value should be null");
+      assertEquals(WasmValueType.EQREF, value.getType(), "Type should be EQREF");
+      // EQREF doesn't have a dedicated accessor - use raw value
+      assertNull(value.getValue(), "Value should be null");
     }
 
     @Test
     @DisplayName("should create null structref")
     void shouldCreateNullStructref() {
       final WasmValue value = WasmValue.nullStructRef();
-      assertEquals(WasmValueType.EXTERNREF, value.getType(), "Type should be EXTERNREF");
-      assertNull(value.asExternref(), "Value should be null");
+      assertEquals(WasmValueType.STRUCTREF, value.getType(), "Type should be STRUCTREF");
+      // STRUCTREF doesn't have a dedicated accessor - use raw value
+      assertNull(value.getValue(), "Value should be null");
     }
 
     @Test
     @DisplayName("should create null arrayref")
     void shouldCreateNullArrayref() {
       final WasmValue value = WasmValue.nullArrayRef();
-      assertEquals(WasmValueType.EXTERNREF, value.getType(), "Type should be EXTERNREF");
-      assertNull(value.asExternref(), "Value should be null");
+      assertEquals(WasmValueType.ARRAYREF, value.getType(), "Type should be ARRAYREF");
+      // ARRAYREF doesn't have a dedicated accessor - use raw value
+      assertNull(value.getValue(), "Value should be null");
     }
   }
 }

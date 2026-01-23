@@ -136,14 +136,17 @@ class JniEngineTest {
     }
 
     @Test
-    @DisplayName("should throw UnsupportedOperationException for createStore with data")
-    void shouldThrowUnsupportedForCreateStoreWithData() {
-      final JniEngine engine = new JniEngine(VALID_HANDLE);
+    @DisplayName("should throw on invalid handle when createStore with data")
+    void shouldThrowOnInvalidHandleForCreateStoreWithData() {
+      // Use ZERO_HANDLE so validation fails before reaching native code
+      // Using a fake non-zero handle would crash the JVM when native code
+      // tries to dereference the invalid pointer
+      final JniEngine engine = new JniEngine(ZERO_HANDLE);
 
       assertThrows(
-          UnsupportedOperationException.class,
+          IllegalStateException.class,
           () -> engine.createStore("test data"),
-          "Should throw UnsupportedOperationException for createStore with data");
+          "Should throw on zero handle engine");
     }
   }
 

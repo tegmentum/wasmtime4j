@@ -141,6 +141,36 @@ public final class WasmValue {
   }
 
   /**
+   * Gets this value as an anyref.
+   *
+   * @return the anyref value (may be null)
+   * @throws ClassCastException if this value is not an anyref
+   */
+  public Object asAnyref() {
+    if (type != WasmValueType.ANYREF) {
+      throw new ClassCastException("Value is not an anyref, but " + type);
+    }
+    return value;
+  }
+
+  /**
+   * Gets this value as an i31ref.
+   *
+   * @return the 31-bit integer value
+   * @throws ClassCastException if this value is not an i31ref
+   * @throws NullPointerException if the i31ref is null
+   */
+  public int asI31ref() {
+    if (type != WasmValueType.I31REF) {
+      throw new ClassCastException("Value is not an i31ref, but " + type);
+    }
+    if (value == null) {
+      throw new NullPointerException("i31ref is null");
+    }
+    return (Integer) value;
+  }
+
+  /**
    * Gets this value as a type-safe ExternRef wrapper.
    *
    * @return the ExternRef wrapping the external reference value
@@ -463,7 +493,19 @@ public final class WasmValue {
    * @return a new WasmValue representing null anyref
    */
   public static WasmValue nullAnyRef() {
-    return new WasmValue(WasmValueType.EXTERNREF, null);
+    return new WasmValue(WasmValueType.ANYREF, null);
+  }
+
+  /**
+   * Creates an anyref value.
+   *
+   * <p>This is used in WebAssembly GC for references in the anyref hierarchy.
+   *
+   * @param value the value to wrap (may be null)
+   * @return a new WasmValue representing anyref
+   */
+  public static WasmValue anyref(final Object value) {
+    return new WasmValue(WasmValueType.ANYREF, value);
   }
 
   /**
@@ -474,7 +516,51 @@ public final class WasmValue {
    * @return a new WasmValue representing null eqref
    */
   public static WasmValue nullEqRef() {
-    return new WasmValue(WasmValueType.EXTERNREF, null);
+    return new WasmValue(WasmValueType.EQREF, null);
+  }
+
+  /**
+   * Creates an eqref value.
+   *
+   * <p>This is used in WebAssembly GC for equality-testable references.
+   *
+   * @param value the value to wrap (may be null)
+   * @return a new WasmValue representing eqref
+   */
+  public static WasmValue eqref(final Object value) {
+    return new WasmValue(WasmValueType.EQREF, value);
+  }
+
+  /**
+   * Creates an i31ref value.
+   *
+   * <p>This is used in WebAssembly GC for immediate 31-bit integer references. The value must be in
+   * the range [-2^30, 2^30 - 1] (signed 31-bit integer).
+   *
+   * @param value the 31-bit integer value
+   * @return a new WasmValue representing i31ref
+   * @throws IllegalArgumentException if value is outside the valid range
+   */
+  public static WasmValue i31ref(final int value) {
+    // i31ref can hold values in the range [-2^30, 2^30 - 1]
+    final int minValue = -(1 << 30);
+    final int maxValue = (1 << 30) - 1;
+    if (value < minValue || value > maxValue) {
+      throw new IllegalArgumentException(
+          "i31ref value must be in range [" + minValue + ", " + maxValue + "], got: " + value);
+    }
+    return new WasmValue(WasmValueType.I31REF, value);
+  }
+
+  /**
+   * Creates a null i31ref value.
+   *
+   * <p>This is used in WebAssembly GC for null i31 references.
+   *
+   * @return a new WasmValue representing null i31ref
+   */
+  public static WasmValue nullI31Ref() {
+    return new WasmValue(WasmValueType.I31REF, null);
   }
 
   /**
@@ -485,7 +571,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null structref
    */
   public static WasmValue nullStructRef() {
-    return new WasmValue(WasmValueType.EXTERNREF, null);
+    return new WasmValue(WasmValueType.STRUCTREF, null);
   }
 
   /**
@@ -496,7 +582,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null arrayref
    */
   public static WasmValue nullArrayRef() {
-    return new WasmValue(WasmValueType.EXTERNREF, null);
+    return new WasmValue(WasmValueType.ARRAYREF, null);
   }
 
   /**

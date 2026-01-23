@@ -1,14 +1,16 @@
 package ai.tegmentum.wasmtime4j.wasmtime.generated.func;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Disabled;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -22,18 +24,104 @@ import org.junit.jupiter.api.Test;
  * signatures and calling them from WebAssembly.
  *
  * <p>Note: This test uses advanced WebAssembly GC types (externref, funcref, anyref, i31ref) which
- * require the GC proposal to be enabled. It is disabled until full GC support is implemented.
+ * require the GC proposal to be enabled.
  */
 public final class ImportWorksTest {
 
+  private static final Logger LOGGER = Logger.getLogger(ImportWorksTest.class.getName());
+
   @Test
-  @Disabled(
-      "Requires WebAssembly GC proposal types (externref, funcref, anyref, i31ref) - not yet"
-          + " implemented")
   @DisplayName("func::import_works - full test with GC types")
   public void testImportWorksWithGcTypes() throws Exception {
-    // This test requires GC types that are not yet supported
-    // Keeping as placeholder for when GC support is added
+    LOGGER.info("Testing import works with GC types (anyref, funcref, externref)");
+
+    // Track host function invocations
+    final AtomicInteger hits = new AtomicInteger(0);
+
+    // Track received values for verification
+    final Object[] lastExternref = new Object[1];
+    final Object[] lastFuncref = new Object[1];
+
+    // This test requires GC types that need Panama runtime
+    try (final WastTestRunner runner = new WastTestRunner(RuntimeType.PANAMA)) {
+      // Define f1: (externref) -> ()
+      runner.defineHostFunction(
+          "test",
+          "f1",
+          FunctionType.of(new WasmValueType[] {WasmValueType.EXTERNREF}, new WasmValueType[] {}),
+          (args) -> {
+            hits.incrementAndGet();
+            lastExternref[0] = args[0].asExternref();
+            LOGGER.fine("f1 called with externref: " + lastExternref[0]);
+            return new WasmValue[] {};
+          });
+
+      // Define f2: (funcref) -> ()
+      runner.defineHostFunction(
+          "test",
+          "f2",
+          FunctionType.of(new WasmValueType[] {WasmValueType.FUNCREF}, new WasmValueType[] {}),
+          (args) -> {
+            hits.incrementAndGet();
+            lastFuncref[0] = args[0].asFuncref();
+            LOGGER.fine("f2 called with funcref: " + lastFuncref[0]);
+            return new WasmValue[] {};
+          });
+
+      // Define f3: (externref, funcref) -> ()
+      runner.defineHostFunction(
+          "test",
+          "f3",
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.EXTERNREF, WasmValueType.FUNCREF},
+              new WasmValueType[] {}),
+          (args) -> {
+            hits.incrementAndGet();
+            lastExternref[0] = args[0].asExternref();
+            lastFuncref[0] = args[1].asFuncref();
+            LOGGER.fine(
+                "f3 called with externref: " + lastExternref[0] + ", funcref: " + lastFuncref[0]);
+            return new WasmValue[] {};
+          });
+
+      // WAT that tests basic GC reference types
+      final String wat =
+          """
+          (module
+            (import "test" "f1" (func $f1 (param externref)))
+            (import "test" "f2" (func $f2 (param funcref)))
+            (import "test" "f3" (func $f3 (param externref) (param funcref)))
+
+            (func (export "run") (param externref funcref)
+              ;; Call f1 with externref parameter
+              local.get 0
+              call $f1
+
+              ;; Call f2 with funcref parameter
+              local.get 1
+              call $f2
+
+              ;; Call f3 with both parameters
+              local.get 0
+              local.get 1
+              call $f3
+            )
+          )
+          """;
+
+      runner.compileAndInstantiate(wat);
+
+      // Verify no functions called yet
+      assertEquals(0, hits.get(), "No functions should be called before run()");
+
+      // Call the exported run function with null references
+      runner.invoke("run", WasmValue.externRefNull(), WasmValue.funcRefNull());
+
+      // Verify all three host functions were called
+      assertEquals(3, hits.get(), "All three host functions should have been called");
+
+      LOGGER.info("Import works with GC types test passed: " + hits.get() + " functions called");
+    }
   }
 
   @Test
