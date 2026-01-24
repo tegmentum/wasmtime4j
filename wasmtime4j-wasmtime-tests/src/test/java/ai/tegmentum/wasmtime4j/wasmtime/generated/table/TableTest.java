@@ -160,6 +160,7 @@ public final class TableTest extends DualRuntimeTest {
         (module
           (table (export "table") 10 funcref)
           (func $f (result i32) i32.const 99)
+          (elem declare func $f)  ;; Required for ref.func with function-references proposal
           (func (export "fill")
             i32.const 2        ;; start index
             ref.func $f        ;; value

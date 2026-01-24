@@ -716,6 +716,7 @@ impl EngineBuilder {
         config.wasm_bulk_memory(true);
         config.wasm_multi_value(true);
         config.wasm_simd(true);
+        config.wasm_function_references(true);  // Tier 2 - enable for ref.func support
 
         // Enable Component Model support (Tier 1 feature)
         config.wasm_component_model(true);
@@ -756,7 +757,7 @@ impl EngineBuilder {
             wasm_multi_memory: false,
             wasm_tail_call: false,
             wasm_relaxed_simd: false,
-            wasm_function_references: false,
+            wasm_function_references: true,   // Tier 2 - enable for ref.func support
             wasm_gc: false,
             wasm_exceptions: false,
             wasm_memory64: true,              // Tier 1 - on by default
