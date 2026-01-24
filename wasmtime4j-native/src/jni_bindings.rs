@@ -8906,11 +8906,8 @@ pub mod jni_memory {
             let table = unsafe { get_table_ref(table_ptr as *const std::os::raw::c_void)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
 
-            eprintln!("[RUST nativeSet] table_ptr=0x{:x}, store_ptr=0x{:x}, index={}", table_ptr, store_ptr, index);
-
             // Convert Java object to TableElement
             let element = if value.is_null() {
-                eprintln!("[RUST nativeSet] value is null, using FuncRef(None)");
                 // Null value - create null funcref
                 crate::table::TableElement::FuncRef(None)
             } else {
@@ -8922,9 +8919,7 @@ pub mod jni_memory {
 
                 match handle_result {
                     Ok(jni::objects::JValueGen::Long(func_handle)) => {
-                        eprintln!("[RUST nativeSet] got func_handle=0x{:x}", func_handle);
                         if func_handle == 0 {
-                            eprintln!("[RUST nativeSet] func_handle is 0, using FuncRef(None)");
                             crate::table::TableElement::FuncRef(None)
                         } else {
                             // The handle points to a JniHostFunctionHandle struct containing:
@@ -8937,11 +8932,7 @@ pub mod jni_memory {
                             }
 
                             let handle_struct = unsafe { &*(func_handle as *const JniHostFunctionHandle) };
-                            let host_function_id = handle_struct.host_function_id;
                             let func_ref_id = handle_struct.func_ref_id;
-
-                            eprintln!("[RUST nativeSet] handle_struct: host_function_id={}, func_ref_id={}",
-                                       host_function_id, func_ref_id);
 
                             crate::table::TableElement::FuncRef(Some(func_ref_id))
                         }

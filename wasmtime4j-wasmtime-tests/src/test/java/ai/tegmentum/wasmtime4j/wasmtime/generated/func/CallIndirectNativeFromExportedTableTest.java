@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.wasmtime.generated.func;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
@@ -33,10 +32,6 @@ public final class CallIndirectNativeFromExportedTableTest extends DualRuntimeTe
   @EnumSource(RuntimeType.class)
   @DisplayName("func::call_indirect_native_from_exported_table")
   public void testCallIndirectNativeFromExportedTable(final RuntimeType runtime) throws Exception {
-    // Skip Panama for now as funcref support is incomplete
-    assumeTrue(
-        runtime == RuntimeType.JNI,
-        "Panama funcref support is incomplete - skipping for Panama runtime");
 
     // WAT code: exports a table and a function that does call_indirect
     final String wat =

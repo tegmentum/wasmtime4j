@@ -2467,6 +2467,24 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Gets the method handle for creating a host function in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreCreateHostFunction() {
+    return getMethodHandle("wasmtime4j_panama_store_create_host_function").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for destroying a host function.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaDestroyHostFunction() {
+    return getMethodHandle("wasmtime4j_panama_destroy_host_function").orElse(null);
+  }
+
+  /**
    * Gets the method handle for creating host functions.
    *
    * @return the method handle, or null if not available
@@ -8569,6 +8587,26 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return c_int (1 if has pending)
             ValueLayout.ADDRESS)); // store_ptr
+
+    // Panama host function for table operations
+    addFunctionBinding(
+        "wasmtime4j_panama_store_create_host_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // callback_fn
+            ValueLayout.JAVA_LONG, // callback_id
+            ValueLayout.ADDRESS, // param_types
+            ValueLayout.JAVA_INT, // param_count
+            ValueLayout.ADDRESS, // return_types
+            ValueLayout.JAVA_INT, // return_count
+            ValueLayout.ADDRESS)); // func_ref_id_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_destroy_host_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.JAVA_LONG)); // func_ref_id
 
     // Atomic memory operations
     addFunctionBinding(

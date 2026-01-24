@@ -197,26 +197,8 @@ public final class JniTable extends JniResource implements WasmTable {
     final long handle = getNativeHandle(); // This validates not closed
     validateIndex(index);
 
-    System.err.println(
-        "[JAVA] JniTable.set called: index="
-            + index
-            + ", value="
-            + value
-            + ", tableHandle=0x"
-            + Long.toHexString(handle)
-            + ", storeHandle=0x"
-            + Long.toHexString(store.getNativeHandle()));
-
-    if (value != null && value instanceof JniHostFunction) {
-      JniHostFunction func = (JniHostFunction) value;
-      System.err.println(
-          "[JAVA] JniTable.set: value is JniHostFunction with nativeHandle=0x"
-              + Long.toHexString(func.getNativeHandle()));
-    }
-
     try {
       final boolean success = nativeSet(handle, store.getNativeHandle(), index, value);
-      System.err.println("[JAVA] JniTable.set: nativeSet returned " + success);
       if (!success) {
         throw new RuntimeException("Failed to set table element");
       }

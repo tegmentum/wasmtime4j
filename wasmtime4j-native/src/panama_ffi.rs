@@ -1167,6 +1167,7 @@ pub mod store {
     use super::*;
     use crate::error::ffi_utils;
     use crate::store::core;
+    use wasmtime::{ValType, FuncType, RefType, Func, Val};
     
     /// Create a new WebAssembly store with default configuration (Panama FFI version)
     #[no_mangle]
@@ -1439,7 +1440,213 @@ pub mod store {
             Ok(())
         })
     }
-    
+
+    /// Create a host function and register it for table operations (Panama FFI version)
+    ///
+    /// This creates a Wasmtime Func that wraps a Panama callback and registers it
+    /// in the reference registry so it can be used with table.set() operations.
+    ///
+    /// # Parameters
+    /// - store_ptr: Pointer to the Store
+    /// - callback_fn: The Panama callback function pointer
+    /// - callback_id: Unique ID for the callback
+    /// - param_types: Array of parameter type codes
+    /// - param_count: Number of parameters
+    /// - return_types: Array of return type codes
+    /// - return_count: Number of return values
+    /// - func_ref_id_out: Output pointer for the function reference ID
+    ///
+    /// # Returns
+    /// 0 on success, non-zero error code on failure
+    /// Callback type for Panama host functions used in store-level creation
+    type StoreHostFunctionCallback = extern "C" fn(
+        callback_id: i64,
+        params_ptr: *const c_void,
+        params_len: c_uint,
+        results_ptr: *mut c_void,
+        results_len: c_uint,
+        error_message_ptr: *mut c_char,
+        error_message_len: c_uint,
+    ) -> c_int;
+
+    /// Convert integer to ValType for store module
+    fn store_int_to_valtype(val: c_int) -> crate::WasmtimeResult<ValType> {
+        match val {
+            0 => Ok(ValType::I32),
+            1 => Ok(ValType::I64),
+            2 => Ok(ValType::F32),
+            3 => Ok(ValType::F64),
+            4 => Ok(ValType::V128),
+            5 => Ok(ValType::Ref(RefType::FUNCREF)),
+            6 => Ok(ValType::Ref(RefType::EXTERNREF)),
+            7 => Ok(ValType::Ref(RefType::ANYREF)),
+            _ => Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Invalid ValType code: {}", val),
+            }),
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_create_host_function(
+        store_ptr: *mut c_void,
+        callback_fn: StoreHostFunctionCallback,
+        callback_id: i64,
+        param_types: *const c_int,
+        param_count: c_uint,
+        return_types: *const c_int,
+        return_count: c_uint,
+        func_ref_id_out: *mut c_ulong,
+    ) -> c_int {
+        use crate::hostfunc::HostFunctionCallback;
+        use crate::instance::WasmValue;
+
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_mut(store_ptr)? };
+
+            // Convert parameter types
+            let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
+            let param_val_types: Vec<ValType> = param_slice.iter()
+                .map(|&t| store_int_to_valtype(t))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            // Convert return types
+            let return_slice = unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
+            let return_val_types: Vec<ValType> = return_slice.iter()
+                .map(|&t| store_int_to_valtype(t))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            // Create FuncType using the Store's engine
+            let func_type = store.with_context(|ctx| {
+                let engine = ctx.engine();
+                Ok(FuncType::new(engine, param_val_types.clone(), return_val_types.clone()))
+            })?;
+
+            // Create callback implementation that calls the Panama callback
+            // This mirrors the linker module's PanamaHostFunctionCallbackImpl
+            struct StoreHostFunctionCallbackImpl {
+                callback_fn: StoreHostFunctionCallback,
+                callback_id: i64,
+                result_count: usize,
+            }
+
+            impl HostFunctionCallback for StoreHostFunctionCallbackImpl {
+                fn execute(&self, params: &[WasmValue]) -> crate::WasmtimeResult<Vec<WasmValue>> {
+                    log::debug!("[STORE_CB] StoreHostFunctionCallbackImpl.execute, callback_id={}, params.len={}, expected_results={}",
+                        self.callback_id, params.len(), self.result_count);
+
+                    // Convert internal WasmValue to FFI-safe format
+                    let ffi_params: Vec<crate::instance::FfiWasmValue> = params.iter()
+                        .map(crate::instance::FfiWasmValue::from_wasm_value)
+                        .collect();
+
+                    // Allocate result buffer in FFI-safe format
+                    let expected_results = self.result_count;
+                    let mut ffi_results = vec![crate::instance::FfiWasmValue { tag: 0, value: [0u8; 16] }; expected_results];
+
+                    // Allocate error message buffer
+                    const ERROR_BUFFER_SIZE: usize = 1024;
+                    let mut error_message_buffer = vec![0u8; ERROR_BUFFER_SIZE];
+
+                    // Call the Panama function pointer with FFI-safe structs
+                    let result_code = (self.callback_fn)(
+                        self.callback_id,
+                        ffi_params.as_ptr() as *const c_void,
+                        ffi_params.len() as c_uint,
+                        ffi_results.as_mut_ptr() as *mut c_void,
+                        expected_results as c_uint,
+                        error_message_buffer.as_mut_ptr() as *mut c_char,
+                        ERROR_BUFFER_SIZE as c_uint,
+                    );
+
+                    if result_code != 0 {
+                        // Extract error message from buffer
+                        let error_message = unsafe {
+                            let len = error_message_buffer.iter()
+                                .position(|&b| b == 0)
+                                .unwrap_or(ERROR_BUFFER_SIZE);
+                            String::from_utf8_lossy(&error_message_buffer[..len]).to_string()
+                        };
+
+                        let final_message = if error_message.is_empty() {
+                            format!("Panama host function callback failed with code: {}", result_code)
+                        } else {
+                            error_message
+                        };
+
+                        log::error!("[STORE_CB] Error: {}", final_message);
+                        return Err(crate::error::WasmtimeError::Function {
+                            message: final_message,
+                        });
+                    }
+
+                    // Convert FFI results back to internal WasmValue
+                    let results: Vec<WasmValue> = ffi_results.iter()
+                        .map(crate::instance::FfiWasmValue::to_wasm_value)
+                        .collect();
+                    log::debug!("[STORE_CB] Converted {} results, execute complete", results.len());
+
+                    Ok(results)
+                }
+
+                fn clone_callback(&self) -> Box<dyn HostFunctionCallback> {
+                    Box::new(StoreHostFunctionCallbackImpl {
+                        callback_fn: self.callback_fn,
+                        callback_id: self.callback_id,
+                        result_count: self.result_count,
+                    })
+                }
+            }
+
+            unsafe impl Send for StoreHostFunctionCallbackImpl {}
+            unsafe impl Sync for StoreHostFunctionCallbackImpl {}
+
+            let callback = Box::new(StoreHostFunctionCallbackImpl {
+                callback_fn,
+                callback_id,
+                result_count: return_count as usize,
+            });
+
+            // Create the host function in the store
+            let (_, wasmtime_func) = store.create_host_function(
+                format!("panama_host_func_{}", callback_id),
+                func_type,
+                callback,
+            )?;
+
+            // Register the Wasmtime Func in the reference registry
+            let func_ref_id = crate::table::core::register_function_reference(wasmtime_func)?;
+
+            unsafe {
+                *func_ref_id_out = func_ref_id;
+            }
+
+            log::debug!("Created Panama host function with callback_id={}, func_ref_id={}", callback_id, func_ref_id);
+
+            Ok(())
+        })
+    }
+
+    /// Destroy a host function and unregister it from the reference registry (Panama FFI version)
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_destroy_host_function(func_ref_id: c_ulong) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            if func_ref_id != 0 {
+                match crate::table::core::remove_function_reference(func_ref_id) {
+                    Ok(Some(_)) => {
+                        log::debug!("Removed function reference {} from table registry", func_ref_id);
+                    }
+                    Ok(None) => {
+                        log::debug!("Function reference {} was not in table registry", func_ref_id);
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to remove function reference {} from table registry: {}", func_ref_id, e);
+                    }
+                }
+            }
+            Ok(())
+        })
+    }
+
     /// Destroy a WebAssembly store (Panama FFI version)
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_store_destroy(store_ptr: *mut c_void) {
@@ -3529,18 +3736,6 @@ pub mod memory {
         ref_id_present: i32,
         ref_id: i64,
     ) -> c_int {
-        // Write to file at VERY start
-        if let Ok(mut file) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("/tmp/panama_callback_debug.log")
-        {
-            use std::io::Write;
-            let _ = writeln!(file, "[SET_GLOBAL ENTRY] instance_ptr={:?}, store_ptr={:?}, value_type_code={}, ref_id_present={}, ref_id={}",
-                instance_ptr, store_ptr, value_type_code, ref_id_present, ref_id);
-        }
-        eprintln!("[SET_GLOBAL ENTRY] instance_ptr={:?}, store_ptr={:?}, value_type_code={}, ref_id_present={}, ref_id={}",
-            instance_ptr, store_ptr, value_type_code, ref_id_present, ref_id);
         ffi_utils::ffi_try_code(|| {
             let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
@@ -3558,7 +3753,6 @@ pub mod memory {
                     message: format!("Global '{}' not found", name_str),
                 })?;
 
-            eprintln!("[RUST DEBUG] wasmtime4j_instance_set_global_value: value_type_code={}, ref_id_present={}, ref_id={}", value_type_code, ref_id_present, ref_id);
             let value = match value_type_code {
                 0 => wasmtime::Val::I32(i32_value),
                 1 => wasmtime::Val::I64(i64_value),
@@ -3566,15 +3760,12 @@ pub mod memory {
                 3 => wasmtime::Val::F64(f64_value.to_bits()),
                 5 => {
                     // FuncRef
-                    eprintln!("[RUST DEBUG] Processing FuncRef with ref_id_present={}, ref_id={}", ref_id_present, ref_id);
                     if ref_id_present != 0 {
                         // Look up the function from the registry using the ref_id
-                        eprintln!("[RUST DEBUG] Looking up function reference with ID: {}", ref_id);
                         let func = crate::table::core::get_function_reference(ref_id as u64)?
                             .ok_or_else(|| crate::error::WasmtimeError::InvalidParameter {
                                 message: format!("Function reference not found in registry: {}", ref_id),
                             })?;
-                        eprintln!("[RUST DEBUG] Found function reference!");
                         wasmtime::Val::FuncRef(Some(func))
                     } else {
                         wasmtime::Val::FuncRef(None)
@@ -5832,35 +6023,14 @@ pub mod linker {
 
     impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
         fn execute(&self, params: &[WasmValue]) -> crate::WasmtimeResult<Vec<WasmValue>> {
-            fn debug_log(msg: &str) {
-                if let Ok(mut file) = std::fs::OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open("/tmp/panama_callback_debug.log")
-                {
-                    use std::io::Write;
-                    let _ = writeln!(file, "{}", msg);
-                    let _ = file.flush();
-                }
-                eprintln!("{}", msg);
-            }
-
-            debug_log(&format!("[RUST CALLBACK] Panama host function callback - callback_id={}, params.len={}, expected_results={}",
-                self.callback_id, params.len(), self.result_count));
-
-            debug_log("[RUST CALLBACK] Converting params to FFI-safe format...");
             // Convert internal WasmValue to FFI-safe format
             let ffi_params: Vec<FfiWasmValue> = params.iter()
                 .map(FfiWasmValue::from_wasm_value)
                 .collect();
-            debug_log(&format!("[RUST CALLBACK] Converted {} params to FFI format", ffi_params.len()));
 
             // Allocate result buffer in FFI-safe format
             let expected_results = self.result_count;
             let mut ffi_results = vec![FfiWasmValue { tag: 0, value: [0u8; 16] }; expected_results];
-            debug_log(&format!("[RUST CALLBACK] Allocated {} FFI result slots", expected_results));
-
-            debug_log(&format!("[RUST CALLBACK] Calling Java callback with callback_id={}", self.callback_id));
 
             // Allocate error message buffer (1024 bytes should be sufficient)
             const ERROR_BUFFER_SIZE: usize = 1024;
@@ -5877,8 +6047,6 @@ pub mod linker {
                 ERROR_BUFFER_SIZE as c_uint,
             );
 
-            debug_log(&format!("[RUST CALLBACK] Java callback returned result_code={}", result_code));
-
             if result_code != 0 {
                 // Extract error message from buffer
                 let error_message = unsafe {
@@ -5887,7 +6055,6 @@ pub mod linker {
                         .unwrap_or(ERROR_BUFFER_SIZE);
                     String::from_utf8_lossy(&error_message_buffer[..len]).to_string()
                 };
-                debug_log(&format!("[RUST CALLBACK] Extracted error message (len={}): '{}'", error_message.len(), error_message));
 
                 let final_message = if error_message.is_empty() {
                     format!("Panama host function callback failed with code: {}", result_code)
@@ -5895,23 +6062,15 @@ pub mod linker {
                     error_message
                 };
 
-                debug_log(&format!("[RUST CALLBACK] ERROR: callback failed - {}", final_message));
                 return Err(crate::error::WasmtimeError::Function {
                     message: final_message,
                 });
             }
 
             // Convert FFI results back to internal WasmValue
-            debug_log(&format!("[RUST CALLBACK] Converting {} FFI results to WasmValue", ffi_results.len()));
-            for (i, ffi_val) in ffi_results.iter().enumerate() {
-                debug_log(&format!("[RUST CALLBACK] Result[{}]: tag={}", i, ffi_val.tag));
-            }
-
             let results: Vec<WasmValue> = ffi_results.iter()
                 .map(FfiWasmValue::to_wasm_value)
                 .collect();
-
-            debug_log(&format!("[RUST CALLBACK] Converted {} results successfully", results.len()));
 
             Ok(results)
         }

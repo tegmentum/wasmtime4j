@@ -332,14 +332,41 @@ public final class PanamaTable implements WasmTable {
       // Handle null value (set to empty reference)
       final int refIdPresent;
       final long refId;
+      // Debug logging to trace instanceof issue
+      LOGGER.warning(
+          "PanamaTable.set debug: value class="
+              + (value != null ? value.getClass().getName() : "null")
+              + ", isPanamaHostFunction="
+              + (value instanceof PanamaHostFunction)
+              + ", value class loader="
+              + (value != null ? value.getClass().getClassLoader() : "null")
+              + ", PanamaHostFunction class loader="
+              + PanamaHostFunction.class.getClassLoader());
       if (value == null) {
         refIdPresent = 0;
         refId = 0L;
       } else if (value instanceof Long) {
         refIdPresent = 1;
         refId = ((Long) value).longValue();
+      } else if (value instanceof PanamaHostFunction) {
+        // Handle PanamaHostFunction - use its func_ref_id from the native registry
+        final PanamaHostFunction hostFunc = (PanamaHostFunction) value;
+        final long funcRefIdVal = hostFunc.getFuncRefId();
+        if (funcRefIdVal == 0) {
+          throw new IllegalArgumentException(
+              "Host function has no native registry ID - it may not have been created with a"
+                  + " store");
+        }
+        refIdPresent = 1;
+        refId = funcRefIdVal;
+        LOGGER.fine("Setting table element to host function with funcRefId: " + funcRefIdVal);
+      } else if (value instanceof ai.tegmentum.wasmtime4j.WasmFunction) {
+        // Other WasmFunction implementations - try to get native handle if available
+        throw new IllegalArgumentException(
+            "Unsupported WasmFunction type for table.set: "
+                + value.getClass().getName()
+                + ". Only PanamaHostFunction is currently supported.");
       } else {
-        // TODO: Support other types (function references, external references)
         throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
       }
 

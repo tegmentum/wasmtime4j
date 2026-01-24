@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
@@ -71,6 +72,8 @@ public final class PanamaHostFunction implements WasmFunction {
 
   private MemorySegment functionHandle;
   private MemorySegment upcallStub;
+  private MemorySegment ffiUpcallStub; // FFI-compatible upcall stub for native registry
+  private long funcRefId = 0L; // Native reference registry ID for table operations
   private volatile boolean closed = false;
 
   /**
@@ -130,11 +133,22 @@ public final class PanamaHostFunction implements WasmFunction {
       // Create the upcall stub for native-to-Java callback
       createUpcallStub();
 
+      // Register the function in the native registry for table operations
+      if (store != null) {
+        registerInNativeRegistry(store);
+      }
+
       // Register for automatic resource cleanup
       arenaManager.registerManagedNativeResource(this, upcallStub, this::closeNative);
 
       if (logger.isLoggable(Level.FINE)) {
-        logger.fine("Created host function '" + functionName + "' with ID: " + hostFunctionId);
+        logger.fine(
+            "Created host function '"
+                + functionName
+                + "' with ID: "
+                + hostFunctionId
+                + ", funcRefId: "
+                + funcRefId);
       }
     } catch (Exception e) {
       hostFunctionRegistry.remove(hostFunctionId);
@@ -188,6 +202,18 @@ public final class PanamaHostFunction implements WasmFunction {
   }
 
   /**
+   * Gets the native function reference registry ID for table operations.
+   *
+   * <p>This ID is used to look up the function in the native reference registry when setting table
+   * elements.
+   *
+   * @return the function reference ID, or 0 if not registered
+   */
+  public long getFuncRefId() {
+    return funcRefId;
+  }
+
+  /**
    * Gets the upcall stub for direct FFI integration.
    *
    * <p>This method is intended for internal use by Panama FFI components and should not be used by
@@ -224,6 +250,19 @@ public final class PanamaHostFunction implements WasmFunction {
       try {
         // Remove from global registry
         hostFunctionRegistry.remove(hostFunctionId);
+
+        // Unregister from native reference registry
+        if (funcRefId != 0) {
+          try {
+            final MethodHandle destroyHandle =
+                NativeFunctionBindings.getInstance().getPanamaDestroyHostFunction();
+            if (destroyHandle != null) {
+              destroyHandle.invoke(funcRefId);
+            }
+          } catch (Throwable e) {
+            logger.warning("Failed to unregister host function from native registry: " + e);
+          }
+        }
 
         // Unregister from arena manager - this will call closeNative()
         arenaManager.unregisterManagedResource(this);
@@ -270,6 +309,409 @@ public final class PanamaHostFunction implements WasmFunction {
     } catch (Exception e) {
       throw new WasmException("Failed to create upcall stub for host function: " + functionName, e);
     }
+  }
+
+  /**
+   * Converts a WasmValueType to its native type code for FFI.
+   *
+   * @param type the WasmValueType to convert
+   * @return the native type code (0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF)
+   */
+  private static int toNativeTypeCode(final WasmValueType type) {
+    return switch (type) {
+      case I32 -> 0;
+      case I64 -> 1;
+      case F32 -> 2;
+      case F64 -> 3;
+      case V128 -> 4;
+      case FUNCREF -> 5;
+      case EXTERNREF -> 6;
+      case ANYREF -> 7;
+      default -> throw new IllegalArgumentException("Unsupported type for native FFI: " + type);
+    };
+  }
+
+  /**
+   * Registers this host function in the native reference registry for table operations.
+   *
+   * <p>This creates a Wasmtime Func in the native side and registers it so it can be looked up when
+   * setting table elements.
+   *
+   * @param store the store to register the function in
+   * @throws WasmException if registration fails
+   */
+  private void registerInNativeRegistry(final PanamaStore store) throws WasmException {
+    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+    final MethodHandle createHandle = bindings.getPanamaStoreCreateHostFunction();
+
+    if (createHandle == null) {
+      logger.warning("Native host function creation not available - table.set() may not work");
+      return;
+    }
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment storePtr = store.getNativeStore();
+      if (storePtr == null || storePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Store has no native handle");
+      }
+
+      // Create FFI-compatible upcall stub that matches StoreHostFunctionCallback signature
+      createFfiUpcallStub();
+
+      // Build parameter types array
+      final WasmValueType[] paramTypes = functionType.getParamTypes();
+      final MemorySegment paramTypesSegment =
+          tempArena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
+      for (int i = 0; i < paramTypes.length; i++) {
+        paramTypesSegment.setAtIndex(ValueLayout.JAVA_INT, i, toNativeTypeCode(paramTypes[i]));
+      }
+
+      // Build return types array
+      final WasmValueType[] returnTypes = functionType.getReturnTypes();
+      final MemorySegment returnTypesSegment =
+          tempArena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
+      for (int i = 0; i < returnTypes.length; i++) {
+        returnTypesSegment.setAtIndex(ValueLayout.JAVA_INT, i, toNativeTypeCode(returnTypes[i]));
+      }
+
+      // Allocate output pointer for func_ref_id
+      final MemorySegment funcRefIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      // Call the native function with FFI-compatible upcall stub
+      final int result =
+          (int)
+              createHandle.invoke(
+                  storePtr,
+                  ffiUpcallStub, // Use FFI-compatible callback, not upcallStub
+                  hostFunctionId, // callback_id
+                  paramTypesSegment,
+                  paramTypes.length,
+                  returnTypesSegment,
+                  returnTypes.length,
+                  funcRefIdOut);
+
+      if (result != 0) {
+        logger.warning("Failed to register host function in native registry: error code " + result);
+        return;
+      }
+
+      this.funcRefId = funcRefIdOut.get(ValueLayout.JAVA_LONG, 0);
+      logger.fine(
+          "Registered host function '"
+              + functionName
+              + "' in native registry with funcRefId: "
+              + funcRefId);
+    } catch (WasmException e) {
+      throw e;
+    } catch (Throwable e) {
+      throw new WasmException(
+          "Failed to register host function in native registry: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Creates an FFI-compatible upcall stub that matches the StoreHostFunctionCallback signature.
+   *
+   * <p>The native code expects this signature: extern "C" fn( callback_id: i64, params_ptr: *const
+   * c_void, params_len: c_uint, results_ptr: *mut c_void, results_len: c_uint, error_message_ptr:
+   * *mut c_char, error_message_len: c_uint, ) -> c_int
+   *
+   * @throws WasmException if upcall stub creation fails
+   */
+  private void createFfiUpcallStub() throws WasmException {
+    try {
+      final MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+      // Create method handle for the FFI callback
+      final MethodHandle ffiCallbackHandle =
+          lookup.findStatic(
+              PanamaHostFunction.class,
+              "ffiCallback",
+              MethodType.methodType(
+                  int.class, // return type: c_int
+                  long.class, // callback_id: i64
+                  MemorySegment.class, // params_ptr: *const c_void
+                  int.class, // params_len: c_uint
+                  MemorySegment.class, // results_ptr: *mut c_void
+                  int.class, // results_len: c_uint
+                  MemorySegment.class, // error_message_ptr: *mut c_char
+                  int.class // error_message_len: c_uint
+                  ));
+
+      // Create function descriptor matching StoreHostFunctionCallback
+      final FunctionDescriptor ffiDescriptor =
+          FunctionDescriptor.of(
+              ValueLayout.JAVA_INT, // return type: c_int
+              ValueLayout.JAVA_LONG, // callback_id: i64
+              ValueLayout.ADDRESS, // params_ptr: *const c_void
+              ValueLayout.JAVA_INT, // params_len: c_uint
+              ValueLayout.ADDRESS, // results_ptr: *mut c_void
+              ValueLayout.JAVA_INT, // results_len: c_uint
+              ValueLayout.ADDRESS, // error_message_ptr: *mut c_char
+              ValueLayout.JAVA_INT // error_message_len: c_uint
+              );
+
+      // Create the FFI-compatible upcall stub
+      final Linker linker = Linker.nativeLinker();
+      this.ffiUpcallStub =
+          linker.upcallStub(ffiCallbackHandle, ffiDescriptor, arenaManager.getArena());
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine("Created FFI upcall stub for host function: " + functionName);
+      }
+    } catch (Exception e) {
+      throw new WasmException(
+          "Failed to create FFI upcall stub for host function: " + functionName, e);
+    }
+  }
+
+  /**
+   * Static FFI callback method invoked by native code through the FFI upcall stub.
+   *
+   * <p>This method matches the StoreHostFunctionCallback signature expected by the native code. It
+   * receives parameters in FFI format, invokes the Java callback, and marshals results back.
+   *
+   * @param callbackId the ID of the host function to invoke
+   * @param paramsPtr pointer to FFI parameter array
+   * @param paramsLen number of parameters
+   * @param resultsPtr pointer to FFI results array (output)
+   * @param resultsLen expected number of results
+   * @param errorMessagePtr pointer to error message buffer (output)
+   * @param errorMessageLen size of error message buffer
+   * @return 0 on success, non-zero on error
+   */
+  @SuppressWarnings("unused") // Called via upcall stub
+  private static int ffiCallback(
+      final long callbackId,
+      final MemorySegment paramsPtr,
+      final int paramsLen,
+      final MemorySegment resultsPtr,
+      final int resultsLen,
+      final MemorySegment errorMessagePtr,
+      final int errorMessageLen) {
+
+    if (logger.isLoggable(Level.FINE)) {
+      logger.fine(
+          "FFI callback entered: callbackId="
+              + callbackId
+              + ", paramsLen="
+              + paramsLen
+              + ", resultsLen="
+              + resultsLen);
+    }
+
+    final PanamaHostFunction hostFunction = hostFunctionRegistry.get(callbackId);
+    if (hostFunction == null) {
+      writeErrorMessage(errorMessagePtr, errorMessageLen, "Host function not found: " + callbackId);
+      return 1;
+    }
+
+    try {
+      if (hostFunction.closed) {
+        writeErrorMessage(
+            errorMessagePtr, errorMessageLen, "Host function closed: " + hostFunction.functionName);
+        return 2;
+      }
+
+      // Unmarshal FFI parameters to WasmValue array
+      final WasmValue[] wasmParams = unmarshalFfiParams(paramsPtr, paramsLen, hostFunction);
+
+      // Invoke the Java callback
+      final WasmValue[] wasmResults = hostFunction.callback.execute(wasmParams);
+
+      // Marshal results back to FFI format
+      marshalFfiResults(resultsPtr, resultsLen, wasmResults, hostFunction);
+
+      if (logger.isLoggable(Level.FINE)) {
+        logger.fine(
+            "FFI callback completed successfully for: "
+                + hostFunction.functionName
+                + ", returned "
+                + wasmResults.length
+                + " results");
+      }
+
+      return 0; // Success
+    } catch (Exception e) {
+      logger.log(Level.SEVERE, "Error in FFI callback for: " + hostFunction.functionName, e);
+      writeErrorMessage(errorMessagePtr, errorMessageLen, e.getMessage());
+      return 3;
+    }
+  }
+
+  /**
+   * Unmarshals FFI parameters to WasmValue array.
+   *
+   * <p>The FFI format uses FfiWasmValue structs: struct FfiWasmValue { tag: u8, padding: [u8; 7],
+   * value: [u8; 16] }
+   */
+  private static WasmValue[] unmarshalFfiParams(
+      final MemorySegment paramsPtr, final int paramsLen, final PanamaHostFunction hostFunction) {
+
+    if (paramsLen == 0) {
+      return new WasmValue[0];
+    }
+
+    // Rust FfiWasmValue layout:
+    // - tag: i32 (4 bytes)
+    // - value: [u8; 16] (16 bytes)
+    // Total: 20 bytes
+    final int ffiValueSize = 20;
+    final WasmValueType[] paramTypes = hostFunction.functionType.getParamTypes();
+    final WasmValue[] result = new WasmValue[paramsLen];
+
+    // Reinterpret the zero-length segment with proper bounds
+    // Panama upcalls receive pointers as zero-length segments that must be reinterpreted
+    final long requiredSize = (long) paramsLen * ffiValueSize;
+    final MemorySegment params = paramsPtr.reinterpret(requiredSize);
+
+    for (int i = 0; i < paramsLen; i++) {
+      final long offset = (long) i * ffiValueSize;
+      final int tag = params.get(ValueLayout.JAVA_INT, offset); // Tag is i32, not u8
+      final WasmValueType expectedType = i < paramTypes.length ? paramTypes[i] : WasmValueType.I32;
+
+      result[i] = unmarshalFfiValue(params, offset, (byte) tag, expectedType);
+    }
+
+    return result;
+  }
+
+  /**
+   * Unmarshals a single FFI value to WasmValue.
+   *
+   * @param ptr pointer to FfiWasmValue struct
+   * @param offset offset within the array
+   * @param tag the type tag
+   * @param expectedType the expected WasmValueType
+   * @return the unmarshalled WasmValue
+   */
+  private static WasmValue unmarshalFfiValue(
+      final MemorySegment ptr,
+      final long offset,
+      final byte tag,
+      final WasmValueType expectedType) {
+
+    // Value starts at offset + 4 (after the 4-byte i32 tag)
+    final long valueOffset = offset + 4;
+
+    return switch (tag) {
+      case 0 -> WasmValue.i32(ptr.get(ValueLayout.JAVA_INT, valueOffset));
+      case 1 -> WasmValue.i64(ptr.get(ValueLayout.JAVA_LONG, valueOffset));
+      case 2 -> WasmValue.f32(ptr.get(ValueLayout.JAVA_FLOAT, valueOffset));
+      case 3 -> WasmValue.f64(ptr.get(ValueLayout.JAVA_DOUBLE, valueOffset));
+      case 4 -> {
+        // V128 - read 16 bytes
+        final byte[] v128 = new byte[16];
+        for (int j = 0; j < 16; j++) {
+          v128[j] = ptr.get(ValueLayout.JAVA_BYTE, valueOffset + j);
+        }
+        yield WasmValue.v128(v128);
+      }
+      case 5 -> WasmValue.funcref(null); // FuncRef
+      case 6 -> WasmValue.externref(null); // ExternRef
+      default -> throw new IllegalArgumentException("Unknown FFI value tag: " + tag);
+    };
+  }
+
+  /**
+   * Marshals WasmValue results to FFI format.
+   *
+   * @param resultsPtr pointer to FFI results array (output)
+   * @param resultsLen expected number of results
+   * @param wasmResults the WasmValue results from callback
+   * @param hostFunction the host function (for type info)
+   */
+  private static void marshalFfiResults(
+      final MemorySegment resultsPtr,
+      final int resultsLen,
+      final WasmValue[] wasmResults,
+      final PanamaHostFunction hostFunction) {
+
+    if (resultsLen == 0) {
+      return;
+    }
+
+    // FfiWasmValue layout in Rust:
+    // - tag: i32 (4 bytes)
+    // - value: [u8; 16] (16 bytes)
+    // Total: 20 bytes (no padding needed, value is aligned at offset 4)
+    final int ffiValueSize = 20;
+
+    // Reinterpret the zero-length segment with proper bounds
+    // Panama upcalls receive pointers as zero-length segments that must be reinterpreted
+    final long requiredSize = (long) resultsLen * ffiValueSize;
+    final MemorySegment results = resultsPtr.reinterpret(requiredSize);
+
+    for (int i = 0; i < Math.min(resultsLen, wasmResults.length); i++) {
+      final long offset = (long) i * ffiValueSize;
+      marshalFfiValue(results, offset, wasmResults[i]);
+    }
+  }
+
+  /**
+   * Marshals a single WasmValue to FFI format.
+   *
+   * @param ptr pointer to FfiWasmValue struct
+   * @param offset offset within the array
+   * @param value the WasmValue to marshal
+   */
+  private static void marshalFfiValue(
+      final MemorySegment ptr, final long offset, final WasmValue value) {
+
+    // Rust FfiWasmValue layout:
+    // - tag: i32 at offset 0 (4 bytes)
+    // - value: [u8; 16] at offset 4 (16 bytes)
+
+    // Write tag as i32 at offset
+    final int tag =
+        switch (value.getType()) {
+          case I32 -> 0;
+          case I64 -> 1;
+          case F32 -> 2;
+          case F64 -> 3;
+          case V128 -> 4;
+          case FUNCREF -> 5;
+          case EXTERNREF -> 6;
+          default -> throw new IllegalArgumentException("Unsupported type: " + value.getType());
+        };
+    ptr.set(ValueLayout.JAVA_INT, offset, tag);
+
+    // Write value at offset + 4 (immediately after the 4-byte tag)
+    final long valueOffset = offset + 4;
+
+    switch (value.getType()) {
+      case I32 -> ptr.set(ValueLayout.JAVA_INT, valueOffset, value.asI32());
+      case I64 -> ptr.set(ValueLayout.JAVA_LONG, valueOffset, value.asI64());
+      case F32 -> ptr.set(ValueLayout.JAVA_FLOAT, valueOffset, value.asF32());
+      case F64 -> ptr.set(ValueLayout.JAVA_DOUBLE, valueOffset, value.asF64());
+      case V128 -> {
+        final byte[] v128 = value.asV128();
+        for (int j = 0; j < Math.min(16, v128.length); j++) {
+          ptr.set(ValueLayout.JAVA_BYTE, valueOffset + j, v128[j]);
+        }
+      }
+      case FUNCREF, EXTERNREF -> ptr.set(ValueLayout.JAVA_LONG, valueOffset, 0L);
+      default -> throw new IllegalArgumentException("Unsupported type: " + value.getType());
+    }
+  }
+
+  /** Writes an error message to the native error buffer. */
+  private static void writeErrorMessage(
+      final MemorySegment errorPtr, final int maxLen, final String message) {
+    if (errorPtr == null || errorPtr.equals(MemorySegment.NULL) || maxLen <= 0) {
+      return;
+    }
+
+    // Reinterpret the zero-length segment with proper bounds
+    final MemorySegment errBuf = errorPtr.reinterpret(maxLen);
+
+    final byte[] msgBytes = message.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    final int writeLen = Math.min(msgBytes.length, maxLen - 1);
+
+    for (int i = 0; i < writeLen; i++) {
+      errBuf.set(ValueLayout.JAVA_BYTE, i, msgBytes[i]);
+    }
+    errBuf.set(ValueLayout.JAVA_BYTE, writeLen, (byte) 0); // Null terminator
   }
 
   /**
