@@ -45,9 +45,9 @@ public final class PanamaTable implements WasmTable {
     this.nativeTable = nativeTable;
     this.instance = instance;
     this.store = null;
-    // Element type will be determined when needed (TODO: may need to query from native)
-    this.elementType = WasmValueType.FUNCREF;
-    LOGGER.fine("Wrapped native table pointer");
+    // Query element type from native table metadata
+    this.elementType = queryElementTypeFromNative(nativeTable, arena);
+    LOGGER.fine("Wrapped native table pointer with element type: " + this.elementType);
   }
 
   /**
@@ -747,6 +747,53 @@ public final class PanamaTable implements WasmTable {
     } catch (final Exception e) {
       LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
       return false;
+    }
+  }
+
+  /**
+   * Query the element type from native table metadata.
+   *
+   * @param nativeTable the native table pointer
+   * @param arena the memory arena to use for allocations
+   * @return the element type of the table
+   */
+  private static WasmValueType queryElementTypeFromNative(
+      final MemorySegment nativeTable, final Arena arena) {
+    try {
+      final MethodHandle metadataHandle = NATIVE_BINDINGS.getPanamaTableMetadata();
+      if (metadataHandle == null) {
+        LOGGER.warning("Panama table metadata function not available, defaulting to FUNCREF");
+        return WasmValueType.FUNCREF;
+      }
+
+      final MemorySegment elementTypeSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment initialSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment hasMaximumSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maximumSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment is64Segment = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment nameSegment = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              metadataHandle.invoke(
+                  nativeTable,
+                  elementTypeSegment,
+                  initialSizeSegment,
+                  hasMaximumSegment,
+                  maximumSizeSegment,
+                  is64Segment,
+                  nameSegment);
+
+      if (result != 0) {
+        LOGGER.warning("Failed to get table metadata, defaulting to FUNCREF");
+        return WasmValueType.FUNCREF;
+      }
+
+      final int elementTypeCode = elementTypeSegment.get(ValueLayout.JAVA_INT, 0);
+      return WasmValueType.fromNativeTypeCode(elementTypeCode);
+    } catch (final Throwable e) {
+      LOGGER.warning("Error querying element type from native: " + e.getMessage());
+      return WasmValueType.FUNCREF;
     }
   }
 }
