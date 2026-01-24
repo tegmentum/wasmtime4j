@@ -404,10 +404,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
-    // Debug: print received handle value immediately
-    eprintln!("[NATIVE DEBUG] nativeGetStdout called with context_handle=0x{:x} (decimal {})",
-              context_handle as u64, context_handle);
-
     // Validate parameters
     if context_handle == 0 {
         let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle: null");

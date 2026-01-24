@@ -569,9 +569,7 @@ fn struct_new_internal(
 
     for i in 0..field_count {
         let obj = env.get_object_array_element(&field_values, i)?;
-        eprintln!("[RUST] struct_new_internal: field {} - got jobject, is_null={}", i, obj.is_null());
         let gc_value = convert_jobject_to_gc_value(env, obj)?;
-        eprintln!("[RUST] struct_new_internal: field {} - converted to {:?}", i, gc_value);
         values.push(gc_value);
     }
 
@@ -624,10 +622,8 @@ fn struct_get_internal(
     let result = runtime.struct_get(object_id as ObjectId, field_index as u32);
 
     if result.success {
-        eprintln!("[JNI DEBUG] struct_get_internal: success=true, object_id={:?}, value={:?}", result.object_id, result.value);
         // Check if this is a reference type (object_id is set)
         if let Some(ref_object_id) = result.object_id {
-            eprintln!("[JNI DEBUG] struct_get_internal: creating GcReferenceMarker with id={}", ref_object_id);
             // Create a GcReferenceMarker object to indicate this is a reference ID
             // GcReferenceMarker is a simple wrapper class with a long field
             match env.new_object(
@@ -635,20 +631,12 @@ fn struct_get_internal(
                 "(J)V",
                 &[JValue::Long(ref_object_id as jlong)]
             ) {
-                Ok(obj) => {
-                    eprintln!("[JNI DEBUG] struct_get_internal: GcReferenceMarker created successfully");
-                    obj.into_raw()
-                },
-                Err(e) => {
-                    eprintln!("[ERROR] Failed to create GcReferenceMarker: {:?}", e);
-                    std::ptr::null_mut()
-                }
+                Ok(obj) => obj.into_raw(),
+                Err(_) => std::ptr::null_mut(),
             }
         } else if let Some(value) = result.value {
-            eprintln!("[JNI DEBUG] struct_get_internal: converting value={:?} to jobject", value);
             convert_gc_value_to_jobject(env, &value)
         } else {
-            eprintln!("[JNI DEBUG] struct_get_internal: no object_id and no value - error");
             let _ = env.throw_new(
                 "ai/tegmentum/wasmtime4j/exception/RuntimeException",
                 "Struct field returned no value",
@@ -1831,7 +1819,6 @@ fn put_bool_in_map(env: &mut JNIEnv, map: &JObject, key: &str, value: bool) {
 
 /// Parse FieldType from string representation
 fn parse_field_type(type_str: &str) -> WasmtimeResult<FieldType> {
-    eprintln!("[DEBUG] parse_field_type: type_str={}", type_str);
     match type_str.to_lowercase().as_str() {
         "i32" => Ok(FieldType::I32),
         "i64" => Ok(FieldType::I64),
@@ -1887,7 +1874,6 @@ fn convert_jobject_to_gc_value(
     if let Ok(true) = env.is_instance_of(&obj, "java/lang/Long") {
         let value = env.call_method(&obj, "longValue", "()J", &[])?;
         if let JValueOwned::Long(l) = value {
-            eprintln!("[RUST] convert_jobject_to_gc_value: Found Long with value {}", l);
             return Ok(GcValue::I64(l));
         }
     }

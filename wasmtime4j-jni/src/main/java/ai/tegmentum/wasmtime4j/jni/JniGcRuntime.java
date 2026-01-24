@@ -1609,24 +1609,6 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   private Object[] convertGcValuesToNative(final List<GcValue> values) {
-    System.err.println(
-        "[JAVA DEBUG] convertGcValuesToNative: converting " + values.size() + " values");
-    for (int i = 0; i < values.size(); i++) {
-      final GcValue v = values.get(i);
-      System.err.println("[JAVA DEBUG]   value " + i + " type=" + v.getType());
-      if (v.getType() == GcValue.Type.REFERENCE) {
-        final ai.tegmentum.wasmtime4j.gc.GcObject ref = v.asReference();
-        System.err.println("[JAVA DEBUG]     ref is null? " + (ref == null));
-        if (ref != null) {
-          System.err.println("[JAVA DEBUG]     ref class=" + ref.getClass().getName());
-          System.err.println(
-              "[JAVA DEBUG]     ref instanceof JniGcObject? " + (ref instanceof JniGcObject));
-          if (ref instanceof JniGcObject) {
-            System.err.println("[JAVA DEBUG]     object ID=" + ((JniGcObject) ref).getObjectId());
-          }
-        }
-      }
-    }
     return values.stream().map(this::convertGcValueToNative).toArray();
   }
 

@@ -47,8 +47,6 @@ public final class NativeMethodBindings {
       try {
         // Load the native library first
         NativeLibraryLoader.loadLibrary();
-        System.err.println("[JAVA DEBUG] Library load info: " + NativeLibraryLoader.getLoadInfo());
-        System.err.flush();
         LOGGER.info("Native library loaded successfully");
 
         // Validate that critical native methods are available
@@ -142,16 +140,8 @@ public final class NativeMethodBindings {
    */
   private static void validateNativeMethods() {
     try {
-      // DEBUG: Confirm we're calling the native method
-      System.err.println("[JAVA DEBUG] About to call nativeGetWasmtimeVersion()");
-      System.err.flush();
-
       // Test basic version retrieval to ensure native library is functional
       final String version = nativeGetWasmtimeVersion();
-
-      System.err.println(
-          "[JAVA DEBUG] Returned from nativeGetWasmtimeVersion(), result: " + version);
-      System.err.flush();
 
       if (version == null || version.trim().isEmpty()) {
         throw new RuntimeException("Native library version is null or empty");

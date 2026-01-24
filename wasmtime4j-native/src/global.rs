@@ -191,19 +191,16 @@ impl Global {
             GlobalValue::V128(val) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(val))),
             GlobalValue::FuncRef(func_id) => {
                 if let Some(id) = func_id {
-                    eprintln!("[GLOBAL] Looking up funcref with ID: {}", id);
                     // Look up function reference in the table reference registry
                     use crate::table::core::get_function_reference;
                     if let Some(func) = get_function_reference(id)? {
-                        eprintln!("[GLOBAL] Found funcref with ID: {}", id);
                         Val::FuncRef(Some(func))
                     } else {
                         // Function not found in registry, return null
-                        eprintln!("[GLOBAL] WARNING: Funcref ID {} not found in registry!", id);
+                        log::warn!("Funcref ID {} not found in registry", id);
                         Val::FuncRef(None)
                     }
                 } else {
-                    eprintln!("[GLOBAL] Funcref is NULL");
                     Val::FuncRef(None)
                 }
             },

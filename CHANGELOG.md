@@ -5,6 +5,31 @@ All notable changes to wasmtime4j will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Wasmtime Upgrade**: Upgraded from Wasmtime 36.0.2 to Wasmtime 41.0.0
+  - New component model async patterns at Store level vs Instance level
+  - SharedMemory now requires explicit `wasm_threads(true)` configuration
+  - Updated WasiView trait implementations
+  - Rust toolchain minimum version 1.90.0
+
+### Added
+
+- **Panama Funcref Support**: Full funcref support for table.set operations in Panama FFI
+- **Native Reference Registry**: Added function reference registry for tracking func references across JNI/Panama boundary
+- **Handle Registry Cleanup**: Added cleanup mechanism for JNI handle registry to improve test isolation
+- **Platform Detection**: Added platform detection to skip trap tests on aarch64
+
+### Fixed
+
+- Fixed WASI API method names in native bindings
+- Improved test isolation with handle registry cleanup between tests
+- Resolved JVM crash issues related to GC type support
+
+---
+
 ## [1.0.0] - 2025-09-27
 
 ### Summary
@@ -206,10 +231,10 @@ Initial release of wasmtime4j with 100% Wasmtime 36.0.2 API coverage, featuring 
 
 ### Dependencies
 
-- **Wasmtime**: 36.0.2 (native dependency)
+- **Wasmtime**: 41.0.0 (native dependency)
 - **Java**: 8+ (JNI runtime), 23+ (Panama runtime)
 - **Maven**: 3.6+ for building
-- **Rust**: Latest stable for native compilation
+- **Rust**: 1.90.0+ for native compilation
 
 ### Compatibility
 

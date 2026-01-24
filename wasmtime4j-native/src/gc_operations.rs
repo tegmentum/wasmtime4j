@@ -205,14 +205,6 @@ impl WasmtimeGcOperations {
             }
         };
 
-        // Debug: print struct type fields
-        let field_count = struct_type.fields().count();
-        eprintln!("[DEBUG] struct_new: StructType has {} fields", field_count);
-        for (i, field) in struct_type.fields().enumerate() {
-            let mutability = field.mutability();
-            eprintln!("[DEBUG] struct_new: field {}: mutability={:?}", i, mutability);
-        }
-
         let allocator = wasmtime::StructRefPre::new(&mut self.store, struct_type);
 
         // Create the struct using Wasmtime's GC APIs with RootScope
@@ -234,7 +226,6 @@ impl WasmtimeGcOperations {
                 let effective_value: GcValue = if let Ok(field) = field_def {
                     if matches!(field.field_type, crate::gc_types::FieldType::Reference(_)) {
                         if let GcValue::I32(id) = value {
-                            eprintln!("[DEBUG] struct_new: field {} is Reference, converting I32({}) to I64", i, id);
                             GcValue::I64(*id as i64)
                         } else {
                             value.clone()
@@ -248,8 +239,6 @@ impl WasmtimeGcOperations {
 
                 match Self::convert_gc_value_to_wasmtime_in_scope(&self.gc_objects, &mut scope, &effective_value) {
                     Ok(val) => {
-                        eprintln!("[DEBUG] struct_new: field {} - converting {:?} (field_type: {:?}) to {:?}",
-                                  i, value, field_def.as_ref().map(|f| &f.field_type), val);
                         wasmtime_values.push(val);
                     },
                     Err(e) => {
@@ -341,7 +330,6 @@ impl WasmtimeGcOperations {
             let struct_ref = owned_struct_ref.to_rooted(&mut scope);
             match struct_ref.field(&mut scope, field_index as usize) {
                 Ok(val) => {
-                    eprintln!("[DEBUG] struct_get: field {} - retrieved value {:?}", field_index, val);
                     // Convert the value to GcValue BEFORE the scope ends
                     match val {
                         wasmtime::Val::I32(i) => (Ok(GcValue::I32(i)), None),
@@ -365,7 +353,6 @@ impl WasmtimeGcOperations {
                                     match struct_ref.to_owned_rooted(&mut scope) {
                                         Ok(owned) => {
                                             self.gc_objects.insert(new_object_id, GcObjectRef::Struct(owned));
-                                            eprintln!("[DEBUG] struct_get: stored struct reference with object_id={}", new_object_id);
                                             // Return Null for value, object_id carries the reference
                                             (Ok(GcValue::Null), Some(new_object_id))
                                         }
@@ -375,7 +362,6 @@ impl WasmtimeGcOperations {
                                     match array_ref.to_owned_rooted(&mut scope) {
                                         Ok(owned) => {
                                             self.gc_objects.insert(new_object_id, GcObjectRef::Array(owned));
-                                            eprintln!("[DEBUG] struct_get: stored array reference with object_id={}", new_object_id);
                                             // Return Null for value, object_id carries the reference
                                             (Ok(GcValue::Null), Some(new_object_id))
                                         }
@@ -386,7 +372,6 @@ impl WasmtimeGcOperations {
                                     match any.to_owned_rooted(&mut scope) {
                                         Ok(owned) => {
                                             self.gc_objects.insert(new_object_id, GcObjectRef::Any(owned));
-                                            eprintln!("[DEBUG] struct_get: stored anyref reference with object_id={}", new_object_id);
                                             // Return Null for value, object_id carries the reference
                                             (Ok(GcValue::Null), Some(new_object_id))
                                         }
@@ -405,18 +390,15 @@ impl WasmtimeGcOperations {
         };
 
         // Now handle the conversion result
-        eprintln!("[DEBUG] struct_get: after scope, gc_value={:?}, ref_object_id={:?}", gc_value, ref_object_id);
         match gc_value {
             Ok(gc_val) => {
-                let result = RealStructOperationResult {
+                RealStructOperationResult {
                     success: true,
                     gc_object: None,
                     object_id: ref_object_id,
                     value: Some(gc_val),
                     error: None,
-                };
-                eprintln!("[DEBUG] struct_get: returning result with object_id={:?}", result.object_id);
-                result
+                }
             },
             Err(e) => RealStructOperationResult {
                 success: false,
@@ -437,11 +419,7 @@ impl WasmtimeGcOperations {
     ) -> RealStructOperationResult {
         // Convert GC value to Wasmtime value FIRST (before borrowing gc_objects)
         let wasmtime_value = match self.convert_gc_value_to_wasmtime(value) {
-            Ok(val) => {
-                eprintln!("[DEBUG] struct_set: object_id={}, field_index={}, value={:?}, wasmtime_value={:?}",
-                          object_id, field_index, value, val);
-                val
-            },
+            Ok(val) => val,
             Err(e) => {
                 return RealStructOperationResult {
                     success: false,
@@ -485,10 +463,7 @@ impl WasmtimeGcOperations {
         let result = {
             let mut scope = wasmtime::RootScope::new(&mut self.store);
             let struct_rooted = struct_ref.to_rooted(&mut scope);
-            eprintln!("[DEBUG] struct_set: calling set_field");
-            let set_result = struct_rooted.set_field(&mut scope, field_index as usize, wasmtime_value);
-            eprintln!("[DEBUG] struct_set: set_field result={:?}", set_result);
-            set_result
+            struct_rooted.set_field(&mut scope, field_index as usize, wasmtime_value)
         };
 
         match result {
@@ -569,14 +544,10 @@ impl WasmtimeGcOperations {
         // Create the array using Wasmtime's GC APIs with RootScope
         // For immutable arrays, use new_fixed with initial values
         // For mutable arrays, create with first element then set the rest
-        eprintln!("[DEBUG] array_new: type_id={}, mutable={}, element_count={}",
-                  type_def.type_id, type_def.mutable, wasmtime_values.len());
-
         let result = {
             let mut scope = wasmtime::RootScope::new(&mut self.store);
 
             let array_ref = if !type_def.mutable && !wasmtime_values.is_empty() {
-                eprintln!("[DEBUG] array_new: using new_fixed for immutable array");
                 // Immutable array: use new_fixed to initialize with all values at once
                 match wasmtime::ArrayRef::new_fixed(&mut scope, &allocator, &wasmtime_values) {
                     Ok(array_ref) => array_ref,
@@ -1504,10 +1475,8 @@ impl WasmtimeGcOperations {
                 // Check if this i64 is actually an object ID (hack to support JNI layer passing object IDs as Long)
                 // If the value exists in gc_objects, treat it as a reference
                 let object_id = *i as u64;
-                eprintln!("[DEBUG] convert_gc_value_to_wasmtime_in_scope: checking I64({}) as object ID, exists={}", i, gc_objects.contains_key(&object_id));
                 if let Some(gc_ref) = gc_objects.get(&object_id) {
                     // Found an object with this ID - convert it to AnyRef within the provided scope
-                    eprintln!("[DEBUG] convert_gc_value_to_wasmtime_in_scope: treating I64({}) as object ID", i);
                     let any_ref = match gc_ref {
                         GcObjectRef::Struct(owned_struct) => {
                             let struct_rooted = owned_struct.to_rooted(scope);
@@ -1533,7 +1502,6 @@ impl WasmtimeGcOperations {
                     any_ref.map(|a| Val::AnyRef(Some(a)))
                 } else {
                     // Not an object ID, treat as regular i64
-                    eprintln!("[DEBUG] convert_gc_value_to_wasmtime_in_scope: I64({}) not found in gc_objects, treating as regular i64", i);
                     Ok(Val::I64(*i))
                 }
             },
@@ -1578,10 +1546,8 @@ impl WasmtimeGcOperations {
                 // Check if this i64 is actually an object ID (hack to support JNI layer passing object IDs as Long)
                 // If the value exists in gc_objects, treat it as a reference
                 let object_id = *i as u64;
-                eprintln!("[DEBUG] convert_gc_value_to_wasmtime: checking I64({}) as object ID, exists={}", i, self.gc_objects.contains_key(&object_id));
                 if let Some(gc_ref) = self.gc_objects.get(&object_id) {
                     // Found an object with this ID - convert it to AnyRef
-                    eprintln!("[DEBUG] convert_gc_value_to_wasmtime: treating I64({}) as object ID", i);
                     let mut scope = wasmtime::RootScope::new(&mut self.store);
                     let any_ref = match gc_ref {
                         GcObjectRef::Struct(owned_struct) => {
@@ -1607,7 +1573,6 @@ impl WasmtimeGcOperations {
                     any_ref.map(|a| Val::AnyRef(Some(a)))
                 } else {
                     // Not an object ID, treat as regular i64
-                    eprintln!("[DEBUG] convert_gc_value_to_wasmtime: I64({}) not found in gc_objects, treating as regular i64", i);
                     Ok(Val::I64(*i))
                 }
             },

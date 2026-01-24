@@ -558,7 +558,6 @@ fn struct_new_internal(
                 } else {
                     &FieldType::I32
                 };
-                eprintln!("[PANAMA_FFI] struct_new_internal: field {} raw_value={}, field_type={:?}", i, raw_value, field_type);
                 let gc_value = if i < struct_def.fields.len() {
                     match field_type {
                         FieldType::I32 => GcValue::I32(raw_value as i32),
@@ -574,10 +573,8 @@ fn struct_new_internal(
                         // If raw_value is 0, treat as null reference
                         FieldType::Reference(_) => {
                             if raw_value == 0 {
-                                eprintln!("[PANAMA_FFI] struct_new_internal: field {} is Reference with null value", i);
                                 GcValue::Null
                             } else {
-                                eprintln!("[PANAMA_FFI] struct_new_internal: field {} is Reference, converting raw_value {} to I64", i, raw_value);
                                 GcValue::I64(raw_value)
                             }
                         },
@@ -585,7 +582,6 @@ fn struct_new_internal(
                 } else {
                     GcValue::I32(raw_value as i32)
                 };
-                eprintln!("[PANAMA_FFI] struct_new_internal: field {} converted to {:?}", i, gc_value);
                 values.push(gc_value);
             }
         }

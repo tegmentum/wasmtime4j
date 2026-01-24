@@ -328,25 +328,9 @@ impl EnhancedComponentEngine {
         }
 
         let instance = linker.instantiate(&mut store, component.wasmtime_component())
-            .map_err(|e| {
-                use std::io::Write;
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
-                    let _ = writeln!(f, "ERROR: Component instantiation failed: {}", e);
-                    let _ = writeln!(f, "ERROR: Full error: {:?}", e);
-                }
-                eprintln!("RUST ERROR: Component instantiation failed: {}", e);
-                eprintln!("RUST ERROR: Full error: {:?}", e);
-                WasmtimeError::Instance {
-                    message: format!("Failed to instantiate component: {}", e),
-                }
+            .map_err(|e| WasmtimeError::Instance {
+                message: format!("Failed to instantiate component: {}", e),
             })?;
-
-        {
-            use std::io::Write;
-            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
-                let _ = writeln!(f, "DEBUG: Component instantiated successfully");
-            }
-        }
 
         let handle = ComponentInstanceHandle {
             store,
@@ -410,8 +394,6 @@ impl EnhancedComponentEngine {
         let result_count = func.ty(&instance_info.store).results().len();
         let mut results: Vec<Val> = vec![Val::Bool(false); result_count];  // Initialize with dummy values
 
-        eprintln!("DEBUG: Calling function with {} params, expecting {} results", params.len(), result_count);
-
         let call_result = func.call(&mut instance_info.store, params, &mut results);
 
         match call_result {
@@ -424,11 +406,6 @@ impl EnhancedComponentEngine {
                     })?;
             }
             Err(e) => {
-                eprintln!("COMPONENT CALL ERROR: Function '{}' failed with error: {:?}", function_name, e);
-                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
-                    use std::io::Write;
-                    let _ = writeln!(f, "COMPONENT CALL ERROR: Function '{}' failed: {:?}", function_name, e);
-                }
                 return Err(WasmtimeError::Runtime {
                     message: format!("Failed to call component function '{}': {}", function_name, e),
                     backtrace: None,
@@ -491,31 +468,16 @@ impl EnhancedComponentEngine {
         function_name: &str,
         params: &[wasmtime::component::Val],
     ) -> WasmtimeResult<Vec<wasmtime::component::Val>> {
-        eprintln!("DEBUG: invoke_component_function called: instance_id={}, function_name={}, params.len()={}",
-                  instance_id, function_name, params.len());
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
-            use std::io::Write;
-            let _ = writeln!(f, "DEBUG: invoke_component_function: instance_id={}, function_name={}, params.len()={}",
-                           instance_id, function_name, params.len());
-        }
-
         let mut instances = self.instances.write()
-            .map_err(|e| {
-                eprintln!("ERROR: Failed to acquire instances write lock: {:?}", e);
-                WasmtimeError::Concurrency {
-                    message: "Failed to acquire instances write lock".to_string(),
-                }
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
             })?;
 
         let handle = instances.get_mut(&instance_id)
-            .ok_or_else(|| {
-                eprintln!("ERROR: Instance {} not found", instance_id);
-                WasmtimeError::InvalidParameter {
-                    message: format!("Instance {} not found", instance_id),
-                }
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Instance {} not found", instance_id),
             })?;
 
-        eprintln!("DEBUG: About to call call_component_function");
         self.call_component_function(handle, function_name, params)
     }
 
@@ -1166,10 +1128,7 @@ const FFI_ERROR: c_int = -1;
 pub extern "C" fn wasmtime4j_enhanced_component_engine_create() -> *mut c_void {
     match EnhancedComponentEngine::new() {
         Ok(engine) => Box::into_raw(Box::new(engine)) as *mut c_void,
-        Err(e) => {
-            eprintln!("ERROR: Failed to create enhanced component engine: {:?}", e);
-            std::ptr::null_mut()
-        }
+        Err(_) => std::ptr::null_mut(),
     }
 }
 
@@ -1199,10 +1158,7 @@ pub unsafe extern "C" fn wasmtime4j_enhanced_component_load_bytes(
 
     match engine.load_component_from_bytes(bytes) {
         Ok(component) => Box::into_raw(Box::new(component)) as *mut c_void,
-        Err(e) => {
-            eprintln!("ERROR: Failed to load component: {:?}", e);
-            std::ptr::null_mut()
-        }
+        Err(_) => std::ptr::null_mut(),
     }
 }
 
@@ -1231,10 +1187,7 @@ pub unsafe extern "C" fn wasmtime4j_enhanced_component_instantiate(
 
     match engine.instantiate_component(component) {
         Ok(instance_id) => instance_id,
-        Err(e) => {
-            eprintln!("ERROR: Failed to instantiate component: {:?}", e);
-            0
-        }
+        Err(_) => 0,
     }
 }
 
@@ -1315,10 +1268,7 @@ pub unsafe extern "C" fn wasmtime4j_enhanced_component_invoke(
 
             match crate::wit_value_marshal::deserialize_to_val(type_disc, data) {
                 Ok(val) => params.push(val),
-                Err(e) => {
-                    eprintln!("ERROR: Failed to deserialize parameter: {:?}", e);
-                    return FFI_ERROR;
-                }
+                Err(_) => return FFI_ERROR,
             }
         }
     }
@@ -1326,10 +1276,7 @@ pub unsafe extern "C" fn wasmtime4j_enhanced_component_invoke(
     // Invoke the function
     let results = match engine.invoke_component_function(instance_id, func_name, &params) {
         Ok(r) => r,
-        Err(e) => {
-            eprintln!("ERROR: Failed to invoke component function '{}': {:?}", func_name, e);
-            return FFI_ERROR;
-        }
+        Err(_) => return FFI_ERROR,
     };
 
     // Serialize results
@@ -1344,10 +1291,7 @@ pub unsafe extern "C" fn wasmtime4j_enhanced_component_invoke(
                 result_data.extend_from_slice(&(data.len() as u32).to_le_bytes());
                 result_data.extend_from_slice(&data);
             }
-            Err(e) => {
-                eprintln!("ERROR: Failed to serialize result: {:?}", e);
-                return FFI_ERROR;
-            }
+            Err(_) => return FFI_ERROR,
         }
     }
 
@@ -1396,10 +1340,7 @@ pub unsafe extern "C" fn wasmtime4j_enhanced_component_get_exports(
 
     let function_names = match engine.get_exported_function_names(instance_id) {
         Ok(names) => names,
-        Err(e) => {
-            eprintln!("ERROR: Failed to get exported functions: {:?}", e);
-            return FFI_ERROR;
-        }
+        Err(_) => return FFI_ERROR,
     };
 
     // Allocate array of C strings

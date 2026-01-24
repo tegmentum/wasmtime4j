@@ -164,8 +164,6 @@ impl WasmGcRuntime {
         type_def: StructTypeDefinition,
         field_values: Vec<GcValue>,
     ) -> StructOperationResult {
-        // DEBUG: Print to stderr to trace call origin
-        eprintln!("[GC_RS_ENTRY] struct_new: type_def.name={:?}, field_values={:?}", type_def.name, field_values);
         // Generate unique object ID
         let object_id = {
             let mut next_id = match self.next_object_id.lock()
