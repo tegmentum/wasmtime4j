@@ -1456,6 +1456,43 @@ pub mod jni_engine {
             Err(_) => 0,
         }
     }
+
+    /// Detect if bytes are a precompiled WebAssembly module or component
+    ///
+    /// Returns:
+    /// - -1 if not precompiled
+    /// - 0 if precompiled MODULE
+    /// - 1 if precompiled COMPONENT
+    /// - -2 on error
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDetectPrecompiled(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr: jlong,
+        bytes: JByteArray,
+    ) -> jint {
+        let result: Result<jint, crate::error::WasmtimeError> = (|| {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+
+            let byte_vec = env.convert_byte_array(bytes)
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert byte array: {}", e),
+                })?;
+
+            match engine.detect_precompiled(&byte_vec) {
+                Some(value) => Ok(value),
+                None => Ok(-1),
+            }
+        })();
+
+        match result {
+            Ok(value) => value,
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                -2 // Error indicator
+            }
+        }
+    }
 }
 
 

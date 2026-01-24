@@ -360,6 +360,26 @@ impl Engine {
         Arc::ptr_eq(&self.inner, &other.inner)
     }
 
+    /// Detect if bytes are a precompiled WebAssembly module or component
+    ///
+    /// This inspects the header of the bytes to determine if they look like
+    /// a precompiled core wasm module or a precompiled component.
+    ///
+    /// # Arguments
+    /// * `bytes` - The bytes to check
+    ///
+    /// # Returns
+    /// * `Some(0)` - The bytes look like a precompiled core wasm module
+    /// * `Some(1)` - The bytes look like a precompiled wasm component
+    /// * `None` - The bytes do not appear to be precompiled
+    pub fn detect_precompiled(&self, bytes: &[u8]) -> Option<i32> {
+        match WasmtimeEngine::detect_precompiled(bytes) {
+            Some(wasmtime::Precompiled::Module) => Some(0),
+            Some(wasmtime::Precompiled::Component) => Some(1),
+            None => None,
+        }
+    }
+
     /// Increment the epoch counter
     ///
     /// This method is signal-safe and performs only an atomic increment operation.
