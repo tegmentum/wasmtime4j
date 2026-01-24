@@ -1144,6 +1144,21 @@ pub mod jni_engine {
         }) as jboolean
     }
 
+    /// Check if two engines are the same (share the same underlying Wasmtime engine)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeEngineSame(
+        mut env: JNIEnv,
+        _class: JClass,
+        engine_ptr1: jlong,
+        engine_ptr2: jlong,
+    ) -> jboolean {
+        jni_utils::jni_try_bool(&mut env, || {
+            let engine1 = unsafe { core::get_engine_ref(engine_ptr1 as *const std::os::raw::c_void)? };
+            let engine2 = unsafe { core::get_engine_ref(engine_ptr2 as *const std::os::raw::c_void)? };
+            Ok(engine1.same(engine2))
+        }) as jboolean
+    }
+
     /// Increment the epoch counter for epoch-based interruption
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIncrementEpoch(

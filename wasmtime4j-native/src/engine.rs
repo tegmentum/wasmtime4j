@@ -345,6 +345,21 @@ impl Engine {
         Arc::strong_count(&self.inner)
     }
 
+    /// Check if this engine is the same as another engine
+    ///
+    /// Two engines are considered the same if they share the same underlying
+    /// Wasmtime engine (i.e., they were cloned from the same original engine).
+    /// This uses Arc pointer equality to determine sameness.
+    ///
+    /// # Arguments
+    /// * `other` - The other engine to compare against
+    ///
+    /// # Returns
+    /// `true` if both engines share the same underlying Wasmtime engine
+    pub fn same(&self, other: &Engine) -> bool {
+        Arc::ptr_eq(&self.inner, &other.inner)
+    }
+
     /// Increment the epoch counter
     ///
     /// This method is signal-safe and performs only an atomic increment operation.
