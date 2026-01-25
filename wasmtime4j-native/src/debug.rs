@@ -943,6 +943,26 @@ pub fn get_active_debug_sessions() -> Result<Vec<DebugSessionId>> {
     Ok(sessions.keys().cloned().collect())
 }
 
+/// Clears all debug sessions from the global registry
+///
+/// This function is useful for test cleanup to prevent memory leaks and
+/// JVM crashes from accumulated debug sessions. Returns the number of
+/// sessions that were cleared.
+///
+/// Uses poisoned mutex recovery to handle edge cases where a thread
+/// panicked while holding the lock.
+pub fn clear_debug_sessions() -> usize {
+    let mut sessions = DEBUG_SESSIONS.write()
+        .unwrap_or_else(|poisoned| {
+            log::warn!("DEBUG_SESSIONS mutex was poisoned, recovering");
+            poisoned.into_inner()
+        });
+    let count = sessions.len();
+    sessions.clear();
+    log::debug!("Cleared {} debug sessions from registry", count);
+    count
+}
+
 // Export functions for FFI interfaces
 
 /// JNI exports for debug functionality
@@ -976,6 +996,16 @@ pub mod jni_debug_exports {
             Err(_) => JNI_FALSE as jboolean,
         }
     }
+
+    /// Clear all debug sessions from the registry
+    /// Returns the number of sessions that were cleared
+    #[no_mangle]
+    pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_clearDebugSessions(
+        _env: JNIEnv,
+        _class: JClass,
+    ) -> jlong {
+        clear_debug_sessions() as jlong
+    }
 }
 
 /// Panama FFI exports for debug functionality
@@ -998,5 +1028,12 @@ pub mod panama_debug_exports {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_debug_close_session(session_id: u64) -> bool {
         close_debug_session(session_id).is_ok()
+    }
+
+    /// Clear all debug sessions from the registry
+    /// Returns the number of sessions that were cleared
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_debug_clear_sessions() -> u64 {
+        clear_debug_sessions() as u64
     }
 }

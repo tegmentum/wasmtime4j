@@ -34,7 +34,11 @@ impl DebugServer {
     /// Creates a new debug session for an instance
     pub fn create_session(&self, instance: Instance, module: Module) -> Result<u64, anyhow::Error> {
         let session_id = {
-            let mut next_id = self.next_session_id.lock().unwrap();
+            let mut next_id = self.next_session_id.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("next_session_id mutex was poisoned in create_session, recovering");
+                    poisoned.into_inner()
+                });
             let id = *next_id;
             *next_id += 1;
             id
@@ -43,7 +47,11 @@ impl DebugServer {
         let session = DebugSession::new(session_id, instance, module, self.event_sender.clone())?;
 
         {
-            let mut sessions = self.debug_sessions.write().unwrap();
+            let mut sessions = self.debug_sessions.write()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("debug_sessions mutex was poisoned in create_session, recovering");
+                    poisoned.into_inner()
+                });
             sessions.insert(session_id, session);
         }
 
@@ -52,7 +60,11 @@ impl DebugServer {
 
     /// Removes a debug session
     pub fn remove_session(&self, session_id: u64) -> Result<(), anyhow::Error> {
-        let mut sessions = self.debug_sessions.write().unwrap();
+        let mut sessions = self.debug_sessions.write()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in remove_session, recovering");
+                poisoned.into_inner()
+            });
         sessions.remove(&session_id);
         Ok(())
     }
@@ -60,7 +72,11 @@ impl DebugServer {
     /// Sets a breakpoint in a debug session
     pub fn set_breakpoint(&self, session_id: u64, function_index: u32, instruction_offset: u32,
                           condition: Option<String>) -> Result<u32, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in set_breakpoint, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.set_breakpoint(function_index, instruction_offset, condition)
         } else {
@@ -70,7 +86,11 @@ impl DebugServer {
 
     /// Removes a breakpoint from a debug session
     pub fn remove_breakpoint(&self, session_id: u64, breakpoint_id: u32) -> Result<(), anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in remove_breakpoint, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.remove_breakpoint(breakpoint_id)
         } else {
@@ -80,7 +100,11 @@ impl DebugServer {
 
     /// Steps to the next instruction in a debug session
     pub fn step_next(&self, session_id: u64) -> Result<ExecutionContext, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in step_next, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.step_next()
         } else {
@@ -90,7 +114,11 @@ impl DebugServer {
 
     /// Steps into a function call in a debug session
     pub fn step_into(&self, session_id: u64) -> Result<ExecutionContext, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in step_into, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.step_into()
         } else {
@@ -100,7 +128,11 @@ impl DebugServer {
 
     /// Steps out of the current function in a debug session
     pub fn step_out(&self, session_id: u64) -> Result<ExecutionContext, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in step_out, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.step_out()
         } else {
@@ -110,7 +142,11 @@ impl DebugServer {
 
     /// Continues execution in a debug session
     pub fn continue_execution(&self, session_id: u64) -> Result<(), anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in continue_execution, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.continue_execution()
         } else {
@@ -120,7 +156,11 @@ impl DebugServer {
 
     /// Pauses execution in a debug session
     pub fn pause_execution(&self, session_id: u64) -> Result<ExecutionContext, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in pause_execution, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.pause_execution()
         } else {
@@ -130,7 +170,11 @@ impl DebugServer {
 
     /// Gets the call stack for a debug session
     pub fn get_call_stack(&self, session_id: u64) -> Result<Vec<StackFrame>, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in get_call_stack, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.get_call_stack()
         } else {
@@ -140,7 +184,11 @@ impl DebugServer {
 
     /// Inspects memory in a debug session
     pub fn inspect_memory(&self, session_id: u64, address: u64, length: u32) -> Result<Vec<u8>, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in inspect_memory, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.inspect_memory(address, length)
         } else {
@@ -150,7 +198,11 @@ impl DebugServer {
 
     /// Gets variable values in the current scope for a debug session
     pub fn get_variables(&self, session_id: u64) -> Result<HashMap<String, VariableValue>, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in get_variables, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.get_variables()
         } else {
@@ -160,7 +212,11 @@ impl DebugServer {
 
     /// Evaluates a watch expression in a debug session
     pub fn evaluate_watch(&self, session_id: u64, expression: &str) -> Result<WatchResult, anyhow::Error> {
-        let sessions = self.debug_sessions.read().unwrap();
+        let sessions = self.debug_sessions.read()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("debug_sessions mutex was poisoned in evaluate_watch, recovering");
+                poisoned.into_inner()
+            });
         if let Some(session) = sessions.get(&session_id) {
             session.evaluate_watch(expression)
         } else {
@@ -171,7 +227,11 @@ impl DebugServer {
     /// Starts the debug server event processing loop
     pub fn start(&mut self) -> Result<(), anyhow::Error> {
         {
-            let mut running = self.is_running.lock().unwrap();
+            let mut running = self.is_running.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("is_running mutex was poisoned in start, recovering");
+                    poisoned.into_inner()
+                });
             if *running {
                 return Ok(());
             }
@@ -184,7 +244,18 @@ impl DebugServer {
         let is_running = self.is_running.clone();
 
         thread::spawn(move || {
-            while *is_running.lock().unwrap() {
+            loop {
+                let should_continue = {
+                    let running = is_running.lock()
+                        .unwrap_or_else(|poisoned| {
+                            log::warn!("is_running mutex was poisoned in event loop, recovering");
+                            poisoned.into_inner()
+                        });
+                    *running
+                };
+                if !should_continue {
+                    break;
+                }
                 match receiver.recv_timeout(Duration::from_millis(100)) {
                     Ok(event) => {
                         // Process debug events
@@ -205,7 +276,11 @@ impl DebugServer {
 
     /// Stops the debug server
     pub fn stop(&self) {
-        let mut running = self.is_running.lock().unwrap();
+        let mut running = self.is_running.lock()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("is_running mutex was poisoned in stop, recovering");
+                poisoned.into_inner()
+            });
         *running = false;
     }
 
@@ -267,7 +342,11 @@ impl DebugSession {
     pub fn set_breakpoint(&self, function_index: u32, instruction_offset: u32,
                           condition: Option<String>) -> Result<u32, anyhow::Error> {
         let breakpoint_id = {
-            let mut next_id = self.next_breakpoint_id.lock().unwrap();
+            let mut next_id = self.next_breakpoint_id.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("next_breakpoint_id mutex was poisoned in set_breakpoint, recovering");
+                    poisoned.into_inner()
+                });
             let id = *next_id;
             *next_id += 1;
             id
@@ -283,7 +362,11 @@ impl DebugSession {
         };
 
         {
-            let mut breakpoints = self.breakpoints.write().unwrap();
+            let mut breakpoints = self.breakpoints.write()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("breakpoints mutex was poisoned in set_breakpoint, recovering");
+                    poisoned.into_inner()
+                });
             breakpoints.insert(breakpoint_id, breakpoint);
         }
 
@@ -291,14 +374,22 @@ impl DebugSession {
     }
 
     pub fn remove_breakpoint(&self, breakpoint_id: u32) -> Result<(), anyhow::Error> {
-        let mut breakpoints = self.breakpoints.write().unwrap();
+        let mut breakpoints = self.breakpoints.write()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("breakpoints mutex was poisoned in remove_breakpoint, recovering");
+                poisoned.into_inner()
+            });
         breakpoints.remove(&breakpoint_id);
         Ok(())
     }
 
     pub fn step_next(&self) -> Result<ExecutionContext, anyhow::Error> {
         {
-            let mut state = self.execution_state.lock().unwrap();
+            let mut state = self.execution_state.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("execution_state mutex was poisoned in step_next, recovering");
+                    poisoned.into_inner()
+                });
             *state = ExecutionState::Stepping;
         }
 
@@ -306,12 +397,20 @@ impl DebugSession {
         let context = self.create_execution_context(0, 1, "main")?;
 
         {
-            let mut current = self.current_context.lock().unwrap();
+            let mut current = self.current_context.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("current_context mutex was poisoned in step_next, recovering");
+                    poisoned.into_inner()
+                });
             *current = Some(context.clone());
         }
 
         {
-            let mut state = self.execution_state.lock().unwrap();
+            let mut state = self.execution_state.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("execution_state mutex was poisoned in step_next (final), recovering");
+                    poisoned.into_inner()
+                });
             *state = ExecutionState::Paused;
         }
 
@@ -335,7 +434,11 @@ impl DebugSession {
 
     pub fn continue_execution(&self) -> Result<(), anyhow::Error> {
         {
-            let mut state = self.execution_state.lock().unwrap();
+            let mut state = self.execution_state.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("execution_state mutex was poisoned in continue_execution, recovering");
+                    poisoned.into_inner()
+                });
             *state = ExecutionState::Running;
         }
 
@@ -348,14 +451,22 @@ impl DebugSession {
 
     pub fn pause_execution(&self) -> Result<ExecutionContext, anyhow::Error> {
         {
-            let mut state = self.execution_state.lock().unwrap();
+            let mut state = self.execution_state.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("execution_state mutex was poisoned in pause_execution, recovering");
+                    poisoned.into_inner()
+                });
             *state = ExecutionState::Paused;
         }
 
         let context = self.create_execution_context(0, 5, "main")?;
 
         {
-            let mut current = self.current_context.lock().unwrap();
+            let mut current = self.current_context.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("current_context mutex was poisoned in pause_execution, recovering");
+                    poisoned.into_inner()
+                });
             *current = Some(context.clone());
         }
 
@@ -368,7 +479,11 @@ impl DebugSession {
     }
 
     pub fn get_call_stack(&self) -> Result<Vec<StackFrame>, anyhow::Error> {
-        let stack = self.call_stack.lock().unwrap();
+        let stack = self.call_stack.lock()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("call_stack mutex was poisoned in get_call_stack, recovering");
+                poisoned.into_inner()
+            });
         Ok(stack.clone())
     }
 
