@@ -17,10 +17,14 @@
 package ai.tegmentum.wasmtime4j.wasi.panama;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
+import ai.tegmentum.wasmtime4j.panama.PanamaWasiFilesystem;
+import ai.tegmentum.wasmtime4j.wasi.WasiDirEntry;
 import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiRights;
 import java.lang.reflect.Method;
@@ -32,7 +36,6 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -246,59 +249,161 @@ class WasiDirectoryHandleIntegrationTest {
 
   @Nested
   @DisplayName("Native Implementation Tests")
-  @Disabled("Requires valid native directory handles from WASI context")
   class NativeImplementationTests {
 
+    private PanamaWasiFilesystem filesystem;
+
+    @BeforeEach
+    void setUpFilesystem() {
+      LOGGER.info("Setting up PanamaWasiFilesystem with root: " + tempDir);
+      filesystem = new PanamaWasiFilesystem(tempDir);
+      resources.add(() -> filesystem.close());
+    }
+
     @Test
-    @DisplayName("should create directory handle from WASI context")
-    void shouldCreateDirectoryHandleFromWasiContext() {
-      LOGGER.info("Testing directory handle creation from WASI context");
+    @DisplayName("should create directory handle from WASI filesystem")
+    void shouldCreateDirectoryHandleFromWasiContext() throws Exception {
+      LOGGER.info("Testing directory handle creation from WASI filesystem");
 
-      // This test would require:
-      // 1. A properly configured WASI context
-      // 2. Native directory handle creation from preopened directories
-      // 3. The handle would be obtained from WasiFilesystemOperations or similar
+      // Open the root directory using the WASI filesystem
+      final WasiDirectoryHandle handle = filesystem.openDirectory("/", WasiRights.PATH_OPEN);
+      assertNotNull(handle, "Directory handle should not be null");
+      resources.add(handle);
 
-      LOGGER.info("Test placeholder for native directory handle creation");
+      // Verify handle properties
+      assertTrue(handle.getFileDescriptor() >= 3, "File descriptor should be >= 3 (stdio reserved)");
+      assertEquals("/", handle.getPath(), "Path should match");
+      assertEquals(WasiRights.PATH_OPEN, handle.getRights(), "Rights should match");
+      assertTrue(handle.isValid(), "Handle should be valid");
+      assertEquals(0L, handle.getPosition(), "Initial position should be 0");
+
+      LOGGER.info(
+          "Successfully created directory handle with fd="
+              + handle.getFileDescriptor()
+              + ", path="
+              + handle.getPath());
     }
 
     @Test
     @DisplayName("should iterate directory entries")
-    void shouldIterateDirectoryEntries() {
+    void shouldIterateDirectoryEntries() throws Exception {
       LOGGER.info("Testing directory entry iteration");
 
-      // This test would require a valid directory handle to call:
-      // - readEntry() or similar methods
-      // - Verify each entry's name and type
+      // Open directory and read entries
+      final WasiDirectoryHandle handle = filesystem.openDirectory("/", WasiRights.PATH_OPEN);
+      resources.add(handle);
 
-      LOGGER.info("Test placeholder for directory entry iteration");
+      final List<WasiDirEntry> entries = filesystem.readDirectory(handle);
+      assertNotNull(entries, "Entries list should not be null");
+
+      // We created 2 subdirectories and 2 files in setUp
+      assertEquals(4, entries.size(), "Should have 4 entries (subdir1, subdir2, file1.txt, file2.txt)");
+
+      // Collect entry names for verification
+      final List<String> names = new ArrayList<>();
+      for (final WasiDirEntry entry : entries) {
+        assertNotNull(entry.getName(), "Entry name should not be null");
+        assertNotNull(entry.getType(), "Entry type should not be null");
+        names.add(entry.getName());
+        LOGGER.info("Found entry: " + entry.getName() + " (type: " + entry.getType() + ")");
+      }
+
+      // Verify expected entries exist
+      assertTrue(names.contains("subdir1"), "Should contain subdir1");
+      assertTrue(names.contains("subdir2"), "Should contain subdir2");
+      assertTrue(names.contains("file1.txt"), "Should contain file1.txt");
+      assertTrue(names.contains("file2.txt"), "Should contain file2.txt");
+
+      LOGGER.info("Successfully iterated " + entries.size() + " directory entries");
     }
 
     @Test
     @DisplayName("should track position during iteration")
-    void shouldTrackPositionDuringIteration() {
+    void shouldTrackPositionDuringIteration() throws Exception {
       LOGGER.info("Testing position tracking during iteration");
 
-      // This test would require:
-      // - A valid directory handle
-      // - Multiple calls to advance position
-      // - Verification of getPosition() after each call
+      final WasiDirectoryHandle handle = filesystem.openDirectory("/", WasiRights.PATH_OPEN);
+      resources.add(handle);
 
-      LOGGER.info("Test placeholder for position tracking");
+      // Initial position should be 0
+      assertEquals(0L, handle.getPosition(), "Initial position should be 0");
+
+      // Set position to different values and verify
+      handle.setPosition(100L);
+      assertEquals(100L, handle.getPosition(), "Position should be 100 after setPosition(100)");
+
+      handle.setPosition(500L);
+      assertEquals(500L, handle.getPosition(), "Position should be 500 after setPosition(500)");
+
+      // Verify negative position throws exception
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> handle.setPosition(-1L),
+          "Negative position should throw IllegalArgumentException");
+
+      LOGGER.info("Position tracking verified successfully");
     }
 
     @Test
     @DisplayName("should rewind position to start")
-    void shouldRewindPositionToStart() {
+    void shouldRewindPositionToStart() throws Exception {
       LOGGER.info("Testing position rewind");
 
-      // This test would require:
-      // - A valid directory handle
-      // - Advance position to some point
-      // - Call rewind()
-      // - Verify getPosition() returns 0
+      final WasiDirectoryHandle handle = filesystem.openDirectory("/", WasiRights.PATH_OPEN);
+      resources.add(handle);
 
-      LOGGER.info("Test placeholder for position rewind");
+      // Set position to some non-zero value
+      handle.setPosition(12345L);
+      assertEquals(12345L, handle.getPosition(), "Position should be 12345 after setPosition");
+
+      // Rewind should reset position to 0
+      handle.rewind();
+      assertEquals(0L, handle.getPosition(), "Position should be 0 after rewind()");
+
+      // Verify we can set position again after rewind
+      handle.setPosition(999L);
+      assertEquals(999L, handle.getPosition(), "Position should be 999 after setPosition(999)");
+
+      // Rewind again
+      handle.rewind();
+      assertEquals(0L, handle.getPosition(), "Position should be 0 after second rewind()");
+
+      LOGGER.info("Position rewind verified successfully");
+    }
+
+    @Test
+    @DisplayName("should invalidate handle after close")
+    void shouldInvalidateHandleAfterClose() throws Exception {
+      LOGGER.info("Testing handle invalidation after close");
+
+      final WasiDirectoryHandle handle = filesystem.openDirectory("/", WasiRights.PATH_OPEN);
+      assertTrue(handle.isValid(), "Handle should be valid before close");
+
+      handle.close();
+      assertFalse(handle.isValid(), "Handle should be invalid after close");
+
+      LOGGER.info("Handle invalidation verified successfully");
+    }
+
+    @Test
+    @DisplayName("should open subdirectory")
+    void shouldOpenSubdirectory() throws Exception {
+      LOGGER.info("Testing subdirectory opening");
+
+      // Open a subdirectory
+      final WasiDirectoryHandle handle = filesystem.openDirectory("/subdir1", WasiRights.PATH_OPEN);
+      assertNotNull(handle, "Subdirectory handle should not be null");
+      resources.add(handle);
+
+      assertEquals("/subdir1", handle.getPath(), "Path should match subdirectory");
+      assertTrue(handle.isValid(), "Handle should be valid");
+
+      // Read entries (should be empty)
+      final List<WasiDirEntry> entries = filesystem.readDirectory(handle);
+      assertNotNull(entries, "Entries list should not be null");
+      assertEquals(0, entries.size(), "Subdirectory should be empty");
+
+      LOGGER.info("Successfully opened and read subdirectory");
     }
   }
 
