@@ -368,9 +368,14 @@ pub mod core {
         }
 
         // Check if pointer was already destroyed
+        // Use unwrap_or_else to recover from poisoned mutex instead of panicking
         {
             use crate::error::ffi_utils::DESTROYED_POINTERS;
-            let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
+            let mut destroyed = DESTROYED_POINTERS.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("DESTROYED_POINTERS mutex was poisoned in Global destroy, recovering");
+                    poisoned.into_inner()
+                });
             if destroyed.contains(&ptr_addr) {
                 log::warn!("Attempted double-free of Global resource at {:p} - ignoring", global_ptr);
                 return;

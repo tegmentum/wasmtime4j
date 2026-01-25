@@ -3983,6 +3983,20 @@ pub mod memory {
             Err(_) => -1,
         }
     }
+
+    /// Clear the destroyed pointers registry (for testing purposes)
+    ///
+    /// This function clears the HashSet tracking destroyed pointers to prevent
+    /// unbounded memory growth during large test suite execution.
+    /// Should only be called in test teardown after all native resources
+    /// have been properly destroyed.
+    ///
+    /// # Returns
+    /// The number of entries cleared from the registry
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_clear_destroyed_pointers() -> c_ulong {
+        crate::error::ffi_utils::clear_destroyed_pointers() as c_ulong
+    }
 }
 
 /// Panama FFI bindings for WebAssembly global variables

@@ -3355,6 +3355,20 @@ pub extern "C" fn wasmtime4j_memory_clear_handle_registries() -> i32 {
     }
 }
 
+/// Clears the destroyed pointers registry (for testing purposes)
+///
+/// This function clears the HashSet tracking destroyed pointers to prevent
+/// unbounded memory growth during large test suite execution.
+/// Should only be called in test teardown after all native resources
+/// have been properly destroyed.
+///
+/// # Returns
+/// The number of entries cleared from the registry
+#[no_mangle]
+pub extern "C" fn wasmtime4j_clear_destroyed_pointers() -> u64 {
+    crate::error::ffi_utils::clear_destroyed_pointers() as u64
+}
+
 /// Creates a WebAssembly memory with platform optimization
 #[no_mangle]
 pub extern "C" fn wasmtime4j_memory_create_with_platform_config(

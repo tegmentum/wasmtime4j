@@ -1678,8 +1678,31 @@ pub mod ffi_utils {
     
     /// Thread-safe tracking of destroyed pointers to prevent double-free
     /// Using usize addresses instead of raw pointers for thread safety
-    pub(crate) static DESTROYED_POINTERS: Lazy<Mutex<HashSet<usize>>> = 
+    pub(crate) static DESTROYED_POINTERS: Lazy<Mutex<HashSet<usize>>> =
         Lazy::new(|| Mutex::new(HashSet::new()));
+
+    /// Clear the destroyed pointers registry.
+    ///
+    /// This function clears the HashSet tracking destroyed pointers.
+    /// It should be called during test teardown to prevent unbounded memory growth
+    /// when running large test suites.
+    ///
+    /// # Safety
+    /// Calling this function while native resources are still in use could
+    /// result in the double-free protection being bypassed for those resources.
+    /// Only call this when all native resources have been properly destroyed.
+    pub fn clear_destroyed_pointers() -> usize {
+        // Use unwrap_or_else to recover from poisoned mutex
+        let mut destroyed = DESTROYED_POINTERS.lock()
+            .unwrap_or_else(|poisoned| {
+                log::warn!("DESTROYED_POINTERS mutex was poisoned, recovering");
+                poisoned.into_inner()
+            });
+        let count = destroyed.len();
+        destroyed.clear();
+        log::debug!("Cleared {} entries from destroyed pointers registry", count);
+        count
+    }
 
     /// Safely destroy a boxed resource from raw pointer with double-free protection
     pub unsafe fn destroy_resource<T>(ptr: *mut c_void, name: &str) {
@@ -1688,9 +1711,14 @@ pub mod ffi_utils {
         }
 
         // Acquire lock and check if this pointer was already destroyed
+        // Use unwrap_or_else to recover from poisoned mutex instead of panicking
         let ptr_addr = ptr as usize;
         {
-            let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
+            let mut destroyed = DESTROYED_POINTERS.lock()
+                .unwrap_or_else(|poisoned| {
+                    log::warn!("DESTROYED_POINTERS mutex was poisoned during destroy_resource, recovering");
+                    poisoned.into_inner()
+                });
             if destroyed.contains(&ptr_addr) {
                 log::warn!("Attempted double-free of {} resource at {:p} - ignoring", name, ptr);
                 return;
