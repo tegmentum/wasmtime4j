@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.FunctionReference;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -690,7 +691,15 @@ public final class PanamaHostFunction implements WasmFunction {
           ptr.set(ValueLayout.JAVA_BYTE, valueOffset + j, v128[j]);
         }
       }
-      case FUNCREF, EXTERNREF -> ptr.set(ValueLayout.JAVA_LONG, valueOffset, 0L);
+      case FUNCREF -> {
+        final Object ref = value.asFuncref();
+        final long id = ref instanceof FunctionReference ? ((FunctionReference) ref).getId() : 0L;
+        ptr.set(ValueLayout.JAVA_LONG, valueOffset, id);
+      }
+      case EXTERNREF -> {
+        // ExternRef handling - externref IDs not yet fully supported
+        ptr.set(ValueLayout.JAVA_LONG, valueOffset, 0L);
+      }
       default -> throw new IllegalArgumentException("Unsupported type: " + value.getType());
     }
   }

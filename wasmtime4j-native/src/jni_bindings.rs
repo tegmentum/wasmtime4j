@@ -3318,7 +3318,7 @@ pub mod jni_linker {
     use std::os::raw::c_void;
     use std::sync::Arc;
     use jni::JavaVM;
-    use wasmtime::ValType;
+    use wasmtime::{RefType, ValType};
 
     /// Extract the message from a pending Java exception and clear it.
     /// Returns the exception message or a default message if extraction fails.
@@ -3506,6 +3506,8 @@ pub mod jni_linker {
             2 => Ok(ValType::F32),
             3 => Ok(ValType::F64),
             4 => Ok(ValType::V128),
+            5 => Ok(ValType::Ref(RefType::FUNCREF)),
+            6 => Ok(ValType::Ref(RefType::EXTERNREF)),
             _ => Err(WasmtimeError::Runtime {
                 message: format!("Unknown type code: {}", type_code),
                 backtrace: None
@@ -3720,6 +3722,27 @@ pub mod jni_linker {
                         backtrace: None
                     })?;
                 Ok(WasmValue::F64(double_val))
+            },
+            "FUNCREF" => {
+                // Check if value is null (null funcref)
+                if value.is_null() {
+                    Ok(WasmValue::FuncRef(None))
+                } else {
+                    // Get the FunctionReference ID
+                    let id = env.call_method(&value, "getId", "()J", &[])
+                        .map_err(|e| WasmtimeError::Runtime {
+                            message: format!("Failed to call getId on FunctionReference: {}", e),
+                            backtrace: None
+                        })?.j().map_err(|e| WasmtimeError::Runtime {
+                            message: format!("Failed to extract funcref id: {}", e),
+                            backtrace: None
+                        })?;
+                    Ok(WasmValue::FuncRef(Some(id)))
+                }
+            },
+            "EXTERNREF" => {
+                // ExternRef - not fully supported yet, return None
+                Ok(WasmValue::ExternRef(None))
             },
             _ => Err(WasmtimeError::Runtime {
                 message: format!("Unsupported type: {}", type_name),
