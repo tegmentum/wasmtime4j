@@ -514,8 +514,7 @@ public final class SharedMemoryIntegrationTest {
 
   @Nested
   @DisplayName("Thread Synchronization Tests")
-  @Disabled(
-      "JVM crash during concurrent shared memory access in full test suite - works in isolation")
+  @Disabled("JVM crash in DebugStackTraceTest when running full suite - needs further investigation")
   class ThreadSynchronizationTests {
 
     @Test
