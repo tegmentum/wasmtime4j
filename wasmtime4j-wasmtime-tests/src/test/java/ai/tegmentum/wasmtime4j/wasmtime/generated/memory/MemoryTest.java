@@ -6,10 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -475,7 +477,7 @@ public final class MemoryTest extends DualRuntimeTest {
   public void testMultipleMemories(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    // Note: Multi-memory is a proposal feature
+    // Multi-memory requires the MULTI_MEMORY feature to be enabled
     final String wat =
         """
         (module
@@ -484,7 +486,9 @@ public final class MemoryTest extends DualRuntimeTest {
         )
         """;
 
-    try (final Engine engine = Engine.create()) {
+    // Create engine with multi-memory feature enabled
+    final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.MULTI_MEMORY);
+    try (final Engine engine = Engine.create(config)) {
       try {
         final Module module = engine.compileWat(wat);
         try (final Store store = engine.createStore();
@@ -501,7 +505,7 @@ public final class MemoryTest extends DualRuntimeTest {
         }
         module.close();
       } catch (final WasmException e) {
-        // Multi-memory may not be supported
+        // Multi-memory compilation/instantiation may still fail on some platforms
         Assumptions.assumeTrue(false, "Multi-memory not supported: " + e.getMessage());
       }
     }
