@@ -938,7 +938,10 @@ pub mod global {
     #[derive(Debug, Clone, Copy)]
     #[allow(missing_docs)]
     pub struct FfiGlobalValue {
-        pub value_type: i32,  // 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF
+        /// Value type discriminant:
+        /// 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF, 7=ANYREF,
+        /// 8=EQREF, 9=I31REF, 10=STRUCTREF, 11=ARRAYREF
+        pub value_type: i32,
         pub i32_value: i32,
         pub i64_value: i64,
         pub f32_value: f32,
@@ -958,6 +961,11 @@ pub mod global {
                 5 => Ok(GlobalValue::FuncRef(None)),
                 6 => Ok(GlobalValue::ExternRef(None)),
                 7 => Ok(GlobalValue::AnyRef(None)),
+                // WasmGC reference types
+                8 => Ok(GlobalValue::EqRef(None)),
+                9 => Ok(GlobalValue::I31Ref(if self.i32_value == 0 { None } else { Some(self.i32_value) })),
+                10 => Ok(GlobalValue::StructRef(None)),
+                11 => Ok(GlobalValue::ArrayRef(None)),
                 _ => Err(WasmtimeError::InvalidParameter {
                 message:
                     format!("Invalid global value type: {}", self.value_type)
@@ -1026,6 +1034,39 @@ pub mod global {
                 },
                 GlobalValue::AnyRef(_) => FfiGlobalValue {
                     value_type: 7,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                // WasmGC reference types
+                GlobalValue::EqRef(_) => FfiGlobalValue {
+                    value_type: 8,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                GlobalValue::I31Ref(val) => FfiGlobalValue {
+                    value_type: 9,
+                    i32_value: val.unwrap_or(0),
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                GlobalValue::StructRef(_) => FfiGlobalValue {
+                    value_type: 10,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+                GlobalValue::ArrayRef(_) => FfiGlobalValue {
+                    value_type: 11,
                     i32_value: 0,
                     i64_value: 0,
                     f32_value: 0.0,

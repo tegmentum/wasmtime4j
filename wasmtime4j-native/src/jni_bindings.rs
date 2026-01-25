@@ -6875,8 +6875,52 @@ pub mod jni_global {
                         None => std::ptr::null_mut()
                     }
                 },
+                crate::global::GlobalValue::EqRef(opt_id) => {
+                    // Return EqRef as Long (null for None)
+                    match opt_id {
+                        Some(id) => {
+                            let long_class = env.find_class("java/lang/Long")?;
+                            let long_obj = env.new_object(long_class, "(J)V", &[JValue::Long(id as i64)])?;
+                            long_obj.into_raw()
+                        },
+                        None => std::ptr::null_mut()
+                    }
+                },
+                crate::global::GlobalValue::I31Ref(opt_val) => {
+                    // Return I31Ref as Integer (null for None)
+                    match opt_val {
+                        Some(val) => {
+                            let integer_class = env.find_class("java/lang/Integer")?;
+                            let integer_obj = env.new_object(integer_class, "(I)V", &[JValue::Int(val)])?;
+                            integer_obj.into_raw()
+                        },
+                        None => std::ptr::null_mut()
+                    }
+                },
+                crate::global::GlobalValue::StructRef(opt_id) => {
+                    // Return StructRef as Long (null for None)
+                    match opt_id {
+                        Some(id) => {
+                            let long_class = env.find_class("java/lang/Long")?;
+                            let long_obj = env.new_object(long_class, "(J)V", &[JValue::Long(id as i64)])?;
+                            long_obj.into_raw()
+                        },
+                        None => std::ptr::null_mut()
+                    }
+                },
+                crate::global::GlobalValue::ArrayRef(opt_id) => {
+                    // Return ArrayRef as Long (null for None)
+                    match opt_id {
+                        Some(id) => {
+                            let long_class = env.find_class("java/lang/Long")?;
+                            let long_obj = env.new_object(long_class, "(J)V", &[JValue::Long(id as i64)])?;
+                            long_obj.into_raw()
+                        },
+                        None => std::ptr::null_mut()
+                    }
+                },
             };
-            
+
             Ok(java_value)
         })() {
             Ok(result) => result,

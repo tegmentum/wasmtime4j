@@ -54,8 +54,16 @@ pub enum GlobalValue {
     FuncRef(Option<u64>), // Function ID, None for null reference
     /// External reference
     ExternRef(Option<u64>), // External object ID, None for null reference
-    /// Any reference type
+    /// Any reference type (WasmGC)
     AnyRef(Option<u64>), // Generic reference ID, None for null reference
+    /// Equality-testable reference (WasmGC)
+    EqRef(Option<u64>), // EqRef ID, None for null reference
+    /// 31-bit integer reference (WasmGC)
+    I31Ref(Option<i32>), // i31 value (31-bit signed), None for null reference
+    /// Struct reference (WasmGC) - requires struct type definition
+    StructRef(Option<u64>), // Struct instance ID, None for null reference
+    /// Array reference (WasmGC) - requires array type definition
+    ArrayRef(Option<u64>), // Array instance ID, None for null reference
 }
 
 impl Global {
@@ -151,6 +159,8 @@ impl Global {
 
     /// Validate that a GlobalValue matches the expected ValType
     fn validate_value_type(value: &GlobalValue, expected_type: &ValType) -> WasmtimeResult<()> {
+        use wasmtime::HeapType;
+
         let matches = match (value, expected_type) {
             (GlobalValue::I32(_), ValType::I32) => true,
             (GlobalValue::I64(_), ValType::I64) => true,
@@ -158,14 +168,26 @@ impl Global {
             (GlobalValue::F64(_), ValType::F64) => true,
             (GlobalValue::V128(_), ValType::V128) => true,
             (GlobalValue::FuncRef(_), ValType::Ref(ref_type)) => {
-                use wasmtime::HeapType;
                 matches!(*ref_type.heap_type(), HeapType::Func | HeapType::ConcreteFunc(_))
             },
             (GlobalValue::ExternRef(_), ValType::Ref(ref_type)) => {
-                use wasmtime::HeapType;
                 matches!(*ref_type.heap_type(), HeapType::Extern)
             },
-            (GlobalValue::AnyRef(_), ValType::Ref(_)) => true, // AnyRef matches any Ref type
+            (GlobalValue::AnyRef(_), ValType::Ref(ref_type)) => {
+                matches!(*ref_type.heap_type(), HeapType::Any)
+            },
+            (GlobalValue::EqRef(_), ValType::Ref(ref_type)) => {
+                matches!(*ref_type.heap_type(), HeapType::Eq)
+            },
+            (GlobalValue::I31Ref(_), ValType::Ref(ref_type)) => {
+                matches!(*ref_type.heap_type(), HeapType::I31)
+            },
+            (GlobalValue::StructRef(_), ValType::Ref(ref_type)) => {
+                matches!(*ref_type.heap_type(), HeapType::Struct | HeapType::ConcreteStruct(_))
+            },
+            (GlobalValue::ArrayRef(_), ValType::Ref(ref_type)) => {
+                matches!(*ref_type.heap_type(), HeapType::Array | HeapType::ConcreteArray(_))
+            },
             _ => false,
         };
 
@@ -211,11 +233,39 @@ impl Global {
                 // Full externref support requires Store-aware APIs
                 Val::ExternRef(None)
             },
-            GlobalValue::AnyRef(_) => {
-                // AnyRef is not directly supported by wasmtime::Val
-                return Err(WasmtimeError::Type {
-                    message: "AnyRef type not yet supported".to_string(),
-                });
+            GlobalValue::AnyRef(_ref_id) => {
+                // AnyRef supports null values directly
+                // Non-null AnyRef would require Store context for GC-managed objects
+                // For now, only null anyref is supported for global creation
+                Val::AnyRef(None)
+            },
+            GlobalValue::EqRef(_ref_id) => {
+                // EqRef supports null values directly
+                // Non-null EqRef would require Store context for GC-managed objects
+                Val::AnyRef(None) // EqRef is a subtype of AnyRef
+            },
+            GlobalValue::I31Ref(maybe_value) => {
+                // i31ref can hold actual 31-bit integer values
+                if let Some(value) = maybe_value {
+                    // Create an i31 value and wrap it in AnyRef
+                    store.with_context(|mut ctx| {
+                        let i31 = wasmtime::I31::wrapping_i32(value);
+                        let anyref = wasmtime::AnyRef::from_i31(&mut ctx, i31);
+                        Ok(Val::AnyRef(Some(anyref)))
+                    })?
+                } else {
+                    Val::AnyRef(None) // null i31ref
+                }
+            },
+            GlobalValue::StructRef(_ref_id) => {
+                // StructRef requires a concrete struct type from a module
+                // Only null values can be created without a module instance
+                Val::AnyRef(None)
+            },
+            GlobalValue::ArrayRef(_ref_id) => {
+                // ArrayRef requires a concrete array type from a module
+                // Only null values can be created without a module instance
+                Val::AnyRef(None)
             },
         };
 
@@ -443,6 +493,11 @@ pub mod core {
             GlobalValue::FuncRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
             GlobalValue::ExternRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
             GlobalValue::AnyRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
+            // WasmGC reference types
+            GlobalValue::EqRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
+            GlobalValue::I31Ref(val) => (val.unwrap_or(0), 0, 0.0, 0.0, None),
+            GlobalValue::StructRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
+            GlobalValue::ArrayRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
         }
     }
 }
