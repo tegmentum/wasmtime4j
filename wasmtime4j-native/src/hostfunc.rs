@@ -12,6 +12,7 @@ use crate::store::StoreData;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::WasmValue;
 use crate::interop::ReentrantLock;
+use crate::table::core::{get_function_reference, register_function_reference};
 
 /// Compare ValType values since they don't implement PartialEq
 fn valtype_eq(a: &ValType, b: &ValType) -> bool {
@@ -441,7 +442,19 @@ fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow
             Val::F32(v) => WasmValue::F32(f32::from_bits(*v)),
             Val::F64(v) => WasmValue::F64(f64::from_bits(*v)),
             Val::V128(v) => WasmValue::V128(u128::from(*v).to_le_bytes()),
-            Val::FuncRef(_) => WasmValue::FuncRef(None), // FuncRef marshalling not yet implemented
+            Val::FuncRef(func_ref) => {
+                // Extract funcref and register it to get an ID
+                if let Some(func) = func_ref {
+                    let id = register_function_reference(func.clone())
+                        .map_err(|e| WasmtimeError::Execution {
+                            message: format!("Failed to register function reference: {:?}", e),
+                        })?;
+                    // Convert u64 to i64 for WasmValue storage
+                    WasmValue::FuncRef(Some(id as i64))
+                } else {
+                    WasmValue::FuncRef(None)
+                }
+            }
             Val::ExternRef(_ext_ref) => {
                 // ExternRef data extraction requires Store context
                 // For now, just preserve None
@@ -478,7 +491,17 @@ fn marshal_results_to_wasmtime(
             WasmValue::F32(v) => Val::F32(v.to_bits()),
             WasmValue::F64(v) => Val::F64(v.to_bits()),
             WasmValue::V128(v) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(*v))),
-            WasmValue::FuncRef(_) => Val::FuncRef(None), // FuncRef marshalling not yet implemented
+            WasmValue::FuncRef(ref_id) => {
+                // Convert funcref ID to Func handle using the function registry
+                if let Some(id) = ref_id {
+                    let func = get_function_reference(*id as u64)
+                        .map_err(|e| anyhow::anyhow!("Failed to get function reference: {:?}", e))?
+                        .ok_or_else(|| anyhow::anyhow!("Invalid function reference ID: {}", id))?;
+                    Val::FuncRef(Some(func))
+                } else {
+                    Val::FuncRef(None)
+                }
+            }
             WasmValue::ExternRef(_ref_id) => {
                 // ExternRef creation requires Store context
                 // Always return NULL for now

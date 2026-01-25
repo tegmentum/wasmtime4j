@@ -286,11 +286,15 @@ pub mod jni_instance {
                             wasm_params.push(WasmValue::F64(value));
                         }
                         5 => { // FUNCREF
-                            // Extract the Long value from the funcref
+                            // Extract the function reference ID
+                            // Try FunctionReference.getId() first, then fall back to longValue() for direct Long values
                             let ref_value = if !value_obj.is_null() {
-                                env.call_method(&value_obj, "longValue", "()J", &[])
+                                env.call_method(&value_obj, "getId", "()J", &[])
                                     .and_then(|v| v.j())
                                     .ok()
+                                    .or_else(|| env.call_method(&value_obj, "longValue", "()J", &[])
+                                        .and_then(|v| v.j())
+                                        .ok())
                             } else {
                                 None
                             };
@@ -461,17 +465,40 @@ pub mod jni_instance {
                             }
                         }
                     }
-                    WasmValue::FuncRef(_) => {
-                        // FuncRef: return WasmValue.funcref(null)
-                        let null_obj = JObject::null();
-                        env.call_static_method(
-                            wasm_value_class,
-                            "funcref",
-                            "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
-                            &[JValue::from(&null_obj)]
-                        ).map_err(|e| WasmtimeError::InvalidParameter {
-                            message: format!("Failed to create WasmValue.funcref: {}", e)
-                        })?.l()?
+                    WasmValue::FuncRef(ref_id) => {
+                        // FuncRef: return WasmValue.funcref with the reference ID
+                        match ref_id {
+                            Some(id) => {
+                                // Create a Long object with the funcref ID
+                                let long_class = env.find_class("java/lang/Long")
+                                    .map_err(|e| WasmtimeError::InvalidParameter {
+                                        message: format!("Failed to find Long class: {}", e)
+                                    })?;
+                                let long_obj = env.new_object(long_class, "(J)V", &[JValue::Long(*id)])
+                                    .map_err(|e| WasmtimeError::InvalidParameter {
+                                        message: format!("Failed to create Long object: {}", e)
+                                    })?;
+                                env.call_static_method(
+                                    wasm_value_class,
+                                    "funcref",
+                                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                                    &[JValue::from(&long_obj)]
+                                ).map_err(|e| WasmtimeError::InvalidParameter {
+                                    message: format!("Failed to create WasmValue.funcref: {}", e)
+                                })?.l()?
+                            }
+                            None => {
+                                let null_obj = JObject::null();
+                                env.call_static_method(
+                                    wasm_value_class,
+                                    "funcref",
+                                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                                    &[JValue::from(&null_obj)]
+                                ).map_err(|e| WasmtimeError::InvalidParameter {
+                                    message: format!("Failed to create WasmValue.funcref(null): {}", e)
+                                })?.l()?
+                            }
+                        }
                     }
                     _ => continue, // Skip unsupported types for now
                 };
