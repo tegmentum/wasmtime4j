@@ -56,8 +56,9 @@ import org.junit.jupiter.api.io.TempDir;
  * @since 1.0.0
  */
 @DisplayName("Panama WasiInputStream Integration Tests")
-@Disabled(
-    "JVM crash in wasmtime4j_panama_wasi_stdio_get_stdin - Panama WASI CLI FFI needs investigation")
+// @Disabled temporarily removed to investigate JVM crash
+// @Disabled(
+//     "JVM crash in wasmtime4j_panama_wasi_stdio_get_stdin - Panama WASI CLI FFI needs investigation")
 class WasiInputStreamIntegrationTest {
 
   private static final Logger LOGGER =
@@ -136,7 +137,7 @@ class WasiInputStreamIntegrationTest {
       LOGGER.info("Testing constructor rejection of null context handle");
 
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> new PanamaWasiInputStream(null, MemorySegment.NULL),
           "Should reject null context handle");
 
@@ -149,7 +150,7 @@ class WasiInputStreamIntegrationTest {
       LOGGER.info("Testing constructor rejection of null stream handle");
 
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> new PanamaWasiInputStream(MemorySegment.ofAddress(12345L), null),
           "Should reject null stream handle");
 
@@ -365,7 +366,7 @@ class WasiInputStreamIntegrationTest {
       LOGGER.info("Testing stdio constructor rejection of null context handle");
 
       assertThrows(
-          NullPointerException.class,
+          IllegalArgumentException.class,
           () -> new PanamaWasiStdio(null),
           "Should reject null context handle");
 
