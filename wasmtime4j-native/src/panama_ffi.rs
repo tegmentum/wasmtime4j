@@ -154,6 +154,7 @@ pub mod engine {
         };
 
         // Parse feature name to WasmFeature enum
+        // Note: Some Java enum names have aliases for compatibility
         let feature = match feature_str {
             "THREADS" => WasmFeature::Threads,
             "REFERENCE_TYPES" => WasmFeature::ReferenceTypes,
@@ -165,9 +166,11 @@ pub mod engine {
             "MEMORY64" => WasmFeature::Memory64,
             "EXCEPTIONS" => WasmFeature::Exceptions,
             "RELAXED_SIMD" => WasmFeature::RelaxedSimd,
-            "EXTENDED_CONST" => WasmFeature::ExtendedConst,
+            // Accept both Java enum name and native name
+            "EXTENDED_CONST" | "EXTENDED_CONST_EXPRESSIONS" => WasmFeature::ExtendedConst,
             "COMPONENT_MODEL" => WasmFeature::ComponentModel,
-            "FUNCTION_REFERENCES" => WasmFeature::FunctionReferences,
+            // Accept both Java enum name and native name
+            "FUNCTION_REFERENCES" | "TYPED_FUNCTION_REFERENCES" => WasmFeature::FunctionReferences,
             "GC" => WasmFeature::Gc,
             "CUSTOM_PAGE_SIZES" => WasmFeature::CustomPageSizes,
             "WIDE_ARITHMETIC" => WasmFeature::WideArithmetic,

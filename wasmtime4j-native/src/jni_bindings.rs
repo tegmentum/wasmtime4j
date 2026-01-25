@@ -1217,6 +1217,7 @@ pub mod jni_engine {
             let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
 
             // Parse feature name to WasmFeature enum
+            // Note: Some Java enum names have aliases for compatibility
             let feature = match feature_str.as_str() {
                 "THREADS" => crate::engine::WasmFeature::Threads,
                 "REFERENCE_TYPES" => crate::engine::WasmFeature::ReferenceTypes,
@@ -1226,11 +1227,13 @@ pub mod jni_engine {
                 "MULTI_MEMORY" => crate::engine::WasmFeature::MultiMemory,
                 "TAIL_CALL" => crate::engine::WasmFeature::TailCall,
                 "RELAXED_SIMD" => crate::engine::WasmFeature::RelaxedSimd,
-                "FUNCTION_REFERENCES" => crate::engine::WasmFeature::FunctionReferences,
+                // Accept both Java enum name and native name
+                "FUNCTION_REFERENCES" | "TYPED_FUNCTION_REFERENCES" => crate::engine::WasmFeature::FunctionReferences,
                 "GC" => crate::engine::WasmFeature::Gc,
                 "EXCEPTIONS" => crate::engine::WasmFeature::Exceptions,
                 "MEMORY64" => crate::engine::WasmFeature::Memory64,
-                "EXTENDED_CONST" => crate::engine::WasmFeature::ExtendedConst,
+                // Accept both Java enum name and native name
+                "EXTENDED_CONST" | "EXTENDED_CONST_EXPRESSIONS" => crate::engine::WasmFeature::ExtendedConst,
                 "COMPONENT_MODEL" => crate::engine::WasmFeature::ComponentModel,
                 "CUSTOM_PAGE_SIZES" => crate::engine::WasmFeature::CustomPageSizes,
                 "WIDE_ARITHMETIC" => crate::engine::WasmFeature::WideArithmetic,
