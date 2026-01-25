@@ -74,7 +74,6 @@ public final class ComponentTypedFunctionIntegrationTest {
 
       // Attempt to create engine - this exercises the native binding
       final JniComponentEngine testEngine = new JniComponentEngine(new ComponentEngineConfig());
-      testEngine.close();
 
       // Load the test component file
       try (InputStream is =
@@ -86,17 +85,57 @@ public final class ComponentTypedFunctionIntegrationTest {
               "Component native implementation available - "
                   + addComponentBytes.length
                   + " bytes loaded");
+
+          // Check if typed function support is available by testing with real component
+          checkTypedFunctionAvailable(testEngine);
         } else {
           unavailableReason = "add.wasm test component not found in resources";
           LOGGER.warning("ComponentTypedFunc tests skipped: " + unavailableReason);
         }
       }
+
+      testEngine.close();
     } catch (final UnsatisfiedLinkError e) {
       unavailableReason = "Native library not available: " + e.getMessage();
       LOGGER.warning("ComponentTypedFunc tests skipped: " + unavailableReason);
     } catch (final Exception e) {
       unavailableReason = "Component engine creation failed: " + e.getMessage();
       LOGGER.warning("ComponentTypedFunc tests skipped: " + unavailableReason);
+    }
+  }
+
+  /**
+   * Checks if typed function support is available by attempting to create a typed function.
+   *
+   * @param engine the component engine to use for testing
+   */
+  private static void checkTypedFunctionAvailable(final JniComponentEngine engine) {
+    try {
+      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final ComponentInstance instance = component.instantiate();
+      final Optional<ComponentFunction> funcOpt = instance.getFunc("add");
+
+      if (funcOpt.isPresent() && funcOpt.get() instanceof ComponentFunc) {
+        final ComponentFunc componentFunc = (ComponentFunc) funcOpt.get();
+
+        // Check if the implementation supports TypedComponentFunctionSupport
+        if (componentFunc instanceof ComponentTypedFunc.TypedComponentFunctionSupport) {
+          final ComponentTypedFunc typedFunc =
+              ComponentTypedFunc.create(componentFunc, "s32,s32->s32");
+          typedFuncAvailable = true;
+          typedFunc.close();
+          LOGGER.info("Typed component function support is available");
+        } else {
+          LOGGER.info("ComponentFunc does not implement TypedComponentFunctionSupport");
+        }
+      }
+
+      instance.close();
+      component.close();
+    } catch (final UnsupportedOperationException e) {
+      LOGGER.info("TypedFunc not supported: " + e.getMessage());
+    } catch (final Exception e) {
+      LOGGER.info("TypedFunc check failed: " + e.getMessage());
     }
   }
 

@@ -514,7 +514,6 @@ public final class SharedMemoryIntegrationTest {
 
   @Nested
   @DisplayName("Thread Synchronization Tests")
-  @Disabled("JVM crash in DebugStackTraceTest when running full suite - needs further investigation")
   class ThreadSynchronizationTests {
 
     @Test
@@ -610,6 +609,10 @@ public final class SharedMemoryIntegrationTest {
       startLatch.countDown();
       assertTrue(doneLatch.await(30, TimeUnit.SECONDS), "All threads should complete");
       executor.shutdown();
+      // Wait for executor to fully terminate before test completes
+      // This ensures all thread-local native resources are fully cleaned up
+      assertTrue(
+          executor.awaitTermination(30, TimeUnit.SECONDS), "Executor should terminate gracefully");
 
       // Verify no errors occurred during concurrent access
       // The actual atomic increment test would require an import module with atomic_add
