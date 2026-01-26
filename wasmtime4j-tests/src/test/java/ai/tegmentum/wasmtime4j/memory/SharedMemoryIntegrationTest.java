@@ -45,7 +45,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -544,6 +543,11 @@ public final class SharedMemoryIntegrationTest {
       final CountDownLatch doneLatch = new CountDownLatch(threadCount);
       final AtomicBoolean hasError = new AtomicBoolean(false);
 
+      // Pre-compile the import module once before spawning threads.
+      // Compiling modules concurrently from multiple threads can cause race conditions.
+      final Module importModule = sharedEngine.compileWat(IMPORT_SHARED_MEMORY_WAT);
+      resources.add(importModule);
+
       final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
       for (int t = 0; t < threadCount; t++) {
@@ -559,9 +563,7 @@ public final class SharedMemoryIntegrationTest {
                 localLinker = sharedRuntime.createLinker(sharedEngine);
                 localLinker.defineMemory(localStore, "env", "memory", sharedMemory);
 
-                final Module importModule = sharedEngine.compileWat(IMPORT_SHARED_MEMORY_WAT);
                 localInstance = localLinker.instantiate(localStore, importModule);
-                importModule.close();
 
                 // Each thread has its own function handle - atomics work on shared memory
                 // The "read" function does atomic load, but we need an add function
@@ -652,6 +654,172 @@ public final class SharedMemoryIntegrationTest {
       }
 
       LOGGER.info("Multiple memory offsets verified");
+    }
+
+    @Test
+    @DisplayName("should handle concurrent atomic write contention correctly")
+    void shouldHandleConcurrentAtomicWriteContention(final TestInfo testInfo) throws Exception {
+      // This test requires memory export retrieval to properly share memory between threads.
+      assumeSharedMemoryExportSupported();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      // WAT module with atomic add that exports shared memory
+      final String atomicAddModuleWat =
+          "(module\n"
+              + "  (memory (export \"memory\") 1 1 shared)\n"
+              + "  (func (export \"atomic_add\") (param $offset i32) (param $value i32) (result"
+              + " i32)\n"
+              + "    local.get $offset\n"
+              + "    local.get $value\n"
+              + "    i32.atomic.rmw.add\n"
+              + "  )\n"
+              + "  (func (export \"atomic_store\") (param $offset i32) (param $value i32)\n"
+              + "    local.get $offset\n"
+              + "    local.get $value\n"
+              + "    i32.atomic.store\n"
+              + "  )\n"
+              + "  (func (export \"atomic_load\") (param $offset i32) (result i32)\n"
+              + "    local.get $offset\n"
+              + "    i32.atomic.load\n"
+              + "  )\n"
+              + ")";
+
+      // WAT module that imports memory and does atomic add
+      final String atomicAddImportWat =
+          "(module\n"
+              + "  (import \"env\" \"memory\" (memory 1 1 shared))\n"
+              + "  (func (export \"atomic_add\") (param $offset i32) (param $value i32) (result"
+              + " i32)\n"
+              + "    local.get $offset\n"
+              + "    local.get $value\n"
+              + "    i32.atomic.rmw.add\n"
+              + "  )\n"
+              + ")";
+
+      final Module exportModule = sharedEngine.compileWat(atomicAddModuleWat);
+      resources.add(exportModule);
+      final Instance exportInstance = exportModule.instantiate(store);
+      resources.add(exportInstance);
+
+      // Get the shared memory and initialize to 0
+      final WasmMemory sharedMemory = exportInstance.getMemory("memory").orElseThrow();
+      final WasmFunction atomicStore = exportInstance.getFunction("atomic_store").orElseThrow();
+      final WasmFunction atomicLoad = exportInstance.getFunction("atomic_load").orElseThrow();
+
+      atomicStore.call(WasmValue.i32(0), WasmValue.i32(0));
+
+      final int threadCount = 10;
+      final int incrementsPerThread = 100;
+      final CountDownLatch startLatch = new CountDownLatch(1);
+      final CountDownLatch doneLatch = new CountDownLatch(threadCount);
+      final AtomicBoolean hasError = new AtomicBoolean(false);
+      final List<String> errors = new ArrayList<>();
+
+      final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+
+      // Compile the import module once
+      final Module importModule = sharedEngine.compileWat(atomicAddImportWat);
+      resources.add(importModule);
+
+      for (int t = 0; t < threadCount; t++) {
+        final int threadId = t;
+        executor.submit(
+            () -> {
+              Store localStore = null;
+              Linker<Void> localLinker = null;
+              Instance localInstance = null;
+              try {
+                startLatch.await();
+
+                // Each thread creates its own store and imports the shared memory
+                localStore = sharedRuntime.createStore(sharedEngine);
+                localLinker = sharedRuntime.createLinker(sharedEngine);
+                localLinker.defineMemory(localStore, "env", "memory", sharedMemory);
+
+                localInstance = localLinker.instantiate(localStore, importModule);
+
+                final WasmFunction atomicAdd =
+                    localInstance.getFunction("atomic_add").orElseThrow();
+
+                // Each thread atomically increments the counter
+                for (int i = 0; i < incrementsPerThread; i++) {
+                  // atomic_add returns old value, we just need to call it
+                  atomicAdd.call(WasmValue.i32(0), WasmValue.i32(1));
+                }
+
+                LOGGER.fine("Thread " + threadId + " completed " + incrementsPerThread + " adds");
+              } catch (final Exception e) {
+                LOGGER.warning("Thread " + threadId + " error: " + e.getMessage());
+                synchronized (errors) {
+                  errors.add("Thread " + threadId + ": " + e.getMessage());
+                }
+                hasError.set(true);
+              } finally {
+                // Clean up thread-local resources
+                try {
+                  if (localInstance != null) {
+                    localInstance.close();
+                  }
+                } catch (final Exception ex) {
+                  LOGGER.fine("Instance cleanup: " + ex.getMessage());
+                }
+                try {
+                  if (localLinker != null) {
+                    localLinker.close();
+                  }
+                } catch (final Exception ex) {
+                  LOGGER.fine("Linker cleanup: " + ex.getMessage());
+                }
+                try {
+                  if (localStore != null) {
+                    localStore.close();
+                  }
+                } catch (final Exception ex) {
+                  LOGGER.fine("Store cleanup: " + ex.getMessage());
+                }
+                doneLatch.countDown();
+              }
+            });
+      }
+
+      // Start all threads simultaneously
+      startLatch.countDown();
+      assertTrue(doneLatch.await(30, TimeUnit.SECONDS), "All threads should complete");
+      executor.shutdown();
+      assertTrue(
+          executor.awaitTermination(30, TimeUnit.SECONDS), "Executor should terminate gracefully");
+
+      // Report any errors
+      if (hasError.get()) {
+        LOGGER.warning("Errors occurred: " + errors);
+      }
+
+      // Verify the final value equals threadCount * incrementsPerThread
+      final WasmValue[] finalValue = atomicLoad.call(WasmValue.i32(0));
+      final int expectedValue = threadCount * incrementsPerThread;
+      final int actualValue = finalValue[0].asInt();
+
+      LOGGER.info(
+          "Concurrent atomic write test: expected="
+              + expectedValue
+              + ", actual="
+              + actualValue
+              + ", errors="
+              + hasError.get());
+
+      assertEquals(
+          expectedValue,
+          actualValue,
+          "Final value should equal threadCount * incrementsPerThread ("
+              + threadCount
+              + " * "
+              + incrementsPerThread
+              + " = "
+              + expectedValue
+              + ")");
+
+      assertTrue(!hasError.get(), "No thread should have failed");
+      LOGGER.info("Concurrent atomic write contention test passed");
     }
   }
 
