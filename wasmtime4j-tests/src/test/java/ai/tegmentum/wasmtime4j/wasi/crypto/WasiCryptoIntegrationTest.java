@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -27,8 +26,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("WASI Crypto Integration Tests")
 public class WasiCryptoIntegrationTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiCryptoIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiCryptoIntegrationTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {
@@ -67,8 +65,10 @@ public class WasiCryptoIntegrationTest {
       assertEquals(128, SymmetricAlgorithm.AES_128.getKeySize(), "AES-128 should have 128-bit key");
       assertEquals(192, SymmetricAlgorithm.AES_192.getKeySize(), "AES-192 should have 192-bit key");
       assertEquals(256, SymmetricAlgorithm.AES_256.getKeySize(), "AES-256 should have 256-bit key");
-      assertEquals(256, SymmetricAlgorithm.CHACHA20.getKeySize(), "ChaCha20 should have 256-bit key");
-      assertEquals(256, SymmetricAlgorithm.XCHACHA20.getKeySize(), "XChaCha20 should have 256-bit key");
+      assertEquals(
+          256, SymmetricAlgorithm.CHACHA20.getKeySize(), "ChaCha20 should have 256-bit key");
+      assertEquals(
+          256, SymmetricAlgorithm.XCHACHA20.getKeySize(), "XChaCha20 should have 256-bit key");
 
       LOGGER.info("Key sizes verified");
     }
@@ -95,7 +95,8 @@ public class WasiCryptoIntegrationTest {
       LOGGER.info("Testing valueOf parsing");
 
       assertEquals(SymmetricAlgorithm.AES_128, SymmetricAlgorithm.valueOf("AES_128"));
-      assertEquals(SymmetricAlgorithm.CHACHA20_POLY1305, SymmetricAlgorithm.valueOf("CHACHA20_POLY1305"));
+      assertEquals(
+          SymmetricAlgorithm.CHACHA20_POLY1305, SymmetricAlgorithm.valueOf("CHACHA20_POLY1305"));
 
       LOGGER.info("valueOf parsing verified");
     }
@@ -284,7 +285,8 @@ public class WasiCryptoIntegrationTest {
 
       assertNotNull(options, "Options should not be null");
       assertEquals(mode, options.getMode(), "Mode should match");
-      assertTrue(options.useHardwareAcceleration(), "Hardware acceleration should be true by default");
+      assertTrue(
+          options.useHardwareAcceleration(), "Hardware acceleration should be true by default");
 
       LOGGER.info("EncryptionOptions built successfully");
     }
@@ -297,9 +299,7 @@ public class WasiCryptoIntegrationTest {
       EncryptionMode mode = EncryptionMode.values()[0];
       byte[] iv = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 
-      EncryptionOptions options = EncryptionOptions.builder(mode)
-          .iv(iv)
-          .build();
+      EncryptionOptions options = EncryptionOptions.builder(mode).iv(iv).build();
 
       assertTrue(options.getIv().isPresent(), "IV should be present");
       assertArrayEquals(iv, options.getIv().get(), "IV should match");
@@ -315,9 +315,7 @@ public class WasiCryptoIntegrationTest {
       EncryptionMode mode = EncryptionMode.values()[0];
       byte[] aad = new byte[] {0x41, 0x41, 0x44}; // "AAD"
 
-      EncryptionOptions options = EncryptionOptions.builder(mode)
-          .additionalData(aad)
-          .build();
+      EncryptionOptions options = EncryptionOptions.builder(mode).additionalData(aad).build();
 
       assertTrue(options.getAdditionalData().isPresent(), "AAD should be present");
       assertArrayEquals(aad, options.getAdditionalData().get(), "AAD should match");
@@ -332,9 +330,8 @@ public class WasiCryptoIntegrationTest {
 
       EncryptionMode mode = EncryptionMode.values()[0];
 
-      EncryptionOptions options = EncryptionOptions.builder(mode)
-          .useHardwareAcceleration(false)
-          .build();
+      EncryptionOptions options =
+          EncryptionOptions.builder(mode).useHardwareAcceleration(false).build();
 
       assertFalse(options.useHardwareAcceleration(), "Hardware acceleration should be disabled");
 
@@ -348,9 +345,7 @@ public class WasiCryptoIntegrationTest {
 
       EncryptionMode mode = EncryptionMode.values()[0];
 
-      EncryptionOptions options = EncryptionOptions.builder(mode)
-          .iv(null)
-          .build();
+      EncryptionOptions options = EncryptionOptions.builder(mode).iv(null).build();
 
       assertFalse(options.getIv().isPresent(), "IV should not be present");
 
@@ -365,9 +360,7 @@ public class WasiCryptoIntegrationTest {
       EncryptionMode mode = EncryptionMode.values()[0];
       byte[] iv = new byte[] {1, 2, 3, 4};
 
-      EncryptionOptions options = EncryptionOptions.builder(mode)
-          .iv(iv)
-          .build();
+      EncryptionOptions options = EncryptionOptions.builder(mode).iv(iv).build();
 
       // Modify original array
       iv[0] = 99;
@@ -392,8 +385,11 @@ public class WasiCryptoIntegrationTest {
       SignatureOptions options = SignatureOptions.builder().build();
 
       assertNotNull(options, "Options should not be null");
-      assertTrue(options.useHardwareAcceleration(), "Hardware acceleration should be true by default");
-      assertTrue(options.useDeterministicSignatures(), "Deterministic signatures should be true by default");
+      assertTrue(
+          options.useHardwareAcceleration(), "Hardware acceleration should be true by default");
+      assertTrue(
+          options.useDeterministicSignatures(),
+          "Deterministic signatures should be true by default");
       assertFalse(options.isPrehashed(), "Prehashed should be false by default");
 
       LOGGER.info("SignatureOptions built successfully");
@@ -404,12 +400,12 @@ public class WasiCryptoIntegrationTest {
     void shouldBuildSignatureOptionsWithPrehash() {
       LOGGER.info("Testing SignatureOptions with prehash");
 
-      SignatureOptions options = SignatureOptions.builder()
-          .prehashed(HashAlgorithm.SHA_256)
-          .build();
+      SignatureOptions options =
+          SignatureOptions.builder().prehashed(HashAlgorithm.SHA_256).build();
 
       assertTrue(options.isPrehashed(), "Prehashed should be true");
-      assertEquals(HashAlgorithm.SHA_256, options.getPrehashAlgorithm(), "Prehash algorithm should match");
+      assertEquals(
+          HashAlgorithm.SHA_256, options.getPrehashAlgorithm(), "Prehash algorithm should match");
 
       LOGGER.info("SignatureOptions with prehash verified");
     }
@@ -432,9 +428,7 @@ public class WasiCryptoIntegrationTest {
     void shouldBuildSignatureOptionsWithoutHardwareAcceleration() {
       LOGGER.info("Testing SignatureOptions without hardware acceleration");
 
-      SignatureOptions options = SignatureOptions.builder()
-          .useHardwareAcceleration(false)
-          .build();
+      SignatureOptions options = SignatureOptions.builder().useHardwareAcceleration(false).build();
 
       assertFalse(options.useHardwareAcceleration(), "Hardware acceleration should be disabled");
 
@@ -446,11 +440,10 @@ public class WasiCryptoIntegrationTest {
     void shouldBuildSignatureOptionsWithoutDeterministicSignatures() {
       LOGGER.info("Testing SignatureOptions without deterministic signatures");
 
-      SignatureOptions options = SignatureOptions.builder()
-          .deterministicSignatures(false)
-          .build();
+      SignatureOptions options = SignatureOptions.builder().deterministicSignatures(false).build();
 
-      assertFalse(options.useDeterministicSignatures(), "Deterministic signatures should be disabled");
+      assertFalse(
+          options.useDeterministicSignatures(), "Deterministic signatures should be disabled");
 
       LOGGER.info("SignatureOptions without deterministic signatures verified");
     }

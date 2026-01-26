@@ -768,7 +768,8 @@ public class ProfilingIntegrationTest {
 
       assertTrue(types.length >= 4, "Should have at least 4 hot spot types");
       assertNotNull(PerformanceInsights.HotSpotType.HIGH_CPU_TIME, "HIGH_CPU_TIME should exist");
-      assertNotNull(PerformanceInsights.HotSpotType.HIGH_CALL_COUNT, "HIGH_CALL_COUNT should exist");
+      assertNotNull(
+          PerformanceInsights.HotSpotType.HIGH_CALL_COUNT, "HIGH_CALL_COUNT should exist");
       assertNotNull(PerformanceInsights.HotSpotType.HIGH_MEMORY, "HIGH_MEMORY should exist");
       assertNotNull(PerformanceInsights.HotSpotType.DEEP_STACK, "DEEP_STACK should exist");
 
@@ -823,13 +824,13 @@ public class ProfilingIntegrationTest {
 
           assertNotNull(summary, "Summary should not be null");
           assertEquals(1, summary.getTotalCalls(), "Total calls should be 1");
-          assertEquals(Duration.ofMillis(100), summary.getTotalTime(), "Total time should be 100ms");
+          assertEquals(
+              Duration.ofMillis(100), summary.getTotalTime(), "Total time should be 100ms");
           assertEquals(1024, summary.getTotalMemory(), "Total memory should be 1024");
           assertTrue(summary.getAvgCallTimeNanos() > 0, "Avg call time should be positive");
           assertTrue(summary.getHotSpotCount() >= 0, "Hot spot count should be non-negative");
           assertTrue(
-              summary.getHotSpotCoveragePercent() >= 0,
-              "Hot spot coverage should be non-negative");
+              summary.getHotSpotCoveragePercent() >= 0, "Hot spot coverage should be non-negative");
 
           String str = summary.toString();
           assertTrue(str.contains("PerformanceSummary"), "toString should contain class name");

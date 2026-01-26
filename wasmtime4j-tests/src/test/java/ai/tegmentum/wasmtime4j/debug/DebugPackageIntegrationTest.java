@@ -32,7 +32,6 @@ import ai.tegmentum.wasmtime4j.debug.GuestProfiler.ProfileFormat;
 import ai.tegmentum.wasmtime4j.debug.ProfileData.FunctionProfile;
 import ai.tegmentum.wasmtime4j.debug.WasmCoreDump.MemoryDump;
 import ai.tegmentum.wasmtime4j.debug.WasmCoreDump.StackFrame;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,7 +58,8 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("Debug Package Integration Tests")
 class DebugPackageIntegrationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(DebugPackageIntegrationTest.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(DebugPackageIntegrationTest.class.getName());
 
   @Nested
   @DisplayName("ProfilerConfig Tests")
@@ -73,10 +73,13 @@ class DebugPackageIntegrationTest {
       final ProfilerConfig config = ProfilerConfig.defaults();
 
       assertTrue(config.isTrackFunctionCalls(), "Function calls should be tracked by default");
-      assertFalse(config.isTrackMemoryOperations(), "Memory operations should not be tracked by default");
-      assertFalse(config.isTrackInstructionCount(), "Instruction count should not be tracked by default");
+      assertFalse(
+          config.isTrackMemoryOperations(), "Memory operations should not be tracked by default");
+      assertFalse(
+          config.isTrackInstructionCount(), "Instruction count should not be tracked by default");
       assertTrue(config.isTrackStackDepth(), "Stack depth should be tracked by default");
-      assertEquals(1_000_000, config.getSamplingIntervalNanos(), "Default sampling interval should be 1ms");
+      assertEquals(
+          1_000_000, config.getSamplingIntervalNanos(), "Default sampling interval should be 1ms");
       assertEquals(128, config.getMaxStackFrames(), "Default max stack frames should be 128");
     }
 
@@ -88,8 +91,10 @@ class DebugPackageIntegrationTest {
       final ProfilerConfig config = ProfilerConfig.builder().build();
 
       assertEquals(ProfilerConfig.defaults().isTrackFunctionCalls(), config.isTrackFunctionCalls());
-      assertEquals(ProfilerConfig.defaults().isTrackMemoryOperations(), config.isTrackMemoryOperations());
-      assertEquals(ProfilerConfig.defaults().getSamplingIntervalNanos(), config.getSamplingIntervalNanos());
+      assertEquals(
+          ProfilerConfig.defaults().isTrackMemoryOperations(), config.isTrackMemoryOperations());
+      assertEquals(
+          ProfilerConfig.defaults().getSamplingIntervalNanos(), config.getSamplingIntervalNanos());
     }
 
     @Test
@@ -162,7 +167,8 @@ class DebugPackageIntegrationTest {
 
       final ProfilerConfig config = ProfilerConfig.builder().samplingIntervalNanos(0).build();
 
-      assertEquals(0, config.getSamplingIntervalNanos(), "Zero sampling interval should be accepted");
+      assertEquals(
+          0, config.getSamplingIntervalNanos(), "Zero sampling interval should be accepted");
     }
 
     @Test
@@ -186,9 +192,10 @@ class DebugPackageIntegrationTest {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
       final Duration duration = Duration.ofMillis(1500);
-      final List<FunctionProfile> profiles = Arrays.asList(
-          new FunctionProfile("main", 0, 100, Duration.ofMillis(500), Duration.ofMillis(200)),
-          new FunctionProfile("helper", 1, 50, Duration.ofMillis(200), Duration.ofMillis(150)));
+      final List<FunctionProfile> profiles =
+          Arrays.asList(
+              new FunctionProfile("main", 0, 100, Duration.ofMillis(500), Duration.ofMillis(200)),
+              new FunctionProfile("helper", 1, 50, Duration.ofMillis(200), Duration.ofMillis(150)));
       final Map<String, Long> metrics = new HashMap<>();
       metrics.put("custom_metric", 42L);
 
@@ -209,14 +216,17 @@ class DebugPackageIntegrationTest {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
       final List<FunctionProfile> profiles = new ArrayList<>();
-      profiles.add(new FunctionProfile("main", 0, 100, Duration.ofMillis(500), Duration.ofMillis(200)));
+      profiles.add(
+          new FunctionProfile("main", 0, 100, Duration.ofMillis(500), Duration.ofMillis(200)));
 
       final ProfileData data =
           new ProfileData(Duration.ZERO, 0, 0, 0, profiles, Collections.emptyMap());
 
       assertThrows(
           UnsupportedOperationException.class,
-          () -> data.getFunctionProfiles().add(new FunctionProfile("new", 1, 1, Duration.ZERO, Duration.ZERO)),
+          () ->
+              data.getFunctionProfiles()
+                  .add(new FunctionProfile("new", 1, 1, Duration.ZERO, Duration.ZERO)),
           "Function profiles list should be unmodifiable");
     }
 
@@ -265,11 +275,7 @@ class DebugPackageIntegrationTest {
 
       final FunctionProfile profile =
           new FunctionProfile(
-              "testFunction",
-              42,
-              1000,
-              Duration.ofMillis(500),
-              Duration.ofMillis(250));
+              "testFunction", 42, 1000, Duration.ofMillis(500), Duration.ofMillis(250));
 
       assertEquals("testFunction", profile.getFunctionName());
       assertEquals(42, profile.getFunctionIndex());
@@ -297,8 +303,7 @@ class DebugPackageIntegrationTest {
     void shouldHandleNullFunctionName(final TestInfo testInfo) {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
-      final FunctionProfile profile =
-          new FunctionProfile(null, 0, 0, Duration.ZERO, Duration.ZERO);
+      final FunctionProfile profile = new FunctionProfile(null, 0, 0, Duration.ZERO, Duration.ZERO);
 
       assertNull(profile.getFunctionName(), "Null function name should be preserved");
     }
@@ -308,8 +313,7 @@ class DebugPackageIntegrationTest {
   @DisplayName("WasmCoreDump Tests")
   class WasmCoreDumpTests {
 
-    @TempDir
-    Path tempDir;
+    @TempDir Path tempDir;
 
     @Test
     @DisplayName("should create core dump with all fields")
@@ -396,7 +400,8 @@ class DebugPackageIntegrationTest {
       final String content = new String(serialized, StandardCharsets.UTF_8);
 
       assertTrue(content.contains("WASMCOREDUMP"), "Serialized data should contain header");
-      assertTrue(content.contains("test trap message"), "Serialized data should contain trap message");
+      assertTrue(
+          content.contains("test trap message"), "Serialized data should contain trap message");
       assertTrue(content.contains("test_global"), "Serialized data should contain global name");
       assertTrue(content.contains("42"), "Serialized data should contain global value");
     }
@@ -821,7 +826,10 @@ class DebugPackageIntegrationTest {
       profiles.add(new FunctionProfile("added", 1, 1, Duration.ZERO, Duration.ZERO));
 
       // ProfileData should still have only 1 profile
-      assertEquals(1, data.getFunctionProfiles().size(), "ProfileData should not be affected by external modification");
+      assertEquals(
+          1,
+          data.getFunctionProfiles().size(),
+          "ProfileData should not be affected by external modification");
     }
 
     @Test
@@ -839,7 +847,10 @@ class DebugPackageIntegrationTest {
       metrics.put("added", 2L);
 
       // ProfileData should still have only 1 metric
-      assertEquals(1, data.getCustomMetrics().size(), "ProfileData should not be affected by external modification");
+      assertEquals(
+          1,
+          data.getCustomMetrics().size(),
+          "ProfileData should not be affected by external modification");
     }
 
     @Test
@@ -852,17 +863,15 @@ class DebugPackageIntegrationTest {
 
       final WasmCoreDump dump =
           new WasmCoreDump(
-              "trap",
-              null,
-              Instant.now(),
-              dumps,
-              Collections.emptyMap(),
-              Collections.emptyList());
+              "trap", null, Instant.now(), dumps, Collections.emptyMap(), Collections.emptyList());
 
       // Try to modify the original list
       dumps.add(new MemoryDump(1, new byte[20], 0));
 
-      assertEquals(1, dump.getMemoryDumps().size(), "WasmCoreDump should not be affected by external modification");
+      assertEquals(
+          1,
+          dump.getMemoryDumps().size(),
+          "WasmCoreDump should not be affected by external modification");
     }
 
     @Test

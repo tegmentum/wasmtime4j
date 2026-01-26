@@ -128,8 +128,7 @@ public class UtilPackageIntegrationTest {
       // HealthCheck has private constructor that throws AssertionError
       // We can verify it has private constructor through reflection
       try {
-        java.lang.reflect.Constructor<?> constructor =
-            HealthCheck.class.getDeclaredConstructor();
+        java.lang.reflect.Constructor<?> constructor = HealthCheck.class.getDeclaredConstructor();
         assertTrue(
             java.lang.reflect.Modifier.isPrivate(constructor.getModifiers()),
             "Constructor should be private");
@@ -182,8 +181,7 @@ public class UtilPackageIntegrationTest {
       assertNotNull(summary, "Runtime summary should not be null");
       assertFalse(summary.isEmpty(), "Runtime summary should not be empty");
       assertTrue(
-          summary.startsWith("Runtime Summary:"),
-          "Summary should start with 'Runtime Summary:'");
+          summary.startsWith("Runtime Summary:"), "Summary should start with 'Runtime Summary:'");
 
       LOGGER.info("Runtime summary: " + summary);
     }
@@ -268,8 +266,7 @@ public class UtilPackageIntegrationTest {
     void shouldCreateFixedDelayRetryConfig() {
       LOGGER.info("Testing fixed delay RetryConfig creation");
 
-      ErrorRecoveryManager.RetryConfig config =
-          ErrorRecoveryManager.RetryConfig.fixedDelay(5, 200);
+      ErrorRecoveryManager.RetryConfig config = ErrorRecoveryManager.RetryConfig.fixedDelay(5, 200);
 
       assertNotNull(config, "Fixed delay config should not be null");
       assertEquals(5, config.getMaxRetries(), "Max retries should be 5");
@@ -467,8 +464,7 @@ public class UtilPackageIntegrationTest {
             return "success after retries";
           };
 
-      ErrorRecoveryManager.RetryConfig config =
-          ErrorRecoveryManager.RetryConfig.fixedDelay(5, 10);
+      ErrorRecoveryManager.RetryConfig config = ErrorRecoveryManager.RetryConfig.fixedDelay(5, 10);
 
       ErrorRecoveryManager.RetryResult<String> result =
           ErrorRecoveryManager.executeWithRetry(operation, config, "retry_test");
@@ -491,8 +487,7 @@ public class UtilPackageIntegrationTest {
             throw new java.lang.RuntimeException("Connection timeout - always fails");
           };
 
-      ErrorRecoveryManager.RetryConfig config =
-          ErrorRecoveryManager.RetryConfig.fixedDelay(2, 10);
+      ErrorRecoveryManager.RetryConfig config = ErrorRecoveryManager.RetryConfig.fixedDelay(2, 10);
 
       ErrorRecoveryManager.RetryResult<String> result =
           ErrorRecoveryManager.executeWithRetry(operation, config, "fail_test");
@@ -537,8 +532,7 @@ public class UtilPackageIntegrationTest {
             return "should not reach";
           };
 
-      ErrorRecoveryManager.RetryConfig config =
-          ErrorRecoveryManager.RetryConfig.fixedDelay(0, 10);
+      ErrorRecoveryManager.RetryConfig config = ErrorRecoveryManager.RetryConfig.fixedDelay(0, 10);
 
       ErrorRecoveryManager.RetryResult<String> result =
           ErrorRecoveryManager.executeWithRetry(operation, config, "zero_retry_test");
@@ -597,8 +591,7 @@ public class UtilPackageIntegrationTest {
             throw new java.lang.RuntimeException("Invalid data - this is permanent");
           };
 
-      ErrorRecoveryManager.RetryConfig config =
-          ErrorRecoveryManager.RetryConfig.fixedDelay(5, 10);
+      ErrorRecoveryManager.RetryConfig config = ErrorRecoveryManager.RetryConfig.fixedDelay(5, 10);
 
       ErrorRecoveryManager.RetryResult<String> result =
           ErrorRecoveryManager.executeWithRetry(operation, config, "non_recoverable_test");
@@ -623,8 +616,7 @@ public class UtilPackageIntegrationTest {
       Supplier<String> primary = () -> "primary result";
       Supplier<String> fallback = () -> "fallback result";
 
-      String result =
-          ErrorRecoveryManager.executeWithFallback(primary, fallback, "fallback_test");
+      String result = ErrorRecoveryManager.executeWithFallback(primary, fallback, "fallback_test");
 
       assertEquals("primary result", result, "Should return primary result");
 
@@ -643,8 +635,7 @@ public class UtilPackageIntegrationTest {
           };
       Supplier<String> fallback = () -> "fallback result";
 
-      String result =
-          ErrorRecoveryManager.executeWithFallback(primary, fallback, "fallback_test");
+      String result = ErrorRecoveryManager.executeWithFallback(primary, fallback, "fallback_test");
 
       assertEquals("fallback result", result, "Should return fallback result");
 
@@ -705,8 +696,7 @@ public class UtilPackageIntegrationTest {
     void shouldReturnResultWhenValidationPasses() throws WasmException {
       LOGGER.info("Testing validateResult - validation passes");
 
-      String result =
-          ErrorRecoveryManager.validateResult("valid", value -> null);
+      String result = ErrorRecoveryManager.validateResult("valid", value -> null);
 
       assertEquals("valid", result, "Should return the valid result");
 
@@ -763,8 +753,7 @@ public class UtilPackageIntegrationTest {
 
       Supplier<String> operation = () -> "circuit breaker success";
 
-      String result =
-          ErrorRecoveryManager.executeWithCircuitBreaker(operation, 0.5, 10, "cb_test");
+      String result = ErrorRecoveryManager.executeWithCircuitBreaker(operation, 0.5, 10, "cb_test");
 
       assertEquals("circuit breaker success", result, "Should return operation result");
 

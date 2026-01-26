@@ -26,8 +26,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("WASI Clocks Integration Tests")
 public class WasiClocksIntegrationTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiClocksIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiClocksIntegrationTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {
@@ -144,7 +143,8 @@ public class WasiClocksIntegrationTest {
 
       assertEquals(dt1.hashCode(), dt2.hashCode(), "Equal objects should have same hashCode");
       // Different objects may have same hashCode (not a requirement, but useful to check)
-      assertNotEquals(dt1.hashCode(), dt3.hashCode(), "Different objects likely have different hashCode");
+      assertNotEquals(
+          dt1.hashCode(), dt3.hashCode(), "Different objects likely have different hashCode");
 
       LOGGER.info("HashCode implementation verified");
     }
@@ -391,7 +391,8 @@ public class WasiClocksIntegrationTest {
       LOGGER.info("Testing WasiMonotonicClock interface definition");
 
       assertNotNull(WasiMonotonicClock.class, "WasiMonotonicClock interface should exist");
-      assertTrue(WasiMonotonicClock.class.isInterface(), "WasiMonotonicClock should be an interface");
+      assertTrue(
+          WasiMonotonicClock.class.isInterface(), "WasiMonotonicClock should be an interface");
 
       LOGGER.info("WasiMonotonicClock interface verified");
     }

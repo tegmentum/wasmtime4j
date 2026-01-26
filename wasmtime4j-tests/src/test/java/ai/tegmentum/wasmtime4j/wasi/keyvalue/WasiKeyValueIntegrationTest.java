@@ -61,9 +61,7 @@ public class WasiKeyValueIntegrationTest {
     void shouldBuildEntryWithVersion() {
       LOGGER.info("Testing KeyValueEntry with version");
 
-      KeyValueEntry entry = KeyValueEntry.builder("key", "value".getBytes())
-          .version(42)
-          .build();
+      KeyValueEntry entry = KeyValueEntry.builder("key", "value".getBytes()).version(42).build();
 
       assertEquals(42, entry.getVersion(), "Version should match");
 
@@ -78,11 +76,12 @@ public class WasiKeyValueIntegrationTest {
       Instant now = Instant.now();
       Instant future = now.plusSeconds(3600);
 
-      KeyValueEntry entry = KeyValueEntry.builder("key", "value".getBytes())
-          .createdAt(now)
-          .modifiedAt(now)
-          .expiresAt(future)
-          .build();
+      KeyValueEntry entry =
+          KeyValueEntry.builder("key", "value".getBytes())
+              .createdAt(now)
+              .modifiedAt(now)
+              .expiresAt(future)
+              .build();
 
       assertTrue(entry.getCreatedAt().isPresent(), "Created at should be present");
       assertTrue(entry.getModifiedAt().isPresent(), "Modified at should be present");
@@ -145,9 +144,8 @@ public class WasiKeyValueIntegrationTest {
       LOGGER.info("Testing KeyValueEntry expiration detection");
 
       Instant past = Instant.now().minusSeconds(3600);
-      KeyValueEntry entry = KeyValueEntry.builder("key", "value".getBytes())
-          .expiresAt(past)
-          .build();
+      KeyValueEntry entry =
+          KeyValueEntry.builder("key", "value".getBytes()).expiresAt(past).build();
 
       assertTrue(entry.isExpired(), "Entry should be expired");
 
@@ -160,9 +158,8 @@ public class WasiKeyValueIntegrationTest {
       LOGGER.info("Testing KeyValueEntry non-expiration");
 
       Instant future = Instant.now().plusSeconds(3600);
-      KeyValueEntry entry = KeyValueEntry.builder("key", "value".getBytes())
-          .expiresAt(future)
-          .build();
+      KeyValueEntry entry =
+          KeyValueEntry.builder("key", "value".getBytes()).expiresAt(future).build();
 
       assertFalse(entry.isExpired(), "Entry should not be expired");
 
@@ -186,15 +183,9 @@ public class WasiKeyValueIntegrationTest {
     void shouldImplementEqualsBasedOnKeyAndVersion() {
       LOGGER.info("Testing KeyValueEntry equals");
 
-      KeyValueEntry entry1 = KeyValueEntry.builder("key", "value1".getBytes())
-          .version(1)
-          .build();
-      KeyValueEntry entry2 = KeyValueEntry.builder("key", "value2".getBytes())
-          .version(1)
-          .build();
-      KeyValueEntry entry3 = KeyValueEntry.builder("key", "value1".getBytes())
-          .version(2)
-          .build();
+      KeyValueEntry entry1 = KeyValueEntry.builder("key", "value1".getBytes()).version(1).build();
+      KeyValueEntry entry2 = KeyValueEntry.builder("key", "value2".getBytes()).version(1).build();
+      KeyValueEntry entry3 = KeyValueEntry.builder("key", "value1".getBytes()).version(2).build();
 
       assertEquals(entry1, entry2, "Entries with same key and version should be equal");
       assertNotEquals(entry1, entry3, "Entries with different versions should not be equal");
@@ -207,12 +198,8 @@ public class WasiKeyValueIntegrationTest {
     void shouldImplementHashCodeBasedOnKeyAndVersion() {
       LOGGER.info("Testing KeyValueEntry hashCode");
 
-      KeyValueEntry entry1 = KeyValueEntry.builder("key", "value1".getBytes())
-          .version(1)
-          .build();
-      KeyValueEntry entry2 = KeyValueEntry.builder("key", "value2".getBytes())
-          .version(1)
-          .build();
+      KeyValueEntry entry1 = KeyValueEntry.builder("key", "value1".getBytes()).version(1).build();
+      KeyValueEntry entry2 = KeyValueEntry.builder("key", "value2".getBytes()).version(1).build();
 
       assertEquals(entry1.hashCode(), entry2.hashCode(), "Equal entries should have same hashCode");
 
@@ -224,9 +211,8 @@ public class WasiKeyValueIntegrationTest {
     void shouldHaveMeaningfulToString() {
       LOGGER.info("Testing KeyValueEntry toString");
 
-      KeyValueEntry entry = KeyValueEntry.builder("test-key", "value".getBytes())
-          .version(5)
-          .build();
+      KeyValueEntry entry =
+          KeyValueEntry.builder("test-key", "value".getBytes()).version(5).build();
 
       String str = entry.toString();
       assertTrue(str.contains("test-key"), "toString should contain key");

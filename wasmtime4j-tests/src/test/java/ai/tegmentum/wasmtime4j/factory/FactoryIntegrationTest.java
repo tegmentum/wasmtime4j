@@ -6,7 +6,6 @@
 package ai.tegmentum.wasmtime4j.factory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -137,10 +136,7 @@ public class FactoryIntegrationTest {
 
       // The detected version should reasonably correspond to the system version
       LOGGER.info(
-          "System version: "
-              + systemVersion
-              + ", detected major version: "
-              + detectedVersion);
+          "System version: " + systemVersion + ", detected major version: " + detectedVersion);
     }
   }
 
@@ -178,11 +174,9 @@ public class FactoryIntegrationTest {
       boolean jniAvailable = WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI);
       boolean panamaAvailable = WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
 
-      assertTrue(
-          jniAvailable || panamaAvailable, "At least one runtime should be available");
+      assertTrue(jniAvailable || panamaAvailable, "At least one runtime should be available");
 
-      LOGGER.info(
-          "Runtime availability - JNI: " + jniAvailable + ", Panama: " + panamaAvailable);
+      LOGGER.info("Runtime availability - JNI: " + jniAvailable + ", Panama: " + panamaAvailable);
     }
 
     @Test
@@ -560,8 +554,7 @@ public class FactoryIntegrationTest {
             new Thread(
                 () -> {
                   jniResults[index] = WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI);
-                  panamaResults[index] =
-                      WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
+                  panamaResults[index] = WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
                 });
       }
 

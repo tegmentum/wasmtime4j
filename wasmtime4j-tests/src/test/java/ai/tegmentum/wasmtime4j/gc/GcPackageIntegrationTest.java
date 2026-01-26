@@ -269,8 +269,14 @@ class GcPackageIntegrationTest {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
       assertEquals(42, I31Type.clampValue(42), "In-range value should not be clamped");
-      assertEquals(I31Type.MAX_VALUE, I31Type.clampValue(Integer.MAX_VALUE), "Above max should clamp to max");
-      assertEquals(I31Type.MIN_VALUE, I31Type.clampValue(Integer.MIN_VALUE), "Below min should clamp to min");
+      assertEquals(
+          I31Type.MAX_VALUE,
+          I31Type.clampValue(Integer.MAX_VALUE),
+          "Above max should clamp to max");
+      assertEquals(
+          I31Type.MIN_VALUE,
+          I31Type.clampValue(Integer.MIN_VALUE),
+          "Below min should clamp to min");
     }
 
     @Test
@@ -618,7 +624,8 @@ class GcPackageIntegrationTest {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
       assertThrows(
-          IllegalArgumentException.class, () -> new FieldDefinition("test", FieldType.i32(), true, -1));
+          IllegalArgumentException.class,
+          () -> new FieldDefinition("test", FieldType.i32(), true, -1));
     }
 
     @Test
@@ -794,17 +801,24 @@ class GcPackageIntegrationTest {
     void shouldCheckSubtypingCorrectly(final TestInfo testInfo) {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
-      final ArrayType mutableArray = ArrayType.builder("Mut").elementType(FieldType.i32()).mutable(true).build();
-      final ArrayType immutableArray = ArrayType.builder("Immut").elementType(FieldType.i32()).immutable().build();
+      final ArrayType mutableArray =
+          ArrayType.builder("Mut").elementType(FieldType.i32()).mutable(true).build();
+      final ArrayType immutableArray =
+          ArrayType.builder("Immut").elementType(FieldType.i32()).immutable().build();
 
       // An array is a subtype of itself
       assertTrue(mutableArray.isSubtypeOf(mutableArray));
 
       // Note: Since ArrayType.equals() compares by typeId only, and both arrays have typeId=0,
       // they are considered equal, so isSubtypeOf returns true via the equals short-circuit.
-      // This tests the behavior as implemented - both arrays are "equal" from the runtime's perspective.
-      assertTrue(immutableArray.isSubtypeOf(mutableArray), "Same typeId means equal, so subtype check passes");
-      assertTrue(mutableArray.isSubtypeOf(immutableArray), "Same typeId means equal, so subtype check passes");
+      // This tests the behavior as implemented - both arrays are "equal" from the runtime's
+      // perspective.
+      assertTrue(
+          immutableArray.isSubtypeOf(mutableArray),
+          "Same typeId means equal, so subtype check passes");
+      assertTrue(
+          mutableArray.isSubtypeOf(immutableArray),
+          "Same typeId means equal, so subtype check passes");
     }
 
     @Test
@@ -832,7 +846,8 @@ class GcPackageIntegrationTest {
     void shouldFormatToStringCorrectly(final TestInfo testInfo) {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
-      final ArrayType mutableArray = ArrayType.builder("IntArray").elementType(FieldType.i32()).mutable(true).build();
+      final ArrayType mutableArray =
+          ArrayType.builder("IntArray").elementType(FieldType.i32()).mutable(true).build();
       final String str = mutableArray.toString();
 
       assertTrue(str.contains("array"));

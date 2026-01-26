@@ -139,8 +139,7 @@ public class OptimizationIntegrationTest {
     void shouldHaveAllExpectedAllocationStrategies() {
       LOGGER.info("Testing AllocationStrategy enum values");
 
-      MemoryOptimizer.AllocationStrategy[] strategies =
-          MemoryOptimizer.AllocationStrategy.values();
+      MemoryOptimizer.AllocationStrategy[] strategies = MemoryOptimizer.AllocationStrategy.values();
 
       assertEquals(4, strategies.length, "Should have 4 allocation strategies");
       assertNotNull(MemoryOptimizer.AllocationStrategy.HEAP, "HEAP should exist");
@@ -245,9 +244,7 @@ public class OptimizationIntegrationTest {
             optimizer.getRecommendedStrategy(100, StringBuilder.class);
 
         assertEquals(
-            MemoryOptimizer.AllocationStrategy.HEAP,
-            strategy,
-            "Should return HEAP when disabled");
+            MemoryOptimizer.AllocationStrategy.HEAP, strategy, "Should return HEAP when disabled");
       } finally {
         MemoryOptimizer.setEnabled(true);
       }
@@ -626,9 +623,7 @@ public class OptimizationIntegrationTest {
 
         String stats = optimizer.getStatistics();
 
-        assertTrue(
-            stats.contains("disabled"),
-            "Statistics should indicate disabled: " + stats);
+        assertTrue(stats.contains("disabled"), "Statistics should indicate disabled: " + stats);
       } finally {
         MemoryOptimizer.setEnabled(true);
       }

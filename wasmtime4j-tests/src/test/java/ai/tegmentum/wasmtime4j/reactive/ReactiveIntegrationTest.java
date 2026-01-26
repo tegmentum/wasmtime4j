@@ -555,7 +555,8 @@ public class ReactiveIntegrationTest {
       publisher.subscribe(subscriber);
 
       assertNotNull(capturedError.get(), "Error should be captured");
-      assertEquals("Simulated error", capturedError.get().getMessage(), "Error message should match");
+      assertEquals(
+          "Simulated error", capturedError.get().getMessage(), "Error message should match");
       assertTrue(!completed.get(), "Should not complete after error");
 
       LOGGER.info("Error propagation verified");
