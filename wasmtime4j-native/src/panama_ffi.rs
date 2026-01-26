@@ -1331,6 +1331,43 @@ pub mod store {
         })
     }
 
+    /// Epoch deadline callback function pointer type for Panama FFI.
+    ///
+    /// # Parameters
+    /// * `callback_id` - i64 - Identifier passed back to the callback (for Java to identify the callback)
+    /// * `epoch` - u64 - Current epoch value (reserved for future use)
+    ///
+    /// # Returns
+    /// * Positive i64: Continue execution and add this many ticks to the deadline
+    /// * Negative i64: Trap execution
+    type EpochDeadlineCallbackFn = extern "C" fn(callback_id: i64, epoch: u64) -> i64;
+
+    /// Set epoch deadline callback with function pointer (Panama FFI version)
+    ///
+    /// This allows setting a callback function that will be invoked when the epoch
+    /// deadline is reached. The callback can decide to continue execution by returning
+    /// a positive delta, or trap by returning a negative value.
+    ///
+    /// # Arguments
+    /// * `store_ptr` - Pointer to the store
+    /// * `callback_fn` - Function pointer for the epoch deadline callback
+    /// * `callback_id` - Identifier passed to the callback (for Java to identify the callback)
+    ///
+    /// # Returns
+    /// 0 on success, non-zero error code on failure
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_store_set_epoch_deadline_callback_fn(
+        store_ptr: *mut c_void,
+        callback_fn: EpochDeadlineCallbackFn,
+        callback_id: i64,
+    ) -> c_int {
+        ffi_utils::ffi_try_code(|| {
+            let store = unsafe { core::get_store_ref(store_ptr)? };
+            core::epoch_deadline_callback_with_fn(store, callback_fn, callback_id)?;
+            Ok(())
+        })
+    }
+
     /// Configure epoch deadline to yield and update (Panama FFI version)
     ///
     /// This configures the store to yield when the epoch deadline is reached,

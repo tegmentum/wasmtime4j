@@ -2375,16 +2375,157 @@ pub mod jni_store {
         });
     }
 
-    /// Configure epoch deadline callback (uses trap as default implementation)
+    // Static storage for JNI epoch callbacks
+    static JNI_EPOCH_CALLBACKS: std::sync::OnceLock<std::sync::Mutex<std::collections::HashMap<i64, JniEpochCallbackContext>>> = std::sync::OnceLock::new();
+
+    struct JniEpochCallbackContext {
+        jvm: std::sync::Arc<jni::JavaVM>,
+        jni_store_global: jni::objects::GlobalRef,
+    }
+
+    fn get_jni_epoch_callbacks() -> &'static std::sync::Mutex<std::collections::HashMap<i64, JniEpochCallbackContext>> {
+        JNI_EPOCH_CALLBACKS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+    }
+
+    fn register_jni_epoch_callback(callback_id: i64, jvm: std::sync::Arc<jni::JavaVM>, jni_store_global: jni::objects::GlobalRef) {
+        let mut callbacks = get_jni_epoch_callbacks().lock().unwrap();
+        callbacks.insert(callback_id, JniEpochCallbackContext { jvm, jni_store_global });
+    }
+
+    pub(crate) fn unregister_jni_epoch_callback(callback_id: i64) {
+        let mut callbacks = get_jni_epoch_callbacks().lock().unwrap();
+        callbacks.remove(&callback_id);
+    }
+
+    /// Dispatch function for JNI epoch callbacks
+    fn jni_epoch_callback_dispatch(callback_id: i64, _epoch: u64) -> i64 {
+        // Clone the JVM Arc and global ref outside the lock to avoid holding the lock during JNI calls
+        let (jvm, global_ref_ptr) = {
+            let callbacks = match get_jni_epoch_callbacks().lock() {
+                Ok(cb) => cb,
+                Err(e) => {
+                    log::error!("Failed to lock epoch callbacks: {}", e);
+                    return -1; // Trap
+                }
+            };
+
+            match callbacks.get(&callback_id) {
+                Some(ctx) => {
+                    // Clone the Arc<JavaVM> and store the raw pointer to the global ref
+                    // We'll create a new GlobalRef from the same object in the attached thread
+                    (ctx.jvm.clone(), ctx.jni_store_global.as_obj().as_raw() as usize)
+                },
+                None => {
+                    log::warn!("No JNI epoch callback found for ID: {}", callback_id);
+                    return -1; // Trap
+                }
+            }
+        };
+
+        // Attach to JVM and call the Java callback
+        let result = match jvm.attach_current_thread() {
+            Ok(mut env) => {
+                // Reconstruct the JObject from the raw pointer
+                // Safety: The global ref is kept alive by the JniEpochCallbackContext
+                let jni_store_obj = unsafe {
+                    jni::objects::JObject::from_raw(global_ref_ptr as jni::sys::jobject)
+                };
+
+                // Call onEpochDeadlineReached on the JniStore object
+                match env.call_method(
+                    &jni_store_obj,
+                    "onEpochDeadlineReached",
+                    "(J)J",
+                    &[jni::objects::JValue::Long(callback_id)],
+                ) {
+                    Ok(result) => {
+                        match result.j() {
+                            Ok(delta) => delta,
+                            Err(e) => {
+                                log::error!("Failed to get epoch callback result: {}", e);
+                                -1 // Trap
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        // Check for Java exception
+                        if env.exception_check().unwrap_or(false) {
+                            let _ = env.exception_clear();
+                        }
+                        log::error!("Failed to call onEpochDeadlineReached: {}", e);
+                        -1 // Trap
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to attach to JVM for epoch callback: {}", e);
+                -1 // Trap
+            }
+        };
+        result
+    }
+
+    /// Configure epoch deadline callback with actual Java callback support
+    ///
+    /// This sets up a real callback that will invoke the Java `onEpochDeadlineReached` method
+    /// on the JniStore object when the epoch deadline is reached.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochDeadlineCallback(
         mut env: JNIEnv,
-        _class: JClass,
+        jni_store_obj: jni::objects::JObject,  // 'this' object for instance methods
         store_ptr: jlong,
     ) {
+        // Get JavaVM reference for later callback use
+        let jvm = match env.get_java_vm() {
+            Ok(vm) => std::sync::Arc::new(vm),
+            Err(e) => {
+                log::error!("Failed to get JavaVM: {}", e);
+                return;
+            }
+        };
+
+        // Create a global reference to the JniStore object to prevent GC
+        let jni_store_global = match env.new_global_ref(&jni_store_obj) {
+            Ok(global) => global,
+            Err(e) => {
+                log::error!("Failed to create global reference to JniStore: {}", e);
+                return;
+            }
+        };
+
+        // Register the JNI context for this callback
+        // Use the store pointer as the callback ID for lookup
+        let callback_id = store_ptr;
+        register_jni_epoch_callback(callback_id, jvm, jni_store_global);
+
         let _ = jni_utils::jni_try_void(&mut env, || {
             let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
-            core::epoch_deadline_callback(store)?;
+
+            // Create epoch callback function that will dispatch to JNI
+            extern "C" fn jni_callback(callback_id: i64, epoch: u64) -> i64 {
+                jni_epoch_callback_dispatch(callback_id, epoch)
+            }
+
+            // Set the epoch callback with function pointer
+            core::epoch_deadline_callback_with_fn(store, jni_callback, callback_id)?;
+            Ok(())
+        });
+    }
+
+    /// Clear epoch deadline callback and clean up JNI resources
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearEpochDeadlineCallback(
+        mut env: JNIEnv,
+        _jni_store_obj: jni::objects::JObject,  // 'this' object for instance methods
+        store_ptr: jlong,
+    ) {
+        // Unregister the JNI callback context
+        unregister_jni_epoch_callback(store_ptr);
+
+        let _ = jni_utils::jni_try_void(&mut env, || {
+            let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+            // Reset to trap behavior (clear callback)
+            core::epoch_deadline_trap(store)?;
             Ok(())
         });
     }

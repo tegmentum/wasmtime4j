@@ -3,15 +3,36 @@
 //! This module provides defensive, thread-safe wrapper around Wasmtime engines
 //! with proper resource management and JVM crash prevention.
 
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread-safe wrapper around Wasmtime engine with defensive programming
-#[derive(Debug, Clone)]
+///
+/// This struct includes synchronization primitives to prevent race conditions
+/// when multiple threads concurrently compile modules or create stores from
+/// the same engine. This is critical for JVM stability when using shared memory
+/// and concurrent WebAssembly execution.
+#[derive(Clone)]
 pub struct Engine {
     inner: Arc<WasmtimeEngine>,
     config_summary: EngineConfigSummary,
+    /// Lock for serializing concurrent operations to prevent JVM crashes.
+    /// This lock is acquired during module compilation and store creation
+    /// to prevent race conditions in native code when using shared memory.
+    /// Uses RwLock to allow multiple readers (e.g., epoch increments) while
+    /// serializing write operations (compilation, store creation).
+    concurrent_ops_lock: Arc<RwLock<()>>,
+}
+
+impl std::fmt::Debug for Engine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Engine")
+            .field("inner", &self.inner)
+            .field("config_summary", &self.config_summary)
+            .field("concurrent_ops_lock", &"<RwLock>")
+            .finish()
+    }
 }
 
 /// Summary of engine configuration for debugging and introspection
@@ -229,7 +250,7 @@ impl Engine {
     /// Create engine with specific configuration
     pub fn with_config(config: Config) -> WasmtimeResult<Self> {
         let summary = EngineConfigSummary::from_config(&config);
-        
+
         let engine = WasmtimeEngine::new(&config)
             .map_err(|e| WasmtimeError::EngineConfig {
                 message: format!("Failed to create Wasmtime engine: {}", e),
@@ -238,6 +259,34 @@ impl Engine {
         Ok(Engine {
             inner: Arc::new(engine),
             config_summary: summary,
+            concurrent_ops_lock: Arc::new(RwLock::new(())),
+        })
+    }
+
+    /// Acquire a write lock for concurrent operations that need serialization.
+    ///
+    /// This should be used for operations like module compilation and store creation
+    /// to prevent race conditions when multiple threads access the same engine.
+    ///
+    /// # Returns
+    /// A RAII guard that releases the lock when dropped.
+    pub fn acquire_compile_lock(&self) -> std::sync::RwLockWriteGuard<'_, ()> {
+        self.concurrent_ops_lock.write().unwrap_or_else(|e| {
+            log::warn!("concurrent_ops_lock was poisoned, recovering");
+            e.into_inner()
+        })
+    }
+
+    /// Acquire a read lock for concurrent operations that can run in parallel.
+    ///
+    /// This should be used for read-only operations that don't need exclusive access.
+    ///
+    /// # Returns
+    /// A RAII guard that releases the lock when dropped.
+    pub fn acquire_read_lock(&self) -> std::sync::RwLockReadGuard<'_, ()> {
+        self.concurrent_ops_lock.read().unwrap_or_else(|e| {
+            log::warn!("concurrent_ops_lock was poisoned, recovering");
+            e.into_inner()
         })
     }
 
@@ -1376,7 +1425,7 @@ impl EngineBuilder {
     /// Build engine with current configuration
     pub fn build(self) -> WasmtimeResult<Engine> {
         let summary = EngineConfigSummary::from_builder(&self);
-        
+
         let engine = WasmtimeEngine::new(&self.config)
             .map_err(|e| WasmtimeError::EngineConfig {
                 message: format!("Failed to create Wasmtime engine: {}", e),
@@ -1385,6 +1434,7 @@ impl EngineBuilder {
         Ok(Engine {
             inner: Arc::new(engine),
             config_summary: summary,
+            concurrent_ops_lock: Arc::new(RwLock::new(())),
         })
     }
 }
@@ -1735,6 +1785,7 @@ impl Default for Engine {
                             module_version_strategy: "WasmtimeVersion".to_string(),
                             allocation_strategy: "OnDemand".to_string(),
                         },
+                        concurrent_ops_lock: Arc::new(RwLock::new(())),
                     },
                     Err(_) => {
                         // Last resort: create engine with completely default wasmtime config
@@ -1802,6 +1853,7 @@ impl Default for Engine {
                                 module_version_strategy: "WasmtimeVersion".to_string(),
                                 allocation_strategy: "OnDemand".to_string(),
                             },
+                            concurrent_ops_lock: Arc::new(RwLock::new(())),
                         }
                     }
                 }

@@ -418,19 +418,55 @@ impl Store {
         Ok(())
     }
 
-    /// Configure an epoch deadline callback
+    /// Configure an epoch deadline callback (default trap behavior)
     ///
     /// When the epoch counter exceeds the deadline, the provided callback
     /// function will be invoked to determine how to proceed.
     ///
-    /// Note: For JNI, we use a simplified approach that just configures trap behavior.
-    /// Full callback support requires more complex JNI callback infrastructure.
+    /// Note: This simple version configures trap behavior.
+    /// Use `epoch_deadline_callback_with_fn` for full callback support.
     pub fn epoch_deadline_callback(&self) -> WasmtimeResult<()> {
-        // For now, we configure trap behavior as a safe default
-        // Full callback support would require maintaining a callback reference
-        // and invoking Java code from Rust, which is complex
         let mut store = self.inner.lock();
         store.epoch_deadline_trap();
+        Ok(())
+    }
+
+    /// Configure an epoch deadline callback with a function pointer.
+    ///
+    /// When the epoch counter exceeds the deadline, the provided callback
+    /// function will be invoked to determine how to proceed.
+    ///
+    /// # Arguments
+    /// * `callback_fn` - A C-compatible function pointer that takes a callback ID and epoch,
+    ///                   and returns:
+    ///                   - Positive value: continue execution with that many ticks added to deadline
+    ///                   - Negative value: trap execution
+    /// * `callback_id` - An ID to pass to the callback function (used to identify the Java callback)
+    ///
+    /// # Safety
+    /// The callback function must be valid for the lifetime of the Store.
+    pub fn epoch_deadline_callback_with_fn(
+        &self,
+        callback_fn: extern "C" fn(callback_id: i64, epoch: u64) -> i64,
+        callback_id: i64,
+    ) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock();
+
+        // Configure the Wasmtime epoch deadline callback
+        // The callback receives StoreContextMut and returns Result<UpdateDeadline, Error>
+        store.epoch_deadline_callback(move |_store_ctx| {
+            // Invoke the external callback
+            let result = callback_fn(callback_id, 0); // epoch counter not easily accessible here
+
+            if result > 0 {
+                // Continue execution with the returned delta
+                Ok(wasmtime::UpdateDeadline::Continue(result as u64))
+            } else {
+                // Return an error to trap execution
+                Err(anyhow::anyhow!("Epoch deadline callback requested trap"))
+            }
+        });
+
         Ok(())
     }
 
@@ -607,6 +643,11 @@ impl StoreBuilder {
     pub fn build(self, engine: &Engine) -> WasmtimeResult<Store> {
         engine.validate()?;
 
+        // Acquire compile lock to prevent race conditions during concurrent store creation.
+        // This is critical when multiple threads create stores from the same engine,
+        // especially when using shared memory features.
+        let _compile_guard = engine.acquire_compile_lock();
+
         // Generate unique store ID
         let store_id = {
             let mut counter = STORE_ID_COUNTER.lock().map_err(|e| WasmtimeError::Store {
@@ -685,6 +726,11 @@ impl StoreBuilder {
     /// This method uses `module.inner().engine()` to get the EXACT Arc that wasmtime
     /// is using internally, ensuring Arc::ptr_eq() succeeds during instantiation.
     pub fn build_for_module(self, module: &Module) -> WasmtimeResult<Store> {
+        // Acquire compile lock to prevent race conditions during concurrent store creation.
+        // This is critical when multiple threads create stores from the same engine,
+        // especially when using shared memory features.
+        let _compile_guard = module.engine().acquire_compile_lock();
+
         // Generate unique store ID
         let store_id = {
             let mut counter = STORE_ID_COUNTER.lock().map_err(|e| WasmtimeError::Store {
@@ -908,6 +954,21 @@ pub mod core {
     /// Core function to configure epoch deadline callback (uses trap as default)
     pub fn epoch_deadline_callback(store: &Store) -> WasmtimeResult<()> {
         store.epoch_deadline_callback()
+    }
+
+    /// Core function to configure epoch deadline callback with function pointer
+    ///
+    /// # Arguments
+    /// * `store` - The store to configure
+    /// * `callback_fn` - A C-compatible function pointer that takes a callback ID and epoch,
+    ///                   and returns positive value to continue or negative to trap
+    /// * `callback_id` - An ID to pass to the callback function
+    pub fn epoch_deadline_callback_with_fn(
+        store: &Store,
+        callback_fn: extern "C" fn(callback_id: i64, epoch: u64) -> i64,
+        callback_id: i64,
+    ) -> WasmtimeResult<()> {
+        store.epoch_deadline_callback_with_fn(callback_fn, callback_id)
     }
 
     /// Core function to configure epoch deadline async yield and update

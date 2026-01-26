@@ -223,6 +223,11 @@ impl Module {
 
         engine.validate()?;
 
+        // Acquire compile lock to prevent race conditions during concurrent compilation.
+        // This is critical when multiple threads compile modules to the same engine,
+        // especially when using shared memory features.
+        let _compile_guard = engine.acquire_compile_lock();
+
         // Compile module with defensive error handling
         let module = WasmtimeModule::new(engine.inner(), wasm_bytes)
             .map_err(|e| WasmtimeError::from_compilation_error(e))?;

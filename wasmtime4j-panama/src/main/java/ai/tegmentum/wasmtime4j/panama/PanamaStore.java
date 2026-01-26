@@ -8,10 +8,16 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -27,6 +33,66 @@ public final class PanamaStore implements Store {
   private static final NativeFunctionBindings NATIVE_BINDINGS =
       NativeFunctionBindings.getInstance();
 
+  // Epoch callback infrastructure
+  private static final AtomicLong EPOCH_CALLBACK_ID_COUNTER = new AtomicLong(1);
+  private static final ConcurrentHashMap<Long, EpochDeadlineCallback> EPOCH_CALLBACKS =
+      new ConcurrentHashMap<>();
+  private static final MemorySegment EPOCH_CALLBACK_STUB;
+  private static final FunctionDescriptor EPOCH_CALLBACK_DESCRIPTOR =
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_LONG, // return: delta (positive) or trap (negative)
+          ValueLayout.JAVA_LONG, // callback_id
+          ValueLayout.JAVA_LONG); // epoch (unused, reserved)
+
+  static {
+    MemorySegment stub = null;
+    try {
+      // Create the upcall stub for epoch deadline callbacks
+      final MethodHandle epochCallbackHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaStore.class,
+                  "epochDeadlineCallbackStub",
+                  MethodType.methodType(long.class, long.class, long.class));
+      stub =
+          Linker.nativeLinker()
+              .upcallStub(epochCallbackHandle, EPOCH_CALLBACK_DESCRIPTOR, Arena.global());
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.severe("Failed to create epoch callback stub: " + e.getMessage());
+    }
+    EPOCH_CALLBACK_STUB = stub;
+  }
+
+  /**
+   * Static callback method invoked from native code when epoch deadline is reached.
+   *
+   * @param callbackId the callback identifier
+   * @param epoch the current epoch value (reserved for future use)
+   * @return positive delta to continue execution, or negative value to trap
+   */
+  private static long epochDeadlineCallbackStub(final long callbackId, final long epoch) {
+    final EpochDeadlineCallback callback = EPOCH_CALLBACKS.get(callbackId);
+    if (callback == null) {
+      LOGGER.warning("Epoch callback not found for ID: " + callbackId);
+      return -1; // Trap - callback not found
+    }
+
+    try {
+      final EpochDeadlineAction action = callback.onEpochDeadline(epoch);
+      if (action == null) {
+        return -1; // Trap on null action
+      }
+      if (action.shouldContinue()) {
+        return action.getDeltaTicks(); // Continue with this delta
+      } else {
+        return -1; // Trap
+      }
+    } catch (final Exception e) {
+      LOGGER.warning("Epoch callback threw exception: " + e.getMessage());
+      return -1; // Trap on exception
+    }
+  }
+
   private final PanamaEngine engine;
   private final Arena arena;
   private final MemorySegment nativeStore;
@@ -35,6 +101,9 @@ public final class PanamaStore implements Store {
   private final PanamaErrorHandler errorHandler;
   private volatile PanamaCallbackRegistry callbackRegistry; // Lazy initialized
   private volatile boolean closed = false;
+
+  // Epoch callback ID for this store (0 = no callback registered)
+  private volatile long epochCallbackId = 0;
 
   /**
    * Creates a new Panama store.
@@ -867,6 +936,12 @@ public final class PanamaStore implements Store {
     closed = true;
 
     try {
+      // Clean up epoch callback from static registry
+      if (epochCallbackId != 0) {
+        EPOCH_CALLBACKS.remove(epochCallbackId);
+        epochCallbackId = 0;
+      }
+
       // Close callback registry first (cleans up function references)
       if (callbackRegistry != null) {
         try {
@@ -1115,14 +1190,44 @@ public final class PanamaStore implements Store {
       final ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback callback)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
+
+    // Remove existing callback if any
+    if (epochCallbackId != 0) {
+      EPOCH_CALLBACKS.remove(epochCallbackId);
+      epochCallbackId = 0;
+    }
+
     // Store callback reference to prevent GC
     this.epochDeadlineCallback = callback;
+
     int result;
     if (callback == null) {
+      // Clear the callback
       result = NATIVE_BINDINGS.storeClearEpochDeadlineCallback(nativeStore);
     } else {
-      result = NATIVE_BINDINGS.storeSetEpochDeadlineCallback(nativeStore);
+      // Check if upcall stub was created successfully
+      if (EPOCH_CALLBACK_STUB == null) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Epoch callback infrastructure not initialized");
+      }
+
+      // Generate a unique callback ID and register the callback
+      final long newCallbackId = EPOCH_CALLBACK_ID_COUNTER.getAndIncrement();
+      EPOCH_CALLBACKS.put(newCallbackId, callback);
+      epochCallbackId = newCallbackId;
+
+      // Set the callback with function pointer
+      result =
+          NATIVE_BINDINGS.storeSetEpochDeadlineCallbackFn(
+              nativeStore, EPOCH_CALLBACK_STUB, newCallbackId);
+
+      if (result != 0) {
+        // Cleanup on failure
+        EPOCH_CALLBACKS.remove(newCallbackId);
+        epochCallbackId = 0;
+      }
     }
+
     if (result != 0) {
       throw new ai.tegmentum.wasmtime4j.exception.WasmException(
           "Failed to configure epoch deadline callback: error code " + result);

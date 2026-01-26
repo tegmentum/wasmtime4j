@@ -1519,7 +1519,7 @@ public final class JniStore extends JniResource implements Store {
 
   private static native void nativeEpochDeadlineTrap(long storeHandle);
 
-  private static native void nativeSetEpochDeadlineCallback(long storeHandle);
+  private native void nativeSetEpochDeadlineCallback(long storeHandle);
 
   private native void nativeClearEpochDeadlineCallback(long storeHandle);
 

@@ -1511,6 +1511,31 @@ public final class NativeFunctionBindings {
   }
 
   /**
+   * Sets an epoch deadline callback with a function pointer on the store.
+   *
+   * <p>This allows the Java code to receive callbacks when the epoch deadline is reached and decide
+   * whether to continue execution (by returning a positive delta) or trap (by returning a negative
+   * value).
+   *
+   * @param storePtr pointer to the store
+   * @param callbackFn function pointer for the epoch callback (takes callback_id, epoch; returns
+   *     delta or negative to trap)
+   * @param callbackId identifier passed to the callback to identify the Java callback
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeSetEpochDeadlineCallbackFn(
+      final MemorySegment storePtr, final MemorySegment callbackFn, final long callbackId) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(callbackFn, "callbackFn");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_set_epoch_deadline_callback_fn",
+        Integer.class,
+        storePtr,
+        callbackFn,
+        callbackId);
+  }
+
+  /**
    * Gets metadata information from a WebAssembly store.
    *
    * @param storePtr pointer to the store
@@ -4601,6 +4626,15 @@ public final class NativeFunctionBindings {
     addFunctionBinding(
         "wasmtime4j_panama_store_clear_epoch_deadline_callback",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    // Epoch deadline callback with function pointer (Panama FFI)
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_epoch_deadline_callback_fn",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // callback_fn (function pointer)
+            ValueLayout.JAVA_LONG)); // callback_id
 
     addFunctionBinding(
         "wasmtime4j_store_set_epoch_deadline",
