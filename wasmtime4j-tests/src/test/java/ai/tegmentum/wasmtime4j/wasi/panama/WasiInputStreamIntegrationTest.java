@@ -38,7 +38,6 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,8 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("Panama WasiInputStream Integration Tests")
 // @Disabled temporarily removed to investigate JVM crash
 // @Disabled(
-//     "JVM crash in wasmtime4j_panama_wasi_stdio_get_stdin - Panama WASI CLI FFI needs investigation")
+//     "JVM crash in wasmtime4j_panama_wasi_stdio_get_stdin - Panama WASI CLI FFI needs
+// investigation")
 class WasiInputStreamIntegrationTest {
 
   private static final Logger LOGGER =

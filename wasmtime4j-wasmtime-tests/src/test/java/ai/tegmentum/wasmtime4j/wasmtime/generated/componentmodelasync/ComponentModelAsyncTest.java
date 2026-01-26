@@ -103,9 +103,7 @@ public final class ComponentModelAsyncTest {
   }
 
   private static void assumeComponentEngineAvailable() {
-    assumeTrue(
-        componentEngineAvailable,
-        "Component engine not available - skipping test.");
+    assumeTrue(componentEngineAvailable, "Component engine not available - skipping test.");
   }
 
   /**
@@ -216,9 +214,7 @@ public final class ComponentModelAsyncTest {
 
     assertTrue(componentCount > 0, "WAST file should contain at least one component definition");
 
-    LOGGER.info(
-        String.format(
-            "Found %d component definition(s) in %s", componentCount, filename));
+    LOGGER.info(String.format("Found %d component definition(s) in %s", componentCount, filename));
   }
 
   /**
@@ -241,9 +237,7 @@ public final class ComponentModelAsyncTest {
       assertNotNull(engine, "Component engine should be created");
       assertTrue(engine.isValid(), "Component engine should be valid");
 
-      LOGGER.info(
-          String.format(
-              "Component engine ready for async testing: %s", filename));
+      LOGGER.info(String.format("Component engine ready for async testing: %s", filename));
     }
   }
 }

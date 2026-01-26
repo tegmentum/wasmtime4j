@@ -271,7 +271,8 @@ class WasiDirectoryHandleIntegrationTest {
       resources.add(handle);
 
       // Verify handle properties
-      assertTrue(handle.getFileDescriptor() >= 3, "File descriptor should be >= 3 (stdio reserved)");
+      assertTrue(
+          handle.getFileDescriptor() >= 3, "File descriptor should be >= 3 (stdio reserved)");
       assertEquals("/", handle.getPath(), "Path should match");
       assertEquals(WasiRights.PATH_OPEN, handle.getRights(), "Rights should match");
       assertTrue(handle.isValid(), "Handle should be valid");
@@ -297,7 +298,8 @@ class WasiDirectoryHandleIntegrationTest {
       assertNotNull(entries, "Entries list should not be null");
 
       // We created 2 subdirectories and 2 files in setUp
-      assertEquals(4, entries.size(), "Should have 4 entries (subdir1, subdir2, file1.txt, file2.txt)");
+      assertEquals(
+          4, entries.size(), "Should have 4 entries (subdir1, subdir2, file1.txt, file2.txt)");
 
       // Collect entry names for verification
       final List<String> names = new ArrayList<>();
