@@ -56,8 +56,9 @@ public final class ProfileData {
     this.totalFunctionCalls = totalFunctionCalls;
     this.totalInstructions = totalInstructions;
     this.maxStackDepth = maxStackDepth;
-    this.functionProfiles = Collections.unmodifiableList(functionProfiles);
-    this.customMetrics = Collections.unmodifiableMap(customMetrics);
+    this.functionProfiles =
+        Collections.unmodifiableList(new java.util.ArrayList<>(functionProfiles));
+    this.customMetrics = Collections.unmodifiableMap(new java.util.HashMap<>(customMetrics));
   }
 
   /**

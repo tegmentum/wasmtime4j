@@ -86,9 +86,9 @@ public final class WasmCoreDump {
     this.trapMessage = trapMessage;
     this.backtrace = backtrace;
     this.timestamp = timestamp;
-    this.memoryDumps = Collections.unmodifiableList(memoryDumps);
-    this.globals = Collections.unmodifiableMap(globals);
-    this.stackFrames = Collections.unmodifiableList(stackFrames);
+    this.memoryDumps = Collections.unmodifiableList(new java.util.ArrayList<>(memoryDumps));
+    this.globals = Collections.unmodifiableMap(new java.util.HashMap<>(globals));
+    this.stackFrames = Collections.unmodifiableList(new java.util.ArrayList<>(stackFrames));
   }
 
   /**
