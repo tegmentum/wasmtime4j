@@ -71,6 +71,7 @@ public final class PanamaStore implements Store {
    * @return positive delta to continue execution, or negative value to trap
    */
   private static long epochDeadlineCallbackStub(final long callbackId, final long epoch) {
+    LOGGER.fine("Epoch callback stub invoked: callbackId=" + callbackId + ", epoch=" + epoch);
     final EpochDeadlineCallback callback = EPOCH_CALLBACKS.get(callbackId);
     if (callback == null) {
       LOGGER.warning("Epoch callback not found for ID: " + callbackId);
@@ -80,11 +81,15 @@ public final class PanamaStore implements Store {
     try {
       final EpochDeadlineAction action = callback.onEpochDeadline(epoch);
       if (action == null) {
+        LOGGER.fine("Epoch callback returned null action - trapping");
         return -1; // Trap on null action
       }
       if (action.shouldContinue()) {
-        return action.getDeltaTicks(); // Continue with this delta
+        final long delta = action.getDeltaTicks();
+        LOGGER.fine("Epoch callback returning continue with delta=" + delta);
+        return delta; // Continue with this delta
       } else {
+        LOGGER.fine("Epoch callback returning trap");
         return -1; // Trap
       }
     } catch (final Exception e) {
@@ -1191,6 +1196,8 @@ public final class PanamaStore implements Store {
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
 
+    LOGGER.fine("epochDeadlineCallback called, callback=" + callback);
+
     // Remove existing callback if any
     if (epochCallbackId != 0) {
       EPOCH_CALLBACKS.remove(epochCallbackId);
@@ -1216,10 +1223,18 @@ public final class PanamaStore implements Store {
       EPOCH_CALLBACKS.put(newCallbackId, callback);
       epochCallbackId = newCallbackId;
 
+      LOGGER.fine(
+          "Calling native storeSetEpochDeadlineCallbackFn: callbackId="
+              + newCallbackId
+              + ", stub="
+              + EPOCH_CALLBACK_STUB);
+
       // Set the callback with function pointer
       result =
           NATIVE_BINDINGS.storeSetEpochDeadlineCallbackFn(
               nativeStore, EPOCH_CALLBACK_STUB, newCallbackId);
+
+      LOGGER.fine("Native call returned: " + result);
 
       if (result != 0) {
         // Cleanup on failure

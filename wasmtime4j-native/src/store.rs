@@ -452,17 +452,29 @@ impl Store {
     ) -> WasmtimeResult<()> {
         let mut store = self.inner.lock();
 
+        log::debug!(
+            "Registering epoch deadline callback: callback_id={}, fn_ptr={:?}",
+            callback_id,
+            callback_fn as *const ()
+        );
+
         // Configure the Wasmtime epoch deadline callback
         // The callback receives StoreContextMut and returns Result<UpdateDeadline, Error>
         store.epoch_deadline_callback(move |_store_ctx| {
+            log::trace!("Epoch deadline reached, invoking callback: callback_id={}", callback_id);
+
             // Invoke the external callback
             let result = callback_fn(callback_id, 0); // epoch counter not easily accessible here
 
+            log::trace!("Epoch callback returned: result={}, callback_id={}", result, callback_id);
+
             if result > 0 {
                 // Continue execution with the returned delta
+                log::trace!("Continuing execution with delta={}", result);
                 Ok(wasmtime::UpdateDeadline::Continue(result as u64))
             } else {
                 // Return an error to trap execution
+                log::trace!("Trapping execution");
                 Err(anyhow::anyhow!("Epoch deadline callback requested trap"))
             }
         });
