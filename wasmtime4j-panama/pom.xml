@@ -87,16 +87,16 @@
 
     <build>
         <plugins>
-            <!-- Unpack native libraries from dependency JAR to test classpath -->
-            <!-- Note: Uses prepare-package phase to ensure wasmtime4j-native is packaged first -->
-            <!-- For reactor builds, use: mvn install -pl wasmtime4j-native && mvn package -->
+            <!-- Unpack native libraries from wasmtime4j-native -->
+            <!-- Uses generate-resources phase so natives are available for compile and test -->
+            <!-- Requires: mvn install -pl wasmtime4j-native first -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>unpack-native-libraries</id>
-                        <phase>prepare-package</phase>
+                        <phase>generate-resources</phase>
                         <goals>
                             <goal>unpack-dependencies</goal>
                         </goals>

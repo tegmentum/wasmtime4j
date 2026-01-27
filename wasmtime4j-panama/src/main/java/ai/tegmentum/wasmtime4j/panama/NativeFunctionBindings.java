@@ -1163,38 +1163,38 @@ public final class NativeFunctionBindings {
    * Creates a WebAssembly store with custom configuration.
    *
    * @param enginePtr pointer to the engine
-   * @param storePtr pointer to store the created store
    * @param fuelLimit the fuel limit (0 = no limit)
    * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
    * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
    * @param maxInstances the maximum number of instances (0 = no limit)
    * @param maxTableElements the maximum table elements (0 = no limit)
    * @param maxFunctions the maximum functions (0 = no limit)
+   * @param storePtr pointer to store the created store (output parameter)
    * @return 0 on success, negative error code on failure
    */
   public int storeCreateWithConfig(
       final MemorySegment enginePtr,
-      final MemorySegment storePtr,
       final long fuelLimit,
       final long memoryLimitBytes,
       final long executionTimeoutSecs,
       final int maxInstances,
       final int maxTableElements,
-      final int maxFunctions) {
+      final int maxFunctions,
+      final MemorySegment storePtr) {
     validatePointer(enginePtr, "enginePtr");
     validatePointer(storePtr, "storePtr");
 
     return callNativeFunction(
-        "wasmtime4j_store_create_with_config",
+        "wasmtime4j_panama_store_create_with_config",
         Integer.class,
         enginePtr,
-        storePtr,
         fuelLimit,
         memoryLimitBytes,
         executionTimeoutSecs,
         maxInstances,
         maxTableElements,
-        maxFunctions);
+        maxFunctions,
+        storePtr);
   }
 
   /**
@@ -4525,6 +4525,30 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // imports_ptr
             ValueLayout.JAVA_LONG)); // imports_count
 
+    // Module serialization functions
+    addFunctionBinding(
+        "wasmtime4j_panama_module_serialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // data_ptr_ptr (output)
+            ValueLayout.ADDRESS)); // len_ptr (output)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_deserialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return result code
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // data_ptr
+            ValueLayout.JAVA_LONG, // len
+            ValueLayout.ADDRESS)); // module_ptr_ptr (output)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_free_serialized_data",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // data_ptr
+            ValueLayout.JAVA_LONG)); // len
+
     // Store functions
     // Panama FFI binding: returns store pointer directly
     addFunctionBinding(
@@ -4536,17 +4560,17 @@ public final class NativeFunctionBindings {
     addFunctionBinding("wasmtime4j_store_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     addFunctionBinding(
-        "wasmtime4j_store_create_with_config",
+        "wasmtime4j_panama_store_create_with_config",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS, // store_ptr
             ValueLayout.JAVA_LONG, // fuel_limit
             ValueLayout.JAVA_LONG, // memory_limit_bytes
             ValueLayout.JAVA_LONG, // execution_timeout_secs
             ValueLayout.JAVA_INT, // max_instances
             ValueLayout.JAVA_INT, // max_table_elements
-            ValueLayout.JAVA_INT)); // max_functions
+            ValueLayout.JAVA_INT, // max_functions
+            ValueLayout.ADDRESS)); // store_ptr (output)
 
     // Additional Store functions
     addFunctionBinding(

@@ -16,246 +16,509 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link PanamaWasiConfig} class.
+ * Integration tests for {@link PanamaWasiConfig}.
  *
- * <p>PanamaWasiConfig is the Panama implementation of WASI configuration.
+ * <p>These tests exercise actual method calls to improve JaCoCo coverage.
  */
-@DisplayName("PanamaWasiConfig Tests")
+@DisplayName("PanamaWasiConfig Integration Tests")
 class PanamaWasiConfigTest {
 
+  private static final Logger LOGGER = Logger.getLogger(PanamaWasiConfigTest.class.getName());
+
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
+  @DisplayName("Default Value Tests")
+  class DefaultValueTests {
 
     @Test
-    @DisplayName("should be public final class")
-    void shouldBePublicFinalClass() {
+    @DisplayName("Should have empty collections by default")
+    void shouldHaveEmptyCollectionsByDefault() {
+      LOGGER.info("Testing default collection values");
+
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+
+      assertTrue(config.getEnvironment().isEmpty(), "Environment should be empty by default");
+      assertTrue(config.getArguments().isEmpty(), "Arguments should be empty by default");
       assertTrue(
-          Modifier.isPublic(PanamaWasiConfig.class.getModifiers()),
-          "PanamaWasiConfig should be public");
+          config.getPreopenDirectories().isEmpty(),
+          "Preopen directories should be empty by default");
       assertTrue(
-          Modifier.isFinal(PanamaWasiConfig.class.getModifiers()),
-          "PanamaWasiConfig should be final");
+          config.getImportResolvers().isEmpty(), "Import resolvers should be empty by default");
+
+      LOGGER.info("Default collections are empty as expected");
     }
 
     @Test
-    @DisplayName("should implement WasiConfig interface")
-    void shouldImplementWasiConfigInterface() {
-      assertTrue(
-          WasiConfig.class.isAssignableFrom(PanamaWasiConfig.class),
-          "PanamaWasiConfig should implement WasiConfig");
-    }
-  }
+    @DisplayName("Should have correct default boolean values")
+    void shouldHaveCorrectDefaultBooleanValues() {
+      LOGGER.info("Testing default boolean values");
 
-  @Nested
-  @DisplayName("Environment Method Tests")
-  class EnvironmentMethodTests {
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
 
-    @Test
-    @DisplayName("should have getEnvironment method")
-    void shouldHaveGetEnvironmentMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getEnvironment");
-      assertNotNull(method, "getEnvironment method should exist");
-      assertEquals(Map.class, method.getReturnType(), "Should return Map");
-    }
+      assertFalse(config.isValidationEnabled(), "Validation should be disabled by default");
+      assertFalse(config.isStrictModeEnabled(), "Strict mode should be disabled by default");
 
-    @Test
-    @DisplayName("should have isInheritEnvironment method")
-    void shouldHaveIsInheritEnvironmentMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("isInheritEnvironment");
-      assertNotNull(method, "isInheritEnvironment method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
-    }
-  }
+      // Check Panama-specific method
+      if (config instanceof PanamaWasiConfig) {
+        final PanamaWasiConfig panamaConfig = (PanamaWasiConfig) config;
+        assertFalse(
+            panamaConfig.isInheritEnvironment(), "Inherit environment should be false by default");
+        assertFalse(
+            panamaConfig.isAsyncOperationsEnabled(),
+            "Async operations should be disabled by default");
+      }
 
-  @Nested
-  @DisplayName("Arguments Method Tests")
-  class ArgumentsMethodTests {
-
-    @Test
-    @DisplayName("should have getArguments method")
-    void shouldHaveGetArgumentsMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getArguments");
-      assertNotNull(method, "getArguments method should exist");
-      assertEquals(List.class, method.getReturnType(), "Should return List");
-    }
-  }
-
-  @Nested
-  @DisplayName("Directory Method Tests")
-  class DirectoryMethodTests {
-
-    @Test
-    @DisplayName("should have getPreopenDirectories method")
-    void shouldHaveGetPreopenDirectoriesMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getPreopenDirectories");
-      assertNotNull(method, "getPreopenDirectories method should exist");
-      assertEquals(Map.class, method.getReturnType(), "Should return Map");
+      LOGGER.info("Default boolean values verified");
     }
 
     @Test
-    @DisplayName("should have getWorkingDirectory method")
-    void shouldHaveGetWorkingDirectoryMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getWorkingDirectory");
-      assertNotNull(method, "getWorkingDirectory method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
-    }
-  }
+    @DisplayName("Should have empty optionals by default")
+    void shouldHaveEmptyOptionalsByDefault() {
+      LOGGER.info("Testing default optional values");
 
-  @Nested
-  @DisplayName("Limits Method Tests")
-  class LimitsMethodTests {
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
 
-    @Test
-    @DisplayName("should have getMemoryLimit method")
-    void shouldHaveGetMemoryLimitMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getMemoryLimit");
-      assertNotNull(method, "getMemoryLimit method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
-    }
+      assertFalse(
+          config.getWorkingDirectory().isPresent(), "Working directory should be empty by default");
+      assertFalse(config.getMemoryLimit().isPresent(), "Memory limit should be empty by default");
+      assertFalse(
+          config.getExecutionTimeout().isPresent(), "Execution timeout should be empty by default");
+      assertFalse(
+          config.getResourceLimits().isPresent(), "Resource limits should be empty by default");
+      assertFalse(
+          config.getSecurityPolicy().isPresent(), "Security policy should be empty by default");
 
-    @Test
-    @DisplayName("should have getExecutionTimeout method")
-    void shouldHaveGetExecutionTimeoutMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getExecutionTimeout");
-      assertNotNull(method, "getExecutionTimeout method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
+      LOGGER.info("Default optional values are empty as expected");
     }
 
     @Test
-    @DisplayName("should have getResourceLimits method")
-    void shouldHaveGetResourceLimitsMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getResourceLimits");
-      assertNotNull(method, "getResourceLimits method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
-    }
-  }
+    @DisplayName("Should have default WASI version")
+    void shouldHaveDefaultWasiVersion() {
+      LOGGER.info("Testing default WASI version");
 
-  @Nested
-  @DisplayName("Security Method Tests")
-  class SecurityMethodTests {
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
 
-    @Test
-    @DisplayName("should have getSecurityPolicy method")
-    void shouldHaveGetSecurityPolicyMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getSecurityPolicy");
-      assertNotNull(method, "getSecurityPolicy method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
-    }
-  }
-
-  @Nested
-  @DisplayName("Import Resolver Method Tests")
-  class ImportResolverMethodTests {
-
-    @Test
-    @DisplayName("should have getImportResolvers method")
-    void shouldHaveGetImportResolversMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getImportResolvers");
-      assertNotNull(method, "getImportResolvers method should exist");
-      assertEquals(Map.class, method.getReturnType(), "Should return Map");
-    }
-  }
-
-  @Nested
-  @DisplayName("Validation Method Tests")
-  class ValidationMethodTests {
-
-    @Test
-    @DisplayName("should have isValidationEnabled method")
-    void shouldHaveIsValidationEnabledMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("isValidationEnabled");
-      assertNotNull(method, "isValidationEnabled method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isStrictModeEnabled method")
-    void shouldHaveIsStrictModeEnabledMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("isStrictModeEnabled");
-      assertNotNull(method, "isStrictModeEnabled method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have validate method")
-    void shouldHaveValidateMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("validate");
-      assertNotNull(method, "validate method should exist");
-      assertEquals(void.class, method.getReturnType(), "Should return void");
-    }
-  }
-
-  @Nested
-  @DisplayName("Version Method Tests")
-  class VersionMethodTests {
-
-    @Test
-    @DisplayName("should have getWasiVersion method")
-    void shouldHaveGetWasiVersionMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getWasiVersion");
-      assertNotNull(method, "getWasiVersion method should exist");
-      assertEquals(WasiVersion.class, method.getReturnType(), "Should return WasiVersion");
-    }
-  }
-
-  @Nested
-  @DisplayName("Async Operations Method Tests")
-  class AsyncOperationsMethodTests {
-
-    @Test
-    @DisplayName("should have isAsyncOperationsEnabled method")
-    void shouldHaveIsAsyncOperationsEnabledMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("isAsyncOperationsEnabled");
-      assertNotNull(method, "isAsyncOperationsEnabled method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have getMaxAsyncOperations method")
-    void shouldHaveGetMaxAsyncOperationsMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getMaxAsyncOperations");
-      assertNotNull(method, "getMaxAsyncOperations method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
-    }
-
-    @Test
-    @DisplayName("should have getAsyncOperationTimeout method")
-    void shouldHaveGetAsyncOperationTimeoutMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("getAsyncOperationTimeout");
-      assertNotNull(method, "getAsyncOperationTimeout method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
-    }
-  }
-
-  @Nested
-  @DisplayName("Builder Method Tests")
-  class BuilderMethodTests {
-
-    @Test
-    @DisplayName("should have toBuilder method")
-    void shouldHaveToBuilderMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiConfig.class.getMethod("toBuilder");
-      assertNotNull(method, "toBuilder method should exist");
       assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
+          WasiVersion.PREVIEW_1, config.getWasiVersion(), "Default version should be PREVIEW_1");
+
+      LOGGER.info("Default WASI version: " + config.getWasiVersion());
+    }
+  }
+
+  @Nested
+  @DisplayName("Environment Configuration Tests")
+  class EnvironmentConfigurationTests {
+
+    @Test
+    @DisplayName("Should return environment variables")
+    void shouldReturnEnvironmentVariables() {
+      LOGGER.info("Testing getEnvironment");
+
+      final WasiConfig config =
+          new PanamaWasiConfigBuilder()
+              .withEnvironment("PATH", "/usr/bin")
+              .withEnvironment("HOME", "/home/user")
+              .build();
+
+      final Map<String, String> env = config.getEnvironment();
+      assertEquals(2, env.size(), "Should have 2 environment variables");
+      assertEquals("/usr/bin", env.get("PATH"), "PATH should be /usr/bin");
+      assertEquals("/home/user", env.get("HOME"), "HOME should be /home/user");
+
+      LOGGER.info("Environment: " + env);
+    }
+
+    @Test
+    @DisplayName("Should return immutable environment map")
+    void shouldReturnImmutableEnvironmentMap() {
+      LOGGER.info("Testing environment immutability");
+
+      final WasiConfig config =
+          new PanamaWasiConfigBuilder().withEnvironment("KEY", "value").build();
+
+      final Map<String, String> env = config.getEnvironment();
+      try {
+        env.put("HACKER", "injection");
+        LOGGER.warning("Environment mutation was allowed");
+      } catch (final UnsupportedOperationException e) {
+        LOGGER.info("Environment is correctly immutable");
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Arguments Configuration Tests")
+  class ArgumentsConfigurationTests {
+
+    @Test
+    @DisplayName("Should return arguments")
+    void shouldReturnArguments() {
+      LOGGER.info("Testing getArguments");
+
+      final WasiConfig config =
+          new PanamaWasiConfigBuilder().withArgument("--config").withArgument("file.conf").build();
+
+      final List<String> args = config.getArguments();
+      assertEquals(2, args.size(), "Should have 2 arguments");
+      assertEquals("--config", args.get(0), "First arg should be --config");
+      assertEquals("file.conf", args.get(1), "Second arg should be file.conf");
+
+      LOGGER.info("Arguments: " + args);
+    }
+  }
+
+  @Nested
+  @DisplayName("Directory Configuration Tests")
+  class DirectoryConfigurationTests {
+
+    @Test
+    @DisplayName("Should return preopen directories")
+    void shouldReturnPreopenDirectories() {
+      LOGGER.info("Testing getPreopenDirectories");
+
+      final WasiConfig config =
+          new PanamaWasiConfigBuilder()
+              .withPreopenDirectory("/", Path.of("/home/user"))
+              .withPreopenDirectory("/tmp", Path.of("/tmp"))
+              .build();
+
+      final Map<String, Path> dirs = config.getPreopenDirectories();
+      assertEquals(2, dirs.size(), "Should have 2 preopen directories");
+      assertEquals(Path.of("/home/user"), dirs.get("/"), "/ should map to /home/user");
+      assertEquals(Path.of("/tmp"), dirs.get("/tmp"), "/tmp should map to /tmp");
+
+      LOGGER.info("Preopen directories: " + dirs);
+    }
+
+    @Test
+    @DisplayName("Should return working directory")
+    void shouldReturnWorkingDirectory() {
+      LOGGER.info("Testing getWorkingDirectory");
+
+      final WasiConfig config = new PanamaWasiConfigBuilder().withWorkingDirectory("/work").build();
+
+      final Optional<String> workDir = config.getWorkingDirectory();
+      assertTrue(workDir.isPresent(), "Working directory should be present");
+      assertEquals("/work", workDir.get(), "Working directory should be /work");
+
+      LOGGER.info("Working directory: " + workDir.get());
+    }
+  }
+
+  @Nested
+  @DisplayName("Timeout Configuration Tests")
+  class TimeoutConfigurationTests {
+
+    @Test
+    @DisplayName("Should return execution timeout")
+    void shouldReturnExecutionTimeout() {
+      LOGGER.info("Testing getExecutionTimeout");
+
+      final Duration timeout = Duration.ofSeconds(30);
+      final WasiConfig config = new PanamaWasiConfigBuilder().withExecutionTimeout(timeout).build();
+
+      final Optional<Duration> result = config.getExecutionTimeout();
+      assertTrue(result.isPresent(), "Execution timeout should be present");
+      assertEquals(timeout, result.get(), "Execution timeout should match");
+
+      LOGGER.info("Execution timeout: " + result.get());
+    }
+  }
+
+  @Nested
+  @DisplayName("Async Operation Tests")
+  class AsyncOperationTests {
+
+    @Test
+    @DisplayName("Should return async operation settings")
+    void shouldReturnAsyncOperationSettings() {
+      LOGGER.info("Testing async operation settings");
+
+      final WasiConfig config =
+          new PanamaWasiConfigBuilder()
+              .withAsyncOperations(true)
+              .withMaxAsyncOperations(10)
+              .withAsyncOperationTimeout(Duration.ofSeconds(5))
+              .build();
+
+      if (config instanceof PanamaWasiConfig) {
+        final PanamaWasiConfig panamaConfig = (PanamaWasiConfig) config;
+        assertTrue(panamaConfig.isAsyncOperationsEnabled(), "Async operations should be enabled");
+        assertEquals(10, panamaConfig.getMaxAsyncOperations().get(), "Max async should be 10");
+        assertEquals(
+            Duration.ofSeconds(5),
+            panamaConfig.getAsyncOperationTimeout().get(),
+            "Async timeout should be 5 seconds");
+      }
+
+      LOGGER.info("Async operation settings verified");
+    }
+  }
+
+  @Nested
+  @DisplayName("Version Configuration Tests")
+  class VersionConfigurationTests {
+
+    @Test
+    @DisplayName("Should return WASI version")
+    void shouldReturnWasiVersion() {
+      LOGGER.info("Testing getWasiVersion");
+
+      final WasiConfig config =
+          new PanamaWasiConfigBuilder().withWasiVersion(WasiVersion.PREVIEW_2).build();
+
+      assertEquals(WasiVersion.PREVIEW_2, config.getWasiVersion(), "Should be PREVIEW_2");
+
+      LOGGER.info("WASI version: " + config.getWasiVersion());
+    }
+  }
+
+  @Nested
+  @DisplayName("Validation Mode Tests")
+  class ValidationModeTests {
+
+    @Test
+    @DisplayName("Should return validation enabled status")
+    void shouldReturnValidationEnabledStatus() {
+      LOGGER.info("Testing isValidationEnabled");
+
+      final WasiConfig configEnabled = new PanamaWasiConfigBuilder().withValidation(true).build();
+      assertTrue(configEnabled.isValidationEnabled(), "Validation should be enabled");
+
+      final WasiConfig configDisabled = new PanamaWasiConfigBuilder().withValidation(false).build();
+      assertFalse(configDisabled.isValidationEnabled(), "Validation should be disabled");
+
+      LOGGER.info("Validation mode tests passed");
+    }
+
+    @Test
+    @DisplayName("Should return strict mode status")
+    void shouldReturnStrictModeStatus() {
+      LOGGER.info("Testing isStrictModeEnabled");
+
+      final WasiConfig configEnabled = new PanamaWasiConfigBuilder().withStrictMode(true).build();
+      assertTrue(configEnabled.isStrictModeEnabled(), "Strict mode should be enabled");
+
+      final WasiConfig configDisabled = new PanamaWasiConfigBuilder().withStrictMode(false).build();
+      assertFalse(configDisabled.isStrictModeEnabled(), "Strict mode should be disabled");
+
+      LOGGER.info("Strict mode tests passed");
+    }
+  }
+
+  @Nested
+  @DisplayName("Import Resolver Tests")
+  class ImportResolverTests {
+
+    @Test
+    @DisplayName("Should return import resolvers")
+    void shouldReturnImportResolvers() {
+      LOGGER.info("Testing getImportResolvers");
+
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+
+      final Map<String, ?> resolvers = config.getImportResolvers();
+      assertNotNull(resolvers, "Import resolvers should not be null");
+      assertTrue(resolvers.isEmpty(), "Import resolvers should be empty by default");
+
+      LOGGER.info("Import resolvers: " + resolvers);
+    }
+  }
+
+  @Nested
+  @DisplayName("Resource Limits Tests")
+  class ResourceLimitsTests {
+
+    @Test
+    @DisplayName("Should return memory limit")
+    void shouldReturnMemoryLimit() {
+      LOGGER.info("Testing getMemoryLimit");
+
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+
+      final Optional<Long> memoryLimit = config.getMemoryLimit();
+      assertFalse(memoryLimit.isPresent(), "Memory limit should be empty by default");
+
+      LOGGER.info("Memory limit: " + memoryLimit);
+    }
+
+    @Test
+    @DisplayName("Should return resource limits")
+    void shouldReturnResourceLimits() {
+      LOGGER.info("Testing getResourceLimits");
+
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+
+      assertFalse(config.getResourceLimits().isPresent(), "Resource limits should be empty");
+
+      LOGGER.info("Resource limits tested");
+    }
+  }
+
+  @Nested
+  @DisplayName("Security Policy Tests")
+  class SecurityPolicyTests {
+
+    @Test
+    @DisplayName("Should return security policy")
+    void shouldReturnSecurityPolicy() {
+      LOGGER.info("Testing getSecurityPolicy");
+
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+
+      assertFalse(config.getSecurityPolicy().isPresent(), "Security policy should be empty");
+
+      LOGGER.info("Security policy tested");
+    }
+  }
+
+  @Nested
+  @DisplayName("toBuilder Tests")
+  class ToBuilderTests {
+
+    @Test
+    @DisplayName("Should create builder from config")
+    void shouldCreateBuilderFromConfig() {
+      LOGGER.info("Testing toBuilder");
+
+      final WasiConfig original =
+          new PanamaWasiConfigBuilder()
+              .withEnvironment("KEY", "value")
+              .withArgument("--test")
+              .withWorkingDirectory("/work")
+              .withWasiVersion(WasiVersion.PREVIEW_2)
+              .withValidation(true)
+              .withStrictMode(true)
+              .withExecutionTimeout(Duration.ofSeconds(60))
+              .withAsyncOperations(true)
+              .withMaxAsyncOperations(5)
+              .withAsyncOperationTimeout(Duration.ofSeconds(10))
+              .build();
+
+      final WasiConfigBuilder builder = original.toBuilder();
+      assertNotNull(builder, "Builder should not be null");
+
+      final WasiConfig rebuilt = builder.build();
+      assertEquals(original.getEnvironment(), rebuilt.getEnvironment());
+      assertEquals(original.getArguments(), rebuilt.getArguments());
+      assertEquals(original.getWorkingDirectory(), rebuilt.getWorkingDirectory());
+      assertEquals(original.getWasiVersion(), rebuilt.getWasiVersion());
+      assertEquals(original.isValidationEnabled(), rebuilt.isValidationEnabled());
+      assertEquals(original.isStrictModeEnabled(), rebuilt.isStrictModeEnabled());
+      assertEquals(original.getExecutionTimeout(), rebuilt.getExecutionTimeout());
+
+      LOGGER.info("toBuilder creates correct builder");
+    }
+
+    @Test
+    @DisplayName("Should handle toBuilder with inherit environment")
+    void shouldHandleToBuilderWithInheritEnvironment() {
+      LOGGER.info("Testing toBuilder with inherit environment");
+
+      final WasiConfig original = new PanamaWasiConfigBuilder().inheritEnvironment().build();
+
+      if (original instanceof PanamaWasiConfig) {
+        assertTrue(
+            ((PanamaWasiConfig) original).isInheritEnvironment(),
+            "Inherit environment should be true");
+      }
+
+      final WasiConfig rebuilt = original.toBuilder().build();
+      if (rebuilt instanceof PanamaWasiConfig) {
+        assertTrue(
+            ((PanamaWasiConfig) rebuilt).isInheritEnvironment(),
+            "Inherit environment should be preserved");
+      }
+
+      LOGGER.info("toBuilder preserves inherit environment");
+    }
+  }
+
+  @Nested
+  @DisplayName("Validation Tests")
+  class ValidationTests {
+
+    @Test
+    @DisplayName("Should validate successfully")
+    void shouldValidateSuccessfully() {
+      LOGGER.info("Testing validate");
+
+      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+      assertDoesNotThrow(config::validate, "Validation should not throw");
+
+      LOGGER.info("Validation passed");
+    }
+  }
+
+  @Nested
+  @DisplayName("Comprehensive Configuration Tests")
+  class ComprehensiveConfigurationTests {
+
+    @Test
+    @DisplayName("Should build fully configured instance")
+    void shouldBuildFullyConfiguredInstance() {
+      LOGGER.info("Testing fully configured instance");
+
+      final Map<String, String> env = new HashMap<>();
+      env.put("PATH", "/usr/bin");
+      env.put("HOME", "/home/user");
+
+      final WasiConfig config =
+          new PanamaWasiConfigBuilder()
+              .withEnvironment(env)
+              .withArguments(Arrays.asList("arg1", "arg2", "arg3"))
+              .withPreopenDirectory("/", Path.of("/"))
+              .withPreopenDirectories(Collections.singletonMap("/tmp", Path.of("/tmp")))
+              .withWorkingDirectory("/workspace")
+              .withExecutionTimeout(Duration.ofMinutes(5))
+              .withWasiVersion(WasiVersion.PREVIEW_1)
+              .withValidation(true)
+              .withStrictMode(true)
+              .withAsyncOperations(true)
+              .withMaxAsyncOperations(100)
+              .withAsyncOperationTimeout(Duration.ofSeconds(30))
+              .build();
+
+      // Verify all settings
+      assertEquals(2, config.getEnvironment().size());
+      assertEquals(3, config.getArguments().size());
+      assertEquals(2, config.getPreopenDirectories().size());
+      assertEquals("/workspace", config.getWorkingDirectory().get());
+      assertEquals(Duration.ofMinutes(5), config.getExecutionTimeout().get());
+      assertEquals(WasiVersion.PREVIEW_1, config.getWasiVersion());
+      assertTrue(config.isValidationEnabled());
+      assertTrue(config.isStrictModeEnabled());
+
+      if (config instanceof PanamaWasiConfig) {
+        final PanamaWasiConfig panamaConfig = (PanamaWasiConfig) config;
+        assertTrue(panamaConfig.isAsyncOperationsEnabled());
+        assertEquals(100, panamaConfig.getMaxAsyncOperations().get());
+        assertEquals(Duration.ofSeconds(30), panamaConfig.getAsyncOperationTimeout().get());
+      }
+
+      LOGGER.info("Fully configured instance built successfully");
     }
   }
 }

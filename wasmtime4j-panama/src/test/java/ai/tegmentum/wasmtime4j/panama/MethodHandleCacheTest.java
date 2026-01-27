@@ -13,242 +13,393 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.panama;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.MemorySegment;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link MethodHandleCache} class.
+ * Integration tests for MethodHandleCache.
  *
- * <p>MethodHandleCache provides caching for method handles to optimize repeated FFI calls.
+ * <p>These tests exercise actual code execution to improve JaCoCo coverage. Note: Some methods
+ * require actual FFI symbols which we cannot test without native library.
  */
-@DisplayName("MethodHandleCache Tests")
-class MethodHandleCacheTest {
+@DisplayName("Method Handle Cache Integration Tests")
+public class MethodHandleCacheTest {
+
+  private static final Logger LOGGER = Logger.getLogger(MethodHandleCacheTest.class.getName());
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
+  @DisplayName("Constructor Tests")
+  class ConstructorTests {
 
     @Test
-    @DisplayName("should be public and final")
-    void shouldBePublicAndFinal() {
+    @DisplayName("Should create cache with default settings")
+    void shouldCreateCacheWithDefaultSettings() {
+      LOGGER.info("Testing default constructor");
+
+      final MethodHandleCache cache = new MethodHandleCache();
+
+      assertNotNull(cache, "Cache should not be null");
+      assertEquals(1000, cache.getMaxSize(), "Default max size should be 1000");
+      assertEquals(0, cache.size(), "Initial size should be 0");
+      assertTrue(cache.isEmpty(), "Cache should be empty");
+
+      LOGGER.info(
+          "Default cache created: maxSize=" + cache.getMaxSize() + ", size=" + cache.size());
+    }
+
+    @Test
+    @DisplayName("Should create cache with custom max size")
+    void shouldCreateCacheWithCustomMaxSize() {
+      LOGGER.info("Testing custom max size constructor");
+
+      final MethodHandleCache cache = new MethodHandleCache(500, true);
+
+      assertEquals(500, cache.getMaxSize(), "Max size should be 500");
+      assertEquals(0, cache.size(), "Initial size should be 0");
+      assertTrue(cache.isEmpty(), "Cache should be empty");
+
+      LOGGER.info("Custom cache created: maxSize=" + cache.getMaxSize());
+    }
+
+    @Test
+    @DisplayName("Should create cache with statistics disabled")
+    void shouldCreateCacheWithStatisticsDisabled() {
+      LOGGER.info("Testing cache with statistics disabled");
+
+      final MethodHandleCache cache = new MethodHandleCache(100, false);
+
+      assertEquals(100, cache.getMaxSize(), "Max size should be 100");
+      assertFalse(
+          cache.getStatistics().isPresent(), "Statistics should not be present when disabled");
+
+      LOGGER.info("Cache with disabled statistics created");
+    }
+
+    @Test
+    @DisplayName("Should reject zero max size")
+    void shouldRejectZeroMaxSize() {
+      LOGGER.info("Testing zero max size rejection");
+
+      final IllegalArgumentException ex =
+          assertThrows(IllegalArgumentException.class, () -> new MethodHandleCache(0, true));
+
       assertTrue(
-          Modifier.isPublic(MethodHandleCache.class.getModifiers()),
-          "MethodHandleCache should be public");
+          ex.getMessage().contains("positive"),
+          "Error should mention positive: " + ex.getMessage());
+
+      LOGGER.info("Correctly rejected zero max size: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should reject negative max size")
+    void shouldRejectNegativeMaxSize() {
+      LOGGER.info("Testing negative max size rejection");
+
+      final IllegalArgumentException ex =
+          assertThrows(IllegalArgumentException.class, () -> new MethodHandleCache(-10, true));
+
       assertTrue(
-          Modifier.isFinal(MethodHandleCache.class.getModifiers()),
-          "MethodHandleCache should be final");
-    }
+          ex.getMessage().contains("positive"),
+          "Error should mention positive: " + ex.getMessage());
 
-    @Test
-    @DisplayName("should have default constructor")
-    void shouldHaveDefaultConstructor() throws NoSuchMethodException {
-      final Constructor<?> constructor = MethodHandleCache.class.getConstructor();
-      assertNotNull(constructor, "Default constructor should exist");
-      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
-    }
-
-    @Test
-    @DisplayName("should have constructor with max size and statistics flag")
-    void shouldHaveConstructorWithMaxSizeAndStats() throws NoSuchMethodException {
-      final Constructor<?> constructor =
-          MethodHandleCache.class.getConstructor(int.class, boolean.class);
-      assertNotNull(constructor, "Constructor with max size and stats should exist");
-      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
+      LOGGER.info("Correctly rejected negative max size: " + ex.getMessage());
     }
   }
 
   @Nested
-  @DisplayName("Cache Operation Method Tests")
-  class CacheOperationMethodTests {
+  @DisplayName("Basic Operation Tests")
+  class BasicOperationTests {
 
     @Test
-    @DisplayName("should have getOrCreate method")
-    void shouldHaveGetOrCreateMethod() throws NoSuchMethodException {
-      final Method method =
-          MethodHandleCache.class.getMethod(
-              "getOrCreate", String.class, MemorySegment.class, FunctionDescriptor.class);
-      assertNotNull(method, "getOrCreate method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "getOrCreate should return Optional");
+    @DisplayName("Should report empty status correctly")
+    void shouldReportEmptyStatusCorrectly() {
+      LOGGER.info("Testing isEmpty and size");
+
+      final MethodHandleCache cache = new MethodHandleCache();
+
+      assertTrue(cache.isEmpty(), "New cache should be empty");
+      assertEquals(0, cache.size(), "New cache size should be 0");
+
+      LOGGER.info("Empty status verified: isEmpty=" + cache.isEmpty() + ", size=" + cache.size());
     }
 
     @Test
-    @DisplayName("should have get method")
-    void shouldHaveGetMethod() throws NoSuchMethodException {
-      final Method method =
-          MethodHandleCache.class.getMethod("get", String.class, FunctionDescriptor.class);
-      assertNotNull(method, "get method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "get should return Optional");
+    @DisplayName("Should clear cache")
+    void shouldClearCache() {
+      LOGGER.info("Testing clear");
+
+      final MethodHandleCache cache = new MethodHandleCache();
+
+      cache.clear();
+
+      assertTrue(cache.isEmpty(), "Cache should be empty after clear");
+      assertEquals(0, cache.size(), "Cache size should be 0 after clear");
+
+      LOGGER.info("Cache cleared successfully");
     }
 
     @Test
-    @DisplayName("should have invalidate method")
-    void shouldHaveInvalidateMethod() throws NoSuchMethodException {
-      final Method method =
-          MethodHandleCache.class.getMethod("invalidate", String.class, FunctionDescriptor.class);
-      assertNotNull(method, "invalidate method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "invalidate should return boolean");
-    }
+    @DisplayName("Should get max size")
+    void shouldGetMaxSize() {
+      LOGGER.info("Testing getMaxSize");
 
-    @Test
-    @DisplayName("should have clear method")
-    void shouldHaveClearMethod() throws NoSuchMethodException {
-      final Method method = MethodHandleCache.class.getMethod("clear");
-      assertNotNull(method, "clear method should exist");
-      assertEquals(void.class, method.getReturnType(), "clear should return void");
-    }
-  }
+      final MethodHandleCache cache1 = new MethodHandleCache();
+      assertEquals(1000, cache1.getMaxSize(), "Default max size should be 1000");
 
-  @Nested
-  @DisplayName("Cache State Method Tests")
-  class CacheStateMethodTests {
+      final MethodHandleCache cache2 = new MethodHandleCache(250, true);
+      assertEquals(250, cache2.getMaxSize(), "Custom max size should be 250");
 
-    @Test
-    @DisplayName("should have size method")
-    void shouldHaveSizeMethod() throws NoSuchMethodException {
-      final Method method = MethodHandleCache.class.getMethod("size");
-      assertNotNull(method, "size method should exist");
-      assertEquals(int.class, method.getReturnType(), "size should return int");
-    }
-
-    @Test
-    @DisplayName("should have getMaxSize method")
-    void shouldHaveGetMaxSizeMethod() throws NoSuchMethodException {
-      final Method method = MethodHandleCache.class.getMethod("getMaxSize");
-      assertNotNull(method, "getMaxSize method should exist");
-      assertEquals(int.class, method.getReturnType(), "getMaxSize should return int");
-    }
-
-    @Test
-    @DisplayName("should have isEmpty method")
-    void shouldHaveIsEmptyMethod() throws NoSuchMethodException {
-      final Method method = MethodHandleCache.class.getMethod("isEmpty");
-      assertNotNull(method, "isEmpty method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isEmpty should return boolean");
+      LOGGER.info("Max size values verified");
     }
   }
 
   @Nested
-  @DisplayName("Statistics Method Tests")
-  class StatisticsMethodTests {
+  @DisplayName("Statistics Tests")
+  class StatisticsTests {
 
     @Test
-    @DisplayName("should have getStatistics method")
-    void shouldHaveGetStatisticsMethod() throws NoSuchMethodException {
-      final Method method = MethodHandleCache.class.getMethod("getStatistics");
-      assertNotNull(method, "getStatistics method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "getStatistics should return Optional");
+    @DisplayName("Should return statistics when enabled")
+    void shouldReturnStatisticsWhenEnabled() {
+      LOGGER.info("Testing statistics when enabled");
+
+      final MethodHandleCache cache = new MethodHandleCache(100, true);
+
+      final Optional<MethodHandleCache.CacheStatistics> stats = cache.getStatistics();
+
+      assertTrue(stats.isPresent(), "Statistics should be present");
+
+      final MethodHandleCache.CacheStatistics s = stats.get();
+      assertEquals(0, s.getHitCount(), "Hit count should be 0");
+      assertEquals(0, s.getMissCount(), "Miss count should be 0");
+      assertEquals(0, s.getEvictionCount(), "Eviction count should be 0");
+      assertEquals(0, s.getTotalLoadTime(), "Total load time should be 0");
+      assertEquals(0, s.getCurrentSize(), "Current size should be 0");
+      assertEquals(0.0, s.getHitRate(), 0.001, "Hit rate should be 0");
+      assertEquals(0.0, s.getAverageLoadTime(), 0.001, "Average load time should be 0");
+
+      LOGGER.info("Statistics retrieved: " + s);
     }
 
     @Test
-    @DisplayName("should have resetStatistics method")
-    void shouldHaveResetStatisticsMethod() throws NoSuchMethodException {
-      final Method method = MethodHandleCache.class.getMethod("resetStatistics");
-      assertNotNull(method, "resetStatistics method should exist");
-      assertEquals(void.class, method.getReturnType(), "resetStatistics should return void");
+    @DisplayName("Should return empty when statistics disabled")
+    void shouldReturnEmptyWhenStatisticsDisabled() {
+      LOGGER.info("Testing statistics when disabled");
+
+      final MethodHandleCache cache = new MethodHandleCache(100, false);
+
+      final Optional<MethodHandleCache.CacheStatistics> stats = cache.getStatistics();
+
+      assertFalse(stats.isPresent(), "Statistics should not be present");
+
+      LOGGER.info("Statistics correctly not present when disabled");
+    }
+
+    @Test
+    @DisplayName("Should reset statistics")
+    void shouldResetStatistics() {
+      LOGGER.info("Testing resetStatistics");
+
+      final MethodHandleCache cache = new MethodHandleCache(100, true);
+
+      cache.resetStatistics();
+
+      final Optional<MethodHandleCache.CacheStatistics> stats = cache.getStatistics();
+      assertTrue(stats.isPresent(), "Statistics should still be present");
+
+      final MethodHandleCache.CacheStatistics s = stats.get();
+      assertEquals(0, s.getHitCount(), "Hit count should be 0 after reset");
+      assertEquals(0, s.getMissCount(), "Miss count should be 0 after reset");
+      assertEquals(0, s.getEvictionCount(), "Eviction count should be 0 after reset");
+      assertEquals(0, s.getTotalLoadTime(), "Total load time should be 0 after reset");
+
+      LOGGER.info("Statistics reset successfully");
+    }
+
+    @Test
+    @DisplayName("Should not fail when resetting disabled statistics")
+    void shouldNotFailWhenResettingDisabledStatistics() {
+      LOGGER.info("Testing resetStatistics when disabled");
+
+      final MethodHandleCache cache = new MethodHandleCache(100, false);
+
+      // Should not throw
+      cache.resetStatistics();
+
+      assertFalse(cache.getStatistics().isPresent(), "Statistics should still not be present");
+
+      LOGGER.info("Reset with disabled statistics succeeded");
     }
   }
 
   @Nested
-  @DisplayName("Nested Class Tests")
-  class NestedClassTests {
+  @DisplayName("CacheStatistics Tests")
+  class CacheStatisticsTests {
 
     @Test
-    @DisplayName("should have CacheStatistics nested class")
-    void shouldHaveCacheStatisticsNestedClass() {
-      final Class<?>[] declaredClasses = MethodHandleCache.class.getDeclaredClasses();
-      boolean found = false;
-      for (final Class<?> clazz : declaredClasses) {
-        if (clazz.getSimpleName().equals("CacheStatistics")) {
-          found = true;
-          assertTrue(Modifier.isPublic(clazz.getModifiers()), "CacheStatistics should be public");
-          assertTrue(Modifier.isFinal(clazz.getModifiers()), "CacheStatistics should be final");
-          assertTrue(Modifier.isStatic(clazz.getModifiers()), "CacheStatistics should be static");
-          break;
-        }
+    @DisplayName("Should calculate hit rate correctly")
+    void shouldCalculateHitRateCorrectly() {
+      LOGGER.info("Testing hit rate calculation");
+
+      // Test with zero requests
+      final MethodHandleCache cache = new MethodHandleCache(100, true);
+      final MethodHandleCache.CacheStatistics stats = cache.getStatistics().orElseThrow();
+
+      assertEquals(0.0, stats.getHitRate(), 0.001, "Hit rate should be 0 with no requests");
+
+      LOGGER.info("Hit rate calculation verified");
+    }
+
+    @Test
+    @DisplayName("Should calculate average load time correctly")
+    void shouldCalculateAverageLoadTimeCorrectly() {
+      LOGGER.info("Testing average load time calculation");
+
+      // Test with zero loads
+      final MethodHandleCache cache = new MethodHandleCache(100, true);
+      final MethodHandleCache.CacheStatistics stats = cache.getStatistics().orElseThrow();
+
+      assertEquals(
+          0.0, stats.getAverageLoadTime(), 0.001, "Average load time should be 0 with no loads");
+
+      LOGGER.info("Average load time calculation verified");
+    }
+
+    @Test
+    @DisplayName("Should produce readable toString")
+    void shouldProduceReadableToString() {
+      LOGGER.info("Testing statistics toString");
+
+      final MethodHandleCache cache = new MethodHandleCache(100, true);
+      final MethodHandleCache.CacheStatistics stats = cache.getStatistics().orElseThrow();
+
+      final String str = stats.toString();
+
+      assertNotNull(str, "toString should not be null");
+      assertTrue(str.contains("CacheStatistics"), "toString should contain class name");
+      assertTrue(str.contains("hitCount"), "toString should contain hitCount");
+      assertTrue(str.contains("missCount"), "toString should contain missCount");
+      assertTrue(str.contains("hitRate"), "toString should contain hitRate");
+
+      LOGGER.info("Statistics toString: " + str);
+    }
+
+    @Test
+    @DisplayName("Should have correct initial values")
+    void shouldHaveCorrectInitialValues() {
+      LOGGER.info("Testing initial statistics values");
+
+      final MethodHandleCache cache = new MethodHandleCache(100, true);
+      final MethodHandleCache.CacheStatistics stats = cache.getStatistics().orElseThrow();
+
+      assertEquals(0, stats.getHitCount(), "Initial hit count should be 0");
+      assertEquals(0, stats.getMissCount(), "Initial miss count should be 0");
+      assertEquals(0, stats.getEvictionCount(), "Initial eviction count should be 0");
+      assertEquals(0, stats.getTotalLoadTime(), "Initial total load time should be 0");
+      assertEquals(0, stats.getCurrentSize(), "Initial current size should be 0");
+
+      LOGGER.info("Initial statistics values verified");
+    }
+  }
+
+  @Nested
+  @DisplayName("Multiple Cache Instance Tests")
+  class MultipleCacheInstanceTests {
+
+    @Test
+    @DisplayName("Should maintain independent caches")
+    void shouldMaintainIndependentCaches() {
+      LOGGER.info("Testing independent cache instances");
+
+      final MethodHandleCache cache1 = new MethodHandleCache(100, true);
+      final MethodHandleCache cache2 = new MethodHandleCache(200, false);
+      final MethodHandleCache cache3 = new MethodHandleCache(300, true);
+
+      assertEquals(100, cache1.getMaxSize(), "Cache1 max size should be 100");
+      assertEquals(200, cache2.getMaxSize(), "Cache2 max size should be 200");
+      assertEquals(300, cache3.getMaxSize(), "Cache3 max size should be 300");
+
+      assertTrue(cache1.getStatistics().isPresent(), "Cache1 statistics should be present");
+      assertFalse(cache2.getStatistics().isPresent(), "Cache2 statistics should not be present");
+      assertTrue(cache3.getStatistics().isPresent(), "Cache3 statistics should be present");
+
+      // Clear one cache shouldn't affect others
+      cache1.clear();
+      assertEquals(0, cache1.size(), "Cache1 should be empty after clear");
+
+      LOGGER.info("Independent cache instances verified");
+    }
+  }
+
+  @Nested
+  @DisplayName("Edge Case Tests")
+  class EdgeCaseTests {
+
+    @Test
+    @DisplayName("Should handle minimum max size")
+    void shouldHandleMinimumMaxSize() {
+      LOGGER.info("Testing minimum max size");
+
+      final MethodHandleCache cache = new MethodHandleCache(1, true);
+
+      assertEquals(1, cache.getMaxSize(), "Max size should be 1");
+      assertTrue(cache.isEmpty(), "Cache should be empty");
+
+      LOGGER.info("Minimum max size (1) handled correctly");
+    }
+
+    @Test
+    @DisplayName("Should handle large max size")
+    void shouldHandleLargeMaxSize() {
+      LOGGER.info("Testing large max size");
+
+      final MethodHandleCache cache = new MethodHandleCache(100000, true);
+
+      assertEquals(100000, cache.getMaxSize(), "Max size should be 100000");
+      assertTrue(cache.isEmpty(), "Cache should be empty");
+
+      LOGGER.info("Large max size (100000) handled correctly");
+    }
+
+    @Test
+    @DisplayName("Should handle repeated clears")
+    void shouldHandleRepeatedClears() {
+      LOGGER.info("Testing repeated clears");
+
+      final MethodHandleCache cache = new MethodHandleCache();
+
+      for (int i = 0; i < 10; i++) {
+        cache.clear();
+        assertTrue(cache.isEmpty(), "Cache should be empty after clear " + (i + 1));
       }
-      assertTrue(found, "CacheStatistics nested class should exist");
-    }
-  }
 
-  @Nested
-  @DisplayName("CacheStatistics Method Tests")
-  class CacheStatisticsMethodTests {
-
-    @Test
-    @DisplayName("CacheStatistics should have getHitCount method")
-    void cacheStatisticsShouldHaveGetHitCountMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = MethodHandleCache.CacheStatistics.class;
-      final Method method = statsClass.getMethod("getHitCount");
-      assertNotNull(method, "getHitCount method should exist");
-      assertEquals(long.class, method.getReturnType(), "getHitCount should return long");
+      LOGGER.info("Repeated clears handled correctly");
     }
 
     @Test
-    @DisplayName("CacheStatistics should have getMissCount method")
-    void cacheStatisticsShouldHaveGetMissCountMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = MethodHandleCache.CacheStatistics.class;
-      final Method method = statsClass.getMethod("getMissCount");
-      assertNotNull(method, "getMissCount method should exist");
-      assertEquals(long.class, method.getReturnType(), "getMissCount should return long");
-    }
+    @DisplayName("Should handle repeated statistics resets")
+    void shouldHandleRepeatedStatisticsResets() {
+      LOGGER.info("Testing repeated statistics resets");
 
-    @Test
-    @DisplayName("CacheStatistics should have getEvictionCount method")
-    void cacheStatisticsShouldHaveGetEvictionCountMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = MethodHandleCache.CacheStatistics.class;
-      final Method method = statsClass.getMethod("getEvictionCount");
-      assertNotNull(method, "getEvictionCount method should exist");
-      assertEquals(long.class, method.getReturnType(), "getEvictionCount should return long");
-    }
+      final MethodHandleCache cache = new MethodHandleCache(100, true);
 
-    @Test
-    @DisplayName("CacheStatistics should have getTotalLoadTime method")
-    void cacheStatisticsShouldHaveGetTotalLoadTimeMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = MethodHandleCache.CacheStatistics.class;
-      final Method method = statsClass.getMethod("getTotalLoadTime");
-      assertNotNull(method, "getTotalLoadTime method should exist");
-      assertEquals(long.class, method.getReturnType(), "getTotalLoadTime should return long");
-    }
+      for (int i = 0; i < 10; i++) {
+        cache.resetStatistics();
+        final MethodHandleCache.CacheStatistics stats = cache.getStatistics().orElseThrow();
+        assertEquals(0, stats.getHitCount(), "Hit count should be 0 after reset " + (i + 1));
+      }
 
-    @Test
-    @DisplayName("CacheStatistics should have getCurrentSize method")
-    void cacheStatisticsShouldHaveGetCurrentSizeMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = MethodHandleCache.CacheStatistics.class;
-      final Method method = statsClass.getMethod("getCurrentSize");
-      assertNotNull(method, "getCurrentSize method should exist");
-      assertEquals(int.class, method.getReturnType(), "getCurrentSize should return int");
-    }
-
-    @Test
-    @DisplayName("CacheStatistics should have getHitRate method")
-    void cacheStatisticsShouldHaveGetHitRateMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = MethodHandleCache.CacheStatistics.class;
-      final Method method = statsClass.getMethod("getHitRate");
-      assertNotNull(method, "getHitRate method should exist");
-      assertEquals(double.class, method.getReturnType(), "getHitRate should return double");
-    }
-
-    @Test
-    @DisplayName("CacheStatistics should have getAverageLoadTime method")
-    void cacheStatisticsShouldHaveGetAverageLoadTimeMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = MethodHandleCache.CacheStatistics.class;
-      final Method method = statsClass.getMethod("getAverageLoadTime");
-      assertNotNull(method, "getAverageLoadTime method should exist");
-      assertEquals(double.class, method.getReturnType(), "getAverageLoadTime should return double");
+      LOGGER.info("Repeated statistics resets handled correctly");
     }
   }
 }

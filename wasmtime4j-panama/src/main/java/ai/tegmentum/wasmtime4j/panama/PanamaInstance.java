@@ -203,10 +203,10 @@ public final class PanamaInstance implements Instance {
     ensureNotClosed();
 
     // Check if the export exists and is a function
-    final int exportKind =
-        NATIVE_BINDINGS.moduleGetExportKind(
-            module.getNativeModule(),
-            getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+    final MemorySegment modulePtr = module.getNativeModule();
+    final MemorySegment namePtr =
+        getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+    final int exportKind = NATIVE_BINDINGS.moduleGetExportKind(modulePtr, namePtr);
 
     // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
     if (exportKind != 1) {

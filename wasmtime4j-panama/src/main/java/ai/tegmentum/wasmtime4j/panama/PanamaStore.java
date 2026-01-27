@@ -171,13 +171,13 @@ public final class PanamaStore implements Store {
     final int result =
         NATIVE_BINDINGS.storeCreateWithConfig(
             engine.getNativeEngine(),
-            storePtr,
             0, // fuel limit - 0 means no limit, can be set later with setFuel
             limits.getMemorySize(),
             0, // execution timeout - 0 means no timeout
             (int) limits.getInstances(),
             (int) limits.getTableElements(),
-            0); // max functions - 0 means no limit
+            0, // max functions - 0 means no limit
+            storePtr);
 
     if (result != 0) {
       arena.close();

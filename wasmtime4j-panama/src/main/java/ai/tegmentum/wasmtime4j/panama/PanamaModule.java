@@ -886,13 +886,16 @@ public final class PanamaModule implements Module {
     }
 
     // Get the data pointer and length
-    final MemorySegment dataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
     final long length = lenPtr.get(ValueLayout.JAVA_LONG, 0);
+    final MemorySegment rawDataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
 
-    if (dataPtr == null || dataPtr.equals(MemorySegment.NULL) || length == 0) {
+    if (rawDataPtr == null || rawDataPtr.equals(MemorySegment.NULL) || length == 0) {
       // Return empty array for empty serialization
       return new byte[0];
     }
+
+    // Reinterpret the pointer with the correct size for safe access
+    final MemorySegment dataPtr = rawDataPtr.reinterpret(length);
 
     // Copy the serialized data into a byte array
     final byte[] serialized = new byte[(int) length];

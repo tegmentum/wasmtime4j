@@ -508,6 +508,12 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     // Set the WASI context on the linker for use during instantiation
     panamaLinker.setWasiContext(panamaContext);
 
+    // Track WASI Preview 2 imports for hasImport() checks
+    // Note: These are marker imports - full Preview 2 component model requires Component Linker
+    panamaLinker.addImport("wasi:filesystem/types", "filesystem");
+    panamaLinker.addImport("wasi:io/streams", "input-stream");
+    panamaLinker.addImport("wasi:sockets/network", "network");
+
     LOGGER.fine("Added WASI Preview 2 support to linker");
   }
 

@@ -1,180 +1,886 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.performance.EngineStatistics;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link PanamaEngine}.
+ * Test suite for {@link PanamaEngine}.
  *
- * <p>These tests focus on the Java wrapper logic, parameter validation, and defensive programming.
- * The tests verify constructor behavior and validation without relying on actual native calls where
- * possible.
- *
- * <p>Note: Tests that require real native operations (engine creation, module compilation) are
- * tested in integration tests.
+ * <p>Tests the Java wrapper logic, parameter validation, native engine creation, module
+ * compilation, feature detection, lifecycle management, and statistics capture.
  */
+@DisplayName("Panama Engine Tests")
 class PanamaEngineTest {
 
-  @Test
-  void testConstructorWithNullConfig() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> new PanamaEngine(null));
+  private static final Logger LOGGER = Logger.getLogger(PanamaEngineTest.class.getName());
 
-    assertThat(exception.getMessage()).contains("Config cannot be null");
+  private static final String SIMPLE_MODULE_WAT = "(module)";
+
+  private static final String FUNCTION_MODULE_WAT =
+      """
+      (module
+        (func (export "add") (param i32 i32) (result i32)
+          local.get 0 local.get 1 i32.add))""";
+
+  /** Resources to close after each test, in reverse order. */
+  private final List<AutoCloseable> resources = new ArrayList<>();
+
+  @AfterEach
+  void tearDown() {
+    for (int i = resources.size() - 1; i >= 0; i--) {
+      try {
+        resources.get(i).close();
+      } catch (final Exception e) {
+        LOGGER.warning("Error closing resource: " + e.getMessage());
+      }
+    }
+    resources.clear();
   }
 
-  @Test
-  void testCompileModuleWithNullBytes() {
-    // This test verifies the validation happens before any native call
-    // We can't create a real engine without native library, but we can document behavior
-
-    // The expected behavior is:
-    // PanamaEngine.compileModule(null) should throw IllegalArgumentException
-    // with message containing "WASM bytes cannot be null or empty"
-
-    // This is tested in integration tests with a real engine instance
-    assertThat(true).isTrue(); // Documentation placeholder
+  /** Creates a PanamaEngine and tracks it for cleanup. */
+  private PanamaEngine createEngine() throws Exception {
+    final PanamaEngine engine = new PanamaEngine();
+    resources.add(engine);
+    return engine;
   }
 
-  @Test
-  void testCompileModuleWithEmptyBytes() {
-    // The expected behavior is:
-    // PanamaEngine.compileModule(new byte[0]) should throw IllegalArgumentException
-    // with message containing "WASM bytes cannot be null or empty"
-
-    // This is tested in integration tests with a real engine instance
-    assertThat(true).isTrue(); // Documentation placeholder
+  /** Creates a PanamaEngine with config and tracks it for cleanup. */
+  private PanamaEngine createEngine(final EngineConfig config) throws Exception {
+    final PanamaEngine engine = new PanamaEngine(config);
+    resources.add(engine);
+    return engine;
   }
 
-  @Test
-  void testCompileWatWithNullString() {
-    // The expected behavior is:
-    // PanamaEngine.compileWat(null) should throw IllegalArgumentException
-    // with message "wat cannot be null"
-
-    // This is tested in integration tests with a real engine instance
-    assertThat(true).isTrue(); // Documentation placeholder
+  /** Loads the exports-test.wasm bytes from classpath. */
+  private byte[] loadTestWasmBytes() throws Exception {
+    final Path wasmPath =
+        Paths.get(getClass().getClassLoader().getResource("wasm/exports-test.wasm").toURI());
+    return Files.readAllBytes(wasmPath);
   }
 
-  @Test
-  void testCompileWatWithEmptyString() {
-    // The expected behavior is:
-    // PanamaEngine.compileWat("") should throw IllegalArgumentException
-    // with message "wat cannot be empty"
+  // ==================== Constructor Tests ====================
 
-    // This is tested in integration tests with a real engine instance
-    assertThat(true).isTrue(); // Documentation placeholder
+  @Nested
+  @DisplayName("Constructor Tests")
+  class ConstructorTests {
+
+    @Test
+    @DisplayName("Default constructor should create valid engine")
+    void shouldCreateWithDefaultConstructor() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertNotNull(engine, "Engine should not be null");
+      assertTrue(engine.isValid(), "Engine should be valid after creation");
+    }
+
+    @Test
+    @DisplayName("Config constructor should create valid engine")
+    void shouldCreateWithConfig() throws Exception {
+      final EngineConfig config = new EngineConfig();
+      final PanamaEngine engine = createEngine(config);
+      assertNotNull(engine, "Engine should not be null");
+      assertTrue(engine.isValid(), "Engine should be valid after creation");
+    }
+
+    @Test
+    @DisplayName("Null config should throw IllegalArgumentException")
+    void shouldThrowForNullConfig() {
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> new PanamaEngine(null),
+              "Null config should throw");
+      assertTrue(
+          ex.getMessage().contains("Config cannot be null"),
+          "Message should indicate null config: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Config+Runtime constructor should create valid engine")
+    void shouldCreateWithConfigAndRuntime() throws Exception {
+      final EngineConfig config = new EngineConfig();
+      final PanamaEngine engine = new PanamaEngine(config, null);
+      resources.add(engine);
+      assertNotNull(engine, "Engine should not be null");
+      assertTrue(engine.isValid(), "Engine should be valid");
+    }
   }
 
-  @Test
-  void testPrecompileModuleWithNullBytes() {
-    // The expected behavior is:
-    // PanamaEngine.precompileModule(null) should throw IllegalArgumentException
-    // with message "wasmBytes cannot be null"
+  // ==================== Configuration Tests ====================
 
-    // This is tested in integration tests with a real engine instance
-    assertThat(true).isTrue(); // Documentation placeholder
+  @Nested
+  @DisplayName("Configuration Tests")
+  class ConfigurationTests {
+
+    @Test
+    @DisplayName("getConfig should return non-null config")
+    void shouldReturnConfig() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertNotNull(engine.getConfig(), "Config should not be null");
+    }
+
+    @Test
+    @DisplayName("getRuntime should return null when not provided")
+    void shouldReturnNullRuntime() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertNull(engine.getRuntime(), "Runtime should be null for default constructor");
+    }
   }
 
-  @Test
-  void testPrecompileModuleWithEmptyBytes() {
-    // The expected behavior is:
-    // PanamaEngine.precompileModule(new byte[0]) should throw IllegalArgumentException
-    // with message "wasmBytes cannot be empty"
+  // ==================== Module Compilation Tests ====================
 
-    // This is tested in integration tests with a real engine instance
-    assertThat(true).isTrue(); // Documentation placeholder
+  @Nested
+  @DisplayName("Module Compilation Tests")
+  class ModuleCompilationTests {
+
+    @Test
+    @DisplayName("compileModule with valid bytes should succeed")
+    void shouldCompileModuleFromBytes() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final byte[] wasmBytes = loadTestWasmBytes();
+
+      final Module module = engine.compileModule(wasmBytes);
+      resources.add(module);
+
+      assertNotNull(module, "Compiled module should not be null");
+      LOGGER.info("Successfully compiled module from bytes");
+    }
+
+    @Test
+    @DisplayName("compileModule with null should throw IllegalArgumentException")
+    void shouldThrowForNullBytes() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.compileModule(null),
+          "Null bytes should throw");
+    }
+
+    @Test
+    @DisplayName("compileModule with empty bytes should throw IllegalArgumentException")
+    void shouldThrowForEmptyBytes() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.compileModule(new byte[0]),
+          "Empty bytes should throw");
+    }
+
+    @Test
+    @DisplayName("compileWat with valid WAT should succeed")
+    void shouldCompileWat() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final Module module = engine.compileWat(FUNCTION_MODULE_WAT);
+      resources.add(module);
+
+      assertNotNull(module, "Compiled WAT module should not be null");
+      LOGGER.info("Successfully compiled WAT module");
+    }
+
+    @Test
+    @DisplayName("compileWat with simple empty module should succeed")
+    void shouldCompileSimpleWat() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final Module module = engine.compileWat(SIMPLE_MODULE_WAT);
+      resources.add(module);
+
+      assertNotNull(module, "Simple WAT module should not be null");
+    }
+
+    @Test
+    @DisplayName("compileWat with null should throw IllegalArgumentException")
+    void shouldThrowForNullWat() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.compileWat(null),
+          "Null WAT should throw");
+    }
+
+    @Test
+    @DisplayName("compileWat with empty string should throw IllegalArgumentException")
+    void shouldThrowForEmptyWat() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.compileWat(""),
+          "Empty WAT should throw");
+    }
+
+    @Test
+    @DisplayName("compileWat with invalid WAT should throw WasmException")
+    void shouldThrowForInvalidWat() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          WasmException.class,
+          () -> engine.compileWat("this is not valid WAT"),
+          "Invalid WAT should throw WasmException");
+    }
+
+    @Test
+    @DisplayName("precompileModule with null should throw IllegalArgumentException")
+    void shouldThrowForNullPrecompile() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.precompileModule(null),
+          "Null precompile bytes should throw");
+    }
+
+    @Test
+    @DisplayName("precompileModule with empty bytes should throw IllegalArgumentException")
+    void shouldThrowForEmptyPrecompile() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.precompileModule(new byte[0]),
+          "Empty precompile bytes should throw");
+    }
+
+    @Test
+    @DisplayName("compileFromStream with valid stream should succeed")
+    void shouldCompileFromStream() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final byte[] wasmBytes = loadTestWasmBytes();
+      final InputStream stream = new ByteArrayInputStream(wasmBytes);
+
+      final Module module = engine.compileFromStream(stream);
+      resources.add(module);
+
+      assertNotNull(module, "Module from stream should not be null");
+      LOGGER.info("Successfully compiled module from stream");
+    }
+
+    @Test
+    @DisplayName("compileFromStream with null should throw IllegalArgumentException")
+    void shouldThrowForNullStream() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.compileFromStream(null),
+          "Null stream should throw");
+    }
+
+    @Test
+    @DisplayName("compileFromStream with empty stream should throw WasmException")
+    void shouldThrowForEmptyStream() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final InputStream emptyStream = new ByteArrayInputStream(new byte[0]);
+      assertThrows(
+          WasmException.class,
+          () -> engine.compileFromStream(emptyStream),
+          "Empty stream should throw WasmException");
+    }
   }
 
-  @Test
-  void testCompileFromStreamWithNullStream() {
-    // The expected behavior is:
-    // PanamaEngine.compileFromStream(null) should throw IllegalArgumentException
-    // with message "stream cannot be null"
+  // ==================== Store Creation Tests ====================
 
-    // This is tested in integration tests with a real engine instance
-    assertThat(true).isTrue(); // Documentation placeholder
+  @Nested
+  @DisplayName("Store Creation Tests")
+  class StoreCreationTests {
+
+    @Test
+    @DisplayName("createStore should create valid store")
+    void shouldCreateStore() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      assertNotNull(store, "Store should not be null");
+    }
+
+    @Test
+    @DisplayName("createStore with data should set user data")
+    void shouldCreateStoreWithData() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final String userData = "test-data";
+      final Store store = engine.createStore(userData);
+      resources.add(store);
+
+      assertNotNull(store, "Store should not be null");
+    }
+
+    @Test
+    @DisplayName("Should create multiple stores from same engine")
+    void shouldCreateMultipleStores() throws Exception {
+      final PanamaEngine engine = createEngine();
+
+      final Store store1 = engine.createStore();
+      resources.add(store1);
+      final Store store2 = engine.createStore();
+      resources.add(store2);
+
+      assertNotNull(store1, "First store should not be null");
+      assertNotNull(store2, "Second store should not be null");
+    }
   }
 
-  @Test
-  void testSupportsFeatureWithNullFeature() {
-    // PanamaEngine.supportsFeature(null) should return false without throwing
-    // This is a defensive programming pattern
+  // ==================== Feature Detection Tests ====================
 
-    // This is tested in integration tests with a real engine instance
-    assertThat(true).isTrue(); // Documentation placeholder
+  @Nested
+  @DisplayName("Feature Detection Tests")
+  class FeatureDetectionTests {
+
+    @Test
+    @DisplayName("supportsFeature with null should return false")
+    void shouldReturnFalseForNullFeature() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertFalse(engine.supportsFeature(null), "Null feature should return false");
+    }
+
+    @Test
+    @DisplayName("supportsFeature should return boolean for valid features")
+    void shouldReturnBooleanForValidFeatures() throws Exception {
+      final PanamaEngine engine = createEngine();
+
+      for (final WasmFeature feature : WasmFeature.values()) {
+        final boolean supported = engine.supportsFeature(feature);
+        LOGGER.info("Feature " + feature.name() + ": " + supported);
+        // Just verify no exception is thrown
+      }
+    }
+
+    @Test
+    @DisplayName("getMemoryLimitPages should return non-negative")
+    void shouldReturnNonNegativeMemoryLimit() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final int limit = engine.getMemoryLimitPages();
+      LOGGER.info("Memory limit pages: " + limit);
+      assertTrue(limit >= 0, "Memory limit should be non-negative: " + limit);
+    }
+
+    @Test
+    @DisplayName("getStackSizeLimit should return non-negative")
+    void shouldReturnNonNegativeStackSizeLimit() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final long limit = engine.getStackSizeLimit();
+      LOGGER.info("Stack size limit: " + limit);
+      assertTrue(limit >= 0, "Stack size limit should be non-negative: " + limit);
+    }
+
+    @Test
+    @DisplayName("isFuelEnabled should return boolean")
+    void shouldReturnFuelEnabled() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final boolean fuelEnabled = engine.isFuelEnabled();
+      LOGGER.info("Fuel enabled: " + fuelEnabled);
+      // Default config should have fuel disabled
+    }
+
+    @Test
+    @DisplayName("isEpochInterruptionEnabled should return boolean")
+    void shouldReturnEpochInterruptionEnabled() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final boolean epochEnabled = engine.isEpochInterruptionEnabled();
+      LOGGER.info("Epoch interruption enabled: " + epochEnabled);
+    }
+
+    @Test
+    @DisplayName("isCoredumpOnTrapEnabled should return boolean")
+    void shouldReturnCoredumpOnTrapEnabled() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final boolean coredumpEnabled = engine.isCoredumpOnTrapEnabled();
+      LOGGER.info("Coredump on trap enabled: " + coredumpEnabled);
+    }
+
+    @Test
+    @DisplayName("getMaxInstances should return Integer.MAX_VALUE")
+    void shouldReturnMaxInstances() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertEquals(
+          Integer.MAX_VALUE,
+          engine.getMaxInstances(),
+          "Max instances should be Integer.MAX_VALUE");
+    }
+
+    @Test
+    @DisplayName("getReferenceCount should return 1")
+    void shouldReturnReferenceCount() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertEquals(1, engine.getReferenceCount(), "Reference count should be 1");
+    }
+
+    @Test
+    @DisplayName("isAsync should return false")
+    void shouldReturnIsAsync() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertFalse(engine.isAsync(), "Default engine should not be async");
+    }
+
+    @Test
+    @DisplayName("isPulley should return boolean without throwing")
+    void shouldReturnIsPulley() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final boolean pulley = engine.isPulley();
+      LOGGER.info("isPulley: " + pulley);
+      // Just verify no exception
+    }
   }
 
-  @Test
-  void testSupportsFeatureReturnsDefaultValues() {
-    // Verify that each WasmFeature has an expected default behavior
-    // The actual values depend on engine configuration and native capabilities
+  // ==================== Lifecycle Tests ====================
 
-    // Default features that should typically be supported:
-    assertThat(WasmFeature.REFERENCE_TYPES).isNotNull();
-    assertThat(WasmFeature.BULK_MEMORY).isNotNull();
-    assertThat(WasmFeature.MULTI_VALUE).isNotNull();
-    assertThat(WasmFeature.SIMD).isNotNull();
-    assertThat(WasmFeature.THREADS).isNotNull();
+  @Nested
+  @DisplayName("Lifecycle Tests")
+  class LifecycleTests {
+
+    @Test
+    @DisplayName("isValid should return true for new engine")
+    void shouldBeValidAfterCreation() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertTrue(engine.isValid(), "New engine should be valid");
+    }
+
+    @Test
+    @DisplayName("close should make isValid return false")
+    void shouldBeInvalidAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      assertTrue(engine.isValid(), "Engine should be valid before close");
+      engine.close();
+      assertFalse(engine.isValid(), "Engine should be invalid after close");
+    }
+
+    @Test
+    @DisplayName("Double close should not throw")
+    void shouldAllowDoubleClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+      assertDoesNotThrow(engine::close, "Second close should not throw");
+    }
+
+    @Test
+    @DisplayName("compileModule after close should throw IllegalStateException")
+    void shouldThrowOnCompileAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+
+      final byte[] wasmBytes = loadTestWasmBytes();
+      assertThrows(
+          IllegalStateException.class,
+          () -> engine.compileModule(wasmBytes),
+          "compileModule after close should throw");
+    }
+
+    @Test
+    @DisplayName("compileWat after close should throw IllegalStateException")
+    void shouldThrowOnCompileWatAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+
+      assertThrows(
+          IllegalStateException.class,
+          () -> engine.compileWat(SIMPLE_MODULE_WAT),
+          "compileWat after close should throw");
+    }
+
+    @Test
+    @DisplayName("createStore after close should throw IllegalStateException")
+    void shouldThrowOnCreateStoreAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+
+      assertThrows(
+          IllegalStateException.class,
+          engine::createStore,
+          "createStore after close should throw");
+    }
+
+    @Test
+    @DisplayName("supportsFeature after close should throw IllegalStateException")
+    void shouldThrowOnSupportsFeatureAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+
+      assertThrows(
+          IllegalStateException.class,
+          () -> engine.supportsFeature(WasmFeature.BULK_MEMORY),
+          "supportsFeature after close should throw");
+    }
+
+    @Test
+    @DisplayName("incrementEpoch after close should throw IllegalStateException")
+    void shouldThrowOnIncrementEpochAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+
+      assertThrows(
+          IllegalStateException.class,
+          engine::incrementEpoch,
+          "incrementEpoch after close should throw");
+    }
   }
 
-  @Test
-  void testEngineConfigDefaults() {
-    // Verify EngineConfig can be created with defaults
-    final EngineConfig config = new EngineConfig();
+  // ==================== Statistics Tests ====================
 
-    assertThat(config).isNotNull();
+  @Nested
+  @DisplayName("Statistics Tests")
+  class StatisticsTests {
+
+    @Test
+    @DisplayName("captureStatistics should return non-null")
+    void shouldCaptureStatistics() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final EngineStatistics stats = engine.captureStatistics();
+      assertNotNull(stats, "Statistics should not be null");
+    }
+
+    @Test
+    @DisplayName("Statistics should have zero values for new engine (no profiler)")
+    void shouldHaveZeroValuesForNewEngine() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final EngineStatistics stats = engine.captureStatistics();
+
+      assertEquals(0, stats.getModulesCompiled(), "Modules compiled should be 0");
+      assertEquals(Duration.ZERO, stats.getTotalCompilationTime(), "Total compilation time should be zero");
+      assertEquals(Duration.ZERO, stats.getAverageCompilationTime(), "Average compilation time should be zero");
+      assertEquals(0, stats.getBytesCompiled(), "Bytes compiled should be 0");
+      assertEquals(0.0, stats.getCompilationThroughput(), "Compilation throughput should be 0.0");
+      assertEquals(0, stats.getFunctionsExecuted(), "Functions executed should be 0");
+      assertEquals(Duration.ZERO, stats.getTotalExecutionTime(), "Total execution time should be zero");
+      assertEquals(0, stats.getInstructionsExecuted(), "Instructions executed should be 0");
+      assertEquals(0.0, stats.getExecutionThroughput(), "Execution throughput should be 0.0");
+      assertEquals(0, stats.getPeakMemoryUsage(), "Peak memory usage should be 0");
+      assertEquals(0, stats.getCurrentMemoryUsage(), "Current memory usage should be 0");
+      assertEquals(0, stats.getTotalAllocations(), "Total allocations should be 0");
+      assertEquals(0, stats.getTotalDeallocations(), "Total deallocations should be 0");
+      assertEquals(0, stats.getCacheHits(), "Cache hits should be 0");
+      assertEquals(0, stats.getCacheMisses(), "Cache misses should be 0");
+      assertEquals(0.0, stats.getCacheHitRatio(), "Cache hit ratio should be 0.0");
+      assertEquals(0, stats.getJitCompilations(), "JIT compilations should be 0");
+      assertEquals(Duration.ZERO, stats.getJitCompilationTime(), "JIT compilation time should be zero");
+      assertEquals(0, stats.getJitCodeSize(), "JIT code size should be 0");
+    }
+
+    @Test
+    @DisplayName("Statistics getCaptureTime should be recent")
+    void shouldHaveRecentCaptureTime() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final Instant before = Instant.now();
+      final EngineStatistics stats = engine.captureStatistics();
+      final Instant after = Instant.now();
+
+      assertNotNull(stats.getCaptureTime(), "Capture time should not be null");
+      assertFalse(
+          stats.getCaptureTime().isBefore(before),
+          "Capture time should be >= before");
+      assertFalse(
+          stats.getCaptureTime().isAfter(after),
+          "Capture time should be <= after");
+    }
+
+    @Test
+    @DisplayName("Statistics getUptime should be non-negative")
+    void shouldHaveNonNegativeUptime() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final EngineStatistics stats = engine.captureStatistics();
+
+      assertNotNull(stats.getUptime(), "Uptime should not be null");
+      assertFalse(stats.getUptime().isNegative(), "Uptime should be non-negative");
+      LOGGER.info("Engine uptime: " + stats.getUptime());
+    }
+
+    @Test
+    @DisplayName("Statistics getExtendedStatistics should return empty map")
+    void shouldReturnEmptyExtendedStats() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final EngineStatistics stats = engine.captureStatistics();
+
+      assertNotNull(stats.getExtendedStatistics(), "Extended stats should not be null");
+      assertTrue(stats.getExtendedStatistics().isEmpty(), "Extended stats should be empty");
+    }
+
+    @Test
+    @DisplayName("Statistics reset should not throw")
+    void shouldResetWithoutError() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final EngineStatistics stats = engine.captureStatistics();
+
+      assertDoesNotThrow(stats::reset, "reset() should not throw");
+    }
   }
 
-  @Test
-  void testEngineConfigNotNull() {
-    // Document that EngineConfig cannot be null for PanamaEngine
-    // This is enforced by constructor validation
+  // ==================== Identity Tests ====================
 
-    assertThat(true).isTrue(); // Documentation placeholder
+  @Nested
+  @DisplayName("Identity Tests")
+  class IdentityTests {
+
+    @Test
+    @DisplayName("getId should return non-zero")
+    void shouldReturnNonZeroId() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final long id = engine.getId();
+      LOGGER.info("Engine ID: " + id);
+      // identityHashCode can technically be 0, but very unlikely
+      // Just verify no exception
+    }
+
+    @Test
+    @DisplayName("getNativeEngine should return non-null pointer")
+    void shouldReturnNonNullNativeEngine() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertNotNull(engine.getNativeEngine(), "Native engine pointer should not be null");
+    }
+
+    @Test
+    @DisplayName("getEnginePointer should return same as getNativeEngine")
+    void shouldReturnSamePointer() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertEquals(
+          engine.getNativeEngine(),
+          engine.getEnginePointer(),
+          "getEnginePointer and getNativeEngine should return same pointer");
+    }
+
+    @Test
+    @DisplayName("getProfilerHandle should return null (profiler disabled)")
+    void shouldReturnNullProfilerHandle() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertNull(engine.getProfilerHandle(), "Profiler handle should be null by default");
+    }
+
+    @Test
+    @DisplayName("same with self should return true")
+    void shouldBeSameAsSelf() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertTrue(engine.same(engine), "Engine should be same as itself");
+    }
+
+    @Test
+    @DisplayName("same with different engine should return false")
+    void shouldNotBeSameAsDifferent() throws Exception {
+      final PanamaEngine engine1 = createEngine();
+      final PanamaEngine engine2 = createEngine();
+      assertFalse(engine1.same(engine2), "Different engines should not be same");
+    }
+
+    @Test
+    @DisplayName("same with null should throw IllegalArgumentException")
+    void shouldThrowForSameWithNull() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.same(null),
+          "same(null) should throw");
+    }
   }
 
-  @Test
-  void testValidationDocumentation() {
-    // This test documents the expected validation behavior of PanamaEngine
-    // These validations are tested in integration tests with real native libraries
+  // ==================== Epoch Tests ====================
 
-    // Constructor validations:
-    // 1. PanamaEngine(null) throws IllegalArgumentException("Config cannot be null")
-    // 2. PanamaEngine(config) creates engine with native call
+  @Nested
+  @DisplayName("Epoch Tests")
+  class EpochTests {
 
-    // Method validations (on live engine):
-    // - compileModule(null) throws IllegalArgumentException
-    // - compileModule(empty) throws IllegalArgumentException
-    // - compileWat(null) throws IllegalArgumentException
-    // - compileWat("") throws IllegalArgumentException
-    // - precompileModule(null) throws IllegalArgumentException
-    // - precompileModule(empty) throws IllegalArgumentException
-    // - compileFromStream(null) throws IllegalArgumentException
-    // - supportsFeature(null) returns false (defensive)
+    @Test
+    @DisplayName("incrementEpoch should not throw")
+    void shouldIncrementEpochWithoutError() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertDoesNotThrow(engine::incrementEpoch, "incrementEpoch should not throw");
+    }
 
-    // Resource management:
-    // - isValid() returns true for live engine, false after close()
-    // - close() releases native resources
-    // - Operations on closed engine throw appropriate exceptions
-
-    assertThat(true).isTrue(); // Documentation test always passes
+    @Test
+    @DisplayName("incrementEpoch multiple times should not throw")
+    void shouldIncrementEpochMultipleTimes() throws Exception {
+      final PanamaEngine engine = createEngine();
+      for (int i = 0; i < 10; i++) {
+        assertDoesNotThrow(engine::incrementEpoch, "incrementEpoch #" + i + " should not throw");
+      }
+    }
   }
 
-  @Test
-  void testResourceLifecycleDocumentation() {
-    // Document the expected lifecycle behavior:
-    // 1. Create engine with PanamaEngine() or PanamaEngine(config)
-    // 2. isValid() returns true
-    // 3. Use engine for compiling modules, creating stores
-    // 4. close() releases resources
-    // 5. isValid() returns false
-    // 6. Further operations throw exceptions
+  // ==================== Precompiled Detection Tests ====================
 
-    assertThat(true).isTrue(); // Documentation test always passes
+  @Nested
+  @DisplayName("Precompiled Detection Tests")
+  class PrecompiledDetectionTests {
+
+    @Test
+    @DisplayName("detectPrecompiled with null should throw IllegalArgumentException")
+    void shouldThrowForNullBytes() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.detectPrecompiled(null),
+          "Null bytes should throw");
+    }
+
+    @Test
+    @DisplayName("detectPrecompiled with empty bytes should return null")
+    void shouldReturnNullForEmptyBytes() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertNull(
+          engine.detectPrecompiled(new byte[0]),
+          "Empty bytes should return null");
+    }
+
+    @Test
+    @DisplayName("detectPrecompiled with random bytes should throw (native not implemented)")
+    void shouldThrowForRandomBytes() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final byte[] random = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> engine.detectPrecompiled(random),
+          "Random bytes should throw since native function is not implemented");
+    }
+
+    @Test
+    @DisplayName("precompileCompatibilityHash should return non-null array")
+    void shouldReturnCompatibilityHash() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final byte[] hash = engine.precompileCompatibilityHash();
+      assertNotNull(hash, "Compatibility hash should not be null");
+      LOGGER.info("Compatibility hash length: " + hash.length);
+    }
+  }
+
+  // ==================== Record Compilation Tests ====================
+
+  @Nested
+  @DisplayName("Record Compilation Tests")
+  class RecordCompilationTests {
+
+    @Test
+    @DisplayName("recordCompilation should not throw (profiler is null)")
+    void shouldRecordCompilationWithoutError() throws Exception {
+      final PanamaEngine engine = createEngine();
+      // Profiler is null, so this should be a no-op
+      assertDoesNotThrow(
+          () -> engine.recordCompilation(1024, 50000, false, true),
+          "recordCompilation should not throw when profiler is null");
+    }
+
+    @Test
+    @DisplayName("recordCompilation with cached flag should not throw")
+    void shouldRecordCachedCompilation() throws Exception {
+      final PanamaEngine engine = createEngine();
+      assertDoesNotThrow(
+          () -> engine.recordCompilation(512, 10000, true, false),
+          "recordCompilation with cached flag should not throw");
+    }
+  }
+
+  // ==================== Validate Component Tests ====================
+
+  @Nested
+  @DisplayName("Component Validation Tests")
+  class ComponentValidationTests {
+
+    @Test
+    @DisplayName("validateComponent should return success for any input")
+    void shouldReturnSuccessForValidation() throws Exception {
+      final PanamaEngine engine = createEngine();
+      final var result = engine.validateComponent(null);
+      assertNotNull(result, "Validation result should not be null");
+      LOGGER.info("Validation result: " + result);
+    }
+  }
+
+  // ==================== Closed Engine Detection Tests ====================
+
+  @Nested
+  @DisplayName("Closed Engine Detection Tests")
+  class ClosedEngineDetectionTests {
+
+    @Test
+    @DisplayName("isPulley on closed engine should return false")
+    void shouldReturnFalseForIsPulleyAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+      assertFalse(engine.isPulley(), "isPulley should return false on closed engine");
+    }
+
+    @Test
+    @DisplayName("precompileCompatibilityHash on closed engine should return empty array")
+    void shouldReturnEmptyHashAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+      final byte[] hash = engine.precompileCompatibilityHash();
+      assertNotNull(hash, "Hash should not be null");
+      assertEquals(0, hash.length, "Hash should be empty on closed engine");
+    }
+
+    @Test
+    @DisplayName("detectPrecompiled on closed engine should throw IllegalStateException")
+    void shouldThrowOnDetectPrecompiledAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+      assertThrows(
+          IllegalStateException.class,
+          () -> engine.detectPrecompiled(new byte[] {0x01}),
+          "detectPrecompiled on closed engine should throw");
+    }
+
+    @Test
+    @DisplayName("same on closed engine should return false")
+    void shouldReturnFalseForSameAfterClose() throws Exception {
+      final PanamaEngine engine1 = createEngine();
+      final PanamaEngine engine2 = new PanamaEngine();
+      engine2.close();
+      assertFalse(engine2.same(engine1), "same() on closed engine should return false");
+    }
+
+    @Test
+    @DisplayName("getMemoryLimitPages on closed engine should throw")
+    void shouldThrowOnGetMemoryLimitAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+      assertThrows(
+          IllegalStateException.class,
+          engine::getMemoryLimitPages,
+          "getMemoryLimitPages on closed engine should throw");
+    }
+
+    @Test
+    @DisplayName("getStackSizeLimit on closed engine should throw")
+    void shouldThrowOnGetStackSizeLimitAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+      assertThrows(
+          IllegalStateException.class,
+          engine::getStackSizeLimit,
+          "getStackSizeLimit on closed engine should throw");
+    }
+
+    @Test
+    @DisplayName("captureStatistics on closed engine should throw")
+    void shouldThrowOnCaptureStatsAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+      assertThrows(
+          IllegalStateException.class,
+          engine::captureStatistics,
+          "captureStatistics on closed engine should throw");
+    }
+
+    @Test
+    @DisplayName("precompileModule on closed engine should throw")
+    void shouldThrowOnPrecompileAfterClose() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+      engine.close();
+      final byte[] wasmBytes = loadTestWasmBytes();
+      assertThrows(
+          IllegalStateException.class,
+          () -> engine.precompileModule(wasmBytes),
+          "precompileModule on closed engine should throw");
+    }
   }
 }

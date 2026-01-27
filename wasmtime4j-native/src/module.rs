@@ -322,7 +322,7 @@ impl Module {
     /// Get reference to inner Wasmtime module (internal use)
     #[allow(dead_code)]
     pub(crate) fn inner(&self) -> &WasmtimeModule {
-        &self.inner
+        &*self.inner
     }
 
     /// Get reference to the engine this module was compiled with
@@ -1344,14 +1344,19 @@ pub unsafe extern "C" fn wasmtime4j_module_get_export_kind(
 
     match (ffi_core::get_module_ref(module_ptr), std::ffi::CStr::from_ptr(name).to_str()) {
         (Ok(module), Ok(name_str)) => {
-            let exports = &core::get_metadata(module).exports;
+            // Query the wasmtime module directly for exports
+            // This works correctly for both compiled and deserialized modules
+            let wasmtime_module = module.inner();
+            // Collect exports to avoid borrowing issues
+            let exports: Vec<_> = wasmtime_module.exports().collect();
             for export in exports {
-                if export.name == name_str {
-                    return match export.export_type {
-                        ExportKind::Function(_) => 1,
-                        ExportKind::Global(_, _) => 2,
-                        ExportKind::Memory(_, _, _, _) => 3,
-                        ExportKind::Table(_, _, _) => 4,
+                if export.name() == name_str {
+                    return match export.ty() {
+                        wasmtime::ExternType::Func(_) => 1,
+                        wasmtime::ExternType::Global(_) => 2,
+                        wasmtime::ExternType::Memory(_) => 3,
+                        wasmtime::ExternType::Table(_) => 4,
+                        wasmtime::ExternType::Tag(_) => 5,
                     };
                 }
             }

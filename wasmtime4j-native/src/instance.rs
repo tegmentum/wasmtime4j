@@ -419,20 +419,55 @@ impl Instance {
         module: &Module,
         import_count: usize,
     ) -> WasmtimeResult<(InstanceMetadata, HashMap<String, ImportBinding>, HashMap<String, ExportBinding>)> {
-        // Build export bindings map from module metadata instead of instance for now
-        // This avoids complex borrowing issues with the store context
+        // Build export bindings map by querying wasmtime module directly
+        // This works correctly for both compiled and deserialized modules
+        // (deserialized modules have empty metadata, but wasmtime module has exports)
         let mut exports_map = HashMap::new();
-        let export_count = module.metadata().exports.len();
-        
-        for export_info in &module.metadata().exports {
+
+        // Query the wasmtime module's exports directly
+        // This is critical for deserialized modules where metadata.exports is empty
+        for export in module.inner().exports() {
+            let export_type = match export.ty() {
+                wasmtime::ExternType::Func(func_ty) => {
+                    let params: Vec<ModuleValueType> = func_ty.params()
+                        .map(|t| Self::convert_val_type(t.clone()))
+                        .collect::<WasmtimeResult<Vec<_>>>()?;
+                    let returns: Vec<ModuleValueType> = func_ty.results()
+                        .map(|t| Self::convert_val_type(t.clone()))
+                        .collect::<WasmtimeResult<Vec<_>>>()?;
+                    ExportKind::Function(FunctionSignature { params, returns })
+                }
+                wasmtime::ExternType::Global(global_ty) => {
+                    let value_type = Self::convert_val_type(global_ty.content().clone())?;
+                    let is_mutable = global_ty.mutability() == wasmtime::Mutability::Var;
+                    ExportKind::Global(value_type, is_mutable)
+                }
+                wasmtime::ExternType::Memory(mem_ty) => {
+                    ExportKind::Memory(
+                        mem_ty.minimum(),
+                        mem_ty.maximum(),
+                        mem_ty.is_64(),
+                        mem_ty.is_shared(),
+                    )
+                }
+                wasmtime::ExternType::Table(table_ty) => {
+                    let elem_type = Self::convert_ref_type(&table_ty.element())?;
+                    ExportKind::Table(elem_type, table_ty.minimum() as u32, table_ty.maximum().map(|m| m as u32))
+                }
+                wasmtime::ExternType::Tag(_) => {
+                    // Skip tags for now, they're not commonly used
+                    continue;
+                }
+            };
+
             let binding = ExportBinding {
-                name: export_info.name.clone(),
-                export_type: export_info.export_type.clone(),
+                name: export.name().to_string(),
+                export_type,
                 accessible: true,
             };
-            exports_map.insert(export_info.name.clone(), binding);
+            exports_map.insert(export.name().to_string(), binding);
         }
-        
+
         // Build import bindings map from module metadata
         let mut imports_map = HashMap::new();
         for import_info in module.required_imports() {
@@ -445,7 +480,10 @@ impl Instance {
             };
             imports_map.insert(key, binding);
         }
-        
+
+        let export_count = exports_map.len();
+        let import_count = imports_map.len();
+
         let metadata = InstanceMetadata {
             name: module.metadata().name.clone().unwrap_or_else(|| "unnamed".to_string()),
             created_at: Instant::now(),
@@ -606,7 +644,7 @@ impl Instance {
         // Validate export exists and is a function
         let export_binding = self.exports_map.get(name)
             .ok_or_else(|| WasmtimeError::ImportExport {
-                message: format!("Export '{}' not found", name),
+                message: format!("Export '{}' not found. Available exports: {:?}", name, self.exports_map.keys().collect::<Vec<_>>()),
             })?;
             
         let function_sig = match &export_binding.export_type {
@@ -644,7 +682,7 @@ impl Instance {
 
         let export = instance.get_export(&mut *store_guard, name)
             .ok_or_else(|| WasmtimeError::ImportExport {
-                message: format!("Export '{}' not found", name),
+                message: format!("Export '{}' not found in wasmtime instance", name),
             })?;
 
         let result = match export {

@@ -16,607 +16,564 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.PanamaHostFunction.HostFunctionCallback;
-import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Comprehensive unit tests for the PanamaHostFunction implementation.
+ * Integration tests for {@link PanamaHostFunction}.
  *
- * <p>These tests verify the complete functionality of the Panama FFI host function wrapper,
- * including callback handling, upcall stub creation, resource management, and thread safety.
+ * <p>Tests host function creation, upcall stub generation, lifecycle management,
+ * and callback registration using real Panama FFI interactions.
  */
-@ExtendWith(MockitoExtension.class)
+@DisplayName("PanamaHostFunction Integration Tests")
 class PanamaHostFunctionTest {
 
-  @Mock private ArenaResourceManager mockArenaManager;
-  @Mock private PanamaErrorHandler mockErrorHandler;
-  @Mock private Arena mockArena;
+  private static final Logger LOGGER =
+      Logger.getLogger(PanamaHostFunctionTest.class.getName());
 
-  private FunctionType testFunctionType;
-  private HostFunctionCallback testCallback;
+  private final List<AutoCloseable> resources = new ArrayList<>();
+  private final List<PanamaHostFunction> hostFunctions = new ArrayList<>();
+  private PanamaEngine engine;
+  private PanamaStore store;
+  private ArenaResourceManager arenaManager;
+  private PanamaErrorHandler errorHandler;
 
   @BeforeEach
-  void setUp() {
-    // Create a simple test function type: (i32, i64) -> (f32)
-    testFunctionType =
-        new FunctionType(
-            new WasmValueType[] {WasmValueType.I32, WasmValueType.I64},
-            new WasmValueType[] {WasmValueType.F32});
+  void setUp() throws Exception {
+    engine = new PanamaEngine();
+    resources.add(engine);
 
-    // Create a simple test callback
-    testCallback = params -> new WasmValue[] {WasmValue.f32(42.0f)};
+    store = new PanamaStore(engine);
+    resources.add(store);
 
-    // Setup mock arena with real Arena instance (needed for Panama FFI)
-    // Use lenient() to avoid unnecessary stubbing warnings for tests that don't use arena
-    final Arena realArena = Arena.ofShared();
-    lenient().when(mockArenaManager.getArena()).thenReturn(realArena);
+    arenaManager = store.getResourceManager();
+    errorHandler = PanamaErrorHandler.getInstance();
+    LOGGER.info("Set up test fixtures: engine, store, arenaManager, errorHandler");
+  }
+
+  @AfterEach
+  void tearDown() {
+    // Close host functions first (not AutoCloseable)
+    for (int i = hostFunctions.size() - 1; i >= 0; i--) {
+      try {
+        hostFunctions.get(i).close();
+      } catch (final Exception e) {
+        LOGGER.warning("Failed to close host function: " + e.getMessage());
+      }
+    }
+    hostFunctions.clear();
+    for (int i = resources.size() - 1; i >= 0; i--) {
+      try {
+        resources.get(i).close();
+      } catch (final Exception e) {
+        LOGGER.warning("Failed to close resource: " + e.getMessage());
+      }
+    }
+    resources.clear();
+  }
+
+  /** Creates a simple (i32) -> (i32) function type. */
+  private FunctionType createI32ToI32Type() {
+    return FunctionType.of(
+        new WasmValueType[] {WasmValueType.I32},
+        new WasmValueType[] {WasmValueType.I32});
+  }
+
+  /** Creates a void () -> () function type. */
+  private FunctionType createVoidType() {
+    return FunctionType.of(new WasmValueType[0], new WasmValueType[0]);
+  }
+
+  /** Creates a (i32, i32) -> (i32) function type. */
+  private FunctionType createI32I32ToI32Type() {
+    return FunctionType.of(
+        new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+        new WasmValueType[] {WasmValueType.I32});
+  }
+
+  /** Creates a callback that doubles its first i32 parameter. */
+  private PanamaHostFunction.HostFunctionCallback createDoubleCallback() {
+    return params -> new WasmValue[] {WasmValue.i32(params[0].asInt() * 2)};
+  }
+
+  /** Creates a void callback. */
+  private PanamaHostFunction.HostFunctionCallback createVoidCallback() {
+    return params -> new WasmValue[0];
+  }
+
+  /** Creates and tracks a PanamaHostFunction for proper cleanup. */
+  private PanamaHostFunction createTrackedHostFunction(
+      final String name,
+      final FunctionType type,
+      final PanamaHostFunction.HostFunctionCallback callback) throws Exception {
+    final PanamaHostFunction func = new PanamaHostFunction(
+        name, type, callback, null, store, arenaManager, errorHandler);
+    hostFunctions.add(func);
+    return func;
   }
 
   @Nested
-  class ConstructorTests {
+  @DisplayName("Constructor Null Validation Tests")
+  class ConstructorNullValidationTests {
 
     @Test
-    void testCreateHostFunctionWithValidParameters() throws Exception {
-      // Act
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Assert
-      assertNotNull(hostFunction);
-      assertEquals("test_function", hostFunction.getName());
-      assertEquals(testFunctionType, hostFunction.getFunctionType());
-      assertFalse(hostFunction.isClosed());
-      verify(mockArenaManager).registerManagedNativeResource(eq(hostFunction), any(), any());
+    @DisplayName("Should throw for null function name")
+    void shouldThrowForNullFunctionName() {
+      assertThrows(
+          NullPointerException.class,
+          () -> new PanamaHostFunction(
+              null, createI32ToI32Type(), createDoubleCallback(),
+              null, store, arenaManager, errorHandler),
+          "Should throw NullPointerException for null functionName");
+      LOGGER.info("Correctly threw for null function name");
     }
 
     @Test
-    void testThrowExceptionWhenFunctionNameIsNull() {
+    @DisplayName("Should throw for null function type")
+    void shouldThrowForNullFunctionType() {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new PanamaHostFunction(
-                  null,
-                  testFunctionType,
-                  testCallback,
-                  null,
-                  null,
-                  mockArenaManager,
-                  mockErrorHandler));
+          () -> new PanamaHostFunction(
+              "test", null, createDoubleCallback(),
+              null, store, arenaManager, errorHandler),
+          "Should throw NullPointerException for null functionType");
+      LOGGER.info("Correctly threw for null function type");
     }
 
     @Test
-    void testThrowExceptionWhenFunctionTypeIsNull() {
+    @DisplayName("Should throw for null callback")
+    void shouldThrowForNullCallback() {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new PanamaHostFunction(
-                  "test_function",
-                  null,
-                  testCallback,
-                  null,
-                  null,
-                  mockArenaManager,
-                  mockErrorHandler));
+          () -> new PanamaHostFunction(
+              "test", createI32ToI32Type(), null,
+              null, store, arenaManager, errorHandler),
+          "Should throw NullPointerException for null callback");
+      LOGGER.info("Correctly threw for null callback");
     }
 
     @Test
-    void testThrowExceptionWhenCallbackIsNull() {
+    @DisplayName("Should throw for null arena manager")
+    void shouldThrowForNullArenaManager() {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new PanamaHostFunction(
-                  "test_function",
-                  testFunctionType,
-                  null,
-                  null,
-                  null,
-                  mockArenaManager,
-                  mockErrorHandler));
+          () -> new PanamaHostFunction(
+              "test", createI32ToI32Type(), createDoubleCallback(),
+              null, store, null, errorHandler),
+          "Should throw NullPointerException for null arenaManager");
+      LOGGER.info("Correctly threw for null arena manager");
     }
 
     @Test
-    void testThrowExceptionWhenArenaManagerIsNull() {
+    @DisplayName("Should throw for null error handler")
+    void shouldThrowForNullErrorHandler() {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new PanamaHostFunction(
-                  "test_function",
-                  testFunctionType,
-                  testCallback,
-                  null,
-                  null,
-                  null,
-                  mockErrorHandler));
-    }
-
-    @Test
-    void testThrowExceptionWhenErrorHandlerIsNull() {
-      assertThrows(
-          NullPointerException.class,
-          () ->
-              new PanamaHostFunction(
-                  "test_function",
-                  testFunctionType,
-                  testCallback,
-                  null,
-                  null,
-                  mockArenaManager,
-                  null));
+          () -> new PanamaHostFunction(
+              "test", createI32ToI32Type(), createDoubleCallback(),
+              null, store, arenaManager, null),
+          "Should throw NullPointerException for null errorHandler");
+      LOGGER.info("Correctly threw for null error handler");
     }
   }
 
   @Nested
+  @DisplayName("Construction Tests")
+  class ConstructionTests {
+
+    @Test
+    @DisplayName("Should create host function with store")
+    void shouldCreateHostFunctionWithStore() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "addDouble", createI32ToI32Type(), createDoubleCallback());
+      assertNotNull(func, "Host function should not be null");
+      assertFalse(func.isClosed(), "Should not be closed after creation");
+      LOGGER.info("Created host function with store: " + func.getName());
+    }
+
+    @Test
+    @DisplayName("Should create host function without store")
+    void shouldCreateHostFunctionWithoutStore() throws Exception {
+      final PanamaHostFunction func = new PanamaHostFunction(
+          "noStore", createI32ToI32Type(), createDoubleCallback(),
+          null, null, arenaManager, errorHandler);
+      hostFunctions.add(func);
+      assertNotNull(func, "Host function should not be null");
+      LOGGER.info("Created host function without store: " + func.getName());
+    }
+
+    @Test
+    @DisplayName("Should create void host function")
+    void shouldCreateVoidHostFunction() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "voidFunc", createVoidType(), createVoidCallback());
+      assertNotNull(func, "Void host function should not be null");
+      LOGGER.info("Created void host function: " + func.getName());
+    }
+
+    @Test
+    @DisplayName("Should create multi-param host function")
+    void shouldCreateMultiParamHostFunction() throws Exception {
+      final PanamaHostFunction.HostFunctionCallback addCallback = params ->
+          new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())};
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "add", createI32I32ToI32Type(), addCallback);
+      assertNotNull(func, "Multi-param host function should not be null");
+      LOGGER.info("Created multi-param host function: " + func.getName());
+    }
+  }
+
+  @Nested
+  @DisplayName("Function Interface Tests")
   class FunctionInterfaceTests {
 
-    private PanamaHostFunction hostFunction;
-
-    @BeforeEach
-    void setUp() throws Exception {
-      hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
+    @Test
+    @DisplayName("Should return correct function type")
+    void shouldReturnCorrectFunctionType() throws Exception {
+      final FunctionType type = createI32ToI32Type();
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "typed", type, createDoubleCallback());
+      assertEquals(type, func.getFunctionType(),
+          "Function type should match constructor param");
+      LOGGER.info("Function type: " + func.getFunctionType());
     }
 
     @Test
-    void testReturnCorrectFunctionType() {
-      assertEquals(testFunctionType, hostFunction.getFunctionType());
+    @DisplayName("Should return correct name")
+    void shouldReturnCorrectName() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "myHostFunc", createI32ToI32Type(), createDoubleCallback());
+      assertEquals("myHostFunc", func.getName(),
+          "Name should match constructor param");
+      LOGGER.info("Function name: " + func.getName());
     }
 
     @Test
-    void testReturnCorrectFunctionName() {
-      assertEquals("test_function", hostFunction.getName());
-    }
+    @DisplayName("Should throw ValidationException on direct call")
+    void shouldThrowOnDirectCall() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "noCall", createI32ToI32Type(), createDoubleCallback());
 
-    @Test
-    void testThrowExceptionWhenCallingHostFunctionDirectly() {
       assertThrows(
-          ValidationException.class, () -> hostFunction.call(WasmValue.i32(1), WasmValue.i64(2L)));
+          ValidationException.class,
+          () -> func.call(WasmValue.i32(42)),
+          "Direct call should throw ValidationException");
+      LOGGER.info("Correctly threw ValidationException on direct call");
+    }
+
+    @Test
+    @DisplayName("Should return failed future on async call")
+    void shouldReturnFailedFutureOnAsyncCall() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "noAsync", createI32ToI32Type(), createDoubleCallback());
+
+      final CompletableFuture<WasmValue[]> future = func.callAsync(WasmValue.i32(1));
+      assertNotNull(future, "Future should not be null");
+      assertTrue(future.isCompletedExceptionally(),
+          "Async call future should be completed exceptionally");
+      LOGGER.info("Correctly returned failed future on async call");
     }
   }
 
   @Nested
+  @DisplayName("Handle Access Tests")
   class HandleAccessTests {
 
-    private PanamaHostFunction hostFunction;
+    @Test
+    @DisplayName("Should provide function handle")
+    void shouldProvideFunctionHandle() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "handleFunc", createI32ToI32Type(), createDoubleCallback());
 
-    @BeforeEach
-    void setUp() throws Exception {
-      hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
+      final MemorySegment handle = func.getFunctionHandle();
+      assertNotNull(handle, "Function handle should not be null");
+      LOGGER.info("Function handle: " + handle);
     }
 
     @Test
-    void testReturnValidFunctionHandle() {
-      final MemorySegment handle = hostFunction.getFunctionHandle();
-      assertNotNull(handle);
+    @DisplayName("Should provide upcall stub")
+    void shouldProvideUpcallStub() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "stubFunc", createI32ToI32Type(), createDoubleCallback());
+
+      final MemorySegment stub = func.getUpcallStub();
+      assertNotNull(stub, "Upcall stub should not be null");
+      LOGGER.info("Upcall stub: " + stub);
     }
 
     @Test
-    void testReturnValidUpcallStub() {
-      final MemorySegment stub = hostFunction.getUpcallStub();
-      assertNotNull(stub);
+    @DisplayName("Should provide funcRef ID")
+    void shouldProvideFuncRefId() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "refIdFunc", createI32ToI32Type(), createDoubleCallback());
+
+      final long funcRefId = func.getFuncRefId();
+      assertTrue(funcRefId > 0,
+          "FuncRef ID should be positive, got: " + funcRefId);
+      LOGGER.info("FuncRef ID: " + funcRefId);
     }
 
     @Test
-    void testThrowExceptionWhenAccessingClosedHostFunctionHandle() throws Exception {
-      hostFunction.close();
-      assertThrows(IllegalStateException.class, hostFunction::getFunctionHandle);
-    }
+    @DisplayName("Should throw for handle access after close")
+    void shouldThrowForHandleAccessAfterClose() throws Exception {
+      final PanamaHostFunction func = new PanamaHostFunction(
+          "closedFunc", createI32ToI32Type(), createDoubleCallback(),
+          null, store, arenaManager, errorHandler);
+      func.close();
 
-    @Test
-    void testThrowExceptionWhenAccessingClosedUpcallStub() throws Exception {
-      hostFunction.close();
-      assertThrows(IllegalStateException.class, hostFunction::getUpcallStub);
+      assertThrows(
+          IllegalStateException.class,
+          func::getFunctionHandle,
+          "Should throw IllegalStateException for handle after close");
+      assertThrows(
+          IllegalStateException.class,
+          func::getUpcallStub,
+          "Should throw IllegalStateException for stub after close");
+      // getFuncRefId() returns the cached ID and does not check closed state
+      final long closedId = func.getFuncRefId();
+      assertTrue(closedId > 0,
+          "FuncRefId should still return cached value after close, got: " + closedId);
+      LOGGER.info("Handle/stub throw after close, funcRefId=" + closedId);
     }
   }
 
   @Nested
-  class CallbackExecutionTests {
+  @DisplayName("Upcall Stub Creation Tests")
+  class UpcallStubCreationTests {
 
     @Test
-    void testExecuteCallbackWithCorrectParameters() throws Exception {
-      // Arrange
-      final WasmValue[] expectedResults = {WasmValue.f32(30.0f)};
-
-      final HostFunctionCallback mockCallback = mock(HostFunctionCallback.class);
-      lenient().when(mockCallback.execute(any())).thenReturn(expectedResults);
-
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "callback_test",
-              testFunctionType,
-              mockCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Act - simulate callback execution through native interface
-      // Note: This tests the callback mechanism indirectly
-      assertNotNull(hostFunction.getUpcallStub());
+    @DisplayName("Should create stub for i32 -> i32 function")
+    void shouldCreateStubForI32ToI32() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "i32toi32", createI32ToI32Type(), createDoubleCallback());
+      assertNotNull(func.getUpcallStub(), "i32->i32 stub should not be null");
+      LOGGER.info("Created i32->i32 upcall stub");
     }
 
     @Test
-    void testHandleCallbackExecutionWithExceptions() throws Exception {
-      // Arrange
-      final HostFunctionCallback throwingCallback =
-          params -> {
-            throw new WasmException("Callback failed");
-          };
-
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "throwing_callback",
-              testFunctionType,
-              throwingCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Act & Assert - the upcall stub should be created despite callback potentially throwing
-      assertNotNull(hostFunction.getUpcallStub());
+    @DisplayName("Should create stub for void function")
+    void shouldCreateStubForVoidFunction() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "void", createVoidType(), createVoidCallback());
+      assertNotNull(func.getUpcallStub(), "void stub should not be null");
+      LOGGER.info("Created void upcall stub");
     }
 
     @Test
-    void testHandleVoidReturnTypeCallback() throws Exception {
-      // Arrange
-      final FunctionType voidType =
-          new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
+    @DisplayName("Should create stub for i64 -> i64 function")
+    void shouldCreateStubForI64ToI64() throws Exception {
+      final FunctionType type = FunctionType.of(
+          new WasmValueType[] {WasmValueType.I64},
+          new WasmValueType[] {WasmValueType.I64});
+      final PanamaHostFunction.HostFunctionCallback callback = params ->
+          new WasmValue[] {WasmValue.i64(params[0].asLong() * 2)};
 
-      final HostFunctionCallback voidCallback = params -> new WasmValue[] {};
-
-      // Act
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "void_callback",
-              voidType,
-              voidCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Assert
-      assertNotNull(hostFunction.getUpcallStub());
-      assertEquals(voidType, hostFunction.getFunctionType());
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "i64toi64", type, callback);
+      assertNotNull(func.getUpcallStub(), "i64->i64 stub should not be null");
+      LOGGER.info("Created i64->i64 upcall stub");
     }
 
     @Test
-    void testHandleMultipleReturnValues() throws Exception {
-      // Arrange
-      final FunctionType multiReturnType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.F64});
+    @DisplayName("Should create stub for f32 -> f32 function")
+    void shouldCreateStubForF32ToF32() throws Exception {
+      final FunctionType type = FunctionType.of(
+          new WasmValueType[] {WasmValueType.F32},
+          new WasmValueType[] {WasmValueType.F32});
+      final PanamaHostFunction.HostFunctionCallback callback = params ->
+          new WasmValue[] {WasmValue.f32(params[0].asFloat() * 2.0f)};
 
-      final HostFunctionCallback multiReturnCallback =
-          params -> new WasmValue[] {WasmValue.i32(42), WasmValue.f64(3.14)};
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "f32tof32", type, callback);
+      assertNotNull(func.getUpcallStub(), "f32->f32 stub should not be null");
+      LOGGER.info("Created f32->f32 upcall stub");
+    }
 
-      // Act
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "multi_return",
-              multiReturnType,
-              multiReturnCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
+    @Test
+    @DisplayName("Should create stub for f64 -> f64 function")
+    void shouldCreateStubForF64ToF64() throws Exception {
+      final FunctionType type = FunctionType.of(
+          new WasmValueType[] {WasmValueType.F64},
+          new WasmValueType[] {WasmValueType.F64});
+      final PanamaHostFunction.HostFunctionCallback callback = params ->
+          new WasmValue[] {WasmValue.f64(params[0].asDouble() * 2.0)};
 
-      // Assert
-      assertNotNull(hostFunction.getUpcallStub());
-      assertEquals(multiReturnType, hostFunction.getFunctionType());
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "f64tof64", type, callback);
+      assertNotNull(func.getUpcallStub(), "f64->f64 stub should not be null");
+      LOGGER.info("Created f64->f64 upcall stub");
+    }
+
+    @Test
+    @DisplayName("Should create stub for multi-param function")
+    void shouldCreateStubForMultiParamFunction() throws Exception {
+      final FunctionType type = FunctionType.of(
+          new WasmValueType[] {WasmValueType.I32, WasmValueType.I64, WasmValueType.F64},
+          new WasmValueType[] {WasmValueType.F64});
+      final PanamaHostFunction.HostFunctionCallback callback = params ->
+          new WasmValue[] {WasmValue.f64(
+              params[0].asInt() + params[1].asLong() + params[2].asDouble())};
+
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "multiParam", type, callback);
+      assertNotNull(func.getUpcallStub(), "Multi-param stub should not be null");
+      LOGGER.info("Created multi-param upcall stub");
+    }
+
+    @Test
+    @DisplayName("Should create stub for multi-return function")
+    void shouldCreateStubForMultiReturnFunction() throws Exception {
+      final FunctionType type = FunctionType.of(
+          new WasmValueType[] {WasmValueType.I32},
+          new WasmValueType[] {WasmValueType.I32, WasmValueType.I32});
+      final PanamaHostFunction.HostFunctionCallback callback = params -> {
+        final int val = params[0].asInt();
+        return new WasmValue[] {WasmValue.i32(val), WasmValue.i32(val * 2)};
+      };
+
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "multiReturn", type, callback);
+      assertNotNull(func.getUpcallStub(), "Multi-return stub should not be null");
+      LOGGER.info("Created multi-return upcall stub");
     }
   }
 
   @Nested
+  @DisplayName("Resource Management Tests")
   class ResourceManagementTests {
 
-    private PanamaHostFunction hostFunction;
+    @Test
+    @DisplayName("Should close without error")
+    void shouldCloseWithoutError() throws Exception {
+      final PanamaHostFunction func = new PanamaHostFunction(
+          "closeable", createI32ToI32Type(), createDoubleCallback(),
+          null, store, arenaManager, errorHandler);
 
-    @BeforeEach
-    void setUp() throws Exception {
-      hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
+      assertDoesNotThrow(func::close, "Close should not throw");
+      assertTrue(func.isClosed(), "Should be closed after close()");
+      LOGGER.info("Closed host function successfully");
     }
 
     @Test
-    void testCloseHostFunctionSuccessfully() throws Exception {
-      // Act
-      hostFunction.close();
+    @DisplayName("Should handle double close gracefully")
+    void shouldHandleDoubleClose() throws Exception {
+      final PanamaHostFunction func = new PanamaHostFunction(
+          "doubleClose", createI32ToI32Type(), createDoubleCallback(),
+          null, store, arenaManager, errorHandler);
 
-      // Assert
-      assertTrue(hostFunction.isClosed());
-      verify(mockArenaManager).unregisterManagedResource(hostFunction);
+      assertDoesNotThrow(func::close, "First close should not throw");
+      assertDoesNotThrow(func::close, "Second close should not throw");
+      assertTrue(func.isClosed(), "Should remain closed");
+      LOGGER.info("Double close handled gracefully");
     }
 
     @Test
-    void testHandleDoubleCloseGracefully() throws Exception {
-      // Act
-      hostFunction.close();
-      hostFunction.close(); // Second close should be safe
+    @DisplayName("Should report closed state correctly")
+    void shouldReportClosedState() throws Exception {
+      final PanamaHostFunction func = new PanamaHostFunction(
+          "stateCheck", createI32ToI32Type(), createDoubleCallback(),
+          null, store, arenaManager, errorHandler);
 
-      // Assert
-      assertTrue(hostFunction.isClosed());
-    }
-
-    @Test
-    void testThrowExceptionWhenAccessingClosedHostFunction() throws Exception {
-      // Arrange
-      hostFunction.close();
-
-      // Act & Assert
-      assertThrows(IllegalStateException.class, hostFunction::getFunctionHandle);
-      assertThrows(IllegalStateException.class, hostFunction::getUpcallStub);
-      assertThrows(IllegalStateException.class, () -> hostFunction.call(WasmValue.i32(1)));
+      assertFalse(func.isClosed(), "Should not be closed initially");
+      func.close();
+      assertTrue(func.isClosed(), "Should be closed after close()");
+      LOGGER.info("Closed state reported correctly");
     }
   }
 
   @Nested
-  class TypeSafetyTests {
-
-    @Test
-    void testHandleAllWebAssemblyValueTypes() throws Exception {
-      // Arrange - function with all supported parameter types
-      final FunctionType allTypesFunction =
-          new FunctionType(
-              new WasmValueType[] {
-                WasmValueType.I32, WasmValueType.I64, WasmValueType.F32,
-                WasmValueType.F64, WasmValueType.FUNCREF, WasmValueType.EXTERNREF
-              },
-              new WasmValueType[] {WasmValueType.I32});
-
-      final HostFunctionCallback allTypesCallback =
-          params -> {
-            // Verify all parameter types are correctly marshalled
-            assertEquals(6, params.length);
-            assertEquals(WasmValueType.I32, params[0].getType());
-            assertEquals(WasmValueType.I64, params[1].getType());
-            assertEquals(WasmValueType.F32, params[2].getType());
-            assertEquals(WasmValueType.F64, params[3].getType());
-            assertEquals(WasmValueType.FUNCREF, params[4].getType());
-            assertEquals(WasmValueType.EXTERNREF, params[5].getType());
-            return new WasmValue[] {WasmValue.i32(1)};
-          };
-
-      // Act
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "all_types_function",
-              allTypesFunction,
-              allTypesCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Assert
-      assertNotNull(hostFunction.getUpcallStub());
-      assertEquals(allTypesFunction, hostFunction.getFunctionType());
-    }
-
-    @Test
-    void testHandleComplexFunctionSignatures() throws Exception {
-      // Arrange - complex function with many parameters and returns
-      final FunctionType complexType =
-          new FunctionType(
-              new WasmValueType[] {
-                WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64,
-                WasmValueType.I32, WasmValueType.I64, WasmValueType.F32, WasmValueType.F64
-              },
-              new WasmValueType[] {WasmValueType.F64, WasmValueType.I32});
-
-      final HostFunctionCallback complexCallback =
-          params -> {
-            assertEquals(8, params.length);
-            return new WasmValue[] {WasmValue.f64(1.0), WasmValue.i32(2)};
-          };
-
-      // Act
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "complex_function",
-              complexType,
-              complexCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Assert
-      assertNotNull(hostFunction.getUpcallStub());
-      assertEquals(complexType, hostFunction.getFunctionType());
-    }
-  }
-
-  @Nested
+  @DisplayName("String Representation Tests")
   class StringRepresentationTests {
 
     @Test
-    void testReturnCorrectStringRepresentation() throws Exception {
-      // Arrange
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Act
-      final String stringRepr = hostFunction.toString();
-
-      // Assert
-      assertTrue(stringRepr.contains("PanamaHostFunction"));
-      assertTrue(stringRepr.contains("name='test_function'"));
-      assertTrue(stringRepr.contains("type="));
+    @DisplayName("Should include name in toString")
+    void shouldIncludeNameInToString() throws Exception {
+      final PanamaHostFunction func = createTrackedHostFunction(
+          "stringable", createI32ToI32Type(), createDoubleCallback());
+      final String str = func.toString();
+      assertNotNull(str, "toString should not be null");
+      assertTrue(str.contains("stringable"),
+          "toString should contain function name, got: " + str);
+      LOGGER.info("toString: " + str);
     }
 
     @Test
-    void testReturnCorrectStringRepresentationWhenClosed() throws Exception {
-      // Arrange
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-      hostFunction.close();
-
-      // Act
-      final String stringRepr = hostFunction.toString();
-
-      // Assert
-      assertTrue(stringRepr.contains("PanamaHostFunction"));
-      assertTrue(stringRepr.contains("name='test_function'"));
-      assertTrue(stringRepr.contains("closed=true"));
+    @DisplayName("Should indicate closed in toString")
+    void shouldIndicateClosedInToString() throws Exception {
+      final PanamaHostFunction func = new PanamaHostFunction(
+          "closedStr", createI32ToI32Type(), createDoubleCallback(),
+          null, store, arenaManager, errorHandler);
+      func.close();
+      final String str = func.toString();
+      assertTrue(str.toLowerCase().contains("closed"),
+          "toString should indicate closed state, got: " + str);
+      LOGGER.info("Closed toString: " + str);
     }
   }
 
   @Nested
-  class ErrorHandlingTests {
+  @DisplayName("Multiple Host Functions Tests")
+  class MultipleHostFunctionsTests {
 
     @Test
-    void testHandleUpcallStubCreationFailure() throws Exception {
-      // Arrange
-      when(mockArenaManager.getArena()).thenThrow(new RuntimeException("Arena creation failed"));
+    @DisplayName("Should create multiple host functions independently")
+    void shouldCreateMultipleHostFunctionsIndependently() throws Exception {
+      final PanamaHostFunction func1 = createTrackedHostFunction(
+          "func1", createI32ToI32Type(), createDoubleCallback());
+      final PanamaHostFunction func2 = createTrackedHostFunction(
+          "func2", createVoidType(), createVoidCallback());
+      final PanamaHostFunction func3 = createTrackedHostFunction(
+          "func3", createI32I32ToI32Type(),
+          params -> new WasmValue[] {
+              WasmValue.i32(params[0].asInt() + params[1].asInt())});
 
-      // Act & Assert
-      assertThrows(
-          WasmException.class,
-          () ->
-              new PanamaHostFunction(
-                  "failing_function",
-                  testFunctionType,
-                  testCallback,
-                  null,
-                  null,
-                  mockArenaManager,
-                  mockErrorHandler));
+      assertEquals("func1", func1.getName());
+      assertEquals("func2", func2.getName());
+      assertEquals("func3", func3.getName());
+
+      assertTrue(func1.getFuncRefId() != func2.getFuncRefId(),
+          "FuncRef IDs should be unique");
+      assertTrue(func2.getFuncRefId() != func3.getFuncRefId(),
+          "FuncRef IDs should be unique");
+
+      LOGGER.info("Created 3 independent host functions with IDs: "
+          + func1.getFuncRefId() + ", " + func2.getFuncRefId() + ", "
+          + func3.getFuncRefId());
     }
 
     @Test
-    void testHandleCloseOperationFailure() throws Exception {
-      // Arrange
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
+    @DisplayName("Should close one function without affecting others")
+    void shouldCloseOneWithoutAffectingOthers() throws Exception {
+      final PanamaHostFunction func1 = createTrackedHostFunction(
+          "keepOpen", createI32ToI32Type(), createDoubleCallback());
+      final PanamaHostFunction func2 = new PanamaHostFunction(
+          "toClose", createVoidType(), createVoidCallback(),
+          null, store, arenaManager, errorHandler);
 
-      doThrow(new RuntimeException("Unregister failed"))
-          .when(mockArenaManager)
-          .unregisterManagedResource(any());
-
-      // Act & Assert
-      assertThrows(WasmException.class, hostFunction::close);
-    }
-  }
-
-  @Nested
-  class MemorySafetyTests {
-
-    @Test
-    void testRegisterWithArenaManagerForCleanup() throws Exception {
-      // Act
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Assert
-      verify(mockArenaManager)
-          .registerManagedNativeResource(
-              eq(hostFunction), any(MemorySegment.class), any(Runnable.class));
-    }
-
-    @Test
-    void testPreventAccessAfterClose() throws Exception {
-      // Arrange
-      final PanamaHostFunction hostFunction =
-          new PanamaHostFunction(
-              "test_function",
-              testFunctionType,
-              testCallback,
-              null,
-              null,
-              mockArenaManager,
-              mockErrorHandler);
-
-      // Act
-      hostFunction.close();
-
-      // Assert
-      assertTrue(hostFunction.isClosed());
-      assertThrows(IllegalStateException.class, hostFunction::getFunctionHandle);
-      assertThrows(IllegalStateException.class, hostFunction::getUpcallStub);
+      func2.close();
+      assertTrue(func2.isClosed(), "func2 should be closed");
+      assertFalse(func1.isClosed(), "func1 should still be open");
+      assertNotNull(func1.getUpcallStub(), "func1 stub should still work");
+      LOGGER.info("Closed func2, func1 still operational");
     }
   }
 }

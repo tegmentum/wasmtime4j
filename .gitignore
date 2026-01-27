@@ -41,10 +41,22 @@ logs/
 *.ear
 *.nar
 
-# JNI/Panama native libraries
-*.so
-*.dll
-*.dylib
+# Native libraries - only wasmtime4j-native/src/main/resources/natives/ is the source of truth
+# All other modules get natives unpacked from wasmtime4j-native at build time
+
+# Exclude native library directories that should be unpacked, not committed
+wasmtime4j-jni/src/main/resources/natives/
+wasmtime4j-panama/src/main/resources/natives/
+wasmtime4j-panama/src/main/resources/darwin-*/
+wasmtime4j-panama/src/main/resources/linux-*/
+wasmtime4j-panama/src/main/resources/windows-*/
+wasmtime4j-jni/natives/
+/natives/
+
+# Include wasmtime4j-native's libraries (the source of truth)
+!wasmtime4j-native/src/main/resources/natives/**/*.so
+!wasmtime4j-native/src/main/resources/natives/**/*.dll
+!wasmtime4j-native/src/main/resources/natives/**/*.dylib
 
 # Rust build artifacts
 Cargo.lock

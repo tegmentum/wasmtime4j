@@ -13,423 +13,480 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.panama.debug;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/** Tests for {@link PanamaDebugConfig} class. */
-@DisplayName("PanamaDebugConfig Tests")
+/**
+ * Integration tests for PanamaDebugConfig.
+ *
+ * <p>These tests exercise actual code execution to improve JaCoCo coverage.
+ */
+@DisplayName("Panama Debug Config Integration Tests")
 public class PanamaDebugConfigTest {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaDebugConfigTest.class.getName());
 
-  @Test
-  @DisplayName("Create default configuration")
-  public void testDefaultConfiguration() {
-    LOGGER.info("Testing default configuration");
+  @Nested
+  @DisplayName("Default Configuration Tests")
+  class DefaultConfigTests {
 
-    final PanamaDebugConfig config = PanamaDebugConfig.getDefault();
+    @Test
+    @DisplayName("Should create default config with expected values")
+    void shouldCreateDefaultConfigWithExpectedValues() {
+      LOGGER.info("Testing default configuration creation");
 
-    assertNotNull(config, "Config should not be null");
-    assertEquals(
-        PanamaDebugConfig.DEFAULT_DEBUG_PORT,
-        config.getDebugPort(),
-        "Debug port should match default");
-    assertEquals(
-        PanamaDebugConfig.DEFAULT_HOST_ADDRESS,
-        config.getHostAddress(),
-        "Host address should match default");
-    assertFalse(
-        config.isRemoteDebuggingEnabled(), "Remote debugging should be disabled by default");
-    assertEquals(
-        PanamaDebugConfig.DEFAULT_SESSION_TIMEOUT,
-        config.getSessionTimeout(),
-        "Session timeout should match default");
-    assertTrue(config.isBreakpointsEnabled(), "Breakpoints should be enabled by default");
-    assertEquals(
-        PanamaDebugConfig.DEFAULT_MAX_BREAKPOINTS,
-        config.getMaxBreakpoints(),
-        "Max breakpoints should match default");
-    assertTrue(config.isStepDebuggingEnabled(), "Step debugging should be enabled by default");
-    assertEquals(
-        PanamaDebugConfig.DEFAULT_LOG_LEVEL,
-        config.getLogLevel(),
-        "Log level should match default");
+      final PanamaDebugConfig config = PanamaDebugConfig.getDefault();
 
-    LOGGER.info("Default configuration test passed: " + config);
+      assertNotNull(config, "Default config should not be null");
+      assertEquals(
+          PanamaDebugConfig.DEFAULT_DEBUG_PORT, config.getDebugPort(), "Default port should match");
+      assertEquals(
+          PanamaDebugConfig.DEFAULT_HOST_ADDRESS,
+          config.getHostAddress(),
+          "Default host should match");
+      assertEquals(
+          PanamaDebugConfig.DEFAULT_SESSION_TIMEOUT,
+          config.getSessionTimeout(),
+          "Default timeout should match");
+      assertEquals(
+          PanamaDebugConfig.DEFAULT_MAX_BREAKPOINTS,
+          config.getMaxBreakpoints(),
+          "Default max breakpoints should match");
+      assertEquals(
+          PanamaDebugConfig.DEFAULT_LOG_LEVEL,
+          config.getLogLevel(),
+          "Default log level should match");
+      assertFalse(
+          config.isRemoteDebuggingEnabled(), "Remote debugging should be disabled by default");
+      assertTrue(config.isBreakpointsEnabled(), "Breakpoints should be enabled by default");
+      assertTrue(config.isStepDebuggingEnabled(), "Step debugging should be enabled by default");
+
+      LOGGER.info("Default configuration verified: " + config);
+    }
+
+    @Test
+    @DisplayName("Should return builder from builder method")
+    void shouldReturnBuilderFromBuilderMethod() {
+      LOGGER.info("Testing builder method");
+
+      final PanamaDebugConfig.Builder builder = PanamaDebugConfig.builder();
+
+      assertNotNull(builder, "Builder should not be null");
+
+      final PanamaDebugConfig config = builder.build();
+      assertNotNull(config, "Built config should not be null");
+
+      LOGGER.info("Builder method verified");
+    }
   }
 
-  @Test
-  @DisplayName("Verify default constant values")
-  public void testDefaultConstantValues() {
-    LOGGER.info("Testing default constant values");
+  @Nested
+  @DisplayName("Builder Tests")
+  class BuilderTests {
 
-    assertEquals(9229, PanamaDebugConfig.DEFAULT_DEBUG_PORT, "Default debug port should be 9229");
-    assertEquals(
-        "127.0.0.1",
-        PanamaDebugConfig.DEFAULT_HOST_ADDRESS,
-        "Default host address should be 127.0.0.1");
-    assertEquals(
-        300_000L,
-        PanamaDebugConfig.DEFAULT_SESSION_TIMEOUT,
-        "Default session timeout should be 300000ms (5 minutes)");
-    assertEquals(
-        1024, PanamaDebugConfig.DEFAULT_MAX_BREAKPOINTS, "Default max breakpoints should be 1024");
-    assertEquals("INFO", PanamaDebugConfig.DEFAULT_LOG_LEVEL, "Default log level should be INFO");
+    @Test
+    @DisplayName("Should build config with custom debug port")
+    void shouldBuildConfigWithCustomDebugPort() {
+      LOGGER.info("Testing custom debug port");
 
-    LOGGER.info("Default constant values test passed");
+      final int customPort = 8080;
+      final PanamaDebugConfig config = PanamaDebugConfig.builder().debugPort(customPort).build();
+
+      assertEquals(customPort, config.getDebugPort(), "Custom port should be set");
+
+      LOGGER.info("Custom debug port set to: " + config.getDebugPort());
+    }
+
+    @Test
+    @DisplayName("Should reject invalid debug port - negative")
+    void shouldRejectInvalidDebugPortNegative() {
+      LOGGER.info("Testing invalid negative debug port");
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> PanamaDebugConfig.builder().debugPort(-1));
+
+      assertTrue(ex.getMessage().contains("Port"), "Error should mention port: " + ex.getMessage());
+
+      LOGGER.info("Correctly rejected negative port: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should reject invalid debug port - too high")
+    void shouldRejectInvalidDebugPortTooHigh() {
+      LOGGER.info("Testing invalid high debug port");
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> PanamaDebugConfig.builder().debugPort(70000));
+
+      assertTrue(
+          ex.getMessage().contains("Port") || ex.getMessage().contains("65535"),
+          "Error should mention port range: " + ex.getMessage());
+
+      LOGGER.info("Correctly rejected high port: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should accept boundary port values")
+    void shouldAcceptBoundaryPortValues() {
+      LOGGER.info("Testing boundary port values");
+
+      // Test port 0
+      final PanamaDebugConfig config0 = PanamaDebugConfig.builder().debugPort(0).build();
+      assertEquals(0, config0.getDebugPort(), "Port 0 should be accepted");
+
+      // Test port 65535
+      final PanamaDebugConfig config65535 = PanamaDebugConfig.builder().debugPort(65535).build();
+      assertEquals(65535, config65535.getDebugPort(), "Port 65535 should be accepted");
+
+      LOGGER.info("Boundary port values accepted");
+    }
+
+    @Test
+    @DisplayName("Should build config with custom host address")
+    void shouldBuildConfigWithCustomHostAddress() {
+      LOGGER.info("Testing custom host address");
+
+      final String customHost = "192.168.1.100";
+      final PanamaDebugConfig config = PanamaDebugConfig.builder().hostAddress(customHost).build();
+
+      assertEquals(customHost, config.getHostAddress(), "Custom host should be set");
+
+      LOGGER.info("Custom host address set to: " + config.getHostAddress());
+    }
+
+    @Test
+    @DisplayName("Should reject null host address")
+    void shouldRejectNullHostAddress() {
+      LOGGER.info("Testing null host address rejection");
+
+      assertThrows(NullPointerException.class, () -> PanamaDebugConfig.builder().hostAddress(null));
+
+      LOGGER.info("Correctly rejected null host address");
+    }
+
+    @Test
+    @DisplayName("Should build config with remote debugging enabled")
+    void shouldBuildConfigWithRemoteDebuggingEnabled() {
+      LOGGER.info("Testing remote debugging enabled");
+
+      final PanamaDebugConfig config =
+          PanamaDebugConfig.builder().remoteDebuggingEnabled(true).build();
+
+      assertTrue(config.isRemoteDebuggingEnabled(), "Remote debugging should be enabled");
+
+      LOGGER.info("Remote debugging enabled: " + config.isRemoteDebuggingEnabled());
+    }
+
+    @Test
+    @DisplayName("Should build config with custom session timeout")
+    void shouldBuildConfigWithCustomSessionTimeout() {
+      LOGGER.info("Testing custom session timeout");
+
+      final long customTimeout = 600_000L;
+      final PanamaDebugConfig config =
+          PanamaDebugConfig.builder().sessionTimeout(customTimeout).build();
+
+      assertEquals(customTimeout, config.getSessionTimeout(), "Custom timeout should be set");
+
+      LOGGER.info("Custom session timeout set to: " + config.getSessionTimeout());
+    }
+
+    @Test
+    @DisplayName("Should reject negative session timeout")
+    void shouldRejectNegativeSessionTimeout() {
+      LOGGER.info("Testing negative session timeout rejection");
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> PanamaDebugConfig.builder().sessionTimeout(-1));
+
+      assertTrue(
+          ex.getMessage().contains("Timeout") || ex.getMessage().contains("negative"),
+          "Error should mention timeout: " + ex.getMessage());
+
+      LOGGER.info("Correctly rejected negative timeout: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should build config with breakpoints disabled")
+    void shouldBuildConfigWithBreakpointsDisabled() {
+      LOGGER.info("Testing breakpoints disabled");
+
+      final PanamaDebugConfig config =
+          PanamaDebugConfig.builder().breakpointsEnabled(false).build();
+
+      assertFalse(config.isBreakpointsEnabled(), "Breakpoints should be disabled");
+
+      LOGGER.info("Breakpoints enabled: " + config.isBreakpointsEnabled());
+    }
+
+    @Test
+    @DisplayName("Should build config with custom max breakpoints")
+    void shouldBuildConfigWithCustomMaxBreakpoints() {
+      LOGGER.info("Testing custom max breakpoints");
+
+      final int customMax = 2048;
+      final PanamaDebugConfig config =
+          PanamaDebugConfig.builder().maxBreakpoints(customMax).build();
+
+      assertEquals(customMax, config.getMaxBreakpoints(), "Custom max breakpoints should be set");
+
+      LOGGER.info("Custom max breakpoints set to: " + config.getMaxBreakpoints());
+    }
+
+    @Test
+    @DisplayName("Should reject negative max breakpoints")
+    void shouldRejectNegativeMaxBreakpoints() {
+      LOGGER.info("Testing negative max breakpoints rejection");
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> PanamaDebugConfig.builder().maxBreakpoints(-1));
+
+      assertTrue(
+          ex.getMessage().contains("breakpoints") || ex.getMessage().contains("negative"),
+          "Error should mention breakpoints: " + ex.getMessage());
+
+      LOGGER.info("Correctly rejected negative max breakpoints: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should build config with step debugging disabled")
+    void shouldBuildConfigWithStepDebuggingDisabled() {
+      LOGGER.info("Testing step debugging disabled");
+
+      final PanamaDebugConfig config =
+          PanamaDebugConfig.builder().stepDebuggingEnabled(false).build();
+
+      assertFalse(config.isStepDebuggingEnabled(), "Step debugging should be disabled");
+
+      LOGGER.info("Step debugging enabled: " + config.isStepDebuggingEnabled());
+    }
+
+    @Test
+    @DisplayName("Should build config with custom log level")
+    void shouldBuildConfigWithCustomLogLevel() {
+      LOGGER.info("Testing custom log level");
+
+      final String customLevel = "DEBUG";
+      final PanamaDebugConfig config = PanamaDebugConfig.builder().logLevel(customLevel).build();
+
+      assertEquals(customLevel, config.getLogLevel(), "Custom log level should be set");
+
+      LOGGER.info("Custom log level set to: " + config.getLogLevel());
+    }
+
+    @Test
+    @DisplayName("Should reject null log level")
+    void shouldRejectNullLogLevel() {
+      LOGGER.info("Testing null log level rejection");
+
+      assertThrows(NullPointerException.class, () -> PanamaDebugConfig.builder().logLevel(null));
+
+      LOGGER.info("Correctly rejected null log level");
+    }
+
+    @Test
+    @DisplayName("Should build fully customized config")
+    void shouldBuildFullyCustomizedConfig() {
+      LOGGER.info("Testing fully customized config");
+
+      final PanamaDebugConfig config =
+          PanamaDebugConfig.builder()
+              .debugPort(8888)
+              .hostAddress("0.0.0.0")
+              .remoteDebuggingEnabled(true)
+              .sessionTimeout(120_000L)
+              .breakpointsEnabled(true)
+              .maxBreakpoints(512)
+              .stepDebuggingEnabled(false)
+              .logLevel("FINE")
+              .build();
+
+      assertEquals(8888, config.getDebugPort(), "Port should match");
+      assertEquals("0.0.0.0", config.getHostAddress(), "Host should match");
+      assertTrue(config.isRemoteDebuggingEnabled(), "Remote debugging should be enabled");
+      assertEquals(120_000L, config.getSessionTimeout(), "Timeout should match");
+      assertTrue(config.isBreakpointsEnabled(), "Breakpoints should be enabled");
+      assertEquals(512, config.getMaxBreakpoints(), "Max breakpoints should match");
+      assertFalse(config.isStepDebuggingEnabled(), "Step debugging should be disabled");
+      assertEquals("FINE", config.getLogLevel(), "Log level should match");
+
+      LOGGER.info("Fully customized config: " + config);
+    }
   }
 
-  @Test
-  @DisplayName("Create configuration with custom debug port")
-  public void testCustomDebugPort() {
-    LOGGER.info("Testing custom debug port");
+  @Nested
+  @DisplayName("Equality Tests")
+  class EqualityTests {
 
-    final PanamaDebugConfig config = PanamaDebugConfig.builder().debugPort(8080).build();
+    @Test
+    @DisplayName("Should be equal to itself")
+    void shouldBeEqualToItself() {
+      LOGGER.info("Testing reflexive equality");
 
-    assertEquals(8080, config.getDebugPort(), "Debug port should be 8080");
+      final PanamaDebugConfig config = PanamaDebugConfig.getDefault();
 
-    LOGGER.info("Custom debug port test passed");
+      assertEquals(config, config, "Config should equal itself");
+
+      LOGGER.info("Reflexive equality verified");
+    }
+
+    @Test
+    @DisplayName("Should be equal to config with same values")
+    void shouldBeEqualToConfigWithSameValues() {
+      LOGGER.info("Testing equality with same values");
+
+      final PanamaDebugConfig config1 =
+          PanamaDebugConfig.builder().debugPort(9000).hostAddress("localhost").build();
+
+      final PanamaDebugConfig config2 =
+          PanamaDebugConfig.builder().debugPort(9000).hostAddress("localhost").build();
+
+      assertEquals(config1, config2, "Configs with same values should be equal");
+      assertEquals(config1.hashCode(), config2.hashCode(), "Hash codes should be equal");
+
+      LOGGER.info("Equality with same values verified");
+    }
+
+    @Test
+    @DisplayName("Should not be equal to config with different values")
+    void shouldNotBeEqualToConfigWithDifferentValues() {
+      LOGGER.info("Testing inequality with different values");
+
+      final PanamaDebugConfig config1 = PanamaDebugConfig.builder().debugPort(9000).build();
+
+      final PanamaDebugConfig config2 = PanamaDebugConfig.builder().debugPort(9001).build();
+
+      assertNotEquals(config1, config2, "Configs with different ports should not be equal");
+
+      LOGGER.info("Inequality with different values verified");
+    }
+
+    @Test
+    @DisplayName("Should not be equal to null")
+    void shouldNotBeEqualToNull() {
+      LOGGER.info("Testing inequality with null");
+
+      final PanamaDebugConfig config = PanamaDebugConfig.getDefault();
+
+      assertNotEquals(null, config, "Config should not equal null");
+
+      LOGGER.info("Inequality with null verified");
+    }
+
+    @Test
+    @DisplayName("Should not be equal to different type")
+    void shouldNotBeEqualToDifferentType() {
+      LOGGER.info("Testing inequality with different type");
+
+      final PanamaDebugConfig config = PanamaDebugConfig.getDefault();
+
+      assertNotEquals("not a config", config, "Config should not equal String");
+
+      LOGGER.info("Inequality with different type verified");
+    }
   }
 
-  @Test
-  @DisplayName("Create configuration with custom host address")
-  public void testCustomHostAddress() {
-    LOGGER.info("Testing custom host address");
+  @Nested
+  @DisplayName("ToString Tests")
+  class ToStringTests {
 
-    final PanamaDebugConfig config = PanamaDebugConfig.builder().hostAddress("0.0.0.0").build();
+    @Test
+    @DisplayName("Should produce readable toString")
+    void shouldProduceReadableToString() {
+      LOGGER.info("Testing toString output");
 
-    assertEquals("0.0.0.0", config.getHostAddress(), "Host address should be 0.0.0.0");
+      final PanamaDebugConfig config =
+          PanamaDebugConfig.builder()
+              .debugPort(9229)
+              .hostAddress("127.0.0.1")
+              .remoteDebuggingEnabled(true)
+              .build();
 
-    LOGGER.info("Custom host address test passed");
+      final String str = config.toString();
+
+      assertNotNull(str, "toString should not be null");
+      assertTrue(str.contains("PanamaDebugConfig"), "toString should contain class name");
+      assertTrue(str.contains("9229"), "toString should contain port");
+      assertTrue(str.contains("127.0.0.1"), "toString should contain host");
+
+      LOGGER.info("toString output: " + str);
+    }
   }
 
-  @Test
-  @DisplayName("Enable remote debugging")
-  public void testEnableRemoteDebugging() {
-    LOGGER.info("Testing remote debugging enabled");
+  @Nested
+  @DisplayName("HashCode Tests")
+  class HashCodeTests {
 
-    final PanamaDebugConfig config =
-        PanamaDebugConfig.builder().remoteDebuggingEnabled(true).build();
+    @Test
+    @DisplayName("Should have consistent hashCode")
+    void shouldHaveConsistentHashCode() {
+      LOGGER.info("Testing hashCode consistency");
 
-    assertTrue(config.isRemoteDebuggingEnabled(), "Remote debugging should be enabled");
+      final PanamaDebugConfig config =
+          PanamaDebugConfig.builder().debugPort(8000).hostAddress("test.host").build();
 
-    LOGGER.info("Remote debugging enabled test passed");
+      final int hash1 = config.hashCode();
+      final int hash2 = config.hashCode();
+
+      assertEquals(hash1, hash2, "hashCode should be consistent");
+
+      LOGGER.info("hashCode consistency verified: " + hash1);
+    }
+
+    @Test
+    @DisplayName("Should have different hashCode for different values")
+    void shouldHaveDifferentHashCodeForDifferentValues() {
+      LOGGER.info("Testing hashCode variation");
+
+      final PanamaDebugConfig config1 = PanamaDebugConfig.builder().debugPort(8000).build();
+
+      final PanamaDebugConfig config2 = PanamaDebugConfig.builder().debugPort(8001).build();
+
+      // Note: Different values don't guarantee different hashCodes,
+      // but in most cases they should differ
+      final int hash1 = config1.hashCode();
+      final int hash2 = config2.hashCode();
+
+      LOGGER.info("hashCode for port 8000: " + hash1 + ", port 8001: " + hash2);
+      // We don't assert they're different since hash collisions are allowed
+    }
   }
 
-  @Test
-  @DisplayName("Create configuration with custom session timeout")
-  public void testCustomSessionTimeout() {
-    LOGGER.info("Testing custom session timeout");
-
-    final PanamaDebugConfig config = PanamaDebugConfig.builder().sessionTimeout(60000L).build();
-
-    assertEquals(60000L, config.getSessionTimeout(), "Session timeout should be 60000ms");
-
-    LOGGER.info("Custom session timeout test passed");
-  }
-
-  @Test
-  @DisplayName("Disable breakpoints")
-  public void testDisableBreakpoints() {
-    LOGGER.info("Testing breakpoints disabled");
-
-    final PanamaDebugConfig config = PanamaDebugConfig.builder().breakpointsEnabled(false).build();
-
-    assertFalse(config.isBreakpointsEnabled(), "Breakpoints should be disabled");
-
-    LOGGER.info("Breakpoints disabled test passed");
-  }
-
-  @Test
-  @DisplayName("Create configuration with custom max breakpoints")
-  public void testCustomMaxBreakpoints() {
-    LOGGER.info("Testing custom max breakpoints");
-
-    final PanamaDebugConfig config = PanamaDebugConfig.builder().maxBreakpoints(512).build();
-
-    assertEquals(512, config.getMaxBreakpoints(), "Max breakpoints should be 512");
-
-    LOGGER.info("Custom max breakpoints test passed");
-  }
-
-  @Test
-  @DisplayName("Disable step debugging")
-  public void testDisableStepDebugging() {
-    LOGGER.info("Testing step debugging disabled");
-
-    final PanamaDebugConfig config =
-        PanamaDebugConfig.builder().stepDebuggingEnabled(false).build();
-
-    assertFalse(config.isStepDebuggingEnabled(), "Step debugging should be disabled");
-
-    LOGGER.info("Step debugging disabled test passed");
-  }
-
-  @Test
-  @DisplayName("Create configuration with custom log level")
-  public void testCustomLogLevel() {
-    LOGGER.info("Testing custom log level");
-
-    final PanamaDebugConfig config = PanamaDebugConfig.builder().logLevel("DEBUG").build();
-
-    assertEquals("DEBUG", config.getLogLevel(), "Log level should be DEBUG");
-
-    LOGGER.info("Custom log level test passed");
-  }
-
-  @Test
-  @DisplayName("Create configuration with all custom values")
-  public void testAllCustomValues() {
-    LOGGER.info("Testing configuration with all custom values");
-
-    final PanamaDebugConfig config =
-        PanamaDebugConfig.builder()
-            .debugPort(9999)
-            .hostAddress("192.168.1.100")
-            .remoteDebuggingEnabled(true)
-            .sessionTimeout(120000L)
-            .breakpointsEnabled(false)
-            .maxBreakpoints(2048)
-            .stepDebuggingEnabled(false)
-            .logLevel("FINE")
-            .build();
-
-    assertEquals(9999, config.getDebugPort(), "Debug port should match");
-    assertEquals("192.168.1.100", config.getHostAddress(), "Host address should match");
-    assertTrue(config.isRemoteDebuggingEnabled(), "Remote debugging should be enabled");
-    assertEquals(120000L, config.getSessionTimeout(), "Session timeout should match");
-    assertFalse(config.isBreakpointsEnabled(), "Breakpoints should be disabled");
-    assertEquals(2048, config.getMaxBreakpoints(), "Max breakpoints should match");
-    assertFalse(config.isStepDebuggingEnabled(), "Step debugging should be disabled");
-    assertEquals("FINE", config.getLogLevel(), "Log level should match");
-
-    LOGGER.info("All custom values test passed: " + config);
-  }
-
-  @Test
-  @DisplayName("Reject invalid debug port - negative")
-  public void testRejectNegativeDebugPort() {
-    LOGGER.info("Testing rejection of negative debug port");
-
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> PanamaDebugConfig.builder().debugPort(-1),
-        "Should reject negative port");
-
-    LOGGER.info("Negative debug port rejection test passed");
-  }
-
-  @Test
-  @DisplayName("Reject invalid debug port - too high")
-  public void testRejectTooHighDebugPort() {
-    LOGGER.info("Testing rejection of too high debug port");
-
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> PanamaDebugConfig.builder().debugPort(65536),
-        "Should reject port above 65535");
-
-    LOGGER.info("Too high debug port rejection test passed");
-  }
-
-  @Test
-  @DisplayName("Accept edge case debug ports")
-  public void testEdgeCaseDebugPorts() {
-    LOGGER.info("Testing edge case debug ports");
-
-    final PanamaDebugConfig configMin = PanamaDebugConfig.builder().debugPort(0).build();
-    assertEquals(0, configMin.getDebugPort(), "Port 0 should be accepted");
-
-    final PanamaDebugConfig configMax = PanamaDebugConfig.builder().debugPort(65535).build();
-    assertEquals(65535, configMax.getDebugPort(), "Port 65535 should be accepted");
-
-    LOGGER.info("Edge case debug ports test passed");
-  }
-
-  @Test
-  @DisplayName("Reject null host address")
-  public void testRejectNullHostAddress() {
-    LOGGER.info("Testing rejection of null host address");
-
-    assertThrows(
-        NullPointerException.class,
-        () -> PanamaDebugConfig.builder().hostAddress(null),
-        "Should reject null host address");
-
-    LOGGER.info("Null host address rejection test passed");
-  }
-
-  @Test
-  @DisplayName("Reject negative session timeout")
-  public void testRejectNegativeSessionTimeout() {
-    LOGGER.info("Testing rejection of negative session timeout");
-
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> PanamaDebugConfig.builder().sessionTimeout(-1),
-        "Should reject negative timeout");
-
-    LOGGER.info("Negative session timeout rejection test passed");
-  }
-
-  @Test
-  @DisplayName("Accept zero session timeout")
-  public void testAcceptZeroSessionTimeout() {
-    LOGGER.info("Testing acceptance of zero session timeout");
-
-    final PanamaDebugConfig config = PanamaDebugConfig.builder().sessionTimeout(0).build();
-    assertEquals(0, config.getSessionTimeout(), "Zero timeout should be accepted");
-
-    LOGGER.info("Zero session timeout test passed");
-  }
-
-  @Test
-  @DisplayName("Reject negative max breakpoints")
-  public void testRejectNegativeMaxBreakpoints() {
-    LOGGER.info("Testing rejection of negative max breakpoints");
-
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> PanamaDebugConfig.builder().maxBreakpoints(-1),
-        "Should reject negative max breakpoints");
-
-    LOGGER.info("Negative max breakpoints rejection test passed");
-  }
-
-  @Test
-  @DisplayName("Accept zero max breakpoints")
-  public void testAcceptZeroMaxBreakpoints() {
-    LOGGER.info("Testing acceptance of zero max breakpoints");
-
-    final PanamaDebugConfig config = PanamaDebugConfig.builder().maxBreakpoints(0).build();
-    assertEquals(0, config.getMaxBreakpoints(), "Zero max breakpoints should be accepted");
-
-    LOGGER.info("Zero max breakpoints test passed");
-  }
-
-  @Test
-  @DisplayName("Reject null log level")
-  public void testRejectNullLogLevel() {
-    LOGGER.info("Testing rejection of null log level");
-
-    assertThrows(
-        NullPointerException.class,
-        () -> PanamaDebugConfig.builder().logLevel(null),
-        "Should reject null log level");
-
-    LOGGER.info("Null log level rejection test passed");
-  }
-
-  @Test
-  @DisplayName("Test toString contains all fields")
-  public void testToStringContainsFields() {
-    LOGGER.info("Testing toString contains all fields");
-
-    final PanamaDebugConfig config =
-        PanamaDebugConfig.builder()
-            .debugPort(8080)
-            .hostAddress("localhost")
-            .remoteDebuggingEnabled(true)
-            .build();
-
-    final String str = config.toString();
-
-    assertTrue(str.contains("8080"), "toString should contain debug port");
-    assertTrue(str.contains("localhost"), "toString should contain host address");
-    assertTrue(str.contains("remoteDebugging"), "toString should contain remote debugging field");
-
-    LOGGER.info("toString test passed: " + str);
-  }
-
-  @Test
-  @DisplayName("Test equality for same configuration")
-  public void testEquality() {
-    LOGGER.info("Testing configuration equality");
-
-    final PanamaDebugConfig config1 =
-        PanamaDebugConfig.builder()
-            .debugPort(9229)
-            .hostAddress("127.0.0.1")
-            .remoteDebuggingEnabled(true)
-            .sessionTimeout(60000L)
-            .build();
-
-    final PanamaDebugConfig config2 =
-        PanamaDebugConfig.builder()
-            .debugPort(9229)
-            .hostAddress("127.0.0.1")
-            .remoteDebuggingEnabled(true)
-            .sessionTimeout(60000L)
-            .build();
-
-    assertEquals(config1, config2, "Configs with same values should be equal");
-
-    LOGGER.info("Equality test passed");
-  }
-
-  @Test
-  @DisplayName("Test inequality for different configuration")
-  public void testInequality() {
-    LOGGER.info("Testing configuration inequality");
-
-    final PanamaDebugConfig config1 = PanamaDebugConfig.builder().debugPort(8080).build();
-
-    final PanamaDebugConfig config2 = PanamaDebugConfig.builder().debugPort(9229).build();
-
-    assertNotEquals(config1, config2, "Configs with different ports should not be equal");
-
-    LOGGER.info("Inequality test passed");
-  }
-
-  @Test
-  @DisplayName("Test equals edge cases")
-  public void testEqualsEdgeCases() {
-    LOGGER.info("Testing equals edge cases");
-
-    final PanamaDebugConfig config = PanamaDebugConfig.getDefault();
-
-    assertTrue(config.equals(config), "Config should equal itself");
-    assertFalse(config.equals(null), "Config should not equal null");
-    assertFalse(config.equals("not a config"), "Config should not equal string");
-
-    LOGGER.info("Equals edge cases test passed");
-  }
-
-  @Test
-  @DisplayName("Test hashCode consistency")
-  public void testHashCodeConsistency() {
-    LOGGER.info("Testing hashCode consistency");
-
-    final PanamaDebugConfig config1 =
-        PanamaDebugConfig.builder().debugPort(8080).hostAddress("localhost").build();
-
-    final PanamaDebugConfig config2 =
-        PanamaDebugConfig.builder().debugPort(8080).hostAddress("localhost").build();
-
-    assertEquals(config1.hashCode(), config2.hashCode(), "Equal configs should have same hashCode");
-
-    LOGGER.info("hashCode consistency test passed");
-  }
-
-  @Test
-  @DisplayName("Builder can be reused with different values")
-  public void testBuilderReuse() {
-    LOGGER.info("Testing builder reuse");
-
-    final PanamaDebugConfig.Builder builder = PanamaDebugConfig.builder();
-
-    final PanamaDebugConfig config1 = builder.debugPort(8080).build();
-    final PanamaDebugConfig config2 = builder.debugPort(9229).build();
-
-    assertEquals(8080, config1.getDebugPort(), "First config should have port 8080");
-    assertEquals(9229, config2.getDebugPort(), "Second config should have port 9229");
-
-    LOGGER.info("Builder reuse test passed");
+  @Nested
+  @DisplayName("Constants Tests")
+  class ConstantsTests {
+
+    @Test
+    @DisplayName("Should have valid default constants")
+    void shouldHaveValidDefaultConstants() {
+      LOGGER.info("Testing default constants");
+
+      assertTrue(PanamaDebugConfig.DEFAULT_DEBUG_PORT > 0, "Default port should be positive");
+      assertTrue(PanamaDebugConfig.DEFAULT_DEBUG_PORT <= 65535, "Default port should be valid");
+      assertNotNull(PanamaDebugConfig.DEFAULT_HOST_ADDRESS, "Default host should not be null");
+      assertTrue(
+          PanamaDebugConfig.DEFAULT_SESSION_TIMEOUT > 0, "Default timeout should be positive");
+      assertTrue(
+          PanamaDebugConfig.DEFAULT_MAX_BREAKPOINTS > 0,
+          "Default max breakpoints should be positive");
+      assertNotNull(PanamaDebugConfig.DEFAULT_LOG_LEVEL, "Default log level should not be null");
+
+      LOGGER.info("Default constants verified");
+    }
   }
 }

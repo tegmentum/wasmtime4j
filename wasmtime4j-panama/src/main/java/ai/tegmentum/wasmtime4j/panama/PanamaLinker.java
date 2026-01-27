@@ -61,6 +61,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       new java.util.concurrent.ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = new HashSet<>();
   private volatile PanamaWasiContext wasiContext = null;
+  private volatile boolean wasiEnabled = false;
 
   /**
    * Creates a new Panama linker.
@@ -573,6 +574,12 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   public void enableWasi() throws WasmException {
     ensureNotClosed();
 
+    // Check if WASI is already enabled - skip if so to avoid duplicate definition errors
+    if (wasiEnabled) {
+      LOGGER.fine("WASI already enabled for linker, skipping");
+      return;
+    }
+
     // Add WASI Preview 1 imports to the linker
     final int result = NATIVE_BINDINGS.linkerAddWasi(nativeLinker);
 
@@ -580,7 +587,17 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new WasmException("Failed to enable WASI (error code: " + result + ")");
     }
 
+    wasiEnabled = true;
     LOGGER.fine("Enabled WASI for linker");
+  }
+
+  /**
+   * Checks if WASI has been enabled for this linker.
+   *
+   * @return true if WASI is enabled, false otherwise
+   */
+  public boolean isWasiEnabled() {
+    return wasiEnabled;
   }
 
   /**
