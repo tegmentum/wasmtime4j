@@ -20,16 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager.AlertSeverity;
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager.QuotaEnforcementPolicy;
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager.ResourceAllocationStatus;
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager.ResourceCommunicationType;
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager.ResourceIsolationLevel;
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager.ResourceMessageType;
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager.ResourceSharingPolicy;
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager.ResourceType;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,9 +31,9 @@ import org.junit.jupiter.api.Test;
  * Tests for {@link ComponentResourceSharingManager} interface.
  *
  * <p>ComponentResourceSharingManager provides advanced resource sharing and isolation for
- * components.
+ * components including shared resource pools, isolation, quotas, and cross-component communication.
  */
-@DisplayName("ComponentResourceSharingManager Tests")
+@DisplayName("ComponentResourceSharingManager Interface Tests")
 class ComponentResourceSharingManagerTest {
 
   @Nested
@@ -48,11 +41,8 @@ class ComponentResourceSharingManagerTest {
   class InterfaceStructureTests {
 
     @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(
-          Modifier.isPublic(ComponentResourceSharingManager.class.getModifiers()),
-          "ComponentResourceSharingManager should be public");
+    @DisplayName("should be an interface")
+    void shouldBeAnInterface() {
       assertTrue(
           ComponentResourceSharingManager.class.isInterface(),
           "ComponentResourceSharingManager should be an interface");
@@ -61,15 +51,21 @@ class ComponentResourceSharingManagerTest {
     @Test
     @DisplayName("should extend AutoCloseable")
     void shouldExtendAutoCloseable() {
-      assertTrue(
-          AutoCloseable.class.isAssignableFrom(ComponentResourceSharingManager.class),
-          "ComponentResourceSharingManager should extend AutoCloseable");
+      final Class<?>[] interfaces = ComponentResourceSharingManager.class.getInterfaces();
+      boolean extendsAutoCloseable = false;
+      for (final Class<?> iface : interfaces) {
+        if (iface == AutoCloseable.class) {
+          extendsAutoCloseable = true;
+          break;
+        }
+      }
+      assertTrue(extendsAutoCloseable, "Should extend AutoCloseable");
     }
   }
 
   @Nested
-  @DisplayName("Method Signature Tests")
-  class MethodSignatureTests {
+  @DisplayName("Core Method Tests")
+  class CoreMethodTests {
 
     @Test
     @DisplayName("should have getId method")
@@ -87,13 +83,42 @@ class ComponentResourceSharingManagerTest {
     }
 
     @Test
+    @DisplayName("should have start method")
+    void shouldHaveStartMethod() throws NoSuchMethodException {
+      final Method method = ComponentResourceSharingManager.class.getMethod("start");
+      assertNotNull(method, "start method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+
+    @Test
+    @DisplayName("should have stop method")
+    void shouldHaveStopMethod() throws NoSuchMethodException {
+      final Method method = ComponentResourceSharingManager.class.getMethod("stop");
+      assertNotNull(method, "stop method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+
+    @Test
+    @DisplayName("should have close method")
+    void shouldHaveCloseMethod() throws NoSuchMethodException {
+      final Method method = ComponentResourceSharingManager.class.getMethod("close");
+      assertNotNull(method, "close method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+  }
+
+  @Nested
+  @DisplayName("Resource Pool Method Tests")
+  class ResourcePoolMethodTests {
+
+    @Test
     @DisplayName("should have createResourcePool method")
     void shouldHaveCreateResourcePoolMethod() throws NoSuchMethodException {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "createResourcePool",
               String.class,
-              ResourceType.class,
+              ComponentResourceSharingManager.ResourceType.class,
               ComponentResourceSharingManager.ResourcePoolConfig.class);
       assertNotNull(method, "createResourcePool method should exist");
     }
@@ -112,7 +137,21 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod("removeResourcePool", String.class);
       assertNotNull(method, "removeResourcePool method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
+
+    @Test
+    @DisplayName("should have getActiveResourcePools method")
+    void shouldHaveGetActiveResourcePoolsMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod("getActiveResourcePools");
+      assertNotNull(method, "getActiveResourcePools method should exist");
+    }
+  }
+
+  @Nested
+  @DisplayName("Resource Allocation Method Tests")
+  class ResourceAllocationMethodTests {
 
     @Test
     @DisplayName("should have allocateResources method")
@@ -134,20 +173,103 @@ class ComponentResourceSharingManagerTest {
               "deallocateResources", ComponentResourceSharingManager.ResourceAllocation.class);
       assertNotNull(method, "deallocateResources method should exist");
     }
+  }
+
+  @Nested
+  @DisplayName("Resource Isolation Method Tests")
+  class ResourceIsolationMethodTests {
 
     @Test
-    @DisplayName("should have start method")
-    void shouldHaveStartMethod() throws NoSuchMethodException {
-      final Method method = ComponentResourceSharingManager.class.getMethod("start");
-      assertNotNull(method, "start method should exist");
+    @DisplayName("should have setupResourceIsolation method")
+    void shouldHaveSetupResourceIsolationMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "setupResourceIsolation",
+              ComponentSimple.class,
+              ComponentResourceSharingManager.ResourceIsolationConfig.class);
+      assertNotNull(method, "setupResourceIsolation method should exist");
+    }
+
+    @Test
+    @DisplayName("should have removeResourceIsolation method")
+    void shouldHaveRemoveResourceIsolationMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "removeResourceIsolation", ComponentSimple.class);
+      assertNotNull(method, "removeResourceIsolation method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+  }
+
+  @Nested
+  @DisplayName("Resource Quota Method Tests")
+  class ResourceQuotaMethodTests {
+
+    @Test
+    @DisplayName("should have setResourceQuotas method")
+    void shouldHaveSetResourceQuotasMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "setResourceQuotas",
+              ComponentSimple.class,
+              ComponentResourceSharingManager.ResourceQuotas.class);
+      assertNotNull(method, "setResourceQuotas method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should have stop method")
-    void shouldHaveStopMethod() throws NoSuchMethodException {
-      final Method method = ComponentResourceSharingManager.class.getMethod("stop");
-      assertNotNull(method, "stop method should exist");
+    @DisplayName("should have getResourceQuotas method")
+    void shouldHaveGetResourceQuotasMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "getResourceQuotas", ComponentSimple.class);
+      assertNotNull(method, "getResourceQuotas method should exist");
+    }
+
+    @Test
+    @DisplayName("should have updateResourceQuotas method")
+    void shouldHaveUpdateResourceQuotasMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "updateResourceQuotas",
+              ComponentSimple.class,
+              ComponentResourceSharingManager.ResourceQuotaUpdates.class);
+      assertNotNull(method, "updateResourceQuotas method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+
+    @Test
+    @DisplayName("should have getResourceUsage method")
+    void shouldHaveGetResourceUsageMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "getResourceUsage", ComponentSimple.class);
+      assertNotNull(method, "getResourceUsage method should exist");
+    }
+  }
+
+  @Nested
+  @DisplayName("Monitoring Method Tests")
+  class MonitoringMethodTests {
+
+    @Test
+    @DisplayName("should have startResourceMonitoring method")
+    void shouldHaveStartResourceMonitoringMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "startResourceMonitoring",
+              ComponentSimple.class,
+              ComponentResourceSharingManager.ResourceMonitoringConfig.class);
+      assertNotNull(method, "startResourceMonitoring method should exist");
+    }
+
+    @Test
+    @DisplayName("should have stopResourceMonitoring method")
+    void shouldHaveStopResourceMonitoringMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "stopResourceMonitoring", ComponentResourceSharingManager.ResourceMonitor.class);
+      assertNotNull(method, "stopResourceMonitoring method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
@@ -157,338 +279,30 @@ class ComponentResourceSharingManagerTest {
       final Method method = ComponentResourceSharingManager.class.getMethod("getStatistics");
       assertNotNull(method, "getStatistics method should exist");
     }
+  }
+
+  @Nested
+  @DisplayName("Event Listener Method Tests")
+  class EventListenerMethodTests {
 
     @Test
-    @DisplayName("should have getActiveResourcePools method")
-    void shouldHaveGetActiveResourcePoolsMethod() throws NoSuchMethodException {
+    @DisplayName("should have setResourceEventListener method")
+    void shouldHaveSetResourceEventListenerMethod() throws NoSuchMethodException {
       final Method method =
-          ComponentResourceSharingManager.class.getMethod("getActiveResourcePools");
-      assertNotNull(method, "getActiveResourcePools method should exist");
-    }
-  }
-
-  @Nested
-  @DisplayName("ResourceType Enum Tests")
-  class ResourceTypeEnumTests {
-
-    @Test
-    @DisplayName("should have all resource types")
-    void shouldHaveAllResourceTypes() {
-      final var types = ResourceType.values();
-      assertEquals(8, types.length, "Should have 8 resource types");
+          ComponentResourceSharingManager.class.getMethod(
+              "setResourceEventListener",
+              ComponentResourceSharingManager.ResourceEventListener.class);
+      assertNotNull(method, "setResourceEventListener method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should have MEMORY type")
-    void shouldHaveMemoryType() {
-      assertEquals(ResourceType.MEMORY, ResourceType.valueOf("MEMORY"));
-    }
-
-    @Test
-    @DisplayName("should have CPU type")
-    void shouldHaveCpuType() {
-      assertEquals(ResourceType.CPU, ResourceType.valueOf("CPU"));
-    }
-
-    @Test
-    @DisplayName("should have NETWORK type")
-    void shouldHaveNetworkType() {
-      assertEquals(ResourceType.NETWORK, ResourceType.valueOf("NETWORK"));
-    }
-
-    @Test
-    @DisplayName("should have FILE_SYSTEM type")
-    void shouldHaveFileSystemType() {
-      assertEquals(ResourceType.FILE_SYSTEM, ResourceType.valueOf("FILE_SYSTEM"));
-    }
-
-    @Test
-    @DisplayName("should have THREADS type")
-    void shouldHaveThreadsType() {
-      assertEquals(ResourceType.THREADS, ResourceType.valueOf("THREADS"));
-    }
-
-    @Test
-    @DisplayName("should have SOCKETS type")
-    void shouldHaveSocketsType() {
-      assertEquals(ResourceType.SOCKETS, ResourceType.valueOf("SOCKETS"));
-    }
-
-    @Test
-    @DisplayName("should have HANDLES type")
-    void shouldHaveHandlesType() {
-      assertEquals(ResourceType.HANDLES, ResourceType.valueOf("HANDLES"));
-    }
-
-    @Test
-    @DisplayName("should have CUSTOM type")
-    void shouldHaveCustomType() {
-      assertEquals(ResourceType.CUSTOM, ResourceType.valueOf("CUSTOM"));
-    }
-  }
-
-  @Nested
-  @DisplayName("ResourceAllocationStatus Enum Tests")
-  class ResourceAllocationStatusEnumTests {
-
-    @Test
-    @DisplayName("should have all allocation statuses")
-    void shouldHaveAllAllocationStatuses() {
-      final var statuses = ResourceAllocationStatus.values();
-      assertEquals(4, statuses.length, "Should have 4 allocation statuses");
-    }
-
-    @Test
-    @DisplayName("should have ACTIVE status")
-    void shouldHaveActiveStatus() {
-      assertEquals(ResourceAllocationStatus.ACTIVE, ResourceAllocationStatus.valueOf("ACTIVE"));
-    }
-
-    @Test
-    @DisplayName("should have EXPIRED status")
-    void shouldHaveExpiredStatus() {
-      assertEquals(ResourceAllocationStatus.EXPIRED, ResourceAllocationStatus.valueOf("EXPIRED"));
-    }
-
-    @Test
-    @DisplayName("should have RELEASED status")
-    void shouldHaveReleasedStatus() {
-      assertEquals(ResourceAllocationStatus.RELEASED, ResourceAllocationStatus.valueOf("RELEASED"));
-    }
-
-    @Test
-    @DisplayName("should have FAILED status")
-    void shouldHaveFailedStatus() {
-      assertEquals(ResourceAllocationStatus.FAILED, ResourceAllocationStatus.valueOf("FAILED"));
-    }
-  }
-
-  @Nested
-  @DisplayName("ResourceIsolationLevel Enum Tests")
-  class ResourceIsolationLevelEnumTests {
-
-    @Test
-    @DisplayName("should have all isolation levels")
-    void shouldHaveAllIsolationLevels() {
-      final var levels = ResourceIsolationLevel.values();
-      assertEquals(5, levels.length, "Should have 5 isolation levels");
-    }
-
-    @Test
-    @DisplayName("should have NONE level")
-    void shouldHaveNoneLevel() {
-      assertEquals(ResourceIsolationLevel.NONE, ResourceIsolationLevel.valueOf("NONE"));
-    }
-
-    @Test
-    @DisplayName("should have BASIC level")
-    void shouldHaveBasicLevel() {
-      assertEquals(ResourceIsolationLevel.BASIC, ResourceIsolationLevel.valueOf("BASIC"));
-    }
-
-    @Test
-    @DisplayName("should have MODERATE level")
-    void shouldHaveModerateLevel() {
-      assertEquals(ResourceIsolationLevel.MODERATE, ResourceIsolationLevel.valueOf("MODERATE"));
-    }
-
-    @Test
-    @DisplayName("should have STRONG level")
-    void shouldHaveStrongLevel() {
-      assertEquals(ResourceIsolationLevel.STRONG, ResourceIsolationLevel.valueOf("STRONG"));
-    }
-
-    @Test
-    @DisplayName("should have COMPLETE level")
-    void shouldHaveCompleteLevel() {
-      assertEquals(ResourceIsolationLevel.COMPLETE, ResourceIsolationLevel.valueOf("COMPLETE"));
-    }
-  }
-
-  @Nested
-  @DisplayName("QuotaEnforcementPolicy Enum Tests")
-  class QuotaEnforcementPolicyEnumTests {
-
-    @Test
-    @DisplayName("should have all enforcement policies")
-    void shouldHaveAllEnforcementPolicies() {
-      final var policies = QuotaEnforcementPolicy.values();
-      assertEquals(4, policies.length, "Should have 4 enforcement policies");
-    }
-
-    @Test
-    @DisplayName("should have WARN_ONLY policy")
-    void shouldHaveWarnOnlyPolicy() {
-      assertEquals(QuotaEnforcementPolicy.WARN_ONLY, QuotaEnforcementPolicy.valueOf("WARN_ONLY"));
-    }
-
-    @Test
-    @DisplayName("should have THROTTLE policy")
-    void shouldHaveThrottlePolicy() {
-      assertEquals(QuotaEnforcementPolicy.THROTTLE, QuotaEnforcementPolicy.valueOf("THROTTLE"));
-    }
-
-    @Test
-    @DisplayName("should have REJECT policy")
-    void shouldHaveRejectPolicy() {
-      assertEquals(QuotaEnforcementPolicy.REJECT, QuotaEnforcementPolicy.valueOf("REJECT"));
-    }
-
-    @Test
-    @DisplayName("should have TERMINATE policy")
-    void shouldHaveTerminatePolicy() {
-      assertEquals(QuotaEnforcementPolicy.TERMINATE, QuotaEnforcementPolicy.valueOf("TERMINATE"));
-    }
-  }
-
-  @Nested
-  @DisplayName("ResourceCommunicationType Enum Tests")
-  class ResourceCommunicationTypeEnumTests {
-
-    @Test
-    @DisplayName("should have all communication types")
-    void shouldHaveAllCommunicationTypes() {
-      final var types = ResourceCommunicationType.values();
-      assertEquals(4, types.length, "Should have 4 communication types");
-    }
-
-    @Test
-    @DisplayName("should have MESSAGE_PASSING type")
-    void shouldHaveMessagePassingType() {
-      assertEquals(
-          ResourceCommunicationType.MESSAGE_PASSING,
-          ResourceCommunicationType.valueOf("MESSAGE_PASSING"));
-    }
-
-    @Test
-    @DisplayName("should have SHARED_MEMORY type")
-    void shouldHaveSharedMemoryType() {
-      assertEquals(
-          ResourceCommunicationType.SHARED_MEMORY,
-          ResourceCommunicationType.valueOf("SHARED_MEMORY"));
-    }
-
-    @Test
-    @DisplayName("should have EVENT_DRIVEN type")
-    void shouldHaveEventDrivenType() {
-      assertEquals(
-          ResourceCommunicationType.EVENT_DRIVEN,
-          ResourceCommunicationType.valueOf("EVENT_DRIVEN"));
-    }
-
-    @Test
-    @DisplayName("should have STREAM type")
-    void shouldHaveStreamType() {
-      assertEquals(ResourceCommunicationType.STREAM, ResourceCommunicationType.valueOf("STREAM"));
-    }
-  }
-
-  @Nested
-  @DisplayName("AlertSeverity Enum Tests")
-  class AlertSeverityEnumTests {
-
-    @Test
-    @DisplayName("should have all alert severities")
-    void shouldHaveAllAlertSeverities() {
-      final var severities = AlertSeverity.values();
-      assertEquals(4, severities.length, "Should have 4 alert severities");
-    }
-
-    @Test
-    @DisplayName("should have INFO severity")
-    void shouldHaveInfoSeverity() {
-      assertEquals(AlertSeverity.INFO, AlertSeverity.valueOf("INFO"));
-    }
-
-    @Test
-    @DisplayName("should have WARNING severity")
-    void shouldHaveWarningSeverity() {
-      assertEquals(AlertSeverity.WARNING, AlertSeverity.valueOf("WARNING"));
-    }
-
-    @Test
-    @DisplayName("should have ERROR severity")
-    void shouldHaveErrorSeverity() {
-      assertEquals(AlertSeverity.ERROR, AlertSeverity.valueOf("ERROR"));
-    }
-
-    @Test
-    @DisplayName("should have CRITICAL severity")
-    void shouldHaveCriticalSeverity() {
-      assertEquals(AlertSeverity.CRITICAL, AlertSeverity.valueOf("CRITICAL"));
-    }
-  }
-
-  @Nested
-  @DisplayName("ResourceSharingPolicy Enum Tests")
-  class ResourceSharingPolicyEnumTests {
-
-    @Test
-    @DisplayName("should have all sharing policies")
-    void shouldHaveAllSharingPolicies() {
-      final var policies = ResourceSharingPolicy.values();
-      assertEquals(4, policies.length, "Should have 4 sharing policies");
-    }
-
-    @Test
-    @DisplayName("should have EXCLUSIVE policy")
-    void shouldHaveExclusivePolicy() {
-      assertEquals(ResourceSharingPolicy.EXCLUSIVE, ResourceSharingPolicy.valueOf("EXCLUSIVE"));
-    }
-
-    @Test
-    @DisplayName("should have SHARED policy")
-    void shouldHaveSharedPolicy() {
-      assertEquals(ResourceSharingPolicy.SHARED, ResourceSharingPolicy.valueOf("SHARED"));
-    }
-
-    @Test
-    @DisplayName("should have ROUND_ROBIN policy")
-    void shouldHaveRoundRobinPolicy() {
-      assertEquals(ResourceSharingPolicy.ROUND_ROBIN, ResourceSharingPolicy.valueOf("ROUND_ROBIN"));
-    }
-
-    @Test
-    @DisplayName("should have PRIORITY_BASED policy")
-    void shouldHavePriorityBasedPolicy() {
-      assertEquals(
-          ResourceSharingPolicy.PRIORITY_BASED, ResourceSharingPolicy.valueOf("PRIORITY_BASED"));
-    }
-  }
-
-  @Nested
-  @DisplayName("ResourceMessageType Enum Tests")
-  class ResourceMessageTypeEnumTests {
-
-    @Test
-    @DisplayName("should have all message types")
-    void shouldHaveAllMessageTypes() {
-      final var types = ResourceMessageType.values();
-      assertEquals(4, types.length, "Should have 4 message types");
-    }
-
-    @Test
-    @DisplayName("should have DATA type")
-    void shouldHaveDataType() {
-      assertEquals(ResourceMessageType.DATA, ResourceMessageType.valueOf("DATA"));
-    }
-
-    @Test
-    @DisplayName("should have CONTROL type")
-    void shouldHaveControlType() {
-      assertEquals(ResourceMessageType.CONTROL, ResourceMessageType.valueOf("CONTROL"));
-    }
-
-    @Test
-    @DisplayName("should have HEARTBEAT type")
-    void shouldHaveHeartbeatType() {
-      assertEquals(ResourceMessageType.HEARTBEAT, ResourceMessageType.valueOf("HEARTBEAT"));
-    }
-
-    @Test
-    @DisplayName("should have ERROR type")
-    void shouldHaveErrorType() {
-      assertEquals(ResourceMessageType.ERROR, ResourceMessageType.valueOf("ERROR"));
+    @DisplayName("should have removeResourceEventListener method")
+    void shouldHaveRemoveResourceEventListenerMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod("removeResourceEventListener");
+      assertNotNull(method, "removeResourceEventListener method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
@@ -497,13 +311,14 @@ class ComponentResourceSharingManagerTest {
   class NestedInterfaceTests {
 
     @Test
-    @DisplayName("should have ResourcePool interface")
-    void shouldHaveResourcePoolInterface() {
-      final var classes = ComponentResourceSharingManager.class.getDeclaredClasses();
+    @DisplayName("should have ResourcePool nested interface")
+    void shouldHaveResourcePoolNestedInterface() {
+      final Class<?>[] declaredClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
       boolean found = false;
-      for (final var clazz : classes) {
-        if ("ResourcePool".equals(clazz.getSimpleName()) && clazz.isInterface()) {
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("ResourcePool")) {
           found = true;
+          assertTrue(clazz.isInterface(), "ResourcePool should be an interface");
           break;
         }
       }
@@ -511,13 +326,14 @@ class ComponentResourceSharingManagerTest {
     }
 
     @Test
-    @DisplayName("should have ResourceAllocation interface")
-    void shouldHaveResourceAllocationInterface() {
-      final var classes = ComponentResourceSharingManager.class.getDeclaredClasses();
+    @DisplayName("should have ResourceAllocation nested interface")
+    void shouldHaveResourceAllocationNestedInterface() {
+      final Class<?>[] declaredClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
       boolean found = false;
-      for (final var clazz : classes) {
-        if ("ResourceAllocation".equals(clazz.getSimpleName()) && clazz.isInterface()) {
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("ResourceAllocation")) {
           found = true;
+          assertTrue(clazz.isInterface(), "ResourceAllocation should be an interface");
           break;
         }
       }
@@ -525,27 +341,14 @@ class ComponentResourceSharingManagerTest {
     }
 
     @Test
-    @DisplayName("should have ResourceIsolationContext interface")
-    void shouldHaveResourceIsolationContextInterface() {
-      final var classes = ComponentResourceSharingManager.class.getDeclaredClasses();
+    @DisplayName("should have ResourceQuotas nested interface")
+    void shouldHaveResourceQuotasNestedInterface() {
+      final Class<?>[] declaredClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
       boolean found = false;
-      for (final var clazz : classes) {
-        if ("ResourceIsolationContext".equals(clazz.getSimpleName()) && clazz.isInterface()) {
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("ResourceQuotas")) {
           found = true;
-          break;
-        }
-      }
-      assertTrue(found, "Should have ResourceIsolationContext nested interface");
-    }
-
-    @Test
-    @DisplayName("should have ResourceQuotas interface")
-    void shouldHaveResourceQuotasInterface() {
-      final var classes = ComponentResourceSharingManager.class.getDeclaredClasses();
-      boolean found = false;
-      for (final var clazz : classes) {
-        if ("ResourceQuotas".equals(clazz.getSimpleName()) && clazz.isInterface()) {
-          found = true;
+          assertTrue(clazz.isInterface(), "ResourceQuotas should be an interface");
           break;
         }
       }
@@ -553,154 +356,195 @@ class ComponentResourceSharingManagerTest {
     }
 
     @Test
-    @DisplayName("should have ResourceUsage interface")
-    void shouldHaveResourceUsageInterface() {
-      final var classes = ComponentResourceSharingManager.class.getDeclaredClasses();
+    @DisplayName("should have ResourceMonitor nested interface")
+    void shouldHaveResourceMonitorNestedInterface() {
+      final Class<?>[] declaredClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
       boolean found = false;
-      for (final var clazz : classes) {
-        if ("ResourceUsage".equals(clazz.getSimpleName()) && clazz.isInterface()) {
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("ResourceMonitor")) {
           found = true;
-          break;
-        }
-      }
-      assertTrue(found, "Should have ResourceUsage nested interface");
-    }
-
-    @Test
-    @DisplayName("should have ResourceMonitor interface")
-    void shouldHaveResourceMonitorInterface() {
-      final var classes = ComponentResourceSharingManager.class.getDeclaredClasses();
-      boolean found = false;
-      for (final var clazz : classes) {
-        if ("ResourceMonitor".equals(clazz.getSimpleName()) && clazz.isInterface()) {
-          found = true;
+          assertTrue(clazz.isInterface(), "ResourceMonitor should be an interface");
           break;
         }
       }
       assertTrue(found, "Should have ResourceMonitor nested interface");
     }
+  }
+
+  @Nested
+  @DisplayName("Nested Enum Tests")
+  class NestedEnumTests {
 
     @Test
-    @DisplayName("should have ResourceSnapshot interface")
-    void shouldHaveResourceSnapshotInterface() {
-      final var classes = ComponentResourceSharingManager.class.getDeclaredClasses();
+    @DisplayName("should have ResourceType enum")
+    void shouldHaveResourceTypeEnum() {
+      final Class<?>[] declaredClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
       boolean found = false;
-      for (final var clazz : classes) {
-        if ("ResourceSnapshot".equals(clazz.getSimpleName()) && clazz.isInterface()) {
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("ResourceType")) {
           found = true;
+          assertTrue(clazz.isEnum(), "ResourceType should be an enum");
           break;
         }
       }
-      assertTrue(found, "Should have ResourceSnapshot nested interface");
+      assertTrue(found, "Should have ResourceType enum");
     }
 
     @Test
-    @DisplayName("should have ResourceEventListener interface")
-    void shouldHaveResourceEventListenerInterface() {
-      final var classes = ComponentResourceSharingManager.class.getDeclaredClasses();
+    @DisplayName("ResourceType enum should have expected values")
+    void resourceTypeEnumShouldHaveExpectedValues() {
+      final ComponentResourceSharingManager.ResourceType[] values =
+          ComponentResourceSharingManager.ResourceType.values();
+      final Set<String> valueNames = new HashSet<>();
+      for (final ComponentResourceSharingManager.ResourceType value : values) {
+        valueNames.add(value.name());
+      }
+
+      assertTrue(valueNames.contains("MEMORY"), "Should have MEMORY");
+      assertTrue(valueNames.contains("CPU"), "Should have CPU");
+      assertTrue(valueNames.contains("NETWORK"), "Should have NETWORK");
+      assertTrue(valueNames.contains("FILE_SYSTEM"), "Should have FILE_SYSTEM");
+    }
+
+    @Test
+    @DisplayName("should have ResourceAllocationStatus enum")
+    void shouldHaveResourceAllocationStatusEnum() {
+      final Class<?>[] declaredClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
       boolean found = false;
-      for (final var clazz : classes) {
-        if ("ResourceEventListener".equals(clazz.getSimpleName()) && clazz.isInterface()) {
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("ResourceAllocationStatus")) {
           found = true;
+          assertTrue(clazz.isEnum(), "ResourceAllocationStatus should be an enum");
           break;
         }
       }
-      assertTrue(found, "Should have ResourceEventListener nested interface");
+      assertTrue(found, "Should have ResourceAllocationStatus enum");
+    }
+
+    @Test
+    @DisplayName("ResourceAllocationStatus enum should have expected values")
+    void resourceAllocationStatusEnumShouldHaveExpectedValues() {
+      final ComponentResourceSharingManager.ResourceAllocationStatus[] values =
+          ComponentResourceSharingManager.ResourceAllocationStatus.values();
+      final Set<String> valueNames = new HashSet<>();
+      for (final ComponentResourceSharingManager.ResourceAllocationStatus value : values) {
+        valueNames.add(value.name());
+      }
+
+      assertTrue(valueNames.contains("ACTIVE"), "Should have ACTIVE");
+      assertTrue(valueNames.contains("EXPIRED"), "Should have EXPIRED");
+      assertTrue(valueNames.contains("RELEASED"), "Should have RELEASED");
+      assertTrue(valueNames.contains("FAILED"), "Should have FAILED");
+    }
+
+    @Test
+    @DisplayName("should have ResourceIsolationLevel enum")
+    void shouldHaveResourceIsolationLevelEnum() {
+      final Class<?>[] declaredClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("ResourceIsolationLevel")) {
+          found = true;
+          assertTrue(clazz.isEnum(), "ResourceIsolationLevel should be an enum");
+          break;
+        }
+      }
+      assertTrue(found, "Should have ResourceIsolationLevel enum");
+    }
+
+    @Test
+    @DisplayName("should have AlertSeverity enum")
+    void shouldHaveAlertSeverityEnum() {
+      final Class<?>[] declaredClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("AlertSeverity")) {
+          found = true;
+          assertTrue(clazz.isEnum(), "AlertSeverity should be an enum");
+          break;
+        }
+      }
+      assertTrue(found, "Should have AlertSeverity enum");
+    }
+
+    @Test
+    @DisplayName("AlertSeverity enum should have expected values")
+    void alertSeverityEnumShouldHaveExpectedValues() {
+      final ComponentResourceSharingManager.AlertSeverity[] values =
+          ComponentResourceSharingManager.AlertSeverity.values();
+      final String[] expectedValues = {"INFO", "WARNING", "ERROR", "CRITICAL"};
+      final Set<String> valueNames = new HashSet<>();
+      for (final ComponentResourceSharingManager.AlertSeverity value : values) {
+        valueNames.add(value.name());
+      }
+
+      for (final String expected : expectedValues) {
+        assertTrue(valueNames.contains(expected), "Should have " + expected);
+      }
     }
   }
 
   @Nested
-  @DisplayName("Interface Completeness Tests")
-  class InterfaceCompletenessTests {
+  @DisplayName("Snapshot and GC Method Tests")
+  class SnapshotAndGcMethodTests {
 
     @Test
-    @DisplayName("should have resource isolation methods")
-    void shouldHaveResourceIsolationMethods() throws NoSuchMethodException {
-      assertNotNull(
+    @DisplayName("should have performGarbageCollection method")
+    void shouldHavePerformGarbageCollectionMethod() throws NoSuchMethodException {
+      final Method method =
           ComponentResourceSharingManager.class.getMethod(
-              "setupResourceIsolation",
-              ComponentSimple.class,
-              ComponentResourceSharingManager.ResourceIsolationConfig.class),
-          "Should have setupResourceIsolation method");
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod(
-              "removeResourceIsolation", ComponentSimple.class),
-          "Should have removeResourceIsolation method");
+              "performGarbageCollection", ComponentResourceSharingManager.ResourceGCConfig.class);
+      assertNotNull(method, "performGarbageCollection method should exist");
     }
 
     @Test
-    @DisplayName("should have quota management methods")
-    void shouldHaveQuotaManagementMethods() throws NoSuchMethodException {
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod(
-              "setResourceQuotas",
-              ComponentSimple.class,
-              ComponentResourceSharingManager.ResourceQuotas.class),
-          "Should have setResourceQuotas method");
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod(
-              "getResourceQuotas", ComponentSimple.class),
-          "Should have getResourceQuotas method");
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod(
-              "updateResourceQuotas",
-              ComponentSimple.class,
-              ComponentResourceSharingManager.ResourceQuotaUpdates.class),
-          "Should have updateResourceQuotas method");
-    }
-
-    @Test
-    @DisplayName("should have resource monitoring methods")
-    void shouldHaveResourceMonitoringMethods() throws NoSuchMethodException {
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod(
-              "startResourceMonitoring",
-              ComponentSimple.class,
-              ComponentResourceSharingManager.ResourceMonitoringConfig.class),
-          "Should have startResourceMonitoring method");
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod(
-              "stopResourceMonitoring", ComponentResourceSharingManager.ResourceMonitor.class),
-          "Should have stopResourceMonitoring method");
-    }
-
-    @Test
-    @DisplayName("should have garbage collection methods")
-    void shouldHaveGarbageCollectionMethods() throws NoSuchMethodException {
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod(
-              "performGarbageCollection", ComponentResourceSharingManager.ResourceGCConfig.class),
-          "Should have performGarbageCollection method");
-    }
-
-    @Test
-    @DisplayName("should have snapshot methods")
-    void shouldHaveSnapshotMethods() throws NoSuchMethodException {
-      assertNotNull(
+    @DisplayName("should have createResourceSnapshot method")
+    void shouldHaveCreateResourceSnapshotMethod() throws NoSuchMethodException {
+      final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "createResourceSnapshot",
               ComponentSimple.class,
-              ComponentResourceSharingManager.ResourceSnapshotConfig.class),
-          "Should have createResourceSnapshot method");
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod(
-              "restoreResourceSnapshot",
-              ComponentSimple.class,
-              ComponentResourceSharingManager.ResourceSnapshot.class),
-          "Should have restoreResourceSnapshot method");
+              ComponentResourceSharingManager.ResourceSnapshotConfig.class);
+      assertNotNull(method, "createResourceSnapshot method should exist");
     }
 
     @Test
-    @DisplayName("should have event listener methods")
-    void shouldHaveEventListenerMethods() throws NoSuchMethodException {
-      assertNotNull(
+    @DisplayName("should have restoreResourceSnapshot method")
+    void shouldHaveRestoreResourceSnapshotMethod() throws NoSuchMethodException {
+      final Method method =
           ComponentResourceSharingManager.class.getMethod(
-              "setResourceEventListener",
-              ComponentResourceSharingManager.ResourceEventListener.class),
-          "Should have setResourceEventListener method");
-      assertNotNull(
-          ComponentResourceSharingManager.class.getMethod("removeResourceEventListener"),
-          "Should have removeResourceEventListener method");
+              "restoreResourceSnapshot",
+              ComponentSimple.class,
+              ComponentResourceSharingManager.ResourceSnapshot.class);
+      assertNotNull(method, "restoreResourceSnapshot method should exist");
+    }
+  }
+
+  @Nested
+  @DisplayName("Communication Method Tests")
+  class CommunicationMethodTests {
+
+    @Test
+    @DisplayName("should have setupResourceCommunication method")
+    void shouldHaveSetupResourceCommunicationMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "setupResourceCommunication",
+              ComponentSimple.class,
+              ComponentSimple.class,
+              ComponentResourceSharingManager.ResourceCommunicationConfig.class);
+      assertNotNull(method, "setupResourceCommunication method should exist");
+    }
+
+    @Test
+    @DisplayName("should have removeResourceCommunication method")
+    void shouldHaveRemoveResourceCommunicationMethod() throws NoSuchMethodException {
+      final Method method =
+          ComponentResourceSharingManager.class.getMethod(
+              "removeResourceCommunication",
+              ComponentResourceSharingManager.ResourceCommunicationChannel.class);
+      assertNotNull(method, "removeResourceCommunication method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 }

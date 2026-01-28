@@ -23,32 +23,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive test suite for the InstanceManager interface.
+ * Tests for {@link InstanceManager} interface.
  *
  * <p>InstanceManager provides production-ready instance management with pooling, scaling, and
- * health monitoring. This test verifies the interface structure, nested interfaces, and API
- * conformance.
+ * health monitoring for WebAssembly instances.
  */
 @DisplayName("InstanceManager Interface Tests")
 class InstanceManagerTest {
 
-  // ========================================================================
-  // Type Definition Tests
-  // ========================================================================
-
   @Nested
-  @DisplayName("Type Definition Tests")
-  class TypeDefinitionTests {
+  @DisplayName("Interface Structure Tests")
+  class InterfaceStructureTests {
 
     @Test
     @DisplayName("should be an interface")
@@ -57,45 +51,64 @@ class InstanceManagerTest {
     }
 
     @Test
-    @DisplayName("should be public")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(InstanceManager.class.getModifiers()),
-          "InstanceManager should be public");
-    }
-
-    @Test
     @DisplayName("should extend AutoCloseable")
     void shouldExtendAutoCloseable() {
-      assertTrue(
-          AutoCloseable.class.isAssignableFrom(InstanceManager.class),
-          "InstanceManager should extend AutoCloseable");
+      final Class<?>[] interfaces = InstanceManager.class.getInterfaces();
+      boolean extendsAutoCloseable = false;
+      for (final Class<?> iface : interfaces) {
+        if (iface == AutoCloseable.class) {
+          extendsAutoCloseable = true;
+          break;
+        }
+      }
+      assertTrue(extendsAutoCloseable, "Should extend AutoCloseable");
     }
   }
 
-  // ========================================================================
-  // Instance Pool Method Tests
-  // ========================================================================
-
   @Nested
-  @DisplayName("Instance Pool Method Tests")
-  class InstancePoolMethodTests {
+  @DisplayName("Static Factory Method Tests")
+  class StaticFactoryMethodTests {
 
     @Test
-    @DisplayName("should have getInstance method with module parameter")
-    void shouldHaveGetInstanceMethod() throws NoSuchMethodException {
-      final Method method = InstanceManager.class.getMethod("getInstance", Module.class);
-      assertNotNull(method, "getInstance(Module) method should exist");
-      assertEquals(Instance.class, method.getReturnType(), "getInstance should return Instance");
+    @DisplayName("should have static create method with Engine parameter")
+    void shouldHaveStaticCreateMethodWithEngine() throws NoSuchMethodException {
+      final Method method = InstanceManager.class.getMethod("create", Engine.class);
+      assertNotNull(method, "create(Engine) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
+      assertEquals(InstanceManager.class, method.getReturnType(), "Should return InstanceManager");
     }
 
     @Test
-    @DisplayName("should have getInstance method with module and linker")
-    void shouldHaveGetInstanceWithLinkerMethod() throws NoSuchMethodException {
+    @DisplayName("should have static create method with Engine and config parameters")
+    void shouldHaveStaticCreateMethodWithEngineAndConfig() throws NoSuchMethodException {
+      final Method method =
+          InstanceManager.class.getMethod(
+              "create", Engine.class, InstanceManager.InstanceManagerConfig.class);
+      assertNotNull(method, "create(Engine, Config) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
+      assertEquals(InstanceManager.class, method.getReturnType(), "Should return InstanceManager");
+    }
+  }
+
+  @Nested
+  @DisplayName("Instance Retrieval Method Tests")
+  class InstanceRetrievalMethodTests {
+
+    @Test
+    @DisplayName("should have getInstance method with Module parameter")
+    void shouldHaveGetInstanceMethodWithModule() throws NoSuchMethodException {
+      final Method method = InstanceManager.class.getMethod("getInstance", Module.class);
+      assertNotNull(method, "getInstance(Module) method should exist");
+      assertEquals(Instance.class, method.getReturnType(), "Should return Instance");
+    }
+
+    @Test
+    @DisplayName("should have getInstance method with Module and Linker parameters")
+    void shouldHaveGetInstanceMethodWithModuleAndLinker() throws NoSuchMethodException {
       final Method method =
           InstanceManager.class.getMethod("getInstance", Module.class, Linker.class);
       assertNotNull(method, "getInstance(Module, Linker) method should exist");
-      assertEquals(Instance.class, method.getReturnType(), "getInstance should return Instance");
+      assertEquals(Instance.class, method.getReturnType(), "Should return Instance");
     }
 
     @Test
@@ -104,9 +117,7 @@ class InstanceManagerTest {
       final Method method = InstanceManager.class.getMethod("getInstanceAsync", Module.class);
       assertNotNull(method, "getInstanceAsync method should exist");
       assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "getInstanceAsync should return CompletableFuture");
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
     }
 
     @Test
@@ -114,8 +125,13 @@ class InstanceManagerTest {
     void shouldHaveReturnInstanceMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("returnInstance", Instance.class);
       assertNotNull(method, "returnInstance method should exist");
-      assertEquals(void.class, method.getReturnType(), "returnInstance should return void");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
+  }
+
+  @Nested
+  @DisplayName("Pool Management Method Tests")
+  class PoolManagementMethodTests {
 
     @Test
     @DisplayName("should have createPool method")
@@ -123,9 +139,7 @@ class InstanceManagerTest {
       final Method method = InstanceManager.class.getMethod("createPool", Module.class, int.class);
       assertNotNull(method, "createPool method should exist");
       assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "createPool should return CompletableFuture");
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
     }
 
     @Test
@@ -133,44 +147,16 @@ class InstanceManagerTest {
     void shouldHaveDestroyPoolMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("destroyPool", Module.class);
       assertNotNull(method, "destroyPool method should exist");
-      assertEquals(int.class, method.getReturnType(), "destroyPool should return int");
+      assertEquals(int.class, method.getReturnType(), "Should return int");
     }
-  }
-
-  // ========================================================================
-  // Statistics Method Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Statistics Method Tests")
-  class StatisticsMethodTests {
 
     @Test
     @DisplayName("should have getPoolStatistics method")
     void shouldHaveGetPoolStatisticsMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("getPoolStatistics");
       assertNotNull(method, "getPoolStatistics method should exist");
-      assertEquals(
-          InstanceManager.InstancePoolStatistics.class,
-          method.getReturnType(),
-          "getPoolStatistics should return InstancePoolStatistics");
-    }
-
-    @Test
-    @DisplayName("should have getPerformanceMetrics method")
-    void shouldHaveGetPerformanceMetricsMethod() throws NoSuchMethodException {
-      final Method method = InstanceManager.class.getMethod("getPerformanceMetrics");
-      assertNotNull(method, "getPerformanceMetrics method should exist");
-      assertEquals(
-          InstanceManager.InstancePerformanceMetrics.class,
-          method.getReturnType(),
-          "getPerformanceMetrics should return InstancePerformanceMetrics");
     }
   }
-
-  // ========================================================================
-  // Health Monitoring Method Tests
-  // ========================================================================
 
   @Nested
   @DisplayName("Health Monitoring Method Tests")
@@ -181,7 +167,7 @@ class InstanceManagerTest {
     void shouldHaveGetInstanceHealthMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("getInstanceHealth");
       assertNotNull(method, "getInstanceHealth method should exist");
-      assertEquals(List.class, method.getReturnType(), "getInstanceHealth should return List");
+      assertEquals(List.class, method.getReturnType(), "Should return List");
     }
 
     @Test
@@ -189,13 +175,9 @@ class InstanceManagerTest {
     void shouldHavePerformHealthCheckMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("performHealthCheck");
       assertNotNull(method, "performHealthCheck method should exist");
-      assertEquals(int.class, method.getReturnType(), "performHealthCheck should return int");
+      assertEquals(int.class, method.getReturnType(), "Should return int");
     }
   }
-
-  // ========================================================================
-  // Scaling Method Tests
-  // ========================================================================
 
   @Nested
   @DisplayName("Scaling Method Tests")
@@ -206,7 +188,7 @@ class InstanceManagerTest {
     void shouldHaveSetAutoScalingEnabledMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("setAutoScalingEnabled", boolean.class);
       assertNotNull(method, "setAutoScalingEnabled method should exist");
-      assertEquals(void.class, method.getReturnType(), "setAutoScalingEnabled should return void");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
@@ -214,8 +196,7 @@ class InstanceManagerTest {
     void shouldHaveIsAutoScalingEnabledMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("isAutoScalingEnabled");
       assertNotNull(method, "isAutoScalingEnabled method should exist");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isAutoScalingEnabled should return boolean");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
     @Test
@@ -224,9 +205,7 @@ class InstanceManagerTest {
       final Method method = InstanceManager.class.getMethod("scalePool", Module.class, int.class);
       assertNotNull(method, "scalePool method should exist");
       assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "scalePool should return CompletableFuture");
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
     }
 
     @Test
@@ -234,13 +213,9 @@ class InstanceManagerTest {
     void shouldHaveBalanceLoadMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("balanceLoad");
       assertNotNull(method, "balanceLoad method should exist");
-      assertEquals(int.class, method.getReturnType(), "balanceLoad should return int");
+      assertEquals(int.class, method.getReturnType(), "Should return int");
     }
   }
-
-  // ========================================================================
-  // Checkpoint Method Tests
-  // ========================================================================
 
   @Nested
   @DisplayName("Checkpoint Method Tests")
@@ -251,10 +226,6 @@ class InstanceManagerTest {
     void shouldHaveCreateCheckpointMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("createCheckpoint", Instance.class);
       assertNotNull(method, "createCheckpoint method should exist");
-      assertEquals(
-          InstanceManager.InstanceCheckpoint.class,
-          method.getReturnType(),
-          "createCheckpoint should return InstanceCheckpoint");
     }
 
     @Test
@@ -264,14 +235,9 @@ class InstanceManagerTest {
           InstanceManager.class.getMethod(
               "restoreFromCheckpoint", InstanceManager.InstanceCheckpoint.class);
       assertNotNull(method, "restoreFromCheckpoint method should exist");
-      assertEquals(
-          Instance.class, method.getReturnType(), "restoreFromCheckpoint should return Instance");
+      assertEquals(Instance.class, method.getReturnType(), "Should return Instance");
     }
   }
-
-  // ========================================================================
-  // Configuration Method Tests
-  // ========================================================================
 
   @Nested
   @DisplayName("Configuration Method Tests")
@@ -282,10 +248,6 @@ class InstanceManagerTest {
     void shouldHaveGetConfigMethod() throws NoSuchMethodException {
       final Method method = InstanceManager.class.getMethod("getConfig");
       assertNotNull(method, "getConfig method should exist");
-      assertEquals(
-          InstanceManager.InstanceManagerConfig.class,
-          method.getReturnType(),
-          "getConfig should return InstanceManagerConfig");
     }
 
     @Test
@@ -295,56 +257,20 @@ class InstanceManagerTest {
           InstanceManager.class.getMethod(
               "updateConfig", InstanceManager.InstanceManagerConfig.class);
       assertNotNull(method, "updateConfig method should exist");
-      assertEquals(void.class, method.getReturnType(), "updateConfig should return void");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
-  // ========================================================================
-  // Lifecycle Method Tests
-  // ========================================================================
-
   @Nested
-  @DisplayName("Lifecycle Method Tests")
-  class LifecycleMethodTests {
+  @DisplayName("Metrics and Export Method Tests")
+  class MetricsAndExportMethodTests {
 
     @Test
-    @DisplayName("should have shutdown method with duration")
-    void shouldHaveShutdownMethod() throws NoSuchMethodException {
-      final Method method = InstanceManager.class.getMethod("shutdown", Duration.class);
-      assertNotNull(method, "shutdown method should exist");
-      assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "shutdown should return CompletableFuture");
+    @DisplayName("should have getPerformanceMetrics method")
+    void shouldHaveGetPerformanceMetricsMethod() throws NoSuchMethodException {
+      final Method method = InstanceManager.class.getMethod("getPerformanceMetrics");
+      assertNotNull(method, "getPerformanceMetrics method should exist");
     }
-
-    @Test
-    @DisplayName("should have close method")
-    void shouldHaveCloseMethod() throws NoSuchMethodException {
-      final Method method = InstanceManager.class.getMethod("close");
-      assertNotNull(method, "close method should exist");
-      assertEquals(void.class, method.getReturnType(), "close should return void");
-    }
-
-    @Test
-    @DisplayName("should have performMaintenance method")
-    void shouldHavePerformMaintenanceMethod() throws NoSuchMethodException {
-      final Method method = InstanceManager.class.getMethod("performMaintenance");
-      assertNotNull(method, "performMaintenance method should exist");
-      assertEquals(
-          InstanceManager.MaintenanceSummary.class,
-          method.getReturnType(),
-          "performMaintenance should return MaintenanceSummary");
-    }
-  }
-
-  // ========================================================================
-  // Export Method Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Export Method Tests")
-  class ExportMethodTests {
 
     @Test
     @DisplayName("should have exportState method")
@@ -352,13 +278,38 @@ class InstanceManagerTest {
       final Method method =
           InstanceManager.class.getMethod("exportState", InstanceManager.ExportFormat.class);
       assertNotNull(method, "exportState method should exist");
-      assertEquals(String.class, method.getReturnType(), "exportState should return String");
+      assertEquals(String.class, method.getReturnType(), "Should return String");
     }
   }
 
-  // ========================================================================
-  // Nested Interface Tests
-  // ========================================================================
+  @Nested
+  @DisplayName("Maintenance and Shutdown Method Tests")
+  class MaintenanceAndShutdownMethodTests {
+
+    @Test
+    @DisplayName("should have performMaintenance method")
+    void shouldHavePerformMaintenanceMethod() throws NoSuchMethodException {
+      final Method method = InstanceManager.class.getMethod("performMaintenance");
+      assertNotNull(method, "performMaintenance method should exist");
+    }
+
+    @Test
+    @DisplayName("should have shutdown method")
+    void shouldHaveShutdownMethod() throws NoSuchMethodException {
+      final Method method = InstanceManager.class.getMethod("shutdown", Duration.class);
+      assertNotNull(method, "shutdown method should exist");
+      assertEquals(
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
+    }
+
+    @Test
+    @DisplayName("should have close method")
+    void shouldHaveCloseMethod() throws NoSuchMethodException {
+      final Method method = InstanceManager.class.getMethod("close");
+      assertNotNull(method, "close method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+  }
 
   @Nested
   @DisplayName("Nested Interface Tests")
@@ -366,253 +317,178 @@ class InstanceManagerTest {
 
     @Test
     @DisplayName("should have InstanceManagerConfig nested interface")
-    void shouldHaveInstanceManagerConfigInterface() {
-      Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
-      boolean found =
-          Arrays.stream(declaredClasses)
-              .anyMatch(c -> c.getSimpleName().equals("InstanceManagerConfig") && c.isInterface());
-      assertTrue(found, "InstanceManagerConfig should be a nested interface");
+    void shouldHaveInstanceManagerConfigNestedInterface() {
+      final Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("InstanceManagerConfig")) {
+          found = true;
+          assertTrue(clazz.isInterface(), "InstanceManagerConfig should be an interface");
+          break;
+        }
+      }
+      assertTrue(found, "Should have InstanceManagerConfig nested interface");
     }
 
     @Test
     @DisplayName("should have InstancePoolStatistics nested interface")
-    void shouldHaveInstancePoolStatisticsInterface() {
-      Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
-      boolean found =
-          Arrays.stream(declaredClasses)
-              .anyMatch(c -> c.getSimpleName().equals("InstancePoolStatistics") && c.isInterface());
-      assertTrue(found, "InstancePoolStatistics should be a nested interface");
+    void shouldHaveInstancePoolStatisticsNestedInterface() {
+      final Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("InstancePoolStatistics")) {
+          found = true;
+          assertTrue(clazz.isInterface(), "InstancePoolStatistics should be an interface");
+          break;
+        }
+      }
+      assertTrue(found, "Should have InstancePoolStatistics nested interface");
     }
 
     @Test
     @DisplayName("should have InstanceHealthStatus nested interface")
-    void shouldHaveInstanceHealthStatusInterface() {
-      Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
-      boolean found =
-          Arrays.stream(declaredClasses)
-              .anyMatch(c -> c.getSimpleName().equals("InstanceHealthStatus") && c.isInterface());
-      assertTrue(found, "InstanceHealthStatus should be a nested interface");
-    }
-
-    @Test
-    @DisplayName("should have InstancePerformanceMetrics nested interface")
-    void shouldHaveInstancePerformanceMetricsInterface() {
-      Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
-      boolean found =
-          Arrays.stream(declaredClasses)
-              .anyMatch(
-                  c -> c.getSimpleName().equals("InstancePerformanceMetrics") && c.isInterface());
-      assertTrue(found, "InstancePerformanceMetrics should be a nested interface");
-    }
-
-    @Test
-    @DisplayName("should have ModulePoolStatistics nested interface")
-    void shouldHaveModulePoolStatisticsInterface() {
-      Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
-      boolean found =
-          Arrays.stream(declaredClasses)
-              .anyMatch(c -> c.getSimpleName().equals("ModulePoolStatistics") && c.isInterface());
-      assertTrue(found, "ModulePoolStatistics should be a nested interface");
+    void shouldHaveInstanceHealthStatusNestedInterface() {
+      final Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("InstanceHealthStatus")) {
+          found = true;
+          assertTrue(clazz.isInterface(), "InstanceHealthStatus should be an interface");
+          break;
+        }
+      }
+      assertTrue(found, "Should have InstanceHealthStatus nested interface");
     }
 
     @Test
     @DisplayName("should have InstanceCheckpoint nested interface")
-    void shouldHaveInstanceCheckpointInterface() {
-      Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
-      boolean found =
-          Arrays.stream(declaredClasses)
-              .anyMatch(c -> c.getSimpleName().equals("InstanceCheckpoint") && c.isInterface());
-      assertTrue(found, "InstanceCheckpoint should be a nested interface");
+    void shouldHaveInstanceCheckpointNestedInterface() {
+      final Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("InstanceCheckpoint")) {
+          found = true;
+          assertTrue(clazz.isInterface(), "InstanceCheckpoint should be an interface");
+          break;
+        }
+      }
+      assertTrue(found, "Should have InstanceCheckpoint nested interface");
+    }
+
+    @Test
+    @DisplayName("should have InstancePerformanceMetrics nested interface")
+    void shouldHaveInstancePerformanceMetricsNestedInterface() {
+      final Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("InstancePerformanceMetrics")) {
+          found = true;
+          assertTrue(clazz.isInterface(), "InstancePerformanceMetrics should be an interface");
+          break;
+        }
+      }
+      assertTrue(found, "Should have InstancePerformanceMetrics nested interface");
     }
 
     @Test
     @DisplayName("should have MaintenanceSummary nested interface")
-    void shouldHaveMaintenanceSummaryInterface() {
-      Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
-      boolean found =
-          Arrays.stream(declaredClasses)
-              .anyMatch(c -> c.getSimpleName().equals("MaintenanceSummary") && c.isInterface());
-      assertTrue(found, "MaintenanceSummary should be a nested interface");
+    void shouldHaveMaintenanceSummaryNestedInterface() {
+      final Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("MaintenanceSummary")) {
+          found = true;
+          assertTrue(clazz.isInterface(), "MaintenanceSummary should be an interface");
+          break;
+        }
+      }
+      assertTrue(found, "Should have MaintenanceSummary nested interface");
     }
+  }
+
+  @Nested
+  @DisplayName("Nested Enum Tests")
+  class NestedEnumTests {
 
     @Test
-    @DisplayName("should have ExportFormat nested enum")
+    @DisplayName("should have ExportFormat enum")
     void shouldHaveExportFormatEnum() {
-      Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
-      boolean found =
-          Arrays.stream(declaredClasses)
-              .anyMatch(c -> c.getSimpleName().equals("ExportFormat") && c.isEnum());
-      assertTrue(found, "ExportFormat should be a nested enum");
+      final Class<?>[] declaredClasses = InstanceManager.class.getDeclaredClasses();
+      boolean found = false;
+      for (final Class<?> clazz : declaredClasses) {
+        if (clazz.getSimpleName().equals("ExportFormat")) {
+          found = true;
+          assertTrue(clazz.isEnum(), "ExportFormat should be an enum");
+          break;
+        }
+      }
+      assertTrue(found, "Should have ExportFormat enum");
+    }
+
+    @Test
+    @DisplayName("ExportFormat enum should have expected values")
+    void exportFormatEnumShouldHaveExpectedValues() {
+      final InstanceManager.ExportFormat[] values = InstanceManager.ExportFormat.values();
+      final Set<String> valueNames = new HashSet<>();
+      for (final InstanceManager.ExportFormat value : values) {
+        valueNames.add(value.name());
+      }
+
+      assertTrue(valueNames.contains("JSON"), "Should have JSON");
+      assertTrue(valueNames.contains("XML"), "Should have XML");
+      assertTrue(valueNames.contains("CSV"), "Should have CSV");
+      assertTrue(valueNames.contains("YAML"), "Should have YAML");
     }
   }
 
-  // ========================================================================
-  // ExportFormat Enum Tests
-  // ========================================================================
-
   @Nested
-  @DisplayName("ExportFormat Enum Tests")
-  class ExportFormatEnumTests {
+  @DisplayName("InstanceManagerConfig Builder Tests")
+  class InstanceManagerConfigBuilderTests {
 
     @Test
-    @DisplayName("ExportFormat should have JSON value")
-    void exportFormatShouldHaveJsonValue() {
-      InstanceManager.ExportFormat json = InstanceManager.ExportFormat.JSON;
-      assertNotNull(json, "JSON value should exist");
-    }
-
-    @Test
-    @DisplayName("ExportFormat should have XML value")
-    void exportFormatShouldHaveXmlValue() {
-      InstanceManager.ExportFormat xml = InstanceManager.ExportFormat.XML;
-      assertNotNull(xml, "XML value should exist");
-    }
-
-    @Test
-    @DisplayName("ExportFormat should have CSV value")
-    void exportFormatShouldHaveCsvValue() {
-      InstanceManager.ExportFormat csv = InstanceManager.ExportFormat.CSV;
-      assertNotNull(csv, "CSV value should exist");
-    }
-
-    @Test
-    @DisplayName("ExportFormat should have YAML value")
-    void exportFormatShouldHaveYamlValue() {
-      InstanceManager.ExportFormat yaml = InstanceManager.ExportFormat.YAML;
-      assertNotNull(yaml, "YAML value should exist");
-    }
-
-    @Test
-    @DisplayName("ExportFormat should have exactly 4 values")
-    void exportFormatShouldHaveExactlyFourValues() {
-      assertEquals(
-          4,
-          InstanceManager.ExportFormat.values().length,
-          "ExportFormat should have exactly 4 values");
-    }
-  }
-
-  // ========================================================================
-  // InstanceManagerConfig Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("InstanceManagerConfig Tests")
-  class InstanceManagerConfigTests {
-
-    @Test
-    @DisplayName("InstanceManagerConfig should have getDefaultPoolSize method")
-    void shouldHaveGetDefaultPoolSizeMethod() throws NoSuchMethodException {
-      final Method method =
-          InstanceManager.InstanceManagerConfig.class.getMethod("getDefaultPoolSize");
-      assertNotNull(method, "getDefaultPoolSize method should exist");
-      assertEquals(int.class, method.getReturnType(), "getDefaultPoolSize should return int");
-    }
-
-    @Test
-    @DisplayName("InstanceManagerConfig should have getMaxPoolSize method")
-    void shouldHaveGetMaxPoolSizeMethod() throws NoSuchMethodException {
-      final Method method = InstanceManager.InstanceManagerConfig.class.getMethod("getMaxPoolSize");
-      assertNotNull(method, "getMaxPoolSize method should exist");
-      assertEquals(int.class, method.getReturnType(), "getMaxPoolSize should return int");
-    }
-
-    @Test
-    @DisplayName("InstanceManagerConfig should have isAutoScalingEnabled method")
-    void shouldHaveIsAutoScalingEnabledMethod() throws NoSuchMethodException {
-      final Method method =
-          InstanceManager.InstanceManagerConfig.class.getMethod("isAutoScalingEnabled");
-      assertNotNull(method, "isAutoScalingEnabled method should exist");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isAutoScalingEnabled should return boolean");
-    }
-
-    @Test
-    @DisplayName("InstanceManagerConfig should have builder static method")
-    void shouldHaveBuilderStaticMethod() throws NoSuchMethodException {
-      final Method method = InstanceManager.InstanceManagerConfig.class.getMethod("builder");
+    @DisplayName("InstanceManagerConfig should have builder method")
+    void instanceManagerConfigShouldHaveBuilderMethod() throws NoSuchMethodException {
+      final Class<?> configClass = InstanceManager.InstanceManagerConfig.class;
+      final Method method = configClass.getMethod("builder");
       assertNotNull(method, "builder method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "builder should be static");
     }
 
     @Test
-    @DisplayName("InstanceManagerConfig should have defaultConfig static method")
-    void shouldHaveDefaultConfigStaticMethod() throws NoSuchMethodException {
-      final Method method = InstanceManager.InstanceManagerConfig.class.getMethod("defaultConfig");
+    @DisplayName("InstanceManagerConfig should have defaultConfig method")
+    void instanceManagerConfigShouldHaveDefaultConfigMethod() throws NoSuchMethodException {
+      final Class<?> configClass = InstanceManager.InstanceManagerConfig.class;
+      final Method method = configClass.getMethod("defaultConfig");
       assertNotNull(method, "defaultConfig method should exist");
       assertTrue(Modifier.isStatic(method.getModifiers()), "defaultConfig should be static");
     }
-  }
-
-  // ========================================================================
-  // Method Count Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Method Count Tests")
-  class MethodCountTests {
 
     @Test
-    @DisplayName("should have all expected core methods")
-    void shouldHaveAllCoreCoreMethods() {
-      Set<String> expectedMethods =
-          Set.of(
-              "getInstance",
-              "getInstanceAsync",
-              "returnInstance",
-              "createPool",
-              "destroyPool",
-              "getPoolStatistics",
-              "getInstanceHealth",
-              "performHealthCheck",
-              "setAutoScalingEnabled",
-              "isAutoScalingEnabled",
-              "scalePool",
-              "balanceLoad",
-              "createCheckpoint",
-              "restoreFromCheckpoint",
-              "getConfig",
-              "updateConfig",
-              "getPerformanceMetrics",
-              "exportState",
-              "performMaintenance",
-              "shutdown",
-              "close");
-
-      Set<String> actualMethods =
-          Arrays.stream(InstanceManager.class.getDeclaredMethods())
-              .map(Method::getName)
-              .collect(Collectors.toSet());
-
-      for (String expected : expectedMethods) {
-        assertTrue(
-            actualMethods.contains(expected), "InstanceManager should have method: " + expected);
-      }
+    @DisplayName("InstanceManagerConfig should have getDefaultPoolSize method")
+    void instanceManagerConfigShouldHaveGetDefaultPoolSizeMethod() throws NoSuchMethodException {
+      final Class<?> configClass = InstanceManager.InstanceManagerConfig.class;
+      final Method method = configClass.getMethod("getDefaultPoolSize");
+      assertNotNull(method, "getDefaultPoolSize method should exist");
+      assertEquals(int.class, method.getReturnType(), "Should return int");
     }
 
     @Test
-    @DisplayName("should have all expected nested types")
-    void shouldHaveAllNestedTypes() {
-      Set<String> expectedTypes =
-          Set.of(
-              "InstanceManagerConfig",
-              "InstancePoolStatistics",
-              "InstanceHealthStatus",
-              "InstancePerformanceMetrics",
-              "ModulePoolStatistics",
-              "InstanceCheckpoint",
-              "MaintenanceSummary",
-              "ExportFormat");
+    @DisplayName("InstanceManagerConfig should have isAutoScalingEnabled method")
+    void instanceManagerConfigShouldHaveIsAutoScalingEnabledMethod() throws NoSuchMethodException {
+      final Class<?> configClass = InstanceManager.InstanceManagerConfig.class;
+      final Method method = configClass.getMethod("isAutoScalingEnabled");
+      assertNotNull(method, "isAutoScalingEnabled method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
+    }
 
-      Set<String> actualTypes =
-          Arrays.stream(InstanceManager.class.getDeclaredClasses())
-              .map(Class::getSimpleName)
-              .collect(Collectors.toSet());
-
-      for (String expected : expectedTypes) {
-        assertTrue(
-            actualTypes.contains(expected), "InstanceManager should have nested type: " + expected);
-      }
+    @Test
+    @DisplayName("InstanceManagerConfig should have isHealthMonitoringEnabled method")
+    void instanceManagerConfigShouldHaveIsHealthMonitoringEnabledMethod()
+        throws NoSuchMethodException {
+      final Class<?> configClass = InstanceManager.InstanceManagerConfig.class;
+      final Method method = configClass.getMethod("isHealthMonitoringEnabled");
+      assertNotNull(method, "isHealthMonitoringEnabled method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
   }
 }

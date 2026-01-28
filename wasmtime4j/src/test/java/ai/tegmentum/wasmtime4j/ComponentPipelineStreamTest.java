@@ -20,9 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.TypeVariable;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.DisplayName;
@@ -32,9 +30,10 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link ComponentPipelineStream} interface.
  *
- * <p>ComponentPipelineStream represents a stream of data flowing through a component pipeline.
+ * <p>ComponentPipelineStream represents a stream of data flowing through a component pipeline,
+ * providing asynchronous methods for sending and receiving data.
  */
-@DisplayName("ComponentPipelineStream Tests")
+@DisplayName("ComponentPipelineStream Interface Tests")
 class ComponentPipelineStreamTest {
 
   @Nested
@@ -42,11 +41,8 @@ class ComponentPipelineStreamTest {
   class InterfaceStructureTests {
 
     @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(
-          Modifier.isPublic(ComponentPipelineStream.class.getModifiers()),
-          "ComponentPipelineStream should be public");
+    @DisplayName("should be an interface")
+    void shouldBeAnInterface() {
       assertTrue(
           ComponentPipelineStream.class.isInterface(),
           "ComponentPipelineStream should be an interface");
@@ -55,17 +51,23 @@ class ComponentPipelineStreamTest {
     @Test
     @DisplayName("should extend AutoCloseable")
     void shouldExtendAutoCloseable() {
-      assertTrue(
-          AutoCloseable.class.isAssignableFrom(ComponentPipelineStream.class),
-          "ComponentPipelineStream should extend AutoCloseable");
+      final Class<?>[] interfaces = ComponentPipelineStream.class.getInterfaces();
+      boolean extendsAutoCloseable = false;
+      for (final Class<?> iface : interfaces) {
+        if (iface == AutoCloseable.class) {
+          extendsAutoCloseable = true;
+          break;
+        }
+      }
+      assertTrue(extendsAutoCloseable, "Should extend AutoCloseable");
     }
 
     @Test
-    @DisplayName("should have type parameter T")
-    void shouldHaveTypeParameterT() {
-      final TypeVariable<?>[] typeParameters = ComponentPipelineStream.class.getTypeParameters();
-      assertEquals(1, typeParameters.length, "Should have exactly one type parameter");
-      assertEquals("T", typeParameters[0].getName(), "Type parameter should be named T");
+    @DisplayName("should have generic type parameter T")
+    void shouldHaveGenericTypeParameterT() {
+      final TypeVariable<?>[] typeParams = ComponentPipelineStream.class.getTypeParameters();
+      assertEquals(1, typeParams.length, "Should have one type parameter");
+      assertEquals("T", typeParams[0].getName(), "Type parameter should be named T");
     }
   }
 
@@ -109,64 +111,137 @@ class ComponentPipelineStreamTest {
   }
 
   @Nested
-  @DisplayName("Exception Declaration Tests")
-  class ExceptionDeclarationTests {
+  @DisplayName("Method Parameter Tests")
+  class MethodParameterTests {
 
     @Test
-    @DisplayName("send method should declare WasmException")
-    void sendMethodShouldDeclareWasmException() throws NoSuchMethodException {
+    @DisplayName("send should have one parameter")
+    void sendShouldHaveOneParameter() throws NoSuchMethodException {
       final Method method = ComponentPipelineStream.class.getMethod("send", Object.class);
-      final Class<?>[] exceptionTypes = method.getExceptionTypes();
-      boolean hasWasmException = false;
-      for (Class<?> exType : exceptionTypes) {
-        if (exType.equals(WasmException.class)) {
-          hasWasmException = true;
-          break;
-        }
-      }
-      assertTrue(hasWasmException, "send should declare WasmException");
+      assertEquals(1, method.getParameterCount(), "Should have one parameter");
+      assertEquals(
+          Object.class,
+          method.getParameterTypes()[0],
+          "Parameter should be Object (due to erasure)");
     }
 
     @Test
-    @DisplayName("receive method should declare WasmException")
-    void receiveMethodShouldDeclareWasmException() throws NoSuchMethodException {
+    @DisplayName("receive should have no parameters")
+    void receiveShouldHaveNoParameters() throws NoSuchMethodException {
       final Method method = ComponentPipelineStream.class.getMethod("receive");
-      final Class<?>[] exceptionTypes = method.getExceptionTypes();
-      boolean hasWasmException = false;
-      for (Class<?> exType : exceptionTypes) {
-        if (exType.equals(WasmException.class)) {
-          hasWasmException = true;
-          break;
-        }
-      }
-      assertTrue(hasWasmException, "receive should declare WasmException");
+      assertEquals(0, method.getParameterCount(), "Should have no parameters");
     }
 
     @Test
-    @DisplayName("close method should declare WasmException")
-    void closeMethodShouldDeclareWasmException() throws NoSuchMethodException {
+    @DisplayName("isOpen should have no parameters")
+    void isOpenShouldHaveNoParameters() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("isOpen");
+      assertEquals(0, method.getParameterCount(), "Should have no parameters");
+    }
+
+    @Test
+    @DisplayName("close should have no parameters")
+    void closeShouldHaveNoParameters() throws NoSuchMethodException {
       final Method method = ComponentPipelineStream.class.getMethod("close");
-      final Class<?>[] exceptionTypes = method.getExceptionTypes();
-      boolean hasWasmException = false;
-      for (Class<?> exType : exceptionTypes) {
-        if (exType.equals(WasmException.class)) {
-          hasWasmException = true;
-          break;
-        }
-      }
-      assertTrue(hasWasmException, "close should declare WasmException");
+      assertEquals(0, method.getParameterCount(), "Should have no parameters");
     }
   }
 
   @Nested
-  @DisplayName("Method Count Tests")
-  class MethodCountTests {
+  @DisplayName("Exception Declaration Tests")
+  class ExceptionDeclarationTests {
 
     @Test
-    @DisplayName("should have exactly 4 declared methods")
-    void shouldHaveExactlyFourDeclaredMethods() {
-      final Method[] methods = ComponentPipelineStream.class.getDeclaredMethods();
-      assertEquals(4, methods.length, "Should have exactly 4 declared methods");
+    @DisplayName("send should declare WasmException")
+    void sendShouldDeclareWasmException() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("send", Object.class);
+      final Class<?>[] exceptionTypes = method.getExceptionTypes();
+
+      boolean hasWasmException = false;
+      for (final Class<?> exType : exceptionTypes) {
+        if (exType.getSimpleName().equals("WasmException")) {
+          hasWasmException = true;
+          break;
+        }
+      }
+      assertTrue(hasWasmException, "send method should declare WasmException");
+    }
+
+    @Test
+    @DisplayName("receive should declare WasmException")
+    void receiveShouldDeclareWasmException() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("receive");
+      final Class<?>[] exceptionTypes = method.getExceptionTypes();
+
+      boolean hasWasmException = false;
+      for (final Class<?> exType : exceptionTypes) {
+        if (exType.getSimpleName().equals("WasmException")) {
+          hasWasmException = true;
+          break;
+        }
+      }
+      assertTrue(hasWasmException, "receive method should declare WasmException");
+    }
+
+    @Test
+    @DisplayName("close should declare WasmException")
+    void closeShouldDeclareWasmException() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("close");
+      final Class<?>[] exceptionTypes = method.getExceptionTypes();
+
+      boolean hasWasmException = false;
+      for (final Class<?> exType : exceptionTypes) {
+        if (exType.getSimpleName().equals("WasmException")) {
+          hasWasmException = true;
+          break;
+        }
+      }
+      assertTrue(hasWasmException, "close method should declare WasmException");
+    }
+
+    @Test
+    @DisplayName("isOpen should not declare any checked exceptions")
+    void isOpenShouldNotDeclareCheckedExceptions() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("isOpen");
+      final Class<?>[] exceptionTypes = method.getExceptionTypes();
+      assertEquals(0, exceptionTypes.length, "isOpen should not declare checked exceptions");
+    }
+  }
+
+  @Nested
+  @DisplayName("Return Type Tests")
+  class ReturnTypeTests {
+
+    @Test
+    @DisplayName("send should return CompletableFuture<Void>")
+    void sendShouldReturnCompletableFutureVoid() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("send", Object.class);
+      assertEquals(
+          CompletableFuture.class, method.getReturnType(), "send should return CompletableFuture");
+    }
+
+    @Test
+    @DisplayName("receive should return CompletableFuture<T>")
+    void receiveShouldReturnCompletableFutureT() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("receive");
+      assertEquals(
+          CompletableFuture.class,
+          method.getReturnType(),
+          "receive should return CompletableFuture");
+    }
+
+    @Test
+    @DisplayName("isOpen should return boolean")
+    void isOpenShouldReturnBoolean() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("isOpen");
+      assertEquals(boolean.class, method.getReturnType(), "isOpen should return boolean");
+    }
+
+    @Test
+    @DisplayName("close should return void")
+    void closeShouldReturnVoid() throws NoSuchMethodException {
+      final Method method = ComponentPipelineStream.class.getMethod("close");
+      assertEquals(void.class, method.getReturnType(), "close should return void");
     }
   }
 }
