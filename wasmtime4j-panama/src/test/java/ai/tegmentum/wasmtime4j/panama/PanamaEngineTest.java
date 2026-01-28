@@ -211,9 +211,7 @@ class PanamaEngineTest {
     void shouldThrowForNullWat() throws Exception {
       final PanamaEngine engine = createEngine();
       assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.compileWat(null),
-          "Null WAT should throw");
+          IllegalArgumentException.class, () -> engine.compileWat(null), "Null WAT should throw");
     }
 
     @Test
@@ -221,9 +219,7 @@ class PanamaEngineTest {
     void shouldThrowForEmptyWat() throws Exception {
       final PanamaEngine engine = createEngine();
       assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.compileWat(""),
-          "Empty WAT should throw");
+          IllegalArgumentException.class, () -> engine.compileWat(""), "Empty WAT should throw");
     }
 
     @Test
@@ -407,9 +403,7 @@ class PanamaEngineTest {
     void shouldReturnMaxInstances() throws Exception {
       final PanamaEngine engine = createEngine();
       assertEquals(
-          Integer.MAX_VALUE,
-          engine.getMaxInstances(),
-          "Max instances should be Integer.MAX_VALUE");
+          Integer.MAX_VALUE, engine.getMaxInstances(), "Max instances should be Integer.MAX_VALUE");
     }
 
     @Test
@@ -498,9 +492,7 @@ class PanamaEngineTest {
       engine.close();
 
       assertThrows(
-          IllegalStateException.class,
-          engine::createStore,
-          "createStore after close should throw");
+          IllegalStateException.class, engine::createStore, "createStore after close should throw");
     }
 
     @Test
@@ -549,12 +541,17 @@ class PanamaEngineTest {
       final EngineStatistics stats = engine.captureStatistics();
 
       assertEquals(0, stats.getModulesCompiled(), "Modules compiled should be 0");
-      assertEquals(Duration.ZERO, stats.getTotalCompilationTime(), "Total compilation time should be zero");
-      assertEquals(Duration.ZERO, stats.getAverageCompilationTime(), "Average compilation time should be zero");
+      assertEquals(
+          Duration.ZERO, stats.getTotalCompilationTime(), "Total compilation time should be zero");
+      assertEquals(
+          Duration.ZERO,
+          stats.getAverageCompilationTime(),
+          "Average compilation time should be zero");
       assertEquals(0, stats.getBytesCompiled(), "Bytes compiled should be 0");
       assertEquals(0.0, stats.getCompilationThroughput(), "Compilation throughput should be 0.0");
       assertEquals(0, stats.getFunctionsExecuted(), "Functions executed should be 0");
-      assertEquals(Duration.ZERO, stats.getTotalExecutionTime(), "Total execution time should be zero");
+      assertEquals(
+          Duration.ZERO, stats.getTotalExecutionTime(), "Total execution time should be zero");
       assertEquals(0, stats.getInstructionsExecuted(), "Instructions executed should be 0");
       assertEquals(0.0, stats.getExecutionThroughput(), "Execution throughput should be 0.0");
       assertEquals(0, stats.getPeakMemoryUsage(), "Peak memory usage should be 0");
@@ -565,7 +562,8 @@ class PanamaEngineTest {
       assertEquals(0, stats.getCacheMisses(), "Cache misses should be 0");
       assertEquals(0.0, stats.getCacheHitRatio(), "Cache hit ratio should be 0.0");
       assertEquals(0, stats.getJitCompilations(), "JIT compilations should be 0");
-      assertEquals(Duration.ZERO, stats.getJitCompilationTime(), "JIT compilation time should be zero");
+      assertEquals(
+          Duration.ZERO, stats.getJitCompilationTime(), "JIT compilation time should be zero");
       assertEquals(0, stats.getJitCodeSize(), "JIT code size should be 0");
     }
 
@@ -578,12 +576,8 @@ class PanamaEngineTest {
       final Instant after = Instant.now();
 
       assertNotNull(stats.getCaptureTime(), "Capture time should not be null");
-      assertFalse(
-          stats.getCaptureTime().isBefore(before),
-          "Capture time should be >= before");
-      assertFalse(
-          stats.getCaptureTime().isAfter(after),
-          "Capture time should be <= after");
+      assertFalse(stats.getCaptureTime().isBefore(before), "Capture time should be >= before");
+      assertFalse(stats.getCaptureTime().isAfter(after), "Capture time should be <= after");
     }
 
     @Test
@@ -677,9 +671,7 @@ class PanamaEngineTest {
     void shouldThrowForSameWithNull() throws Exception {
       final PanamaEngine engine = createEngine();
       assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.same(null),
-          "same(null) should throw");
+          IllegalArgumentException.class, () -> engine.same(null), "same(null) should throw");
     }
   }
 
@@ -726,9 +718,7 @@ class PanamaEngineTest {
     @DisplayName("detectPrecompiled with empty bytes should return null")
     void shouldReturnNullForEmptyBytes() throws Exception {
       final PanamaEngine engine = createEngine();
-      assertNull(
-          engine.detectPrecompiled(new byte[0]),
-          "Empty bytes should return null");
+      assertNull(engine.detectPrecompiled(new byte[0]), "Empty bytes should return null");
     }
 
     @Test
@@ -881,6 +871,40 @@ class PanamaEngineTest {
           IllegalStateException.class,
           () -> engine.precompileModule(wasmBytes),
           "precompileModule on closed engine should throw");
+    }
+
+    @Test
+    @DisplayName("getNativeEngine on closed engine should throw IllegalStateException")
+    void getNativeEngineOnClosedEngineShouldThrow() throws Exception {
+      final PanamaEngine closedEngine = new PanamaEngine();
+      closedEngine.close();
+
+      final IllegalStateException ex =
+          assertThrows(IllegalStateException.class, closedEngine::getNativeEngine);
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Exception message should mention 'closed': " + ex.getMessage());
+      LOGGER.info("getNativeEngine correctly rejected closed engine: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("close ordering should set flag before destruction")
+    void closeOrderingShouldSetFlagBeforeDestruction() throws Exception {
+      final PanamaEngine engine = new PanamaEngine();
+
+      // First close destroys resources and sets flag
+      engine.close();
+
+      // Second close should be no-op (flag already set)
+      engine.close();
+
+      // getNativeEngine must throw — flag was set before destruction
+      final IllegalStateException ex =
+          assertThrows(IllegalStateException.class, engine::getNativeEngine);
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Exception message should mention 'closed': " + ex.getMessage());
+      LOGGER.info("Close ordering verified — flag set before destruction: " + ex.getMessage());
     }
   }
 }

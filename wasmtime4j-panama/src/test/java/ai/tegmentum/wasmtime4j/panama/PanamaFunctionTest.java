@@ -118,8 +118,7 @@ class PanamaFunctionTest {
         new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
     final IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> new PanamaFunction(null, "test", funcType));
+            IllegalArgumentException.class, () -> new PanamaFunction(null, "test", funcType));
     assertThat(exception.getMessage()).contains("Instance cannot be null");
   }
 
@@ -131,8 +130,7 @@ class PanamaFunctionTest {
         new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
     final IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> new PanamaFunction(instance, null, funcType));
+            IllegalArgumentException.class, () -> new PanamaFunction(instance, null, funcType));
     assertThat(exception.getMessage()).contains("Name cannot be null");
   }
 
@@ -142,8 +140,7 @@ class PanamaFunctionTest {
     final PanamaInstance instance = createFunctionTestInstance();
     final IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class,
-            () -> new PanamaFunction(instance, "test", null));
+            IllegalArgumentException.class, () -> new PanamaFunction(instance, "test", null));
     assertThat(exception.getMessage()).contains("Function type cannot be null");
   }
 
@@ -208,8 +205,11 @@ class PanamaFunctionTest {
       final WasmFunction func = getFunction(instance, "return_i32");
       final FunctionType funcType = func.getFunctionType();
       assertNotNull(funcType, "Function type should not be null");
-      LOGGER.info("Function type: params=" + funcType.getParamCount()
-          + ", returns=" + funcType.getReturnCount());
+      LOGGER.info(
+          "Function type: params="
+              + funcType.getParamCount()
+              + ", returns="
+              + funcType.getReturnCount());
     }
 
     @Test
@@ -219,8 +219,11 @@ class PanamaFunctionTest {
       final WasmFunction func = getFunction(instance, "void_func");
       final FunctionType funcType = func.getFunctionType();
       assertNotNull(funcType, "Function type should not be null");
-      LOGGER.info("void_func type: params=" + funcType.getParamCount()
-          + ", returns=" + funcType.getReturnCount());
+      LOGGER.info(
+          "void_func type: params="
+              + funcType.getParamCount()
+              + ", returns="
+              + funcType.getReturnCount());
     }
 
     @Test
@@ -230,8 +233,11 @@ class PanamaFunctionTest {
       final WasmFunction func = getFunction(instance, "add");
       final FunctionType funcType = func.getFunctionType();
       assertNotNull(funcType, "Function type should not be null");
-      LOGGER.info("add type: params=" + funcType.getParamCount()
-          + ", returns=" + funcType.getReturnCount());
+      LOGGER.info(
+          "add type: params="
+              + funcType.getParamCount()
+              + ", returns="
+              + funcType.getReturnCount());
     }
   }
 
@@ -568,8 +574,9 @@ class PanamaFunctionTest {
     @DisplayName("should retrieve all exported functions")
     void shouldRetrieveAllExportedFunctions() throws Exception {
       final PanamaInstance instance = createFunctionTestInstance();
-      final String[] expectedNames =
-          {"void_func", "return_i32", "i32_to_i32", "add", "i64_to_i64", "f64_to_f64"};
+      final String[] expectedNames = {
+        "void_func", "return_i32", "i32_to_i32", "add", "i64_to_i64", "f64_to_f64"
+      };
 
       for (final String name : expectedNames) {
         final Optional<WasmFunction> funcOpt = instance.getFunction(name);

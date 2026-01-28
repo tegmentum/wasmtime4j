@@ -469,6 +469,7 @@ public final class PanamaEngine implements Engine {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       // Stop and destroy profiler
@@ -482,7 +483,6 @@ public final class PanamaEngine implements Engine {
         NATIVE_BINDINGS.engineDestroy(nativeEngine);
       }
       arena.close();
-      closed = true;
       LOGGER.fine("Closed Panama engine");
     } catch (final Exception e) {
       LOGGER.warning("Error closing engine: " + e.getMessage());
@@ -493,8 +493,12 @@ public final class PanamaEngine implements Engine {
    * Gets the native engine pointer.
    *
    * @return native engine memory segment
+   * @throws IllegalStateException if the engine has been closed
    */
   public MemorySegment getNativeEngine() {
+    if (closed) {
+      throw new IllegalStateException("Engine has been closed");
+    }
     return nativeEngine;
   }
 

@@ -15,326 +15,297 @@
  */
 package ai.tegmentum.wasmtime4j.panama.wasi.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
-
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-
-/**
- * Direct integration tests for Panama WASI HTTP implementation.
- */
+/** Direct integration tests for Panama WASI HTTP implementation. */
 @DisplayName("Panama WASI HTTP Direct Tests")
 public class PanamaWasiHttpDirectTest {
 
-    private static final Logger LOGGER =
-            Logger.getLogger(PanamaWasiHttpDirectTest.class.getName());
-    private final List<AutoCloseable> resources = new ArrayList<>();
+  private static final Logger LOGGER = Logger.getLogger(PanamaWasiHttpDirectTest.class.getName());
+  private final List<AutoCloseable> resources = new ArrayList<>();
 
-    @BeforeAll
-    static void loadNativeLibrary() {
-        LOGGER.info("Loading native library for WASI HTTP tests");
-        final NativeLibraryLoader loader = NativeLibraryLoader.getInstance();
-        assertTrue(loader.isLoaded(), "Native library should be loaded");
+  @BeforeAll
+  static void loadNativeLibrary() {
+    LOGGER.info("Loading native library for WASI HTTP tests");
+    final NativeLibraryLoader loader = NativeLibraryLoader.getInstance();
+    assertTrue(loader.isLoaded(), "Native library should be loaded");
+  }
+
+  @AfterEach
+  void tearDown() {
+    for (int i = resources.size() - 1; i >= 0; i--) {
+      try {
+        resources.get(i).close();
+      } catch (final Exception e) {
+        LOGGER.warning("Error closing resource: " + e.getMessage());
+      }
+    }
+    resources.clear();
+  }
+
+  @Nested
+  @DisplayName("PanamaWasiHttpConfig Tests")
+  class HttpConfigTests {
+
+    @Test
+    @DisplayName("Should have correct class structure")
+    void shouldHaveCorrectClassStructure() {
+      LOGGER.info("Testing PanamaWasiHttpConfig class structure");
+
+      final Class<?> clazz = PanamaWasiHttpConfig.class;
+
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+      assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+
+      LOGGER.info("Class structure verified");
     }
 
-    @AfterEach
-    void tearDown() {
-        for (int i = resources.size() - 1; i >= 0; i--) {
-            try {
-                resources.get(i).close();
-            } catch (final Exception e) {
-                LOGGER.warning("Error closing resource: " + e.getMessage());
-            }
+    @Test
+    @DisplayName("Should have host filtering methods")
+    void shouldHaveHostFilteringMethods() {
+      LOGGER.info("Testing host filtering methods");
+
+      final Class<?> clazz = PanamaWasiHttpConfig.class;
+      final String[] expectedMethods = {"getAllowedHosts", "getBlockedHosts"};
+
+      for (final String methodName : expectedMethods) {
+        boolean found = false;
+        for (final Method method : clazz.getMethods()) {
+          if (method.getName().equals(methodName)) {
+            found = true;
+            LOGGER.info("Found method: " + methodName);
+            break;
+          }
         }
-        resources.clear();
+        assertTrue(found, "Should have method: " + methodName);
+      }
     }
 
-    @Nested
-    @DisplayName("PanamaWasiHttpConfig Tests")
-    class HttpConfigTests {
+    @Test
+    @DisplayName("Should have timeout configuration methods")
+    void shouldHaveTimeoutConfigurationMethods() {
+      LOGGER.info("Testing timeout configuration methods");
 
-        @Test
-        @DisplayName("Should have correct class structure")
-        void shouldHaveCorrectClassStructure() {
-            LOGGER.info("Testing PanamaWasiHttpConfig class structure");
+      final Class<?> clazz = PanamaWasiHttpConfig.class;
+      final String[] expectedMethods = {"getConnectTimeout", "getReadTimeout", "getWriteTimeout"};
 
-            final Class<?> clazz = PanamaWasiHttpConfig.class;
-
-            assertTrue(java.lang.reflect.Modifier.isPublic(clazz.getModifiers()),
-                    "Class should be public");
-            assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
-                    "Class should be final");
-
-            LOGGER.info("Class structure verified");
+      for (final String methodName : expectedMethods) {
+        boolean found = false;
+        for (final Method method : clazz.getMethods()) {
+          if (method.getName().equals(methodName)) {
+            found = true;
+            LOGGER.info("Found method: " + methodName);
+            break;
+          }
         }
-
-        @Test
-        @DisplayName("Should have host filtering methods")
-        void shouldHaveHostFilteringMethods() {
-            LOGGER.info("Testing host filtering methods");
-
-            final Class<?> clazz = PanamaWasiHttpConfig.class;
-            final String[] expectedMethods = {
-                "getAllowedHosts",
-                "getBlockedHosts"
-            };
-
-            for (final String methodName : expectedMethods) {
-                boolean found = false;
-                for (final Method method : clazz.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        found = true;
-                        LOGGER.info("Found method: " + methodName);
-                        break;
-                    }
-                }
-                assertTrue(found, "Should have method: " + methodName);
-            }
-        }
-
-        @Test
-        @DisplayName("Should have timeout configuration methods")
-        void shouldHaveTimeoutConfigurationMethods() {
-            LOGGER.info("Testing timeout configuration methods");
-
-            final Class<?> clazz = PanamaWasiHttpConfig.class;
-            final String[] expectedMethods = {
-                "getConnectTimeout",
-                "getReadTimeout",
-                "getWriteTimeout"
-            };
-
-            for (final String methodName : expectedMethods) {
-                boolean found = false;
-                for (final Method method : clazz.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        found = true;
-                        LOGGER.info("Found method: " + methodName);
-                        break;
-                    }
-                }
-                assertTrue(found, "Should have method: " + methodName);
-            }
-        }
-
-        @Test
-        @DisplayName("Should have connection configuration methods")
-        void shouldHaveConnectionConfigurationMethods() {
-            LOGGER.info("Testing connection configuration methods");
-
-            final Class<?> clazz = PanamaWasiHttpConfig.class;
-            final String[] expectedMethods = {
-                "getMaxConnections",
-                "getMaxConnectionsPerHost",
-                "isConnectionPoolingEnabled",
-                "isHttp2Enabled"
-            };
-
-            for (final String methodName : expectedMethods) {
-                boolean found = false;
-                for (final Method method : clazz.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        found = true;
-                        LOGGER.info("Found method: " + methodName);
-                        break;
-                    }
-                }
-                assertTrue(found, "Should have method: " + methodName);
-            }
-        }
+        assertTrue(found, "Should have method: " + methodName);
+      }
     }
 
-    @Nested
-    @DisplayName("PanamaWasiHttpConfigBuilder Tests")
-    class HttpConfigBuilderTests {
+    @Test
+    @DisplayName("Should have connection configuration methods")
+    void shouldHaveConnectionConfigurationMethods() {
+      LOGGER.info("Testing connection configuration methods");
 
-        @Test
-        @DisplayName("Should have correct class structure")
-        void shouldHaveCorrectClassStructure() {
-            LOGGER.info("Testing PanamaWasiHttpConfigBuilder class structure");
+      final Class<?> clazz = PanamaWasiHttpConfig.class;
+      final String[] expectedMethods = {
+        "getMaxConnections",
+        "getMaxConnectionsPerHost",
+        "isConnectionPoolingEnabled",
+        "isHttp2Enabled"
+      };
 
-            final Class<?> clazz = PanamaWasiHttpConfigBuilder.class;
-
-            assertTrue(java.lang.reflect.Modifier.isPublic(clazz.getModifiers()),
-                    "Class should be public");
-            assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
-                    "Class should be final");
-
-            LOGGER.info("Class structure verified");
+      for (final String methodName : expectedMethods) {
+        boolean found = false;
+        for (final Method method : clazz.getMethods()) {
+          if (method.getName().equals(methodName)) {
+            found = true;
+            LOGGER.info("Found method: " + methodName);
+            break;
+          }
         }
+        assertTrue(found, "Should have method: " + methodName);
+      }
+    }
+  }
 
-        @Test
-        @DisplayName("Should have fluent builder methods")
-        void shouldHaveFluentBuilderMethods() {
-            LOGGER.info("Testing fluent builder methods");
+  @Nested
+  @DisplayName("PanamaWasiHttpConfigBuilder Tests")
+  class HttpConfigBuilderTests {
 
-            final Class<?> clazz = PanamaWasiHttpConfigBuilder.class;
-            final String[] expectedMethods = {
-                "allowHost",
-                "allowHosts",
-                "allowAllHosts",
-                "blockHost",
-                "blockHosts",
-                "withConnectTimeout",
-                "withReadTimeout",
-                "withWriteTimeout",
-                "withMaxConnections",
-                "build"
-            };
+    @Test
+    @DisplayName("Should have correct class structure")
+    void shouldHaveCorrectClassStructure() {
+      LOGGER.info("Testing PanamaWasiHttpConfigBuilder class structure");
 
-            for (final String methodName : expectedMethods) {
-                boolean found = false;
-                for (final Method method : clazz.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        found = true;
-                        LOGGER.info("Found builder method: " + methodName);
-                        break;
-                    }
-                }
-                assertTrue(found, "Should have method: " + methodName);
-            }
-        }
+      final Class<?> clazz = PanamaWasiHttpConfigBuilder.class;
+
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+      assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+
+      LOGGER.info("Class structure verified");
     }
 
-    @Nested
-    @DisplayName("PanamaWasiHttpContext Tests")
-    class HttpContextTests {
+    @Test
+    @DisplayName("Should have fluent builder methods")
+    void shouldHaveFluentBuilderMethods() {
+      LOGGER.info("Testing fluent builder methods");
 
-        @Test
-        @DisplayName("Should have correct class structure")
-        void shouldHaveCorrectClassStructure() {
-            LOGGER.info("Testing PanamaWasiHttpContext class structure");
+      final Class<?> clazz = PanamaWasiHttpConfigBuilder.class;
+      final String[] expectedMethods = {
+        "allowHost",
+        "allowHosts",
+        "allowAllHosts",
+        "blockHost",
+        "blockHosts",
+        "withConnectTimeout",
+        "withReadTimeout",
+        "withWriteTimeout",
+        "withMaxConnections",
+        "build"
+      };
 
-            final Class<?> clazz = PanamaWasiHttpContext.class;
-
-            assertTrue(java.lang.reflect.Modifier.isPublic(clazz.getModifiers()),
-                    "Class should be public");
-            assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
-                    "Class should be final");
-
-            LOGGER.info("Class structure verified");
+      for (final String methodName : expectedMethods) {
+        boolean found = false;
+        for (final Method method : clazz.getMethods()) {
+          if (method.getName().equals(methodName)) {
+            found = true;
+            LOGGER.info("Found builder method: " + methodName);
+            break;
+          }
         }
+        assertTrue(found, "Should have method: " + methodName);
+      }
+    }
+  }
 
-        @Test
-        @DisplayName("Should have context management methods")
-        void shouldHaveContextManagementMethods() {
-            LOGGER.info("Testing context management methods");
+  @Nested
+  @DisplayName("PanamaWasiHttpContext Tests")
+  class HttpContextTests {
 
-            final Class<?> clazz = PanamaWasiHttpContext.class;
-            final String[] expectedMethods = {
-                "getConfig",
-                "getStats",
-                "isValid",
-                "isHostAllowed",
-                "resetStats",
-                "close"
-            };
+    @Test
+    @DisplayName("Should have correct class structure")
+    void shouldHaveCorrectClassStructure() {
+      LOGGER.info("Testing PanamaWasiHttpContext class structure");
 
-            for (final String methodName : expectedMethods) {
-                boolean found = false;
-                for (final Method method : clazz.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        found = true;
-                        LOGGER.info("Found method: " + methodName);
-                        break;
-                    }
-                }
-                assertTrue(found, "Should have method: " + methodName);
-            }
-        }
+      final Class<?> clazz = PanamaWasiHttpContext.class;
 
-        @Test
-        @DisplayName("Should implement AutoCloseable")
-        void shouldImplementAutoCloseable() {
-            LOGGER.info("Testing AutoCloseable implementation");
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+      assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "Class should be final");
 
-            assertTrue(AutoCloseable.class.isAssignableFrom(PanamaWasiHttpContext.class),
-                    "Should implement AutoCloseable");
-        }
+      LOGGER.info("Class structure verified");
     }
 
-    @Nested
-    @DisplayName("PanamaWasiHttpStats Tests")
-    class HttpStatsTests {
+    @Test
+    @DisplayName("Should have context management methods")
+    void shouldHaveContextManagementMethods() {
+      LOGGER.info("Testing context management methods");
 
-        @Test
-        @DisplayName("Should have correct class structure")
-        void shouldHaveCorrectClassStructure() {
-            LOGGER.info("Testing PanamaWasiHttpStats class structure");
+      final Class<?> clazz = PanamaWasiHttpContext.class;
+      final String[] expectedMethods = {
+        "getConfig", "getStats", "isValid", "isHostAllowed", "resetStats", "close"
+      };
 
-            final Class<?> clazz = PanamaWasiHttpStats.class;
-
-            assertTrue(java.lang.reflect.Modifier.isPublic(clazz.getModifiers()),
-                    "Class should be public");
-            assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()),
-                    "Class should be final");
-
-            LOGGER.info("Class structure verified");
+      for (final String methodName : expectedMethods) {
+        boolean found = false;
+        for (final Method method : clazz.getMethods()) {
+          if (method.getName().equals(methodName)) {
+            found = true;
+            LOGGER.info("Found method: " + methodName);
+            break;
+          }
         }
-
-        @Test
-        @DisplayName("Should have request statistics methods")
-        void shouldHaveRequestStatisticsMethods() {
-            LOGGER.info("Testing request statistics methods");
-
-            final Class<?> clazz = PanamaWasiHttpStats.class;
-            final String[] expectedMethods = {
-                "getTotalRequests",
-                "getSuccessfulRequests",
-                "getFailedRequests",
-                "getActiveRequests"
-            };
-
-            for (final String methodName : expectedMethods) {
-                boolean found = false;
-                for (final Method method : clazz.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        found = true;
-                        LOGGER.info("Found method: " + methodName);
-                        break;
-                    }
-                }
-                assertTrue(found, "Should have method: " + methodName);
-            }
-        }
-
-        @Test
-        @DisplayName("Should have timing statistics methods")
-        void shouldHaveTimingStatisticsMethods() {
-            LOGGER.info("Testing timing statistics methods");
-
-            final Class<?> clazz = PanamaWasiHttpStats.class;
-            final String[] expectedMethods = {
-                "getAverageRequestDuration",
-                "getMinRequestDuration",
-                "getMaxRequestDuration"
-            };
-
-            for (final String methodName : expectedMethods) {
-                boolean found = false;
-                for (final Method method : clazz.getMethods()) {
-                    if (method.getName().equals(methodName)) {
-                        found = true;
-                        LOGGER.info("Found method: " + methodName);
-                        break;
-                    }
-                }
-                assertTrue(found, "Should have method: " + methodName);
-            }
-        }
+        assertTrue(found, "Should have method: " + methodName);
+      }
     }
+
+    @Test
+    @DisplayName("Should implement AutoCloseable")
+    void shouldImplementAutoCloseable() {
+      LOGGER.info("Testing AutoCloseable implementation");
+
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(PanamaWasiHttpContext.class),
+          "Should implement AutoCloseable");
+    }
+  }
+
+  @Nested
+  @DisplayName("PanamaWasiHttpStats Tests")
+  class HttpStatsTests {
+
+    @Test
+    @DisplayName("Should have correct class structure")
+    void shouldHaveCorrectClassStructure() {
+      LOGGER.info("Testing PanamaWasiHttpStats class structure");
+
+      final Class<?> clazz = PanamaWasiHttpStats.class;
+
+      assertTrue(
+          java.lang.reflect.Modifier.isPublic(clazz.getModifiers()), "Class should be public");
+      assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+
+      LOGGER.info("Class structure verified");
+    }
+
+    @Test
+    @DisplayName("Should have request statistics methods")
+    void shouldHaveRequestStatisticsMethods() {
+      LOGGER.info("Testing request statistics methods");
+
+      final Class<?> clazz = PanamaWasiHttpStats.class;
+      final String[] expectedMethods = {
+        "getTotalRequests", "getSuccessfulRequests", "getFailedRequests", "getActiveRequests"
+      };
+
+      for (final String methodName : expectedMethods) {
+        boolean found = false;
+        for (final Method method : clazz.getMethods()) {
+          if (method.getName().equals(methodName)) {
+            found = true;
+            LOGGER.info("Found method: " + methodName);
+            break;
+          }
+        }
+        assertTrue(found, "Should have method: " + methodName);
+      }
+    }
+
+    @Test
+    @DisplayName("Should have timing statistics methods")
+    void shouldHaveTimingStatisticsMethods() {
+      LOGGER.info("Testing timing statistics methods");
+
+      final Class<?> clazz = PanamaWasiHttpStats.class;
+      final String[] expectedMethods = {
+        "getAverageRequestDuration", "getMinRequestDuration", "getMaxRequestDuration"
+      };
+
+      for (final String methodName : expectedMethods) {
+        boolean found = false;
+        for (final Method method : clazz.getMethods()) {
+          if (method.getName().equals(methodName)) {
+            found = true;
+            LOGGER.info("Found method: " + methodName);
+            break;
+          }
+        }
+        assertTrue(found, "Should have method: " + methodName);
+      }
+    }
+  }
 }

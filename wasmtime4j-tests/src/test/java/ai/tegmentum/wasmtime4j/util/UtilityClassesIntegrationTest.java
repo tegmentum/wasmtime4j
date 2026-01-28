@@ -563,8 +563,7 @@ public class UtilityClassesIntegrationTest {
     void shouldVerifyCallbackRegistryInterfaceExists(final TestInfo testInfo) {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
-      assertTrue(
-          CallbackRegistry.class.isInterface(), "CallbackRegistry should be an interface");
+      assertTrue(CallbackRegistry.class.isInterface(), "CallbackRegistry should be an interface");
 
       LOGGER.info("CallbackRegistry interface verified");
     }
@@ -689,12 +688,10 @@ public class UtilityClassesIntegrationTest {
           getAverageExecutionTimeNanos, "getAverageExecutionTimeNanos method should exist");
       assertEquals(double.class, getAverageExecutionTimeNanos.getReturnType());
 
-      Method getFailureCount =
-          CallbackRegistry.CallbackMetrics.class.getMethod("getFailureCount");
+      Method getFailureCount = CallbackRegistry.CallbackMetrics.class.getMethod("getFailureCount");
       assertNotNull(getFailureCount, "getFailureCount method should exist");
 
-      Method getTimeoutCount =
-          CallbackRegistry.CallbackMetrics.class.getMethod("getTimeoutCount");
+      Method getTimeoutCount = CallbackRegistry.CallbackMetrics.class.getMethod("getTimeoutCount");
       assertNotNull(getTimeoutCount, "getTimeoutCount method should exist");
 
       LOGGER.info("CallbackMetrics interface verified");

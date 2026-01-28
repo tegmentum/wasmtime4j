@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
@@ -135,8 +134,7 @@ class PanamaPerformanceMonitorIntegrationTest {
       PanamaPerformanceMonitor.endOperation("test_category", startTime);
 
       String stats = PanamaPerformanceMonitor.getStatistics();
-      assertTrue(
-          stats.contains("disabled"), "Statistics should indicate monitoring is disabled");
+      assertTrue(stats.contains("disabled"), "Statistics should indicate monitoring is disabled");
 
       LOGGER.info("Operations correctly not tracked when disabled");
     }
@@ -646,9 +644,7 @@ class PanamaPerformanceMonitorIntegrationTest {
               throw new IllegalStateException("Test exception");
             });
       } catch (RuntimeException e) {
-        assertTrue(
-            e.getCause() instanceof IllegalStateException,
-            "Should wrap original exception");
+        assertTrue(e.getCause() instanceof IllegalStateException, "Should wrap original exception");
         LOGGER.info("Exception correctly propagated: " + e.getCause().getMessage());
         return;
       }

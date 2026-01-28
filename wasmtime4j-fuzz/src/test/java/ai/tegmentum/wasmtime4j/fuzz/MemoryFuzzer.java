@@ -174,17 +174,19 @@ public class MemoryFuzzer {
           throw new AssertionError("Memory size mismatch after growth");
         }
 
-        // Try to access newly allocated memory
-        final int newOffset = initialSize * PAGE_SIZE;
-        try {
-          memory.writeByte(newOffset, (byte) 0x42);
-          final byte readBack = memory.readByte(newOffset);
-          if (readBack != 0x42) {
-            throw new AssertionError("Failed to read from grown memory");
+        // Try to access newly allocated memory (only if pages were actually added)
+        if (growPages > 0) {
+          final int newOffset = initialSize * PAGE_SIZE;
+          try {
+            memory.writeByte(newOffset, (byte) 0x42);
+            final byte readBack = memory.readByte(newOffset);
+            if (readBack != 0x42) {
+              throw new AssertionError("Failed to read from grown memory");
+            }
+          } catch (IndexOutOfBoundsException e) {
+            // Unexpected - growth succeeded but access failed
+            throw new AssertionError("Cannot access grown memory", e);
           }
-        } catch (IndexOutOfBoundsException e) {
-          // Unexpected - growth succeeded but access failed
-          throw new AssertionError("Cannot access grown memory", e);
         }
       }
       // If prevSize is -1, growth failed which is expected for large requests

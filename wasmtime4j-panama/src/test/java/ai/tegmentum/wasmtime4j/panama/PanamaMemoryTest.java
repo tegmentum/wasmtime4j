@@ -504,8 +504,7 @@ public class PanamaMemoryTest {
       // writeByte operates on a buffer copy, so it won't persist to native memory,
       // but it should execute without throwing
       assertDoesNotThrow(
-          () -> memory.writeByte(0, (byte) 0xFF),
-          "writeByte should not throw for valid offset");
+          () -> memory.writeByte(0, (byte) 0xFF), "writeByte should not throw for valid offset");
     }
 
     @Test
@@ -556,16 +555,14 @@ public class PanamaMemoryTest {
       memory.writeBytes(0, data, 0, data.length);
 
       // Overlapping copy: src [0..5) -> dest [2..7)
-      assertDoesNotThrow(
-          () -> memory.copy(2, 0, 5), "copy() should handle overlapping regions");
+      assertDoesNotThrow(() -> memory.copy(2, 0, 5), "copy() should handle overlapping regions");
     }
 
     @Test
     @DisplayName("Should handle zero-length copy")
     public void shouldCopyZeroLength() throws Exception {
       final WasmMemory memory = getMemory();
-      assertDoesNotThrow(
-          () -> memory.copy(0, 0, 0), "Zero-length copy should not throw");
+      assertDoesNotThrow(() -> memory.copy(0, 0, 0), "Zero-length copy should not throw");
     }
 
     @Test
@@ -629,16 +626,14 @@ public class PanamaMemoryTest {
       final WasmMemory memory = getMemory();
       // fill operates on a buffer copy, but should execute without error
       assertDoesNotThrow(
-          () -> memory.fill(0, (byte) 0xAB, 100),
-          "fill() should not throw for valid parameters");
+          () -> memory.fill(0, (byte) 0xAB, 100), "fill() should not throw for valid parameters");
     }
 
     @Test
     @DisplayName("Should handle zero-length fill")
     public void shouldFillZeroLength() throws Exception {
       final WasmMemory memory = getMemory();
-      assertDoesNotThrow(
-          () -> memory.fill(0, (byte) 0xFF, 0), "Zero-length fill should not throw");
+      assertDoesNotThrow(() -> memory.fill(0, (byte) 0xFF, 0), "Zero-length fill should not throw");
     }
 
     @Test
@@ -726,9 +721,7 @@ public class PanamaMemoryTest {
       assertThrows(
           IllegalStateException.class, memory::getSize, "getSize() after close should throw");
       assertThrows(
-          IllegalStateException.class,
-          () -> memory.grow(1),
-          "grow() after close should throw");
+          IllegalStateException.class, () -> memory.grow(1), "grow() after close should throw");
       assertThrows(
           IllegalStateException.class, memory::getMaxSize, "getMaxSize() after close should throw");
       assertThrows(
@@ -1346,8 +1339,7 @@ public class PanamaMemoryTest {
     public void shouldHandleZeroLengthInit() throws Exception {
       final WasmMemory memory = getMemory();
       // Zero length should return immediately without native call
-      assertDoesNotThrow(
-          () -> memory.init(0, 0, 0, 0), "Zero-length init should not throw");
+      assertDoesNotThrow(() -> memory.init(0, 0, 0, 0), "Zero-length init should not throw");
     }
 
     @Test

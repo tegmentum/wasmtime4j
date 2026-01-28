@@ -118,11 +118,16 @@ public class Memory64IntegrationTest {
     void shouldHaveCorrectMnemonics() {
       LOGGER.info("Testing Memory64Instruction mnemonics");
 
-      assertEquals("i32.load", Memory64Instruction.I32_LOAD_64.getMnemonic(), "I32_LOAD_64 mnemonic");
-      assertEquals("i64.load", Memory64Instruction.I64_LOAD_64.getMnemonic(), "I64_LOAD_64 mnemonic");
-      assertEquals("i32.store", Memory64Instruction.I32_STORE_64.getMnemonic(), "I32_STORE_64 mnemonic");
       assertEquals(
-          "memory.size", Memory64Instruction.MEMORY_SIZE_64.getMnemonic(), "MEMORY_SIZE_64 mnemonic");
+          "i32.load", Memory64Instruction.I32_LOAD_64.getMnemonic(), "I32_LOAD_64 mnemonic");
+      assertEquals(
+          "i64.load", Memory64Instruction.I64_LOAD_64.getMnemonic(), "I64_LOAD_64 mnemonic");
+      assertEquals(
+          "i32.store", Memory64Instruction.I32_STORE_64.getMnemonic(), "I32_STORE_64 mnemonic");
+      assertEquals(
+          "memory.size",
+          Memory64Instruction.MEMORY_SIZE_64.getMnemonic(),
+          "MEMORY_SIZE_64 mnemonic");
 
       LOGGER.info("Memory64Instruction mnemonics verified");
     }
@@ -170,7 +175,8 @@ public class Memory64IntegrationTest {
       assertTrue(Memory64Instruction.I32_STORE8_64.isStore(), "I32_STORE8_64 should be store");
 
       assertFalse(Memory64Instruction.I32_LOAD_64.isStore(), "I32_LOAD_64 should not be store");
-      assertFalse(Memory64Instruction.MEMORY_SIZE_64.isStore(), "MEMORY_SIZE_64 should not be store");
+      assertFalse(
+          Memory64Instruction.MEMORY_SIZE_64.isStore(), "MEMORY_SIZE_64 should not be store");
 
       LOGGER.info("Memory64Instruction isStore() verified");
     }
@@ -218,7 +224,9 @@ public class Memory64IntegrationTest {
       assertEquals(
           1, Memory64Instruction.I32_LOAD8_S_64.getRequiredAlignment(), "I32_LOAD8_S_64 alignment");
       assertEquals(
-          2, Memory64Instruction.I32_LOAD16_S_64.getRequiredAlignment(), "I32_LOAD16_S_64 alignment");
+          2,
+          Memory64Instruction.I32_LOAD16_S_64.getRequiredAlignment(),
+          "I32_LOAD16_S_64 alignment");
       assertEquals(
           1, Memory64Instruction.MEMORY_SIZE_64.getRequiredAlignment(), "MEMORY_SIZE_64 alignment");
 
@@ -350,8 +358,7 @@ public class Memory64IntegrationTest {
       LOGGER.info("Testing Memory64Compatibility class structure");
 
       assertFalse(
-          Memory64Compatibility.class.isInterface(),
-          "Memory64Compatibility should be a class");
+          Memory64Compatibility.class.isInterface(), "Memory64Compatibility should be a class");
       assertFalse(
           Memory64Compatibility.class.isEnum(), "Memory64Compatibility should not be an enum");
 

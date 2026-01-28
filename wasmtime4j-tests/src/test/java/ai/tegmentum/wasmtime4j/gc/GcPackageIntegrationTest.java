@@ -952,8 +952,7 @@ class GcPackageIntegrationTest {
 
       var totalAllocatedField = GcHeapStats.class.getDeclaredField("totalAllocated");
       assertTrue(
-          Modifier.isPublic(totalAllocatedField.getModifiers()),
-          "totalAllocated should be public");
+          Modifier.isPublic(totalAllocatedField.getModifiers()), "totalAllocated should be public");
 
       var currentHeapSizeField = GcHeapStats.class.getDeclaredField("currentHeapSize");
       assertTrue(
@@ -1430,8 +1429,7 @@ class GcPackageIntegrationTest {
       assertNotNull(getTotalTime, "getTotalTime method should exist");
       assertEquals(Duration.class, getTotalTime.getReturnType());
 
-      Method getTimePercentage =
-          GcProfiler.PerformanceHotspot.class.getMethod("getTimePercentage");
+      Method getTimePercentage = GcProfiler.PerformanceHotspot.class.getMethod("getTimePercentage");
       assertNotNull(getTimePercentage, "getTimePercentage method should exist");
       assertEquals(double.class, getTimePercentage.getReturnType());
 
@@ -1493,8 +1491,7 @@ class GcPackageIntegrationTest {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
       assertTrue(
-          GcProfiler.ProfilingEvent.class.isInterface(),
-          "ProfilingEvent should be an interface");
+          GcProfiler.ProfilingEvent.class.isInterface(), "ProfilingEvent should be an interface");
     }
 
     @Test

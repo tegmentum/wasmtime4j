@@ -8,7 +8,6 @@ package ai.tegmentum.wasmtime4j.wit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
@@ -31,7 +30,6 @@ import ai.tegmentum.wasmtime4j.WitTypeAdapter;
 import ai.tegmentum.wasmtime4j.WitTypeValidator;
 import ai.tegmentum.wasmtime4j.WitValueMarshaler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -76,8 +74,7 @@ public class WitInterfaceSystemIntegrationTest {
     void shouldHaveMetadataMethods() throws Exception {
       LOGGER.info("Testing WitInterfaceDefinition metadata methods");
 
-      assertNotNull(
-          WitInterfaceDefinition.class.getMethod("getName"), "getName should exist");
+      assertNotNull(WitInterfaceDefinition.class.getMethod("getName"), "getName should exist");
       assertNotNull(
           WitInterfaceDefinition.class.getMethod("getVersion"), "getVersion should exist");
       assertNotNull(
@@ -124,8 +121,7 @@ public class WitInterfaceSystemIntegrationTest {
       LOGGER.info("Testing WitInterfaceDefinition compatibility method");
 
       Method method =
-          WitInterfaceDefinition.class.getMethod(
-              "isCompatibleWith", WitInterfaceDefinition.class);
+          WitInterfaceDefinition.class.getMethod("isCompatibleWith", WitInterfaceDefinition.class);
       assertNotNull(method, "isCompatibleWith should exist");
       assertEquals(
           WitCompatibilityResult.class,
@@ -146,8 +142,7 @@ public class WitInterfaceSystemIntegrationTest {
       LOGGER.info("Testing WitInterfaceBindings interface structure");
 
       assertTrue(
-          WitInterfaceBindings.class.isInterface(),
-          "WitInterfaceBindings should be an interface");
+          WitInterfaceBindings.class.isInterface(), "WitInterfaceBindings should be an interface");
 
       LOGGER.info("WitInterfaceBindings interface structure verified");
     }
@@ -256,8 +251,7 @@ public class WitInterfaceSystemIntegrationTest {
     void shouldVerifyWitInterfaceVersionIsClass() {
       LOGGER.info("Testing WitInterfaceVersion class structure");
 
-      assertFalse(
-          WitInterfaceVersion.class.isInterface(), "WitInterfaceVersion should be a class");
+      assertFalse(WitInterfaceVersion.class.isInterface(), "WitInterfaceVersion should be a class");
       assertFalse(WitInterfaceVersion.class.isEnum(), "WitInterfaceVersion should not be an enum");
 
       LOGGER.info("WitInterfaceVersion class structure verified");

@@ -103,7 +103,9 @@ class PanaNativeObjectPoolIntegrationTest {
 
       PanaNativeObjectPool<MemorySegment> pool =
           PanaNativeObjectPool.getPool(
-              MemorySegment.class, (a) -> a.allocate(1024), PanaNativeObjectPool.DEFAULT_MAX_POOL_SIZE);
+              MemorySegment.class,
+              (a) -> a.allocate(1024),
+              PanaNativeObjectPool.DEFAULT_MAX_POOL_SIZE);
 
       assertNotNull(pool, "Pool should not be null");
       assertEquals(MemorySegment.class, pool.getObjectType(), "Object type should match");
@@ -131,9 +133,7 @@ class PanaNativeObjectPoolIntegrationTest {
       assertNotNull(pool, "Pool should not be null");
       assertEquals(maxSize, pool.getMaxPoolSize(), "Max pool size should match");
       // Pool should have been pre-populated with minSize objects
-      assertTrue(
-          pool.getAvailableCount() >= 0,
-          "Available count should be non-negative");
+      assertTrue(pool.getAvailableCount() >= 0, "Available count should be non-negative");
 
       LOGGER.info("Pool created with custom sizes - available: " + pool.getAvailableCount());
     }
@@ -663,8 +663,7 @@ class PanaNativeObjectPoolIntegrationTest {
           PanaNativeObjectPool.getPool(MemorySegment.class, (a) -> a.allocate(256), 16);
 
       // Clear all
-      assertDoesNotThrow(
-          () -> PanaNativeObjectPool.clearAllPools(), "Clear all should not throw");
+      assertDoesNotThrow(() -> PanaNativeObjectPool.clearAllPools(), "Clear all should not throw");
 
       // Pool should be closed
       assertTrue(pool.isClosed(), "Pool should be closed after clearAllPools");

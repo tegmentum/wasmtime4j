@@ -71,6 +71,20 @@ public final class NativeLibraryUtils {
   private static final String LOG_ARROW = " -> ";
 
   /**
+   * System property to control native loading policy.
+   *
+   * <p>Values: "forbid" (throws on any load attempt), "require" (throws if loading fails), "auto"
+   * (default, no policy enforcement).
+   */
+  private static final String NATIVE_MODE_PROPERTY = "wasmtime4j.native.mode";
+
+  /** System property to control whether Strategy 1 (System.loadLibrary) is attempted. */
+  private static final String STRATEGY1_PROPERTY = "wasmtime4j.native.strategy1";
+
+  /** System property to override the temporary directory for library extraction. */
+  private static final String TMPDIR_PROPERTY = "wasmtime4j.native.tmpdir";
+
+  /**
    * Cache for extracted library paths to avoid multiple extractions.
    *
    * <p>PMD: LooseCoupling - Using Map interface instead of ConcurrentHashMap directly.
@@ -255,6 +269,60 @@ public final class NativeLibraryUtils {
   }
 
   /**
+   * Enforces the native loading policy based on the {@code wasmtime4j.native.mode} system property.
+   *
+   * <p>When the mode is set to "forbid", any attempt to load a native library will throw an {@link
+   * IllegalStateException}. This is used to prevent unit tests from accidentally triggering native
+   * library loading.
+   *
+   * @param libraryName the name of the library being loaded (for diagnostic messages)
+   * @throws IllegalStateException if the mode is "forbid"
+   */
+  private static void enforceLoadingPolicy(final String libraryName) {
+    final String mode = System.getProperty(NATIVE_MODE_PROPERTY, "auto");
+    if ("forbid".equals(mode)) {
+      throw new IllegalStateException(
+          "Native library loading is forbidden (wasmtime4j.native.mode=forbid). "
+              + "A unit test is triggering native loading for library: "
+              + libraryName);
+    }
+  }
+
+  /**
+   * Checks whether Strategy 1 (System.loadLibrary) is enabled.
+   *
+   * <p>Strategy 1 can be disabled by setting the {@code wasmtime4j.native.strategy1} system
+   * property to "false". When disabled, only JAR extraction (Strategy 2) will be attempted.
+   *
+   * @return true if Strategy 1 is enabled (default), false if disabled
+   */
+  private static boolean isStrategy1Enabled() {
+    return Boolean.parseBoolean(System.getProperty(STRATEGY1_PROPERTY, "true"));
+  }
+
+  /**
+   * Enforces the "require" mode policy after a loading attempt has failed.
+   *
+   * <p>When the mode is "require" and loading was not successful, throws an {@link
+   * IllegalStateException} to ensure tests that require native libraries fail fast with a clear
+   * message.
+   *
+   * @param loadInfo the result of the loading attempt
+   * @throws IllegalStateException if mode is "require" and loading was not successful
+   */
+  private static void enforceRequireMode(final LibraryLoadInfo loadInfo) {
+    if ("require".equals(System.getProperty(NATIVE_MODE_PROPERTY, "auto"))
+        && !loadInfo.isSuccessful()) {
+      throw new IllegalStateException(
+          "Native loading required but failed (wasmtime4j.native.mode=require). "
+              + "Library: "
+              + loadInfo.getLibraryName()
+              + ". Error: "
+              + loadInfo.getErrorMessage());
+    }
+  }
+
+  /**
    * Attempts to load the wasmtime4j native library using multiple strategies.
    *
    * <p>This method uses default configuration for backward compatibility.
@@ -306,6 +374,8 @@ public final class NativeLibraryUtils {
     Objects.requireNonNull(libraryName, LIBRARY_NAME_NOT_NULL_MSG);
     Objects.requireNonNull(config, CONFIG_NOT_NULL_MSG);
 
+    enforceLoadingPolicy(libraryName);
+
     final PlatformDetector.PlatformInfo platformInfo;
     try {
       platformInfo = PlatformDetector.detect();
@@ -318,23 +388,25 @@ public final class NativeLibraryUtils {
     final String resourcePath = platformInfo.getLibraryResourcePath(libraryName);
 
     // Strategy 1: Try loading from system library path
-    try {
-      System.loadLibrary(libraryName);
-      LOGGER.info(
-          "Successfully loaded native library from system library path: "
-              + sanitizeForLog(libraryName));
-      return new LibraryLoadInfo(
-          libraryName,
-          platformInfo,
-          resourcePath,
-          false,
-          null,
-          LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
-          null,
-          null,
-          new ArrayList<>());
-    } catch (final UnsatisfiedLinkError e) {
-      LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
+    if (isStrategy1Enabled()) {
+      try {
+        System.loadLibrary(libraryName);
+        LOGGER.info(
+            "Successfully loaded native library from system library path: "
+                + sanitizeForLog(libraryName));
+        return new LibraryLoadInfo(
+            libraryName,
+            platformInfo,
+            resourcePath,
+            false,
+            null,
+            LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
+            null,
+            null,
+            new ArrayList<>());
+      } catch (final UnsatisfiedLinkError e) {
+        LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
+      }
     }
 
     // Strategy 2: Extract from JAR resources and load
@@ -359,16 +431,19 @@ public final class NativeLibraryUtils {
           Arrays.asList(resourcePath));
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Failed to load native library from JAR", e);
-      return new LibraryLoadInfo(
-          libraryName,
-          platformInfo,
-          resourcePath,
-          checkResourceExists(resourcePath),
-          null,
-          null,
-          e,
-          null,
-          Arrays.asList(resourcePath));
+      final LibraryLoadInfo failInfo =
+          new LibraryLoadInfo(
+              libraryName,
+              platformInfo,
+              resourcePath,
+              checkResourceExists(resourcePath),
+              null,
+              null,
+              e,
+              null,
+              Arrays.asList(resourcePath));
+      enforceRequireMode(failInfo);
+      return failInfo;
     }
   }
 
@@ -399,6 +474,8 @@ public final class NativeLibraryUtils {
       throw new IllegalArgumentException("conventions must not be empty");
     }
 
+    enforceLoadingPolicy(libraryName);
+
     final PlatformDetector.PlatformInfo platformInfo;
     try {
       platformInfo = PlatformDetector.detect();
@@ -411,23 +488,25 @@ public final class NativeLibraryUtils {
     final List<String> attemptedPaths = new ArrayList<>();
 
     // Strategy 1: Try loading from system library path
-    try {
-      System.loadLibrary(libraryName);
-      LOGGER.info(
-          "Successfully loaded native library from system library path: "
-              + sanitizeForLog(libraryName));
-      return new LibraryLoadInfo(
-          libraryName,
-          platformInfo,
-          null,
-          false,
-          null,
-          LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
-          null,
-          null,
-          attemptedPaths);
-    } catch (final UnsatisfiedLinkError e) {
-      LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
+    if (isStrategy1Enabled()) {
+      try {
+        System.loadLibrary(libraryName);
+        LOGGER.info(
+            "Successfully loaded native library from system library path: "
+                + sanitizeForLog(libraryName));
+        return new LibraryLoadInfo(
+            libraryName,
+            platformInfo,
+            null,
+            false,
+            null,
+            LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
+            null,
+            null,
+            attemptedPaths);
+      } catch (final UnsatisfiedLinkError e) {
+        LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
+      }
     }
 
     // Strategy 2: Try each convention in order
@@ -490,8 +569,19 @@ public final class NativeLibraryUtils {
             + attemptedPaths,
         lastException);
 
-    return new LibraryLoadInfo(
-        libraryName, platformInfo, null, false, null, null, lastException, null, attemptedPaths);
+    final LibraryLoadInfo failInfo =
+        new LibraryLoadInfo(
+            libraryName,
+            platformInfo,
+            null,
+            false,
+            null,
+            null,
+            lastException,
+            null,
+            attemptedPaths);
+    enforceRequireMode(failInfo);
+    return failInfo;
   }
 
   /**
@@ -516,6 +606,8 @@ public final class NativeLibraryUtils {
     Objects.requireNonNull(customConvention, "customConvention must not be null");
     Objects.requireNonNull(conventions, "conventions must not be null");
 
+    enforceLoadingPolicy(libraryName);
+
     final PlatformDetector.PlatformInfo platformInfo;
     try {
       platformInfo = PlatformDetector.detect();
@@ -528,23 +620,25 @@ public final class NativeLibraryUtils {
     final List<String> attemptedPaths = new ArrayList<>();
 
     // Strategy 1: Try loading from system library path
-    try {
-      System.loadLibrary(libraryName);
-      LOGGER.info(
-          "Successfully loaded native library from system library path: "
-              + sanitizeForLog(libraryName));
-      return new LibraryLoadInfo(
-          libraryName,
-          platformInfo,
-          null,
-          false,
-          null,
-          LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
-          null,
-          null,
-          attemptedPaths);
-    } catch (final UnsatisfiedLinkError e) {
-      LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
+    if (isStrategy1Enabled()) {
+      try {
+        System.loadLibrary(libraryName);
+        LOGGER.info(
+            "Successfully loaded native library from system library path: "
+                + sanitizeForLog(libraryName));
+        return new LibraryLoadInfo(
+            libraryName,
+            platformInfo,
+            null,
+            false,
+            null,
+            LibraryLoadInfo.LoadingMethod.SYSTEM_LIBRARY_PATH,
+            null,
+            null,
+            attemptedPaths);
+      } catch (final UnsatisfiedLinkError e) {
+        LOGGER.fine("Failed to load from system library path: " + sanitizeForLog(e.getMessage()));
+      }
     }
 
     // Strategy 2: Try custom convention first
@@ -638,8 +732,19 @@ public final class NativeLibraryUtils {
             + attemptedPaths,
         lastException);
 
-    return new LibraryLoadInfo(
-        libraryName, platformInfo, null, false, null, null, lastException, null, attemptedPaths);
+    final LibraryLoadInfo failInfo =
+        new LibraryLoadInfo(
+            libraryName,
+            platformInfo,
+            null,
+            false,
+            null,
+            null,
+            lastException,
+            null,
+            attemptedPaths);
+    enforceRequireMode(failInfo);
+    return failInfo;
   }
 
   /**
@@ -718,10 +823,13 @@ public final class NativeLibraryUtils {
       // Sanitize platform ID to prevent path traversal attacks
       final String sanitizedPlatformId = sanitizePlatformId(platformInfo.getPlatformId());
 
-      // Create temporary directory with unique name in system temp directory
+      // Create temporary directory with unique name (respects tmpdir override)
+      final Path tmpParent =
+          Paths.get(System.getProperty(TMPDIR_PROPERTY, System.getProperty("java.io.tmpdir")));
+      Files.createDirectories(tmpParent);
       final Path tempDir =
           Files.createTempDirectory(
-              Paths.get(System.getProperty("java.io.tmpdir")),
+              tmpParent,
               config.getTempFilePrefix() + sanitizedPlatformId + config.getTempDirSuffix());
       final String libraryFileName = platformInfo.getLibraryFileName(libraryName);
       final Path extractedLibrary = tempDir.resolve(libraryFileName);

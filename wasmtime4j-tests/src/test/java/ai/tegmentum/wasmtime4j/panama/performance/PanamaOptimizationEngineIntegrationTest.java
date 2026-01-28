@@ -307,8 +307,7 @@ class PanamaOptimizationEngineIntegrationTest {
 
       // Perform optimized copy
       assertDoesNotThrow(
-          () -> engine.optimizedCopy(source, destination, 1024),
-          "Optimized copy should not throw");
+          () -> engine.optimizedCopy(source, destination, 1024), "Optimized copy should not throw");
 
       // Verify data was copied
       for (int i = 0; i < 256; i++) {

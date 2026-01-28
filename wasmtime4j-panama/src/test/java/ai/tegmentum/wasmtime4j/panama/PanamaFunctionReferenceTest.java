@@ -139,7 +139,8 @@ class PanamaFunctionReferenceTest {
               "Should throw WasmException for null host function");
       LOGGER.info("Null host function error: " + ex.getMessage());
       assertTrue(
-          ex.getMessage().contains("null"), "Error message should mention null: " + ex.getMessage());
+          ex.getMessage().contains("null"),
+          "Error message should mention null: " + ex.getMessage());
     }
 
     @Test
@@ -157,7 +158,8 @@ class PanamaFunctionReferenceTest {
               "Should throw WasmException for null function type");
       LOGGER.info("Null function type error: " + ex.getMessage());
       assertTrue(
-          ex.getMessage().contains("null"), "Error message should mention null: " + ex.getMessage());
+          ex.getMessage().contains("null"),
+          "Error message should mention null: " + ex.getMessage());
     }
 
     @Test
@@ -177,7 +179,8 @@ class PanamaFunctionReferenceTest {
               "Should throw WasmException for null store");
       LOGGER.info("Null store error: " + ex.getMessage());
       assertTrue(
-          ex.getMessage().contains("null"), "Error message should mention null: " + ex.getMessage());
+          ex.getMessage().contains("null"),
+          "Error message should mention null: " + ex.getMessage());
     }
 
     @Test
@@ -195,7 +198,8 @@ class PanamaFunctionReferenceTest {
               "Should throw WasmException for null arena manager");
       LOGGER.info("Null arena manager error: " + ex.getMessage());
       assertTrue(
-          ex.getMessage().contains("null"), "Error message should mention null: " + ex.getMessage());
+          ex.getMessage().contains("null"),
+          "Error message should mention null: " + ex.getMessage());
     }
 
     @Test
@@ -214,7 +218,8 @@ class PanamaFunctionReferenceTest {
               "Should throw WasmException for null error handler");
       LOGGER.info("Null error handler error: " + ex.getMessage());
       assertTrue(
-          ex.getMessage().contains("null"), "Error message should mention null: " + ex.getMessage());
+          ex.getMessage().contains("null"),
+          "Error message should mention null: " + ex.getMessage());
     }
   }
 
@@ -232,12 +237,12 @@ class PanamaFunctionReferenceTest {
       final WasmException ex =
           assertThrows(
               WasmException.class,
-              () ->
-                  new PanamaFunctionReference((WasmFunction) null, store, arm, eh),
+              () -> new PanamaFunctionReference((WasmFunction) null, store, arm, eh),
               "Should throw WasmException for null wasm function");
       LOGGER.info("Null wasm function error: " + ex.getMessage());
       assertTrue(
-          ex.getMessage().contains("null"), "Error message should mention null: " + ex.getMessage());
+          ex.getMessage().contains("null"),
+          "Error message should mention null: " + ex.getMessage());
     }
 
     @Test
@@ -327,24 +332,16 @@ class PanamaFunctionReferenceTest {
 
       final FunctionType returnedType = ref.getFunctionType();
       assertNotNull(returnedType, "Function type should not be null");
+      assertEquals(2, returnedType.getParamTypes().length, "Should have 2 param types");
+      assertEquals(1, returnedType.getReturnTypes().length, "Should have 1 return type");
+      assertEquals(WasmValueType.I32, returnedType.getParamTypes()[0], "First param should be I32");
       assertEquals(
-          2,
-          returnedType.getParamTypes().length,
-          "Should have 2 param types");
-      assertEquals(
-          1,
-          returnedType.getReturnTypes().length,
-          "Should have 1 return type");
-      assertEquals(
-          WasmValueType.I32,
-          returnedType.getParamTypes()[0],
-          "First param should be I32");
-      assertEquals(
-          WasmValueType.I32,
-          returnedType.getReturnTypes()[0],
-          "Return type should be I32");
-      LOGGER.info("Function type: params=" + returnedType.getParamTypes().length
-          + " returns=" + returnedType.getReturnTypes().length);
+          WasmValueType.I32, returnedType.getReturnTypes()[0], "Return type should be I32");
+      LOGGER.info(
+          "Function type: params="
+              + returnedType.getParamTypes().length
+              + " returns="
+              + returnedType.getReturnTypes().length);
     }
 
     @Test
@@ -379,8 +376,8 @@ class PanamaFunctionReferenceTest {
 
       assertTrue(ref.isHostFunction(), "Should be a host function");
       assertFalse(ref.isWasmFunction(), "Should not be a wasm function");
-      LOGGER.info("isHostFunction=" + ref.isHostFunction()
-          + " isWasmFunction=" + ref.isWasmFunction());
+      LOGGER.info(
+          "isHostFunction=" + ref.isHostFunction() + " isWasmFunction=" + ref.isWasmFunction());
     }
 
     @Test
@@ -439,8 +436,7 @@ class PanamaFunctionReferenceTest {
 
       final MemorySegment stub = ref.getUpcallStub();
       assertNotNull(stub, "Upcall stub should not be null for host function");
-      assertNotEquals(
-          MemorySegment.NULL, stub, "Upcall stub should not be NULL segment");
+      assertNotEquals(MemorySegment.NULL, stub, "Upcall stub should not be NULL segment");
       LOGGER.info("Upcall stub address: 0x" + Long.toHexString(stub.address()));
     }
 
@@ -501,8 +497,7 @@ class PanamaFunctionReferenceTest {
     @Test
     @DisplayName("Should call void host function reference")
     void shouldCallVoidHostFunction() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {});
+      final FunctionType ft = FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {});
       final HostFunction hf = (params) -> new WasmValue[] {};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
@@ -576,8 +571,8 @@ class PanamaFunctionReferenceTest {
 
       assertTrue(ref.isWasmFunction(), "Should be a wasm function");
       assertFalse(ref.isHostFunction(), "Should not be a host function");
-      LOGGER.info("isWasmFunction=" + ref.isWasmFunction()
-          + " isHostFunction=" + ref.isHostFunction());
+      LOGGER.info(
+          "isWasmFunction=" + ref.isWasmFunction() + " isHostFunction=" + ref.isHostFunction());
     }
 
     @Test
@@ -642,8 +637,12 @@ class PanamaFunctionReferenceTest {
       // (empty params/returns) - actual signature is validated at call time by native code.
       assertNotNull(ft.getParamTypes(), "Param types should not be null");
       assertNotNull(ft.getReturnTypes(), "Return types should not be null");
-      LOGGER.info("Function type: " + ft.getParamTypes().length + " params, "
-          + ft.getReturnTypes().length + " returns");
+      LOGGER.info(
+          "Function type: "
+              + ft.getParamTypes().length
+              + " params, "
+              + ft.getReturnTypes().length
+              + " returns");
     }
 
     @Test
@@ -664,8 +663,8 @@ class PanamaFunctionReferenceTest {
       assertTrue(ref.isValid(), "Wasm function reference should be valid");
       assertTrue(ref.longValue() > 0, "longValue should be positive: " + ref.longValue());
       assertTrue(ref.getId() > 0, "getId should be positive: " + ref.getId());
-      LOGGER.info("Valid=" + ref.isValid() + " longValue=" + ref.longValue()
-          + " id=" + ref.getId());
+      LOGGER.info(
+          "Valid=" + ref.isValid() + " longValue=" + ref.longValue() + " id=" + ref.getId());
     }
   }
 
@@ -769,7 +768,8 @@ class PanamaFunctionReferenceTest {
       final FunctionReference result = PanamaFunctionReference.getFunctionReferenceById(-999);
       assertNull(result, "Should return null for invalid registry ID");
 
-      final PanamaFunctionReference result2 = PanamaFunctionReference.getFromRegistry(Long.MAX_VALUE);
+      final PanamaFunctionReference result2 =
+          PanamaFunctionReference.getFromRegistry(Long.MAX_VALUE);
       assertNull(result2, "Should return null for non-existent registry ID");
       LOGGER.info("Correctly returned null for invalid IDs");
     }
@@ -792,7 +792,9 @@ class PanamaFunctionReferenceTest {
       assertTrue(
           statsAfter[0] >= statsBefore[0],
           "Registry count should not decrease after adding: before="
-              + statsBefore[0] + " after=" + statsAfter[0]);
+              + statsBefore[0]
+              + " after="
+              + statsAfter[0]);
       assertTrue(
           statsAfter[1] > statsBefore[1],
           "Next ID should increase: before=" + statsBefore[1] + " after=" + statsAfter[1]);
@@ -814,11 +816,11 @@ class PanamaFunctionReferenceTest {
       trackRef(ref2);
 
       assertNotEquals(
-          ref1.longValue(), ref2.longValue(),
+          ref1.longValue(),
+          ref2.longValue(),
           "Each function reference should have a unique longValue");
       assertNotEquals(
-          ref1.getId(), ref2.getId(),
-          "Each function reference should have a unique ID");
+          ref1.getId(), ref2.getId(), "Each function reference should have a unique ID");
       LOGGER.info("Unique IDs: ref1=" + ref1.longValue() + " ref2=" + ref2.longValue());
     }
   }
@@ -854,10 +856,11 @@ class PanamaFunctionReferenceTest {
           (PanamaFunctionReference) store.createFunctionReference(hf, ft);
       ref.close();
 
-      final WasmException ex = assertThrows(
-          WasmException.class,
-          () -> ref.call(),
-          "Should throw WasmException on call after close");
+      final WasmException ex =
+          assertThrows(
+              WasmException.class,
+              () -> ref.call(),
+              "Should throw WasmException on call after close");
       assertTrue(
           ex.getMessage().contains("closed"),
           "Error message should mention closed: " + ex.getMessage());
@@ -890,8 +893,7 @@ class PanamaFunctionReferenceTest {
       final long id = ref.longValue();
 
       assertNotNull(
-          PanamaFunctionReference.getFromRegistry(id),
-          "Should be in registry before close");
+          PanamaFunctionReference.getFromRegistry(id), "Should be in registry before close");
 
       ref.close();
 
@@ -941,8 +943,7 @@ class PanamaFunctionReferenceTest {
       assertNotNull(str, "toString should not be null");
       assertTrue(str.contains("host"), "toString should contain 'host': " + str);
       assertTrue(
-          str.contains("PanamaFunctionReference"),
-          "toString should contain class name: " + str);
+          str.contains("PanamaFunctionReference"), "toString should contain class name: " + str);
       LOGGER.info("Host function toString: " + str);
     }
 
@@ -993,17 +994,16 @@ class PanamaFunctionReferenceTest {
     void shouldInvokeCallbackDirectly() throws WasmException {
       final FunctionType ft =
           FunctionType.of(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf =
-          (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() * 3)};
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() * 3)};
 
       final PanamaFunctionReference ref =
           (PanamaFunctionReference) store.createFunctionReference(hf, ft);
       trackRef(ref);
 
-      final WasmValue[] results = PanamaFunctionReference.invokeFunctionReferenceCallback(
-          ref.longValue(), new WasmValue[] {WasmValue.i32(10)});
+      final WasmValue[] results =
+          PanamaFunctionReference.invokeFunctionReferenceCallback(
+              ref.longValue(), new WasmValue[] {WasmValue.i32(10)});
       assertNotNull(results, "Callback results should not be null");
       assertEquals(1, results.length, "Should have 1 result");
       assertEquals(30, results[0].asI32(), "10*3 should be 30");
@@ -1013,11 +1013,13 @@ class PanamaFunctionReferenceTest {
     @Test
     @DisplayName("Should throw WasmException for invalid callback ID")
     void shouldThrowForInvalidCallbackId() {
-      final WasmException ex = assertThrows(
-          WasmException.class,
-          () -> PanamaFunctionReference.invokeFunctionReferenceCallback(
-              -999L, new WasmValue[] {}),
-          "Should throw for invalid callback ID");
+      final WasmException ex =
+          assertThrows(
+              WasmException.class,
+              () ->
+                  PanamaFunctionReference.invokeFunctionReferenceCallback(
+                      -999L, new WasmValue[] {}),
+              "Should throw for invalid callback ID");
       assertTrue(
           ex.getMessage().contains("not found"),
           "Error should mention not found: " + ex.getMessage());
@@ -1038,11 +1040,11 @@ class PanamaFunctionReferenceTest {
 
       // After close, the ref is removed from registry, so invokeFunctionReferenceCallback
       // should fail with "not found" since it's no longer in registry
-      final WasmException ex = assertThrows(
-          WasmException.class,
-          () -> PanamaFunctionReference.invokeFunctionReferenceCallback(
-              id, new WasmValue[] {}),
-          "Should throw for closed function reference callback");
+      final WasmException ex =
+          assertThrows(
+              WasmException.class,
+              () -> PanamaFunctionReference.invokeFunctionReferenceCallback(id, new WasmValue[] {}),
+              "Should throw for closed function reference callback");
       LOGGER.info("Closed callback error: " + ex.getMessage());
     }
   }
@@ -1056,8 +1058,7 @@ class PanamaFunctionReferenceTest {
     void shouldReturnGlobalCallbackStub() {
       final MemorySegment stub = PanamaFunctionReference.getGlobalCallbackStub();
       assertNotNull(stub, "Global callback stub should not be null");
-      assertNotEquals(
-          MemorySegment.NULL, stub, "Global callback stub should not be NULL segment");
+      assertNotEquals(MemorySegment.NULL, stub, "Global callback stub should not be NULL segment");
       LOGGER.info("Global callback stub address: 0x" + Long.toHexString(stub.address()));
     }
 
@@ -1080,10 +1081,8 @@ class PanamaFunctionReferenceTest {
     void shouldCreateI64HostFunctionReference() throws WasmException {
       final FunctionType ft =
           FunctionType.of(
-              new WasmValueType[] {WasmValueType.I64},
-              new WasmValueType[] {WasmValueType.I64});
-      final HostFunction hf =
-          (params) -> new WasmValue[] {WasmValue.i64(params[0].asI64() * 2)};
+              new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.I64});
+      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i64(params[0].asI64() * 2)};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
@@ -1098,10 +1097,8 @@ class PanamaFunctionReferenceTest {
     void shouldCreateF32HostFunctionReference() throws WasmException {
       final FunctionType ft =
           FunctionType.of(
-              new WasmValueType[] {WasmValueType.F32},
-              new WasmValueType[] {WasmValueType.F32});
-      final HostFunction hf =
-          (params) -> new WasmValue[] {WasmValue.f32(params[0].asF32() + 1.0f)};
+              new WasmValueType[] {WasmValueType.F32}, new WasmValueType[] {WasmValueType.F32});
+      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.f32(params[0].asF32() + 1.0f)};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
@@ -1116,10 +1113,8 @@ class PanamaFunctionReferenceTest {
     void shouldCreateF64HostFunctionReference() throws WasmException {
       final FunctionType ft =
           FunctionType.of(
-              new WasmValueType[] {WasmValueType.F64},
-              new WasmValueType[] {WasmValueType.F64});
-      final HostFunction hf =
-          (params) -> new WasmValue[] {WasmValue.f64(params[0].asF64() * 0.5)};
+              new WasmValueType[] {WasmValueType.F64}, new WasmValueType[] {WasmValueType.F64});
+      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.f64(params[0].asF64() * 0.5)};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
@@ -1146,8 +1141,7 @@ class PanamaFunctionReferenceTest {
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
 
-      final WasmValue[] results =
-          ref.call(WasmValue.i32(1), WasmValue.i64(2L), WasmValue.f64(3.0));
+      final WasmValue[] results = ref.call(WasmValue.i32(1), WasmValue.i64(2L), WasmValue.f64(3.0));
       assertEquals(6.0, results[0].asF64(), 0.001, "1+2+3.0 should equal 6.0");
       LOGGER.info("Multi-param function result: " + results[0].asF64());
     }

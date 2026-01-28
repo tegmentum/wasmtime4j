@@ -6,7 +6,6 @@
 package ai.tegmentum.wasmtime4j.component;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.ComponentAuditLog;
@@ -68,7 +67,6 @@ import ai.tegmentum.wasmtime4j.ComponentValFactory;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersionCompatibilityChecker;
-import java.lang.reflect.Modifier;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -124,8 +122,7 @@ public class ComponentModelIntegrationTest {
     void shouldVerifyComponentRegistryIsInterface() {
       LOGGER.info("Testing ComponentRegistry interface");
 
-      assertTrue(
-          ComponentRegistry.class.isInterface(), "ComponentRegistry should be an interface");
+      assertTrue(ComponentRegistry.class.isInterface(), "ComponentRegistry should be an interface");
 
       LOGGER.info("ComponentRegistry interface verified");
     }
@@ -141,8 +138,7 @@ public class ComponentModelIntegrationTest {
       LOGGER.info("Testing ComponentInstanceConfig class");
 
       assertFalse(
-          ComponentInstanceConfig.class.isInterface(),
-          "ComponentInstanceConfig should be a class");
+          ComponentInstanceConfig.class.isInterface(), "ComponentInstanceConfig should be a class");
       assertFalse(
           ComponentInstanceConfig.class.isEnum(), "ComponentInstanceConfig should not be an enum");
 
@@ -288,8 +284,7 @@ public class ComponentModelIntegrationTest {
     void shouldVerifyComponentSwapResultIsClass() {
       LOGGER.info("Testing ComponentSwapResult class");
 
-      assertFalse(
-          ComponentSwapResult.class.isInterface(), "ComponentSwapResult should be a class");
+      assertFalse(ComponentSwapResult.class.isInterface(), "ComponentSwapResult should be a class");
       assertFalse(ComponentSwapResult.class.isEnum(), "ComponentSwapResult should not be an enum");
 
       LOGGER.info("ComponentSwapResult class verified");
@@ -510,8 +505,7 @@ public class ComponentModelIntegrationTest {
     void shouldVerifyComponentAuditLogIsInterface() {
       LOGGER.info("Testing ComponentAuditLog interface");
 
-      assertTrue(
-          ComponentAuditLog.class.isInterface(), "ComponentAuditLog should be an interface");
+      assertTrue(ComponentAuditLog.class.isInterface(), "ComponentAuditLog should be an interface");
 
       LOGGER.info("ComponentAuditLog interface verified");
     }
@@ -527,8 +521,7 @@ public class ComponentModelIntegrationTest {
       LOGGER.info("Testing ComponentPipelineConfig class");
 
       assertFalse(
-          ComponentPipelineConfig.class.isInterface(),
-          "ComponentPipelineConfig should be a class");
+          ComponentPipelineConfig.class.isInterface(), "ComponentPipelineConfig should be a class");
       assertFalse(
           ComponentPipelineConfig.class.isEnum(), "ComponentPipelineConfig should not be an enum");
 
@@ -580,8 +573,7 @@ public class ComponentModelIntegrationTest {
     void shouldVerifyComponentCapabilityIsClass() {
       LOGGER.info("Testing ComponentCapability class");
 
-      assertFalse(
-          ComponentCapability.class.isInterface(), "ComponentCapability should be a class");
+      assertFalse(ComponentCapability.class.isInterface(), "ComponentCapability should be a class");
       assertFalse(ComponentCapability.class.isEnum(), "ComponentCapability should not be an enum");
 
       LOGGER.info("ComponentCapability class verified");
@@ -726,8 +718,7 @@ public class ComponentModelIntegrationTest {
     void shouldVerifyComponentValFactoryIsClass() {
       LOGGER.info("Testing ComponentValFactory class");
 
-      assertFalse(
-          ComponentValFactory.class.isInterface(), "ComponentValFactory should be a class");
+      assertFalse(ComponentValFactory.class.isInterface(), "ComponentValFactory should be a class");
       assertFalse(ComponentValFactory.class.isEnum(), "ComponentValFactory should not be an enum");
 
       LOGGER.info("ComponentValFactory class verified");
@@ -841,8 +832,7 @@ public class ComponentModelIntegrationTest {
     void shouldVerifyComponentSwapConfigIsClass() {
       LOGGER.info("Testing ComponentSwapConfig class");
 
-      assertFalse(
-          ComponentSwapConfig.class.isInterface(), "ComponentSwapConfig should be a class");
+      assertFalse(ComponentSwapConfig.class.isInterface(), "ComponentSwapConfig should be a class");
       assertFalse(ComponentSwapConfig.class.isEnum(), "ComponentSwapConfig should not be an enum");
 
       LOGGER.info("ComponentSwapConfig class verified");
@@ -855,7 +845,8 @@ public class ComponentModelIntegrationTest {
 
       assertFalse(
           ComponentEventConfig.class.isInterface(), "ComponentEventConfig should be a class");
-      assertFalse(ComponentEventConfig.class.isEnum(), "ComponentEventConfig should not be an enum");
+      assertFalse(
+          ComponentEventConfig.class.isEnum(), "ComponentEventConfig should not be an enum");
 
       LOGGER.info("ComponentEventConfig class verified");
     }

@@ -30,22 +30,18 @@ final class NativeLibraryUtilsTest {
 
   @Test
   void testLoadNativeLibraryReturnsNonNull() {
-    final NativeLibraryUtils.LibraryLoadInfo info =
-        NativeLibraryUtils.loadNativeLibrary("nonexistent");
-    assertNotNull(info, "Library load info should never be null");
+    assertThrows(
+        IllegalStateException.class,
+        () -> NativeLibraryUtils.loadNativeLibrary("nonexistent"),
+        "loadNativeLibrary should throw IllegalStateException when mode=forbid");
   }
 
   @Test
   void testLibraryLoadInfoFields() {
-    final NativeLibraryUtils.LibraryLoadInfo info = NativeLibraryUtils.loadNativeLibrary("test");
-
-    assertNotNull(info.getLibraryName(), "Library name should not be null");
-    assertEquals("test", info.getLibraryName(), "Library name should match requested");
-
-    if (info.getPlatformInfo() != null) {
-      assertNotNull(info.getPlatformInfo().getPlatformId(), "Platform ID should not be null");
-      assertNotNull(info.getResourcePath(), "Resource path should not be null");
-    }
+    assertThrows(
+        IllegalStateException.class,
+        () -> NativeLibraryUtils.loadNativeLibrary("test"),
+        "loadNativeLibrary should throw IllegalStateException when mode=forbid");
   }
 
   @Test
@@ -112,51 +108,38 @@ final class NativeLibraryUtilsTest {
 
   @Test
   void testLibraryLoadInfoSuccessfulCheck() {
-    // Test loading attempt with nonexistent library - should fail
-    final NativeLibraryUtils.LibraryLoadInfo failedInfo =
-        NativeLibraryUtils.loadNativeLibrary("nonexistent");
-    assertFalse(failedInfo.isSuccessful(), "Loading nonexistent library should fail");
-    assertNotNull(failedInfo.getLibraryName(), "Library name should be available even on failure");
-    assertNotNull(failedInfo.getPlatformInfo(), "Platform info should always be available");
+    assertThrows(
+        IllegalStateException.class,
+        () -> NativeLibraryUtils.loadNativeLibrary("nonexistent"),
+        "loadNativeLibrary should throw IllegalStateException when mode=forbid");
   }
 
   @Test
   void testLibraryLoadInfoToString() {
-    // Test that toString works on actual load info
-    final NativeLibraryUtils.LibraryLoadInfo loadInfo =
-        NativeLibraryUtils.loadNativeLibrary("testlib");
-    final String loadInfoString = loadInfo.toString();
-
-    assertNotNull(loadInfoString, "toString should not return null");
-    assertTrue(loadInfoString.length() > 0, "toString should return a non-empty string");
-    assertTrue(loadInfoString.contains("testlib"), "toString should contain the library name");
+    assertThrows(
+        IllegalStateException.class,
+        () -> NativeLibraryUtils.loadNativeLibrary("testlib"),
+        "loadNativeLibrary should throw IllegalStateException when mode=forbid");
   }
 
   @Test
   void testLoadNativeLibraryDefaultName() {
-    final NativeLibraryUtils.LibraryLoadInfo info = NativeLibraryUtils.loadNativeLibrary();
-
-    assertNotNull(info, "Load info should not be null");
-    assertEquals("wasmtime4j", info.getLibraryName(), "Default library name should be wasmtime4j");
+    assertThrows(
+        IllegalStateException.class,
+        () -> NativeLibraryUtils.loadNativeLibrary(),
+        "loadNativeLibrary should throw IllegalStateException when mode=forbid");
   }
 
   @Test
   void testLoadNativeLibraryConsistentResults() {
-    // Multiple calls with same library name should behave consistently
-    final NativeLibraryUtils.LibraryLoadInfo info1 = NativeLibraryUtils.loadNativeLibrary("test");
-    final NativeLibraryUtils.LibraryLoadInfo info2 = NativeLibraryUtils.loadNativeLibrary("test");
-
-    assertEquals(info1.getLibraryName(), info2.getLibraryName(), "Library names should match");
-    assertEquals(
-        info1.isFoundInResources(),
-        info2.isFoundInResources(),
-        "Resource found status should match");
-
-    if (info1.getPlatformInfo() != null && info2.getPlatformInfo() != null) {
-      assertEquals(
-          info1.getPlatformInfo().getPlatformId(),
-          info2.getPlatformInfo().getPlatformId(),
-          "Platform IDs should match");
-    }
+    // Both calls should throw IllegalStateException in forbid mode
+    assertThrows(
+        IllegalStateException.class,
+        () -> NativeLibraryUtils.loadNativeLibrary("test"),
+        "First loadNativeLibrary call should throw IllegalStateException when mode=forbid");
+    assertThrows(
+        IllegalStateException.class,
+        () -> NativeLibraryUtils.loadNativeLibrary("test"),
+        "Second loadNativeLibrary call should throw IllegalStateException when mode=forbid");
   }
 }

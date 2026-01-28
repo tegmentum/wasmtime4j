@@ -39,8 +39,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Integration tests for Panama CompilationCache.
  *
- * <p>These tests verify the Panama-specific compilation caching capabilities including
- * memory segment-based cache operations, statistics tracking, and cache management.
+ * <p>These tests verify the Panama-specific compilation caching capabilities including memory
+ * segment-based cache operations, statistics tracking, and cache management.
  *
  * @since 1.0.0
  */
@@ -52,23 +52,45 @@ class CompilationCacheIntegrationTest {
 
   /** Simple WebAssembly module for testing (minimal valid module). */
   private static final byte[] SIMPLE_WASM_MODULE = {
-    0x00, 0x61, 0x73, 0x6D, // Magic number \0asm
-    0x01, 0x00, 0x00, 0x00, // Version 1
-    0x01, 0x07, // Type section
+    0x00,
+    0x61,
+    0x73,
+    0x6D, // Magic number \0asm
+    0x01,
+    0x00,
+    0x00,
+    0x00, // Version 1
+    0x01,
+    0x07, // Type section
     0x01, // 1 type
-    0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F, // func (i32, i32) -> i32
-    0x03, 0x02, // Function section
-    0x01, 0x00, // 1 function of type 0
-    0x07, 0x07, // Export section
+    0x60,
+    0x02,
+    0x7F,
+    0x7F,
+    0x01,
+    0x7F, // func (i32, i32) -> i32
+    0x03,
+    0x02, // Function section
+    0x01,
+    0x00, // 1 function of type 0
+    0x07,
+    0x07, // Export section
     0x01, // 1 export
-    0x03, 0x61, 0x64, 0x64, // "add"
-    0x00, 0x00, // func index 0
-    0x0A, 0x09, // Code section
+    0x03,
+    0x61,
+    0x64,
+    0x64, // "add"
+    0x00,
+    0x00, // func index 0
+    0x0A,
+    0x09, // Code section
     0x01, // 1 function body
     0x07, // body size
     0x00, // local count
-    0x20, 0x00, // local.get 0
-    0x20, 0x01, // local.get 1
+    0x20,
+    0x00, // local.get 0
+    0x20,
+    0x01, // local.get 1
     0x6A, // i32.add
     0x0B // end
   };
@@ -222,8 +244,7 @@ class CompilationCacheIntegrationTest {
               0,
               SIMPLE_WASM_MODULE.length);
 
-          MemorySegment loaded =
-              CompilationCache.loadFromCache(loadWasmBytes, options, loadArena);
+          MemorySegment loaded = CompilationCache.loadFromCache(loadWasmBytes, options, loadArena);
 
           // Note: Loading may fail due to verification or other reasons
           // The important thing is that the operation doesn't crash

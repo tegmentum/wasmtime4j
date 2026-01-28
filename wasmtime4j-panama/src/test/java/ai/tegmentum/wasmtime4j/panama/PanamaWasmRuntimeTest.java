@@ -57,8 +57,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("PanamaWasmRuntime Integration Tests")
 class PanamaWasmRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(PanamaWasmRuntimeTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(PanamaWasmRuntimeTest.class.getName());
 
   private static final String SIMPLE_WAT = "(module)";
   private static final String FUNCTION_WAT =
@@ -104,9 +103,7 @@ class PanamaWasmRuntimeTest {
     @Test
     @DisplayName("Should implement WasmRuntime interface")
     void shouldImplementWasmRuntime() {
-      assertTrue(
-          runtime instanceof WasmRuntime,
-          "PanamaWasmRuntime should implement WasmRuntime");
+      assertTrue(runtime instanceof WasmRuntime, "PanamaWasmRuntime should implement WasmRuntime");
       LOGGER.info("PanamaWasmRuntime implements WasmRuntime: true");
     }
 
@@ -114,8 +111,7 @@ class PanamaWasmRuntimeTest {
     @DisplayName("Should implement AutoCloseable interface")
     void shouldImplementAutoCloseable() {
       assertTrue(
-          runtime instanceof AutoCloseable,
-          "PanamaWasmRuntime should implement AutoCloseable");
+          runtime instanceof AutoCloseable, "PanamaWasmRuntime should implement AutoCloseable");
       LOGGER.info("PanamaWasmRuntime implements AutoCloseable: true");
     }
   }
@@ -148,9 +144,7 @@ class PanamaWasmRuntimeTest {
     @DisplayName("Should throw for null config")
     void shouldThrowForNullConfig() {
       assertThrows(
-          Exception.class,
-          () -> runtime.createEngine(null),
-          "Should throw for null config");
+          Exception.class, () -> runtime.createEngine(null), "Should throw for null config");
       LOGGER.info("Correctly threw for null config");
     }
   }
@@ -165,9 +159,7 @@ class PanamaWasmRuntimeTest {
       final ComponentEngine ce = runtime.createComponentEngine();
       resources.add(ce);
       assertNotNull(ce, "Component engine should not be null");
-      assertTrue(
-          ce instanceof PanamaComponentEngine,
-          "Should be PanamaComponentEngine instance");
+      assertTrue(ce instanceof PanamaComponentEngine, "Should be PanamaComponentEngine instance");
       LOGGER.info("Created default component engine: " + ce);
     }
 
@@ -215,10 +207,11 @@ class PanamaWasmRuntimeTest {
       resources.add(engine);
 
       // Minimal valid wasm binary: magic number (\0asm) + version 1
-      final byte[] wasmBytes = new byte[] {
-          0x00, 0x61, 0x73, 0x6d, // magic: \0asm
-          0x01, 0x00, 0x00, 0x00  // version: 1
-      };
+      final byte[] wasmBytes =
+          new byte[] {
+            0x00, 0x61, 0x73, 0x6d, // magic: \0asm
+            0x01, 0x00, 0x00, 0x00 // version: 1
+          };
 
       final Module bytesModule = engine.compileModule(wasmBytes);
       resources.add(bytesModule);
@@ -298,11 +291,8 @@ class PanamaWasmRuntimeTest {
       final Engine engine = runtime.createEngine();
       resources.add(engine);
 
-      final StoreLimits limits = StoreLimits.builder()
-          .memorySize(1048576L)
-          .tableElements(100)
-          .instances(5)
-          .build();
+      final StoreLimits limits =
+          StoreLimits.builder().memorySize(1048576L).tableElements(100).instances(5).build();
 
       final Store store = runtime.createStore(engine, limits);
       resources.add(store);
@@ -314,9 +304,7 @@ class PanamaWasmRuntimeTest {
     @DisplayName("Should throw for null engine in createStore")
     void shouldThrowForNullEngine() {
       assertThrows(
-          Exception.class,
-          () -> runtime.createStore(null),
-          "Should throw for null engine");
+          Exception.class, () -> runtime.createStore(null), "Should throw for null engine");
       LOGGER.info("Correctly threw for null engine");
     }
 
@@ -367,9 +355,7 @@ class PanamaWasmRuntimeTest {
     @DisplayName("Should throw for null engine in createLinker")
     void shouldThrowForNullEngine() {
       assertThrows(
-          Exception.class,
-          () -> runtime.createLinker(null),
-          "Should throw for null engine");
+          Exception.class, () -> runtime.createLinker(null), "Should throw for null engine");
       LOGGER.info("Correctly threw for null engine");
     }
   }
@@ -403,9 +389,7 @@ class PanamaWasmRuntimeTest {
     @DisplayName("Should throw for null module in instantiate")
     void shouldThrowForNullModule() {
       assertThrows(
-          Exception.class,
-          () -> runtime.instantiate(null),
-          "Should throw for null module");
+          Exception.class, () -> runtime.instantiate(null), "Should throw for null module");
       LOGGER.info("Correctly threw for null module");
     }
   }
@@ -419,9 +403,7 @@ class PanamaWasmRuntimeTest {
     void shouldCreateWasiContext() throws WasmException {
       final WasiContext context = runtime.createWasiContext();
       assertNotNull(context, "WASI context should not be null");
-      assertTrue(
-          context instanceof PanamaWasiContext,
-          "Should be PanamaWasiContext instance");
+      assertTrue(context instanceof PanamaWasiContext, "Should be PanamaWasiContext instance");
       LOGGER.info("Created WASI context: " + context);
     }
 
@@ -456,21 +438,22 @@ class PanamaWasmRuntimeTest {
       assertNotNull(info.getRuntimeName(), "Name should not be null");
       assertNotNull(info.getRuntimeVersion(), "Version should not be null");
       assertNotNull(info.getWasmtimeVersion(), "Wasmtime version should not be null");
-      assertEquals(
-          RuntimeType.PANAMA, info.getRuntimeType(),
-          "Runtime type should be PANAMA");
-      LOGGER.info("Runtime info: name=" + info.getRuntimeName()
-          + " version=" + info.getRuntimeVersion()
-          + " wasmtime=" + info.getWasmtimeVersion()
-          + " type=" + info.getRuntimeType());
+      assertEquals(RuntimeType.PANAMA, info.getRuntimeType(), "Runtime type should be PANAMA");
+      LOGGER.info(
+          "Runtime info: name="
+              + info.getRuntimeName()
+              + " version="
+              + info.getRuntimeVersion()
+              + " wasmtime="
+              + info.getWasmtimeVersion()
+              + " type="
+              + info.getRuntimeType());
     }
 
     @Test
     @DisplayName("Should support component model")
     void shouldSupportComponentModel() {
-      assertTrue(
-          runtime.supportsComponentModel(),
-          "Panama runtime should support component model");
+      assertTrue(runtime.supportsComponentModel(), "Panama runtime should support component model");
       LOGGER.info("supportsComponentModel: " + runtime.supportsComponentModel());
     }
 
@@ -631,8 +614,7 @@ class PanamaWasmRuntimeTest {
       final Engine engine = runtime.createEngine();
       resources.add(engine);
 
-      final ai.tegmentum.wasmtime4j.wasi.WasiLinker wasiLinker =
-          runtime.createWasiLinker(engine);
+      final ai.tegmentum.wasmtime4j.wasi.WasiLinker wasiLinker = runtime.createWasiLinker(engine);
       assertNotNull(wasiLinker, "WASI linker should not be null");
       LOGGER.info("Created WASI linker: " + wasiLinker);
     }
@@ -641,9 +623,7 @@ class PanamaWasmRuntimeTest {
     @DisplayName("Should throw for null engine in createWasiLinker")
     void shouldThrowForNullEngineInWasiLinker() {
       assertThrows(
-          Exception.class,
-          () -> runtime.createWasiLinker(null),
-          "Should throw for null engine");
+          Exception.class, () -> runtime.createWasiLinker(null), "Should throw for null engine");
       LOGGER.info("Correctly threw for null engine in createWasiLinker");
     }
   }

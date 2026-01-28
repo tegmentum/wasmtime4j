@@ -831,8 +831,7 @@ class PanamaModuleTest {
       // WAT-compiled modules don't store the original WASM bytes internally,
       // so getWasmBytes() attempts to clone a null field and throws NullPointerException
       assertThrows(NullPointerException.class, module::getWasmBytes);
-      LOGGER.info(
-          "WAT-compiled module correctly throws NullPointerException for getWasmBytes()");
+      LOGGER.info("WAT-compiled module correctly throws NullPointerException for getWasmBytes()");
     }
   }
 

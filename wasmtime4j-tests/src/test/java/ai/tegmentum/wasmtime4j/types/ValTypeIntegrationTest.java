@@ -128,9 +128,22 @@ public class ValTypeIntegrationTest {
       LOGGER.info("Testing ValType static factory methods");
 
       String[] factoryMethods = {
-        "from", "i32", "i64", "f32", "f64", "v128", "funcref", "externref",
-        "anyref", "eqref", "i31ref", "structref", "arrayref", "nullref",
-        "nullfuncref", "nullexternref"
+        "from",
+        "i32",
+        "i64",
+        "f32",
+        "f64",
+        "v128",
+        "funcref",
+        "externref",
+        "anyref",
+        "eqref",
+        "i31ref",
+        "structref",
+        "arrayref",
+        "nullref",
+        "nullfuncref",
+        "nullexternref"
       };
 
       for (String methodName : factoryMethods) {
@@ -403,8 +416,7 @@ public class ValTypeIntegrationTest {
       LOGGER.info("Testing nullable reference type classification");
 
       assertTrue(
-          ValTypes.from(WasmValueType.NULLREF).isNullableReference(),
-          "NULLREF should be nullable");
+          ValTypes.from(WasmValueType.NULLREF).isNullableReference(), "NULLREF should be nullable");
       assertTrue(
           ValTypes.from(WasmValueType.NULLFUNCREF).isNullableReference(),
           "NULLFUNCREF should be nullable");
@@ -541,8 +553,7 @@ public class ValTypeIntegrationTest {
       ValType i32a = ValTypes.i32();
       ValType i32b = ValTypes.i32();
 
-      assertEquals(
-          i32a.hashCode(), i32b.hashCode(), "Equal ValTypes should have same hashCode");
+      assertEquals(i32a.hashCode(), i32b.hashCode(), "Equal ValTypes should have same hashCode");
 
       LOGGER.info("ValType hashCode implementation verified");
     }
@@ -635,9 +646,7 @@ public class ValTypeIntegrationTest {
 
         // A type can't be both numeric and reference
         if (valType.isNumeric()) {
-          assertFalse(
-              valType.isReference(),
-              wasmType + " cannot be both numeric and reference");
+          assertFalse(valType.isReference(), wasmType + " cannot be both numeric and reference");
         }
 
         // A type can't be both vector and something else (except maybe reference in future)
@@ -649,28 +658,23 @@ public class ValTypeIntegrationTest {
 
         // Integer implies numeric
         if (valType.isInteger()) {
-          assertTrue(
-              valType.isNumeric(), wasmType + " integer should imply numeric");
+          assertTrue(valType.isNumeric(), wasmType + " integer should imply numeric");
         }
 
         // Float implies numeric
         if (valType.isFloat()) {
-          assertTrue(
-              valType.isNumeric(), wasmType + " float should imply numeric");
+          assertTrue(valType.isNumeric(), wasmType + " float should imply numeric");
         }
 
         // GC reference implies reference
         if (valType.isGcReference()) {
-          assertTrue(
-              valType.isReference(), wasmType + " GC reference should imply reference");
+          assertTrue(valType.isReference(), wasmType + " GC reference should imply reference");
         }
 
         // Nullable reference implies reference and GC reference
         if (valType.isNullableReference()) {
-          assertTrue(
-              valType.isReference(), wasmType + " nullable should imply reference");
-          assertTrue(
-              valType.isGcReference(), wasmType + " nullable should imply GC reference");
+          assertTrue(valType.isReference(), wasmType + " nullable should imply reference");
+          assertTrue(valType.isGcReference(), wasmType + " nullable should imply GC reference");
         }
       }
 

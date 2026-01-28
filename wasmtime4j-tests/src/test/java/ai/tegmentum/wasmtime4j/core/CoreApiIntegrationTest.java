@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.FrameInfo;
-import ai.tegmentum.wasmtime4j.FrameSymbol;
 import ai.tegmentum.wasmtime4j.FunctionContext;
 import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
@@ -224,8 +223,7 @@ public class CoreApiIntegrationTest {
               "scalePool", ai.tegmentum.wasmtime4j.Module.class, int.class),
           "scalePool should exist");
 
-      assertNotNull(
-          InstanceManager.class.getMethod("balanceLoad"), "balanceLoad should exist");
+      assertNotNull(InstanceManager.class.getMethod("balanceLoad"), "balanceLoad should exist");
 
       LOGGER.info("InstanceManager scaling methods verified");
     }
@@ -464,7 +462,8 @@ public class CoreApiIntegrationTest {
     void shouldHaveWorkingOptimizationInfo() {
       LOGGER.info("Testing FunctionContext optimization info");
 
-      FunctionType funcType = FunctionType.of(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+      FunctionType funcType =
+          FunctionType.of(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
       FunctionContext ctx = FunctionContext.create("test", 0, funcType);
 
       FunctionContext.FunctionOptimization opt = ctx.getOptimization();
@@ -515,8 +514,7 @@ public class CoreApiIntegrationTest {
     void shouldVerifyExportDescriptorIsInterface() {
       LOGGER.info("Testing ExportDescriptor interface structure");
 
-      assertTrue(
-          ExportDescriptor.class.isInterface(), "ExportDescriptor should be an interface");
+      assertTrue(ExportDescriptor.class.isInterface(), "ExportDescriptor should be an interface");
 
       LOGGER.info("ExportDescriptor interface structure verified");
     }
@@ -570,8 +568,7 @@ public class CoreApiIntegrationTest {
     void shouldVerifyImportDescriptorIsInterface() {
       LOGGER.info("Testing ImportDescriptor interface structure");
 
-      assertTrue(
-          ImportDescriptor.class.isInterface(), "ImportDescriptor should be an interface");
+      assertTrue(ImportDescriptor.class.isInterface(), "ImportDescriptor should be an interface");
 
       LOGGER.info("ImportDescriptor interface structure verified");
     }
@@ -708,8 +705,7 @@ public class CoreApiIntegrationTest {
       LOGGER.info("Testing WasmExecutionContext interface structure");
 
       assertTrue(
-          WasmExecutionContext.class.isInterface(),
-          "WasmExecutionContext should be an interface");
+          WasmExecutionContext.class.isInterface(), "WasmExecutionContext should be an interface");
 
       LOGGER.info("WasmExecutionContext interface structure verified");
     }

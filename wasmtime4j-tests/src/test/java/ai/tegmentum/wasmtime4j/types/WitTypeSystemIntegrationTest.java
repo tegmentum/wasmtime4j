@@ -214,8 +214,7 @@ public class WitTypeSystemIntegrationTest {
       assertEquals(WitPrimitiveType.U8, WitPrimitiveType.fromString("u8"), "u8 -> U8");
       assertEquals(WitPrimitiveType.S32, WitPrimitiveType.fromString("s32"), "s32 -> S32");
       assertEquals(WitPrimitiveType.S32, WitPrimitiveType.fromString("i32"), "i32 -> S32");
-      assertEquals(
-          WitPrimitiveType.FLOAT32, WitPrimitiveType.fromString("f32"), "f32 -> FLOAT32");
+      assertEquals(WitPrimitiveType.FLOAT32, WitPrimitiveType.fromString("f32"), "f32 -> FLOAT32");
       assertEquals(
           WitPrimitiveType.FLOAT32, WitPrimitiveType.fromString("float32"), "float32 -> FLOAT32");
       assertEquals(WitPrimitiveType.CHAR, WitPrimitiveType.fromString("char"), "char -> CHAR");
@@ -411,8 +410,7 @@ public class WitTypeSystemIntegrationTest {
 
       WitType intType = WitType.createS32();
       WitTypeKind kind =
-          WitTypeKind.variant(
-              Map.of("some", Optional.of(intType), "none", Optional.empty()));
+          WitTypeKind.variant(Map.of("some", Optional.of(intType), "none", Optional.empty()));
 
       assertNotNull(kind, "Variant kind should not be null");
       assertFalse(kind.isPrimitive(), "Should not be primitive");
@@ -506,8 +504,7 @@ public class WitTypeSystemIntegrationTest {
     void shouldCreateTupleTypeKind() {
       LOGGER.info("Testing WitTypeKind.tuple()");
 
-      WitTypeKind kind =
-          WitTypeKind.tuple(List.of(WitType.createS32(), WitType.createString()));
+      WitTypeKind kind = WitTypeKind.tuple(List.of(WitType.createS32(), WitType.createString()));
 
       assertNotNull(kind, "Tuple kind should not be null");
       assertFalse(kind.isPrimitive(), "Should not be primitive");
@@ -723,8 +720,7 @@ public class WitTypeSystemIntegrationTest {
       assertNotNull(voidResult, "Void result type should not be null");
 
       // Test with empty error type
-      WitType infallibleResult =
-          WitType.result(Optional.of(WitType.createS32()), Optional.empty());
+      WitType infallibleResult = WitType.result(Optional.of(WitType.createS32()), Optional.empty());
       assertNotNull(infallibleResult, "Infallible result type should not be null");
 
       LOGGER.info("WitType.result() verified");
@@ -767,8 +763,7 @@ public class WitTypeSystemIntegrationTest {
       assertTrue(fileHandle.isResource(), "Resource should be resource");
 
       Map<String, Object> metadata = fileHandle.getMetadata();
-      assertEquals(
-          "wasi:filesystem/file", metadata.get("resourceId"), "Resource ID should match");
+      assertEquals("wasi:filesystem/file", metadata.get("resourceId"), "Resource ID should match");
 
       LOGGER.info("WitType.resource() verified");
     }
@@ -903,8 +898,7 @@ public class WitTypeSystemIntegrationTest {
       WitType outerOption = WitType.option(innerOption);
 
       assertNotNull(outerOption, "Nested option should not be null");
-      assertEquals(
-          "option<option<s32>>", outerOption.getName(), "Name should reflect nesting");
+      assertEquals("option<option<s32>>", outerOption.getName(), "Name should reflect nesting");
 
       LOGGER.info("Option of option type verified");
     }
@@ -914,7 +908,8 @@ public class WitTypeSystemIntegrationTest {
     void shouldCreateComplexRecordWithNestedTypes() {
       LOGGER.info("Testing complex record type");
 
-      WitType point = WitType.record("point", Map.of("x", WitType.createS32(), "y", WitType.createS32()));
+      WitType point =
+          WitType.record("point", Map.of("x", WitType.createS32(), "y", WitType.createS32()));
 
       WitType line =
           WitType.record(
@@ -956,7 +951,8 @@ public class WitTypeSystemIntegrationTest {
       LOGGER.info("Testing result with complex types");
 
       WitType okType =
-          WitType.record("success", Map.of("value", WitType.createS32(), "message", WitType.createString()));
+          WitType.record(
+              "success", Map.of("value", WitType.createS32(), "message", WitType.createString()));
 
       WitType errType =
           WitType.variant(

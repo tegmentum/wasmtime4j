@@ -310,8 +310,7 @@ class AdvancedArenaManagerIntegrationTest {
       long afterRelease = manager.getCurrentMemoryUsage();
 
       // Memory usage should decrease after release
-      assertTrue(
-          afterRelease <= afterAlloc, "Memory usage should not increase after release");
+      assertTrue(afterRelease <= afterAlloc, "Memory usage should not increase after release");
 
       LOGGER.info(
           "Memory: initial="

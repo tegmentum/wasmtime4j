@@ -143,7 +143,7 @@ public class SystemLoadLibraryBaselineBenchmark {
     // Test common resource paths that might exist
     final String[] resourcePaths = {
       "/META-INF/MANIFEST.MF",
-      "/native/" + platformInfo.getPlatformId() + "/" + TEST_LIBRARY_NAME,
+      "/natives/" + platformInfo.getPlatformId() + "/" + TEST_LIBRARY_NAME,
       "/lib/" + platformInfo.getLibraryFileName(TEST_LIBRARY_NAME),
       "/nonexistent/path/test.so"
     };
@@ -223,7 +223,7 @@ public class SystemLoadLibraryBaselineBenchmark {
 
     // Operations similar to those in library loading
     final String fileName = platformInfo.getLibraryFileName(libraryName);
-    final String resourcePath = "/native/" + platformId + "/" + fileName;
+    final String resourcePath = "/natives/" + platformId + "/" + fileName;
     final String normalizedPath = resourcePath.replaceAll("//", "/");
     final String tempFileName = "temp-" + libraryName + "-" + System.nanoTime();
 
@@ -310,7 +310,7 @@ public class SystemLoadLibraryBaselineBenchmark {
     final String fileName = platform.getLibraryFileName(libraryName);
 
     // Step 3: Generate resource path
-    final String resourcePath = "/native/" + platform.getPlatformId() + "/" + fileName;
+    final String resourcePath = "/natives/" + platform.getPlatformId() + "/" + fileName;
 
     // Step 4: Try to find resource
     final InputStream stream = classLoader.getResourceAsStream(resourcePath);

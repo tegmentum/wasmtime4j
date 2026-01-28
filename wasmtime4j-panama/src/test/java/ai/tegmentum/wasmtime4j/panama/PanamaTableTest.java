@@ -125,7 +125,8 @@ class PanamaTableTest {
   @DisplayName("Constructor with instance: null native pointer should throw")
   void testConstructorWithInstanceNullNativePointer() {
     final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> new PanamaTable(null, (PanamaInstance) null));
+        assertThrows(
+            IllegalArgumentException.class, () -> new PanamaTable(null, (PanamaInstance) null));
     assertThat(exception.getMessage()).contains("Native table pointer cannot be null");
   }
 
@@ -239,10 +240,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("getSize should reflect growth")
     void shouldReflectGrowth() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 3 20 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 3 20 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
       assertEquals(3, table.getSize(), "Initial size should be 3");
@@ -274,10 +272,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("getMaxSize for bounded table should return max")
     void shouldReturnMaxForBounded() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 5 20 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 5 20 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
       final int maxSize = table.getMaxSize();
@@ -305,10 +300,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("getTableType should have correct minimum")
     void shouldHaveCorrectMinimum() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 8 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 8 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
       final TableType tableType = table.getTableType();
@@ -362,10 +354,7 @@ class PanamaTableTest {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
       // Table has 5 elements (indices 0-4), index 5 is out of bounds
-      assertThrows(
-          Exception.class,
-          () -> table.get(100),
-          "Out-of-bounds index should throw");
+      assertThrows(Exception.class, () -> table.get(100), "Out-of-bounds index should throw");
     }
 
     @Test
@@ -391,9 +380,7 @@ class PanamaTableTest {
     void shouldSetNullValue() throws Exception {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
-      assertDoesNotThrow(
-          () -> table.set(0, null),
-          "Setting null value should not throw");
+      assertDoesNotThrow(() -> table.set(0, null), "Setting null value should not throw");
       LOGGER.info("Set table element to null successfully");
     }
 
@@ -413,10 +400,7 @@ class PanamaTableTest {
     void shouldThrowForOutOfBoundsIndex() throws Exception {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
-      assertThrows(
-          Exception.class,
-          () -> table.set(100, null),
-          "Out-of-bounds index should throw");
+      assertThrows(Exception.class, () -> table.set(100, null), "Out-of-bounds index should throw");
     }
 
     @Test
@@ -440,10 +424,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("grow should return previous size on success")
     void shouldReturnPreviousSizeOnSuccess() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 3 10 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 3 10 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
       final int oldSize = table.grow(2, null);
@@ -454,10 +435,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("grow by zero should be a no-op returning current size")
     void shouldReturnCurrentSizeForZeroGrow() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 5 10 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 5 10 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
       final int oldSize = table.grow(0, null);
@@ -479,10 +457,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("grow beyond max should return -1")
     void shouldReturnNegativeOneWhenExceedingMax() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 5 6 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 5 6 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
       // Table is 5 with max 6, trying to grow by 2 should fail
@@ -494,10 +469,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("grow to exact max should succeed")
     void shouldSucceedGrowingToExactMax() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 5 7 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 5 7 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
       final int oldSize = table.grow(2, null);
@@ -517,9 +489,7 @@ class PanamaTableTest {
     void shouldFillWithNull() throws Exception {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
-      assertDoesNotThrow(
-          () -> table.fill(0, 3, null),
-          "Filling with null should not throw");
+      assertDoesNotThrow(() -> table.fill(0, 3, null), "Filling with null should not throw");
       LOGGER.info("Filled table range [0, 3) with null");
     }
 
@@ -528,9 +498,7 @@ class PanamaTableTest {
     void shouldBeNoOpForZeroCount() throws Exception {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
-      assertDoesNotThrow(
-          () -> table.fill(0, 0, null),
-          "Fill with zero count should not throw");
+      assertDoesNotThrow(() -> table.fill(0, 0, null), "Fill with zero count should not throw");
     }
 
     @Test
@@ -560,9 +528,7 @@ class PanamaTableTest {
     void shouldDelegateFromLongOverload() throws Exception {
       final PanamaInstance instance = createTableTestInstance();
       final PanamaTable table = (PanamaTable) getTable(instance);
-      assertDoesNotThrow(
-          () -> table.fill(0L, null, 2L),
-          "Long overload fill should not throw");
+      assertDoesNotThrow(() -> table.fill(0L, null, 2L), "Long overload fill should not throw");
     }
 
     @Test
@@ -599,9 +565,7 @@ class PanamaTableTest {
     void shouldBeNoOpForZeroCount() throws Exception {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
-      assertDoesNotThrow(
-          () -> table.copy(0, 0, 0),
-          "Copy with zero count should not throw");
+      assertDoesNotThrow(() -> table.copy(0, 0, 0), "Copy with zero count should not throw");
     }
 
     @Test
@@ -643,9 +607,7 @@ class PanamaTableTest {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
       // Copy 2 elements from index 0 to index 2 within the same table
-      assertDoesNotThrow(
-          () -> table.copy(2, 0, 2),
-          "Self-copy within bounds should not throw");
+      assertDoesNotThrow(() -> table.copy(2, 0, 2), "Self-copy within bounds should not throw");
       LOGGER.info("Self-copy succeeded");
     }
 
@@ -666,8 +628,7 @@ class PanamaTableTest {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
       assertDoesNotThrow(
-          () -> table.copy(0, table, 0, 0),
-          "Cross-table copy with zero count should not throw");
+          () -> table.copy(0, table, 0, 0), "Cross-table copy with zero count should not throw");
     }
 
     @Test
@@ -715,9 +676,7 @@ class PanamaTableTest {
     void shouldBeNoOpForZeroCount() throws Exception {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
-      assertDoesNotThrow(
-          () -> table.init(0, 0, 0, 0),
-          "Init with zero count should not throw");
+      assertDoesNotThrow(() -> table.init(0, 0, 0, 0), "Init with zero count should not throw");
     }
 
     @Test
@@ -910,9 +869,7 @@ class PanamaTableTest {
       final WasmValueType typeBefore = table.getType();
       table.close();
       assertEquals(
-          typeBefore,
-          table.getType(),
-          "getType should return cached value even after close");
+          typeBefore, table.getType(), "getType should return cached value even after close");
     }
 
     @Test
@@ -982,10 +939,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("growAsync should complete successfully")
     void shouldCompleteSuccessfully() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 3 10 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 3 10 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final PanamaTable table = (PanamaTable) getTable(instance);
       final CompletableFuture<Long> future = table.growAsync(2L, null);
@@ -1006,10 +960,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("grow then get on new elements should work")
     void shouldGrowThenGet() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 2 10 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 2 10 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
       assertEquals(2, table.getSize(), "Initial size should be 2");
@@ -1021,8 +972,7 @@ class PanamaTableTest {
       for (int i = 0; i < 5; i++) {
         final int idx = i;
         assertDoesNotThrow(
-            () -> table.get(idx),
-            "get at index " + idx + " after grow should not throw");
+            () -> table.get(idx), "get at index " + idx + " after grow should not throw");
       }
     }
 
@@ -1059,10 +1009,7 @@ class PanamaTableTest {
     @Test
     @DisplayName("multiple grows should accumulate")
     void shouldAccumulateGrows() throws Exception {
-      final String wat =
-          "(module\n"
-              + "  (table (export \"table\") 1 20 funcref)\n"
-              + ")";
+      final String wat = "(module\n" + "  (table (export \"table\") 1 20 funcref)\n" + ")";
       final PanamaInstance instance = createInstanceFromWat(wat);
       final WasmTable table = getTable(instance);
 

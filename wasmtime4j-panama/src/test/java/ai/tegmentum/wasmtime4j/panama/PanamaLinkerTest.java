@@ -137,8 +137,10 @@ class PanamaLinkerTest {
       final PanamaEngine closedEngine = new PanamaEngine();
       closedEngine.close();
 
-      assertThrows(Exception.class, () -> new PanamaLinker<>(closedEngine));
-      LOGGER.info("Correctly rejected closed engine");
+      final IllegalStateException ex =
+          assertThrows(IllegalStateException.class, () -> new PanamaLinker<>(closedEngine));
+      assertThat(ex.getMessage()).contains("closed");
+      LOGGER.info("Correctly rejected closed engine: " + ex.getMessage());
     }
 
     @Test
@@ -355,9 +357,7 @@ class PanamaLinkerTest {
     void shouldDefineHostFunction() throws Exception {
       final PanamaLinker<?> linker = createLinker();
       final FunctionType funcType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {});
+          new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final HostFunction impl = params -> new WasmValue[0];
 
       assertDoesNotThrow(() -> linker.defineHostFunction("env", "log", funcType, impl));
@@ -371,9 +371,7 @@ class PanamaLinkerTest {
 
       // Define the host function that the module imports
       final FunctionType funcType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {});
+          new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final HostFunction impl = params -> new WasmValue[0];
       linker.defineHostFunction("env", "log", funcType, impl);
 
@@ -402,8 +400,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
       final PanamaModule module = compileWat(SIMPLE_MODULE_WAT);
 
-      assertThrows(
-          IllegalArgumentException.class, () -> linker.instantiate(null, module));
+      assertThrows(IllegalArgumentException.class, () -> linker.instantiate(null, module));
       LOGGER.info("Correctly rejected null store");
     }
 
@@ -413,8 +410,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
       final PanamaStore store = createStore();
 
-      assertThrows(
-          IllegalArgumentException.class, () -> linker.instantiate(store, null));
+      assertThrows(IllegalArgumentException.class, () -> linker.instantiate(store, null));
       LOGGER.info("Correctly rejected null module");
     }
 
@@ -561,9 +557,7 @@ class PanamaLinkerTest {
     void shouldReturnTrueAfterDefine() throws Exception {
       final PanamaLinker<?> linker = createLinker();
       final FunctionType funcType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {});
+          new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final HostFunction impl = params -> new WasmValue[0];
       linker.defineHostFunction("env", "log", funcType, impl);
 
@@ -594,9 +588,7 @@ class PanamaLinkerTest {
     void shouldReturnRegistryWithDefinedImports() throws Exception {
       final PanamaLinker<?> linker = createLinker();
       final FunctionType funcType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {});
+          new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       linker.defineHostFunction("env", "log", funcType, params -> new WasmValue[0]);
 
       final List<ImportInfo> registry = linker.getImportRegistry();
@@ -609,9 +601,7 @@ class PanamaLinkerTest {
     void shouldReturnIterableDefinitions() throws Exception {
       final PanamaLinker<?> linker = createLinker();
       final FunctionType funcType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {});
+          new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       linker.defineHostFunction("env", "log", funcType, params -> new WasmValue[0]);
 
       final Iterable<Linker.LinkerDefinition> defs = linker.iter();
@@ -649,9 +639,7 @@ class PanamaLinkerTest {
     void shouldRejectEmptyModules() throws Exception {
       final PanamaLinker<?> linker = createLinker();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.resolveDependencies());
+      assertThrows(IllegalArgumentException.class, () -> linker.resolveDependencies());
       LOGGER.info("Correctly rejected empty modules for dependency resolution");
     }
 
@@ -702,8 +690,7 @@ class PanamaLinkerTest {
       final PanamaModule module = compileWat(SIMPLE_MODULE_WAT);
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineUnknownImportsAsTraps(null, module));
+          IllegalArgumentException.class, () -> linker.defineUnknownImportsAsTraps(null, module));
       LOGGER.info("Correctly rejected null store for defineUnknownImportsAsTraps");
     }
 
@@ -714,8 +701,7 @@ class PanamaLinkerTest {
       final PanamaStore store = createStore();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineUnknownImportsAsTraps(store, null));
+          IllegalArgumentException.class, () -> linker.defineUnknownImportsAsTraps(store, null));
       LOGGER.info("Correctly rejected null module for defineUnknownImportsAsTraps");
     }
 
@@ -726,10 +712,10 @@ class PanamaLinkerTest {
       final PanamaModule module = compileWat(IMPORT_MODULE_WAT);
       final PanamaStore store = createStore();
 
-      // Native function wasmtime4j_panama_linker_define_unknown_imports_as_traps not yet implemented
+      // Native function wasmtime4j_panama_linker_define_unknown_imports_as_traps not yet
+      // implemented
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineUnknownImportsAsTraps(store, module));
+          IllegalArgumentException.class, () -> linker.defineUnknownImportsAsTraps(store, module));
       LOGGER.info("defineUnknownImportsAsTraps correctly throws for unimplemented native");
     }
 
@@ -784,8 +770,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.alias(null, "func", "other", "func"));
+          IllegalArgumentException.class, () -> linker.alias(null, "func", "other", "func"));
       LOGGER.info("Correctly rejected null from module name");
     }
 
@@ -795,8 +780,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.alias("env", null, "other", "func"));
+          IllegalArgumentException.class, () -> linker.alias("env", null, "other", "func"));
       LOGGER.info("Correctly rejected null from name");
     }
 
@@ -805,9 +789,7 @@ class PanamaLinkerTest {
     void shouldRejectNullToModuleName() throws Exception {
       final PanamaLinker<?> linker = createLinker();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.alias("env", "func", null, "func"));
+      assertThrows(IllegalArgumentException.class, () -> linker.alias("env", "func", null, "func"));
       LOGGER.info("Correctly rejected null to module name");
     }
 
@@ -817,8 +799,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.alias("env", "func", "other", null));
+          IllegalArgumentException.class, () -> linker.alias("env", "func", "other", null));
       LOGGER.info("Correctly rejected null to name");
     }
   }
@@ -838,9 +819,7 @@ class PanamaLinkerTest {
       final Instance instance = linker.instantiate(store, module);
       resources.add(instance);
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineInstance(null, instance));
+      assertThrows(IllegalArgumentException.class, () -> linker.defineInstance(null, instance));
       LOGGER.info("Correctly rejected null module name for defineInstance");
     }
 
@@ -849,9 +828,7 @@ class PanamaLinkerTest {
     void shouldRejectNullInstance() throws Exception {
       final PanamaLinker<?> linker = createLinker();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineInstance("test", null));
+      assertThrows(IllegalArgumentException.class, () -> linker.defineInstance("test", null));
       LOGGER.info("Correctly rejected null instance for defineInstance");
     }
 
@@ -919,9 +896,7 @@ class PanamaLinkerTest {
       final PanamaStore store = createStore();
 
       // defineName checks parameters before reaching the unimplemented body
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineName(store, "test", null));
+      assertThrows(IllegalArgumentException.class, () -> linker.defineName(store, "test", null));
       LOGGER.info("defineName correctly rejects null extern");
     }
   }
@@ -937,9 +912,7 @@ class PanamaLinkerTest {
     void shouldRejectNullStore() throws Exception {
       final PanamaLinker<?> linker = createLinker();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.getByImport(null, "env", "func"));
+      assertThrows(IllegalArgumentException.class, () -> linker.getByImport(null, "env", "func"));
       LOGGER.info("Correctly rejected null store for getByImport");
     }
 
@@ -949,9 +922,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
       final PanamaStore store = createStore();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.getByImport(store, null, "func"));
+      assertThrows(IllegalArgumentException.class, () -> linker.getByImport(store, null, "func"));
       LOGGER.info("Correctly rejected null module name for getByImport");
     }
 
@@ -961,9 +932,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
       final PanamaStore store = createStore();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.getByImport(store, "env", null));
+      assertThrows(IllegalArgumentException.class, () -> linker.getByImport(store, "env", null));
       LOGGER.info("Correctly rejected null name for getByImport");
     }
   }
@@ -979,9 +948,7 @@ class PanamaLinkerTest {
     void shouldRejectNullStore() throws Exception {
       final PanamaLinker<?> linker = createLinker();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.getDefault(null, "module"));
+      assertThrows(IllegalArgumentException.class, () -> linker.getDefault(null, "module"));
       LOGGER.info("Correctly rejected null store for getDefault");
     }
 
@@ -991,9 +958,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
       final PanamaStore store = createStore();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.getDefault(store, null));
+      assertThrows(IllegalArgumentException.class, () -> linker.getDefault(store, null));
       LOGGER.info("Correctly rejected null module name for getDefault");
     }
   }
@@ -1010,8 +975,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineTable(null, "env", "table", null));
+          IllegalArgumentException.class, () -> linker.defineTable(null, "env", "table", null));
       LOGGER.info("defineTable correctly rejected null store");
     }
 
@@ -1022,8 +986,7 @@ class PanamaLinkerTest {
       final PanamaStore store = createStore();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineTable(store, null, "table", null));
+          IllegalArgumentException.class, () -> linker.defineTable(store, null, "table", null));
       LOGGER.info("defineTable correctly rejected null module name");
     }
 
@@ -1033,8 +996,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineGlobal(null, "env", "g", null));
+          IllegalArgumentException.class, () -> linker.defineGlobal(null, "env", "g", null));
       LOGGER.info("defineGlobal correctly rejected null store");
     }
 
@@ -1045,8 +1007,7 @@ class PanamaLinkerTest {
       final PanamaStore store = createStore();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineGlobal(store, null, "g", null));
+          IllegalArgumentException.class, () -> linker.defineGlobal(store, null, "g", null));
       LOGGER.info("defineGlobal correctly rejected null module name");
     }
 
@@ -1056,8 +1017,7 @@ class PanamaLinkerTest {
       final PanamaLinker<?> linker = createLinker();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineMemory(null, "env", "memory", null));
+          IllegalArgumentException.class, () -> linker.defineMemory(null, "env", "memory", null));
       LOGGER.info("defineMemory correctly rejected null store");
     }
 
@@ -1068,8 +1028,7 @@ class PanamaLinkerTest {
       final PanamaStore store = createStore();
 
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineMemory(store, null, "memory", null));
+          IllegalArgumentException.class, () -> linker.defineMemory(store, null, "memory", null));
       LOGGER.info("defineMemory correctly rejected null module name");
     }
   }
