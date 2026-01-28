@@ -59,9 +59,7 @@ class WasiNioIntegrationTest {
    */
   private Class<?> loadClassWithoutInit() throws ClassNotFoundException {
     return Class.forName(
-        "ai.tegmentum.wasmtime4j.jni.wasi.WasiNioIntegration",
-        false,
-        getClass().getClassLoader());
+        "ai.tegmentum.wasmtime4j.jni.wasi.WasiNioIntegration", false, getClass().getClassLoader());
   }
 
   @Nested
@@ -325,8 +323,7 @@ class WasiNioIntegrationTest {
       final Field field = clazz.getDeclaredField("MAX_MEMORY_MAP_SIZE");
 
       assertNotNull(field, "MAX_MEMORY_MAP_SIZE field should exist");
-      assertTrue(
-          Modifier.isPrivate(field.getModifiers()), "MAX_MEMORY_MAP_SIZE should be private");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "MAX_MEMORY_MAP_SIZE should be private");
       assertTrue(Modifier.isStatic(field.getModifiers()), "MAX_MEMORY_MAP_SIZE should be static");
       assertTrue(Modifier.isFinal(field.getModifiers()), "MAX_MEMORY_MAP_SIZE should be final");
       assertEquals(int.class, field.getType(), "MAX_MEMORY_MAP_SIZE should be int type");
@@ -391,7 +388,8 @@ class WasiNioIntegrationTest {
         }
       }
 
-      assertTrue(asyncMethodCount >= 2, "Should have at least 2 async methods (asyncRead, asyncWrite)");
+      assertTrue(
+          asyncMethodCount >= 2, "Should have at least 2 async methods (asyncRead, asyncWrite)");
       LOGGER.info("Async method count verified: " + asyncMethodCount);
     }
   }

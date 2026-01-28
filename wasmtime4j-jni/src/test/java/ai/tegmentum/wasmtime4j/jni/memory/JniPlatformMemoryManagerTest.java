@@ -318,8 +318,7 @@ class JniPlatformMemoryManagerTest {
       for (final Class<?> innerClass : declaredClasses) {
         if (innerClass.getSimpleName().equals("Config")) {
           foundConfig = true;
-          assertTrue(
-              Modifier.isStatic(innerClass.getModifiers()), "Config should be static");
+          assertTrue(Modifier.isStatic(innerClass.getModifiers()), "Config should be static");
           assertTrue(Modifier.isFinal(innerClass.getModifiers()), "Config should be final");
           assertTrue(Modifier.isPublic(innerClass.getModifiers()), "Config should be public");
           LOGGER.info("Found Config class: " + innerClass.getName());
@@ -342,8 +341,7 @@ class JniPlatformMemoryManagerTest {
       for (final Class<?> innerClass : declaredClasses) {
         if (innerClass.getSimpleName().equals("MemoryStats")) {
           foundMemoryStats = true;
-          assertTrue(
-              Modifier.isStatic(innerClass.getModifiers()), "MemoryStats should be static");
+          assertTrue(Modifier.isStatic(innerClass.getModifiers()), "MemoryStats should be static");
           assertTrue(Modifier.isFinal(innerClass.getModifiers()), "MemoryStats should be final");
           assertTrue(Modifier.isPublic(innerClass.getModifiers()), "MemoryStats should be public");
           LOGGER.info("Found MemoryStats class: " + innerClass.getName());
@@ -366,12 +364,9 @@ class JniPlatformMemoryManagerTest {
       for (final Class<?> innerClass : declaredClasses) {
         if (innerClass.getSimpleName().equals("PlatformInfo")) {
           foundPlatformInfo = true;
-          assertTrue(
-              Modifier.isStatic(innerClass.getModifiers()), "PlatformInfo should be static");
-          assertTrue(
-              Modifier.isFinal(innerClass.getModifiers()), "PlatformInfo should be final");
-          assertTrue(
-              Modifier.isPublic(innerClass.getModifiers()), "PlatformInfo should be public");
+          assertTrue(Modifier.isStatic(innerClass.getModifiers()), "PlatformInfo should be static");
+          assertTrue(Modifier.isFinal(innerClass.getModifiers()), "PlatformInfo should be final");
+          assertTrue(Modifier.isPublic(innerClass.getModifiers()), "PlatformInfo should be public");
           LOGGER.info("Found PlatformInfo class: " + innerClass.getName());
           break;
         }
@@ -394,8 +389,7 @@ class JniPlatformMemoryManagerTest {
           foundAllocationInfo = true;
           assertTrue(
               Modifier.isStatic(innerClass.getModifiers()), "AllocationInfo should be static");
-          assertTrue(
-              Modifier.isFinal(innerClass.getModifiers()), "AllocationInfo should be final");
+          assertTrue(Modifier.isFinal(innerClass.getModifiers()), "AllocationInfo should be final");
           assertTrue(
               Modifier.isPublic(innerClass.getModifiers()), "AllocationInfo should be public");
           LOGGER.info("Found AllocationInfo class: " + innerClass.getName());
@@ -418,8 +412,7 @@ class JniPlatformMemoryManagerTest {
       for (final Class<?> innerClass : declaredClasses) {
         if (innerClass.getSimpleName().equals("MemoryLeak")) {
           foundMemoryLeak = true;
-          assertTrue(
-              Modifier.isStatic(innerClass.getModifiers()), "MemoryLeak should be static");
+          assertTrue(Modifier.isStatic(innerClass.getModifiers()), "MemoryLeak should be static");
           assertTrue(Modifier.isFinal(innerClass.getModifiers()), "MemoryLeak should be final");
           assertTrue(Modifier.isPublic(innerClass.getModifiers()), "MemoryLeak should be public");
           LOGGER.info("Found MemoryLeak class: " + innerClass.getName());

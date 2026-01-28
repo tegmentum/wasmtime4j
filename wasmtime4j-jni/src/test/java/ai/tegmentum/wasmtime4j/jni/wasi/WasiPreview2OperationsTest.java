@@ -28,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
@@ -70,8 +69,7 @@ class WasiPreview2OperationsTest {
     void shouldBeFinalClass() throws ClassNotFoundException {
       LOGGER.info("Testing WasiPreview2Operations class modifiers");
       final Class<?> clazz = loadClassWithoutInit();
-      assertTrue(
-          Modifier.isFinal(clazz.getModifiers()), "WasiPreview2Operations should be final");
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "WasiPreview2Operations should be final");
       LOGGER.info("WasiPreview2Operations is correctly marked as final");
     }
 
@@ -178,7 +176,9 @@ class WasiPreview2OperationsTest {
 
       assertNotNull(method, "readAsync method should exist");
       assertEquals(
-          CompletableFuture.class, method.getReturnType(), "readAsync should return CompletableFuture");
+          CompletableFuture.class,
+          method.getReturnType(),
+          "readAsync should return CompletableFuture");
       assertTrue(Modifier.isPublic(method.getModifiers()), "readAsync should be public");
       LOGGER.info("readAsync method signature verified: " + method);
     }
@@ -192,7 +192,9 @@ class WasiPreview2OperationsTest {
 
       assertNotNull(method, "writeAsync method should exist");
       assertEquals(
-          CompletableFuture.class, method.getReturnType(), "writeAsync should return CompletableFuture");
+          CompletableFuture.class,
+          method.getReturnType(),
+          "writeAsync should return CompletableFuture");
       assertTrue(Modifier.isPublic(method.getModifiers()), "writeAsync should be public");
       LOGGER.info("writeAsync method signature verified: " + method);
     }
@@ -220,8 +222,7 @@ class WasiPreview2OperationsTest {
     void shouldHaveConnectTcpAsyncMethod() throws ClassNotFoundException, NoSuchMethodException {
       LOGGER.info("Testing connectTcpAsync method signature");
       final Class<?> clazz = loadClassWithoutInit();
-      final Method method =
-          clazz.getMethod("connectTcpAsync", long.class, String.class, int.class);
+      final Method method = clazz.getMethod("connectTcpAsync", long.class, String.class, int.class);
 
       assertNotNull(method, "connectTcpAsync method should exist");
       assertEquals(
@@ -325,13 +326,15 @@ class WasiPreview2OperationsTest {
 
     @Test
     @DisplayName("should have MAX_ASYNC_OPERATIONS constant")
-    void shouldHaveMaxAsyncOperationsConstant() throws ClassNotFoundException, NoSuchFieldException {
+    void shouldHaveMaxAsyncOperationsConstant()
+        throws ClassNotFoundException, NoSuchFieldException {
       LOGGER.info("Testing MAX_ASYNC_OPERATIONS constant");
       final Class<?> clazz = loadClassWithoutInit();
       final Field field = clazz.getDeclaredField("MAX_ASYNC_OPERATIONS");
 
       assertNotNull(field, "MAX_ASYNC_OPERATIONS field should exist");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "MAX_ASYNC_OPERATIONS should be private");
+      assertTrue(
+          Modifier.isPrivate(field.getModifiers()), "MAX_ASYNC_OPERATIONS should be private");
       assertTrue(Modifier.isStatic(field.getModifiers()), "MAX_ASYNC_OPERATIONS should be static");
       assertTrue(Modifier.isFinal(field.getModifiers()), "MAX_ASYNC_OPERATIONS should be final");
       assertEquals(int.class, field.getType(), "MAX_ASYNC_OPERATIONS should be int type");
@@ -480,7 +483,8 @@ class WasiPreview2OperationsTest {
 
       assertTrue(
           asyncMethodCount >= 4,
-          "Should have at least 4 async methods (readAsync, writeAsync, connectTcpAsync, sendUdpAsync)");
+          "Should have at least 4 async methods (readAsync, writeAsync, connectTcpAsync,"
+              + " sendUdpAsync)");
       LOGGER.info("Async method count verified: " + asyncMethodCount);
     }
   }

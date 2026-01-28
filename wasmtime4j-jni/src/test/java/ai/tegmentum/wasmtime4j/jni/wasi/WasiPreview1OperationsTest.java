@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,8 +68,7 @@ class WasiPreview1OperationsTest {
     void shouldBeFinalClass() throws ClassNotFoundException {
       LOGGER.info("Testing WasiPreview1Operations class modifiers");
       final Class<?> clazz = loadClassWithoutInit();
-      assertTrue(
-          Modifier.isFinal(clazz.getModifiers()), "WasiPreview1Operations should be final");
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "WasiPreview1Operations should be final");
       LOGGER.info("WasiPreview1Operations is correctly marked as final");
     }
 
@@ -263,14 +261,14 @@ class WasiPreview1OperationsTest {
       assertNotNull(method, "pathOpen method should exist");
       assertEquals(int.class, method.getReturnType(), "pathOpen should return int");
       assertTrue(Modifier.isPublic(method.getModifiers()), "pathOpen should be public");
-      assertEquals(
-          7, method.getParameterCount(), "pathOpen should have 7 parameters");
+      assertEquals(7, method.getParameterCount(), "pathOpen should have 7 parameters");
       LOGGER.info("pathOpen method signature verified: " + method);
     }
 
     @Test
     @DisplayName("should have pathCreateDirectory method returning void")
-    void shouldHavePathCreateDirectoryMethod() throws ClassNotFoundException, NoSuchMethodException {
+    void shouldHavePathCreateDirectoryMethod()
+        throws ClassNotFoundException, NoSuchMethodException {
       LOGGER.info("Testing pathCreateDirectory method signature");
       final Class<?> clazz = loadClassWithoutInit();
       final Method method = clazz.getMethod("pathCreateDirectory", int.class, String.class);

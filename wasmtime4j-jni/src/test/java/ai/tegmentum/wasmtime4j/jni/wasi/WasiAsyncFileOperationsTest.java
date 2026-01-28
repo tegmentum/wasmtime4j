@@ -26,7 +26,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -71,8 +70,7 @@ class WasiAsyncFileOperationsTest {
     void shouldBeFinalClass() throws ClassNotFoundException {
       LOGGER.info("Testing WasiAsyncFileOperations class modifiers");
       final Class<?> clazz = loadClassWithoutInit();
-      assertTrue(
-          Modifier.isFinal(clazz.getModifiers()), "WasiAsyncFileOperations should be final");
+      assertTrue(Modifier.isFinal(clazz.getModifiers()), "WasiAsyncFileOperations should be final");
       LOGGER.info("WasiAsyncFileOperations is correctly marked as final");
     }
 
@@ -329,8 +327,7 @@ class WasiAsyncFileOperationsTest {
           Modifier.isPrivate(field.getModifiers()), "DEFAULT_TIMEOUT_SECONDS should be private");
       assertTrue(
           Modifier.isStatic(field.getModifiers()), "DEFAULT_TIMEOUT_SECONDS should be static");
-      assertTrue(
-          Modifier.isFinal(field.getModifiers()), "DEFAULT_TIMEOUT_SECONDS should be final");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "DEFAULT_TIMEOUT_SECONDS should be final");
       assertEquals(int.class, field.getType(), "DEFAULT_TIMEOUT_SECONDS should be int type");
       LOGGER.info("DEFAULT_TIMEOUT_SECONDS constant verified");
     }

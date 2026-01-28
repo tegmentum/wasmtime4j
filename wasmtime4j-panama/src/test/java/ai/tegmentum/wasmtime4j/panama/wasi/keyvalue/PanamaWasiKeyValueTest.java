@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.keyvalue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -129,8 +128,7 @@ class PanamaWasiKeyValueTest {
         if (field.getName().equals("contextHandle")) {
           foundContextHandle = true;
           assertEquals(long.class, field.getType(), "contextHandle should be long type");
-          assertTrue(
-              Modifier.isVolatile(field.getModifiers()), "contextHandle should be volatile");
+          assertTrue(Modifier.isVolatile(field.getModifiers()), "contextHandle should be volatile");
           break;
         }
       }

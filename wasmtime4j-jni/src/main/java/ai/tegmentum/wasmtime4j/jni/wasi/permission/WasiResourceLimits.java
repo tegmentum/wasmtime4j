@@ -329,8 +329,8 @@ public final class WasiResourceLimits {
   @Override
   public String toString() {
     return String.format(
-        "WasiResourceLimits{memory=%s, fileDescriptors=%d, diskReads=%s/s, diskWrites=%s/s, "
-            + "diskReadBytes=%s/s, diskWriteBytes=%s/s, networkConnections=%d, "
+        "WasiResourceLimits{memory=%s, fileDescriptors=%s, diskReads=%s/s, diskWrites=%s/s, "
+            + "diskReadBytes=%s/s, diskWriteBytes=%s/s, networkConnections=%s, "
             + "executionTime=%s, cpuTime=%s, wallClockTime=%s, fileSize=%s, diskSpace=%s}",
         formatBytes(maxMemoryBytes),
         maxFileDescriptors == UNLIMITED ? "unlimited" : maxFileDescriptors,
