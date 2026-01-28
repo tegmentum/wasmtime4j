@@ -1374,9 +1374,10 @@ public final class PanamaInstance implements Instance {
     if (closed) {
       return;
     }
+    closed = true;
+    disposed.set(true);
 
     try {
-      disposed.set(true);
       // Clear function name cache
       functionNameCache.clear();
       // Close call arena (releases cached function name segments)
@@ -1387,7 +1388,6 @@ public final class PanamaInstance implements Instance {
       if (nativeInstance != null && !nativeInstance.equals(MemorySegment.NULL)) {
         NATIVE_BINDINGS.instanceDestroy(nativeInstance);
       }
-      closed = true;
       LOGGER.fine("Closed Panama instance");
     } catch (final Exception e) {
       LOGGER.warning("Error closing instance: " + e.getMessage());

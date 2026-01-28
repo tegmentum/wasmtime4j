@@ -63,7 +63,7 @@ public final class PanamaWasiLinker implements WasiLinker {
   private final PanamaLinker<Object> linker;
   private final PanamaEngine engine;
   private final WasiConfig initialConfig;
-  private boolean closed;
+  private volatile boolean closed;
 
   // Accumulated configuration
   private final Map<Path, DirectoryMapping> directoryMappings;

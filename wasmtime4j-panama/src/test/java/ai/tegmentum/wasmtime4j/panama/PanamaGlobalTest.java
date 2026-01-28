@@ -10,9 +10,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /** Test suite for PanamaGlobal operations (get/set). */
@@ -281,5 +283,54 @@ public class PanamaGlobalTest {
     assertTrue(globalOpt.isPresent());
     globalOpt.get().set(WasmValue.i64(Long.MIN_VALUE));
     assertEquals(Long.MIN_VALUE, globalOpt.get().get().asI64());
+  }
+
+  /** Close safety tests for instance globals (PanamaInstanceGlobal). */
+  @Nested
+  @DisplayName("Closed Instance Global Detection Tests")
+  class ClosedInstanceGlobalDetectionTests {
+
+    private static final Logger LOGGER = Logger.getLogger("ClosedInstanceGlobalDetectionTests");
+
+    @Test
+    @DisplayName("get on closed instance global should throw IllegalStateException")
+    void getOnClosedInstanceGlobalShouldThrow() {
+      final Optional<WasmGlobal> globalOpt = instance.getGlobal("g_i32");
+      assertTrue(globalOpt.isPresent(), "Global g_i32 should be present");
+      final PanamaInstanceGlobal global = (PanamaInstanceGlobal) globalOpt.get();
+
+      global.close();
+      LOGGER.info("Instance global closed, attempting get()");
+
+      assertThrows(
+          IllegalStateException.class,
+          global::get,
+          "get() on closed instance global should throw IllegalStateException");
+      assertThrows(
+          IllegalStateException.class,
+          () -> global.set(WasmValue.i32(1)),
+          "set() on closed instance global should throw IllegalStateException");
+      LOGGER.info("IllegalStateException thrown as expected for get/set on closed instance global");
+    }
+
+    @Test
+    @DisplayName("double close should be safe")
+    void doubleCloseShouldBeSafe() {
+      final Optional<WasmGlobal> globalOpt = instance.getGlobal("g_i32");
+      assertTrue(globalOpt.isPresent(), "Global g_i32 should be present");
+      final PanamaInstanceGlobal global = (PanamaInstanceGlobal) globalOpt.get();
+
+      global.close();
+      LOGGER.info("First close completed");
+
+      assertDoesNotThrow(global::close, "Second close should not throw");
+      LOGGER.info("Second close completed without exception");
+
+      assertThrows(
+          IllegalStateException.class,
+          global::get,
+          "get() after double close should still throw IllegalStateException");
+      LOGGER.info("IllegalStateException confirmed after double close");
+    }
   }
 }

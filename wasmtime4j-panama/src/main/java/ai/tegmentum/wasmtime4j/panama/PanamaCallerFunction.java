@@ -206,10 +206,10 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       bindings.funcDestroy(funcHandle);
-      closed = true;
       LOGGER.fine("Closed PanamaCallerFunction: " + name);
     } catch (final Exception e) {
       LOGGER.warning("Error closing function: " + e.getMessage());

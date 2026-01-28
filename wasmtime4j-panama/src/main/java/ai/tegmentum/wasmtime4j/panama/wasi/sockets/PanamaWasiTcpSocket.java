@@ -385,7 +385,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
   private final long socketHandle;
 
   /** Whether this socket has been closed. */
-  private boolean closed = false;
+  private volatile boolean closed = false;
 
   /**
    * Creates a new Panama WASI TCP socket with the given address family.
@@ -1062,10 +1062,10 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       CLOSE_HANDLE.invoke(contextHandle, socketHandle);
-      closed = true;
       LOGGER.fine("Closed Panama WASI TCP socket with handle: " + socketHandle);
 
     } catch (final Throwable e) {

@@ -627,6 +627,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       // Clean up host function callbacks
@@ -642,7 +643,6 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
       }
 
       arena.close();
-      closed = true;
       LOGGER.fine("Closed Panama component linker");
     } catch (final Exception e) {
       LOGGER.warning("Error closing component linker: " + e.getMessage());

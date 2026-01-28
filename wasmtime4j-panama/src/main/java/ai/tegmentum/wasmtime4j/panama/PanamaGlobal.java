@@ -275,13 +275,13 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       if (nativeGlobal != null && !nativeGlobal.equals(MemorySegment.NULL)) {
         NATIVE_BINDINGS.panamaGlobalDestroy(nativeGlobal);
       }
       arena.close();
-      closed = true;
       LOGGER.fine("Closed Panama global");
     } catch (final Exception e) {
       LOGGER.warning("Error closing global: " + e.getMessage());

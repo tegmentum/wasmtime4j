@@ -300,7 +300,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
   private final long socketHandle;
 
   /** Whether this socket has been closed. */
-  private boolean closed = false;
+  private volatile boolean closed = false;
 
   /**
    * Creates a new Panama WASI UDP socket with the given address family.
@@ -933,10 +933,10 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       CLOSE_HANDLE.invoke(contextHandle, socketHandle);
-      closed = true;
       LOGGER.fine("Closed Panama WASI UDP socket with handle: " + socketHandle);
 
     } catch (final Throwable e) {

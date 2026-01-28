@@ -628,6 +628,34 @@ public final class MemoryOperationsIntegrationTest {
     }
 
     @Test
+    @DisplayName("should handle grow by zero pages")
+    void shouldHandleGrowByZeroPages() throws Exception {
+      LOGGER.info("Testing memory grow by 0 pages");
+
+      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
+      resources.add(module);
+
+      final Instance instance = module.instantiate(store);
+      resources.add(instance);
+
+      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+      assertTrue(memOpt.isPresent(), "Memory should be present");
+
+      final WasmMemory memory = memOpt.get();
+
+      final long initialSize = memory.getSize();
+      assertEquals(1, initialSize, "Initial size should be 1 page");
+
+      // Grow by 0 should succeed and return current size
+      final long previousSize = memory.grow(0);
+      assertEquals(1, previousSize, "Previous size should be 1 page");
+
+      final long newSize = memory.getSize();
+      assertEquals(1, newSize, "Size should remain unchanged after grow(0)");
+      LOGGER.info("Memory grow(0) returned " + previousSize + ", size unchanged at " + newSize);
+    }
+
+    @Test
     @DisplayName("should respect memory maximum limit")
     void shouldRespectMemoryMaximumLimit() throws Exception {
       LOGGER.info("Testing memory maximum limit");
@@ -836,6 +864,175 @@ public final class MemoryOperationsIntegrationTest {
       LOGGER.info("WASM read: 0x" + Integer.toHexString(wasmResults[0].asInt()));
 
       LOGGER.info("Memory sharing verified");
+    }
+  }
+
+  /** Tests for float read/write memory operations. */
+  @Nested
+  @DisplayName("Memory Float Read/Write Tests")
+  class MemoryFloatReadWriteTests {
+
+    @Test
+    @DisplayName("should write and read float32")
+    void shouldWriteAndReadFloat32() throws Exception {
+      LOGGER.info("Testing float32 write and read");
+
+      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
+      resources.add(module);
+
+      final Instance instance = module.instantiate(store);
+      resources.add(instance);
+
+      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+      assertTrue(memOpt.isPresent(), "Memory should be present");
+      final WasmMemory memory = memOpt.get();
+
+      memory.writeFloat32(0, 3.14f);
+      final float result = memory.readFloat32(0);
+      assertEquals(3.14f, result, 0.0001f, "Should read back the same float32 value");
+      LOGGER.info("Float32 write/read verified: " + result);
+    }
+
+    @Test
+    @DisplayName("should write and read float64")
+    void shouldWriteAndReadFloat64() throws Exception {
+      LOGGER.info("Testing float64 write and read");
+
+      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
+      resources.add(module);
+
+      final Instance instance = module.instantiate(store);
+      resources.add(instance);
+
+      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+      assertTrue(memOpt.isPresent(), "Memory should be present");
+      final WasmMemory memory = memOpt.get();
+
+      memory.writeFloat64(0, 3.141592653589793);
+      final double result = memory.readFloat64(0);
+      assertEquals(
+          3.141592653589793, result, 0.000000000001, "Should read back the same float64 value");
+      LOGGER.info("Float64 write/read verified: " + result);
+    }
+
+    @Test
+    @DisplayName("should handle float32 special values")
+    void shouldHandleFloat32SpecialValues() throws Exception {
+      LOGGER.info("Testing float32 special values");
+
+      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
+      resources.add(module);
+
+      final Instance instance = module.instantiate(store);
+      resources.add(instance);
+
+      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+      assertTrue(memOpt.isPresent(), "Memory should be present");
+      final WasmMemory memory = memOpt.get();
+
+      // NaN
+      memory.writeFloat32(0, Float.NaN);
+      assertTrue(Float.isNaN(memory.readFloat32(0)), "Should preserve NaN");
+      LOGGER.info("Float32 NaN preserved");
+
+      // Positive infinity
+      memory.writeFloat32(4, Float.POSITIVE_INFINITY);
+      assertEquals(
+          Float.POSITIVE_INFINITY, memory.readFloat32(4), "Should preserve positive infinity");
+      LOGGER.info("Float32 +Infinity preserved");
+
+      // Negative infinity
+      memory.writeFloat32(8, Float.NEGATIVE_INFINITY);
+      assertEquals(
+          Float.NEGATIVE_INFINITY, memory.readFloat32(8), "Should preserve negative infinity");
+      LOGGER.info("Float32 -Infinity preserved");
+
+      // Positive zero
+      memory.writeFloat32(12, 0.0f);
+      assertEquals(0.0f, memory.readFloat32(12), "Should preserve positive zero");
+      assertEquals(
+          Float.floatToRawIntBits(0.0f),
+          Float.floatToRawIntBits(memory.readFloat32(12)),
+          "Should preserve positive zero bit pattern");
+      LOGGER.info("Float32 +0.0 preserved");
+
+      // Negative zero
+      memory.writeFloat32(16, -0.0f);
+      assertEquals(
+          Float.floatToRawIntBits(-0.0f),
+          Float.floatToRawIntBits(memory.readFloat32(16)),
+          "Should preserve negative zero bit pattern");
+      LOGGER.info("Float32 -0.0 preserved");
+
+      // Minimum positive normal
+      memory.writeFloat32(20, Float.MIN_NORMAL);
+      assertEquals(Float.MIN_NORMAL, memory.readFloat32(20), "Should preserve MIN_NORMAL");
+      LOGGER.info("Float32 MIN_NORMAL preserved");
+
+      // Minimum positive denormalized
+      memory.writeFloat32(24, Float.MIN_VALUE);
+      assertEquals(Float.MIN_VALUE, memory.readFloat32(24), "Should preserve MIN_VALUE");
+      LOGGER.info("Float32 MIN_VALUE (denormalized) preserved");
+    }
+
+    @Test
+    @DisplayName("should handle float64 special values")
+    void shouldHandleFloat64SpecialValues() throws Exception {
+      LOGGER.info("Testing float64 special values");
+
+      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
+      resources.add(module);
+
+      final Instance instance = module.instantiate(store);
+      resources.add(instance);
+
+      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+      assertTrue(memOpt.isPresent(), "Memory should be present");
+      final WasmMemory memory = memOpt.get();
+
+      // NaN
+      memory.writeFloat64(0, Double.NaN);
+      assertTrue(Double.isNaN(memory.readFloat64(0)), "Should preserve NaN");
+      LOGGER.info("Float64 NaN preserved");
+
+      // Positive infinity
+      memory.writeFloat64(8, Double.POSITIVE_INFINITY);
+      assertEquals(
+          Double.POSITIVE_INFINITY, memory.readFloat64(8), "Should preserve positive infinity");
+      LOGGER.info("Float64 +Infinity preserved");
+
+      // Negative infinity
+      memory.writeFloat64(16, Double.NEGATIVE_INFINITY);
+      assertEquals(
+          Double.NEGATIVE_INFINITY, memory.readFloat64(16), "Should preserve negative infinity");
+      LOGGER.info("Float64 -Infinity preserved");
+
+      // Positive zero
+      memory.writeFloat64(24, 0.0);
+      assertEquals(0.0, memory.readFloat64(24), "Should preserve positive zero");
+      assertEquals(
+          Double.doubleToRawLongBits(0.0),
+          Double.doubleToRawLongBits(memory.readFloat64(24)),
+          "Should preserve positive zero bit pattern");
+      LOGGER.info("Float64 +0.0 preserved");
+
+      // Negative zero
+      memory.writeFloat64(32, -0.0);
+      assertEquals(
+          Double.doubleToRawLongBits(-0.0),
+          Double.doubleToRawLongBits(memory.readFloat64(32)),
+          "Should preserve negative zero bit pattern");
+      LOGGER.info("Float64 -0.0 preserved");
+
+      // Minimum positive normal
+      memory.writeFloat64(40, Double.MIN_NORMAL);
+      assertEquals(Double.MIN_NORMAL, memory.readFloat64(40), "Should preserve MIN_NORMAL");
+      LOGGER.info("Float64 MIN_NORMAL preserved");
+
+      // Minimum positive denormalized
+      memory.writeFloat64(48, Double.MIN_VALUE);
+      assertEquals(Double.MIN_VALUE, memory.readFloat64(48), "Should preserve MIN_VALUE");
+      LOGGER.info("Float64 MIN_VALUE (denormalized) preserved");
     }
   }
 }

@@ -910,6 +910,7 @@ public final class PanamaModule implements Module {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       // Destroy native module
@@ -917,7 +918,6 @@ public final class PanamaModule implements Module {
         NATIVE_BINDINGS.moduleDestroy(nativeModule);
       }
       arena.close();
-      closed = true;
       LOGGER.fine("Closed Panama module");
     } catch (final Exception e) {
       LOGGER.warning("Error closing module: " + e.getMessage());

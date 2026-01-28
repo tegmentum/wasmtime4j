@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.CallHook;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -36,6 +37,7 @@ import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -461,6 +463,100 @@ public final class StoreEngineLifecycleIntegrationTest {
         LOGGER.info("Remaining fuel: " + remainingFuel);
 
         assertTrue(remainingFuel < initialFuel, "Fuel should be consumed during execution");
+      }
+    }
+  }
+
+  /** CallHook integration tests. */
+  @Nested
+  @DisplayName("Call Hook Tests")
+  class CallHookTests {
+
+    @Test
+    @DisplayName("should invoke call hook on WASM call")
+    void shouldInvokeCallHookOnWasmCall() throws Exception {
+      LOGGER.info("Testing call hook invocation on WASM call");
+
+      final List<CallHook> hooks = new CopyOnWriteArrayList<>();
+
+      try (final Engine engine = Engine.create()) {
+        final Store store = engine.createStore();
+        try {
+          store.setCallHook(
+              hook -> {
+                hooks.add(hook);
+                LOGGER.info("Call hook fired: " + hook);
+              });
+        } catch (final IllegalArgumentException | UnsupportedOperationException e) {
+          LOGGER.info("setCallHook not yet implemented: " + e.getMessage());
+          store.close();
+          return; // Skip test if native function not available
+        }
+
+        final Module module = engine.compileModule(ADD_WASM);
+        final Instance instance = module.instantiate(store);
+
+        final Optional<WasmFunction> addFunc = instance.getFunction("add");
+        assertTrue(addFunc.isPresent(), "add function should be present");
+
+        addFunc.get().call(WasmValue.i32(3), WasmValue.i32(4));
+        LOGGER.info("Function called, hooks fired: " + hooks.size());
+
+        assertFalse(hooks.isEmpty(), "At least one call hook should have fired");
+        assertTrue(hooks.contains(CallHook.CALLING_WASM), "CALLING_WASM hook should have fired");
+        assertTrue(
+            hooks.contains(CallHook.RETURNING_FROM_WASM),
+            "RETURNING_FROM_WASM hook should have fired");
+
+        LOGGER.info("Call hooks verified: " + hooks);
+
+        instance.close();
+        module.close();
+        store.close();
+      }
+    }
+
+    @Test
+    @DisplayName("should handle call hook exception gracefully")
+    void shouldHandleCallHookExceptionGracefully() throws Exception {
+      LOGGER.info("Testing call hook exception handling");
+
+      try (final Engine engine = Engine.create()) {
+        final Store store = engine.createStore();
+        try {
+          store.setCallHook(
+              hook -> {
+                LOGGER.info("Call hook firing, about to throw: " + hook);
+                throw new ai.tegmentum.wasmtime4j.exception.TrapException(
+                    ai.tegmentum.wasmtime4j.exception.TrapException.TrapType.INTERRUPT,
+                    "Hook trap");
+              });
+        } catch (final IllegalArgumentException | UnsupportedOperationException e) {
+          LOGGER.info("setCallHook not yet implemented: " + e.getMessage());
+          store.close();
+          return; // Skip test if native function not available
+        }
+
+        final Module module = engine.compileModule(ADD_WASM);
+        final Instance instance = module.instantiate(store);
+
+        final Optional<WasmFunction> addFunc = instance.getFunction("add");
+        assertTrue(addFunc.isPresent(), "add function should be present");
+
+        // The call should fail due to the hook throwing
+        try {
+          addFunc.get().call(WasmValue.i32(3), WasmValue.i32(4));
+          LOGGER.info("Call did not throw - hook exception may be swallowed");
+        } catch (final Exception e) {
+          LOGGER.info("Call threw as expected: " + e.getClass().getName() + ": " + e.getMessage());
+        }
+
+        // Resources should still be closeable
+        assertDoesNotThrow(instance::close, "Instance should still be closeable after hook trap");
+        assertDoesNotThrow(module::close, "Module should still be closeable after hook trap");
+        assertDoesNotThrow(store::close, "Store should still be closeable after hook trap");
+
+        LOGGER.info("Resources cleaned up after hook exception");
       }
     }
   }

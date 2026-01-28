@@ -633,4 +633,104 @@ public final class LinkerIntegrationTest {
       }
     }
   }
+
+  /** Tests for linker dependency resolution between modules. */
+  @Nested
+  @Order(8)
+  @DisplayName("Multi-Module Dependency Resolution Tests")
+  class MultiModuleDependencyResolutionTests {
+
+    @BeforeAll
+    static void beforeAll() {
+      cleanupNativeResources();
+    }
+
+    @AfterAll
+    static void afterAll() {
+      cleanupNativeResources();
+    }
+
+    @Test
+    @DisplayName("should resolve dependencies for multi-module setup")
+    void shouldResolveDependenciesForMultiModuleSetup() throws WasmException {
+      LOGGER.info("Testing multi-module dependency resolution");
+
+      try (final Engine engine = Engine.create();
+          final Linker<Object> linker = Linker.create(engine);
+          final Store store = engine.createStore()) {
+
+        // Module A: exports "get_value" function returning 42
+        final Module moduleA =
+            engine.compileWat(
+                "(module"
+                    + " (func (export \"get_value\") (result i32)"
+                    + "   i32.const 42)"
+                    + ")");
+
+        // Instantiate Module A with a name so linker tracks its exports
+        final Instance instanceA = linker.instantiate(store, "modA", moduleA);
+        assertNotNull(instanceA, "Instance A should be created");
+        LOGGER.info("Module A instantiated and registered as 'modA'");
+
+        // Module B: imports "get_value" from "modA" and doubles it
+        final Module moduleB =
+            engine.compileWat(
+                "(module"
+                    + " (import \"modA\" \"get_value\" (func $get (result i32)))"
+                    + " (func (export \"double_value\") (result i32)"
+                    + "   call $get"
+                    + "   call $get"
+                    + "   i32.add)"
+                    + ")");
+
+        // Instantiate Module B which depends on Module A's exports
+        final Instance instanceB = linker.instantiate(store, moduleB);
+        assertNotNull(instanceB, "Instance B should be created");
+        LOGGER.info("Module B instantiated with dependency on Module A");
+
+        // Verify cross-module call works
+        final Optional<WasmFunction> doubleFunc = instanceB.getFunction("double_value");
+        assertTrue(doubleFunc.isPresent(), "double_value function should be present");
+
+        final WasmValue[] result = doubleFunc.get().call();
+        assertEquals(84, result[0].asInt(), "double_value should return 42 + 42 = 84");
+        LOGGER.info("Cross-module call returned: " + result[0].asInt());
+
+        instanceB.close();
+        instanceA.close();
+        moduleB.close();
+        moduleA.close();
+      }
+    }
+
+    @Test
+    @DisplayName("should fail when dependencies are not satisfied")
+    void shouldFailWhenDependenciesNotSatisfied() throws WasmException {
+      LOGGER.info("Testing unsatisfied dependency detection");
+
+      try (final Engine engine = Engine.create();
+          final Linker<Object> linker = Linker.create(engine);
+          final Store store = engine.createStore()) {
+
+        // Module that imports a function that hasn't been defined
+        final Module module =
+            engine.compileWat(
+                "(module"
+                    + " (import \"missing_mod\" \"missing_func\" (func (result i32)))"
+                    + " (func (export \"call_missing\") (result i32)"
+                    + "   call 0)"
+                    + ")");
+
+        // Should throw because "missing_mod"."missing_func" is not defined
+        assertThrows(
+            Exception.class,
+            () -> linker.instantiate(store, module),
+            "Should fail when imported dependency is not defined");
+
+        LOGGER.info("Unsatisfied dependency correctly detected");
+
+        module.close();
+      }
+    }
+  }
 }

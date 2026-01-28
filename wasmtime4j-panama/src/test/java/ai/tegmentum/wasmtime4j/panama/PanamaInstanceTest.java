@@ -2,6 +2,9 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstancePre;
@@ -13,6 +16,9 @@ import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -977,6 +983,88 @@ class PanamaInstanceTest {
               .averageInstantiationTime(Duration.ofNanos(50000))
               .build();
       assertThat(stats).isNotNull();
+    }
+  }
+
+  /** Close safety tests for PanamaInstance requiring native library. */
+  @Nested
+  @DisplayName("Closed Instance Detection Tests")
+  class ClosedInstanceDetectionTests {
+
+    private static final Logger CLOSE_LOGGER = Logger.getLogger("ClosedInstanceDetectionTests");
+
+    private static boolean nativeAvailable;
+
+    static {
+      try {
+        new PanamaEngine().close();
+        nativeAvailable = true;
+      } catch (final Exception | UnsatisfiedLinkError e) {
+        nativeAvailable = false;
+      }
+    }
+
+    @Test
+    @DisplayName("method on closed instance should throw IllegalStateException")
+    void methodOnClosedInstanceShouldThrow() throws Exception {
+      assumeTrue(nativeAvailable, "Native library not available");
+
+      final Path wasmPath =
+          Paths.get(getClass().getClassLoader().getResource("wasm/exports-test.wasm").toURI());
+      final byte[] wasmBytes = Files.readAllBytes(wasmPath);
+
+      final PanamaEngine engine = new PanamaEngine();
+      final PanamaStore store = new PanamaStore(engine);
+      final PanamaModule module = new PanamaModule(engine, wasmBytes);
+      final PanamaInstance instance = new PanamaInstance(module, store);
+
+      instance.close();
+      CLOSE_LOGGER.info("Instance closed, attempting operations");
+
+      assertThrows(
+          IllegalStateException.class,
+          () -> instance.getFunction("add"),
+          "getFunction() on closed instance should throw IllegalStateException");
+      assertThrows(
+          IllegalStateException.class,
+          () -> instance.getMemory("memory"),
+          "getMemory() on closed instance should throw IllegalStateException");
+      CLOSE_LOGGER.info("IllegalStateException thrown as expected for closed instance operations");
+
+      store.close();
+      module.close();
+      engine.close();
+    }
+
+    @Test
+    @DisplayName("double close should be safe")
+    void doubleCloseShouldBeSafe() throws Exception {
+      assumeTrue(nativeAvailable, "Native library not available");
+
+      final Path wasmPath =
+          Paths.get(getClass().getClassLoader().getResource("wasm/exports-test.wasm").toURI());
+      final byte[] wasmBytes = Files.readAllBytes(wasmPath);
+
+      final PanamaEngine engine = new PanamaEngine();
+      final PanamaStore store = new PanamaStore(engine);
+      final PanamaModule module = new PanamaModule(engine, wasmBytes);
+      final PanamaInstance instance = new PanamaInstance(module, store);
+
+      instance.close();
+      CLOSE_LOGGER.info("First close completed");
+
+      assertDoesNotThrow(instance::close, "Second close should not throw");
+      CLOSE_LOGGER.info("Second close completed without exception");
+
+      assertThrows(
+          IllegalStateException.class,
+          () -> instance.getFunction("add"),
+          "getFunction() after double close should still throw");
+      CLOSE_LOGGER.info("IllegalStateException confirmed after double close");
+
+      store.close();
+      module.close();
+      engine.close();
     }
   }
 }

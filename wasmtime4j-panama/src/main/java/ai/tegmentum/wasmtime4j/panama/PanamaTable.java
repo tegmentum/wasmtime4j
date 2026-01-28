@@ -711,11 +711,11 @@ public final class PanamaTable implements WasmTable {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       // TODO: Destroy native table
       arena.close();
-      closed = true;
       LOGGER.fine("Closed Panama table");
     } catch (final Exception e) {
       LOGGER.warning("Error closing table: " + e.getMessage());

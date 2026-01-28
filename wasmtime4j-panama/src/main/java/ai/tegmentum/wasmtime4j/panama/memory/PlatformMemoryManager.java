@@ -172,7 +172,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   // Native handle to the platform memory allocator
   private MemorySegment nativeHandle;
   private final Arena arena;
-  private boolean closed = false;
+  private volatile boolean closed = false;
 
   /** Configuration for platform-specific memory management. */
   public static final class Config {
@@ -676,11 +676,15 @@ public final class PlatformMemoryManager implements AutoCloseable {
   /** Closes the platform memory manager and releases native resources. */
   @Override
   public void close() {
-    if (!closed && nativeHandle != null && nativeHandle.address() != 0) {
+    if (closed) {
+      return;
+    }
+    closed = true;
+
+    if (nativeHandle != null && nativeHandle.address() != 0) {
       try {
         DESTROY_ALLOCATOR.invoke(nativeHandle);
         nativeHandle = null;
-        closed = true;
         LOGGER.log(Level.INFO, "Platform memory manager closed");
       } catch (Throwable t) {
         LOGGER.log(Level.WARNING, "Error during platform memory manager cleanup", t);

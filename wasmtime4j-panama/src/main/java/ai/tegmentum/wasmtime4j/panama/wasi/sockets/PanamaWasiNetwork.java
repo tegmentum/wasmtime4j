@@ -79,7 +79,7 @@ public final class PanamaWasiNetwork implements WasiNetwork {
   private final long networkHandle;
 
   /** Whether this network has been closed. */
-  private boolean closed = false;
+  private volatile boolean closed = false;
 
   /**
    * Creates a new Panama WASI network with the given native context handle.
@@ -141,10 +141,10 @@ public final class PanamaWasiNetwork implements WasiNetwork {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       CLOSE_HANDLE.invoke(contextHandle, networkHandle);
-      closed = true;
       LOGGER.fine("Closed Panama WASI network with handle: " + networkHandle);
 
     } catch (final Throwable e) {

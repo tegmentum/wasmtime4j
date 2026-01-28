@@ -1272,6 +1272,7 @@ public final class PanamaMemory implements WasmMemory {
     if (closed) {
       return;
     }
+    closed = true;
 
     try {
       // Clear cached resources
@@ -1287,7 +1288,6 @@ public final class PanamaMemory implements WasmMemory {
       bufferArena.close();
       arena.close();
 
-      closed = true;
       LOGGER.fine("Closed Panama memory");
     } catch (final Exception e) {
       LOGGER.warning("Error closing memory: " + e.getMessage());
