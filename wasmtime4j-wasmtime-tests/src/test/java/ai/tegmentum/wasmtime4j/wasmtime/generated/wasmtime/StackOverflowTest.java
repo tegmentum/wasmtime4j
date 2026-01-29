@@ -25,8 +25,6 @@ import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -46,13 +44,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  */
 public final class StackOverflowTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER = Logger.getLogger(StackOverflowTest.class.getName());
-
-  @BeforeAll
-  static void checkPlatformSupport() {
+  private static void assumeX86() {
     final PlatformDetector.Architecture arch = PlatformDetector.detect().getArchitecture();
-    LOGGER.info("Running on architecture: " + arch.getName());
-
     assumeTrue(
         arch == PlatformDetector.Architecture.X86_64,
         "Stack overflow tests are skipped on aarch64 due to JVM signal handler conflicts. "
@@ -72,6 +65,7 @@ public final class StackOverflowTest extends DualRuntimeTest {
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("stack overflow - direct recursion")
   public void testStackOverflowDirectRecursion(final RuntimeType runtime) throws Exception {
+    assumeX86();
     setRuntime(runtime);
 
     try (final WastTestRunner runner = new WastTestRunner()) {
@@ -90,6 +84,7 @@ public final class StackOverflowTest extends DualRuntimeTest {
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("stack overflow - mutual recursion")
   public void testStackOverflowMutualRecursion(final RuntimeType runtime) throws Exception {
+    assumeX86();
     setRuntime(runtime);
 
     try (final WastTestRunner runner = new WastTestRunner()) {

@@ -573,6 +573,10 @@ impl Linker {
             })?;
 
             self.metadata.wasi_enabled = true;
+
+            // Create a default WASI context so nativeInstantiate() can auto-attach it to the Store
+            self.wasi_context = Some(crate::wasi::WasiContext::new()?);
+
             log::debug!("WASI Preview 1 imports successfully added to linker");
         }
 
@@ -1185,6 +1189,13 @@ pub mod ffi_core {
         module: &Module,
     ) -> WasmtimeResult<LinkerInstantiationResult> {
         let start = std::time::Instant::now();
+
+        // If linker has a WASI context, attach it to the store before instantiation
+        if let Some(wasi_ctx) = linker.get_wasi_context() {
+            let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+            store.set_wasi_context(wasi_ctx, fd_manager)?;
+            log::debug!("Attached WASI context to store before instantiation (FFI path)");
+        }
 
         // CRITICAL: Instantiate host functions BEFORE trying to link the module
         {

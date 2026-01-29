@@ -10,8 +10,6 @@ import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -38,13 +36,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  */
 public final class TrapsSkipCatchAllTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER = Logger.getLogger(TrapsSkipCatchAllTest.class.getName());
-
-  @BeforeAll
-  static void checkPlatformSupport() {
+  private static void assumeX86() {
     final PlatformDetector.Architecture arch = PlatformDetector.detect().getArchitecture();
-    LOGGER.info("Running on architecture: " + arch.getName());
-
     assumeTrue(
         arch == PlatformDetector.Architecture.X86_64,
         "Trap handling tests are skipped on aarch64 due to JVM signal handler conflicts. "
@@ -64,6 +57,7 @@ public final class TrapsSkipCatchAllTest extends DualRuntimeTest {
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("traps skip catch all")
   public void testTrapsSkipCatchAll(final RuntimeType runtime) throws Exception {
+    assumeX86();
     setRuntime(runtime);
 
     try (final WastTestRunner runner = new WastTestRunner()) {
