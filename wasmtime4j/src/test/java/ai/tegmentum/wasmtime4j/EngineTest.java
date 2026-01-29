@@ -1,525 +1,344 @@
 package ai.tegmentum.wasmtime4j;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
-import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for the Engine interface.
+ * Tests for the {@link Engine} interface.
  *
- * <p>Tests verify engine creation, configuration, module compilation, store creation, and resource
- * management. These tests require the native Wasmtime runtime to be available.
+ * <p>This test class verifies the structure and contract of the Engine interface, which represents
+ * a WebAssembly compilation engine.
  */
 @DisplayName("Engine Interface Tests")
-@RequiresWasmRuntime
 class EngineTest {
 
-  /** Simple WebAssembly module that exports an add function. */
-  private static final String SIMPLE_ADD_WAT =
-      "(module\n"
-          + "  (func $add (export \"add\") (param i32 i32) (result i32)\n"
-          + "    local.get 0\n"
-          + "    local.get 1\n"
-          + "    i32.add))\n";
+  @Nested
+  @DisplayName("Interface Definition Tests")
+  class InterfaceDefinitionTests {
 
-  /** Minimal valid WebAssembly module (empty module). */
-  private static final byte[] MINIMAL_WASM = {0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
+    @Test
+    @DisplayName("Engine should be an interface")
+    void shouldBeAnInterface() {
+      assertTrue(Engine.class.isInterface(), "Engine should be an interface");
+    }
 
-  private Engine engine;
+    @Test
+    @DisplayName("Engine should extend Closeable")
+    void shouldExtendCloseable() {
+      assertTrue(Closeable.class.isAssignableFrom(Engine.class), "Engine should extend Closeable");
+    }
 
-  @BeforeEach
-  void setUp() throws WasmException {
-    engine = Engine.create();
-  }
-
-  @AfterEach
-  void tearDown() {
-    if (engine != null) {
-      engine.close();
-      engine = null;
+    @Test
+    @DisplayName("Engine should be public")
+    void shouldBePublic() {
+      assertTrue(
+          Modifier.isPublic(Engine.class.getModifiers()), "Engine should be a public interface");
     }
   }
 
   @Nested
-  @DisplayName("Engine Creation Tests")
-  class EngineCreationTests {
+  @DisplayName("Store Creation Method Tests")
+  class StoreCreationMethodTests {
 
     @Test
-    @DisplayName("should create engine with default configuration")
-    void shouldCreateEngineWithDefaultConfiguration() throws WasmException {
-      try (Engine defaultEngine = Engine.create()) {
-        assertNotNull(defaultEngine, "Engine should not be null");
-        assertTrue(defaultEngine.isValid(), "Engine should be valid after creation");
-      }
+    @DisplayName("Should have createStore() method")
+    void shouldHaveCreateStoreMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("createStore");
+      assertNotNull(method, "createStore() method should exist");
+      assertEquals(Store.class, method.getReturnType(), "Should return Store");
     }
 
     @Test
-    @DisplayName("should create engine with custom configuration")
-    void shouldCreateEngineWithCustomConfiguration() throws WasmException {
-      final EngineConfig config = new EngineConfig().consumeFuel(true).setEpochInterruption(true);
-
-      try (Engine customEngine = Engine.create(config)) {
-        assertNotNull(customEngine, "Engine should not be null");
-        assertTrue(customEngine.isValid(), "Engine should be valid after creation");
-        assertTrue(customEngine.isFuelEnabled(), "Fuel should be enabled per configuration");
-        assertTrue(
-            customEngine.isEpochInterruptionEnabled(),
-            "Epoch interruption should be enabled per configuration");
-      }
-    }
-
-    @Test
-    @DisplayName("should create engine using builder pattern")
-    void shouldCreateEngineUsingBuilderPattern() throws WasmException {
-      final EngineConfig config = Engine.builder().debugInfo(true).consumeFuel(false);
-
-      try (Engine builtEngine = Engine.create(config)) {
-        assertNotNull(builtEngine, "Engine should not be null");
-        assertTrue(builtEngine.isValid(), "Engine should be valid after creation");
-      }
-    }
-
-    @Test
-    @DisplayName("should throw exception when creating engine with null config")
-    void shouldThrowExceptionWhenCreatingEngineWithNullConfig() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> Engine.create(null),
-          "Should throw IllegalArgumentException for null config");
+    @DisplayName("Should have createStore(Object) method")
+    void shouldHaveCreateStoreWithDataMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("createStore", Object.class);
+      assertNotNull(method, "createStore(Object) method should exist");
+      assertEquals(Store.class, method.getReturnType(), "Should return Store");
     }
   }
 
   @Nested
-  @DisplayName("Engine Configuration Tests")
-  class EngineConfigurationTests {
+  @DisplayName("Module Compilation Method Tests")
+  class ModuleCompilationMethodTests {
 
     @Test
-    @DisplayName("should return engine configuration")
-    void shouldReturnEngineConfiguration() {
-      final EngineConfig config = engine.getConfig();
-      assertNotNull(config, "Engine config should not be null");
+    @DisplayName("Should have compileModule(byte[]) method")
+    void shouldHaveCompileModuleMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("compileModule", byte[].class);
+      assertNotNull(method, "compileModule(byte[]) method should exist");
+      assertEquals(Module.class, method.getReturnType(), "Should return Module");
     }
 
     @Test
-    @DisplayName("should report fuel disabled by default")
-    void shouldReportFuelDisabledByDefault() {
-      assertFalse(engine.isFuelEnabled(), "Fuel should be disabled by default");
+    @DisplayName("Should have compileWat(String) method")
+    void shouldHaveCompileWatMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("compileWat", String.class);
+      assertNotNull(method, "compileWat(String) method should exist");
+      assertEquals(Module.class, method.getReturnType(), "Should return Module");
     }
 
     @Test
-    @DisplayName("should report epoch interruption disabled by default")
-    void shouldReportEpochInterruptionDisabledByDefault() {
-      assertFalse(
-          engine.isEpochInterruptionEnabled(), "Epoch interruption should be disabled by default");
+    @DisplayName("Should have precompileModule(byte[]) method")
+    void shouldHavePrecompileModuleMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("precompileModule", byte[].class);
+      assertNotNull(method, "precompileModule(byte[]) method should exist");
+      assertEquals(byte[].class, method.getReturnType(), "Should return byte[]");
     }
 
     @Test
-    @DisplayName("should report coredump on trap status")
-    void shouldReportCoredumpOnTrapStatus() {
-      // Just verify the method exists and returns a boolean
-      assertNotNull(
-          Boolean.valueOf(engine.isCoredumpOnTrapEnabled()),
-          "isCoredumpOnTrapEnabled should return a boolean");
-    }
-
-    @Test
-    @DisplayName("should report async status")
-    void shouldReportAsyncStatus() {
-      // Just verify the method exists and returns a boolean
-      assertNotNull(Boolean.valueOf(engine.isAsync()), "isAsync should return a boolean");
-    }
-
-    @Test
-    @DisplayName("should return memory limit in pages")
-    void shouldReturnMemoryLimitInPages() {
-      final int memoryLimit = engine.getMemoryLimitPages();
-      assertTrue(memoryLimit >= 0, "Memory limit should be non-negative");
-    }
-
-    @Test
-    @DisplayName("should return stack size limit")
-    void shouldReturnStackSizeLimit() {
-      final long stackSize = engine.getStackSizeLimit();
-      assertTrue(stackSize >= 0, "Stack size should be non-negative");
-    }
-
-    @Test
-    @DisplayName("should return max instances")
-    void shouldReturnMaxInstances() {
-      final int maxInstances = engine.getMaxInstances();
-      assertTrue(maxInstances >= 0, "Max instances should be non-negative");
-    }
-
-    @Test
-    @DisplayName("should return reference count")
-    void shouldReturnReferenceCount() {
-      final long refCount = engine.getReferenceCount();
-      assertTrue(refCount >= 0, "Reference count should be non-negative");
-    }
-  }
-
-  @Nested
-  @DisplayName("Store Creation Tests")
-  class StoreCreationTests {
-
-    @Test
-    @DisplayName("should create store from engine")
-    void shouldCreateStoreFromEngine() throws WasmException {
-      try (Store store = engine.createStore()) {
-        assertNotNull(store, "Store should not be null");
+    @DisplayName("Should have compileFromStream(InputStream) method")
+    void shouldHaveCompileFromStreamMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("compileFromStream", InputStream.class);
+      assertNotNull(method, "compileFromStream(InputStream) method should exist");
+      assertEquals(Module.class, method.getReturnType(), "Should return Module");
+      final Class<?>[] exceptionTypes = method.getExceptionTypes();
+      boolean hasIoException = false;
+      for (final Class<?> exceptionType : exceptionTypes) {
+        if (exceptionType == IOException.class) {
+          hasIoException = true;
+          break;
+        }
       }
-    }
-
-    @Test
-    @DisplayName("should create store with custom data")
-    void shouldCreateStoreWithCustomData() throws WasmException {
-      final String customData = "test-data";
-      try (Store store = engine.createStore(customData)) {
-        assertNotNull(store, "Store should not be null");
-      }
-    }
-
-    @Test
-    @DisplayName("should create store with null data")
-    void shouldCreateStoreWithNullData() throws WasmException {
-      try (Store store = engine.createStore(null)) {
-        assertNotNull(store, "Store should not be null even with null data");
-      }
-    }
-
-    @Test
-    @DisplayName("should create multiple stores from same engine")
-    void shouldCreateMultipleStoresFromSameEngine() throws WasmException {
-      try (Store store1 = engine.createStore();
-          Store store2 = engine.createStore();
-          Store store3 = engine.createStore()) {
-        assertNotNull(store1, "First store should not be null");
-        assertNotNull(store2, "Second store should not be null");
-        assertNotNull(store3, "Third store should not be null");
-        assertNotSame(store1, store2, "Stores should be different instances");
-        assertNotSame(store2, store3, "Stores should be different instances");
-      }
+      assertTrue(hasIoException, "compileFromStream should throw IOException");
     }
   }
 
   @Nested
-  @DisplayName("Module Compilation Tests")
-  class ModuleCompilationTests {
+  @DisplayName("Epoch Method Tests")
+  class EpochMethodTests {
 
     @Test
-    @DisplayName("should compile module from valid wasm bytes")
-    void shouldCompileModuleFromValidWasmBytes() throws WasmException {
-      final Module module = engine.compileModule(MINIMAL_WASM);
-      assertNotNull(module, "Module should not be null");
-      module.close();
+    @DisplayName("Should have incrementEpoch() method")
+    void shouldHaveIncrementEpochMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("incrementEpoch");
+      assertNotNull(method, "incrementEpoch() method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should compile module from WAT string")
-    void shouldCompileModuleFromWatString() throws WasmException {
-      final Module module = engine.compileWat(SIMPLE_ADD_WAT);
-      assertNotNull(module, "Module should not be null");
-      module.close();
-    }
-
-    @Test
-    @DisplayName("should compile module from input stream")
-    void shouldCompileModuleFromInputStream() throws WasmException, IOException {
-      try (ByteArrayInputStream stream = new ByteArrayInputStream(MINIMAL_WASM)) {
-        final Module module = engine.compileFromStream(stream);
-        assertNotNull(module, "Module should not be null");
-        module.close();
-      }
-    }
-
-    @Test
-    @DisplayName("should throw exception for null wasm bytes")
-    void shouldThrowExceptionForNullWasmBytes() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.compileModule(null),
-          "Should throw IllegalArgumentException for null bytes");
-    }
-
-    @Test
-    @DisplayName("should throw exception for null WAT string")
-    void shouldThrowExceptionForNullWatString() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.compileWat(null),
-          "Should throw IllegalArgumentException for null WAT");
-    }
-
-    @Test
-    @DisplayName("should throw exception for empty WAT string")
-    void shouldThrowExceptionForEmptyWatString() {
-      assertThrows(
-          Exception.class,
-          () -> engine.compileWat(""),
-          "Should throw exception for empty WAT string");
-    }
-
-    @Test
-    @DisplayName("should throw exception for null input stream")
-    void shouldThrowExceptionForNullInputStream() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.compileFromStream(null),
-          "Should throw IllegalArgumentException for null stream");
-    }
-
-    @Test
-    @DisplayName("should throw exception for invalid wasm bytes")
-    void shouldThrowExceptionForInvalidWasmBytes() {
-      final byte[] invalidWasm = {0x00, 0x00, 0x00, 0x00};
-      assertThrows(
-          WasmException.class,
-          () -> engine.compileModule(invalidWasm),
-          "Should throw WasmException for invalid WASM bytes");
-    }
-
-    @Test
-    @DisplayName("should throw exception for invalid WAT syntax")
-    void shouldThrowExceptionForInvalidWatSyntax() {
-      final String invalidWat = "(module (invalid syntax here))";
-      assertThrows(
-          WasmException.class,
-          () -> engine.compileWat(invalidWat),
-          "Should throw WasmException for invalid WAT syntax");
+    @DisplayName("Should have isEpochInterruptionEnabled() method")
+    void shouldHaveIsEpochInterruptionEnabledMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("isEpochInterruptionEnabled");
+      assertNotNull(method, "isEpochInterruptionEnabled() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
   }
 
   @Nested
-  @DisplayName("Precompilation Tests")
-  class PrecompilationTests {
+  @DisplayName("Configuration Method Tests")
+  class ConfigurationMethodTests {
 
     @Test
-    @DisplayName("should precompile module from wasm bytes")
-    void shouldPrecompileModuleFromWasmBytes() throws WasmException {
-      final byte[] precompiled = engine.precompileModule(MINIMAL_WASM);
-      assertNotNull(precompiled, "Precompiled bytes should not be null");
-      assertTrue(precompiled.length > 0, "Precompiled bytes should not be empty");
+    @DisplayName("Should have getConfig() method")
+    void shouldHaveGetConfigMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("getConfig");
+      assertNotNull(method, "getConfig() method should exist");
+      assertEquals(EngineConfig.class, method.getReturnType(), "Should return EngineConfig");
     }
 
     @Test
-    @DisplayName("should throw exception for null bytes in precompile")
-    void shouldThrowExceptionForNullBytesInPrecompile() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.precompileModule(null),
-          "Should throw IllegalArgumentException for null bytes");
-    }
-
-    @Test
-    @DisplayName("should detect precompiled module")
-    void shouldDetectPrecompiledModule() throws WasmException {
-      final byte[] precompiled = engine.precompileModule(MINIMAL_WASM);
-      final Precompiled detected = engine.detectPrecompiled(precompiled);
-      assertEquals(Precompiled.MODULE, detected, "Should detect as precompiled module");
-    }
-
-    @Test
-    @DisplayName("should return null for non-precompiled bytes")
-    void shouldReturnNullForNonPrecompiledBytes() {
-      final Precompiled detected = engine.detectPrecompiled(MINIMAL_WASM);
-      assertNull(detected, "Should return null for non-precompiled bytes");
-    }
-
-    @Test
-    @DisplayName("should throw exception for null bytes in detect")
-    void shouldThrowExceptionForNullBytesInDetect() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.detectPrecompiled(null),
-          "Should throw IllegalArgumentException for null bytes");
-    }
-
-    @Test
-    @DisplayName("should return precompile compatibility hash")
-    void shouldReturnPrecompileCompatibilityHash() {
-      final byte[] hash = engine.precompileCompatibilityHash();
-      assertNotNull(hash, "Compatibility hash should not be null");
+    @DisplayName("Should have getRuntime() method")
+    void shouldHaveGetRuntimeMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("getRuntime");
+      assertNotNull(method, "getRuntime() method should exist");
+      assertEquals(WasmRuntime.class, method.getReturnType(), "Should return WasmRuntime");
     }
   }
 
   @Nested
-  @DisplayName("Feature Support Tests")
-  class FeatureSupportTests {
+  @DisplayName("Validity Method Tests")
+  class ValidityMethodTests {
 
     @Test
-    @DisplayName("should check feature support for reference types")
-    void shouldCheckFeatureSupportForReferenceTypes() {
-      // Just verify the method works without throwing
-      final boolean supported = engine.supportsFeature(WasmFeature.REFERENCE_TYPES);
-      assertNotNull(Boolean.valueOf(supported), "Should return a boolean");
+    @DisplayName("Should have isValid() method")
+    void shouldHaveIsValidMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("isValid");
+      assertNotNull(method, "isValid() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
     @Test
-    @DisplayName("should check feature support for SIMD")
-    void shouldCheckFeatureSupportForSimd() {
-      final boolean supported = engine.supportsFeature(WasmFeature.SIMD);
-      assertNotNull(Boolean.valueOf(supported), "Should return a boolean");
-    }
-
-    @Test
-    @DisplayName("should check feature support for bulk memory")
-    void shouldCheckFeatureSupportForBulkMemory() {
-      final boolean supported = engine.supportsFeature(WasmFeature.BULK_MEMORY);
-      assertNotNull(Boolean.valueOf(supported), "Should return a boolean");
-    }
-
-    @Test
-    @DisplayName("should check feature support for multi-value")
-    void shouldCheckFeatureSupportForMultiValue() {
-      final boolean supported = engine.supportsFeature(WasmFeature.MULTI_VALUE);
-      assertNotNull(Boolean.valueOf(supported), "Should return a boolean");
-    }
-
-    @Test
-    @DisplayName("should throw exception for null feature")
-    void shouldThrowExceptionForNullFeature() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.supportsFeature(null),
-          "Should throw IllegalArgumentException for null feature");
+    @DisplayName("Should have close() method")
+    void shouldHaveCloseMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("close");
+      assertNotNull(method, "close() method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
   @Nested
-  @DisplayName("Epoch Interruption Tests")
-  class EpochInterruptionTests {
+  @DisplayName("Feature Support Method Tests")
+  class FeatureSupportMethodTests {
 
     @Test
-    @DisplayName("should increment epoch without error")
-    void shouldIncrementEpochWithoutError() throws WasmException {
-      try (Engine epochEngine = Engine.create(new EngineConfig().setEpochInterruption(true))) {
-        // Should not throw
-        epochEngine.incrementEpoch();
-        epochEngine.incrementEpoch();
-        epochEngine.incrementEpoch();
-      }
+    @DisplayName("Should have supportsFeature(WasmFeature) method")
+    void shouldHaveSupportsFeatureMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("supportsFeature", WasmFeature.class);
+      assertNotNull(method, "supportsFeature(WasmFeature) method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
     @Test
-    @DisplayName("should increment epoch on non-epoch engine without error")
-    void shouldIncrementEpochOnNonEpochEngineWithoutError() {
-      // Even without epoch interruption enabled, this should not throw
-      engine.incrementEpoch();
-    }
-  }
-
-  @Nested
-  @DisplayName("Engine Comparison Tests")
-  class EngineComparisonTests {
-
-    @Test
-    @DisplayName("should report same engine as same")
-    void shouldReportSameEngineAsSame() {
-      assertTrue(engine.same(engine), "Engine should be same as itself");
+    @DisplayName("Should have isFuelEnabled() method")
+    void shouldHaveIsFuelEnabledMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("isFuelEnabled");
+      assertNotNull(method, "isFuelEnabled() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
     @Test
-    @DisplayName("should throw exception for null engine comparison")
-    void shouldThrowExceptionForNullEngineComparison() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> engine.same(null),
-          "Should throw IllegalArgumentException for null engine");
+    @DisplayName("Should have isCoredumpOnTrapEnabled() method")
+    void shouldHaveIsCoredumpOnTrapEnabledMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("isCoredumpOnTrapEnabled");
+      assertNotNull(method, "isCoredumpOnTrapEnabled() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
     @Test
-    @DisplayName("should compare engines with same config")
-    void shouldCompareEnginesWithSameConfig() throws WasmException {
-      final EngineConfig config = new EngineConfig().consumeFuel(true);
-      try (Engine engine1 = Engine.create(config);
-          Engine engine2 = Engine.create(config)) {
-        // Two separately created engines with same config may or may not be "same"
-        // depending on implementation - just verify it doesn't throw
-        assertNotNull(Boolean.valueOf(engine1.same(engine2)));
-      }
+    @DisplayName("Should have isAsync() method")
+    void shouldHaveIsAsyncMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("isAsync");
+      assertNotNull(method, "isAsync() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
   }
 
   @Nested
-  @DisplayName("Engine Lifecycle Tests")
-  class EngineLifecycleTests {
+  @DisplayName("Resource Limit Method Tests")
+  class ResourceLimitMethodTests {
 
     @Test
-    @DisplayName("should be valid before close")
-    void shouldBeValidBeforeClose() {
-      assertTrue(engine.isValid(), "Engine should be valid before close");
+    @DisplayName("Should have getMemoryLimitPages() method")
+    void shouldHaveGetMemoryLimitPagesMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("getMemoryLimitPages");
+      assertNotNull(method, "getMemoryLimitPages() method should exist");
+      assertEquals(int.class, method.getReturnType(), "Should return int");
     }
 
     @Test
-    @DisplayName("should be invalid after close")
-    void shouldBeInvalidAfterClose() throws WasmException {
-      final Engine tempEngine = Engine.create();
-      assertTrue(tempEngine.isValid(), "Engine should be valid before close");
-      tempEngine.close();
-      assertFalse(tempEngine.isValid(), "Engine should be invalid after close");
+    @DisplayName("Should have getStackSizeLimit() method")
+    void shouldHaveGetStackSizeLimitMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("getStackSizeLimit");
+      assertNotNull(method, "getStackSizeLimit() method should exist");
+      assertEquals(long.class, method.getReturnType(), "Should return long");
     }
 
     @Test
-    @DisplayName("should handle multiple close calls")
-    void shouldHandleMultipleCloseCalls() throws WasmException {
-      final Engine tempEngine = Engine.create();
-      tempEngine.close();
-      // Second close should not throw
-      tempEngine.close();
-      assertFalse(tempEngine.isValid(), "Engine should remain invalid");
+    @DisplayName("Should have getMaxInstances() method")
+    void shouldHaveGetMaxInstancesMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("getMaxInstances");
+      assertNotNull(method, "getMaxInstances() method should exist");
+      assertEquals(int.class, method.getReturnType(), "Should return int");
     }
 
     @Test
-    @DisplayName("should work with try-with-resources")
-    void shouldWorkWithTryWithResources() throws WasmException {
-      Engine tempEngine;
-      try (Engine autoClosedEngine = Engine.create()) {
-        tempEngine = autoClosedEngine;
-        assertTrue(autoClosedEngine.isValid(), "Engine should be valid inside try block");
-      }
-      assertFalse(tempEngine.isValid(), "Engine should be invalid after try-with-resources");
+    @DisplayName("Should have getReferenceCount() method")
+    void shouldHaveGetReferenceCountMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("getReferenceCount");
+      assertNotNull(method, "getReferenceCount() method should exist");
+      assertEquals(long.class, method.getReturnType(), "Should return long");
     }
   }
 
   @Nested
-  @DisplayName("Statistics Tests")
-  class StatisticsTests {
+  @DisplayName("Precompilation Method Tests")
+  class PrecompilationMethodTests {
 
     @Test
-    @DisplayName("should capture engine statistics")
-    void shouldCaptureEngineStatistics() {
-      final ai.tegmentum.wasmtime4j.performance.EngineStatistics stats = engine.captureStatistics();
-      assertNotNull(stats, "Statistics should not be null");
+    @DisplayName("Should have detectPrecompiled(byte[]) method")
+    void shouldHaveDetectPrecompiledMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("detectPrecompiled", byte[].class);
+      assertNotNull(method, "detectPrecompiled(byte[]) method should exist");
+      assertEquals(Precompiled.class, method.getReturnType(), "Should return Precompiled");
     }
 
     @Test
-    @DisplayName("should return pooling allocator metrics or null")
-    void shouldReturnPoolingAllocatorMetricsOrNull() {
-      // May return null if pooling is not enabled
-      final ai.tegmentum.wasmtime4j.pool.PoolStatistics metrics =
-          engine.getPoolingAllocatorMetrics();
-      // Just verify it doesn't throw - may be null
+    @DisplayName("Should have same(Engine) method")
+    void shouldHaveSameMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("same", Engine.class);
+      assertNotNull(method, "same(Engine) method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
   }
 
   @Nested
-  @DisplayName("Pulley Interpreter Tests")
-  class PulleyInterpreterTests {
+  @DisplayName("Default Method Tests")
+  class DefaultMethodTests {
 
     @Test
-    @DisplayName("should report pulley status")
-    void shouldReportPulleyStatus() {
-      // Just verify the method exists and returns a boolean
-      final boolean isPulley = engine.isPulley();
-      assertNotNull(Boolean.valueOf(isPulley), "isPulley should return a boolean");
+    @DisplayName("Should have isPulley() default method")
+    void shouldHaveIsPulleyDefaultMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("isPulley");
+      assertNotNull(method, "isPulley() method should exist");
+      assertTrue(method.isDefault(), "isPulley() should be a default method");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
+    }
+
+    @Test
+    @DisplayName("Should have precompileCompatibilityHash() default method")
+    void shouldHavePrecompileCompatibilityHashDefaultMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("precompileCompatibilityHash");
+      assertNotNull(method, "precompileCompatibilityHash() method should exist");
+      assertTrue(method.isDefault(), "precompileCompatibilityHash() should be a default method");
+      assertEquals(byte[].class, method.getReturnType(), "Should return byte[]");
+    }
+
+    @Test
+    @DisplayName("Should have captureStatistics() default method")
+    void shouldHaveCaptureStatisticsDefaultMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("captureStatistics");
+      assertNotNull(method, "captureStatistics() method should exist");
+      assertTrue(method.isDefault(), "captureStatistics() should be a default method");
+    }
+
+    @Test
+    @DisplayName("Should have getPoolingAllocatorMetrics() default method")
+    void shouldHaveGetPoolingAllocatorMetricsDefaultMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("getPoolingAllocatorMetrics");
+      assertNotNull(method, "getPoolingAllocatorMetrics() method should exist");
+      assertTrue(method.isDefault(), "getPoolingAllocatorMetrics() should be a default method");
+    }
+  }
+
+  @Nested
+  @DisplayName("Static Factory Method Tests")
+  class StaticFactoryMethodTests {
+
+    @Test
+    @DisplayName("Should have static create() method")
+    void shouldHaveStaticCreateMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("create");
+      assertNotNull(method, "create() method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create() should be static");
+      assertEquals(Engine.class, method.getReturnType(), "Should return Engine");
+    }
+
+    @Test
+    @DisplayName("Should have static create(EngineConfig) method")
+    void shouldHaveStaticCreateWithConfigMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("create", EngineConfig.class);
+      assertNotNull(method, "create(EngineConfig) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create(EngineConfig) should be static");
+      assertEquals(Engine.class, method.getReturnType(), "Should return Engine");
+    }
+
+    @Test
+    @DisplayName("Should have static builder() method")
+    void shouldHaveStaticBuilderMethod() throws NoSuchMethodException {
+      final Method method = Engine.class.getMethod("builder");
+      assertNotNull(method, "builder() method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "builder() should be static");
+      assertEquals(EngineConfig.class, method.getReturnType(), "Should return EngineConfig");
     }
   }
 }

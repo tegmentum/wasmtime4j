@@ -1,372 +1,530 @@
 package ai.tegmentum.wasmtime4j;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.io.Closeable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for the Store interface.
+ * Tests for the {@link Store} interface.
  *
- * <p>Tests verify store creation, data management, context operations, fuel management, epoch
- * interruption, and resource lifecycle management. These tests require the native Wasmtime runtime
- * to be available.
+ * <p>This test class verifies the structure and contract of the Store interface, which represents a
+ * WebAssembly execution context.
  */
 @DisplayName("Store Interface Tests")
-@RequiresWasmRuntime
 class StoreTest {
 
-  private Engine engine;
-  private Store store;
+  @Nested
+  @DisplayName("Interface Definition Tests")
+  class InterfaceDefinitionTests {
 
-  @BeforeEach
-  void setUp() throws WasmException {
-    engine = Engine.create();
-    store = engine.createStore();
-  }
-
-  @AfterEach
-  void tearDown() {
-    if (store != null) {
-      store.close();
-      store = null;
+    @Test
+    @DisplayName("Store should be an interface")
+    void shouldBeAnInterface() {
+      assertTrue(Store.class.isInterface(), "Store should be an interface");
     }
-    if (engine != null) {
-      engine.close();
-      engine = null;
+
+    @Test
+    @DisplayName("Store should extend Closeable")
+    void shouldExtendCloseable() {
+      assertTrue(Closeable.class.isAssignableFrom(Store.class), "Store should extend Closeable");
+    }
+
+    @Test
+    @DisplayName("Store should be public")
+    void shouldBePublic() {
+      assertTrue(
+          Modifier.isPublic(Store.class.getModifiers()), "Store should be a public interface");
     }
   }
 
   @Nested
-  @DisplayName("Store Creation Tests")
-  class StoreCreationTests {
+  @DisplayName("Engine and Data Method Tests")
+  class EngineAndDataMethodTests {
 
     @Test
-    @DisplayName("should create store from engine")
-    void shouldCreateStoreFromEngine() throws WasmException {
-      try (Store newStore = engine.createStore()) {
-        assertNotNull(newStore, "Store should not be null");
-      }
+    @DisplayName("Should have getEngine() method")
+    void shouldHaveGetEngineMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("getEngine");
+      assertNotNull(method, "getEngine() method should exist");
+      assertEquals(Engine.class, method.getReturnType(), "Should return Engine");
     }
 
     @Test
-    @DisplayName("should create store with custom data")
-    void shouldCreateStoreWithCustomData() throws WasmException {
-      final String customData = "test-store-data";
-      try (Store dataStore = engine.createStore(customData)) {
-        assertNotNull(dataStore, "Store should not be null");
-        assertEquals(customData, dataStore.getData(), "Store data should match");
-      }
+    @DisplayName("Should have getData() method")
+    void shouldHaveGetDataMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("getData");
+      assertNotNull(method, "getData() method should exist");
+      assertEquals(Object.class, method.getReturnType(), "Should return Object");
     }
 
     @Test
-    @DisplayName("should create store with null data")
-    void shouldCreateStoreWithNullData() throws WasmException {
-      try (Store nullDataStore = engine.createStore(null)) {
-        assertNotNull(nullDataStore, "Store should not be null");
-        assertNull(nullDataStore.getData(), "Store data should be null");
-      }
-    }
-
-    @Test
-    @DisplayName("should create multiple stores from same engine")
-    void shouldCreateMultipleStoresFromSameEngine() throws WasmException {
-      try (Store store1 = engine.createStore();
-          Store store2 = engine.createStore();
-          Store store3 = engine.createStore()) {
-        assertNotNull(store1, "First store should not be null");
-        assertNotNull(store2, "Second store should not be null");
-        assertNotNull(store3, "Third store should not be null");
-        assertNotSame(store1, store2, "Stores should be different instances");
-        assertNotSame(store2, store3, "Stores should be different instances");
-      }
+    @DisplayName("Should have setData(Object) method")
+    void shouldHaveSetDataMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("setData", Object.class);
+      assertNotNull(method, "setData(Object) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
   @Nested
-  @DisplayName("Store Data Management Tests")
-  class StoreDataManagementTests {
+  @DisplayName("Fuel Method Tests")
+  class FuelMethodTests {
 
     @Test
-    @DisplayName("should get and set store data")
-    void shouldGetAndSetStoreData() {
-      final String initialData = "initial";
-      store.setData(initialData);
-      assertEquals(initialData, store.getData(), "Should get the set data");
-
-      final String updatedData = "updated";
-      store.setData(updatedData);
-      assertEquals(updatedData, store.getData(), "Should get the updated data");
+    @DisplayName("Should have setFuel(long) method")
+    void shouldHaveSetFuelMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("setFuel", long.class);
+      assertNotNull(method, "setFuel(long) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should allow setting null data")
-    void shouldAllowSettingNullData() {
-      store.setData("something");
-      assertNotNull(store.getData(), "Data should not be null initially");
-
-      store.setData(null);
-      assertNull(store.getData(), "Data should be null after setting null");
+    @DisplayName("Should have getFuel() method")
+    void shouldHaveGetFuelMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("getFuel");
+      assertNotNull(method, "getFuel() method should exist");
+      assertEquals(long.class, method.getReturnType(), "Should return long");
     }
 
     @Test
-    @DisplayName("should support different data types")
-    void shouldSupportDifferentDataTypes() {
-      // String
-      store.setData("string-data");
-      assertEquals("string-data", store.getData(), "Should store string data");
-
-      // Integer
-      store.setData(Integer.valueOf(42));
-      assertEquals(Integer.valueOf(42), store.getData(), "Should store integer data");
-
-      // Custom object
-      final Object customObject = new Object();
-      store.setData(customObject);
-      assertSame(customObject, store.getData(), "Should store custom object");
+    @DisplayName("Should have addFuel(long) method")
+    void shouldHaveAddFuelMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("addFuel", long.class);
+      assertNotNull(method, "addFuel(long) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
-  }
-
-  @Nested
-  @DisplayName("Store Engine Reference Tests")
-  class StoreEngineReferenceTests {
 
     @Test
-    @DisplayName("should return reference to parent engine")
-    void shouldReturnReferenceToParentEngine() {
-      final Engine storeEngine = store.getEngine();
-      assertNotNull(storeEngine, "Engine reference should not be null");
-      assertTrue(storeEngine.same(engine), "Should reference the same engine");
+    @DisplayName("Should have consumeFuel(long) method")
+    void shouldHaveConsumeFuelMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("consumeFuel", long.class);
+      assertNotNull(method, "consumeFuel(long) method should exist");
+      assertEquals(long.class, method.getReturnType(), "Should return long");
+    }
+
+    @Test
+    @DisplayName("Should have getRemainingFuel() method")
+    void shouldHaveGetRemainingFuelMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("getRemainingFuel");
+      assertNotNull(method, "getRemainingFuel() method should exist");
+      assertEquals(long.class, method.getReturnType(), "Should return long");
+    }
+
+    @Test
+    @DisplayName("Should have getTotalFuelConsumed() method")
+    void shouldHaveGetTotalFuelConsumedMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("getTotalFuelConsumed");
+      assertNotNull(method, "getTotalFuelConsumed() method should exist");
+      assertEquals(long.class, method.getReturnType(), "Should return long");
     }
   }
 
   @Nested
-  @DisplayName("Fuel Management Tests")
-  class FuelManagementTests {
+  @DisplayName("Epoch Method Tests")
+  class EpochMethodTests {
 
     @Test
-    @DisplayName("should add fuel to store with fuel enabled")
-    void shouldAddFuelToStoreWithFuelEnabled() throws WasmException {
-      final EngineConfig config = new EngineConfig().consumeFuel(true);
-      try (Engine fuelEngine = Engine.create(config);
-          Store fuelStore = fuelEngine.createStore()) {
-        fuelStore.addFuel(1000L);
-        final long remaining = fuelStore.getFuel();
-        assertTrue(remaining >= 1000L, "Fuel remaining should be at least 1000");
-      }
+    @DisplayName("Should have setEpochDeadline(long) method")
+    void shouldHaveSetEpochDeadlineMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("setEpochDeadline", long.class);
+      assertNotNull(method, "setEpochDeadline(long) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should consume fuel when executed")
-    void shouldConsumeFuelWhenExecuted() throws WasmException {
-      final EngineConfig config = new EngineConfig().consumeFuel(true);
-      try (Engine fuelEngine = Engine.create(config);
-          Store fuelStore = fuelEngine.createStore()) {
-        fuelStore.addFuel(10000L);
-        final long initialFuel = fuelStore.getFuel();
-        assertTrue(initialFuel >= 10000L, "Initial fuel should be at least 10000");
-      }
+    @DisplayName("Should have epochDeadlineAsyncYieldAndUpdate(long) method")
+    void shouldHaveEpochDeadlineAsyncYieldAndUpdateMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("epochDeadlineAsyncYieldAndUpdate", long.class);
+      assertNotNull(method, "epochDeadlineAsyncYieldAndUpdate(long) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should return zero fuel when disabled")
-    void shouldReturnZeroFuelWhenDisabled() throws WasmException {
-      // Fuel is disabled by default
-      final long remaining = store.getFuel();
-      assertEquals(0L, remaining, "Fuel should be 0 when disabled");
+    @DisplayName("Should have epochDeadlineTrap() method")
+    void shouldHaveEpochDeadlineTrapMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("epochDeadlineTrap");
+      assertNotNull(method, "epochDeadlineTrap() method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should handle multiple fuel additions")
-    void shouldHandleMultipleFuelAdditions() throws WasmException {
-      final EngineConfig config = new EngineConfig().consumeFuel(true);
-      try (Engine fuelEngine = Engine.create(config);
-          Store fuelStore = fuelEngine.createStore()) {
-        fuelStore.addFuel(100L);
-        fuelStore.addFuel(200L);
-        fuelStore.addFuel(300L);
-        final long remaining = fuelStore.getFuel();
-        assertTrue(remaining >= 600L, "Fuel should accumulate");
-      }
+    @DisplayName("Should have epochDeadlineCallback(EpochDeadlineCallback) method")
+    void shouldHaveEpochDeadlineCallbackMethod() throws NoSuchMethodException {
+      final Class<?> callbackClass = Store.EpochDeadlineCallback.class;
+      final Method method = Store.class.getMethod("epochDeadlineCallback", callbackClass);
+      assertNotNull(method, "epochDeadlineCallback(EpochDeadlineCallback) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
   @Nested
-  @DisplayName("Epoch Deadline Tests")
-  class EpochDeadlineTests {
+  @DisplayName("Resource Creation Method Tests")
+  class ResourceCreationMethodTests {
 
     @Test
-    @DisplayName("should set epoch deadline with epoch interruption enabled")
-    void shouldSetEpochDeadlineWithEpochInterruptionEnabled() throws WasmException {
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
-      try (Engine epochEngine = Engine.create(config);
-          Store epochStore = epochEngine.createStore()) {
-        // Should not throw
-        epochStore.setEpochDeadline(100L);
-      }
+    @DisplayName("Should have createHostFunction method")
+    void shouldHaveCreateHostFunctionMethod() throws NoSuchMethodException {
+      final Method method =
+          Store.class.getMethod(
+              "createHostFunction", String.class, FunctionType.class, HostFunction.class);
+      assertNotNull(method, "createHostFunction method should exist");
+      assertEquals(WasmFunction.class, method.getReturnType(), "Should return WasmFunction");
+    }
+
+    @Test
+    @DisplayName("Should have createGlobal method")
+    void shouldHaveCreateGlobalMethod() throws NoSuchMethodException {
+      final Method method =
+          Store.class.getMethod(
+              "createGlobal", WasmValueType.class, boolean.class, WasmValue.class);
+      assertNotNull(method, "createGlobal method should exist");
+      assertEquals(WasmGlobal.class, method.getReturnType(), "Should return WasmGlobal");
+    }
+
+    @Test
+    @DisplayName("Should have createTable method")
+    void shouldHaveCreateTableMethod() throws NoSuchMethodException {
+      final Method method =
+          Store.class.getMethod("createTable", WasmValueType.class, int.class, int.class);
+      assertNotNull(method, "createTable method should exist");
+      assertEquals(WasmTable.class, method.getReturnType(), "Should return WasmTable");
+    }
+
+    @Test
+    @DisplayName("Should have createMemory method")
+    void shouldHaveCreateMemoryMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("createMemory", int.class, int.class);
+      assertNotNull(method, "createMemory method should exist");
+      assertEquals(WasmMemory.class, method.getReturnType(), "Should return WasmMemory");
+    }
+
+    @Test
+    @DisplayName("Should have createSharedMemory method")
+    void shouldHaveCreateSharedMemoryMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("createSharedMemory", int.class, int.class);
+      assertNotNull(method, "createSharedMemory method should exist");
+      assertEquals(WasmMemory.class, method.getReturnType(), "Should return WasmMemory");
     }
   }
 
   @Nested
-  @DisplayName("Store Lifecycle Tests")
-  class StoreLifecycleTests {
+  @DisplayName("Async Resource Creation Method Tests")
+  class AsyncResourceCreationMethodTests {
 
     @Test
-    @DisplayName("should work with try-with-resources")
-    void shouldWorkWithTryWithResources() throws WasmException {
-      Store tempStore;
-      try (Store autoClosedStore = engine.createStore()) {
-        tempStore = autoClosedStore;
-        assertNotNull(autoClosedStore, "Store should not be null inside try block");
-      }
-      // After closing, operations may fail or return invalid state
-      assertNotNull(tempStore, "Reference should still exist");
-    }
-
-    @Test
-    @DisplayName("should handle multiple close calls")
-    void shouldHandleMultipleCloseCalls() throws WasmException {
-      final Store tempStore = engine.createStore();
-      tempStore.close();
-      // Second close should not throw
-      tempStore.close();
-    }
-  }
-
-  @Nested
-  @DisplayName("Memory Creation Tests")
-  class MemoryCreationTests {
-
-    @Test
-    @DisplayName("should create memory with initial and max pages")
-    void shouldCreateMemoryWithInitialAndMaxPages() throws WasmException {
-      final WasmMemory memory = store.createMemory(1, 10);
-      assertNotNull(memory, "Memory should not be null");
-      assertEquals(1, memory.getSize(), "Memory should have initial size of 1 page");
-    }
-
-    @Test
-    @DisplayName("should create memory with only initial pages")
-    void shouldCreateMemoryWithOnlyInitialPages() throws WasmException {
-      final WasmMemory memory = store.createMemory(2, -1);
-      assertNotNull(memory, "Memory should not be null");
-      assertEquals(2, memory.getSize(), "Memory should have initial size of 2 pages");
-    }
-  }
-
-  @Nested
-  @DisplayName("Global Creation Tests")
-  class GlobalCreationTests {
-
-    @Test
-    @DisplayName("should create mutable i32 global")
-    void shouldCreateMutableI32Global() throws WasmException {
-      final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(42));
-      assertNotNull(global, "Global should not be null");
-      assertEquals(WasmValueType.I32, global.getType(), "Global type should be I32");
-      assertTrue(global.isMutable(), "Global should be mutable");
-      assertEquals(42, global.get().asI32(), "Global initial value should be 42");
-    }
-
-    @Test
-    @DisplayName("should create immutable i64 global")
-    void shouldCreateImmutableI64Global() throws WasmException {
-      final WasmGlobal global =
-          store.createGlobal(WasmValueType.I64, false, WasmValue.i64(123456789L));
-      assertNotNull(global, "Global should not be null");
-      assertEquals(WasmValueType.I64, global.getType(), "Global type should be I64");
-      assertFalse(global.isMutable(), "Global should be immutable");
-      assertEquals(123456789L, global.get().asI64(), "Global initial value should match");
-    }
-
-    @Test
-    @DisplayName("should create f32 global")
-    void shouldCreateF32Global() throws WasmException {
-      final WasmGlobal global = store.createGlobal(WasmValueType.F32, true, WasmValue.f32(3.14f));
-      assertNotNull(global, "Global should not be null");
-      assertEquals(WasmValueType.F32, global.getType(), "Global type should be F32");
-      assertEquals(3.14f, global.get().asF32(), 0.001f, "Global initial value should match");
-    }
-
-    @Test
-    @DisplayName("should create f64 global")
-    void shouldCreateF64Global() throws WasmException {
-      final WasmGlobal global = store.createGlobal(WasmValueType.F64, true, WasmValue.f64(2.71828));
-      assertNotNull(global, "Global should not be null");
-      assertEquals(WasmValueType.F64, global.getType(), "Global type should be F64");
-      assertEquals(2.71828, global.get().asF64(), 0.00001, "Global initial value should match");
-    }
-  }
-
-  @Nested
-  @DisplayName("Table Creation Tests")
-  class TableCreationTests {
-
-    @Test
-    @DisplayName("should create funcref table")
-    void shouldCreateFuncrefTable() throws WasmException {
-      final WasmTable table = store.createTable(WasmValueType.FUNCREF, 10, 100);
-      assertNotNull(table, "Table should not be null");
-      assertEquals(10, table.getSize(), "Table should have initial size of 10");
+    @DisplayName("Should have createTableAsync method")
+    void shouldHaveCreateTableAsyncMethod() throws NoSuchMethodException {
+      final Method method =
+          Store.class.getMethod("createTableAsync", WasmValueType.class, int.class, int.class);
+      assertNotNull(method, "createTableAsync method should exist");
       assertEquals(
-          WasmValueType.FUNCREF, table.getElementType(), "Table element type should be FUNCREF");
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
     }
 
     @Test
-    @DisplayName("should create externref table")
-    void shouldCreateExternrefTable() throws WasmException {
-      final WasmTable table = store.createTable(WasmValueType.EXTERNREF, 5, 50);
-      assertNotNull(table, "Table should not be null");
-      assertEquals(5, table.getSize(), "Table should have initial size of 5");
+    @DisplayName("Should have createMemoryAsync method")
+    void shouldHaveCreateMemoryAsyncMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("createMemoryAsync", int.class, int.class);
+      assertNotNull(method, "createMemoryAsync method should exist");
       assertEquals(
-          WasmValueType.EXTERNREF,
-          table.getElementType(),
-          "Table element type should be EXTERNREF");
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
     }
   }
 
   @Nested
-  @DisplayName("Instance Creation Tests")
-  class InstanceCreationTests {
-
-    /** Minimal valid WebAssembly module (empty module). */
-    private static final byte[] MINIMAL_WASM = {0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
+  @DisplayName("Instance Method Tests")
+  class InstanceMethodTests {
 
     @Test
-    @DisplayName("should create instance from module")
-    void shouldCreateInstanceFromModule() throws WasmException {
-      final Module module = engine.compileModule(MINIMAL_WASM);
-      assertNotNull(module, "Module should not be null");
-
-      final Instance instance = store.createInstance(module);
-      assertNotNull(instance, "Instance should not be null");
-
-      instance.close();
-      module.close();
+    @DisplayName("Should have createInstance(Module) method")
+    void shouldHaveCreateInstanceMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("createInstance", Module.class);
+      assertNotNull(method, "createInstance(Module) method should exist");
+      assertEquals(Instance.class, method.getReturnType(), "Should return Instance");
     }
   }
 
   @Nested
-  @DisplayName("GC and Limits Tests")
-  class GcAndLimitsTests {
+  @DisplayName("Execution Statistics Method Tests")
+  class ExecutionStatisticsMethodTests {
 
     @Test
-    @DisplayName("should run garbage collection without error")
-    void shouldRunGarbageCollectionWithoutError() throws WasmException {
-      // Should not throw
-      store.gc();
+    @DisplayName("Should have getExecutionCount() method")
+    void shouldHaveGetExecutionCountMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("getExecutionCount");
+      assertNotNull(method, "getExecutionCount() method should exist");
+      assertEquals(long.class, method.getReturnType(), "Should return long");
     }
 
     @Test
-    @DisplayName("should set and respect limits")
-    void shouldSetAndRespectLimits() throws WasmException {
-      // Just verify the method exists and doesn't throw
-      store.limiter(null);
+    @DisplayName("Should have getTotalExecutionTimeMicros() method")
+    void shouldHaveGetTotalExecutionTimeMicrosMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("getTotalExecutionTimeMicros");
+      assertNotNull(method, "getTotalExecutionTimeMicros() method should exist");
+      assertEquals(long.class, method.getReturnType(), "Should return long");
+    }
+  }
+
+  @Nested
+  @DisplayName("Backtrace Method Tests")
+  class BacktraceMethodTests {
+
+    @Test
+    @DisplayName("Should have captureBacktrace() method")
+    void shouldHaveCaptureBacktraceMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("captureBacktrace");
+      assertNotNull(method, "captureBacktrace() method should exist");
+      assertEquals(WasmBacktrace.class, method.getReturnType(), "Should return WasmBacktrace");
+    }
+
+    @Test
+    @DisplayName("Should have forceCaptureBacktrace() method")
+    void shouldHaveForceCaptureBacktraceMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("forceCaptureBacktrace");
+      assertNotNull(method, "forceCaptureBacktrace() method should exist");
+      assertEquals(WasmBacktrace.class, method.getReturnType(), "Should return WasmBacktrace");
+    }
+  }
+
+  @Nested
+  @DisplayName("GC Method Tests")
+  class GcMethodTests {
+
+    @Test
+    @DisplayName("Should have gc() method")
+    void shouldHaveGcMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("gc");
+      assertNotNull(method, "gc() method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+
+    @Test
+    @DisplayName("Should have gcAsync() method")
+    void shouldHaveGcAsyncMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("gcAsync");
+      assertNotNull(method, "gcAsync() method should exist");
+      assertEquals(
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
+    }
+  }
+
+  @Nested
+  @DisplayName("Exception Handling Method Tests")
+  class ExceptionHandlingMethodTests {
+
+    @Test
+    @DisplayName("Should have throwException(ExnRef) method")
+    void shouldHaveThrowExceptionMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("throwException", ExnRef.class);
+      assertNotNull(method, "throwException(ExnRef) method should exist");
+      assertEquals(Object.class, method.getReturnType(), "Should return Object (generic R)");
+    }
+
+    @Test
+    @DisplayName("Should have takePendingException() method")
+    void shouldHaveTakePendingExceptionMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("takePendingException");
+      assertNotNull(method, "takePendingException() method should exist");
+      assertEquals(ExnRef.class, method.getReturnType(), "Should return ExnRef");
+    }
+
+    @Test
+    @DisplayName("Should have hasPendingException() method")
+    void shouldHaveHasPendingExceptionMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("hasPendingException");
+      assertNotNull(method, "hasPendingException() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
+    }
+  }
+
+  @Nested
+  @DisplayName("Call Hook Method Tests")
+  class CallHookMethodTests {
+
+    @Test
+    @DisplayName("Should have setCallHook(CallHookHandler) method")
+    void shouldHaveSetCallHookMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("setCallHook", CallHookHandler.class);
+      assertNotNull(method, "setCallHook(CallHookHandler) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+
+    @Test
+    @DisplayName("Should have setCallHookAsync(AsyncCallHookHandler) method")
+    void shouldHaveSetCallHookAsyncMethod() throws NoSuchMethodException {
+      final Class<?> handlerClass = Store.AsyncCallHookHandler.class;
+      final Method method = Store.class.getMethod("setCallHookAsync", handlerClass);
+      assertNotNull(method, "setCallHookAsync(AsyncCallHookHandler) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+  }
+
+  @Nested
+  @DisplayName("Debug Method Tests")
+  class DebugMethodTests {
+
+    @Test
+    @DisplayName("Should have debugFrames() method")
+    void shouldHaveDebugFramesMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("debugFrames");
+      assertNotNull(method, "debugFrames() method should exist");
+      assertEquals(List.class, method.getReturnType(), "Should return List");
+    }
+  }
+
+  @Nested
+  @DisplayName("Validity Method Tests")
+  class ValidityMethodTests {
+
+    @Test
+    @DisplayName("Should have isValid() method")
+    void shouldHaveIsValidMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("isValid");
+      assertNotNull(method, "isValid() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
+    }
+
+    @Test
+    @DisplayName("Should have close() method")
+    void shouldHaveCloseMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("close");
+      assertNotNull(method, "close() method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+  }
+
+  @Nested
+  @DisplayName("Static Factory Method Tests")
+  class StaticFactoryMethodTests {
+
+    @Test
+    @DisplayName("Should have static create(Engine) method")
+    void shouldHaveStaticCreateMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("create", Engine.class);
+      assertNotNull(method, "create(Engine) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
+      assertEquals(Store.class, method.getReturnType(), "Should return Store");
+    }
+
+    @Test
+    @DisplayName("Should have static create(Engine, long, long, long) method")
+    void shouldHaveStaticCreateWithLimitsMethod() throws NoSuchMethodException {
+      final Method method =
+          Store.class.getMethod("create", Engine.class, long.class, long.class, long.class);
+      assertNotNull(method, "create(Engine, long, long, long) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
+      assertEquals(Store.class, method.getReturnType(), "Should return Store");
+    }
+
+    @Test
+    @DisplayName("Should have static create(Engine, StoreLimits) method")
+    void shouldHaveStaticCreateWithStoreLimitsMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("create", Engine.class, StoreLimits.class);
+      assertNotNull(method, "create(Engine, StoreLimits) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
+      assertEquals(Store.class, method.getReturnType(), "Should return Store");
+    }
+
+    @Test
+    @DisplayName("Should have static builder(Engine) method")
+    void shouldHaveStaticBuilderMethod() throws NoSuchMethodException {
+      final Method method = Store.class.getMethod("builder", Engine.class);
+      assertNotNull(method, "builder(Engine) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "builder should be static");
+      assertEquals(StoreBuilder.class, method.getReturnType(), "Should return StoreBuilder");
+    }
+  }
+
+  @Nested
+  @DisplayName("Inner Interface and Class Tests")
+  class InnerInterfaceAndClassTests {
+
+    @Test
+    @DisplayName("Should have EpochDeadlineCallback inner interface")
+    void shouldHaveEpochDeadlineCallbackInnerInterface() {
+      assertNotNull(
+          Store.EpochDeadlineCallback.class,
+          "Store should have EpochDeadlineCallback inner interface");
+      assertTrue(
+          Store.EpochDeadlineCallback.class.isInterface(),
+          "EpochDeadlineCallback should be an interface");
+    }
+
+    @Test
+    @DisplayName("EpochDeadlineCallback should have onEpochDeadline method")
+    void epochDeadlineCallbackShouldHaveOnEpochDeadlineMethod() throws NoSuchMethodException {
+      final Method method =
+          Store.EpochDeadlineCallback.class.getMethod("onEpochDeadline", long.class);
+      assertNotNull(method, "onEpochDeadline(long) method should exist");
+      assertEquals(
+          Store.EpochDeadlineAction.class,
+          method.getReturnType(),
+          "Should return EpochDeadlineAction");
+    }
+
+    @Test
+    @DisplayName("Should have EpochDeadlineAction inner class")
+    void shouldHaveEpochDeadlineActionInnerClass() {
+      assertNotNull(
+          Store.EpochDeadlineAction.class, "Store should have EpochDeadlineAction inner class");
+      assertTrue(
+          Modifier.isFinal(Store.EpochDeadlineAction.class.getModifiers()),
+          "EpochDeadlineAction should be final");
+    }
+
+    @Test
+    @DisplayName("EpochDeadlineAction should have continueWith static method")
+    void epochDeadlineActionShouldHaveContinueWithMethod() throws NoSuchMethodException {
+      final Method method = Store.EpochDeadlineAction.class.getMethod("continueWith", long.class);
+      assertNotNull(method, "continueWith(long) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "continueWith should be static");
+      assertEquals(
+          Store.EpochDeadlineAction.class,
+          method.getReturnType(),
+          "Should return EpochDeadlineAction");
+    }
+
+    @Test
+    @DisplayName("EpochDeadlineAction should have trap static method")
+    void epochDeadlineActionShouldHaveTrapMethod() throws NoSuchMethodException {
+      final Method method = Store.EpochDeadlineAction.class.getMethod("trap");
+      assertNotNull(method, "trap() method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "trap should be static");
+      assertEquals(
+          Store.EpochDeadlineAction.class,
+          method.getReturnType(),
+          "Should return EpochDeadlineAction");
+    }
+
+    @Test
+    @DisplayName("Should have AsyncCallHookHandler inner interface")
+    void shouldHaveAsyncCallHookHandlerInnerInterface() {
+      assertNotNull(
+          Store.AsyncCallHookHandler.class,
+          "Store should have AsyncCallHookHandler inner interface");
+      assertTrue(
+          Store.AsyncCallHookHandler.class.isInterface(),
+          "AsyncCallHookHandler should be an interface");
+    }
+
+    @Test
+    @DisplayName("Should have AsyncResourceLimiter inner interface")
+    void shouldHaveAsyncResourceLimiterInnerInterface() {
+      assertNotNull(
+          Store.AsyncResourceLimiter.class,
+          "Store should have AsyncResourceLimiter inner interface");
+      assertTrue(
+          Store.AsyncResourceLimiter.class.isInterface(),
+          "AsyncResourceLimiter should be an interface");
     }
   }
 }

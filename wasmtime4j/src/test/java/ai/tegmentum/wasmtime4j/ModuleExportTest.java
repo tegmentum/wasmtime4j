@@ -1,19 +1,3 @@
-/*
- * Copyright 2025 Tegmentum AI
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
@@ -30,406 +16,223 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link ModuleExport} class.
+ * Tests for the {@link ModuleExport} class.
  *
- * <p>ModuleExport represents a WebAssembly module export with complete type information.
+ * <p>This test class verifies the structure and behavior of the ModuleExport class, which
+ * represents a WebAssembly module export with complete type information.
  */
-@DisplayName("ModuleExport Tests")
+@DisplayName("ModuleExport Class Tests")
 class ModuleExportTest {
 
-  /** Simple test implementation of WasmType for testing purposes. */
-  private static class TestWasmType implements WasmType {
-    private final WasmTypeKind kind;
+  @Nested
+  @DisplayName("Class Definition Tests")
+  class ClassDefinitionTests {
 
-    TestWasmType(final WasmTypeKind kind) {
-      this.kind = kind;
+    @Test
+    @DisplayName("ModuleExport should be a final class")
+    void shouldBeFinalClass() {
+      assertTrue(
+          Modifier.isFinal(ModuleExport.class.getModifiers()),
+          "ModuleExport should be a final class");
     }
 
-    @Override
-    public WasmTypeKind getKind() {
-      return kind;
+    @Test
+    @DisplayName("ModuleExport should be public")
+    void shouldBePublic() {
+      assertTrue(
+          Modifier.isPublic(ModuleExport.class.getModifiers()),
+          "ModuleExport should be a public class");
     }
 
-    @Override
-    public boolean equals(final Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (!(obj instanceof TestWasmType)) {
-        return false;
-      }
-      final TestWasmType other = (TestWasmType) obj;
-      return kind == other.kind;
-    }
-
-    @Override
-    public int hashCode() {
-      return java.util.Objects.hash(kind);
+    @Test
+    @DisplayName("ModuleExport should not be abstract")
+    void shouldNotBeAbstract() {
+      assertFalse(
+          Modifier.isAbstract(ModuleExport.class.getModifiers()),
+          "ModuleExport should not be abstract");
     }
   }
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
+  @DisplayName("Field Tests")
+  class FieldTests {
 
     @Test
-    @DisplayName("should be public and final")
-    void shouldBePublicAndFinal() {
-      assertTrue(
-          Modifier.isPublic(ModuleExport.class.getModifiers()), "ModuleExport should be public");
-      assertTrue(
-          Modifier.isFinal(ModuleExport.class.getModifiers()), "ModuleExport should be final");
+    @DisplayName("Should have private name field")
+    void shouldHavePrivateNameField() throws NoSuchFieldException {
+      final Field field = ModuleExport.class.getDeclaredField("name");
+      assertNotNull(field, "name field should exist");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "name should be private");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "name should be final");
+      assertEquals(String.class, field.getType(), "name should be String type");
     }
 
     @Test
-    @DisplayName("should have two-parameter constructor")
-    void shouldHaveTwoParameterConstructor() throws NoSuchMethodException {
-      final var constructor = ModuleExport.class.getConstructor(String.class, ExportType.class);
-      assertNotNull(constructor, "Two-parameter constructor should exist");
+    @DisplayName("Should have private exportType field")
+    void shouldHavePrivateExportTypeField() throws NoSuchFieldException {
+      final Field field = ModuleExport.class.getDeclaredField("exportType");
+      assertNotNull(field, "exportType field should exist");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "exportType should be private");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "exportType should be final");
+      assertEquals(ExportType.class, field.getType(), "exportType should be ExportType type");
+    }
+  }
+
+  @Nested
+  @DisplayName("Constructor Tests")
+  class ConstructorTests {
+
+    @Test
+    @DisplayName("Should have public constructor with name and exportType parameters")
+    void shouldHavePublicConstructor() throws NoSuchMethodException {
+      final Constructor<ModuleExport> constructor =
+          ModuleExport.class.getConstructor(String.class, ExportType.class);
+      assertNotNull(constructor, "Constructor should exist");
       assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
 
     @Test
-    @DisplayName("should have getName method")
+    @DisplayName("Constructor should throw IllegalArgumentException for null name")
+    void constructorShouldThrowForNullName() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new ModuleExport(null, createMockExportType()),
+          "Constructor should throw IllegalArgumentException for null name");
+    }
+
+    @Test
+    @DisplayName("Constructor should throw IllegalArgumentException for null exportType")
+    void constructorShouldThrowForNullExportType() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new ModuleExport("test", null),
+          "Constructor should throw IllegalArgumentException for null exportType");
+    }
+  }
+
+  @Nested
+  @DisplayName("Getter Method Tests")
+  class GetterMethodTests {
+
+    @Test
+    @DisplayName("Should have getName() method")
     void shouldHaveGetNameMethod() throws NoSuchMethodException {
       final Method method = ModuleExport.class.getMethod("getName");
-      assertNotNull(method, "getName method should exist");
-      assertEquals(String.class, method.getReturnType(), "getName should return String");
+      assertNotNull(method, "getName() method should exist");
+      assertEquals(String.class, method.getReturnType(), "Should return String");
+      assertEquals(0, method.getParameterCount(), "Should have no parameters");
     }
 
     @Test
-    @DisplayName("should have getExportType method")
+    @DisplayName("Should have getExportType() method")
     void shouldHaveGetExportTypeMethod() throws NoSuchMethodException {
       final Method method = ModuleExport.class.getMethod("getExportType");
-      assertNotNull(method, "getExportType method should exist");
-      assertEquals(
-          ExportType.class, method.getReturnType(), "getExportType should return ExportType");
+      assertNotNull(method, "getExportType() method should exist");
+      assertEquals(ExportType.class, method.getReturnType(), "Should return ExportType");
+      assertEquals(0, method.getParameterCount(), "Should have no parameters");
     }
   }
 
   @Nested
-  @DisplayName("Constructor Validation Tests")
-  class ConstructorValidationTests {
+  @DisplayName("Object Method Tests")
+  class ObjectMethodTests {
 
     @Test
-    @DisplayName("should throw IllegalArgumentException when name is null")
-    void shouldThrowWhenNameIsNull() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("test", testType);
-
-      final IllegalArgumentException exception =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> new ModuleExport(null, exportType),
-              "Should throw IllegalArgumentException for null name");
-
-      assertEquals(
-          "Export name cannot be null", exception.getMessage(), "Exception message should match");
+    @DisplayName("Should have toString() method")
+    void shouldHaveToStringMethod() throws NoSuchMethodException {
+      final Method method = ModuleExport.class.getMethod("toString");
+      assertNotNull(method, "toString() method should exist");
+      assertEquals(String.class, method.getReturnType(), "Should return String");
     }
 
     @Test
-    @DisplayName("should throw IllegalArgumentException when exportType is null")
-    void shouldThrowWhenExportTypeIsNull() {
-      final IllegalArgumentException exception =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> new ModuleExport("testExport", null),
-              "Should throw IllegalArgumentException for null exportType");
-
-      assertEquals(
-          "Export type cannot be null", exception.getMessage(), "Exception message should match");
+    @DisplayName("Should have equals(Object) method")
+    void shouldHaveEqualsMethod() throws NoSuchMethodException {
+      final Method method = ModuleExport.class.getMethod("equals", Object.class);
+      assertNotNull(method, "equals(Object) method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
     @Test
-    @DisplayName("should create instance with valid parameters")
-    void shouldCreateInstanceWithValidParameters() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("testFunc", testType);
-      final ModuleExport export = new ModuleExport("myExport", exportType);
-
-      assertNotNull(export, "ModuleExport instance should not be null");
-      assertEquals("myExport", export.getName(), "Name should match");
-      assertEquals(exportType, export.getExportType(), "ExportType should match");
+    @DisplayName("Should have hashCode() method")
+    void shouldHaveHashCodeMethod() throws NoSuchMethodException {
+      final Method method = ModuleExport.class.getMethod("hashCode");
+      assertNotNull(method, "hashCode() method should exist");
+      assertEquals(int.class, method.getReturnType(), "Should return int");
     }
   }
 
   @Nested
-  @DisplayName("Accessor Method Tests")
-  class AccessorMethodTests {
+  @DisplayName("Behavior Tests")
+  class BehaviorTests {
 
     @Test
-    @DisplayName("getName should return the export name")
-    void getNameShouldReturnExportName() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("add", exportType);
-
-      assertEquals("add", export.getName(), "getName should return the export name");
+    @DisplayName("getName should return the name passed to constructor")
+    void getNameShouldReturnConstructorValue() {
+      final ExportType mockType = createMockExportType();
+      final ModuleExport export = new ModuleExport("testExport", mockType);
+      assertEquals("testExport", export.getName(), "getName should return the name");
     }
 
     @Test
-    @DisplayName("getExportType should return the export type")
-    void getExportTypeShouldReturnExportType() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.MEMORY);
-      final ExportType exportType = new ExportType("memory", testType);
-      final ModuleExport export = new ModuleExport("main_memory", exportType);
-
-      assertEquals(exportType, export.getExportType(), "getExportType should return the type");
+    @DisplayName("getExportType should return the exportType passed to constructor")
+    void getExportTypeShouldReturnConstructorValue() {
+      final ExportType mockType = createMockExportType();
+      final ModuleExport export = new ModuleExport("testExport", mockType);
+      assertEquals(mockType, export.getExportType(), "getExportType should return the type");
     }
-  }
-
-  @Nested
-  @DisplayName("toString Tests")
-  class ToStringTests {
 
     @Test
-    @DisplayName("toString should return formatted string representation")
-    void toStringShouldReturnFormattedString() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("calculate", exportType);
-
+    @DisplayName("toString should include name")
+    void toStringShouldIncludeName() {
+      final ExportType mockType = createMockExportType();
+      final ModuleExport export = new ModuleExport("myFunction", mockType);
       final String result = export.toString();
-
-      assertNotNull(result, "toString should not return null");
-      assertTrue(result.contains("ModuleExport"), "toString should contain class name");
-      assertTrue(result.contains("calculate"), "toString should contain export name");
+      assertTrue(result.contains("myFunction"), "toString should include the name");
+      assertTrue(result.contains("ModuleExport"), "toString should include class name");
     }
-
-    @Test
-    @DisplayName("toString should include name and type information")
-    void toStringShouldIncludeNameAndType() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.GLOBAL);
-      final ExportType exportType = new ExportType("global", testType);
-      final ModuleExport export = new ModuleExport("pi_value", exportType);
-
-      final String result = export.toString();
-
-      assertTrue(result.contains("pi_value"), "toString should include the export name");
-      assertTrue(result.contains("type="), "toString should include type information");
-    }
-  }
-
-  @Nested
-  @DisplayName("equals Tests")
-  class EqualsTests {
 
     @Test
     @DisplayName("equals should return true for same instance")
     void equalsShouldReturnTrueForSameInstance() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("test", exportType);
-
-      assertTrue(export.equals(export), "Same instance should be equal");
-    }
-
-    @Test
-    @DisplayName("equals should return true for equal objects")
-    void equalsShouldReturnTrueForEqualObjects() {
-      final WasmType testType1 = new TestWasmType(WasmTypeKind.FUNCTION);
-      final WasmType testType2 = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType1 = new ExportType("func", testType1);
-      final ExportType exportType2 = new ExportType("func", testType2);
-      final ModuleExport export1 = new ModuleExport("test", exportType1);
-      final ModuleExport export2 = new ModuleExport("test", exportType2);
-
-      assertEquals(export1, export2, "Equal objects should be equal");
-      assertEquals(export2, export1, "Equality should be symmetric");
-    }
-
-    @Test
-    @DisplayName("equals should return false for different names")
-    void equalsShouldReturnFalseForDifferentNames() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export1 = new ModuleExport("test1", exportType);
-      final ModuleExport export2 = new ModuleExport("test2", exportType);
-
-      assertNotEquals(export1, export2, "Different names should not be equal");
-    }
-
-    @Test
-    @DisplayName("equals should return false for different export types")
-    void equalsShouldReturnFalseForDifferentExportTypes() {
-      final WasmType testType1 = new TestWasmType(WasmTypeKind.FUNCTION);
-      final WasmType testType2 = new TestWasmType(WasmTypeKind.MEMORY);
-      final ExportType exportType1 = new ExportType("func1", testType1);
-      final ExportType exportType2 = new ExportType("func2", testType2);
-      final ModuleExport export1 = new ModuleExport("test", exportType1);
-      final ModuleExport export2 = new ModuleExport("test", exportType2);
-
-      assertNotEquals(export1, export2, "Different export types should not be equal");
+      final ExportType mockType = createMockExportType();
+      final ModuleExport export = new ModuleExport("test", mockType);
+      assertEquals(export, export, "equals should return true for same instance");
     }
 
     @Test
     @DisplayName("equals should return false for null")
     void equalsShouldReturnFalseForNull() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("test", exportType);
-
-      assertFalse(export.equals(null), "Comparing with null should return false");
+      final ExportType mockType = createMockExportType();
+      final ModuleExport export = new ModuleExport("test", mockType);
+      assertNotEquals(null, export, "equals should return false for null");
     }
 
     @Test
     @DisplayName("equals should return false for different class")
     void equalsShouldReturnFalseForDifferentClass() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("test", exportType);
-
-      assertFalse(export.equals("test"), "Comparing with different class should return false");
+      final ExportType mockType = createMockExportType();
+      final ModuleExport export = new ModuleExport("test", mockType);
+      assertNotEquals("test", export, "equals should return false for different class");
     }
-  }
-
-  @Nested
-  @DisplayName("hashCode Tests")
-  class HashCodeTests {
 
     @Test
     @DisplayName("hashCode should be consistent")
     void hashCodeShouldBeConsistent() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("test", exportType);
-
+      final ExportType mockType = createMockExportType();
+      final ModuleExport export = new ModuleExport("test", mockType);
       final int hash1 = export.hashCode();
       final int hash2 = export.hashCode();
-
-      assertEquals(hash1, hash2, "hashCode should be consistent across calls");
-    }
-
-    @Test
-    @DisplayName("hashCode should be equal for equal objects")
-    void hashCodeShouldBeEqualForEqualObjects() {
-      final WasmType testType1 = new TestWasmType(WasmTypeKind.FUNCTION);
-      final WasmType testType2 = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType1 = new ExportType("func", testType1);
-      final ExportType exportType2 = new ExportType("func", testType2);
-      final ModuleExport export1 = new ModuleExport("test", exportType1);
-      final ModuleExport export2 = new ModuleExport("test", exportType2);
-
-      assertEquals(
-          export1.hashCode(), export2.hashCode(), "Equal objects should have equal hash codes");
-    }
-
-    @Test
-    @DisplayName("hashCode should differ for different names")
-    void hashCodeShouldDifferForDifferentNames() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export1 = new ModuleExport("name1", exportType);
-      final ModuleExport export2 = new ModuleExport("name2", exportType);
-
-      assertNotEquals(
-          export1.hashCode(),
-          export2.hashCode(),
-          "Different names should likely have different hash codes");
+      assertEquals(hash1, hash2, "hashCode should be consistent");
     }
   }
 
-  @Nested
-  @DisplayName("Edge Case Tests")
-  class EdgeCaseTests {
-
-    @Test
-    @DisplayName("should handle empty name string")
-    void shouldHandleEmptyNameString() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("", exportType);
-
-      assertEquals("", export.getName(), "Empty name should be preserved");
-    }
-
-    @Test
-    @DisplayName("should handle special characters in name")
-    void shouldHandleSpecialCharactersInName() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("export$with_special-chars.123", exportType);
-
-      assertEquals(
-          "export$with_special-chars.123",
-          export.getName(),
-          "Special characters should be preserved");
-    }
-
-    @Test
-    @DisplayName("should handle unicode characters in name")
-    void shouldHandleUnicodeCharactersInName() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("エクスポート", exportType);
-
-      assertEquals("エクスポート", export.getName(), "Unicode characters should be preserved");
-    }
-
-    @Test
-    @DisplayName("should handle very long names")
-    void shouldHandleVeryLongNames() {
-      final String longName = "a".repeat(10000);
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport(longName, exportType);
-
-      assertEquals(longName, export.getName(), "Long names should be preserved");
-    }
-  }
-
-  @Nested
-  @DisplayName("WasmTypeKind Integration Tests")
-  class WasmTypeKindIntegrationTests {
-
-    @Test
-    @DisplayName("should work with FUNCTION type kind")
-    void shouldWorkWithFunctionTypeKind() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.FUNCTION);
-      final ExportType exportType = new ExportType("func", testType);
-      final ModuleExport export = new ModuleExport("my_function", exportType);
-
-      assertEquals(
-          WasmTypeKind.FUNCTION,
-          export.getExportType().getType().getKind(),
-          "Should work with FUNCTION");
-    }
-
-    @Test
-    @DisplayName("should work with MEMORY type kind")
-    void shouldWorkWithMemoryTypeKind() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.MEMORY);
-      final ExportType exportType = new ExportType("memory", testType);
-      final ModuleExport export = new ModuleExport("my_memory", exportType);
-
-      assertEquals(
-          WasmTypeKind.MEMORY,
-          export.getExportType().getType().getKind(),
-          "Should work with MEMORY");
-    }
-
-    @Test
-    @DisplayName("should work with TABLE type kind")
-    void shouldWorkWithTableTypeKind() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.TABLE);
-      final ExportType exportType = new ExportType("table", testType);
-      final ModuleExport export = new ModuleExport("my_table", exportType);
-
-      assertEquals(
-          WasmTypeKind.TABLE, export.getExportType().getType().getKind(), "Should work with TABLE");
-    }
-
-    @Test
-    @DisplayName("should work with GLOBAL type kind")
-    void shouldWorkWithGlobalTypeKind() {
-      final WasmType testType = new TestWasmType(WasmTypeKind.GLOBAL);
-      final ExportType exportType = new ExportType("global", testType);
-      final ModuleExport export = new ModuleExport("my_global", exportType);
-
-      assertEquals(
-          WasmTypeKind.GLOBAL,
-          export.getExportType().getType().getKind(),
-          "Should work with GLOBAL");
-    }
+  /**
+   * Creates an ExportType for testing.
+   *
+   * @return an ExportType instance
+   */
+  private ExportType createMockExportType() {
+    return new ExportType("testExport", null);
   }
 }

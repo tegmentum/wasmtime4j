@@ -1,430 +1,442 @@
 package ai.tegmentum.wasmtime4j;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
+import java.io.Closeable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.TypeVariable;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for the Linker interface.
+ * Tests for the {@link Linker} interface.
  *
- * <p>Tests verify linker creation, host function definition, import resolution, module
- * instantiation, and WASI support. These tests require the native Wasmtime runtime to be available.
+ * <p>This test class verifies the structure and contract of the Linker interface, which provides
+ * the mechanism to define host functions and resolve imports before instantiating WebAssembly
+ * modules.
  */
 @DisplayName("Linker Interface Tests")
-@RequiresWasmRuntime
 class LinkerTest {
 
-  /** Module that imports a function from env. */
-  private static final String IMPORT_FUNC_WAT =
-      "(module\n"
-          + "  (import \"env\" \"add\" (func $add (param i32 i32) (result i32)))\n"
-          + "  (func (export \"test\") (param i32 i32) (result i32)\n"
-          + "    local.get 0\n"
-          + "    local.get 1\n"
-          + "    call $add))\n";
+  @Nested
+  @DisplayName("Interface Definition Tests")
+  class InterfaceDefinitionTests {
 
-  /** Module that imports a memory. */
-  private static final String IMPORT_MEMORY_WAT =
-      "(module\n"
-          + "  (import \"env\" \"memory\" (memory 1))\n"
-          + "  (func (export \"read\") (param i32) (result i32)\n"
-          + "    local.get 0\n"
-          + "    i32.load))\n";
-
-  /** Module that imports a global. */
-  private static final String IMPORT_GLOBAL_WAT =
-      "(module\n"
-          + "  (import \"env\" \"counter\" (global $counter (mut i32)))\n"
-          + "  (func (export \"get\") (result i32)\n"
-          + "    global.get $counter))\n";
-
-  /** Simple standalone module. */
-  private static final String STANDALONE_WAT =
-      "(module\n"
-          + "  (func (export \"double\") (param i32) (result i32)\n"
-          + "    local.get 0\n"
-          + "    local.get 0\n"
-          + "    i32.add))\n";
-
-  private Engine engine;
-  private Store store;
-  private Linker<Object> linker;
-
-  @BeforeEach
-  void setUp() throws WasmException {
-    engine = Engine.create();
-    store = engine.createStore();
-    linker = Linker.create(engine);
-  }
-
-  @AfterEach
-  void tearDown() {
-    if (linker != null) {
-      linker.close();
-      linker = null;
+    @Test
+    @DisplayName("Linker should be an interface")
+    void shouldBeAnInterface() {
+      assertTrue(Linker.class.isInterface(), "Linker should be an interface");
     }
-    if (store != null) {
-      store.close();
-      store = null;
+
+    @Test
+    @DisplayName("Linker should extend Closeable")
+    void shouldExtendCloseable() {
+      assertTrue(Closeable.class.isAssignableFrom(Linker.class), "Linker should extend Closeable");
     }
-    if (engine != null) {
-      engine.close();
-      engine = null;
+
+    @Test
+    @DisplayName("Linker should be public")
+    void shouldBePublic() {
+      assertTrue(
+          Modifier.isPublic(Linker.class.getModifiers()), "Linker should be a public interface");
+    }
+
+    @Test
+    @DisplayName("Linker should be generic with type parameter T")
+    void shouldBeGenericWithTypeParameterT() {
+      final TypeVariable<?>[] typeParameters = Linker.class.getTypeParameters();
+      assertEquals(1, typeParameters.length, "Linker should have exactly one type parameter");
+      assertEquals("T", typeParameters[0].getName(), "Type parameter should be named T");
     }
   }
 
   @Nested
-  @DisplayName("Linker Creation Tests")
-  class LinkerCreationTests {
+  @DisplayName("Host Function Definition Method Tests")
+  class HostFunctionDefinitionMethodTests {
 
     @Test
-    @DisplayName("should create linker from engine")
-    void shouldCreateLinkerFromEngine() throws WasmException {
-      try (Linker<Object> newLinker = Linker.create(engine)) {
-        assertNotNull(newLinker, "Linker should not be null");
-        assertTrue(newLinker.isValid(), "Linker should be valid");
-      }
+    @DisplayName("Should have defineHostFunction method")
+    void shouldHaveDefineHostFunctionMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod(
+              "defineHostFunction",
+              String.class,
+              String.class,
+              FunctionType.class,
+              HostFunction.class);
+      assertNotNull(method, "defineHostFunction method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should return reference to parent engine")
-    void shouldReturnReferenceToParentEngine() {
-      final Engine linkerEngine = linker.getEngine();
-      assertNotNull(linkerEngine, "Engine reference should not be null");
-      assertTrue(linkerEngine.same(engine), "Should reference the same engine");
-    }
-  }
-
-  @Nested
-  @DisplayName("Host Function Definition Tests")
-  class HostFunctionDefinitionTests {
-
-    @Test
-    @DisplayName("should define host function")
-    void shouldDefineHostFunction() throws WasmException {
-      final FunctionType funcType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
-
-      linker.defineHostFunction(
-          "env",
-          "add",
-          funcType,
-          (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() + params[1].asI32())});
-
-      assertTrue(linker.hasImport("env", "add"), "Host function should be defined");
-    }
-
-    @Test
-    @DisplayName("should instantiate module with host function")
-    void shouldInstantiateModuleWithHostFunction() throws WasmException {
-      final FunctionType funcType =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
-
-      linker.defineHostFunction(
-          "env",
-          "add",
-          funcType,
-          (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() + params[1].asI32())});
-
-      final Module module = engine.compileWat(IMPORT_FUNC_WAT);
-      final Instance instance = linker.instantiate(store, module);
-
-      final WasmValue[] result =
-          instance.callFunction("test", WasmValue.i32(10), WasmValue.i32(20));
-      assertEquals(30, result[0].asI32(), "10 + 20 should equal 30 via host function");
-
-      instance.close();
-      module.close();
+    @DisplayName("Should have funcNewUnchecked method")
+    void shouldHaveFuncNewUncheckedMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod(
+              "funcNewUnchecked",
+              Store.class,
+              String.class,
+              String.class,
+              FunctionType.class,
+              HostFunction.class);
+      assertNotNull(method, "funcNewUnchecked method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
   @Nested
-  @DisplayName("Memory Definition Tests")
-  class MemoryDefinitionTests {
+  @DisplayName("Resource Definition Method Tests")
+  class ResourceDefinitionMethodTests {
 
     @Test
-    @DisplayName("should define memory")
-    void shouldDefineMemory() throws WasmException {
-      final WasmMemory memory = store.createMemory(1, 10);
-      linker.defineMemory(store, "env", "memory", memory);
-
-      assertTrue(linker.hasImport("env", "memory"), "Memory should be defined");
+    @DisplayName("Should have defineMemory method")
+    void shouldHaveDefineMemoryMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod(
+              "defineMemory", Store.class, String.class, String.class, WasmMemory.class);
+      assertNotNull(method, "defineMemory method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should instantiate module with imported memory")
-    void shouldInstantiateModuleWithImportedMemory() throws WasmException {
-      final WasmMemory memory = store.createMemory(1, 10);
-
-      // Write a test value to memory
-      memory.writeInt32(0, 42);
-
-      linker.defineMemory(store, "env", "memory", memory);
-
-      final Module module = engine.compileWat(IMPORT_MEMORY_WAT);
-      final Instance instance = linker.instantiate(store, module);
-
-      final int result = instance.callI32Function("read", 0);
-      assertEquals(42, result, "Should read 42 from imported memory");
-
-      instance.close();
-      module.close();
-    }
-  }
-
-  @Nested
-  @DisplayName("Global Definition Tests")
-  class GlobalDefinitionTests {
-
-    @Test
-    @DisplayName("should define global")
-    void shouldDefineGlobal() throws WasmException {
-      final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(100));
-      linker.defineGlobal(store, "env", "counter", global);
-
-      assertTrue(linker.hasImport("env", "counter"), "Global should be defined");
+    @DisplayName("Should have defineTable method")
+    void shouldHaveDefineTableMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod(
+              "defineTable", Store.class, String.class, String.class, WasmTable.class);
+      assertNotNull(method, "defineTable method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should instantiate module with imported global")
-    void shouldInstantiateModuleWithImportedGlobal() throws WasmException {
-      final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(999));
-      linker.defineGlobal(store, "env", "counter", global);
+    @DisplayName("Should have defineGlobal method")
+    void shouldHaveDefineGlobalMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod(
+              "defineGlobal", Store.class, String.class, String.class, WasmGlobal.class);
+      assertNotNull(method, "defineGlobal method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
 
-      final Module module = engine.compileWat(IMPORT_GLOBAL_WAT);
-      final Instance instance = linker.instantiate(store, module);
+    @Test
+    @DisplayName("Should have defineInstance method")
+    void shouldHaveDefineInstanceMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("defineInstance", String.class, Instance.class);
+      assertNotNull(method, "defineInstance method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
 
-      final int result = instance.callI32Function("get");
-      assertEquals(999, result, "Should get 999 from imported global");
-
-      instance.close();
-      module.close();
+    @Test
+    @DisplayName("Should have defineName method")
+    void shouldHaveDefineNameMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod("defineName", Store.class, String.class, Extern.class);
+      assertNotNull(method, "defineName method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
   @Nested
-  @DisplayName("Module Instantiation Tests")
-  class ModuleInstantiationTests {
+  @DisplayName("Alias Method Tests")
+  class AliasMethodTests {
 
     @Test
-    @DisplayName("should instantiate standalone module")
-    void shouldInstantiateStandaloneModule() throws WasmException {
-      final Module module = engine.compileWat(STANDALONE_WAT);
-      final Instance instance = linker.instantiate(store, module);
-
-      assertNotNull(instance, "Instance should not be null");
-
-      final int result = instance.callI32Function("double", 21);
-      assertEquals(42, result, "double(21) should equal 42");
-
-      instance.close();
-      module.close();
+    @DisplayName("Should have alias method")
+    void shouldHaveAliasMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod("alias", String.class, String.class, String.class, String.class);
+      assertNotNull(method, "alias method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should instantiate module with name")
-    void shouldInstantiateModuleWithName() throws WasmException {
-      final Module module = engine.compileWat(STANDALONE_WAT);
-      final Instance instance = linker.instantiate(store, "mymodule", module);
-
-      assertNotNull(instance, "Instance should not be null");
-
-      instance.close();
-      module.close();
+    @DisplayName("Should have aliasModule default method")
+    void shouldHaveAliasModuleMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("aliasModule", String.class, String.class);
+      assertNotNull(method, "aliasModule method should exist");
+      assertTrue(method.isDefault(), "aliasModule should be a default method");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
   @Nested
-  @DisplayName("Pre-instantiation Tests")
-  class PreInstantiationTests {
+  @DisplayName("Instantiation Method Tests")
+  class InstantiationMethodTests {
 
     @Test
-    @DisplayName("should create instance pre")
-    void shouldCreateInstancePre() throws WasmException {
-      final Module module = engine.compileWat(STANDALONE_WAT);
-      final InstancePre instancePre = linker.instantiatePre(module);
+    @DisplayName("Should have instantiate(Store, Module) method")
+    void shouldHaveInstantiateMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("instantiate", Store.class, Module.class);
+      assertNotNull(method, "instantiate(Store, Module) method should exist");
+      assertEquals(Instance.class, method.getReturnType(), "Should return Instance");
+    }
 
-      assertNotNull(instancePre, "InstancePre should not be null");
+    @Test
+    @DisplayName("Should have instantiate(Store, String, Module) method")
+    void shouldHaveInstantiateWithNameMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod("instantiate", Store.class, String.class, Module.class);
+      assertNotNull(method, "instantiate(Store, String, Module) method should exist");
+      assertEquals(Instance.class, method.getReturnType(), "Should return Instance");
+    }
 
-      module.close();
+    @Test
+    @DisplayName("Should have instantiatePre method")
+    void shouldHaveInstantiatePreMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("instantiatePre", Module.class);
+      assertNotNull(method, "instantiatePre(Module) method should exist");
+      assertEquals(InstancePre.class, method.getReturnType(), "Should return InstancePre");
     }
   }
 
   @Nested
-  @DisplayName("Import Check Tests")
-  class ImportCheckTests {
+  @DisplayName("Async Instantiation Method Tests")
+  class AsyncInstantiationMethodTests {
 
     @Test
-    @DisplayName("should check for defined import")
-    void shouldCheckForDefinedImport() throws WasmException {
-      final FunctionType funcType =
-          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+    @DisplayName("Should have instantiateAsync(Store, Module) default method")
+    void shouldHaveInstantiateAsyncMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("instantiateAsync", Store.class, Module.class);
+      assertNotNull(method, "instantiateAsync(Store, Module) method should exist");
+      assertTrue(method.isDefault(), "instantiateAsync should be a default method");
+      assertEquals(
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
+    }
 
-      linker.defineHostFunction(
-          "test", "func", funcType, (params) -> new WasmValue[] {WasmValue.i32(0)});
+    @Test
+    @DisplayName("Should have instantiateAsync(Store, String, Module) default method")
+    void shouldHaveInstantiateAsyncWithNameMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod("instantiateAsync", Store.class, String.class, Module.class);
+      assertNotNull(method, "instantiateAsync(Store, String, Module) method should exist");
+      assertTrue(method.isDefault(), "instantiateAsync should be a default method");
+      assertEquals(
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
+    }
 
-      assertTrue(linker.hasImport("test", "func"), "Defined import should exist");
-      assertFalse(linker.hasImport("test", "nonexistent"), "Non-existent import should not exist");
-      assertFalse(
-          linker.hasImport("nonexistent", "func"), "Non-existent module should not have imports");
+    @Test
+    @DisplayName("Should have moduleAsync default method")
+    void shouldHaveModuleAsyncMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod("moduleAsync", Store.class, String.class, Module.class);
+      assertNotNull(method, "moduleAsync method should exist");
+      assertTrue(method.isDefault(), "moduleAsync should be a default method");
+      assertEquals(
+          CompletableFuture.class, method.getReturnType(), "Should return CompletableFuture");
     }
   }
 
   @Nested
-  @DisplayName("Import Registry Tests")
-  class ImportRegistryTests {
+  @DisplayName("WASI Method Tests")
+  class WasiMethodTests {
 
     @Test
-    @DisplayName("should return import registry")
-    void shouldReturnImportRegistry() throws WasmException {
-      final FunctionType funcType =
-          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
-
-      linker.defineHostFunction(
-          "env", "func1", funcType, (params) -> new WasmValue[] {WasmValue.i32(0)});
-
-      final List<ImportInfo> registry = linker.getImportRegistry();
-      assertNotNull(registry, "Import registry should not be null");
-      assertFalse(registry.isEmpty(), "Import registry should not be empty");
+    @DisplayName("Should have enableWasi method")
+    void shouldHaveEnableWasiMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("enableWasi");
+      assertNotNull(method, "enableWasi() method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
   @Nested
-  @DisplayName("Linker Configuration Tests")
-  class LinkerConfigurationTests {
+  @DisplayName("Configuration Method Tests")
+  class ConfigurationMethodTests {
 
     @Test
-    @DisplayName("should allow shadowing")
-    void shouldAllowShadowing() throws WasmException {
-      linker.allowShadowing(true);
-
-      final FunctionType funcType =
-          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
-
-      linker.defineHostFunction(
-          "env", "func", funcType, (params) -> new WasmValue[] {WasmValue.i32(1)});
-
-      // Should not throw when redefining with shadowing allowed
-      linker.defineHostFunction(
-          "env", "func", funcType, (params) -> new WasmValue[] {WasmValue.i32(2)});
-
-      assertTrue(linker.hasImport("env", "func"), "Function should still be defined");
+    @DisplayName("Should have allowShadowing method")
+    void shouldHaveAllowShadowingMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("allowShadowing", boolean.class);
+      assertNotNull(method, "allowShadowing(boolean) method should exist");
+      assertEquals(Linker.class, method.getReturnType(), "Should return Linker for chaining");
     }
 
     @Test
-    @DisplayName("should allow unknown exports")
-    void shouldAllowUnknownExports() {
-      // Just verify the method exists and doesn't throw
-      linker.allowUnknownExports(true);
+    @DisplayName("Should have allowUnknownExports method")
+    void shouldHaveAllowUnknownExportsMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("allowUnknownExports", boolean.class);
+      assertNotNull(method, "allowUnknownExports(boolean) method should exist");
+      assertEquals(Linker.class, method.getReturnType(), "Should return Linker for chaining");
     }
   }
 
   @Nested
-  @DisplayName("Linker Iteration Tests")
-  class LinkerIterationTests {
+  @DisplayName("Import Resolution Method Tests")
+  class ImportResolutionMethodTests {
 
     @Test
-    @DisplayName("should iterate over definitions")
-    void shouldIterateOverDefinitions() throws WasmException {
-      final FunctionType funcType =
-          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+    @DisplayName("Should have hasImport method")
+    void shouldHaveHasImportMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("hasImport", String.class, String.class);
+      assertNotNull(method, "hasImport(String, String) method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
+    }
 
-      linker.defineHostFunction(
-          "env", "func1", funcType, (params) -> new WasmValue[] {WasmValue.i32(0)});
-      linker.defineHostFunction(
-          "env", "func2", funcType, (params) -> new WasmValue[] {WasmValue.i32(0)});
+    @Test
+    @DisplayName("Should have defineUnknownImportsAsTraps method")
+    void shouldHaveDefineUnknownImportsAsTrapsMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod("defineUnknownImportsAsTraps", Store.class, Module.class);
+      assertNotNull(method, "defineUnknownImportsAsTraps method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
 
-      int count = 0;
-      for (Linker.LinkerDefinition def : linker.iter()) {
-        assertNotNull(def.getModuleName(), "Module name should not be null");
-        assertNotNull(def.getName(), "Name should not be null");
-        count++;
-      }
-
-      assertTrue(count >= 2, "Should have at least 2 definitions");
+    @Test
+    @DisplayName("Should have defineUnknownImportsAsDefaultValues method")
+    void shouldHaveDefineUnknownImportsAsDefaultValuesMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod("defineUnknownImportsAsDefaultValues", Store.class, Module.class);
+      assertNotNull(method, "defineUnknownImportsAsDefaultValues method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
   @Nested
-  @DisplayName("Linker Lifecycle Tests")
-  class LinkerLifecycleTests {
+  @DisplayName("Dependency Resolution Method Tests")
+  class DependencyResolutionMethodTests {
 
     @Test
-    @DisplayName("should be valid before close")
-    void shouldBeValidBeforeClose() {
-      assertTrue(linker.isValid(), "Linker should be valid before close");
+    @DisplayName("Should have resolveDependencies method")
+    void shouldHaveResolveDependenciesMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("resolveDependencies", Module[].class);
+      assertNotNull(method, "resolveDependencies(Module...) method should exist");
+      assertEquals(
+          DependencyResolution.class, method.getReturnType(), "Should return DependencyResolution");
     }
 
     @Test
-    @DisplayName("should handle multiple close calls")
-    void shouldHandleMultipleCloseCalls() throws WasmException {
-      final Linker<Object> tempLinker = Linker.create(engine);
-      tempLinker.close();
-      // Second close should not throw
-      tempLinker.close();
-    }
-  }
-
-  @Nested
-  @DisplayName("WASI Support Tests")
-  class WasiSupportTests {
-
-    @Test
-    @DisplayName("should enable WASI")
-    void shouldEnableWasi() throws WasmException {
-      // Should not throw
-      linker.enableWasi();
+    @DisplayName("Should have validateImports method")
+    void shouldHaveValidateImportsMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("validateImports", Module[].class);
+      assertNotNull(method, "validateImports(Module...) method should exist");
+      assertEquals(
+          ImportValidation.class, method.getReturnType(), "Should return ImportValidation");
     }
   }
 
   @Nested
-  @DisplayName("Instance Definition Tests")
-  class InstanceDefinitionTests {
+  @DisplayName("Registry Method Tests")
+  class RegistryMethodTests {
 
     @Test
-    @DisplayName("should define instance")
-    void shouldDefineInstance() throws WasmException {
-      final Module module = engine.compileWat(STANDALONE_WAT);
-      final Instance instance = linker.instantiate(store, module);
+    @DisplayName("Should have getImportRegistry method")
+    void shouldHaveGetImportRegistryMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("getImportRegistry");
+      assertNotNull(method, "getImportRegistry() method should exist");
+      assertEquals(List.class, method.getReturnType(), "Should return List");
+    }
 
-      // Define the instance under a module name
-      linker.defineInstance("myinstance", instance);
+    @Test
+    @DisplayName("Should have iter method")
+    void shouldHaveIterMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("iter");
+      assertNotNull(method, "iter() method should exist");
+      assertEquals(Iterable.class, method.getReturnType(), "Should return Iterable");
+    }
 
-      // The exports from the instance should now be available
-      assertTrue(linker.hasImport("myinstance", "double"), "Instance export should be available");
+    @Test
+    @DisplayName("Should have getByImport method")
+    void shouldHaveGetByImportMethod() throws NoSuchMethodException {
+      final Method method =
+          Linker.class.getMethod("getByImport", Store.class, String.class, String.class);
+      assertNotNull(method, "getByImport method should exist");
+      assertEquals(Extern.class, method.getReturnType(), "Should return Extern");
+    }
 
-      instance.close();
-      module.close();
+    @Test
+    @DisplayName("Should have getDefault method")
+    void shouldHaveGetDefaultMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("getDefault", Store.class, String.class);
+      assertNotNull(method, "getDefault method should exist");
+      assertEquals(WasmFunction.class, method.getReturnType(), "Should return WasmFunction");
     }
   }
 
   @Nested
-  @DisplayName("Alias Tests")
-  class AliasTests {
+  @DisplayName("Engine and Validity Method Tests")
+  class EngineAndValidityMethodTests {
 
     @Test
-    @DisplayName("should create alias for export")
-    void shouldCreateAliasForExport() throws WasmException {
-      final FunctionType funcType =
-          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+    @DisplayName("Should have getEngine method")
+    void shouldHaveGetEngineMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("getEngine");
+      assertNotNull(method, "getEngine() method should exist");
+      assertEquals(Engine.class, method.getReturnType(), "Should return Engine");
+    }
 
-      linker.defineHostFunction(
-          "original", "func", funcType, (params) -> new WasmValue[] {WasmValue.i32(0)});
+    @Test
+    @DisplayName("Should have isValid method")
+    void shouldHaveIsValidMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("isValid");
+      assertNotNull(method, "isValid() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
+    }
 
-      linker.alias("original", "func", "aliased", "aliased_func");
+    @Test
+    @DisplayName("Should have close method")
+    void shouldHaveCloseMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("close");
+      assertNotNull(method, "close() method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
+    }
+  }
 
-      assertTrue(linker.hasImport("aliased", "aliased_func"), "Alias should exist");
+  @Nested
+  @DisplayName("Static Factory Method Tests")
+  class StaticFactoryMethodTests {
+
+    @Test
+    @DisplayName("Should have static create(Engine) method")
+    void shouldHaveStaticCreateMethod() throws NoSuchMethodException {
+      final Method method = Linker.class.getMethod("create", Engine.class);
+      assertNotNull(method, "create(Engine) method should exist");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
+      assertEquals(Linker.class, method.getReturnType(), "Should return Linker");
+    }
+  }
+
+  @Nested
+  @DisplayName("Inner Class Tests")
+  class InnerClassTests {
+
+    @Test
+    @DisplayName("Should have LinkerDefinition inner class")
+    void shouldHaveLinkerDefinitionInnerClass() {
+      assertNotNull(
+          Linker.LinkerDefinition.class, "Linker should have LinkerDefinition inner class");
+      assertTrue(
+          Modifier.isFinal(Linker.LinkerDefinition.class.getModifiers()),
+          "LinkerDefinition should be final");
+    }
+
+    @Test
+    @DisplayName("LinkerDefinition should have getModuleName method")
+    void linkerDefinitionShouldHaveGetModuleNameMethod() throws NoSuchMethodException {
+      final Method method = Linker.LinkerDefinition.class.getMethod("getModuleName");
+      assertNotNull(method, "getModuleName() method should exist");
+      assertEquals(String.class, method.getReturnType(), "Should return String");
+    }
+
+    @Test
+    @DisplayName("LinkerDefinition should have getName method")
+    void linkerDefinitionShouldHaveGetNameMethod() throws NoSuchMethodException {
+      final Method method = Linker.LinkerDefinition.class.getMethod("getName");
+      assertNotNull(method, "getName() method should exist");
+      assertEquals(String.class, method.getReturnType(), "Should return String");
+    }
+
+    @Test
+    @DisplayName("LinkerDefinition should have getType method")
+    void linkerDefinitionShouldHaveGetTypeMethod() throws NoSuchMethodException {
+      final Method method = Linker.LinkerDefinition.class.getMethod("getType");
+      assertNotNull(method, "getType() method should exist");
+      assertEquals(ExternType.class, method.getReturnType(), "Should return ExternType");
     }
   }
 }

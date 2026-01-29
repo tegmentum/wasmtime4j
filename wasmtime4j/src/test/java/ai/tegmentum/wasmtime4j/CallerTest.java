@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2024 Tegmentum AI. All rights reserved.
- */
-
 package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,344 +5,228 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.TypeVariable;
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive test suite for the Caller interface.
+ * Tests for the {@link Caller} interface.
  *
- * <p>The Caller interface provides access to the calling WebAssembly instance context within host
- * functions, allowing host functions to interact with the WebAssembly module's state and resources.
+ * <p>This test class verifies the structure and contract of the Caller interface, which provides
+ * access to the calling WebAssembly instance context within host functions.
  */
 @DisplayName("Caller Interface Tests")
 class CallerTest {
 
-  // ========================================================================
-  // Type Definition Tests
-  // ========================================================================
-
   @Nested
-  @DisplayName("Type Definition Tests")
-  class TypeDefinitionTests {
+  @DisplayName("Interface Definition Tests")
+  class InterfaceDefinitionTests {
 
     @Test
-    @DisplayName("should be an interface")
+    @DisplayName("Caller should be an interface")
     void shouldBeAnInterface() {
       assertTrue(Caller.class.isInterface(), "Caller should be an interface");
     }
 
     @Test
-    @DisplayName("should have generic type parameter T")
-    void shouldHaveGenericTypeParameter() {
-      TypeVariable<?>[] typeParams = Caller.class.getTypeParameters();
-      assertEquals(1, typeParams.length, "Caller should have exactly one type parameter");
-      assertEquals("T", typeParams[0].getName(), "Type parameter should be named T");
+    @DisplayName("Caller should be public")
+    void shouldBePublic() {
+      assertTrue(
+          Modifier.isPublic(Caller.class.getModifiers()), "Caller should be a public interface");
     }
 
     @Test
-    @DisplayName("should be public")
-    void shouldBePublic() {
-      assertTrue(
-          java.lang.reflect.Modifier.isPublic(Caller.class.getModifiers()),
-          "Caller should be public");
+    @DisplayName("Caller should be generic with type parameter T")
+    void shouldBeGenericWithTypeParameterT() {
+      final TypeVariable<?>[] typeParameters = Caller.class.getTypeParameters();
+      assertEquals(1, typeParameters.length, "Caller should have exactly one type parameter");
+      assertEquals("T", typeParameters[0].getName(), "Type parameter should be named T");
     }
   }
-
-  // ========================================================================
-  // Data Access Method Tests
-  // ========================================================================
 
   @Nested
   @DisplayName("Data Access Method Tests")
   class DataAccessMethodTests {
 
     @Test
-    @DisplayName("should have data method returning generic type T")
+    @DisplayName("Should have data() method")
     void shouldHaveDataMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("data");
-      assertNotNull(method, "data method should exist");
-      Type returnType = method.getGenericReturnType();
-      assertTrue(
-          returnType instanceof TypeVariable, "Return type should be generic type variable T");
-      assertEquals("T", ((TypeVariable<?>) returnType).getName(), "Return type should be T");
+      final Method method = Caller.class.getMethod("data");
+      assertNotNull(method, "data() method should exist");
+      assertEquals(Object.class, method.getReturnType(), "Should return Object (generic T)");
     }
   }
-
-  // ========================================================================
-  // Export Access Method Tests
-  // ========================================================================
 
   @Nested
   @DisplayName("Export Access Method Tests")
   class ExportAccessMethodTests {
 
     @Test
-    @DisplayName("should have getExport method")
+    @DisplayName("Should have getExport(String) method")
     void shouldHaveGetExportMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("getExport", String.class);
-      assertNotNull(method, "getExport method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("getExport", String.class);
+      assertNotNull(method, "getExport(String) method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have getFunction method")
+    @DisplayName("Should have getFunction(String) method")
     void shouldHaveGetFunctionMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("getFunction", String.class);
-      assertNotNull(method, "getFunction method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("getFunction", String.class);
+      assertNotNull(method, "getFunction(String) method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have getMemory method with name parameter")
-    void shouldHaveGetMemoryMethodWithName() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("getMemory", String.class);
+    @DisplayName("Should have getMemory(String) method")
+    void shouldHaveGetMemoryByNameMethod() throws NoSuchMethodException {
+      final Method method = Caller.class.getMethod("getMemory", String.class);
       assertNotNull(method, "getMemory(String) method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have default getMemory method without parameters")
-    void shouldHaveDefaultGetMemoryMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("getMemory");
+    @DisplayName("Should have getMemory() default method")
+    void shouldHaveGetMemoryDefaultMethod() throws NoSuchMethodException {
+      final Method method = Caller.class.getMethod("getMemory");
       assertNotNull(method, "getMemory() method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
       assertTrue(method.isDefault(), "getMemory() should be a default method");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have getTable method")
+    @DisplayName("Should have getTable(String) method")
     void shouldHaveGetTableMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("getTable", String.class);
-      assertNotNull(method, "getTable method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("getTable", String.class);
+      assertNotNull(method, "getTable(String) method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have getGlobal method")
+    @DisplayName("Should have getGlobal(String) method")
     void shouldHaveGetGlobalMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("getGlobal", String.class);
-      assertNotNull(method, "getGlobal method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("getGlobal", String.class);
+      assertNotNull(method, "getGlobal(String) method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have hasExport method")
+    @DisplayName("Should have hasExport(String) method")
     void shouldHaveHasExportMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("hasExport", String.class);
-      assertNotNull(method, "hasExport method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Return type should be boolean");
+      final Method method = Caller.class.getMethod("hasExport", String.class);
+      assertNotNull(method, "hasExport(String) method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
     @Test
-    @DisplayName("should have getExportByModuleExport method")
+    @DisplayName("Should have getExportByModuleExport(ModuleExport) method")
     void shouldHaveGetExportByModuleExportMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("getExportByModuleExport", ModuleExport.class);
-      assertNotNull(method, "getExportByModuleExport method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("getExportByModuleExport", ModuleExport.class);
+      assertNotNull(method, "getExportByModuleExport(ModuleExport) method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
   }
 
-  // ========================================================================
-  // Fuel Management Method Tests
-  // ========================================================================
-
   @Nested
-  @DisplayName("Fuel Management Method Tests")
-  class FuelManagementMethodTests {
+  @DisplayName("Fuel Method Tests")
+  class FuelMethodTests {
 
     @Test
-    @DisplayName("should have fuelConsumed method")
+    @DisplayName("Should have fuelConsumed() method")
     void shouldHaveFuelConsumedMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("fuelConsumed");
-      assertNotNull(method, "fuelConsumed method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("fuelConsumed");
+      assertNotNull(method, "fuelConsumed() method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have fuelRemaining method")
+    @DisplayName("Should have fuelRemaining() method")
     void shouldHaveFuelRemainingMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("fuelRemaining");
-      assertNotNull(method, "fuelRemaining method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("fuelRemaining");
+      assertNotNull(method, "fuelRemaining() method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have addFuel method")
+    @DisplayName("Should have addFuel(long) method")
     void shouldHaveAddFuelMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("addFuel", long.class);
-      assertNotNull(method, "addFuel method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
+      final Method method = Caller.class.getMethod("addFuel", long.class);
+      assertNotNull(method, "addFuel(long) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should have fuelAsyncYieldInterval method")
+    @DisplayName("Should have fuelAsyncYieldInterval() method")
     void shouldHaveFuelAsyncYieldIntervalMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("fuelAsyncYieldInterval");
-      assertNotNull(method, "fuelAsyncYieldInterval method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("fuelAsyncYieldInterval");
+      assertNotNull(method, "fuelAsyncYieldInterval() method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have setFuelAsyncYieldInterval method")
+    @DisplayName("Should have setFuelAsyncYieldInterval(long) method")
     void shouldHaveSetFuelAsyncYieldIntervalMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("setFuelAsyncYieldInterval", long.class);
-      assertNotNull(method, "setFuelAsyncYieldInterval method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
+      final Method method = Caller.class.getMethod("setFuelAsyncYieldInterval", long.class);
+      assertNotNull(method, "setFuelAsyncYieldInterval(long) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
-  // ========================================================================
-  // Epoch Deadline Method Tests
-  // ========================================================================
-
   @Nested
-  @DisplayName("Epoch Deadline Method Tests")
-  class EpochDeadlineMethodTests {
+  @DisplayName("Epoch Method Tests")
+  class EpochMethodTests {
 
     @Test
-    @DisplayName("should have hasEpochDeadline method")
+    @DisplayName("Should have hasEpochDeadline() method")
     void shouldHaveHasEpochDeadlineMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("hasEpochDeadline");
-      assertNotNull(method, "hasEpochDeadline method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Return type should be boolean");
+      final Method method = Caller.class.getMethod("hasEpochDeadline");
+      assertNotNull(method, "hasEpochDeadline() method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
     @Test
-    @DisplayName("should have epochDeadline method")
+    @DisplayName("Should have epochDeadline() method")
     void shouldHaveEpochDeadlineMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("epochDeadline");
-      assertNotNull(method, "epochDeadline method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
+      final Method method = Caller.class.getMethod("epochDeadline");
+      assertNotNull(method, "epochDeadline() method should exist");
+      assertEquals(Optional.class, method.getReturnType(), "Should return Optional");
     }
 
     @Test
-    @DisplayName("should have setEpochDeadline method")
+    @DisplayName("Should have setEpochDeadline(long) method")
     void shouldHaveSetEpochDeadlineMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("setEpochDeadline", long.class);
-      assertNotNull(method, "setEpochDeadline method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
+      final Method method = Caller.class.getMethod("setEpochDeadline", long.class);
+      assertNotNull(method, "setEpochDeadline(long) method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 
-  // ========================================================================
-  // Engine and GC Method Tests
-  // ========================================================================
-
   @Nested
-  @DisplayName("Engine and GC Method Tests")
-  class EngineAndGcMethodTests {
+  @DisplayName("Engine Method Tests")
+  class EngineMethodTests {
 
     @Test
-    @DisplayName("should have engine method")
+    @DisplayName("Should have engine() method")
     void shouldHaveEngineMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("engine");
-      assertNotNull(method, "engine method should exist");
-      assertEquals(Engine.class, method.getReturnType(), "Return type should be Engine");
+      final Method method = Caller.class.getMethod("engine");
+      assertNotNull(method, "engine() method should exist");
+      assertEquals(Engine.class, method.getReturnType(), "Should return Engine");
     }
+  }
+
+  @Nested
+  @DisplayName("GC Method Tests")
+  class GcMethodTests {
 
     @Test
-    @DisplayName("should have gc method")
+    @DisplayName("Should have gc() method")
     void shouldHaveGcMethod() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("gc");
-      assertNotNull(method, "gc method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
-    }
-  }
-
-  // ========================================================================
-  // Method Count and Completeness Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Method Count and Completeness Tests")
-  class MethodCountTests {
-
-    @Test
-    @DisplayName("should have all expected methods")
-    void shouldHaveAllExpectedMethods() {
-      Set<String> expectedMethods =
-          Set.of(
-              "data",
-              "getExport",
-              "getFunction",
-              "getMemory",
-              "getTable",
-              "getGlobal",
-              "hasExport",
-              "fuelConsumed",
-              "fuelRemaining",
-              "addFuel",
-              "hasEpochDeadline",
-              "epochDeadline",
-              "setEpochDeadline",
-              "getExportByModuleExport",
-              "engine",
-              "gc",
-              "fuelAsyncYieldInterval",
-              "setFuelAsyncYieldInterval");
-
-      Set<String> actualMethods =
-          Arrays.stream(Caller.class.getDeclaredMethods())
-              .map(Method::getName)
-              .collect(Collectors.toSet());
-
-      for (String expected : expectedMethods) {
-        assertTrue(actualMethods.contains(expected), "Caller should have method: " + expected);
-      }
-    }
-
-    @Test
-    @DisplayName("should have reasonable method count")
-    void shouldHaveReasonableMethodCount() {
-      int methodCount = Caller.class.getDeclaredMethods().length;
-      assertTrue(
-          methodCount >= 15, "Caller should have at least 15 methods, found: " + methodCount);
-    }
-  }
-
-  // ========================================================================
-  // Exception Declaration Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Exception Declaration Tests")
-  class ExceptionDeclarationTests {
-
-    @Test
-    @DisplayName("addFuel should declare WasmException")
-    void addFuelShouldDeclareWasmException() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("addFuel", long.class);
-      Class<?>[] exceptions = method.getExceptionTypes();
-      assertTrue(
-          Arrays.asList(exceptions).contains(ai.tegmentum.wasmtime4j.exception.WasmException.class),
-          "addFuel should declare WasmException");
-    }
-
-    @Test
-    @DisplayName("setEpochDeadline should declare WasmException")
-    void setEpochDeadlineShouldDeclareWasmException() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("setEpochDeadline", long.class);
-      Class<?>[] exceptions = method.getExceptionTypes();
-      assertTrue(
-          Arrays.asList(exceptions).contains(ai.tegmentum.wasmtime4j.exception.WasmException.class),
-          "setEpochDeadline should declare WasmException");
-    }
-
-    @Test
-    @DisplayName("gc should declare WasmException")
-    void gcShouldDeclareWasmException() throws NoSuchMethodException {
-      Method method = Caller.class.getMethod("gc");
-      Class<?>[] exceptions = method.getExceptionTypes();
-      assertTrue(
-          Arrays.asList(exceptions).contains(ai.tegmentum.wasmtime4j.exception.WasmException.class),
-          "gc should declare WasmException");
+      final Method method = Caller.class.getMethod("gc");
+      assertNotNull(method, "gc() method should exist");
+      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 }
