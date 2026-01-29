@@ -111,16 +111,15 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
 
-            <!-- Unpack native libraries from wasmtime4j-native -->
-            <!-- Uses generate-resources phase so natives are available for compile and test -->
-            <!-- Requires: mvn install -pl wasmtime4j-native first -->
+            <!-- Unpack native libraries from wasmtime4j-native for packaging -->
+            <!-- Uses prepare-package phase so reactor modules are already packaged -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>unpack-native-libraries</id>
-                        <phase>generate-resources</phase>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>unpack-dependencies</goal>
                         </goals>
