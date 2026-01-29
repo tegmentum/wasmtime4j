@@ -72,9 +72,9 @@
 
         <!-- Native build properties -->
         <native.library.name>wasmtime4j</native.library.name>
-        <wasmtime.version>40.0.1</wasmtime.version>
-        <rust.version>1.75.0</rust.version>
-        <cargo.version>1.75.0</cargo.version>
+        <wasmtime.version>41.0.1</wasmtime.version>
+        <rust.version>1.90.0</rust.version>
+        <cargo.version>1.90.0</cargo.version>
         
         <!-- Cross-compilation target properties -->
         <target.linux.x86_64>x86_64-unknown-linux-gnu</target.linux.x86_64>

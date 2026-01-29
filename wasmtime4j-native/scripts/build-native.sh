@@ -10,8 +10,8 @@ SCRIPT_DIR="$PROJECT_ROOT/scripts"
 NATIVE_DIR="$PROJECT_ROOT/src/main/resources/natives"
 
 # Configuration
-WASMTIME_VERSION="36.0.2"
-RUST_VERSION="1.75.0"
+WASMTIME_VERSION="41.0.1"
+RUST_VERSION="1.90.0"
 
 # Colors for output
 RED='\033[0;31m'
