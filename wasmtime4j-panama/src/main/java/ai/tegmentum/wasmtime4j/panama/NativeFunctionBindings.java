@@ -5702,6 +5702,22 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // linker_ptr
             ValueLayout.JAVA_INT)); // allow (1=yes, 0=no)
 
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_unknown_imports_as_traps",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_unknown_imports_as_default_values",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // module_ptr
+
     // InstancePre operations
     addFunctionBinding(
         "wasmtime4j_linker_instantiate_pre",

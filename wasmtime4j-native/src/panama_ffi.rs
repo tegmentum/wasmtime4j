@@ -293,11 +293,9 @@ pub mod engine {
 
     /// Get the precompile compatibility hash for the engine (Panama FFI version)
     ///
-    /// Returns a hash value that can be compared between engines to check compatibility.
-    /// The hash is written to out_hash buffer (must be at least 8 bytes).
+    /// Writes a u64 hash to out_hash buffer (must be at least 8 bytes).
+    /// Uses wasmtime 41.0.1 Engine::precompile_compatibility_hash() API.
     /// Returns 0 on success, -1 on error.
-    /// Note: precompile_compatibility_hash is only available in wasmtime >= 40.0.0.
-    /// In 39.0.1, we compute a hash based on available engine properties.
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_engine_precompile_compatibility_hash(
         engine_ptr: *mut c_void,
@@ -308,20 +306,10 @@ pub mod engine {
 
         match unsafe { core::get_engine_ref(engine_ptr) } {
             Ok(engine) => {
-                // Compute a compatibility hash based on available engine properties
-                // This is a best-effort approximation for wasmtime 39.0.1 which lacks
-                // the precompile_compatibility_hash() method
                 let mut hasher = DefaultHasher::new();
-
-                // Hash based on engine feature flags
-                engine.fuel_enabled().hash(&mut hasher);
-                engine.epoch_interruption_enabled().hash(&mut hasher);
-                engine.coredump_on_trap().hash(&mut hasher);
-
-                // Include wasmtime version in the hash
-                "wasmtime-39.0.1".hash(&mut hasher);
-
+                engine.inner().precompile_compatibility_hash().hash(&mut hasher);
                 let hash = hasher.finish();
+
                 unsafe {
                     if !out_hash.is_null() {
                         *out_hash = hash;
@@ -6307,6 +6295,7 @@ pub mod linker {
     ///
     /// # Arguments
     /// * `linker_ptr` - Pointer to the linker
+    /// * `store_ptr` - Pointer to the store (used to flush pending host functions)
     /// * `module_ptr` - Pointer to the module
     ///
     /// # Returns
@@ -6314,6 +6303,7 @@ pub mod linker {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_linker_define_unknown_imports_as_traps(
         linker_ptr: *mut c_void,
+        store_ptr: *mut c_void,
         module_ptr: *const c_void,
     ) -> c_int {
         use crate::error::ffi_utils;
@@ -6323,11 +6313,19 @@ pub mod linker {
                 // Get mutable linker reference
                 let linker = linker_core::get_linker_mut(linker_ptr)?;
 
-                // Get module reference
-                let module = crate::module::core::get_module_ref(module_ptr)?;
+                // Flush pending host functions to wasmtime linker before defining traps
+                let store = crate::store::core::get_store_mut(store_ptr)?;
+                {
+                    let mut store_lock = store.lock_store();
+                    linker.instantiate_host_functions(&mut *store_lock)?;
+                }
 
-                // Call the method
-                linker.define_unknown_imports_as_traps(module)?;
+                // Get module reference and clone the inner wasmtime module
+                let module = crate::module::core::get_module_ref(module_ptr)?;
+                let wasmtime_module = module.inner().clone();
+
+                // Call the method with the cloned wasmtime module
+                linker.define_unknown_imports_as_traps_wasmtime(&wasmtime_module)?;
 
                 Ok(())
             }
@@ -6361,6 +6359,12 @@ pub mod linker {
 
                 // Get store reference
                 let store = crate::store::core::get_store_mut(store_ptr)?;
+
+                // Flush pending host functions to wasmtime linker before defining defaults
+                {
+                    let mut store_lock = store.lock_store();
+                    linker.instantiate_host_functions(&mut *store_lock)?;
+                }
 
                 // Get module reference
                 let module = crate::module::core::get_module_ref(module_ptr)?;

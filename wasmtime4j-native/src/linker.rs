@@ -574,8 +574,12 @@ impl Linker {
 
             self.metadata.wasi_enabled = true;
 
-            // Create a default WASI context so nativeInstantiate() can auto-attach it to the Store
-            self.wasi_context = Some(crate::wasi::WasiContext::new()?);
+            // Create a default WASI context only if one hasn't already been set.
+            // If set_wasi_context() was called before enable_wasi(), the user's
+            // configured context (with env vars, argv, stdio, etc.) must be preserved.
+            if self.wasi_context.is_none() {
+                self.wasi_context = Some(crate::wasi::WasiContext::new()?);
+            }
 
             log::debug!("WASI Preview 1 imports successfully added to linker");
         }
@@ -626,6 +630,37 @@ impl Linker {
             })?;
 
         log::debug!("Defined unknown imports as traps for module");
+        Ok(())
+    }
+
+    /// Define unknown imports as traps using a direct wasmtime Module reference.
+    ///
+    /// This variant accepts `&wasmtime::Module` directly, bypassing the wrapper's
+    /// `inner()` indirection. Used from JNI where the module is cloned before passing.
+    pub fn define_unknown_imports_as_traps_wasmtime(
+        &mut self,
+        wasmtime_module: &wasmtime::Module,
+    ) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None,
+            });
+        }
+
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
+
+        linker
+            .define_unknown_imports_as_traps(wasmtime_module)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to define unknown imports as traps: {}", e),
+                backtrace: None,
+            })?;
+
+        log::debug!("Defined unknown imports as traps for module (wasmtime)");
         Ok(())
     }
 
@@ -1190,11 +1225,19 @@ pub mod ffi_core {
     ) -> WasmtimeResult<LinkerInstantiationResult> {
         let start = std::time::Instant::now();
 
-        // If linker has a WASI context, attach it to the store before instantiation
+        // If linker has a WASI context and the store doesn't already have one,
+        // attach the linker's context to the store before instantiation.
+        // The store may already have a WASI context if the caller (e.g., Panama runtime)
+        // explicitly set it before calling instantiate. In that case, the caller's
+        // context takes precedence since it has the user's configured env/args/stdio.
         if let Some(wasi_ctx) = linker.get_wasi_context() {
-            let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
-            store.set_wasi_context(wasi_ctx, fd_manager)?;
-            log::debug!("Attached WASI context to store before instantiation (FFI path)");
+            if !store.has_wasi_context() {
+                let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+                store.set_wasi_context(wasi_ctx, fd_manager)?;
+                log::debug!("Attached linker's WASI context to store before instantiation (FFI path)");
+            } else {
+                log::debug!("Store already has WASI context, skipping linker context attachment");
+            }
         }
 
         // CRITICAL: Instantiate host functions BEFORE trying to link the module

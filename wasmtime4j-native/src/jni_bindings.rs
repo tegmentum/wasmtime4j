@@ -1454,36 +1454,37 @@ pub mod jni_engine {
 
     /// Get the precompile compatibility hash for the engine (JNI version)
     ///
-    /// Returns a hash value that can be compared between engines to check compatibility.
-    /// Note: precompile_compatibility_hash is only available in wasmtime >= 40.0.0.
-    /// In 39.0.1, we compute a hash based on available engine properties.
+    /// Returns the hash as a byte array (8 bytes, big-endian u64).
+    /// Uses wasmtime 41.0.1 Engine::precompile_compatibility_hash() API.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompileCompatibilityHash(
-        _env: JNIEnv,
+        mut env: JNIEnv,
         _class: JClass,
         engine_ptr: jlong,
-    ) -> jlong {
+    ) -> jbyteArray {
         use std::hash::{Hash, Hasher};
         use std::collections::hash_map::DefaultHasher;
 
-        match unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void) } {
-            Ok(engine) => {
-                // Compute a compatibility hash based on available engine properties
-                // This is a best-effort approximation for wasmtime 39.0.1 which lacks
-                // the precompile_compatibility_hash() method
-                let mut hasher = DefaultHasher::new();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let engine = unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void) }
+                .map_err(|e| format!("Invalid engine pointer: {:?}", e))?;
 
-                // Hash based on engine feature flags
-                engine.fuel_enabled().hash(&mut hasher);
-                engine.epoch_interruption_enabled().hash(&mut hasher);
-                engine.coredump_on_trap().hash(&mut hasher);
+            let mut hasher = DefaultHasher::new();
+            engine.inner().precompile_compatibility_hash().hash(&mut hasher);
+            let hash_value = hasher.finish();
 
-                // Include wasmtime version in the hash
-                "wasmtime-39.0.1".hash(&mut hasher);
+            Ok::<u64, String>(hash_value)
+        }));
 
-                hasher.finish() as jlong
+        match result {
+            Ok(Ok(hash_value)) => {
+                let bytes = hash_value.to_be_bytes();
+                match env.byte_array_from_slice(&bytes) {
+                    Ok(arr) => arr.into_raw(),
+                    Err(_) => std::ptr::null_mut(),
+                }
             }
-            Err(_) => 0,
+            _ => std::ptr::null_mut(),
         }
     }
 
@@ -3911,13 +3912,18 @@ pub mod jni_linker {
             // Extract module from handle
             let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
 
-            // If linker has a WASI context, attach it to the store before instantiation
+            // If linker has a WASI context and the store doesn't already have one,
+            // attach the linker's context to the store before instantiation.
+            // The store may already have a WASI context if the caller (e.g., Panama runtime)
+            // explicitly set it before calling instantiate.
             if let Some(wasi_ctx) = linker.get_wasi_context() {
-                // Create a new fd_manager for this store (it manages per-store file descriptors)
-                let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
-                // Build a fresh WasiP1Ctx from the configuration and set on the store
-                store.set_wasi_context(wasi_ctx, fd_manager)?;
-                log::debug!("Attached WASI context to store before instantiation");
+                if !store.has_wasi_context() {
+                    let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+                    store.set_wasi_context(wasi_ctx, fd_manager)?;
+                    log::debug!("Attached linker's WASI context to store before instantiation");
+                } else {
+                    log::debug!("Store already has WASI context, skipping linker context attachment");
+                }
             }
 
             // Instantiate the module using the linker
@@ -4439,6 +4445,7 @@ pub mod jni_linker {
         mut env: JNIEnv,
         _obj: jobject,
         linker_handle: jlong,
+        _store_handle: jlong,
         module_handle: jlong,
     ) -> jboolean {
         jni_utils::jni_try_with_default(&mut env, 0, || {
@@ -4447,11 +4454,22 @@ pub mod jni_linker {
             // Get mutable linker reference
             let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
 
-            // Get module reference
-            let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+            // Get store reference - needed to flush pending host functions
+            let store = unsafe { crate::store::core::get_store_mut(_store_handle as *mut c_void)? };
 
-            // Call the method
-            linker.define_unknown_imports_as_traps(module)?;
+            // Flush any pending host functions to the wasmtime linker before
+            // calling define_unknown_imports_as_traps, so wasmtime knows which
+            // imports are already satisfied and only traps truly unknown ones.
+            {
+                let mut store_lock = store.lock_store();
+                linker.instantiate_host_functions(&mut *store_lock)?;
+            }
+
+            // Get module reference and clone the inner wasmtime module
+            let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+            let wasmtime_module = module.inner().clone();
+
+            linker.define_unknown_imports_as_traps_wasmtime(&wasmtime_module)?;
 
             Ok(1) // JNI_TRUE
         })
@@ -4477,6 +4495,12 @@ pub mod jni_linker {
 
             // Get store reference
             let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+            // Flush pending host functions before defining defaults
+            {
+                let mut store_lock = store.lock_store();
+                linker.instantiate_host_functions(&mut *store_lock)?;
+            }
 
             // Get module reference
             let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
@@ -9543,6 +9567,7 @@ pub mod jni_runtime {
             let wasi_ctx_ptr = wasi_handle as *const (crate::wasi::WasiContext, crate::wasi::WasiFileDescriptorManager);
             let wasi_tuple = unsafe { &*wasi_ctx_ptr };
 
+            // Clone the WASI context configuration and store in linker
             // Clone the WASI context configuration and store in linker
             let wasi_context = wasi_tuple.0.clone();
             linker_wrapper.set_wasi_context(wasi_context);

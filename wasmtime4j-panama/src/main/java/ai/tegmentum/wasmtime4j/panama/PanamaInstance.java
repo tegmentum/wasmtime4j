@@ -213,9 +213,7 @@ public final class PanamaInstance implements Instance {
       return Optional.empty();
     }
 
-    // TODO: Get the actual function type from the module
-    // For now, use a placeholder type - the actual signature will be validated at call time
-    final FunctionType functionType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+    final FunctionType functionType = lookupFunctionType(name);
     return Optional.of(new PanamaFunction(this, name, functionType));
   }
 
@@ -241,6 +239,23 @@ public final class PanamaInstance implements Instance {
     }
 
     return Optional.empty();
+  }
+
+  /**
+   * Looks up the function type for a named export from the module metadata.
+   *
+   * @param name the export function name
+   * @return the function type, or an empty FunctionType if lookup fails
+   */
+  private FunctionType lookupFunctionType(final String name) {
+    final Optional<FuncType> funcType = module.getFunctionType(name);
+    if (funcType.isPresent()) {
+      final FuncType ft = funcType.get();
+      final WasmValueType[] params = ft.getParams().toArray(new WasmValueType[0]);
+      final WasmValueType[] results = ft.getResults().toArray(new WasmValueType[0]);
+      return new FunctionType(params, results);
+    }
+    return new FunctionType(new WasmValueType[0], new WasmValueType[0]);
   }
 
   @Override
