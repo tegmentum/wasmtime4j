@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.memory;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -352,6 +353,177 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
         LOGGER.info("[" + runtime + "] Copy out of bounds trapped as expected: "
             + e.getClass().getName() + " - " + e.getMessage());
       }
+
+      instance.close();
+      module.close();
+    }
+  }
+
+  // ---------- Java API default method tests: copy(long,long,long) and fill(long,long,byte) ------
+  // These default methods use readBytes64/writeBytes64, NOT the native copy/fill that crashes.
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("long copy non-overlapping region via Java API")
+  void longCopyNonOverlapping(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing WasmMemory.copy(long,long,long) non-overlapping");
+
+    try (Engine engine = Engine.create();
+        Store store = engine.createStore()) {
+      final Module module = engine.compileWat(WAT);
+      final Instance instance = module.instantiate(store);
+      final WasmMemory memory = instance.getMemory("mem").get();
+
+      // Write 10 bytes at offset 0 via WAT store_byte
+      final byte[] pattern = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
+      for (int i = 0; i < pattern.length; i++) {
+        instance.callFunction("store_byte", WasmValue.i32(i), WasmValue.i32(pattern[i]));
+      }
+
+      // Copy 10 bytes from offset 0 to offset 100 via Java default method
+      memory.copy(100L, 0L, 10L);
+
+      // Verify using load_byte
+      for (int i = 0; i < pattern.length; i++) {
+        final WasmValue[] result = instance.callFunction("load_byte",
+            WasmValue.i32(100 + i));
+        assertEquals(pattern[i] & 0xFF, result[0].asInt(),
+            "Byte at dest offset " + (100 + i) + " should match source");
+      }
+      LOGGER.info("[" + runtime + "] Long copy non-overlapping verified for 10 bytes");
+
+      instance.close();
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("long copy forward overlap via Java API")
+  void longCopyForwardOverlap(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing WasmMemory.copy(long,long,long) with forward overlap");
+
+    try (Engine engine = Engine.create();
+        Store store = engine.createStore()) {
+      final Module module = engine.compileWat(WAT);
+      final Instance instance = module.instantiate(store);
+      final WasmMemory memory = instance.getMemory("mem").get();
+
+      // Write [1,2,3,4,5] at offset 0
+      final int[] pattern = {0x01, 0x02, 0x03, 0x04, 0x05};
+      for (int i = 0; i < pattern.length; i++) {
+        instance.callFunction("store_byte", WasmValue.i32(i), WasmValue.i32(pattern[i]));
+      }
+
+      // Copy from offset 0 to offset 2 (forward overlap), length 5
+      memory.copy(2L, 0L, 5L);
+
+      // After copy, bytes at [2..6] should be [1,2,3,4,5]
+      for (int i = 0; i < pattern.length; i++) {
+        final WasmValue[] result = instance.callFunction("load_byte",
+            WasmValue.i32(2 + i));
+        assertEquals(pattern[i], result[0].asInt(),
+            "Overlapping copy byte at offset " + (2 + i) + " should be " + pattern[i]);
+      }
+      LOGGER.info("[" + runtime + "] Long copy forward overlap verified");
+
+      instance.close();
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("long copy same offset is no-op via Java API")
+  void longCopyNoOpSameOffset(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing WasmMemory.copy(long,long,long) same offset no-op");
+
+    try (Engine engine = Engine.create();
+        Store store = engine.createStore()) {
+      final Module module = engine.compileWat(WAT);
+      final Instance instance = module.instantiate(store);
+      final WasmMemory memory = instance.getMemory("mem").get();
+
+      // This should be a no-op (same source and dest)
+      memory.copy(10L, 10L, 100L);
+      LOGGER.info("[" + runtime + "] Long copy same-offset no-op succeeded");
+
+      instance.close();
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("long copy zero length is no-op via Java API")
+  void longCopyNoOpZeroLength(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing WasmMemory.copy(long,long,long) zero length no-op");
+
+    try (Engine engine = Engine.create();
+        Store store = engine.createStore()) {
+      final Module module = engine.compileWat(WAT);
+      final Instance instance = module.instantiate(store);
+      final WasmMemory memory = instance.getMemory("mem").get();
+
+      // Zero length copy should be a no-op
+      memory.copy(0L, 100L, 0L);
+      LOGGER.info("[" + runtime + "] Long copy zero-length no-op succeeded");
+
+      instance.close();
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("long fill region via Java API")
+  void longFillRegion(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing WasmMemory.fill(long,long,byte) with 16 bytes of 0xAB");
+
+    try (Engine engine = Engine.create();
+        Store store = engine.createStore()) {
+      final Module module = engine.compileWat(WAT);
+      final Instance instance = module.instantiate(store);
+      final WasmMemory memory = instance.getMemory("mem").get();
+
+      // Fill 16 bytes at offset 0 with 0xAB via Java default method
+      memory.fill(0L, 16L, (byte) 0xAB);
+
+      // Verify all 16 bytes using load_byte
+      for (int i = 0; i < 16; i++) {
+        final WasmValue[] result = instance.callFunction("load_byte",
+            WasmValue.i32(i));
+        assertEquals(0xAB, result[0].asInt(),
+            "Filled byte at offset " + i + " should be 0xAB");
+      }
+      LOGGER.info("[" + runtime + "] Long fill verified for 16 bytes of 0xAB");
+
+      instance.close();
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("long fill zero length is no-op via Java API")
+  void longFillZeroLength(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing WasmMemory.fill(long,long,byte) zero length no-op");
+
+    try (Engine engine = Engine.create();
+        Store store = engine.createStore()) {
+      final Module module = engine.compileWat(WAT);
+      final Instance instance = module.instantiate(store);
+      final WasmMemory memory = instance.getMemory("mem").get();
+
+      // Zero length fill should be a no-op
+      memory.fill(0L, 0L, (byte) 0xFF);
+      LOGGER.info("[" + runtime + "] Long fill zero-length no-op succeeded");
 
       instance.close();
       module.close();

@@ -204,4 +204,64 @@ public class TableAsyncAnd64BitOpsTest extends DualRuntimeTest {
       assert64BitOpThrows("grow64", () -> table.grow64(1, WasmValue.funcRefNull()), runtime);
     }
   }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("fill64 throws UnsupportedOperationException or UnsatisfiedLinkError")
+  void fill64ThrowsUnsupported(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing fill64 throws on non-64-bit table");
+
+    try (Engine engine = Engine.create();
+        Module module = engine.compileWat(TABLE_WAT);
+        Store store = engine.createStore();
+        Instance instance = module.instantiate(store)) {
+
+      final WasmTable table = instance.getTable("tab")
+          .orElseThrow(() -> new AssertionError("tab table should be present"));
+
+      assert64BitOpThrows(
+          "fill64", () -> table.fill64(0, 1, WasmValue.funcRefNull()), runtime);
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("copy64 throws UnsupportedOperationException or UnsatisfiedLinkError")
+  void copy64ThrowsUnsupported(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing copy64 throws on non-64-bit table");
+
+    try (Engine engine = Engine.create();
+        Module module = engine.compileWat(TABLE_WAT);
+        Store store = engine.createStore();
+        Instance instance = module.instantiate(store)) {
+
+      final WasmTable table = instance.getTable("tab")
+          .orElseThrow(() -> new AssertionError("tab table should be present"));
+
+      assert64BitOpThrows(
+          "copy64", () -> table.copy64(0, table, 0, 1), runtime);
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("init64 throws UnsupportedOperationException or UnsatisfiedLinkError")
+  void init64ThrowsUnsupported(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing init64 throws on non-64-bit table");
+
+    try (Engine engine = Engine.create();
+        Module module = engine.compileWat(TABLE_WAT);
+        Store store = engine.createStore();
+        Instance instance = module.instantiate(store)) {
+
+      final WasmTable table = instance.getTable("tab")
+          .orElseThrow(() -> new AssertionError("tab table should be present"));
+
+      assert64BitOpThrows(
+          "init64", () -> table.init64(0, 0, 0, 1), runtime);
+    }
+  }
 }
