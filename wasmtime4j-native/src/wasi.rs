@@ -937,7 +937,7 @@ pub unsafe extern "C" fn wasi_ctx_set_env(
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
         let key_str = ffi_utils::c_str_to_string(key, "environment key")?;
         let value_str = ffi_utils::c_str_to_string(value, "environment value")?;
-        
+
         ctx.set_environment_variable(&key_str, &value_str)?;
         Ok(())
     })
