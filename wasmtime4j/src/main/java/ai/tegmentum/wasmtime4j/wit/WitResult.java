@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.wit;
 
 import ai.tegmentum.wasmtime4j.WitType;
+import ai.tegmentum.wasmtime4j.WitTypeCategory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -212,7 +213,8 @@ public final class WitResult extends WitValue {
     // Get ok/error types from result type kind
     // This is a simplified extraction - in a full implementation,
     // WitType would provide getOkType() and getErrorType() methods
-    if (resultType.getKind() == null || !"RESULT".equals(resultType.getKind().toString())) {
+    if (resultType.getKind() == null
+        || resultType.getKind().getCategory() != WitTypeCategory.RESULT) {
       throw new IllegalArgumentException("Type must be a result type");
     }
 

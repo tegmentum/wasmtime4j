@@ -279,6 +279,28 @@ public final class MeshConfig {
     public Map<String, String> getMetadata() {
       return new java.util.HashMap<>(metadata);
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final ServiceDiscoveryConfig that = (ServiceDiscoveryConfig) obj;
+      return autoRegistration == that.autoRegistration
+          && Objects.equals(discoveryProtocols, that.discoveryProtocols)
+          && Objects.equals(healthCheckInterval, that.healthCheckInterval)
+          && Objects.equals(serviceTimeout, that.serviceTimeout)
+          && Objects.equals(metadata, that.metadata);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          discoveryProtocols, healthCheckInterval, serviceTimeout, autoRegistration, metadata);
+    }
   }
 
   /** Load balancing configuration. */
@@ -340,6 +362,32 @@ public final class MeshConfig {
     public boolean isHealthCheckEnabled() {
       return healthCheckEnabled;
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final LoadBalancingConfig that = (LoadBalancingConfig) obj;
+      return circuitBreakerFailureThreshold == that.circuitBreakerFailureThreshold
+          && healthCheckEnabled == that.healthCheckEnabled
+          && Objects.equals(defaultStrategy, that.defaultStrategy)
+          && Objects.equals(availableStrategies, that.availableStrategies)
+          && Objects.equals(circuitBreakerTimeout, that.circuitBreakerTimeout);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          defaultStrategy,
+          availableStrategies,
+          circuitBreakerTimeout,
+          circuitBreakerFailureThreshold,
+          healthCheckEnabled);
+    }
   }
 
   /** Security configuration. */
@@ -393,6 +441,34 @@ public final class MeshConfig {
     public List<String> getComplianceFrameworks() {
       return new java.util.ArrayList<>(complianceFrameworks);
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final SecurityConfig that = (SecurityConfig) obj;
+      return encryptionEnabled == that.encryptionEnabled
+          && accessControlEnabled == that.accessControlEnabled
+          && auditLoggingEnabled == that.auditLoggingEnabled
+          && threatDetectionEnabled == that.threatDetectionEnabled
+          && Objects.equals(encryptionAlgorithm, that.encryptionAlgorithm)
+          && Objects.equals(complianceFrameworks, that.complianceFrameworks);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          encryptionEnabled,
+          encryptionAlgorithm,
+          accessControlEnabled,
+          auditLoggingEnabled,
+          threatDetectionEnabled,
+          complianceFrameworks);
+    }
   }
 
   /** Streaming configuration. */
@@ -438,6 +514,28 @@ public final class MeshConfig {
 
     public boolean isAnalyticsEnabled() {
       return analyticsEnabled;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final StreamingConfig that = (StreamingConfig) obj;
+      return enabled == that.enabled
+          && maxPipelines == that.maxPipelines
+          && backpressureThreshold == that.backpressureThreshold
+          && analyticsEnabled == that.analyticsEnabled
+          && Objects.equals(processingTimeout, that.processingTimeout);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          enabled, maxPipelines, backpressureThreshold, processingTimeout, analyticsEnabled);
     }
   }
 
@@ -495,6 +593,27 @@ public final class MeshConfig {
     public String getRoutingStrategy() {
       return routingStrategy;
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final CdnConfig that = (CdnConfig) obj;
+      return enabled == that.enabled
+          && maxCacheSize == that.maxCacheSize
+          && Objects.equals(edgeLocations, that.edgeLocations)
+          && Objects.equals(cacheTtl, that.cacheTtl)
+          && Objects.equals(routingStrategy, that.routingStrategy);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(enabled, edgeLocations, cacheTtl, maxCacheSize, routingStrategy);
+    }
   }
 
   /** Analytics configuration. */
@@ -542,6 +661,28 @@ public final class MeshConfig {
     public List<String> getMetricTypes() {
       return new java.util.ArrayList<>(metricTypes);
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final AnalyticsConfig that = (AnalyticsConfig) obj;
+      return enabled == that.enabled
+          && anomalyDetectionEnabled == that.anomalyDetectionEnabled
+          && optimizationEnabled == that.optimizationEnabled
+          && Objects.equals(metricsInterval, that.metricsInterval)
+          && Objects.equals(metricTypes, that.metricTypes);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          enabled, metricsInterval, anomalyDetectionEnabled, optimizationEnabled, metricTypes);
+    }
   }
 
   /** Federation configuration. */
@@ -588,6 +729,28 @@ public final class MeshConfig {
 
     public String getConflictResolution() {
       return conflictResolution;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final FederationConfig that = (FederationConfig) obj;
+      return enabled == that.enabled
+          && Objects.equals(consistencyLevel, that.consistencyLevel)
+          && Objects.equals(replicationStrategy, that.replicationStrategy)
+          && Objects.equals(syncInterval, that.syncInterval)
+          && Objects.equals(conflictResolution, that.conflictResolution);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          enabled, consistencyLevel, replicationStrategy, syncInterval, conflictResolution);
     }
   }
 
@@ -644,6 +807,28 @@ public final class MeshConfig {
 
     public String getMetricsFormat() {
       return metricsFormat;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final MonitoringConfig that = (MonitoringConfig) obj;
+      return enabled == that.enabled
+          && metricsExportEnabled == that.metricsExportEnabled
+          && Objects.equals(healthCheckInterval, that.healthCheckInterval)
+          && Objects.equals(healthChecks, that.healthChecks)
+          && Objects.equals(metricsFormat, that.metricsFormat);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          enabled, healthCheckInterval, healthChecks, metricsExportEnabled, metricsFormat);
     }
   }
 }
