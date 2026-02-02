@@ -493,4 +493,249 @@ final class WitValueSerializerTest {
     assertEquals(
         11, WitValueSerializer.getTypeDiscriminator(value), "List discriminator should be 11");
   }
+
+  @Test
+  @DisplayName("Get type discriminator for record")
+  void testGetTypeDiscriminatorRecord() throws WitValueException {
+    final java.util.Map<String, WitValue> fields = new java.util.LinkedHashMap<>();
+    fields.put("field1", WitS32.of(42));
+    final WitRecord value = WitRecord.of(fields);
+    assertEquals(
+        7, WitValueSerializer.getTypeDiscriminator(value), "Record discriminator should be 7");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for u32")
+  void testGetTypeDiscriminatorU32() throws WitValueException {
+    final WitU32 value = WitU32.of(100);
+    assertEquals(
+        9, WitValueSerializer.getTypeDiscriminator(value), "U32 discriminator should be 9");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for u64")
+  void testGetTypeDiscriminatorU64() throws WitValueException {
+    final WitU64 value = WitU64.of(100L);
+    assertEquals(
+        10, WitValueSerializer.getTypeDiscriminator(value), "U64 discriminator should be 10");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for variant")
+  void testGetTypeDiscriminatorVariant() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType variantType =
+        ai.tegmentum.wasmtime4j.WitType.variant("result",
+            java.util.Map.of("success", java.util.Optional.of(ai.tegmentum.wasmtime4j.WitType.createS32())));
+    final WitVariant value = WitVariant.of(variantType, "success", WitS32.of(42));
+    assertEquals(
+        12, WitValueSerializer.getTypeDiscriminator(value), "Variant discriminator should be 12");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for option")
+  void testGetTypeDiscriminatorOption() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType optionType =
+        ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createS32());
+    final WitOption value = WitOption.some(optionType, WitS32.of(42));
+    assertEquals(
+        14, WitValueSerializer.getTypeDiscriminator(value), "Option discriminator should be 14");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for own")
+  void testGetTypeDiscriminatorOwn() throws WitValueException {
+    final WitOwn value = WitOwn.of("TestResource", 1);
+    assertEquals(
+        22, WitValueSerializer.getTypeDiscriminator(value), "Own discriminator should be 22");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for borrow")
+  void testGetTypeDiscriminatorBorrow() throws WitValueException {
+    final WitBorrow value = WitBorrow.of("TestResource", 1);
+    assertEquals(
+        23, WitValueSerializer.getTypeDiscriminator(value), "Borrow discriminator should be 23");
+  }
+
+  @Test
+  @DisplayName("Serialize s8 to binary format")
+  void testSerializeS8() throws WitValueException {
+    final WitS8 value = WitS8.of((byte) -42);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(1, result.length, "S8 should serialize to 1 byte");
+    assertEquals((byte) -42, result[0], "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Serialize s16 to binary format")
+  void testSerializeS16() throws WitValueException {
+    final WitS16 value = WitS16.of((short) -1000);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(2, result.length, "S16 should serialize to 2 bytes");
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals((short) -1000, buffer.getShort(), "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Serialize u8 to binary format")
+  void testSerializeU8() throws WitValueException {
+    final WitU8 value = WitU8.of((byte) 0xFF);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(1, result.length, "U8 should serialize to 1 byte");
+    assertEquals((byte) 0xFF, result[0], "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Serialize u16 to binary format")
+  void testSerializeU16() throws WitValueException {
+    final WitU16 value = WitU16.of((short) 0xFFFF);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(2, result.length, "U16 should serialize to 2 bytes");
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals((short) 0xFFFF, buffer.getShort(), "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Serialize u32 to binary format")
+  void testSerializeU32() throws WitValueException {
+    final WitU32 value = WitU32.of(0xFFFFFFFF);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(4, result.length, "U32 should serialize to 4 bytes");
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals(0xFFFFFFFF, buffer.getInt(), "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Serialize u64 to binary format")
+  void testSerializeU64() throws WitValueException {
+    final WitU64 value = WitU64.of(-1L); // Max unsigned
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(8, result.length, "U64 should serialize to 8 bytes");
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals(-1L, buffer.getLong(), "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Serialize float32 to binary format")
+  void testSerializeFloat32() throws WitValueException {
+    final WitFloat32 value = WitFloat32.of(3.14f);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(4, result.length, "Float32 should serialize to 4 bytes");
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals(3.14f, buffer.getFloat(), 0.001f, "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Serialize record to binary format")
+  void testSerializeRecord() throws WitValueException {
+    final java.util.Map<String, WitValue> fields = new java.util.LinkedHashMap<>();
+    fields.put("name", WitString.of("test"));
+    fields.put("age", WitS32.of(42));
+    final WitRecord value = WitRecord.of(fields);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertTrue(result.length > 4, "Record should have more than just field count");
+  }
+
+  @Test
+  @DisplayName("Serialize variant to binary format")
+  void testSerializeVariant() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType variantType =
+        ai.tegmentum.wasmtime4j.WitType.variant("opt",
+            java.util.Map.of("some", java.util.Optional.of(ai.tegmentum.wasmtime4j.WitType.createS32())));
+    final WitVariant value = WitVariant.of(variantType, "some", WitS32.of(42));
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertTrue(result.length > 0, "Variant should have serialized data");
+  }
+
+  @Test
+  @DisplayName("Serialize option some to binary format")
+  void testSerializeOptionSome() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType optionType =
+        ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createS32());
+    final WitOption value = WitOption.some(optionType, WitS32.of(42));
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertTrue(result.length > 1, "Option some should have discriminator + payload");
+  }
+
+  @Test
+  @DisplayName("Serialize option none to binary format")
+  void testSerializeOptionNone() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType optionType =
+        ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createS32());
+    final WitOption value = WitOption.none(optionType);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(1, result.length, "Option none should have just discriminator");
+    assertEquals((byte) 0, result[0], "None should be discriminator 0");
+  }
+
+  @Test
+  @DisplayName("Serialize own resource handle to binary format")
+  void testSerializeOwn() throws WitValueException {
+    final WitOwn value = WitOwn.of("FileHandle", 42);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertTrue(result.length > 4, "Own should have type name + index");
+  }
+
+  @Test
+  @DisplayName("Serialize borrow resource handle to binary format")
+  void testSerializeBorrow() throws WitValueException {
+    final WitBorrow value = WitBorrow.of("FileHandle", 42);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertTrue(result.length > 4, "Borrow should have type name + index");
+  }
+
+  @Test
+  @DisplayName("Serialize empty list to binary format")
+  void testSerializeEmptyList() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType elementType = ai.tegmentum.wasmtime4j.WitType.createS32();
+    final WitList value = WitList.empty(elementType);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertEquals(4, result.length, "Empty list should just have count");
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals(0, buffer.getInt(), "Count should be 0");
+  }
+
+  @Test
+  @DisplayName("Serialize single element list to binary format")
+  void testSerializeSingleElementList() throws WitValueException {
+    final WitList value = WitList.of(WitS32.of(42));
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    assertTrue(result.length > 4, "Single element list should have count + element data");
+  }
 }
