@@ -454,6 +454,378 @@ class ComponentLinkingExceptionTest {
   }
 
   @Nested
+  @DisplayName("isRecoverable Mutation Tests")
+  class IsRecoverableMutationTests {
+
+    @Test
+    @DisplayName("INVALID_COMPONENT_STATE should not be recoverable")
+    void invalidComponentStateShouldNotBeRecoverable() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.INVALID_COMPONENT_STATE, null, null, null, null, null);
+
+      assertFalse(exception.isRecoverable(), "INVALID_COMPONENT_STATE should not be recoverable");
+    }
+
+    @Test
+    @DisplayName("RESOURCE_CONSTRAINTS should not be recoverable")
+    void resourceConstraintsShouldNotBeRecoverable() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.RESOURCE_CONSTRAINTS, null, null, null, null, null);
+
+      assertFalse(exception.isRecoverable(), "RESOURCE_CONSTRAINTS should not be recoverable");
+    }
+
+    @Test
+    @DisplayName("SECURITY_VIOLATION should not be recoverable")
+    void securityViolationShouldNotBeRecoverable() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.SECURITY_VIOLATION, null, null, null, null, null);
+
+      assertFalse(exception.isRecoverable(), "SECURITY_VIOLATION should not be recoverable");
+    }
+
+    @Test
+    @DisplayName("UNKNOWN should not be recoverable")
+    void unknownShouldNotBeRecoverable() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.UNKNOWN, null, null, null, null, null);
+
+      assertFalse(exception.isRecoverable(), "UNKNOWN should not be recoverable");
+    }
+
+    @Test
+    @DisplayName("Only exactly three failure types should be recoverable")
+    void onlyThreeFailureTypesShouldBeRecoverable() {
+      int recoverableCount = 0;
+      for (LinkingFailureType type : LinkingFailureType.values()) {
+        final ComponentLinkingException exception =
+            new ComponentLinkingException("Error", type, null, null, null, null, null);
+        if (exception.isRecoverable()) {
+          recoverableCount++;
+        }
+      }
+
+      assertEquals(3, recoverableCount, "Exactly 3 failure types should be recoverable");
+    }
+  }
+
+  @Nested
+  @DisplayName("getDetailedErrorReport Empty Collection Tests")
+  class GetDetailedErrorReportEmptyCollectionTests {
+
+    @Test
+    @DisplayName("Report should not include empty components section")
+    void reportShouldNotIncludeEmptyComponentsSection() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error",
+              LinkingFailureType.UNKNOWN,
+              Collections.emptyList(),
+              null,
+              null,
+              null,
+              null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertFalse(
+          report.contains("Involved Components:"),
+          "Report should not contain Involved Components section when empty");
+    }
+
+    @Test
+    @DisplayName("Report should not include empty compatibility issues section")
+    void reportShouldNotIncludeEmptyCompatibilityIssuesSection() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error",
+              LinkingFailureType.UNKNOWN,
+              null,
+              Collections.emptyMap(),
+              null,
+              null,
+              null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertFalse(
+          report.contains("Compatibility Issues:"),
+          "Report should not contain Compatibility Issues section when empty");
+    }
+
+    @Test
+    @DisplayName("Report should not include empty missing dependencies section")
+    void reportShouldNotIncludeEmptyMissingDependenciesSection() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error",
+              LinkingFailureType.UNKNOWN,
+              null,
+              null,
+              Collections.emptySet(),
+              null,
+              null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertFalse(
+          report.contains("Missing Dependencies:"),
+          "Report should not contain Missing Dependencies section when empty");
+    }
+
+    @Test
+    @DisplayName("Report should not include empty circular dependencies section")
+    void reportShouldNotIncludeEmptyCircularDependenciesSection() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error",
+              LinkingFailureType.UNKNOWN,
+              null,
+              null,
+              null,
+              Collections.emptySet(),
+              null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertFalse(
+          report.contains("Circular Dependencies:"),
+          "Report should not contain Circular Dependencies section when empty");
+    }
+
+    @Test
+    @DisplayName("Report should not include empty suggested resolutions section")
+    void reportShouldNotIncludeEmptySuggestedResolutionsSection() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error",
+              LinkingFailureType.UNKNOWN,
+              null,
+              null,
+              null,
+              null,
+              Collections.emptyList());
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertFalse(
+          report.contains("Suggested Resolutions:"),
+          "Report should not contain Suggested Resolutions section when empty");
+    }
+
+    @Test
+    @DisplayName("Report should not include null components section")
+    void reportShouldNotIncludeNullComponentsSection() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.UNKNOWN, null, null, null, null, null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertFalse(
+          report.contains("Involved Components:"),
+          "Report should not contain Involved Components section when null");
+    }
+  }
+
+  @Nested
+  @DisplayName("getDetailedErrorReport Content Tests")
+  class GetDetailedErrorReportContentTests {
+
+    @Test
+    @DisplayName("Report should include compatibility issues")
+    void reportShouldIncludeCompatibilityIssues() {
+      final Map<String, String> issues = new HashMap<>();
+      issues.put("comp-a:comp-b", "Version mismatch");
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.VERSION_INCOMPATIBILITY, null, issues, null, null, null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertTrue(
+          report.contains("Compatibility Issues:"), "Report should contain Compatibility Issues");
+      assertTrue(report.contains("comp-a:comp-b"), "Report should contain issue key");
+      assertTrue(report.contains("Version mismatch"), "Report should contain issue value");
+    }
+
+    @Test
+    @DisplayName("Report should include missing dependencies")
+    void reportShouldIncludeMissingDependencies() {
+      final Set<String> missing = new HashSet<>(Arrays.asList("dep-a", "dep-b"));
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.MISSING_DEPENDENCIES, null, null, missing, null, null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertTrue(
+          report.contains("Missing Dependencies:"), "Report should contain Missing Dependencies");
+      assertTrue(report.contains("dep-a"), "Report should contain first missing dependency");
+      assertTrue(report.contains("dep-b"), "Report should contain second missing dependency");
+    }
+
+    @Test
+    @DisplayName("Report should include circular dependencies")
+    void reportShouldIncludeCircularDependencies() {
+      final Set<String> circular = new HashSet<>(Arrays.asList("comp-x", "comp-y"));
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.CIRCULAR_DEPENDENCY, null, null, null, circular, null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertTrue(
+          report.contains("Circular Dependencies:"), "Report should contain Circular Dependencies");
+      assertTrue(report.contains("comp-x"), "Report should contain first circular component");
+      assertTrue(report.contains("comp-y"), "Report should contain second circular component");
+    }
+
+    @Test
+    @DisplayName("Report should include numbered suggested resolutions")
+    void reportShouldIncludeNumberedSuggestedResolutions() {
+      final List<String> suggestions = Arrays.asList("First fix", "Second fix", "Third fix");
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.UNKNOWN, null, null, null, null, suggestions);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertTrue(
+          report.contains("Suggested Resolutions:"), "Report should contain Suggested Resolutions");
+      assertTrue(report.contains("1. First fix"), "Report should contain numbered first suggestion");
+      assertTrue(
+          report.contains("2. Second fix"), "Report should contain numbered second suggestion");
+      assertTrue(report.contains("3. Third fix"), "Report should contain numbered third suggestion");
+    }
+
+    @Test
+    @DisplayName("Report should show No for non-recoverable failure")
+    void reportShouldShowNoForNonRecoverableFailure() {
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", LinkingFailureType.CIRCULAR_DEPENDENCY, null, null, null, null, null);
+
+      final String report = exception.getDetailedErrorReport();
+
+      assertTrue(report.contains("Recoverable: No"), "Report should contain 'Recoverable: No'");
+    }
+  }
+
+  @Nested
+  @DisplayName("Constructor with Cause Mutation Tests")
+  class ConstructorWithCauseMutationTests {
+
+    @Test
+    @DisplayName("Constructor with cause should copy involved components")
+    void constructorWithCauseShouldCopyInvolvedComponents() {
+      final List<String> components = Arrays.asList("comp-1", "comp-2");
+      final Throwable cause = new RuntimeException("cause");
+
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error",
+              cause,
+              LinkingFailureType.UNKNOWN,
+              components,
+              null,
+              null,
+              null,
+              null);
+
+      final List<String> retrieved = exception.getInvolvedComponents();
+      assertNotNull(retrieved, "Should have involved components");
+      assertEquals(2, retrieved.size(), "Should have 2 components");
+      assertNotSame(components, retrieved, "Should return a copy");
+    }
+
+    @Test
+    @DisplayName("Constructor with cause should copy compatibility issues")
+    void constructorWithCauseShouldCopyCompatibilityIssues() {
+      final Map<String, String> issues = new HashMap<>();
+      issues.put("key", "value");
+      final Throwable cause = new RuntimeException("cause");
+
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", cause, LinkingFailureType.UNKNOWN, null, issues, null, null, null);
+
+      final Map<String, String> retrieved = exception.getCompatibilityIssues();
+      assertNotNull(retrieved, "Should have compatibility issues");
+      assertEquals(1, retrieved.size(), "Should have 1 issue");
+      assertNotSame(issues, retrieved, "Should return a copy");
+    }
+
+    @Test
+    @DisplayName("Constructor with cause should copy missing dependencies")
+    void constructorWithCauseShouldCopyMissingDependencies() {
+      final Set<String> missing = new HashSet<>(Arrays.asList("dep"));
+      final Throwable cause = new RuntimeException("cause");
+
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", cause, LinkingFailureType.UNKNOWN, null, null, missing, null, null);
+
+      final Set<String> retrieved = exception.getMissingDependencies();
+      assertNotNull(retrieved, "Should have missing dependencies");
+      assertEquals(1, retrieved.size(), "Should have 1 dependency");
+      assertNotSame(missing, retrieved, "Should return a copy");
+    }
+
+    @Test
+    @DisplayName("Constructor with cause should copy circular dependencies")
+    void constructorWithCauseShouldCopyCircularDependencies() {
+      final Set<String> circular = new HashSet<>(Arrays.asList("comp"));
+      final Throwable cause = new RuntimeException("cause");
+
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", cause, LinkingFailureType.UNKNOWN, null, null, null, circular, null);
+
+      final Set<String> retrieved = exception.getCircularDependencies();
+      assertNotNull(retrieved, "Should have circular dependencies");
+      assertEquals(1, retrieved.size(), "Should have 1 circular dependency");
+      assertNotSame(circular, retrieved, "Should return a copy");
+    }
+
+    @Test
+    @DisplayName("Constructor with cause should copy suggested resolutions")
+    void constructorWithCauseShouldCopySuggestedResolutions() {
+      final List<String> suggestions = Arrays.asList("fix");
+      final Throwable cause = new RuntimeException("cause");
+
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", cause, LinkingFailureType.UNKNOWN, null, null, null, null, suggestions);
+
+      final List<String> retrieved = exception.getSuggestedResolutions();
+      assertNotNull(retrieved, "Should have suggested resolutions");
+      assertEquals(1, retrieved.size(), "Should have 1 suggestion");
+      assertNotSame(suggestions, retrieved, "Should return a copy");
+    }
+
+    @Test
+    @DisplayName("Constructor with cause should handle null collections")
+    void constructorWithCauseShouldHandleNullCollections() {
+      final Throwable cause = new RuntimeException("cause");
+
+      final ComponentLinkingException exception =
+          new ComponentLinkingException(
+              "Error", cause, LinkingFailureType.UNKNOWN, null, null, null, null, null);
+
+      assertNull(exception.getInvolvedComponents(), "Components should be null");
+      assertNull(exception.getCompatibilityIssues(), "Compatibility issues should be null");
+      assertNull(exception.getMissingDependencies(), "Missing dependencies should be null");
+      assertNull(exception.getCircularDependencies(), "Circular dependencies should be null");
+      assertNull(exception.getSuggestedResolutions(), "Suggestions should be null");
+    }
+  }
+
+  @Nested
   @DisplayName("Usage Tests")
   class UsageTests {
 
