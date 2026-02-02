@@ -311,7 +311,13 @@ impl Module {
         }
 
         // Use wasmparser for comprehensive validation
-        match wasmtime::Module::validate(&wasmtime::Engine::default(), wasm_bytes) {
+        let safe_config = crate::engine::safe_wasmtime_config();
+        let validation_engine = wasmtime::Engine::new(&safe_config)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create validation engine: {}", e),
+                backtrace: None,
+            })?;
+        match wasmtime::Module::validate(&validation_engine, wasm_bytes) {
             Ok(_) => Ok(()),
             Err(e) => Err(WasmtimeError::Validation {
                 message: format!("WebAssembly validation failed: {}", e),
@@ -558,13 +564,25 @@ impl ModuleMetadata {
             });
         }
 
-        // Extract function information (basic)
+        // Extract function information from imports and exports
         let mut func_index = 0;
         for import in module.imports() {
             if let wasmtime::ExternType::Func(func_type) = import.ty() {
                 functions.push(FunctionInfo {
                     index: func_index,
                     name: Some(format!("{}:{}", import.module(), import.name())),
+                    signature: convert_func_type(&func_type)?,
+                });
+                func_index += 1;
+            }
+        }
+
+        // Also include exported functions (module-defined)
+        for export in module.exports() {
+            if let wasmtime::ExternType::Func(func_type) = export.ty() {
+                functions.push(FunctionInfo {
+                    index: func_index,
+                    name: Some(export.name().to_string()),
                     signature: convert_func_type(&func_type)?,
                 });
                 func_index += 1;

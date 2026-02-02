@@ -5,6 +5,7 @@
 //! external objects, or other reference types with proper bounds checking
 //! and type validation.
 
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref, Func, Extern, HeapType};
@@ -36,9 +37,10 @@ pub struct TableMetadata {
 }
 
 /// Global reference registry for managing references across table operations
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
 use once_cell::sync::Lazy;
-static REFERENCE_REGISTRY: Lazy<Arc<Mutex<ReferenceRegistry>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(ReferenceRegistry::new()))
+static REFERENCE_REGISTRY: Lazy<ManuallyDrop<Arc<Mutex<ReferenceRegistry>>>> = Lazy::new(|| {
+    ManuallyDrop::new(Arc::new(Mutex::new(ReferenceRegistry::new())))
 });
 
 /// Registry for managing WebAssembly references by ID
@@ -1342,7 +1344,7 @@ mod tests {
         assert_eq!(initial_size, 5);
 
         // Test growing table
-        let old_size = table.grow(&store, 3, TableElement::FuncRef(Some(123)))
+        let old_size = table.grow(&store, 3, TableElement::FuncRef(None))
             .expect("Failed to grow table");
         assert_eq!(old_size, 5);
 

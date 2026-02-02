@@ -946,3 +946,209 @@ pub extern "C" fn wasmtime4j_error_recovery_destroy(system: *mut ErrorRecoverySy
         unsafe { drop(Box::from_raw(system)) };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn make_error(category: ErrorCategory, severity: ErrorSeverity, component: &str) -> ErrorEvent {
+        ErrorEvent::new(
+            "test error".to_string(),
+            1,
+            category,
+            severity,
+            component.to_string(),
+        )
+    }
+
+    // --- CircuitBreaker tests ---
+
+    #[test]
+    fn circuit_breaker_starts_closed() {
+        let cb = CircuitBreaker::new(3, Duration::from_millis(100));
+        assert_eq!(cb.get_state(), CircuitBreakerState::Closed);
+        assert!(cb.can_execute());
+    }
+
+    #[test]
+    fn circuit_breaker_opens_after_threshold_failures() {
+        let mut cb = CircuitBreaker::new(3, Duration::from_millis(100));
+        cb.record_failure();
+        cb.record_failure();
+        assert_eq!(cb.get_state(), CircuitBreakerState::Closed);
+        cb.record_failure();
+        assert_eq!(cb.get_state(), CircuitBreakerState::Open);
+    }
+
+    #[test]
+    fn circuit_breaker_open_blocks_execution() {
+        let mut cb = CircuitBreaker::new(1, Duration::from_secs(60));
+        cb.record_failure();
+        assert_eq!(cb.get_state(), CircuitBreakerState::Open);
+        assert!(!cb.can_execute(), "Open circuit should block execution");
+    }
+
+    #[test]
+    fn circuit_breaker_transitions_to_half_open_after_timeout() {
+        let mut cb = CircuitBreaker::new(1, Duration::from_millis(10));
+        cb.record_failure();
+        assert_eq!(cb.get_state(), CircuitBreakerState::Open);
+
+        std::thread::sleep(Duration::from_millis(15));
+        assert!(cb.try_half_open(), "Should transition to HalfOpen after timeout");
+        assert_eq!(cb.get_state(), CircuitBreakerState::HalfOpen);
+    }
+
+    #[test]
+    fn circuit_breaker_half_open_closes_after_successes() {
+        let mut cb = CircuitBreaker::new(1, Duration::from_millis(10));
+        cb.record_failure();
+        std::thread::sleep(Duration::from_millis(15));
+        cb.try_half_open();
+        assert_eq!(cb.get_state(), CircuitBreakerState::HalfOpen);
+
+        cb.record_success();
+        cb.record_success();
+        assert_eq!(cb.get_state(), CircuitBreakerState::Closed, "2 successes in HalfOpen should close");
+    }
+
+    #[test]
+    fn circuit_breaker_half_open_reopens_on_failure() {
+        let mut cb = CircuitBreaker::new(1, Duration::from_millis(10));
+        cb.record_failure();
+        std::thread::sleep(Duration::from_millis(15));
+        cb.try_half_open();
+
+        cb.record_failure();
+        assert_eq!(cb.get_state(), CircuitBreakerState::Open, "Failure in HalfOpen should reopen");
+    }
+
+    #[test]
+    fn circuit_breaker_statistics() {
+        let mut cb = CircuitBreaker::new(5, Duration::from_secs(60));
+        cb.record_failure();
+        cb.record_failure();
+        cb.record_success();
+        let (failures, successes, state) = cb.get_statistics();
+        assert_eq!(failures, 0, "Success in Closed resets failure count");
+        assert_eq!(successes, 1);
+        assert_eq!(state, CircuitBreakerState::Closed);
+    }
+
+    // --- RetryStrategy tests ---
+
+    #[test]
+    fn retry_strategy_default_values() {
+        let rs = RetryStrategy::default();
+        assert_eq!(rs.max_attempts, 3);
+        assert!(rs.jitter_enabled);
+        assert!(rs.retry_on_categories.contains(&ErrorCategory::Transient));
+    }
+
+    #[test]
+    fn retry_strategy_should_retry_within_attempts() {
+        let rs = RetryStrategy::default();
+        assert!(rs.should_retry(&ErrorCategory::Transient, 0));
+        assert!(rs.should_retry(&ErrorCategory::Transient, 2));
+        assert!(!rs.should_retry(&ErrorCategory::Transient, 3), "Should not retry at max_attempts");
+    }
+
+    #[test]
+    fn retry_strategy_should_not_retry_non_retriable_category() {
+        let rs = RetryStrategy::default();
+        assert!(!rs.should_retry(&ErrorCategory::Configuration, 0));
+        assert!(!rs.should_retry(&ErrorCategory::Compilation, 0));
+    }
+
+    #[test]
+    fn retry_strategy_calculate_delay_increases_with_attempts() {
+        let mut rs = RetryStrategy::default();
+        rs.jitter_enabled = false; // Disable jitter for deterministic test
+        let delay0 = rs.calculate_delay(0);
+        let delay1 = rs.calculate_delay(1);
+        let delay2 = rs.calculate_delay(2);
+        assert!(delay1 > delay0, "Delay should increase with attempt number");
+        assert!(delay2 > delay1, "Delay should increase with attempt number");
+    }
+
+    #[test]
+    fn retry_strategy_calculate_delay_caps_at_max() {
+        let mut rs = RetryStrategy::default();
+        rs.jitter_enabled = false;
+        rs.max_delay = Duration::from_millis(500);
+        let delay = rs.calculate_delay(100); // Very high attempt
+        assert!(delay <= Duration::from_millis(500), "Should cap at max_delay");
+    }
+
+    // --- ErrorRecoverySystem tests ---
+
+    #[test]
+    fn system_create_succeeds() {
+        let system = ErrorRecoverySystem::new();
+        assert!(system.is_ok());
+    }
+
+    #[test]
+    fn system_register_circuit_breaker() {
+        let system = ErrorRecoverySystem::new().unwrap();
+        let result = system.register_circuit_breaker("comp1", 5, Duration::from_secs(30));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn system_register_retry_strategy() {
+        let system = ErrorRecoverySystem::new().unwrap();
+        let result = system.register_retry_strategy("comp1", RetryStrategy::default());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn system_handle_transient_error_returns_retry() {
+        let system = ErrorRecoverySystem::new().unwrap();
+        let error = make_error(ErrorCategory::Transient, ErrorSeverity::Low, "test");
+        let action = system.handle_error(error).unwrap();
+        assert_eq!(action, RecoveryAction::Retry);
+    }
+
+    #[test]
+    fn system_handle_critical_system_error_returns_circuit_break() {
+        let system = ErrorRecoverySystem::new().unwrap();
+        let error = make_error(ErrorCategory::System, ErrorSeverity::Critical, "test");
+        let action = system.handle_error(error).unwrap();
+        assert_eq!(action, RecoveryAction::CircuitBreak);
+    }
+
+    #[test]
+    fn system_handle_critical_memory_error_returns_restart() {
+        let system = ErrorRecoverySystem::new().unwrap();
+        let error = make_error(ErrorCategory::Memory, ErrorSeverity::Critical, "test");
+        let action = system.handle_error(error).unwrap();
+        assert_eq!(action, RecoveryAction::Restart);
+    }
+
+    #[test]
+    fn system_handle_resource_exhaustion_high_returns_reset() {
+        let system = ErrorRecoverySystem::new().unwrap();
+        let error = make_error(ErrorCategory::ResourceExhaustion, ErrorSeverity::High, "test");
+        let action = system.handle_error(error).unwrap();
+        assert_eq!(action, RecoveryAction::Reset);
+    }
+
+    #[test]
+    fn system_record_success_succeeds() {
+        let system = ErrorRecoverySystem::new().unwrap();
+        system.register_circuit_breaker("comp1", 5, Duration::from_secs(30)).unwrap();
+        let result = system.record_success("comp1");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn system_statistics_track_errors() {
+        let system = ErrorRecoverySystem::new().unwrap();
+        let error = make_error(ErrorCategory::Transient, ErrorSeverity::Low, "test");
+        system.handle_error(error).unwrap();
+        let stats = system.get_statistics().unwrap();
+        assert_eq!(stats.total_errors_detected, 1);
+    }
+}

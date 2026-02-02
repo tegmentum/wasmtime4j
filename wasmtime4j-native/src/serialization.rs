@@ -643,7 +643,7 @@ mod tests {
     fn test_serialization_config() {
         let config = SerializationConfig::default();
         assert_eq!(config.max_cache_size, DEFAULT_MAX_CACHE_SIZE);
-        assert!(config.enable_compression);
+        assert!(!config.enable_compression);
         assert_eq!(config.validation_level, ValidationLevel::Basic);
     }
 

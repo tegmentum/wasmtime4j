@@ -8,14 +8,16 @@
 //! - Advanced interruption handling with state preservation
 
 use std::collections::{HashMap, VecDeque};
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use once_cell::sync::Lazy;
 
 /// Global execution controller managing all execution contexts
-static GLOBAL_CONTROLLER: Lazy<Mutex<ExecutionControllerState>> = Lazy::new(|| {
-    Mutex::new(ExecutionControllerState::new())
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static GLOBAL_CONTROLLER: Lazy<ManuallyDrop<Mutex<ExecutionControllerState>>> = Lazy::new(|| {
+    ManuallyDrop::new(Mutex::new(ExecutionControllerState::new()))
 });
 
 /// Thread-safe execution controller state

@@ -1410,7 +1410,7 @@ mod tests {
     #[test]
     fn test_wasi_preview2_context_creation() {
         // WASI Preview 2 requires async support
-        let mut engine_config = wasmtime::Config::new();
+        let mut engine_config = crate::engine::safe_wasmtime_config();
         engine_config.async_support(true);
         let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
@@ -1451,7 +1451,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_component_compilation() {
-        let mut engine_config = wasmtime::Config::new();
+        let mut engine_config = crate::engine::safe_wasmtime_config();
         engine_config.async_support(true);
         let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
@@ -1477,7 +1477,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_stream_operations() {
-        let mut engine_config = wasmtime::Config::new();
+        let mut engine_config = crate::engine::safe_wasmtime_config();
         engine_config.async_support(true);
         let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
@@ -1510,7 +1510,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_async_operation_cancellation() {
-        let mut engine_config = wasmtime::Config::new();
+        let mut engine_config = crate::engine::safe_wasmtime_config();
         engine_config.async_support(true);
         let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();
@@ -1544,7 +1544,7 @@ mod tests {
     #[test]
     fn test_operation_cleanup() {
         // WASI Preview 2 requires async support
-        let mut engine_config = wasmtime::Config::new();
+        let mut engine_config = crate::engine::safe_wasmtime_config();
         engine_config.async_support(true);
         let engine = Engine::new(&engine_config).unwrap();
         let config = WasiPreview2Config::default();

@@ -425,7 +425,9 @@ fn create_gc_runtime_internal(engine_handle: jlong) -> WasmtimeResult<WasmGcRunt
 
     // For now, create with a default engine
     // TODO: In the future, retrieve the actual engine from the handle
-    let engine = Engine::default();
+    let safe_config = crate::engine::safe_wasmtime_config();
+    let engine = Engine::new(&safe_config)
+        .map_err(|e| WasmtimeError::from_string(format!("Failed to create engine: {}", e)))?;
     WasmGcRuntime::new(engine)
 }
 

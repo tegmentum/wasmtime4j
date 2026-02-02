@@ -60,7 +60,7 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
 
     // Create Wasmtime engine with default configuration
     // Note: async_support is disabled for synchronous WAST execution
-    let mut config = Config::new();
+    let mut config = crate::engine::safe_wasmtime_config();
     config.wasm_multi_value(true);
     config.wasm_multi_memory(true);
     config.wasm_bulk_memory(true);
@@ -75,11 +75,6 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
     config.wasm_component_model(true);
     config.wasm_exceptions(true);
     config.wasm_wide_arithmetic(true);
-
-    // CRITICAL: Disable signal-based traps to avoid conflict with JVM signal handlers
-    // JVM and Wasmtime both install SIGSEGV/SIGILL handlers which conflict
-    // This forces explicit bounds checks instead of using signals
-    config.signals_based_traps(false);
 
     // Configure stack size for proper overflow handling
     config.max_wasm_stack(2 * 1024 * 1024); // 2 MiB
@@ -141,7 +136,7 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
 pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> Result<WastExecutionResult> {
     // Create Wasmtime engine with default configuration
     // Note: async_support is disabled for synchronous WAST execution
-    let mut config = Config::new();
+    let mut config = crate::engine::safe_wasmtime_config();
     config.wasm_multi_value(true);
     config.wasm_multi_memory(true);
     config.wasm_bulk_memory(true);
@@ -156,11 +151,6 @@ pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> Result<WastExecuti
     config.wasm_component_model(true);
     config.wasm_exceptions(true);
     config.wasm_wide_arithmetic(true);
-
-    // CRITICAL: Disable signal-based traps to avoid conflict with JVM signal handlers
-    // JVM and Wasmtime both install SIGSEGV/SIGILL handlers which conflict
-    // This forces explicit bounds checks instead of using signals
-    config.signals_based_traps(false);
 
     // Configure stack size for proper overflow handling
     config.max_wasm_stack(2 * 1024 * 1024); // 2 MiB

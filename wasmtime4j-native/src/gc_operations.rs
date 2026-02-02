@@ -104,7 +104,7 @@ impl WasmtimeGcOperations {
     pub fn new(mut store: Store<()>) -> WasmtimeResult<Self> {
         // Enable GC features in Wasmtime store
         let engine = store.engine().clone();
-        let mut config = wasmtime::Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.wasm_gc(true);
         config.wasm_reference_types(true);
 
@@ -1685,7 +1685,7 @@ mod tests {
     use crate::gc_types::{FieldDefinition, FieldType};
 
     fn create_test_operations() -> WasmtimeResult<WasmtimeGcOperations> {
-        let mut config = wasmtime::Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.wasm_gc(true);
         config.wasm_reference_types(true);
 

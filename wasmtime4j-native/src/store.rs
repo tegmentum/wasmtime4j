@@ -1052,11 +1052,24 @@ pub mod core {
 
         match result {
             Ok(_) => {
+                // Remove address from DESTROYED_POINTERS so that if the allocator
+                // reuses this address for a new store, it won't be falsely
+                // detected as a double-free.
+                {
+                    use crate::error::ffi_utils::DESTROYED_POINTERS;
+                    let mut destroyed = DESTROYED_POINTERS.lock()
+                        .unwrap_or_else(|poisoned| {
+                            log::warn!("DESTROYED_POINTERS mutex was poisoned during store cleanup, recovering");
+                            poisoned.into_inner()
+                        });
+                    destroyed.remove(&ptr_addr);
+                }
                 log::debug!("Store resource at {:p} destroyed successfully", store_ptr);
             }
             Err(e) => {
                 log::error!("Store resource at {:p} destruction panicked: {:?} - preventing JVM crash", store_ptr, e);
                 // Don't propagate panic to JVM
+                // Leave address in DESTROYED_POINTERS since destruction failed
             }
         }
     }

@@ -469,30 +469,39 @@ impl PerformanceProfiler {
     /// Gets actual CPU usage percentage
     fn get_cpu_usage_percent() -> f64 {
         // This is a simplified CPU usage calculation
-        // In production, you would track CPU time over intervals
-        static mut LAST_CPU_TIME: Option<Duration> = None;
-        static mut LAST_CHECK_TIME: Option<std::time::Instant> = None;
+        // Using thread-local storage for thread safety
+        use std::cell::RefCell;
 
-        unsafe {
-            let current_time = std::time::Instant::now();
-            let current_cpu_time = Self::get_process_cpu_time();
-
-            if let (Some(last_cpu), Some(last_time)) = (LAST_CPU_TIME, LAST_CHECK_TIME) {
-                let time_delta = current_time.duration_since(last_time);
-                let cpu_delta = current_cpu_time.saturating_sub(last_cpu);
-
-                if time_delta.as_secs_f64() > 0.0 {
-                    let cpu_percent = (cpu_delta.as_secs_f64() / time_delta.as_secs_f64()) * 100.0;
-                    LAST_CPU_TIME = Some(current_cpu_time);
-                    LAST_CHECK_TIME = Some(current_time);
-                    return cpu_percent.min(100.0);
-                }
-            }
-
-            LAST_CPU_TIME = Some(current_cpu_time);
-            LAST_CHECK_TIME = Some(current_time);
-            0.0
+        thread_local! {
+            static LAST_CPU_TIME: RefCell<Option<Duration>> = const { RefCell::new(None) };
+            static LAST_CHECK_TIME: RefCell<Option<std::time::Instant>> = const { RefCell::new(None) };
         }
+
+        let current_time = std::time::Instant::now();
+        let current_cpu_time = Self::get_process_cpu_time();
+
+        LAST_CPU_TIME.with(|last_cpu_cell| {
+            LAST_CHECK_TIME.with(|last_time_cell| {
+                let last_cpu = *last_cpu_cell.borrow();
+                let last_time = *last_time_cell.borrow();
+
+                if let (Some(last_cpu), Some(last_time)) = (last_cpu, last_time) {
+                    let time_delta = current_time.duration_since(last_time);
+                    let cpu_delta = current_cpu_time.saturating_sub(last_cpu);
+
+                    if time_delta.as_secs_f64() > 0.0 {
+                        let cpu_percent = (cpu_delta.as_secs_f64() / time_delta.as_secs_f64()) * 100.0;
+                        *last_cpu_cell.borrow_mut() = Some(current_cpu_time);
+                        *last_time_cell.borrow_mut() = Some(current_time);
+                        return cpu_percent.min(100.0);
+                    }
+                }
+
+                *last_cpu_cell.borrow_mut() = Some(current_cpu_time);
+                *last_time_cell.borrow_mut() = Some(current_time);
+                0.0
+            })
+        })
     }
 
     /// Gets process CPU time
@@ -1635,5 +1644,477 @@ pub extern "C" fn wasmtime4j_flame_graph_collector_export_svg(
 pub extern "C" fn wasmtime4j_flame_graph_collector_destroy(collector: *mut FlameGraphCollector) {
     if !collector.is_null() {
         unsafe { drop(Box::from_raw(collector)) };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn test_config() -> ProfilerConfig {
+        ProfilerConfig {
+            sampling_interval: Duration::from_millis(50),
+            function_profiling_enabled: true,
+            memory_leak_detection_enabled: true,
+            io_profiling_enabled: true,
+            compilation_monitoring_enabled: true,
+            regression_detection_enabled: true,
+            max_function_profiles: 5,
+            max_memory_allocations: 10,
+            regression_threshold_percent: 10.0,
+            dashboard_enabled: true,
+        }
+    }
+
+    // --- FunctionProfile tests ---
+
+    #[test]
+    fn function_profile_new_has_correct_initial_values() {
+        let profile = FunctionProfile::new("test_fn".to_string());
+        assert_eq!(profile.function_name, "test_fn");
+        assert_eq!(profile.call_count, 0);
+        assert_eq!(profile.total_execution_time, Duration::ZERO);
+        assert_eq!(profile.min_execution_time, Duration::MAX);
+        assert_eq!(profile.max_execution_time, Duration::ZERO);
+        assert_eq!(profile.memory_allocated, 0);
+        assert_eq!(profile.memory_deallocated, 0);
+    }
+
+    #[test]
+    fn function_profile_record_execution_tracks_min_max() {
+        let mut profile = FunctionProfile::new("test_fn".to_string());
+        profile.record_execution(Duration::from_millis(10), 0);
+        profile.record_execution(Duration::from_millis(5), 0);
+        profile.record_execution(Duration::from_millis(20), 0);
+
+        assert_eq!(profile.call_count, 3);
+        assert_eq!(profile.min_execution_time, Duration::from_millis(5));
+        assert_eq!(profile.max_execution_time, Duration::from_millis(20));
+        assert_eq!(profile.total_execution_time, Duration::from_millis(35));
+    }
+
+    #[test]
+    fn function_profile_record_execution_tracks_memory() {
+        let mut profile = FunctionProfile::new("test_fn".to_string());
+        profile.record_execution(Duration::from_millis(1), 100);   // allocation
+        profile.record_execution(Duration::from_millis(1), -30);   // deallocation
+        profile.record_execution(Duration::from_millis(1), 50);    // allocation
+
+        assert_eq!(profile.memory_allocated, 150);
+        assert_eq!(profile.memory_deallocated, 30);
+    }
+
+    // --- IoProfile tests ---
+
+    #[test]
+    fn io_profile_new_has_zero_values() {
+        let profile = IoProfile::new("read".to_string());
+        assert_eq!(profile.operation_type, "read");
+        assert_eq!(profile.operation_count, 0);
+        assert_eq!(profile.total_bytes, 0);
+        assert_eq!(profile.error_count, 0);
+    }
+
+    #[test]
+    fn io_profile_records_operations_and_throughput() {
+        let mut profile = IoProfile::new("write".to_string());
+        profile.record_operation(1000, Duration::from_secs(1), true);
+        assert_eq!(profile.operation_count, 1);
+        assert_eq!(profile.total_bytes, 1000);
+        assert_eq!(profile.error_count, 0);
+        assert!((profile.average_throughput - 1000.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn io_profile_tracks_errors() {
+        let mut profile = IoProfile::new("read".to_string());
+        profile.record_operation(100, Duration::from_millis(10), true);
+        profile.record_operation(0, Duration::from_millis(1), false);
+        assert_eq!(profile.operation_count, 2);
+        assert_eq!(profile.error_count, 1);
+    }
+
+    // --- PerformanceProfiler tests ---
+
+    #[test]
+    fn profiler_create_succeeds() {
+        let profiler = PerformanceProfiler::new(test_config());
+        assert!(profiler.is_ok());
+    }
+
+    #[test]
+    fn profiler_is_not_profiling_initially() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        assert!(!profiler.is_profiling().unwrap());
+    }
+
+    #[test]
+    fn profiler_start_and_stop() {
+        let mut profiler = PerformanceProfiler::new(test_config()).unwrap();
+        profiler.start_profiling().unwrap();
+        assert!(profiler.is_profiling().unwrap());
+        profiler.stop_profiling().unwrap();
+        assert!(!profiler.is_profiling().unwrap());
+    }
+
+    #[test]
+    fn profiler_double_start_fails() {
+        let mut profiler = PerformanceProfiler::new(test_config()).unwrap();
+        profiler.start_profiling().unwrap();
+        let result = profiler.start_profiling();
+        assert!(result.is_err());
+        profiler.stop_profiling().unwrap();
+    }
+
+    #[test]
+    fn profiler_double_stop_fails() {
+        let mut profiler = PerformanceProfiler::new(test_config()).unwrap();
+        let result = profiler.stop_profiling();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn profiler_record_function_execution() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        profiler.record_function_execution("my_func", Duration::from_millis(10), 256).unwrap();
+        profiler.record_function_execution("my_func", Duration::from_millis(20), -128).unwrap();
+
+        let dashboard = profiler.get_performance_dashboard().unwrap();
+        let profile = dashboard.function_profiles.get("my_func").unwrap();
+        assert_eq!(profile.call_count, 2);
+        assert_eq!(profile.memory_allocated, 256);
+        assert_eq!(profile.memory_deallocated, 128);
+    }
+
+    #[test]
+    fn profiler_function_disabled_skips_recording() {
+        let mut config = test_config();
+        config.function_profiling_enabled = false;
+        let profiler = PerformanceProfiler::new(config).unwrap();
+        profiler.record_function_execution("func", Duration::from_millis(1), 0).unwrap();
+
+        let dashboard = profiler.get_performance_dashboard().unwrap();
+        assert!(dashboard.function_profiles.is_empty());
+    }
+
+    #[test]
+    fn profiler_function_lru_eviction() {
+        let config = test_config(); // max_function_profiles = 5
+        let profiler = PerformanceProfiler::new(config).unwrap();
+
+        // Record 6 different functions, exceeding max of 5
+        for i in 0..6 {
+            std::thread::sleep(Duration::from_millis(2)); // Ensure different last_called
+            profiler.record_function_execution(
+                &format!("func_{}", i), Duration::from_millis(1), 0
+            ).unwrap();
+        }
+
+        let dashboard = profiler.get_performance_dashboard().unwrap();
+        // After eviction, should have at most max_function_profiles entries
+        assert!(dashboard.function_profiles.len() <= 5,
+            "Should evict LRU to stay at max, got {}", dashboard.function_profiles.len());
+    }
+
+    #[test]
+    fn profiler_record_memory_allocation_and_deallocation() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        let alloc_id = profiler.record_memory_allocation(
+            1024, "heap", vec!["main".to_string()]
+        ).unwrap();
+        assert!(alloc_id > 0);
+
+        let dashboard = profiler.get_performance_dashboard().unwrap();
+        assert_eq!(dashboard.memory_allocations.len(), 1);
+
+        profiler.record_memory_deallocation(alloc_id).unwrap();
+        let dashboard = profiler.get_performance_dashboard().unwrap();
+        assert_eq!(dashboard.memory_allocations.len(), 0);
+    }
+
+    #[test]
+    fn profiler_memory_allocation_ids_are_monotonic() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        let id1 = profiler.record_memory_allocation(100, "heap", vec![]).unwrap();
+        let id2 = profiler.record_memory_allocation(200, "heap", vec![]).unwrap();
+        assert!(id2 > id1, "Allocation IDs should be monotonically increasing");
+    }
+
+    #[test]
+    fn profiler_memory_disabled_returns_zero_id() {
+        let mut config = test_config();
+        config.memory_leak_detection_enabled = false;
+        let profiler = PerformanceProfiler::new(config).unwrap();
+        let id = profiler.record_memory_allocation(1024, "heap", vec![]).unwrap();
+        assert_eq!(id, 0, "Should return 0 when disabled");
+    }
+
+    #[test]
+    fn profiler_record_io_operation() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        profiler.record_io_operation("read", 4096, Duration::from_millis(5), true).unwrap();
+        profiler.record_io_operation("read", 2048, Duration::from_millis(3), false).unwrap();
+
+        let dashboard = profiler.get_performance_dashboard().unwrap();
+        let io = dashboard.io_profiles.get("read").unwrap();
+        assert_eq!(io.operation_count, 2);
+        assert_eq!(io.total_bytes, 6144);
+        assert_eq!(io.error_count, 1);
+    }
+
+    #[test]
+    fn profiler_record_compilation_metrics() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        profiler.record_compilation(Duration::from_millis(100), 5000, false, true).unwrap();
+        profiler.record_compilation(Duration::from_millis(50), 3000, true, false).unwrap();
+
+        let dashboard = profiler.get_performance_dashboard().unwrap();
+        let metrics = &dashboard.compilation_metrics;
+        assert_eq!(metrics.module_compilations, 2);
+        assert_eq!(metrics.bytecode_size_compiled, 8000);
+        assert_eq!(metrics.compilation_cache_hits, 1);
+        assert_eq!(metrics.compilation_cache_misses, 1);
+        assert_eq!(metrics.optimized_modules, 1);
+    }
+
+    #[test]
+    fn profiler_detect_memory_leaks_returns_empty_for_recent() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        profiler.record_memory_allocation(1024, "heap", vec![]).unwrap();
+        let leaks = profiler.detect_memory_leaks().unwrap();
+        assert!(leaks.is_empty(), "Recent allocations should not be leaks");
+    }
+
+    #[test]
+    fn profiler_detect_memory_leaks_disabled_returns_empty() {
+        let mut config = test_config();
+        config.memory_leak_detection_enabled = false;
+        let profiler = PerformanceProfiler::new(config).unwrap();
+        let leaks = profiler.detect_memory_leaks().unwrap();
+        assert!(leaks.is_empty());
+    }
+
+    #[test]
+    fn profiler_reset_clears_all_data() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        profiler.record_function_execution("fn1", Duration::from_millis(1), 0).unwrap();
+        profiler.record_memory_allocation(100, "heap", vec![]).unwrap();
+        profiler.record_io_operation("read", 100, Duration::from_millis(1), true).unwrap();
+        profiler.record_compilation(Duration::from_millis(10), 1000, false, false).unwrap();
+
+        profiler.reset().unwrap();
+
+        let dashboard = profiler.get_performance_dashboard().unwrap();
+        assert!(dashboard.function_profiles.is_empty());
+        assert!(dashboard.memory_allocations.is_empty());
+        assert!(dashboard.io_profiles.is_empty());
+        assert_eq!(dashboard.compilation_metrics.module_compilations, 0);
+    }
+
+    #[test]
+    fn profiler_detect_regression_returns_none_without_baseline() {
+        let profiler = PerformanceProfiler::new(test_config()).unwrap();
+        let result = profiler.detect_regression().unwrap();
+        assert!(result.is_none(), "No baseline = no regression detection");
+    }
+
+    #[test]
+    fn profiler_detect_regression_disabled_returns_none() {
+        let mut config = test_config();
+        config.regression_detection_enabled = false;
+        let profiler = PerformanceProfiler::new(config).unwrap();
+        let result = profiler.detect_regression().unwrap();
+        assert!(result.is_none());
+    }
+
+    // --- FlameGraphNode tests ---
+
+    #[test]
+    fn flame_graph_node_new_has_zero_values() {
+        let node = FlameGraphNode::new("test".to_string(), "system".to_string());
+        assert_eq!(node.function_name, "test");
+        assert_eq!(node.total_samples, 0);
+        assert_eq!(node.self_samples, 0);
+        assert_eq!(node.total_time_nanos, 0);
+        assert!(node.children.is_empty());
+    }
+
+    #[test]
+    fn flame_graph_node_record_sample_leaf_vs_nonleaf() {
+        let mut node = FlameGraphNode::new("fn".to_string(), "wasm".to_string());
+        node.record_sample(100, false); // non-leaf
+        node.record_sample(200, true);  // leaf
+
+        assert_eq!(node.total_samples, 2);
+        assert_eq!(node.self_samples, 1, "Only leaf increments self_samples");
+        assert_eq!(node.total_time_nanos, 300);
+        assert_eq!(node.self_time_nanos, 200, "Only leaf adds to self_time");
+    }
+
+    #[test]
+    fn flame_graph_node_get_time_percentage_handles_zero() {
+        let node = FlameGraphNode::new("fn".to_string(), "wasm".to_string());
+        assert_eq!(node.get_time_percentage(0), 0.0);
+    }
+
+    #[test]
+    fn flame_graph_node_get_time_percentage_calculates_correctly() {
+        let mut node = FlameGraphNode::new("fn".to_string(), "wasm".to_string());
+        node.record_sample(500, true);
+        let pct = node.get_time_percentage(1000);
+        assert!((pct - 50.0).abs() < 0.01, "Should be 50%, got {}", pct);
+    }
+
+    #[test]
+    fn flame_graph_node_add_child() {
+        let mut parent = FlameGraphNode::new("parent".to_string(), "system".to_string());
+        let child = FlameGraphNode::new("child".to_string(), "wasm".to_string());
+        parent.add_child(child);
+        assert_eq!(parent.children.len(), 1);
+        assert_eq!(parent.children[0].function_name, "child");
+    }
+
+    // --- FlameGraphCollector tests ---
+
+    #[test]
+    fn collector_start_and_stop_collection() {
+        let collector = FlameGraphCollector::new(1000, Duration::from_millis(10));
+        collector.start_collection().unwrap();
+        collector.stop_collection().unwrap();
+    }
+
+    #[test]
+    fn collector_double_start_fails() {
+        let collector = FlameGraphCollector::new(1000, Duration::from_millis(10));
+        collector.start_collection().unwrap();
+        assert!(collector.start_collection().is_err());
+        collector.stop_collection().unwrap();
+    }
+
+    #[test]
+    fn collector_record_sample_inactive_is_ignored() {
+        let collector = FlameGraphCollector::new(1000, Duration::from_millis(10));
+        // Not started, so recording should be a no-op
+        let entry = StackTraceEntry {
+            function_name: "test".to_string(),
+            file_name: "test.rs".to_string(),
+            line_number: 1,
+            instruction_pointer: 0,
+            duration_nanos: 100,
+            self_time_nanos: 100,
+            sample_count: 1,
+        };
+        collector.record_stack_sample(vec![entry]).unwrap();
+        let (total, current) = collector.get_stats().unwrap();
+        assert_eq!(total, 0, "Should not record when inactive");
+        assert_eq!(current, 0);
+    }
+
+    #[test]
+    fn collector_record_sample_active_tracks() {
+        let collector = FlameGraphCollector::new(1000, Duration::from_millis(10));
+        collector.start_collection().unwrap();
+        let entry = StackTraceEntry {
+            function_name: "test".to_string(),
+            file_name: "test.rs".to_string(),
+            line_number: 1,
+            instruction_pointer: 0,
+            duration_nanos: 100,
+            self_time_nanos: 100,
+            sample_count: 1,
+        };
+        collector.record_stack_sample(vec![entry]).unwrap();
+        let (total, current) = collector.get_stats().unwrap();
+        assert_eq!(total, 1);
+        assert_eq!(current, 1);
+        collector.stop_collection().unwrap();
+    }
+
+    #[test]
+    fn collector_build_flame_graph_empty() {
+        let collector = FlameGraphCollector::new(1000, Duration::from_millis(10));
+        let root = collector.build_flame_graph().unwrap();
+        assert_eq!(root.function_name, "(root)");
+        assert!(root.children.is_empty());
+    }
+
+    #[test]
+    fn collector_build_flame_graph_with_samples() {
+        let collector = FlameGraphCollector::new(1000, Duration::from_millis(10));
+        collector.start_collection().unwrap();
+
+        let entries = vec![
+            StackTraceEntry {
+                function_name: "main".to_string(),
+                file_name: "main.rs".to_string(),
+                line_number: 1,
+                instruction_pointer: 0,
+                duration_nanos: 200,
+                self_time_nanos: 50,
+                sample_count: 1,
+            },
+            StackTraceEntry {
+                function_name: "helper".to_string(),
+                file_name: "lib.rs".to_string(),
+                line_number: 10,
+                instruction_pointer: 0,
+                duration_nanos: 150,
+                self_time_nanos: 150,
+                sample_count: 1,
+            },
+        ];
+        collector.record_stack_sample(entries).unwrap();
+        collector.stop_collection().unwrap();
+
+        let root = collector.build_flame_graph().unwrap();
+        assert!(!root.children.is_empty(), "Root should have children after samples");
+    }
+
+    #[test]
+    fn collector_export_svg_produces_valid_svg() {
+        let collector = FlameGraphCollector::new(1000, Duration::from_millis(10));
+        collector.start_collection().unwrap();
+        let entry = StackTraceEntry {
+            function_name: "wasmtime_func".to_string(),
+            file_name: "test.rs".to_string(),
+            line_number: 1,
+            instruction_pointer: 0,
+            duration_nanos: 1000,
+            self_time_nanos: 1000,
+            sample_count: 1,
+        };
+        collector.record_stack_sample(vec![entry]).unwrap();
+        collector.stop_collection().unwrap();
+
+        let svg = collector.export_svg(800, 600).unwrap();
+        assert!(svg.contains("<svg"), "Should produce SVG output: {}", &svg[..50.min(svg.len())]);
+        assert!(svg.contains("</svg>"), "Should have closing SVG tag");
+    }
+
+    // --- ProfilerConfig defaults ---
+
+    #[test]
+    fn profiler_config_default_values() {
+        let config = ProfilerConfig::default();
+        assert!(config.function_profiling_enabled);
+        assert!(config.memory_leak_detection_enabled);
+        assert!(config.io_profiling_enabled);
+        assert!(config.compilation_monitoring_enabled);
+        assert!(config.regression_detection_enabled);
+        assert_eq!(config.max_function_profiles, 10000);
+        assert_eq!(config.max_memory_allocations, 100000);
+    }
+
+    // --- CompilationMetrics defaults ---
+
+    #[test]
+    fn compilation_metrics_default_all_zeros() {
+        let m = CompilationMetrics::default();
+        assert_eq!(m.module_compilations, 0);
+        assert_eq!(m.total_compilation_time, Duration::ZERO);
+        assert_eq!(m.compilation_cache_hits, 0);
+        assert_eq!(m.compilation_cache_misses, 0);
+        assert_eq!(m.optimized_modules, 0);
     }
 }

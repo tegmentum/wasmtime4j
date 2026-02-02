@@ -308,9 +308,23 @@ impl ModuleCache {
             let mut memory_cache = self.memory_cache.write()
                 .map_err(|e| format!("Lock error: {}", e))?;
 
-            // Check size limits
+            // Check size limits — evict LRU inline to avoid deadlock
+            // (evict_lru_memory() would try to acquire the same write lock)
             if memory_cache.len() >= self.config.max_entries {
-                self.evict_lru_memory()?;
+                let mut lru_hash: Option<String> = None;
+                let mut lru_time = u64::MAX;
+                for (h, e) in memory_cache.iter() {
+                    if e.metadata.last_accessed < lru_time {
+                        lru_time = e.metadata.last_accessed;
+                        lru_hash = Some(h.clone());
+                    }
+                }
+                if let Some(h) = lru_hash {
+                    memory_cache.remove(&h);
+                    if let Ok(mut stats) = self.statistics.write() {
+                        stats.entries_evicted += 1;
+                    }
+                }
             }
 
             let entry = MemoryCacheEntry {
@@ -925,4 +939,240 @@ pub extern "C" fn wasmtime4j_module_cache_perform_maintenance(cache: *mut Module
 
     let cache = unsafe { &*cache };
     cache.perform_maintenance().is_ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn test_config() -> ModuleCacheConfig {
+        let dir = std::env::temp_dir().join(format!("wasmtime4j_cache_test_{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        ModuleCacheConfig {
+            cache_dir: dir,
+            max_cache_size: 10 * 1024 * 1024,
+            max_entries: 5,
+            max_age: Duration::from_secs(3600),
+            compression_enabled: true,
+            compression_level: 1, // Fast for tests
+            cache_warming_enabled: false,
+            deduplication_enabled: true,
+            persistent_storage: true,
+        }
+    }
+
+    fn test_engine() -> Engine {
+        let config = crate::engine::safe_wasmtime_config();
+        Engine::new(&config).unwrap()
+    }
+
+    // Minimal valid WASM module: (module)
+    fn minimal_wasm() -> Vec<u8> {
+        vec![
+            0x00, 0x61, 0x73, 0x6D, // magic
+            0x01, 0x00, 0x00, 0x00, // version 1
+        ]
+    }
+
+    // WASM module with a function that adds two i32s
+    fn add_wasm() -> Vec<u8> {
+        wat::parse_str("(module (func (export \"add\") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))").unwrap()
+    }
+
+    // --- CacheEntryMetadata tests ---
+
+    #[test]
+    fn metadata_new_has_correct_fields() {
+        let m = CacheEntryMetadata::new("abc123".to_string(), 1000, 500);
+        assert_eq!(m.bytecode_hash, "abc123");
+        assert_eq!(m.module_size, 1000);
+        assert_eq!(m.compressed_size, 500);
+        assert_eq!(m.load_count, 0);
+        assert_eq!(m.cache_version, 1);
+        assert!(m.compiled_at > 0);
+    }
+
+    #[test]
+    fn metadata_touch_increments_load_count() {
+        let mut m = CacheEntryMetadata::new("hash".to_string(), 100, 50);
+        assert_eq!(m.load_count, 0);
+        m.touch();
+        assert_eq!(m.load_count, 1);
+        m.touch();
+        assert_eq!(m.load_count, 2);
+    }
+
+    #[test]
+    fn metadata_is_valid_checks_hash_and_version() {
+        let m = CacheEntryMetadata::new("correct_hash".to_string(), 100, 50);
+        assert!(m.is_valid("correct_hash"));
+        assert!(!m.is_valid("wrong_hash"));
+    }
+
+    #[test]
+    fn metadata_is_valid_rejects_wrong_version() {
+        let mut m = CacheEntryMetadata::new("hash".to_string(), 100, 50);
+        m.cache_version = 99;
+        assert!(!m.is_valid("hash"));
+    }
+
+    #[test]
+    fn metadata_age_is_recent() {
+        let m = CacheEntryMetadata::new("hash".to_string(), 100, 50);
+        let age = m.age();
+        assert!(age < Duration::from_secs(5), "Freshly created metadata should have near-zero age");
+    }
+
+    // --- CacheStatistics defaults ---
+
+    #[test]
+    fn cache_statistics_default_all_zeros() {
+        let stats = CacheStatistics::default();
+        assert_eq!(stats.cache_hits, 0);
+        assert_eq!(stats.cache_misses, 0);
+        assert_eq!(stats.entries_count, 0);
+        assert_eq!(stats.entries_evicted, 0);
+        assert_eq!(stats.storage_bytes_used, 0);
+    }
+
+    // --- ModuleCacheConfig defaults ---
+
+    #[test]
+    fn config_default_values() {
+        let config = ModuleCacheConfig::default();
+        assert_eq!(config.max_cache_size, 1024 * 1024 * 1024);
+        assert_eq!(config.max_entries, 10000);
+        assert!(config.compression_enabled);
+        assert_eq!(config.compression_level, 6);
+        assert!(config.cache_warming_enabled);
+        assert!(config.deduplication_enabled);
+        assert!(config.persistent_storage);
+    }
+
+    // --- ModuleCache hash tests ---
+
+    #[test]
+    fn compute_hash_is_deterministic() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let data = b"test data for hashing";
+        let hash1 = cache.compute_hash(data);
+        let hash2 = cache.compute_hash(data);
+        assert_eq!(hash1, hash2, "Same input should produce same hash");
+    }
+
+    #[test]
+    fn compute_hash_different_inputs_differ() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let hash1 = cache.compute_hash(b"data_a");
+        let hash2 = cache.compute_hash(b"data_b");
+        assert_ne!(hash1, hash2, "Different inputs should produce different hashes");
+    }
+
+    #[test]
+    fn compute_hash_is_64_hex_chars() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let hash = cache.compute_hash(b"test");
+        assert_eq!(hash.len(), 64, "SHA-256 hex should be 64 chars, got {}", hash.len());
+        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()), "Should be hex");
+    }
+
+    // --- Compression round-trip tests ---
+
+    #[test]
+    fn compress_decompress_round_trip() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let original = b"Hello, this is test data for compression round-trip verification!";
+        let (compressed, compressed_size) = cache.compress_data(original).unwrap();
+        assert!(compressed_size > 0);
+        let decompressed = cache.decompress_data(&compressed).unwrap();
+        assert_eq!(decompressed, original, "Round-trip should preserve data");
+    }
+
+    #[test]
+    fn compress_decompress_empty_data() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let (compressed, _) = cache.compress_data(b"").unwrap();
+        let decompressed = cache.decompress_data(&compressed).unwrap();
+        assert!(decompressed.is_empty(), "Empty data round-trip should work");
+    }
+
+    // --- ModuleCache creation and basic operations ---
+
+    #[test]
+    fn cache_create_succeeds() {
+        let cache = ModuleCache::new(test_engine(), test_config());
+        assert!(cache.is_ok());
+    }
+
+    #[test]
+    fn cache_initial_statistics_are_zero() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let stats = cache.get_statistics().unwrap();
+        assert_eq!(stats.cache_hits, 0);
+        assert_eq!(stats.cache_misses, 0);
+        assert_eq!(stats.entries_count, 0);
+    }
+
+    #[test]
+    fn cache_get_or_compile_compiles_valid_wasm() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let result = cache.get_or_compile(&add_wasm());
+        assert!(result.is_ok(), "Should compile valid WASM: {:?}", result.err());
+    }
+
+    #[test]
+    fn cache_get_or_compile_second_call_is_cache_hit() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let wasm = add_wasm();
+        cache.get_or_compile(&wasm).unwrap();
+        cache.get_or_compile(&wasm).unwrap();
+
+        let stats = cache.get_statistics().unwrap();
+        assert_eq!(stats.cache_misses, 1, "First call should be a miss");
+        assert_eq!(stats.cache_hits, 1, "Second call should be a hit");
+    }
+
+    #[test]
+    fn cache_get_or_compile_invalid_wasm_fails() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let result = cache.get_or_compile(b"not valid wasm");
+        assert!(result.is_err(), "Invalid WASM should fail compilation");
+    }
+
+    #[test]
+    fn cache_clear_empties_cache() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        cache.get_or_compile(&add_wasm()).unwrap();
+        cache.clear().unwrap();
+
+        let stats = cache.get_statistics().unwrap();
+        assert_eq!(stats.entries_count, 0, "Clear should empty the cache");
+        assert_eq!(stats.cache_hits, 0, "Clear should reset stats");
+    }
+
+    #[test]
+    fn cache_module_returns_hash_key() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        let key = cache.cache_module(&add_wasm());
+        assert!(key.is_ok(), "Should return cache key: {:?}", key.err());
+        let key = key.unwrap();
+        assert_eq!(key.len(), 64, "Cache key should be SHA-256 hex");
+    }
+
+    #[test]
+    fn cache_perform_maintenance_succeeds() {
+        let cache = ModuleCache::new(test_engine(), test_config()).unwrap();
+        cache.get_or_compile(&add_wasm()).unwrap();
+        let result = cache.perform_maintenance();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn cache_get_config_returns_config() {
+        let config = test_config();
+        let expected_max = config.max_entries;
+        let cache = ModuleCache::new(test_engine(), config).unwrap();
+        assert_eq!(cache.get_config().max_entries, expected_max);
+    }
 }

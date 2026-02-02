@@ -1103,3 +1103,387 @@ pub extern "C" fn wasmtime4j_resource_manager_destroy(manager: *mut ResourceMana
         unsafe { drop(Box::from_raw(manager)) };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::thread;
+    use std::time::Duration;
+
+    fn test_quota() -> ResourceQuota {
+        ResourceQuota {
+            memory_limit_bytes: 1024,
+            memory_soft_limit_bytes: 512,
+            cpu_time_limit: Duration::from_millis(50),
+            max_file_descriptors: 3,
+            max_network_connections: 2,
+            io_bandwidth_limit: 1000,
+            max_execution_time: Duration::from_secs(60),
+            cpu_preemption_enabled: true,
+            preemption_check_interval: Duration::from_millis(1),
+        }
+    }
+
+    // --- ResourceQuota default tests ---
+
+    #[test]
+    fn resource_quota_default_has_expected_values() {
+        let q = ResourceQuota::default();
+        assert_eq!(q.memory_limit_bytes, 1024 * 1024 * 1024);
+        assert_eq!(q.memory_soft_limit_bytes, 768 * 1024 * 1024);
+        assert_eq!(q.cpu_time_limit, Duration::from_secs(30));
+        assert_eq!(q.max_file_descriptors, 1000);
+        assert_eq!(q.max_network_connections, 100);
+        assert_eq!(q.io_bandwidth_limit, 100 * 1024 * 1024);
+        assert!(q.cpu_preemption_enabled);
+    }
+
+    // --- FileDescriptorTracker tests ---
+
+    #[test]
+    fn fd_tracker_allocates_monotonic_ids() {
+        let mut tracker = FileDescriptorTracker::new(10);
+        let fd1 = tracker.allocate_descriptor().unwrap();
+        let fd2 = tracker.allocate_descriptor().unwrap();
+        assert_eq!(fd1, 1);
+        assert_eq!(fd2, 2);
+        assert_eq!(tracker.get_open_count(), 2);
+    }
+
+    #[test]
+    fn fd_tracker_rejects_at_limit() {
+        let mut tracker = FileDescriptorTracker::new(2);
+        tracker.allocate_descriptor().unwrap();
+        tracker.allocate_descriptor().unwrap();
+        let result = tracker.allocate_descriptor();
+        assert!(result.is_err(), "Should reject when at max descriptors");
+        assert_eq!(tracker.get_open_count(), 2);
+    }
+
+    #[test]
+    fn fd_tracker_release_frees_slot() {
+        let mut tracker = FileDescriptorTracker::new(2);
+        let fd1 = tracker.allocate_descriptor().unwrap();
+        tracker.allocate_descriptor().unwrap();
+        assert!(tracker.release_descriptor(fd1));
+        assert_eq!(tracker.get_open_count(), 1);
+        // Can allocate again after release
+        let fd3 = tracker.allocate_descriptor().unwrap();
+        assert_eq!(fd3, 3); // Monotonic, not reused
+    }
+
+    #[test]
+    fn fd_tracker_release_unknown_returns_false() {
+        let mut tracker = FileDescriptorTracker::new(10);
+        assert!(!tracker.release_descriptor(999));
+    }
+
+    // --- NetworkConnectionTracker tests ---
+
+    #[test]
+    fn network_tracker_allocates_and_limits() {
+        let mut tracker = NetworkConnectionTracker::new(2);
+        let c1 = tracker.open_connection().unwrap();
+        let c2 = tracker.open_connection().unwrap();
+        assert_eq!(c1, 1);
+        assert_eq!(c2, 2);
+        assert!(tracker.open_connection().is_err());
+        assert_eq!(tracker.get_active_count(), 2);
+    }
+
+    #[test]
+    fn network_tracker_close_releases_slot() {
+        let mut tracker = NetworkConnectionTracker::new(1);
+        let c1 = tracker.open_connection().unwrap();
+        assert!(tracker.close_connection(c1));
+        assert_eq!(tracker.get_active_count(), 0);
+        // Can open another
+        tracker.open_connection().unwrap();
+    }
+
+    #[test]
+    fn network_tracker_close_unknown_returns_false() {
+        let mut tracker = NetworkConnectionTracker::new(10);
+        assert!(!tracker.close_connection(999));
+    }
+
+    // --- IoRateLimiter tests ---
+
+    #[test]
+    fn io_limiter_allows_under_limit() {
+        let mut limiter = IoRateLimiter::new(1000);
+        let delay = limiter.check_and_throttle(500).unwrap();
+        assert_eq!(delay, Duration::ZERO, "Should not throttle under limit");
+        let (total, throttle_count) = limiter.get_statistics();
+        assert_eq!(total, 500);
+        assert_eq!(throttle_count, 0);
+    }
+
+    #[test]
+    fn io_limiter_throttles_over_limit() {
+        let mut limiter = IoRateLimiter::new(100);
+        limiter.check_and_throttle(50).unwrap();
+        let delay = limiter.check_and_throttle(60).unwrap();
+        assert!(delay > Duration::ZERO, "Should throttle when exceeding limit");
+        let (_, throttle_count) = limiter.get_statistics();
+        assert_eq!(throttle_count, 1);
+    }
+
+    #[test]
+    fn io_limiter_resets_after_period() {
+        let mut limiter = IoRateLimiter::new(100);
+        limiter.check_and_throttle(90).unwrap();
+        // Wait for period reset
+        thread::sleep(Duration::from_millis(1100));
+        let delay = limiter.check_and_throttle(90).unwrap();
+        assert_eq!(delay, Duration::ZERO, "Should allow after period reset");
+    }
+
+    // --- CpuTimeTracker tests ---
+
+    #[test]
+    fn cpu_tracker_disabled_preemption_returns_false() {
+        let mut tracker = CpuTimeTracker::new(false, Duration::from_millis(1));
+        let result = tracker.check_preemption(Duration::from_millis(1)).unwrap();
+        assert!(!result, "Should not preempt when disabled");
+        let (_, count) = tracker.get_statistics();
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn cpu_tracker_within_limit_returns_false() {
+        let mut tracker = CpuTimeTracker::new(true, Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(5));
+        let result = tracker.check_preemption(Duration::from_secs(10)).unwrap();
+        assert!(!result, "Should not preempt within time limit");
+    }
+
+    #[test]
+    fn cpu_tracker_exceeds_limit_returns_true() {
+        let mut tracker = CpuTimeTracker::new(true, Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(20));
+        let result = tracker.check_preemption(Duration::from_millis(5)).unwrap();
+        assert!(result, "Should preempt after exceeding time limit");
+        let (_, count) = tracker.get_statistics();
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn cpu_tracker_rate_limits_checks() {
+        let mut tracker = CpuTimeTracker::new(true, Duration::from_secs(10));
+        // First check - should pass interval gate
+        let _r1 = tracker.check_preemption(Duration::from_secs(100));
+        // Immediate second check - should be rate-limited
+        let r2 = tracker.check_preemption(Duration::from_secs(100)).unwrap();
+        assert!(!r2, "Should rate-limit preemption checks");
+    }
+
+    // --- ResourceManager register/unregister tests ---
+
+    #[test]
+    fn manager_create_succeeds() {
+        let manager = ResourceManager::new();
+        assert!(manager.is_ok());
+    }
+
+    #[test]
+    fn manager_register_and_unregister() {
+        let manager = ResourceManager::new().unwrap();
+        assert!(manager.register_resource("r1", test_quota()).is_ok());
+        assert!(manager.unregister_resource("r1").is_ok());
+    }
+
+    #[test]
+    fn manager_reject_duplicate_registration() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        let result = manager.register_resource("r1", test_quota());
+        assert!(result.is_err(), "Should reject duplicate resource ID");
+    }
+
+    #[test]
+    fn manager_unregister_unknown_fails() {
+        let manager = ResourceManager::new().unwrap();
+        let result = manager.unregister_resource("nonexistent");
+        assert!(result.is_err());
+    }
+
+    // --- Memory allocation tests ---
+
+    #[test]
+    fn manager_memory_under_soft_limit_succeeds() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        // soft limit = 512, hard limit = 1024
+        let result = manager.allocate_memory("r1", 256);
+        assert!(result.is_ok(), "Should allow allocation under soft limit");
+    }
+
+    #[test]
+    fn manager_memory_over_hard_limit_fails() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        // hard limit = 1024
+        let result = manager.allocate_memory("r1", 2000);
+        assert!(result.is_err(), "Should reject over hard limit");
+        let violation = result.unwrap_err();
+        assert_eq!(violation.violation_type, ResourceViolationType::MemoryHardLimit);
+        assert_eq!(violation.action_taken, ResourceAction::Terminate);
+    }
+
+    #[test]
+    fn manager_memory_between_soft_and_hard_succeeds() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        // Between soft (512) and hard (1024)
+        let result = manager.allocate_memory("r1", 700);
+        assert!(result.is_ok(), "Should allow between soft and hard limit");
+    }
+
+    #[test]
+    fn manager_memory_tracks_peak() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        manager.allocate_memory("r1", 400).unwrap();
+        let usage = manager.get_resource_usage("r1").unwrap();
+        assert_eq!(usage.memory_allocated, 400);
+        assert_eq!(usage.memory_peak, 400);
+    }
+
+    #[test]
+    fn manager_deallocate_memory_reduces_usage() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        manager.allocate_memory("r1", 400).unwrap();
+        manager.deallocate_memory("r1", 200).unwrap();
+        let usage = manager.get_resource_usage("r1").unwrap();
+        assert_eq!(usage.memory_allocated, 200);
+        assert_eq!(usage.memory_peak, 400, "Peak should not decrease");
+    }
+
+    // --- File descriptor allocation tests ---
+
+    #[test]
+    fn manager_fd_allocation_up_to_limit() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        // max_file_descriptors = 3
+        assert!(manager.allocate_file_descriptor("r1").is_ok());
+        assert!(manager.allocate_file_descriptor("r1").is_ok());
+        assert!(manager.allocate_file_descriptor("r1").is_ok());
+        let result = manager.allocate_file_descriptor("r1");
+        assert!(result.is_err(), "Should reject at FD limit");
+        let violation = result.unwrap_err();
+        assert_eq!(violation.violation_type, ResourceViolationType::FileDescriptorLimit);
+    }
+
+    // --- Network connection tests ---
+
+    #[test]
+    fn manager_network_connection_up_to_limit() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        // max_network_connections = 2
+        assert!(manager.open_network_connection("r1").is_ok());
+        assert!(manager.open_network_connection("r1").is_ok());
+        let result = manager.open_network_connection("r1");
+        assert!(result.is_err(), "Should reject at connection limit");
+        let violation = result.unwrap_err();
+        assert_eq!(violation.violation_type, ResourceViolationType::NetworkConnectionLimit);
+    }
+
+    // --- I/O bandwidth tests ---
+
+    #[test]
+    fn manager_io_bandwidth_under_limit_returns_zero_delay() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        // io_bandwidth_limit = 1000
+        let delay = manager.check_io_bandwidth("r1", 500).unwrap();
+        assert_eq!(delay, Duration::ZERO);
+    }
+
+    #[test]
+    fn manager_io_bandwidth_over_limit_returns_positive_delay() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        manager.check_io_bandwidth("r1", 800).unwrap();
+        let delay = manager.check_io_bandwidth("r1", 500).unwrap();
+        assert!(delay > Duration::ZERO, "Should throttle over bandwidth limit");
+    }
+
+    // --- Statistics tests ---
+
+    #[test]
+    fn manager_statistics_track_registrations() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        manager.register_resource("r2", test_quota()).unwrap();
+        let stats = manager.get_statistics().unwrap();
+        assert_eq!(stats.total_resources_managed, 2);
+        assert_eq!(stats.active_quotas, 2);
+
+        manager.unregister_resource("r1").unwrap();
+        let stats = manager.get_statistics().unwrap();
+        assert_eq!(stats.active_quotas, 1);
+    }
+
+    // --- Violations tracking tests ---
+
+    #[test]
+    fn manager_violations_empty_initially() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        let violations = manager.get_violations("r1").unwrap();
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn manager_violations_recorded_on_hard_limit() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        let _ = manager.allocate_memory("r1", 2000); // Exceeds hard limit
+        let violations = manager.get_violations("r1").unwrap();
+        assert_eq!(violations.len(), 1, "Should record one violation");
+        assert_eq!(violations[0].violation_type, ResourceViolationType::MemoryHardLimit);
+    }
+
+    // --- Resource usage query tests ---
+
+    #[test]
+    fn manager_usage_unknown_resource_fails() {
+        let manager = ResourceManager::new().unwrap();
+        assert!(manager.get_resource_usage("nonexistent").is_err());
+    }
+
+    #[test]
+    fn manager_usage_reflects_allocations() {
+        let manager = ResourceManager::new().unwrap();
+        manager.register_resource("r1", test_quota()).unwrap();
+        manager.allocate_memory("r1", 100).unwrap();
+        manager.allocate_file_descriptor("r1").unwrap();
+        manager.open_network_connection("r1").unwrap();
+        let usage = manager.get_resource_usage("r1").unwrap();
+        assert_eq!(usage.memory_allocated, 100);
+        assert_eq!(usage.file_descriptors_open, 1);
+        assert_eq!(usage.network_connections_active, 1);
+    }
+
+    // --- Monitoring tests ---
+
+    #[test]
+    fn manager_start_and_stop_monitoring() {
+        let mut manager = ResourceManager::new().unwrap();
+        assert!(manager.start_monitoring().is_ok());
+        assert!(manager.stop_monitoring().is_ok());
+    }
+
+    #[test]
+    fn manager_double_start_monitoring_fails() {
+        let mut manager = ResourceManager::new().unwrap();
+        manager.start_monitoring().unwrap();
+        let result = manager.start_monitoring();
+        assert!(result.is_err(), "Double start should fail");
+        manager.stop_monitoring().unwrap();
+    }
+}

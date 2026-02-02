@@ -11,6 +11,7 @@
 //! - Custom protocol negotiation and multiplexing
 
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use std::net::SocketAddr;
@@ -55,8 +56,9 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;
 
 /// Global advanced networking manager
-static ADVANCED_NETWORK_MANAGER: once_cell::sync::Lazy<AdvancedNetworkManager> =
-    once_cell::sync::Lazy::new(|| AdvancedNetworkManager::new());
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static ADVANCED_NETWORK_MANAGER: once_cell::sync::Lazy<ManuallyDrop<AdvancedNetworkManager>> =
+    once_cell::sync::Lazy::new(|| ManuallyDrop::new(AdvancedNetworkManager::new()));
 
 /// Advanced networking manager providing protocol-specific functionality
 pub struct AdvancedNetworkManager {
@@ -325,7 +327,7 @@ impl AdvancedNetworkManager {
 
     /// Get the global advanced network manager
     pub fn global() -> &'static AdvancedNetworkManager {
-        &ADVANCED_NETWORK_MANAGER
+        &**ADVANCED_NETWORK_MANAGER
     }
 
     /// Create a WebSocket client connection

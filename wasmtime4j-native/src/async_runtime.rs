@@ -21,6 +21,7 @@
 //! - Thread-safe callback dispatch to Java
 
 use std::ffi::{c_char, c_void, CStr, CString};
+use std::mem::ManuallyDrop;
 use std::os::raw::{c_int, c_uint, c_ulong};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -50,11 +51,15 @@ fn wasm_value_to_val(value: &WasmValue) -> WasmtimeResult<wasmtime::Val> {
 }
 
 /// Global Tokio runtime for async operations
-static ASYNC_RUNTIME: Lazy<Arc<Runtime>> = Lazy::new(|| {
+///
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+/// This avoids SIGABRT caused by Tokio worker threads trying to interact with
+/// the JVM during shutdown when the JVM is already tearing down.
+static ASYNC_RUNTIME: Lazy<ManuallyDrop<Arc<Runtime>>> = Lazy::new(|| {
     info!("Initializing global Tokio async runtime for wasmtime4j");
 
     // Try optimal configuration first
-    match tokio::runtime::Builder::new_multi_thread()
+    let runtime = match tokio::runtime::Builder::new_multi_thread()
         .worker_threads(4)
         .thread_name("wasmtime4j-async")
         .thread_stack_size(2 * 1024 * 1024) // 2MB stack size
@@ -89,7 +94,9 @@ static ASYNC_RUNTIME: Lazy<Arc<Runtime>> = Lazy::new(|| {
                 }
             }
         }
-    }
+    };
+
+    ManuallyDrop::new(runtime)
 });
 
 /// Callback function type for async operation completion
@@ -505,7 +512,7 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
                 }
 
                 // Create engine with appropriate configuration
-                let mut engine_config = wasmtime::Config::new();
+                let mut engine_config = crate::engine::safe_wasmtime_config();
 
                 // Apply compilation options
                 if context.options.optimize {

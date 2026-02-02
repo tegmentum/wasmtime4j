@@ -10,6 +10,7 @@
 //! - File system quota and usage tracking
 
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Instant, SystemTime};
 use std::path::{Path, PathBuf};
@@ -32,8 +33,9 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;
 
 /// Global file system manager
-static FILESYSTEM_MANAGER: once_cell::sync::Lazy<FileSystemManager> =
-    once_cell::sync::Lazy::new(|| FileSystemManager::new());
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static FILESYSTEM_MANAGER: once_cell::sync::Lazy<ManuallyDrop<FileSystemManager>> =
+    once_cell::sync::Lazy::new(|| ManuallyDrop::new(FileSystemManager::new()));
 
 /// File system manager providing comprehensive file operations
 pub struct FileSystemManager {
@@ -416,7 +418,7 @@ impl FileSystemManager {
 
     /// Get the global file system manager instance
     pub fn global() -> &'static FileSystemManager {
-        &FILESYSTEM_MANAGER
+        &**FILESYSTEM_MANAGER
     }
 
     /// Open a file with enhanced options

@@ -20,9 +20,10 @@ use crate::filesystem_snapshots::{
     SnapshotType, ValidationResult, SnapshotMetrics,
 };
 use crate::async_runtime::get_runtime_handle;
+use std::sync::OnceLock;
 
-/// Global JVM reference for callback handling
-static mut JVM: Option<JavaVM> = None;
+/// Global JVM reference for callback handling (thread-safe)
+static JVM: OnceLock<JavaVM> = OnceLock::new();
 
 /// Initialize JNI snapshot bindings
 #[no_mangle]
@@ -33,9 +34,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
     // Store JVM reference for callbacks
     match env.get_java_vm() {
         Ok(jvm) => {
-            unsafe {
-                JVM = Some(jvm);
-            }
+            // Use get_or_init to safely set the JVM reference once
+            let _ = JVM.get_or_init(|| jvm);
             log::info!("JNI snapshot manager initialized successfully");
             0 // Success
         }
@@ -47,14 +47,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 }
 
 /// Cleanup JNI snapshot bindings
+/// Note: OnceLock cannot be reset, so we just log cleanup.
+/// The JVM reference will be dropped when the process exits.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnapshot_nativeCleanupSnapshotManager(
-    env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
 ) {
-    unsafe {
-        JVM = None;
-    }
+    // OnceLock cannot be reset to None. The JVM reference will be
+    // automatically cleaned up when the process exits.
     log::info!("JNI snapshot manager cleaned up");
 }
 

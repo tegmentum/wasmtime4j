@@ -161,3 +161,139 @@ pub fn timezone_utc_offset(
     // Return UTC offset (0) as the default
     Ok(0)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::wasi_preview2::WasiPreview2Config;
+    use wasmtime::Engine;
+
+    fn test_context() -> WasiPreview2Context {
+        let mut config = crate::engine::safe_wasmtime_config();
+        config.async_support(true);
+        let engine = Engine::new(&config).unwrap();
+        WasiPreview2Context::new(engine, WasiPreview2Config::default()).unwrap()
+    }
+
+    #[test]
+    fn monotonic_now_returns_value() {
+        let ctx = test_context();
+        let first = monotonic_now(&ctx).unwrap();
+        let second = monotonic_now(&ctx).unwrap();
+        assert!(
+            second >= first,
+            "Second call ({}) should be >= first call ({})",
+            second,
+            first
+        );
+    }
+
+    #[test]
+    fn monotonic_now_is_monotonic() {
+        let ctx = test_context();
+        let mut previous = monotonic_now(&ctx).unwrap();
+        for i in 0..100 {
+            let current = monotonic_now(&ctx).unwrap();
+            assert!(
+                current >= previous,
+                "Iteration {}: current ({}) should be >= previous ({})",
+                i,
+                current,
+                previous
+            );
+            previous = current;
+        }
+    }
+
+    #[test]
+    fn monotonic_resolution_returns_one() {
+        let ctx = test_context();
+        let resolution = monotonic_resolution(&ctx).unwrap();
+        assert_eq!(resolution, 1, "Monotonic resolution should be 1 nanosecond");
+    }
+
+    #[test]
+    fn monotonic_subscribe_instant_returns_pollable_id() {
+        let ctx = test_context();
+        let when = monotonic_now(&ctx).unwrap() + 1_000_000_000;
+        let pollable_id = monotonic_subscribe_instant(&ctx, when).unwrap();
+        assert!(
+            pollable_id > 0,
+            "Pollable ID ({}) should be > 0",
+            pollable_id
+        );
+    }
+
+    #[test]
+    fn monotonic_subscribe_duration_returns_pollable_id() {
+        let ctx = test_context();
+        let duration_ns = 1_000_000_000u64; // 1 second
+        let pollable_id = monotonic_subscribe_duration(&ctx, duration_ns).unwrap();
+        assert!(
+            pollable_id > 0,
+            "Pollable ID ({}) should be > 0",
+            pollable_id
+        );
+    }
+
+    #[test]
+    fn wall_clock_now_returns_valid_datetime() {
+        let ctx = test_context();
+        let now = wall_clock_now(&ctx).unwrap();
+        assert!(
+            now.seconds > 0,
+            "Wall clock seconds ({}) should be > 0 (after Unix epoch)",
+            now.seconds
+        );
+        assert!(
+            now.nanoseconds < 1_000_000_000,
+            "Wall clock nanoseconds ({}) should be < 1_000_000_000",
+            now.nanoseconds
+        );
+    }
+
+    #[test]
+    fn wall_clock_resolution_is_nanosecond() {
+        let ctx = test_context();
+        let resolution = wall_clock_resolution(&ctx).unwrap();
+        assert_eq!(
+            resolution.seconds, 0,
+            "Wall clock resolution seconds should be 0, got {}",
+            resolution.seconds
+        );
+        assert_eq!(
+            resolution.nanoseconds, 1,
+            "Wall clock resolution nanoseconds should be 1, got {}",
+            resolution.nanoseconds
+        );
+    }
+
+    #[test]
+    fn timezone_display_returns_utc() {
+        let ctx = test_context();
+        let when = wall_clock_now(&ctx).unwrap();
+        let display = timezone_display(&ctx, when).unwrap();
+        assert_eq!(
+            display.name, "UTC",
+            "Timezone name should be 'UTC', got '{}'",
+            display.name
+        );
+        assert_eq!(
+            display.utc_offset_seconds, 0,
+            "UTC offset should be 0, got {}",
+            display.utc_offset_seconds
+        );
+        assert!(
+            !display.in_daylight_saving_time,
+            "UTC should not be in daylight saving time"
+        );
+    }
+
+    #[test]
+    fn timezone_utc_offset_returns_zero() {
+        let ctx = test_context();
+        let when = wall_clock_now(&ctx).unwrap();
+        let offset = timezone_utc_offset(&ctx, when).unwrap();
+        assert_eq!(offset, 0, "UTC offset should be 0, got {}", offset);
+    }
+}

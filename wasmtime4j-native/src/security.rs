@@ -689,8 +689,14 @@ impl TrustStore {
     }
 
     /// Add a trusted public key
-    pub fn add_trusted_key(&mut self, fingerprint: String, public_key: Vec<u8>) {
-        self.trusted_keys.insert(fingerprint, public_key);
+    ///
+    /// The fingerprint is computed automatically as the SHA-256 hex digest
+    /// of `public_key`, matching the lookup performed by `is_key_trusted`.
+    /// Returns the computed fingerprint (useful for later revocation).
+    pub fn add_trusted_key(&mut self, public_key: Vec<u8>) -> String {
+        let fingerprint = self.calculate_key_fingerprint(&public_key);
+        self.trusted_keys.insert(fingerprint.clone(), public_key);
+        fingerprint
     }
 
     /// Add a trusted certificate
@@ -1073,8 +1079,10 @@ impl ModuleVerifier {
     }
 
     /// Add a trusted public key to the trust store
-    pub fn add_trusted_key(&mut self, fingerprint: String, public_key: Vec<u8>) {
-        self.trust_store.add_trusted_key(fingerprint, public_key);
+    ///
+    /// Returns the computed SHA-256 fingerprint of the key.
+    pub fn add_trusted_key(&mut self, public_key: Vec<u8>) -> String {
+        self.trust_store.add_trusted_key(public_key)
     }
 
     /// Add a trusted certificate to the trust store
@@ -1202,10 +1210,7 @@ mod tests {
         assert!(!signature.public_key.is_empty());
 
         let mut verifier = ModuleVerifier::new();
-        verifier.add_trusted_key(
-            "test".to_string(),
-            signer.public_key(),
-        );
+        verifier.add_trusted_key(signer.public_key());
 
         let result = verifier.verify_module(module_bytes, &signature);
         assert!(result.is_ok());
@@ -1216,10 +1221,10 @@ mod tests {
         let mut trust_store = TrustStore::new();
         let public_key = b"test public key".to_vec();
 
-        trust_store.add_trusted_key("test".to_string(), public_key.clone());
+        let fingerprint = trust_store.add_trusted_key(public_key.clone());
         assert!(trust_store.is_key_trusted(&public_key));
 
-        trust_store.revoke_certificate("test".to_string());
+        trust_store.revoke_certificate(fingerprint);
         assert!(!trust_store.is_key_trusted(&public_key));
     }
 

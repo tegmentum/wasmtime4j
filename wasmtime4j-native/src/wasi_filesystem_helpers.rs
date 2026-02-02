@@ -527,3 +527,354 @@ pub fn close_descriptor(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::wasi_preview2::WasiPreview2Config;
+    use wasmtime::Engine;
+
+    fn test_context() -> WasiPreview2Context {
+        let mut config = crate::engine::safe_wasmtime_config();
+        config.async_support(true);
+        let engine = Engine::new(&config).unwrap();
+        WasiPreview2Context::new(engine, WasiPreview2Config::default()).unwrap()
+    }
+
+    fn insert_descriptor(
+        ctx: &WasiPreview2Context,
+        id: u32,
+        dtype: DescriptorType,
+        path: Option<String>,
+        flags: u32,
+        metadata: Option<DescriptorMetadata>,
+        status: DescriptorStatus,
+    ) {
+        let descriptor = WasiDescriptor {
+            id,
+            descriptor_type: dtype,
+            path,
+            flags,
+            metadata,
+            status,
+        };
+        ctx.descriptors.write().unwrap().insert(id, descriptor);
+    }
+
+    #[test]
+    fn get_type_returns_file_type_code() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 10, DescriptorType::File,
+            Some("/tmp/test.txt".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = get_type(&ctx, 10);
+        assert!(result.is_ok(), "get_type should succeed, got: {:?}", result.err());
+        let type_code = result.unwrap();
+        println!("File descriptor type code: {}", type_code);
+        assert_eq!(type_code, 1, "DescriptorType::File should map to 1, got: {}", type_code);
+    }
+
+    #[test]
+    fn get_type_returns_directory_type_code() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 20, DescriptorType::Directory,
+            Some("/tmp".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = get_type(&ctx, 20);
+        assert!(result.is_ok(), "get_type should succeed, got: {:?}", result.err());
+        let type_code = result.unwrap();
+        println!("Directory descriptor type code: {}", type_code);
+        assert_eq!(type_code, 2, "DescriptorType::Directory should map to 2, got: {}", type_code);
+    }
+
+    #[test]
+    fn get_type_nonexistent_descriptor_fails() {
+        let ctx = test_context();
+        let result = get_type(&ctx, 99999);
+        assert!(result.is_err(), "get_type on nonexistent descriptor should fail");
+        let err_msg = format!("{:?}", result.unwrap_err());
+        println!("Expected error for nonexistent descriptor: {}", err_msg);
+        assert!(
+            err_msg.contains("not found"),
+            "Error should mention 'not found', got: {}",
+            err_msg,
+        );
+    }
+
+    #[test]
+    fn get_flags_returns_descriptor_flags() {
+        let ctx = test_context();
+        let expected_flags: u32 = 0b1010_0101;
+        insert_descriptor(
+            &ctx, 30, DescriptorType::File,
+            Some("/tmp/flagged.txt".to_string()), expected_flags, None, DescriptorStatus::Open,
+        );
+        let result = get_flags(&ctx, 30);
+        assert!(result.is_ok(), "get_flags should succeed, got: {:?}", result.err());
+        let flags = result.unwrap();
+        println!("Descriptor flags: 0b{:08b}", flags);
+        assert_eq!(flags, expected_flags, "Flags should match inserted value");
+    }
+
+    #[test]
+    fn get_flags_nonexistent_descriptor_fails() {
+        let ctx = test_context();
+        let result = get_flags(&ctx, 99999);
+        assert!(result.is_err(), "get_flags on nonexistent descriptor should fail");
+        let err_msg = format!("{:?}", result.unwrap_err());
+        println!("Expected error for nonexistent descriptor: {}", err_msg);
+        assert!(
+            err_msg.contains("not found"),
+            "Error should mention 'not found', got: {}",
+            err_msg,
+        );
+    }
+
+    #[test]
+    fn set_size_updates_metadata() {
+        let ctx = test_context();
+        let metadata = DescriptorMetadata { size: 100, modified: 0, accessed: 0, created: 0 };
+        insert_descriptor(
+            &ctx, 40, DescriptorType::File,
+            Some("/tmp/sized.txt".to_string()), 0, Some(metadata), DescriptorStatus::Open,
+        );
+        let result = set_size(&ctx, 40, 512);
+        assert!(result.is_ok(), "set_size should succeed, got: {:?}", result.err());
+        // Verify metadata was updated
+        let descriptors = ctx.descriptors.read().unwrap();
+        let desc = descriptors.get(&40).unwrap();
+        let meta = desc.metadata.as_ref().unwrap();
+        println!("Descriptor size after set_size: {}", meta.size);
+        assert_eq!(meta.size, 512, "Metadata size should be updated to 512, got: {}", meta.size);
+    }
+
+    #[test]
+    fn set_size_without_metadata_is_noop() {
+        // set_size on a descriptor without metadata silently succeeds (no metadata to update)
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 41, DescriptorType::Directory,
+            Some("/tmp/dir".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = set_size(&ctx, 41, 999);
+        assert!(
+            result.is_ok(),
+            "set_size on descriptor without metadata should succeed (no-op), got: {:?}",
+            result.err(),
+        );
+        // Verify metadata is still None
+        let descriptors = ctx.descriptors.read().unwrap();
+        let desc = descriptors.get(&41).unwrap();
+        println!("Descriptor metadata after set_size on None: {:?}", desc.metadata.is_none());
+        assert!(desc.metadata.is_none(), "Metadata should remain None");
+    }
+
+    #[test]
+    fn set_size_nonexistent_fails() {
+        let ctx = test_context();
+        let result = set_size(&ctx, 99999, 100);
+        assert!(result.is_err(), "set_size on nonexistent descriptor should fail");
+        let err_msg = format!("{:?}", result.unwrap_err());
+        println!("Expected error for nonexistent descriptor: {}", err_msg);
+        assert!(
+            err_msg.contains("not found"),
+            "Error should mention 'not found', got: {}",
+            err_msg,
+        );
+    }
+
+    #[test]
+    fn open_at_requires_directory_parent() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 50, DescriptorType::File,
+            Some("/tmp/not_a_dir.txt".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = open_at(&ctx, 50, "child.txt", 0, 0);
+        assert!(result.is_err(), "open_at with non-directory parent should fail");
+        let err_msg = format!("{:?}", result.unwrap_err());
+        println!("Expected error for non-directory parent: {}", err_msg);
+        assert!(
+            err_msg.contains("not a directory"),
+            "Error should mention 'not a directory', got: {}",
+            err_msg,
+        );
+    }
+
+    #[test]
+    fn open_at_with_directory_parent_succeeds() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 51, DescriptorType::Directory,
+            Some("/tmp".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = open_at(&ctx, 51, "newfile.txt", 0, 0);
+        assert!(result.is_ok(), "open_at with directory parent should succeed, got: {:?}", result.err());
+        let new_id = result.unwrap();
+        println!("Opened new descriptor with id: {}", new_id);
+        // Verify the new descriptor was created
+        let descriptors = ctx.descriptors.read().unwrap();
+        let new_desc = descriptors.get(&(new_id as u32));
+        assert!(new_desc.is_some(), "New descriptor {} should exist", new_id);
+        let new_desc = new_desc.unwrap();
+        assert!(
+            matches!(new_desc.descriptor_type, DescriptorType::File),
+            "Opened descriptor should be File type, got: {:?}",
+            new_desc.descriptor_type,
+        );
+        assert_eq!(
+            new_desc.path.as_deref(),
+            Some("newfile.txt"),
+            "Opened descriptor path should match requested path",
+        );
+    }
+
+    #[test]
+    fn create_directory_at_requires_directory_parent() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 60, DescriptorType::File,
+            Some("/tmp/file.txt".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = create_directory_at(&ctx, 60, "subdir");
+        assert!(result.is_err(), "create_directory_at with non-directory parent should fail");
+        let err_msg = format!("{:?}", result.unwrap_err());
+        println!("Expected error for non-directory parent: {}", err_msg);
+        assert!(
+            err_msg.contains("not a directory"),
+            "Error should mention 'not a directory', got: {}",
+            err_msg,
+        );
+    }
+
+    #[test]
+    fn is_same_object_same_path_returns_true() {
+        let ctx = test_context();
+        let shared_path = "/tmp/shared.txt".to_string();
+        insert_descriptor(
+            &ctx, 70, DescriptorType::File,
+            Some(shared_path.clone()), 0, None, DescriptorStatus::Open,
+        );
+        insert_descriptor(
+            &ctx, 71, DescriptorType::File,
+            Some(shared_path), 0, None, DescriptorStatus::Open,
+        );
+        let result = is_same_object(&ctx, 70, 71);
+        assert!(result.is_ok(), "is_same_object should succeed, got: {:?}", result.err());
+        let same = result.unwrap();
+        println!("is_same_object with identical paths: {}", same);
+        assert!(same, "Descriptors with same path should be the same object");
+    }
+
+    #[test]
+    fn is_same_object_different_paths_returns_false() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 80, DescriptorType::File,
+            Some("/tmp/a.txt".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        insert_descriptor(
+            &ctx, 81, DescriptorType::File,
+            Some("/tmp/b.txt".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = is_same_object(&ctx, 80, 81);
+        assert!(result.is_ok(), "is_same_object should succeed, got: {:?}", result.err());
+        let same = result.unwrap();
+        println!("is_same_object with different paths: {}", same);
+        assert!(!same, "Descriptors with different paths should not be the same object");
+    }
+
+    #[test]
+    fn is_same_object_nonexistent_fails() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 90, DescriptorType::File,
+            Some("/tmp/exists.txt".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = is_same_object(&ctx, 90, 99999);
+        assert!(result.is_err(), "is_same_object with nonexistent descriptor should fail");
+        let err_msg = format!("{:?}", result.unwrap_err());
+        println!("Expected error for nonexistent descriptor: {}", err_msg);
+        assert!(
+            err_msg.contains("not found"),
+            "Error should mention 'not found', got: {}",
+            err_msg,
+        );
+    }
+
+    #[test]
+    fn close_descriptor_marks_as_closed() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 100, DescriptorType::File,
+            Some("/tmp/closeme.txt".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = close_descriptor(&ctx, 100);
+        assert!(result.is_ok(), "close_descriptor should succeed, got: {:?}", result.err());
+        // Verify status is now Closed
+        let descriptors = ctx.descriptors.read().unwrap();
+        let desc = descriptors.get(&100).unwrap();
+        println!("Descriptor status after close: {:?}", desc.status);
+        assert!(
+            matches!(desc.status, DescriptorStatus::Closed),
+            "Descriptor should be Closed after close_descriptor, got: {:?}",
+            desc.status,
+        );
+    }
+
+    #[test]
+    fn close_descriptor_nonexistent_is_ok() {
+        let ctx = test_context();
+        let result = close_descriptor(&ctx, 99999);
+        println!("close_descriptor on nonexistent id result: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "close_descriptor on nonexistent id should silently succeed, got: {:?}",
+            result.err(),
+        );
+    }
+
+    #[test]
+    fn read_via_stream_creates_input_stream() {
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 110, DescriptorType::File,
+            Some("/tmp/readable.txt".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = read_via_stream(&ctx, 110, 0);
+        assert!(result.is_ok(), "read_via_stream should succeed, got: {:?}", result.err());
+        let stream_id = result.unwrap();
+        println!("Created input stream with id: {}", stream_id);
+        // Verify the stream was registered in the context
+        let streams = ctx.streams.read().unwrap();
+        let stream = streams.get(&(stream_id as u32));
+        assert!(
+            stream.is_some(),
+            "Stream {} should exist in context after read_via_stream",
+            stream_id,
+        );
+    }
+
+    #[test]
+    fn write_via_stream_succeeds_for_open_descriptor() {
+        // write_via_stream only checks that the descriptor exists and is Open;
+        // it does not check descriptor type
+        let ctx = test_context();
+        insert_descriptor(
+            &ctx, 120, DescriptorType::Directory,
+            Some("/tmp/dir".to_string()), 0, None, DescriptorStatus::Open,
+        );
+        let result = write_via_stream(&ctx, 120, 0);
+        println!("write_via_stream on directory descriptor result: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "write_via_stream should succeed for any open descriptor, got: {:?}",
+            result.err(),
+        );
+        let stream_id = result.unwrap();
+        println!("Write stream id: {}", stream_id);
+        assert!(stream_id > 0, "Stream id should be positive, got: {}", stream_id);
+    }
+}

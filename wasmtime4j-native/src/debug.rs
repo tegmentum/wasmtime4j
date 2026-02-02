@@ -8,10 +8,12 @@ use wasmtime::component::Component;
 use wasmtime_wasi::WasiView;
 
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use once_cell::sync::Lazy;
 
 /// Result type alias for debug operations
 pub type Result<T> = WasmtimeResult<T>;
@@ -898,11 +900,10 @@ fn current_timestamp() -> u64 {
         .as_millis() as u64
 }
 
-// Global debug session manager
-lazy_static::lazy_static! {
-    static ref DEBUG_SESSIONS: Arc<RwLock<HashMap<DebugSessionId, Arc<DebugSession>>>> =
-        Arc::new(RwLock::new(HashMap::new()));
-}
+/// Global debug session manager
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static DEBUG_SESSIONS: Lazy<ManuallyDrop<Arc<RwLock<HashMap<DebugSessionId, Arc<DebugSession>>>>>> =
+    Lazy::new(|| ManuallyDrop::new(Arc::new(RwLock::new(HashMap::new()))));
 
 /// Creates a new debug session
 pub fn create_debug_session(

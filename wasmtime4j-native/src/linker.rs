@@ -1924,7 +1924,7 @@ mod tests {
     use std::os::raw::c_void;
 
     #[test]
-    #[ignore = "WASI enable_wasi corrupts global state causing subsequent tests to SIGABRT"]
+    #[ignore = "Passes individually and in WASI subset but SIGABRTs in full suite due to pre-existing global state corruption from earlier tests"]
     fn test_enable_wasi() {
         // Create engine with default config
         let engine = crate::engine::Engine::new().expect("Failed to create engine");
@@ -1947,7 +1947,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "WASI FFI style test causes SIGABRT - WASI initialization issue during test"]
+    #[ignore = "Passes individually and in WASI subset but SIGABRTs in full suite due to pre-existing global state corruption from earlier tests"]
     fn test_enable_wasi_ffi_style() {
         // Simulate FFI pattern: create via Box::into_raw, use via pointer
         println!("Creating engine...");
@@ -1980,7 +1980,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "WASI module instantiation causes SIGABRT - WASI initialization issue during test"]
+    #[ignore = "Passes individually and in WASI subset but SIGABRTs in full suite due to pre-existing global state corruption from earlier tests"]
     fn test_wasi_module_instantiation() {
         // Test instantiating a WASI module using the linker
         println!("Creating engine...");

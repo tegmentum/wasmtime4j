@@ -128,6 +128,9 @@ pub type MemoryId = u64;
 pub struct SharedMemoryManager {
     /// Memory identifier
     memory_id: MemoryId,
+    /// Wasmtime engine (kept to control drop order)
+    #[allow(dead_code)]
+    engine: wasmtime::Engine,
     /// Wasmtime shared memory
     shared_memory: SharedMemory,
     /// Memory metadata
@@ -1430,11 +1433,13 @@ impl MemoryCoordinator {
     pub fn register_shared_memory(
         &self,
         memory_id: MemoryId,
+        engine: wasmtime::Engine,
         shared_memory: SharedMemory,
         metadata: MemoryMetadata,
     ) -> WasmtimeResult<Arc<SharedMemoryManager>> {
         let manager = Arc::new(SharedMemoryManager::new(
             memory_id,
+            engine,
             shared_memory,
             metadata,
         )?);
@@ -1485,8 +1490,49 @@ impl MemoryCoordinator {
     }
 
     /// Create shared memory with the given configuration
-    pub fn create_shared_memory(&self, memory_id: MemoryId, _config: SharedMemoryConfig) -> WasmtimeResult<()> {
-        // Implementation would create actual shared memory
+    pub fn create_shared_memory(&self, memory_id: MemoryId, config: SharedMemoryConfig) -> WasmtimeResult<()> {
+        let mut safe_config = crate::engine::safe_wasmtime_config();
+        safe_config.wasm_threads(true);
+        safe_config.shared_memory(true);
+        let engine = wasmtime::Engine::new(&safe_config).map_err(|e| {
+            WasmtimeError::Runtime {
+                message: format!("Failed to create engine for shared memory: {}", e),
+                backtrace: None,
+            }
+        })?;
+
+        let memory_type = wasmtime::MemoryType::shared(
+            config.initial_size,
+            config.maximum_size.unwrap_or(config.initial_size),
+        );
+
+        let shared_memory = SharedMemory::new(&engine, memory_type).map_err(|e| {
+            WasmtimeError::Runtime {
+                message: format!("Failed to create shared memory: {}", e),
+                backtrace: None,
+            }
+        })?;
+
+        let metadata = MemoryMetadata {
+            size: config.initial_size as usize * 65536, // pages to bytes
+            memory_type: WasmMemoryType::Shared,
+            created_at: std::time::SystemTime::now(),
+            owner_thread: std::thread::current().id(),
+            permissions: MemoryPermissions {
+                read: true,
+                write: true,
+                execute: false,
+                atomic: true,
+            },
+            flags: MemoryFlags {
+                shared: true,
+                atomics: true,
+                thread_local: false,
+                mutable: true,
+            },
+        };
+
+        self.register_shared_memory(memory_id, engine, shared_memory, metadata)?;
         log::info!("Created shared memory with ID: {:?}", memory_id);
         Ok(())
     }
@@ -1542,11 +1588,13 @@ impl MemoryCoordinator {
 impl SharedMemoryManager {
     pub fn new(
         memory_id: MemoryId,
+        engine: wasmtime::Engine,
         shared_memory: SharedMemory,
         metadata: MemoryMetadata,
     ) -> WasmtimeResult<Self> {
         Ok(Self {
             memory_id,
+            engine,
             shared_memory,
             metadata,
             access_control: Arc::new(MemoryAccessControl::new()),

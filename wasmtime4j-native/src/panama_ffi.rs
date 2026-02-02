@@ -3955,6 +3955,10 @@ pub mod memory {
     }
 
     /// Get memory from registry (Panama FFI version)
+    ///
+    /// IMPORTANT: This function transfers Arc ownership to the caller via Arc::into_raw().
+    /// The caller MUST eventually call wasmtime4j_panama_memory_release() to release the Arc
+    /// reference, otherwise there will be a memory leak.
     #[no_mangle]
     pub extern "C" fn wasmtime4j_panama_memory_registry_get(
         registry_ptr: *mut c_void,
@@ -3963,17 +3967,31 @@ pub mod memory {
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
             let registry = unsafe { ffi_utils::deref_ptr::<MemoryRegistry>(registry_ptr, "registry")? };
-            
+
             let memory_arc = registry.get(memory_id)?;
-            
-            // Return a reference to the Arc-wrapped memory
-            // Note: This is a simplified approach - production code would need better lifetime management
+
+            // Transfer Arc ownership to caller using into_raw()
+            // Caller must call wasmtime4j_panama_memory_release() to release the reference
             unsafe {
-                *memory_ptr = Arc::as_ptr(&memory_arc) as *mut c_void;
+                *memory_ptr = Arc::into_raw(memory_arc) as *mut c_void;
             }
-            
+
             Ok(())
         })
+    }
+
+    /// Release an Arc reference obtained from wasmtime4j_panama_memory_registry_get
+    ///
+    /// This decrements the Arc reference count. The memory will be freed when
+    /// all references are released.
+    #[no_mangle]
+    pub extern "C" fn wasmtime4j_panama_memory_release(memory_ptr: *mut c_void) {
+        if !memory_ptr.is_null() {
+            unsafe {
+                // Reconstruct Arc and let it drop to decrement reference count
+                let _ = Arc::from_raw(memory_ptr as *const Memory);
+            }
+        }
     }
 
     /// Destroy a memory instance (Panama FFI version)

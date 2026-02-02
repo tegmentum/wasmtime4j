@@ -1527,7 +1527,7 @@ mod tests {
     #[test]
     fn test_wasmtime_config_application() {
         let config = AdvancedEngineConfig::performance_optimized();
-        let mut wasmtime_config = Config::new();
+        let mut wasmtime_config = crate::engine::safe_wasmtime_config();
 
         assert!(config.apply_to_config(&mut wasmtime_config).is_ok());
     }
@@ -1826,7 +1826,7 @@ mod tests {
     #[test]
     fn test_core_apply_config() {
         let config = core::create_advanced_engine_config().unwrap();
-        let mut wasmtime_config = Config::new();
+        let mut wasmtime_config = crate::engine::safe_wasmtime_config();
 
         unsafe {
             let config_ptr = Box::into_raw(config) as *const std::os::raw::c_void;
@@ -1860,7 +1860,7 @@ mod tests {
             assert!(result.is_err());
 
             // Apply with null pointer should fail
-            let mut wasmtime_config = Config::new();
+            let mut wasmtime_config = crate::engine::safe_wasmtime_config();
             let result = core::apply_advanced_engine_config(std::ptr::null(), &mut wasmtime_config);
             assert!(result.is_err());
         }

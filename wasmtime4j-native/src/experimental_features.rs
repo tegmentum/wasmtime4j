@@ -1434,7 +1434,7 @@ mod tests {
     #[test]
     fn test_wasmtime_config_application() {
         let config = ExperimentalFeaturesConfig::all_experimental_enabled();
-        let mut wasmtime_config = Config::new();
+        let mut wasmtime_config = crate::engine::safe_wasmtime_config();
 
         // Should not error even if features aren't supported yet
         assert!(config.apply_to_config(&mut wasmtime_config).is_ok());

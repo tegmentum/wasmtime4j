@@ -211,7 +211,7 @@ impl JitCompiler {
     // Private implementation methods
 
     fn create_engine(config: &amp;JitCompilerConfig) -&gt; Result&lt;Engine&gt; {
-        let mut wasmtime_config = Config::new();
+        let mut wasmtime_config = crate::engine::safe_wasmtime_config();
 
         // Configure basic settings
         wasmtime_config.strategy(config.compilation_strategy.into())?;

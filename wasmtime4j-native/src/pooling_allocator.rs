@@ -669,3 +669,189 @@ pub extern "C" fn wasmtime4j_pooling_allocator_destroy(allocator: *mut PoolingAl
         unsafe { drop(Box::from_raw(allocator)) };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn small_config() -> PoolingAllocatorConfig {
+        PoolingAllocatorConfig {
+            instance_pool_size: 5,
+            max_memory_per_instance: 1024,
+            stack_size: 512,
+            max_stacks: 5,
+            max_tables_per_instance: 2,
+            max_tables: 5,
+            memory_decommit_enabled: false,
+            pool_warming_enabled: false,
+            pool_warming_percentage: 0.0,
+        }
+    }
+
+    // --- StackPool tests ---
+
+    #[test]
+    fn stack_pool_allocate_returns_sequential_ids() {
+        let mut pool = StackPool::new(10, 1024);
+        let id0 = pool.allocate_stack().unwrap();
+        let id1 = pool.allocate_stack().unwrap();
+        assert_eq!(id0, 0);
+        assert_eq!(id1, 1);
+    }
+
+    #[test]
+    fn stack_pool_exhaustion() {
+        let mut pool = StackPool::new(2, 1024);
+        pool.allocate_stack().unwrap();
+        pool.allocate_stack().unwrap();
+        assert!(pool.allocate_stack().is_err(), "Should fail when pool exhausted");
+    }
+
+    #[test]
+    fn stack_pool_release_enables_reuse() {
+        let mut pool = StackPool::new(2, 1024);
+        let id0 = pool.allocate_stack().unwrap();
+        pool.allocate_stack().unwrap();
+        pool.release_stack(id0);
+        let reused = pool.allocate_stack().unwrap();
+        assert_eq!(reused, id0, "Should reuse released stack ID");
+        let (_, reused_count) = pool.get_statistics();
+        assert_eq!(reused_count, 1);
+    }
+
+    // --- TablePool tests ---
+
+    #[test]
+    fn table_pool_allocate_and_exhaust() {
+        let mut pool = TablePool::new(2, 1);
+        pool.allocate_table().unwrap();
+        pool.allocate_table().unwrap();
+        assert!(pool.allocate_table().is_err());
+    }
+
+    #[test]
+    fn table_pool_release_enables_reuse() {
+        let mut pool = TablePool::new(1, 1);
+        let id = pool.allocate_table().unwrap();
+        pool.release_table(id);
+        let reused = pool.allocate_table().unwrap();
+        assert_eq!(reused, id);
+    }
+
+    // --- MemoryPool tests ---
+
+    #[test]
+    fn memory_pool_tracks_allocation_count() {
+        let mut pool = MemoryPool::new(3, 1024, false);
+        pool.allocate_memory().unwrap();
+        pool.allocate_memory().unwrap();
+        let (allocated, _, total_bytes) = pool.get_statistics();
+        assert_eq!(allocated, 2);
+        assert_eq!(total_bytes, 2048);
+    }
+
+    #[test]
+    fn memory_pool_exhaustion() {
+        let mut pool = MemoryPool::new(1, 1024, false);
+        pool.allocate_memory().unwrap();
+        assert!(pool.allocate_memory().is_err());
+    }
+
+    // --- PoolingAllocator tests ---
+
+    #[test]
+    fn allocator_create_succeeds() {
+        let allocator = PoolingAllocator::new(small_config());
+        assert!(allocator.is_ok());
+    }
+
+    #[test]
+    fn allocator_create_with_warming() {
+        let mut config = small_config();
+        config.pool_warming_enabled = true;
+        config.pool_warming_percentage = 0.5;
+        let allocator = PoolingAllocator::new(config).unwrap();
+        let stats = allocator.get_statistics().unwrap();
+        assert!(stats.pool_warming_time > Duration::ZERO, "Warming should record time");
+    }
+
+    #[test]
+    fn allocator_allocate_instance() {
+        let allocator = PoolingAllocator::new(small_config()).unwrap();
+        let result = allocator.allocate_instance();
+        assert!(result.is_ok());
+        let stats = allocator.get_statistics().unwrap();
+        assert_eq!(stats.instances_allocated, 1);
+    }
+
+    #[test]
+    fn allocator_reuse_instance() {
+        let allocator = PoolingAllocator::new(small_config()).unwrap();
+        let instance_id = allocator.allocate_instance().unwrap();
+        allocator.release_instance(instance_id).unwrap();
+        let result = allocator.reuse_instance(instance_id);
+        assert!(result.is_ok());
+        let stats = allocator.get_statistics().unwrap();
+        assert_eq!(stats.instances_reused, 1);
+    }
+
+    #[test]
+    fn allocator_release_instance() {
+        let allocator = PoolingAllocator::new(small_config()).unwrap();
+        let instance_id = allocator.allocate_instance().unwrap();
+        let result = allocator.release_instance(instance_id);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn allocator_statistics_initial_values() {
+        let allocator = PoolingAllocator::new(small_config()).unwrap();
+        let stats = allocator.get_statistics().unwrap();
+        assert_eq!(stats.instances_allocated, 0);
+        assert_eq!(stats.instances_reused, 0);
+        assert_eq!(stats.allocation_failures, 0);
+    }
+
+    #[test]
+    fn allocator_reset_statistics() {
+        let allocator = PoolingAllocator::new(small_config()).unwrap();
+        allocator.allocate_instance().unwrap();
+        allocator.reset_statistics().unwrap();
+        let stats = allocator.get_statistics().unwrap();
+        assert_eq!(stats.instances_allocated, 0);
+    }
+
+    #[test]
+    fn allocator_get_config_returns_config() {
+        let config = small_config();
+        let expected = config.instance_pool_size;
+        let allocator = PoolingAllocator::new(config).unwrap();
+        assert_eq!(allocator.get_config().instance_pool_size, expected);
+    }
+
+    #[test]
+    fn allocator_uptime_is_positive() {
+        let allocator = PoolingAllocator::new(small_config()).unwrap();
+        std::thread::sleep(Duration::from_millis(5));
+        assert!(allocator.get_uptime() > Duration::ZERO);
+    }
+
+    #[test]
+    fn pool_statistics_default_all_zeros() {
+        let stats = PoolStatistics::default();
+        assert_eq!(stats.instances_allocated, 0);
+        assert_eq!(stats.instances_reused, 0);
+        assert_eq!(stats.allocation_failures, 0);
+        assert_eq!(stats.peak_memory_usage, 0);
+        assert_eq!(stats.pool_warming_time, Duration::ZERO);
+    }
+
+    #[test]
+    fn config_default_values() {
+        let config = PoolingAllocatorConfig::default();
+        assert_eq!(config.instance_pool_size, 1000);
+        assert_eq!(config.max_stacks, 1000);
+        assert!(config.pool_warming_enabled);
+    }
+}

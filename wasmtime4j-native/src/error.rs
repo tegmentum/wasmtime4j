@@ -1734,11 +1734,21 @@ pub mod ffi_utils {
 
         match result {
             Ok(_) => {
+                // Remove address from DESTROYED_POINTERS so that if the allocator
+                // reuses this address for a new resource, it won't be falsely
+                // detected as a double-free.
+                let mut destroyed = DESTROYED_POINTERS.lock()
+                    .unwrap_or_else(|poisoned| {
+                        log::warn!("DESTROYED_POINTERS mutex was poisoned during cleanup, recovering");
+                        poisoned.into_inner()
+                    });
+                destroyed.remove(&ptr_addr);
                 log::debug!("{} at {:p} destroyed successfully", name, ptr);
             }
             Err(e) => {
                 log::error!("{} at {:p} destruction panicked: {:?} - preventing JVM crash", name, ptr, e);
                 // Don't propagate panic to JVM - just log and continue
+                // Leave address in DESTROYED_POINTERS since destruction failed
             }
         }
     }

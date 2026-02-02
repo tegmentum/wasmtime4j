@@ -420,6 +420,24 @@ impl<T: Clone> LockFreeQueue<T> {
     }
 }
 
+impl<T> Drop for LockFreeQueue<T> {
+    fn drop(&mut self) {
+        // Drain all remaining nodes to prevent memory leaks.
+        // Since we are in Drop, we have exclusive access (&mut self),
+        // so no other thread can be operating on the queue.
+        unsafe {
+            let guard = &epoch::unprotected();
+            let mut current = self.head.load(Ordering::Relaxed, guard);
+            while !current.is_null() {
+                let next = current.deref().next.load(Ordering::Relaxed, guard);
+                // Drop the node by converting back to Owned
+                drop(current.into_owned());
+                current = next;
+            }
+        }
+    }
+}
+
 impl<K, V> LockFreeHashTable<K, V>
 where
     K: Hash + Eq + Clone,
@@ -664,6 +682,28 @@ where
     }
 }
 
+impl<K, V> Drop for LockFreeHashTable<K, V>
+where
+    K: Hash + Eq + Clone,
+    V: Clone,
+{
+    fn drop(&mut self) {
+        // Free all nodes in every bucket chain.
+        // Since we are in Drop, we have exclusive access (&mut self).
+        unsafe {
+            let guard = &epoch::unprotected();
+            for bucket in &self.buckets {
+                let mut current = bucket.load(Ordering::Relaxed, guard);
+                while !current.is_null() {
+                    let next = current.deref().next.load(Ordering::Relaxed, guard);
+                    drop(current.into_owned());
+                    current = next;
+                }
+            }
+        }
+    }
+}
+
 impl<T> WaitFreeRingBuffer<T>
 where
     T: Clone,
@@ -674,7 +714,7 @@ where
         let mut buffer = Vec::with_capacity(capacity);
 
         for _ in 0..capacity {
-            buffer.push(CachePadded::new(Atomic::new(None)));
+            buffer.push(CachePadded::new(Atomic::null()));
         }
 
         Self {
@@ -688,85 +728,141 @@ where
 
     /// Write an item to the buffer (wait-free)
     pub fn write(&self, item: T) -> bool {
-        let tail = self.tail.fetch_add(1, Ordering::Relaxed);
-        let index = tail & (self.capacity - 1);
+        // Claim a tail slot via CAS loop — only advance if buffer is not full
+        let tail;
+        loop {
+            let current_tail = self.tail.load(Ordering::Relaxed);
+            let current_head = self.head.load(Ordering::Acquire);
+            if current_tail.wrapping_sub(current_head) >= self.capacity {
+                // Buffer is full
+                self.statistics.write_failures.fetch_add(1, Ordering::Relaxed);
+                return false;
+            }
+            match self.tail.compare_exchange_weak(
+                current_tail,
+                current_tail.wrapping_add(1),
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(t) => {
+                    tail = t;
+                    break;
+                }
+                Err(_) => continue,
+            }
+        }
 
+        let index = tail & (self.capacity - 1);
         let slot = &self.buffer[index];
         let guard = &epoch::pin();
 
-        // Check if slot is empty
-        let current = slot.load(Ordering::Acquire, guard);
-        if !current.is_null() {
-            // Buffer is full
-            self.statistics.write_failures.fetch_add(1, Ordering::Relaxed);
-            return false;
-        }
-
-        // Try to write to the slot
+        // Write to the claimed slot. Use strong CAS because a spurious failure
+        // would permanently waste the slot (the tail was already advanced).
         let new_value = Owned::new(Some(item));
-        match slot.compare_exchange_weak(
-            current,
-            new_value.into_shared(guard),
-            Ordering::Release,
-            Ordering::Relaxed,
-            guard,
-        ) {
-            Ok(_) => {
-                self.statistics.writes.fetch_add(1, Ordering::Relaxed);
+        let guard = &epoch::pin();
+        let new_shared = new_value.into_shared(guard);
 
-                // Update peak utilization
-                let current_size = self.approximate_size();
-                let current_peak = self.statistics.peak_utilization.load(Ordering::Relaxed);
-                if current_size > current_peak {
-                    let _ = self.statistics.peak_utilization.compare_exchange_weak(
-                        current_peak,
-                        current_size,
-                        Ordering::Relaxed,
-                        Ordering::Relaxed,
-                    );
-                }
-
-                true
+        // Spin until the slot is available (producer may be slightly behind)
+        let backoff = Backoff::new();
+        loop {
+            let current = slot.load(Ordering::Acquire, guard);
+            if !current.is_null() {
+                // Slot still occupied — wait for consumer
+                backoff.snooze();
+                continue;
             }
-            Err(_) => {
-                self.statistics.write_failures.fetch_add(1, Ordering::Relaxed);
-                false
+            match slot.compare_exchange(
+                current,
+                new_shared,
+                Ordering::Release,
+                Ordering::Relaxed,
+                guard,
+            ) {
+                Ok(_) => {
+                    self.statistics.writes.fetch_add(1, Ordering::Relaxed);
+
+                    // Update peak utilization
+                    let current_size = self.approximate_size();
+                    let current_peak = self.statistics.peak_utilization.load(Ordering::Relaxed);
+                    if current_size > current_peak {
+                        let _ = self.statistics.peak_utilization.compare_exchange_weak(
+                            current_peak,
+                            current_size,
+                            Ordering::Relaxed,
+                            Ordering::Relaxed,
+                        );
+                    }
+
+                    return true;
+                }
+                Err(_) => {
+                    // Slot was concurrently filled between our load and CAS — retry
+                    backoff.snooze();
+                    continue;
+                }
             }
         }
     }
 
     /// Read an item from the buffer (wait-free)
     pub fn read(&self) -> Option<T> {
-        let head = self.head.fetch_add(1, Ordering::Relaxed);
-        let index = head & (self.capacity - 1);
+        // Claim a head slot via CAS loop — only advance if buffer is not empty
+        let head;
+        loop {
+            let current_head = self.head.load(Ordering::Relaxed);
+            let current_tail = self.tail.load(Ordering::Acquire);
+            if current_head == current_tail {
+                // Buffer is empty
+                self.statistics.read_failures.fetch_add(1, Ordering::Relaxed);
+                return None;
+            }
+            match self.head.compare_exchange_weak(
+                current_head,
+                current_head.wrapping_add(1),
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(h) => {
+                    head = h;
+                    break;
+                }
+                Err(_) => continue,
+            }
+        }
 
+        let index = head & (self.capacity - 1);
         let slot = &self.buffer[index];
         let guard = &epoch::pin();
 
-        let current = slot.load(Ordering::Acquire, guard);
-        if current.is_null() {
-            // Buffer is empty
-            self.statistics.read_failures.fetch_add(1, Ordering::Relaxed);
-            return None;
-        }
-
-        // Try to read from the slot
-        match slot.compare_exchange_weak(
-            current,
-            Shared::null(),
-            Ordering::Release,
-            Ordering::Relaxed,
-            guard,
-        ) {
-            Ok(_) => {
-                let value = unsafe { current.deref() }.clone();
-                unsafe { guard.defer_destroy(current) };
-                self.statistics.reads.fetch_add(1, Ordering::Relaxed);
-                value
+        // Spin until the producer has written to this slot
+        let backoff = Backoff::new();
+        loop {
+            let current = slot.load(Ordering::Acquire, guard);
+            if current.is_null() {
+                // Producer hasn't written yet — wait
+                backoff.snooze();
+                continue;
             }
-            Err(_) => {
-                self.statistics.read_failures.fetch_add(1, Ordering::Relaxed);
-                None
+
+            // Use strong CAS — spurious failure would lose this item
+            match slot.compare_exchange(
+                current,
+                Shared::null(),
+                Ordering::Release,
+                Ordering::Relaxed,
+                guard,
+            ) {
+                Ok(_) => {
+                    let value = unsafe { current.deref() }.clone();
+                    unsafe { guard.defer_destroy(current) };
+                    self.statistics.reads.fetch_add(1, Ordering::Relaxed);
+                    return value;
+                }
+                Err(_) => {
+                    // Slot was concurrently consumed — retry
+                    backoff.snooze();
+                    continue;
+                }
             }
         }
     }
@@ -805,6 +901,22 @@ where
             write_failures: AtomicU64::new(self.statistics.write_failures.load(Ordering::Relaxed)),
             read_failures: AtomicU64::new(self.statistics.read_failures.load(Ordering::Relaxed)),
             peak_utilization: AtomicUsize::new(self.statistics.peak_utilization.load(Ordering::Relaxed)),
+        }
+    }
+}
+
+impl<T> Drop for WaitFreeRingBuffer<T> {
+    fn drop(&mut self) {
+        // Free any remaining slot values.
+        // Since we are in Drop, we have exclusive access (&mut self).
+        unsafe {
+            let guard = &epoch::unprotected();
+            for slot in &self.buffer {
+                let current = slot.load(Ordering::Relaxed, guard);
+                if !current.is_null() {
+                    drop(current.into_owned());
+                }
+            }
         }
     }
 }
@@ -865,14 +977,16 @@ impl HazardPointerManager {
             retired_at: Instant::now(),
         };
 
+        let should_scan;
         {
             let mut retired_list = self.retired_list.lock();
             retired_list.push(retired);
+            should_scan = retired_list.len() >= self.scan_threshold;
+            // Lock is released here before calling scan_and_reclaim
+        }
 
-            // Check if we need to scan for reclaimable memory
-            if retired_list.len() >= self.scan_threshold {
-                self.scan_and_reclaim();
-            }
+        if should_scan {
+            self.scan_and_reclaim();
         }
     }
 
@@ -932,6 +1046,16 @@ impl HazardPointerManager {
     pub fn get_statistics(&self) -> HazardPointerStatistics {
         let stats = self.statistics.read();
         stats.clone()
+    }
+}
+
+impl Drop for HazardPointerManager {
+    fn drop(&mut self) {
+        // Reclaim all retired pointers by calling their deleters.
+        let mut retired_list = self.retired_list.lock();
+        for retired in retired_list.drain(..) {
+            (retired.deleter)(retired.ptr);
+        }
     }
 }
 
@@ -1201,7 +1325,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Ring buffer is_empty assertion fails - buffer state inconsistent after operations"]
     fn test_wait_free_ring_buffer_basic_operations() {
         let buffer = WaitFreeRingBuffer::new(4);
 
@@ -1227,7 +1350,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Concurrent ring buffer access causes SIGABRT - needs thread safety review"]
     fn test_wait_free_ring_buffer_concurrent_access() {
         let buffer = Arc::new(WaitFreeRingBuffer::new(1024));
         let num_items = 10000;
@@ -1306,30 +1428,34 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Race condition in queue statistics - count assertion off by one due to concurrent access timing"]
     fn test_queue_statistics() {
         let queue = LockFreeQueue::new();
 
-        // Perform some operations
+        // Enqueue 10 items
         for i in 0..10 {
             queue.enqueue(i);
         }
 
+        // Dequeue 5 items
         for _ in 0..5 {
             queue.dequeue();
         }
 
-        // Try to dequeue from partially empty queue
+        // Dequeue 3 more items (8 total dequeued, 2 remaining)
         for _ in 0..3 {
             queue.dequeue();
         }
+
+        // Dequeue remaining 2 items to empty the queue
+        queue.dequeue();
+        queue.dequeue();
 
         // Try to dequeue from empty queue
         queue.dequeue();
 
         let stats = queue.get_statistics();
         assert_eq!(stats.enqueues.load(Ordering::Relaxed), 10);
-        assert_eq!(stats.dequeues.load(Ordering::Relaxed), 8);
+        assert_eq!(stats.dequeues.load(Ordering::Relaxed), 10);
         assert_eq!(stats.empty_dequeues.load(Ordering::Relaxed), 1);
     }
 }

@@ -451,7 +451,7 @@ mod tests {
 
     #[test]
     fn test_memory_type_info_conversion() {
-        let engine = Engine::default();
+        let engine = Engine::new(&crate::engine::safe_wasmtime_config()).unwrap();
         let memory_type = WasmtimeMemoryType::new(1, Some(10));
         let memory_info = MemoryTypeInfo::from(memory_type);
 
@@ -463,7 +463,7 @@ mod tests {
 
     #[test]
     fn test_module_introspection() {
-        let engine = Engine::default();
+        let engine = Engine::new(&crate::engine::safe_wasmtime_config()).unwrap();
 
         // Simple WAT module with imports and exports
         let wat = r#"

@@ -330,10 +330,19 @@ impl WasiContext {
 
     /// Create a new WASI context with specific configuration
     pub fn with_config(config: WasiConfig) -> WasmtimeResult<Self> {
+        use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
+
         let mut builder = WasiCtxBuilder::new();
 
-        // Configure basic WASI settings
-        builder.inherit_stdio();
+        // Use pipe-based stdio instead of inherit_stdio() to avoid SIGABRT
+        // when process stdio handles are captured or unavailable (e.g., during
+        // cargo test or benchmark runs). The actual stdio configuration for
+        // module execution is handled by build_fresh_p1_ctx() which respects
+        // the StdioConfig settings.
+        let empty: Vec<u8> = Vec::new();
+        builder.stdin(MemoryInputPipe::new(empty));
+        builder.stdout(MemoryOutputPipe::new(64 * 1024));
+        builder.stderr(MemoryOutputPipe::new(64 * 1024));
 
         // Build the WASI Preview 1 context
         let wasi_ctx = builder.build_p1();

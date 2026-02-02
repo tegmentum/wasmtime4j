@@ -1375,7 +1375,8 @@ mod tests {
     use crate::gc_types::{FieldDefinition, FieldType};
 
     fn create_test_runtime() -> WasmGcRuntime {
-        let engine = Engine::default();
+        let config = crate::engine::safe_wasmtime_config();
+        let engine = Engine::new(&config).unwrap();
         WasmGcRuntime::new(engine).unwrap()
     }
 

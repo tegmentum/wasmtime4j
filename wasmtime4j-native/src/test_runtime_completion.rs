@@ -25,7 +25,10 @@ mod tests {
     /// Test fuel tracking implementation
     #[test]
     fn test_fuel_tracking_completion() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine with fuel");
         let mut store = Store::builder()
             .fuel_limit(1000)
             .build(&engine)
@@ -94,35 +97,28 @@ mod tests {
     /// Test WASI integration completion
     #[test]
     fn test_wasi_integration_completion() {
-        use crate::wasi::WasiContext;
-        use std::os::raw::c_void;
+        use crate::wasi::{WasiContext, WasiFileDescriptorManager};
 
         let engine = Engine::new().expect("Failed to create engine");
-        let mut store = Store::new(&engine).expect("Failed to create store");
+        let store = Store::new(&engine).expect("Failed to create store");
 
-        // Create a WASI context
+        // Before attaching WASI, store should report no WASI context
+        assert!(
+            !store.has_wasi_context(),
+            "Store should not have WASI context before set_wasi_context"
+        );
+
+        // Create a WASI context and attach it to the store
         let wasi_ctx = WasiContext::new().expect("Failed to create WASI context");
+        let fd_manager = WasiFileDescriptorManager::new();
+        store.set_wasi_context(&wasi_ctx, fd_manager)
+            .expect("Failed to add WASI context to store");
 
-        // Test WASI context integration with store
-        let ctx_ptr = Box::into_raw(Box::new(wasi_ctx)) as *mut c_void;
-        let store_ptr = &mut store as *mut Store as *mut c_void;
-
-        unsafe {
-            // Test integration function
-            let result = crate::wasi::wasi_ctx_add_to_store(ctx_ptr, store_ptr);
-            assert_eq!(result, 0); // Success
-
-            // Test retrieval function
-            let retrieved = crate::wasi::wasi_ctx_get_from_store(store_ptr);
-            assert!(!retrieved.is_null());
-
-            // Test existence check
-            let has_wasi = crate::wasi::wasi_ctx_store_has_wasi(store_ptr);
-            assert_eq!(has_wasi, 1); // Has WASI context
-
-            // Cleanup
-            let _recovered_ctx = Box::from_raw(ctx_ptr as *mut WasiContext);
-        }
+        // After attaching, store should report having WASI context
+        assert!(
+            store.has_wasi_context(),
+            "Store should have WASI context after set_wasi_context"
+        );
     }
 
     /// Test memory operations are not stubbed

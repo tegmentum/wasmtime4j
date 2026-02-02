@@ -7,6 +7,7 @@
 //! - Thread-local storage
 //! - Thread pool management
 
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, RwLock};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::collections::HashMap;
@@ -646,14 +647,17 @@ impl AtomicMemoryOperations {
 }
 
 /// Global thread pool instance
-static GLOBAL_THREAD_POOL: once_cell::sync::Lazy<WasmThreadPool> =
+///
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+/// This avoids potential issues with worker threads during JVM shutdown.
+static GLOBAL_THREAD_POOL: once_cell::sync::Lazy<ManuallyDrop<WasmThreadPool>> =
     once_cell::sync::Lazy::new(|| {
-        WasmThreadPool::new(ThreadPoolConfig::default())
+        ManuallyDrop::new(WasmThreadPool::new(ThreadPoolConfig::default()))
     });
 
 /// Get the global thread pool instance
 pub fn get_global_thread_pool() -> &'static WasmThreadPool {
-    &GLOBAL_THREAD_POOL
+    &**GLOBAL_THREAD_POOL
 }
 
 //==============================================================================

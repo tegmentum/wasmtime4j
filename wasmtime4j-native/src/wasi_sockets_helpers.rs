@@ -1711,3 +1711,505 @@ pub fn resolve_address_stream_close(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::wasi_preview2::WasiPreview2Config;
+    use wasmtime::Engine;
+
+    fn test_context() -> WasiPreview2Context {
+        let mut config = crate::engine::safe_wasmtime_config();
+        config.async_support(true);
+        let engine = Engine::new(&config).unwrap();
+        WasiPreview2Context::new(engine, WasiPreview2Config::default()).unwrap()
+    }
+
+    // =========================================================================
+    // Pure data tests (no context needed)
+    // =========================================================================
+
+    #[test]
+    fn ip_socket_address_ipv4_roundtrip() {
+        let original = IpSocketAddress {
+            ip: IpAddress::V4([192, 168, 1, 42]),
+            port: 8080,
+            flow_info: 0,
+            scope_id: 0,
+        };
+
+        let socket_addr = original.to_socket_addr();
+        assert_eq!(
+            socket_addr.to_string(),
+            "192.168.1.42:8080",
+            "to_socket_addr should produce the correct SocketAddr string"
+        );
+        assert_eq!(socket_addr.port(), 8080, "Port should be 8080");
+        assert!(socket_addr.is_ipv4(), "Address should be IPv4");
+
+        let roundtrip = IpSocketAddress::from_socket_addr(socket_addr);
+        match &roundtrip.ip {
+            IpAddress::V4(octets) => {
+                assert_eq!(
+                    octets, &[192, 168, 1, 42],
+                    "IPv4 octets should survive roundtrip, got {:?}",
+                    octets
+                );
+            }
+            IpAddress::V6(_) => panic!("Expected IPv4 after roundtrip, got IPv6"),
+        }
+        assert_eq!(roundtrip.port, 8080, "Port should survive roundtrip");
+        assert_eq!(roundtrip.flow_info, 0, "flow_info should be 0 for IPv4");
+        assert_eq!(roundtrip.scope_id, 0, "scope_id should be 0 for IPv4");
+    }
+
+    #[test]
+    fn ip_socket_address_ipv6_roundtrip() {
+        // ::1 (loopback) = [0, 0, 0, 0, 0, 0, 0, 1]
+        let original = IpSocketAddress {
+            ip: IpAddress::V6([0x2001, 0x0db8, 0, 0, 0, 0, 0, 1]),
+            port: 443,
+            flow_info: 0,
+            scope_id: 0,
+        };
+
+        let socket_addr = original.to_socket_addr();
+        assert_eq!(socket_addr.port(), 443, "Port should be 443");
+        assert!(socket_addr.is_ipv6(), "Address should be IPv6");
+
+        let roundtrip = IpSocketAddress::from_socket_addr(socket_addr);
+        match &roundtrip.ip {
+            IpAddress::V6(segments) => {
+                assert_eq!(
+                    segments,
+                    &[0x2001, 0x0db8, 0, 0, 0, 0, 0, 1],
+                    "IPv6 segments should survive roundtrip, got {:?}",
+                    segments
+                );
+            }
+            IpAddress::V4(_) => panic!("Expected IPv6 after roundtrip, got IPv4"),
+        }
+        assert_eq!(roundtrip.port, 443, "Port should survive roundtrip");
+    }
+
+    #[test]
+    fn tcp_socket_info_default_values() {
+        let info = TcpSocketInfo::default();
+
+        assert_eq!(
+            info.state,
+            TcpSocketStateEnum::Created,
+            "Default state should be Created"
+        );
+        assert_eq!(info.backlog, 128, "Default backlog should be 128");
+        assert_eq!(info.hop_limit, 64, "Default hop_limit should be 64");
+        assert_eq!(
+            info.receive_buffer_size, 65536,
+            "Default receive_buffer_size should be 65536"
+        );
+        assert_eq!(
+            info.send_buffer_size, 65536,
+            "Default send_buffer_size should be 65536"
+        );
+        assert!(!info.is_ipv6, "Default is_ipv6 should be false");
+        assert!(
+            !info.keep_alive_enabled,
+            "Default keep_alive_enabled should be false"
+        );
+        assert!(
+            info.bound_addr.is_none(),
+            "Default bound_addr should be None"
+        );
+        assert!(
+            info.remote_addr.is_none(),
+            "Default remote_addr should be None"
+        );
+        assert!(
+            info.listener_handle.is_none(),
+            "Default listener_handle should be None"
+        );
+        assert!(
+            info.stream_handle.is_none(),
+            "Default stream_handle should be None"
+        );
+    }
+
+    #[test]
+    fn udp_socket_info_default_values() {
+        let info = UdpSocketInfo::default();
+
+        assert_eq!(
+            info.state,
+            UdpSocketStateEnum::Created,
+            "Default state should be Created"
+        );
+        assert_eq!(
+            info.unicast_hop_limit, 64,
+            "Default unicast_hop_limit should be 64"
+        );
+        assert_eq!(
+            info.receive_buffer_size, 65536,
+            "Default receive_buffer_size should be 65536"
+        );
+        assert_eq!(
+            info.send_buffer_size, 65536,
+            "Default send_buffer_size should be 65536"
+        );
+        assert!(!info.is_ipv6, "Default is_ipv6 should be false");
+        assert!(
+            info.bound_addr.is_none(),
+            "Default bound_addr should be None"
+        );
+        assert!(
+            info.remote_addr.is_none(),
+            "Default remote_addr should be None"
+        );
+    }
+
+    #[test]
+    fn tcp_socket_state_enum_equality() {
+        assert_eq!(
+            TcpSocketStateEnum::Created,
+            TcpSocketStateEnum::Created,
+            "Same variants should be equal"
+        );
+        assert_ne!(
+            TcpSocketStateEnum::Created,
+            TcpSocketStateEnum::Bound,
+            "Different variants should not be equal"
+        );
+        assert_ne!(
+            TcpSocketStateEnum::Connecting,
+            TcpSocketStateEnum::Connected,
+            "Connecting and Connected should not be equal"
+        );
+        assert_eq!(
+            TcpSocketStateEnum::Closed,
+            TcpSocketStateEnum::Closed,
+            "Closed should equal Closed"
+        );
+        assert_ne!(
+            TcpSocketStateEnum::Listening,
+            TcpSocketStateEnum::Bound,
+            "Listening and Bound should not be equal"
+        );
+    }
+
+    // =========================================================================
+    // TCP socket lifecycle tests (need context)
+    // =========================================================================
+
+    #[test]
+    fn tcp_socket_create_returns_handle() {
+        let ctx = test_context();
+        let result = tcp_socket_create(&ctx, false);
+        assert!(result.is_ok(), "tcp_socket_create should succeed: {:?}", result.err());
+        let handle = result.unwrap();
+        assert!(handle > 0, "Handle should be positive, got {}", handle);
+
+        // Cleanup
+        let _ = tcp_socket_close(&ctx, handle);
+    }
+
+    #[test]
+    fn tcp_socket_create_ipv4_and_ipv6() {
+        let ctx = test_context();
+        let handle_v4 = tcp_socket_create(&ctx, false).expect("IPv4 socket creation should succeed");
+        let handle_v6 = tcp_socket_create(&ctx, true).expect("IPv6 socket creation should succeed");
+
+        assert_ne!(
+            handle_v4, handle_v6,
+            "IPv4 handle ({}) and IPv6 handle ({}) should be different",
+            handle_v4, handle_v6
+        );
+
+        // Cleanup
+        let _ = tcp_socket_close(&ctx, handle_v4);
+        let _ = tcp_socket_close(&ctx, handle_v6);
+    }
+
+    #[test]
+    fn tcp_socket_address_family_returns_correct_value() {
+        let ctx = test_context();
+
+        let handle_v6 = tcp_socket_create(&ctx, true).expect("IPv6 socket creation should succeed");
+        let is_ipv6 = tcp_socket_address_family(&ctx, handle_v6)
+            .expect("address_family should succeed");
+        assert!(
+            is_ipv6,
+            "Socket created with is_ipv6=true should report is_ipv6=true"
+        );
+
+        let handle_v4 = tcp_socket_create(&ctx, false).expect("IPv4 socket creation should succeed");
+        let is_ipv6_v4 = tcp_socket_address_family(&ctx, handle_v4)
+            .expect("address_family should succeed");
+        assert!(
+            !is_ipv6_v4,
+            "Socket created with is_ipv6=false should report is_ipv6=false"
+        );
+
+        // Cleanup
+        let _ = tcp_socket_close(&ctx, handle_v6);
+        let _ = tcp_socket_close(&ctx, handle_v4);
+    }
+
+    #[test]
+    fn tcp_socket_set_and_get_receive_buffer_size() {
+        let ctx = test_context();
+        let handle = tcp_socket_create(&ctx, false).expect("Socket creation should succeed");
+
+        // Verify default
+        let default_size = tcp_socket_receive_buffer_size(&ctx, handle)
+            .expect("Getting receive buffer size should succeed");
+        assert_eq!(
+            default_size, 65536,
+            "Default receive buffer size should be 65536, got {}",
+            default_size
+        );
+
+        // Set new value
+        tcp_socket_set_receive_buffer_size(&ctx, handle, 32768)
+            .expect("Setting receive buffer size should succeed");
+
+        // Verify new value
+        let new_size = tcp_socket_receive_buffer_size(&ctx, handle)
+            .expect("Getting receive buffer size should succeed");
+        assert_eq!(
+            new_size, 32768,
+            "Receive buffer size should be 32768 after set, got {}",
+            new_size
+        );
+
+        // Cleanup
+        let _ = tcp_socket_close(&ctx, handle);
+    }
+
+    #[test]
+    fn tcp_socket_set_listen_backlog() {
+        let ctx = test_context();
+        let handle = tcp_socket_create(&ctx, false).expect("Socket creation should succeed");
+
+        let result = tcp_socket_set_listen_backlog_size(&ctx, handle, 256);
+        assert!(
+            result.is_ok(),
+            "Setting listen backlog to 256 should succeed: {:?}",
+            result.err()
+        );
+
+        // Cleanup
+        let _ = tcp_socket_close(&ctx, handle);
+    }
+
+    #[test]
+    fn tcp_socket_set_keep_alive() {
+        let ctx = test_context();
+        let handle = tcp_socket_create(&ctx, false).expect("Socket creation should succeed");
+
+        let result = tcp_socket_set_keep_alive_enabled(&ctx, handle, true);
+        assert!(
+            result.is_ok(),
+            "Enabling keep alive should succeed: {:?}",
+            result.err()
+        );
+
+        // Cleanup
+        let _ = tcp_socket_close(&ctx, handle);
+    }
+
+    #[test]
+    fn tcp_socket_set_hop_limit_succeeds() {
+        let ctx = test_context();
+        let handle = tcp_socket_create(&ctx, false).expect("Socket creation should succeed");
+
+        let result = tcp_socket_set_hop_limit(&ctx, handle, 128);
+        assert!(
+            result.is_ok(),
+            "Setting hop limit to 128 should succeed: {:?}",
+            result.err()
+        );
+
+        // Cleanup
+        let _ = tcp_socket_close(&ctx, handle);
+    }
+
+    #[test]
+    fn tcp_socket_close_transitions_to_closed() {
+        let ctx = test_context();
+        let handle = tcp_socket_create(&ctx, false).expect("Socket creation should succeed");
+
+        let close_result = tcp_socket_close(&ctx, handle);
+        assert!(
+            close_result.is_ok(),
+            "Closing socket should succeed: {:?}",
+            close_result.err()
+        );
+
+        // After close, operations on the handle should fail because the state was removed
+        let family_result = tcp_socket_address_family(&ctx, handle);
+        assert!(
+            family_result.is_err(),
+            "Operations on closed socket handle should fail"
+        );
+
+        let recv_buf_result = tcp_socket_receive_buffer_size(&ctx, handle);
+        assert!(
+            recv_buf_result.is_err(),
+            "Getting receive buffer size on closed socket should fail"
+        );
+    }
+
+    #[test]
+    fn tcp_socket_nonexistent_handle_fails() {
+        let ctx = test_context();
+        let bogus_handle: u64 = 99999;
+
+        let family = tcp_socket_address_family(&ctx, bogus_handle);
+        assert!(
+            family.is_err(),
+            "address_family on nonexistent handle should fail"
+        );
+
+        let recv_buf = tcp_socket_receive_buffer_size(&ctx, bogus_handle);
+        assert!(
+            recv_buf.is_err(),
+            "receive_buffer_size on nonexistent handle should fail"
+        );
+
+        let set_recv = tcp_socket_set_receive_buffer_size(&ctx, bogus_handle, 1024);
+        assert!(
+            set_recv.is_err(),
+            "set_receive_buffer_size on nonexistent handle should fail"
+        );
+
+        let set_backlog = tcp_socket_set_listen_backlog_size(&ctx, bogus_handle, 64);
+        assert!(
+            set_backlog.is_err(),
+            "set_listen_backlog_size on nonexistent handle should fail"
+        );
+
+        let set_keepalive = tcp_socket_set_keep_alive_enabled(&ctx, bogus_handle, true);
+        assert!(
+            set_keepalive.is_err(),
+            "set_keep_alive_enabled on nonexistent handle should fail"
+        );
+
+        let set_hop = tcp_socket_set_hop_limit(&ctx, bogus_handle, 32);
+        assert!(
+            set_hop.is_err(),
+            "set_hop_limit on nonexistent handle should fail"
+        );
+
+        let close = tcp_socket_close(&ctx, bogus_handle);
+        assert!(
+            close.is_ok(),
+            "close on nonexistent handle should succeed (idempotent): {:?}",
+            close.err()
+        );
+    }
+
+    // =========================================================================
+    // UDP socket lifecycle tests
+    // =========================================================================
+
+    #[test]
+    fn udp_socket_create_returns_handle() {
+        let ctx = test_context();
+        let result = udp_socket_create(&ctx, false);
+        assert!(result.is_ok(), "udp_socket_create should succeed: {:?}", result.err());
+        let handle = result.unwrap();
+        assert!(handle > 0, "Handle should be positive, got {}", handle);
+
+        // Cleanup
+        let _ = udp_socket_close(&ctx, handle);
+    }
+
+    #[test]
+    fn udp_socket_close_succeeds() {
+        let ctx = test_context();
+        let handle = udp_socket_create(&ctx, false).expect("UDP socket creation should succeed");
+
+        let result = udp_socket_close(&ctx, handle);
+        assert!(
+            result.is_ok(),
+            "Closing UDP socket should succeed: {:?}",
+            result.err()
+        );
+
+        // Verify socket is gone by checking address family fails
+        let family = udp_socket_address_family(&ctx, handle);
+        assert!(
+            family.is_err(),
+            "address_family on closed UDP socket should fail"
+        );
+    }
+
+    #[test]
+    fn udp_socket_nonexistent_handle_fails() {
+        let ctx = test_context();
+        let bogus_handle: u64 = 99999;
+
+        let family = udp_socket_address_family(&ctx, bogus_handle);
+        assert!(
+            family.is_err(),
+            "address_family on nonexistent UDP handle should fail"
+        );
+
+        let recv_buf = udp_socket_receive_buffer_size(&ctx, bogus_handle);
+        assert!(
+            recv_buf.is_err(),
+            "receive_buffer_size on nonexistent UDP handle should fail"
+        );
+
+        let close = udp_socket_close(&ctx, bogus_handle);
+        assert!(
+            close.is_ok(),
+            "close on nonexistent UDP handle should succeed (idempotent): {:?}",
+            close.err()
+        );
+    }
+
+    // =========================================================================
+    // Network tests
+    // =========================================================================
+
+    #[test]
+    fn network_create_returns_expected_handle() {
+        let ctx = test_context();
+        let result = network_create(&ctx);
+        assert!(result.is_ok(), "network_create should succeed: {:?}", result.err());
+        let handle = result.unwrap();
+        assert_eq!(
+            handle, 5000,
+            "network_create should return handle 5000, got {}",
+            handle
+        );
+    }
+
+    #[test]
+    fn network_close_always_succeeds() {
+        let ctx = test_context();
+
+        // Close with a valid-looking handle
+        let result1 = network_close(&ctx, 5000);
+        assert!(
+            result1.is_ok(),
+            "network_close with handle 5000 should succeed: {:?}",
+            result1.err()
+        );
+
+        // Close with an arbitrary handle should also succeed
+        let result2 = network_close(&ctx, 0);
+        assert!(
+            result2.is_ok(),
+            "network_close with handle 0 should succeed: {:?}",
+            result2.err()
+        );
+
+        let result3 = network_close(&ctx, u64::MAX);
+        assert!(
+            result3.is_ok(),
+            "network_close with u64::MAX should succeed: {:?}",
+            result3.err()
+        );
+    }
+}

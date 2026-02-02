@@ -11,6 +11,7 @@
 //! - Real async networking with connection lifecycle management
 
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use std::net::SocketAddr;
@@ -26,8 +27,9 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;
 
 /// Global network operations manager
-static NETWORK_MANAGER: once_cell::sync::Lazy<NetworkManager> =
-    once_cell::sync::Lazy::new(|| NetworkManager::new());
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static NETWORK_MANAGER: once_cell::sync::Lazy<ManuallyDrop<NetworkManager>> =
+    once_cell::sync::Lazy::new(|| ManuallyDrop::new(NetworkManager::new()));
 
 /// Network operations manager providing real networking functionality
 pub struct NetworkManager {
@@ -292,7 +294,7 @@ impl NetworkManager {
 
     /// Get the global network manager instance
     pub fn global() -> &'static NetworkManager {
-        &NETWORK_MANAGER
+        &**NETWORK_MANAGER
     }
 
     /// Create a TCP connection

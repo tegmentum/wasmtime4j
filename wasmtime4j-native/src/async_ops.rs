@@ -11,6 +11,7 @@
 //! - Real async resource management and cleanup
 
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use std::path::Path;
@@ -27,8 +28,9 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;
 
 /// Global async operations manager
-static ASYNC_OPS_MANAGER: once_cell::sync::Lazy<AsyncOperationsManager> =
-    once_cell::sync::Lazy::new(|| AsyncOperationsManager::new());
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static ASYNC_OPS_MANAGER: once_cell::sync::Lazy<ManuallyDrop<AsyncOperationsManager>> =
+    once_cell::sync::Lazy::new(|| ManuallyDrop::new(AsyncOperationsManager::new()));
 
 /// Async operations manager providing real async functionality
 pub struct AsyncOperationsManager {
@@ -213,7 +215,7 @@ impl AsyncOperationsManager {
 
     /// Get the global async operations manager instance
     pub fn global() -> &'static AsyncOperationsManager {
-        &ASYNC_OPS_MANAGER
+        &**ASYNC_OPS_MANAGER
     }
 
     /// Create an async file read operation

@@ -9,9 +9,11 @@
 
 use std::collections::HashMap;
 use std::ffi::{c_char, c_int, c_long, c_void, CStr, CString};
+use std::mem::ManuallyDrop;
 use std::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
+use once_cell::sync::Lazy;
 
 use serde::{Deserialize, Serialize};
 
@@ -309,10 +311,10 @@ impl CallHookHandler {
 // Global Registry
 // ============================================================================
 
-lazy_static::lazy_static! {
-    static ref HANDLER_REGISTRY: RwLock<HashMap<u64, Arc<CallHookHandler>>> = RwLock::new(HashMap::new());
-    static ref NEXT_HANDLER_ID: AtomicU64 = AtomicU64::new(1);
-}
+/// Global handler registry - wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static HANDLER_REGISTRY: Lazy<ManuallyDrop<RwLock<HashMap<u64, Arc<CallHookHandler>>>>> =
+    Lazy::new(|| ManuallyDrop::new(RwLock::new(HashMap::new())));
+static NEXT_HANDLER_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Register a call hook handler and return its ID
 pub fn register_handler(handler: CallHookHandler) -> WasmtimeResult<u64> {

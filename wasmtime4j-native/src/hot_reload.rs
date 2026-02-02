@@ -908,7 +908,22 @@ impl BackgroundComponentLoader {
         // Load component from file
         match fs::read(&request.component_path) {
             Ok(bytes) => {
-                match Component::from_binary(&Engine::default(), &bytes) {
+                let safe_config = crate::engine::safe_wasmtime_config();
+                let safe_engine = match Engine::new(&safe_config) {
+                    Ok(e) => e,
+                    Err(e) => {
+                        return LoadResult {
+                            request_id: request.request_id.clone(),
+                            component_name: request.component_name.clone(),
+                            success: false,
+                            error: Some(format!("Failed to create engine: {}", e)),
+                            load_time: start_time.elapsed(),
+                            component: None,
+                            validation_results: ValidationResults::default(),
+                        };
+                    }
+                };
+                match Component::from_binary(&safe_engine, &bytes) {
                     Ok(component) => {
                         let component_arc = Arc::new(component);
 

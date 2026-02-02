@@ -2349,8 +2349,16 @@ pub mod core {
             Err(e) => {
                 log::warn!("Attempted to destroy invalid memory handle {:p}: {}", ptr, e);
                 // Still attempt cleanup in case it's a partially corrupted handle
-                if let Err(unregister_err) = unregister_memory_handle(ptr) {
-                    log::debug!("Handle was not registered (expected for corrupted handle): {}", unregister_err);
+                match unregister_memory_handle(ptr) {
+                    Ok(_) => {
+                        // Handle was registered, so the pointer was originally allocated by
+                        // create_validated_memory via Box::into_raw. It is safe to reclaim it.
+                        let _ = Box::from_raw(ptr as *mut ValidatedMemory);
+                        log::debug!("Destroyed corrupted but registered memory handle: {:p}", ptr);
+                    }
+                    Err(unregister_err) => {
+                        log::debug!("Handle was not registered (expected for corrupted handle): {}", unregister_err);
+                    }
                 }
             }
         }
@@ -3660,10 +3668,11 @@ mod tests {
         let validated_ptr1 = core::create_validated_memory(memory1).expect("Failed to create validated memory 1");
         let validated_ptr2 = core::create_validated_memory(memory2).expect("Failed to create validated memory 2");
         
-        // Check handle count increased
+        // Check handle count increased (use >= because parallel tests may add handles concurrently)
         let (current_handles, _current_accesses) = core::get_memory_handle_diagnostics()
             .expect("Failed to get current diagnostics");
-        assert_eq!(current_handles, initial_handles + 2);
+        assert!(current_handles >= initial_handles + 2,
+            "Expected at least {} handles, got {}", initial_handles + 2, current_handles);
         
         // Access the memories to increase access counter
         unsafe {
@@ -3681,10 +3690,12 @@ mod tests {
             core::destroy_memory(validated_ptr2 as *mut std::os::raw::c_void);
         }
         
-        // Check handle count decreased
+        // Check handle count decreased by 2 from the post-creation snapshot
+        // (use relative check because parallel tests may add/remove handles concurrently)
         let (cleanup_handles, _cleanup_accesses) = core::get_memory_handle_diagnostics()
             .expect("Failed to get cleanup diagnostics");
-        assert_eq!(cleanup_handles, initial_handles);
+        assert!(cleanup_handles <= current_handles - 2,
+            "Expected at most {} handles after cleanup, got {}", current_handles - 2, cleanup_handles);
     }
 
     #[test]

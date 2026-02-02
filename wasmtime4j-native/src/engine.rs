@@ -7,6 +7,17 @@ use std::sync::{Arc, RwLock};
 use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
+/// Returns a `wasmtime::Config` with `signals_based_traps(false)` already set.
+///
+/// Every `Config` / `Engine` created in this crate **must** disable signal-based
+/// traps so that Wasmtime's SIGSEGV/SIGBUS handlers do not collide with the
+/// JVM's own signal handlers (which would cause SIGABRT / JVM crash).
+pub(crate) fn safe_wasmtime_config() -> Config {
+    let mut config = Config::new();
+    config.signals_based_traps(false);
+    config
+}
+
 /// Thread-safe wrapper around Wasmtime engine with defensive programming
 ///
 /// This struct includes synchronization primitives to prevent race conditions
@@ -754,7 +765,7 @@ pub mod core {
 impl EngineBuilder {
     /// Create new engine builder with safe defaults
     fn new() -> Self {
-        let mut config = Config::new();
+        let mut config = safe_wasmtime_config();
 
         // Set production-optimized defaults
         config.strategy(Strategy::Cranelift);
@@ -779,11 +790,6 @@ impl EngineBuilder {
         // Enable WASM backtraces for better error diagnostics
         config.wasm_backtrace(true);
         config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
-
-        // CRITICAL: Disable signal-based traps to avoid conflict with JVM signal handlers
-        // JVM and Wasmtime both install SIGSEGV handlers which conflict
-        // This forces explicit bounds checks instead of using signals
-        config.signals_based_traps(false);
 
         // Note: Fuel consumption is opt-in via StoreBuilder.fuel_limit()
         // config.consume_fuel(true);
@@ -1720,7 +1726,7 @@ impl Default for Engine {
             Ok(engine) => engine,
             Err(_) => {
                 // Fallback to absolute minimal configuration that should always work
-                let mut config = Config::new();
+                let mut config = safe_wasmtime_config();
                 config.strategy(Strategy::Cranelift);
 
                 match WasmtimeEngine::new(&config) {

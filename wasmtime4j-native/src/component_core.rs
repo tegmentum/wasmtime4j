@@ -149,7 +149,7 @@ impl EnhancedComponentEngine {
     ///
     /// Returns `WasmtimeError::EngineConfig` if the engine cannot be created.
     pub fn new() -> WasmtimeResult<Self> {
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
 
         // Only enable component model - minimal required feature
         config.wasm_component_model(true);
@@ -1390,7 +1390,7 @@ mod tests {
 
     #[test]
     fn test_enhanced_component_engine_with_config() {
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.wasm_component_model(true);
         let engine = EnhancedComponentEngine::with_config(config);
         assert!(engine.is_ok());

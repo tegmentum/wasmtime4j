@@ -364,6 +364,8 @@ pub struct WorkerStatistics {
     pub tasks_stolen: u64,
     /// Tasks stolen from this worker
     pub tasks_lost_to_stealing: u64,
+    /// Total steal attempts (successful + failed)
+    pub steal_attempts: u64,
     /// Total execution time
     pub total_execution_time: Duration,
     /// Total idle time
@@ -945,6 +947,7 @@ impl WorkStealingScheduler {
                         {
                             let mut stats = context.statistics.write();
                             stats.tasks_stolen += 1;
+                            stats.steal_attempts += 1;
                             stats.total_stealing_time += start_time.elapsed();
                         }
 
@@ -971,9 +974,10 @@ impl WorkStealingScheduler {
             attempts += 1;
         }
 
-        // Update stealing time even if unsuccessful
+        // Update stealing time and attempt count even if unsuccessful
         {
             let mut stats = context.statistics.write();
+            stats.steal_attempts += 1;
             stats.total_stealing_time += start_time.elapsed();
         }
 
@@ -1196,16 +1200,19 @@ impl WorkStealingScheduler {
         let workers = self.workers.read();
         let mut total_executed = 0u64;
         let mut total_stolen = 0u64;
+        let mut total_attempts = 0u64;
 
         for worker in workers.iter() {
             let worker_stats = worker.statistics.read();
             total_executed += worker_stats.tasks_executed;
             total_stolen += worker_stats.tasks_stolen;
+            total_attempts += worker_stats.steal_attempts;
         }
 
         // Update aggregated statistics
         stats.total_tasks_completed = total_executed;
         stats.successful_steals = total_stolen;
+        stats.total_steal_operations = total_attempts;
 
         Ok(stats)
     }

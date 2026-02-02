@@ -12,6 +12,7 @@
 //! - Corruption detection and validation
 
 use std::collections::{HashMap, HashSet};
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant, SystemTime};
 use std::path::{Path, PathBuf};
@@ -35,8 +36,9 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;
 
 /// Global filesystem snapshot manager
-static SNAPSHOT_MANAGER: once_cell::sync::Lazy<FilesystemSnapshotManager> =
-    once_cell::sync::Lazy::new(|| FilesystemSnapshotManager::new());
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static SNAPSHOT_MANAGER: once_cell::sync::Lazy<ManuallyDrop<FilesystemSnapshotManager>> =
+    once_cell::sync::Lazy::new(|| ManuallyDrop::new(FilesystemSnapshotManager::new()));
 
 /// Advanced filesystem snapshot manager with comprehensive features
 pub struct FilesystemSnapshotManager {
@@ -787,7 +789,7 @@ impl FilesystemSnapshotManager {
 
     /// Get global snapshot manager instance
     pub fn global() -> &'static FilesystemSnapshotManager {
-        &SNAPSHOT_MANAGER
+        &**SNAPSHOT_MANAGER
     }
 
     /// Create a full snapshot

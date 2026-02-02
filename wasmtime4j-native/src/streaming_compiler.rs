@@ -17,12 +17,14 @@
 use wasmtime::{Engine, Module};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock, Weak};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use std::io::Read;
 use std::thread;
 use std::ptr;
+use once_cell::sync::Lazy;
 use std::os::raw::{c_void, c_int, c_uchar};
 
 /// Streaming compiler configuration
@@ -189,10 +191,9 @@ pub struct StreamingCompiler {
 }
 
 /// Global registry for streaming compilers
-lazy_static::lazy_static! {
-    static ref COMPILER_REGISTRY: RwLock<HashMap<u64, Weak<StreamingCompiler>>> =
-        RwLock::new(HashMap::new());
-}
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static COMPILER_REGISTRY: Lazy<ManuallyDrop<RwLock<HashMap<u64, Weak<StreamingCompiler>>>>> =
+    Lazy::new(|| ManuallyDrop::new(RwLock::new(HashMap::new())));
 static COMPILER_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 impl StreamingCompiler {

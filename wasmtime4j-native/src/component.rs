@@ -2575,7 +2575,7 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(engine_ptr:
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         // Create a fresh engine with component model support enabled
         // This is a workaround for issues with passing engine pointers across FFI
-        let mut config = wasmtime::Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.wasm_component_model(true);
         config.wasm_bulk_memory(true);
         config.wasm_multi_value(true);
@@ -3231,7 +3231,8 @@ mod tests {
 
     #[test]
     fn test_component_engine_with_custom_engine() {
-        let wasmtime_engine = WasmtimeEngine::default();
+        let safe_config = crate::engine::safe_wasmtime_config();
+        let wasmtime_engine = WasmtimeEngine::new(&safe_config).unwrap();
         let component_engine = ComponentEngine::with_engine(wasmtime_engine);
         assert!(component_engine.is_ok());
     }

@@ -288,7 +288,7 @@ impl ExperimentalCompilationBackend {
 
     /// Create standard Cranelift backend
     fn create_standard_backend(&self) -> Result<CompilationBackend> {
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::Speed);
 
@@ -306,7 +306,7 @@ impl ExperimentalCompilationBackend {
 
     /// Create WASM-to-native compilation backend
     fn create_wasm_to_native_backend(&self) -> Result<CompilationBackend> {
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::SpeedAndSize);
         config.parallel_compilation(true);
@@ -333,7 +333,7 @@ impl ExperimentalCompilationBackend {
 
     /// Create advanced JIT backend with profile-guided optimization
     fn create_advanced_jit_backend(&self) -> Result<CompilationBackend> {
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::SpeedAndSize);
         config.parallel_compilation(true);
@@ -363,7 +363,7 @@ impl ExperimentalCompilationBackend {
         // Predictive compilation is not yet available in stable Wasmtime
         // This implementation provides a framework for when it becomes available
 
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::Speed);
         config.parallel_compilation(true);
@@ -393,7 +393,7 @@ impl ExperimentalCompilationBackend {
         // Adaptive execution is not yet available in stable Wasmtime
         // This provides the framework for future implementation
 
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::Speed);
 
@@ -416,7 +416,7 @@ impl ExperimentalCompilationBackend {
 
     /// Create speculative optimization backend
     fn create_speculative_backend(&self) -> Result<CompilationBackend> {
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::SpeedAndSize);
 
@@ -438,7 +438,7 @@ impl ExperimentalCompilationBackend {
 
     /// Create cross-module optimization backend
     fn create_cross_module_backend(&self) -> Result<CompilationBackend> {
-        let mut config = Config::new();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.strategy(Strategy::Cranelift);
         config.cranelift_opt_level(OptLevel::SpeedAndSize);
         config.parallel_compilation(true);

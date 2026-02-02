@@ -10,6 +10,7 @@
 //! - Real-time process statistics and health monitoring
 
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant, SystemTime};
 use std::process::{ExitStatus, Stdio};
@@ -30,8 +31,9 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;
 
 /// Global process manager
-static PROCESS_MANAGER: once_cell::sync::Lazy<ProcessManager> =
-    once_cell::sync::Lazy::new(|| ProcessManager::new());
+/// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
+static PROCESS_MANAGER: once_cell::sync::Lazy<ManuallyDrop<ProcessManager>> =
+    once_cell::sync::Lazy::new(|| ManuallyDrop::new(ProcessManager::new()));
 
 /// Process manager providing comprehensive process operations
 pub struct ProcessManager {
@@ -332,7 +334,7 @@ impl ProcessManager {
 
     /// Get the global process manager instance
     pub fn global() -> &'static ProcessManager {
-        &PROCESS_MANAGER
+        &**PROCESS_MANAGER
     }
 
     /// Spawn a new process
