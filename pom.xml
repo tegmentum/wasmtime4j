@@ -69,8 +69,11 @@
         <pmd.plugin.version>3.25.0</pmd.plugin.version>
         <pmd.version>7.6.0</pmd.version>
         <jacoco.plugin.version>0.8.12</jacoco.plugin.version>
-        <pitest.plugin.version>1.15.3</pitest.plugin.version>
+        <pitest.plugin.version>1.22.0</pitest.plugin.version>
         <pitest.junit5.version>1.2.1</pitest.junit5.version>
+
+        <!-- Default argLine for surefire (JaCoCo will prepend to this) -->
+        <argLine></argLine>
 
         <!-- Native build properties -->
         <native.library.name>wasmtime4j</native.library.name>
