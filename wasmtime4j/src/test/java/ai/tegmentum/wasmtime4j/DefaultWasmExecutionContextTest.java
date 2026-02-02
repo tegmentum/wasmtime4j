@@ -73,7 +73,7 @@ class DefaultWasmExecutionContextTest {
 
     @Test
     @DisplayName("create with PGO enabled should return true")
-    void createWithPGOEnabledShouldReturnTrue() {
+    void createWithPgoEnabledShouldReturnTrue() {
       final WasmExecutionContext ctx =
           WasmExecutionContext.create(WasmExecutionContext.OptimizationLevel.AGGRESSIVE, true);
 

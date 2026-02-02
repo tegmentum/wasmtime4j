@@ -877,8 +877,7 @@
                 <module>wasmtime4j-panama</module>
             </modules>
             <properties>
-                <maven.compiler.source>23</maven.compiler.source>
-                <maven.compiler.target>23</maven.compiler.target>
+                <maven.compiler.release>23</maven.compiler.release>
                 <wasmtime4j.runtime>panama</wasmtime4j.runtime>
             </properties>
             <build>
@@ -887,10 +886,8 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
-                            <source>23</source>
-                            <target>23</target>
+                            <release>23</release>
                             <compilerArgs>
-                                <arg>--enable-preview</arg>
                                 <arg>-Xlint:all</arg>
                                 <arg>-Werror</arg>
                             </compilerArgs>
@@ -901,7 +898,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <!-- Append Panama flags to JaCoCo argLine -->
-                            <argLine>@{argLine} --enable-preview --enable-native-access=ALL-UNNAMED</argLine>
+                            <argLine>@{argLine} --enable-native-access=ALL-UNNAMED</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -1338,9 +1335,8 @@
                             </targetTests>
                             <mutationThreshold>60</mutationThreshold>
                             <coverageThreshold>70</coverageThreshold>
-                            <!-- Panama requires preview features -->
+                            <!-- Panama requires native access -->
                             <jvmArgs>
-                                <jvmArg>--enable-preview</jvmArg>
                                 <jvmArg>--enable-native-access=ALL-UNNAMED</jvmArg>
                             </jvmArgs>
                         </configuration>

@@ -333,33 +333,240 @@ class ErrorMapperTest {
   class CompilationErrorMappingTests {
 
     @Test
-    @DisplayName("Should detect out of memory errors")
+    @DisplayName("Should detect out of memory errors with correct error type")
     void shouldDetectOutOfMemoryErrors() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "out of memory during compilation");
 
       assertInstanceOf(
           ModuleCompilationException.class, result, "Should return ModuleCompilationException");
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.OUT_OF_MEMORY,
+          ex.getErrorType(),
+          "Should detect OUT_OF_MEMORY error type");
     }
 
     @Test
-    @DisplayName("Should detect timeout errors")
+    @DisplayName("Should detect memory keyword in error message")
+    void shouldDetectMemoryKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "insufficient memory available");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.OUT_OF_MEMORY,
+          ex.getErrorType(),
+          "Should detect OUT_OF_MEMORY from 'memory' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect timeout errors with correct error type")
     void shouldDetectTimeoutErrors() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "compilation timeout exceeded");
 
       assertInstanceOf(
           ModuleCompilationException.class, result, "Should return ModuleCompilationException");
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.TIMEOUT,
+          ex.getErrorType(),
+          "Should detect TIMEOUT error type");
     }
 
     @Test
-    @DisplayName("Should detect unsupported instruction errors")
+    @DisplayName("Should detect time keyword in error message")
+    void shouldDetectTimeKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "compilation time limit reached");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.TIMEOUT,
+          ex.getErrorType(),
+          "Should detect TIMEOUT from 'time' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect too complex errors with correct error type")
+    void shouldDetectTooComplexErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "function is too complex");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.FUNCTION_TOO_COMPLEX,
+          ex.getErrorType(),
+          "Should detect FUNCTION_TOO_COMPLEX error type");
+    }
+
+    @Test
+    @DisplayName("Should detect complex keyword in error message")
+    void shouldDetectComplexKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "highly complex control flow");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.FUNCTION_TOO_COMPLEX,
+          ex.getErrorType(),
+          "Should detect FUNCTION_TOO_COMPLEX from 'complex' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect unsupported instruction errors with correct error type")
     void shouldDetectUnsupportedInstructionErrors() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "unsupported instruction found");
 
       assertInstanceOf(
           ModuleCompilationException.class, result, "Should return ModuleCompilationException");
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.UNSUPPORTED_INSTRUCTION,
+          ex.getErrorType(),
+          "Should detect UNSUPPORTED_INSTRUCTION error type");
+    }
+
+    @Test
+    @DisplayName("Should detect not supported keyword in error message")
+    void shouldDetectNotSupportedKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "feature is not supported");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.UNSUPPORTED_INSTRUCTION,
+          ex.getErrorType(),
+          "Should detect UNSUPPORTED_INSTRUCTION from 'not supported' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect optimization failed errors with correct error type and phase")
+    void shouldDetectOptimizationFailedErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "optimization failed");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.OPTIMIZATION_FAILED,
+          ex.getErrorType(),
+          "Should detect OPTIMIZATION_FAILED error type");
+      assertEquals(
+          ModuleCompilationException.CompilationPhase.OPTIMIZATION,
+          ex.getPhase(),
+          "Should set OPTIMIZATION phase");
+    }
+
+    @Test
+    @DisplayName("Should detect optimize keyword in error message")
+    void shouldDetectOptimizeKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "failed to optimize function");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.OPTIMIZATION_FAILED,
+          ex.getErrorType(),
+          "Should detect OPTIMIZATION_FAILED from 'optimize' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect register allocation failed errors with correct error type and phase")
+    void shouldDetectRegisterAllocationFailedErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "register allocation failed");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.REGISTER_ALLOCATION_FAILED,
+          ex.getErrorType(),
+          "Should detect REGISTER_ALLOCATION_FAILED error type");
+      assertEquals(
+          ModuleCompilationException.CompilationPhase.REGISTER_ALLOCATION,
+          ex.getPhase(),
+          "Should set REGISTER_ALLOCATION phase");
+    }
+
+    @Test
+    @DisplayName("Should detect allocation keyword in error message")
+    void shouldDetectAllocationKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "allocation spill detected");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.REGISTER_ALLOCATION_FAILED,
+          ex.getErrorType(),
+          "Should detect REGISTER_ALLOCATION_FAILED from 'allocation' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect code generation failed errors with correct error type and phase")
+    void shouldDetectCodeGenerationFailedErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "code generation failed");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.CODE_GENERATION_FAILED,
+          ex.getErrorType(),
+          "Should detect CODE_GENERATION_FAILED error type");
+      assertEquals(
+          ModuleCompilationException.CompilationPhase.CODE_GENERATION,
+          ex.getPhase(),
+          "Should set CODE_GENERATION phase");
+    }
+
+    @Test
+    @DisplayName("Should detect codegen keyword in error message")
+    void shouldDetectCodegenKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "codegen error occurred");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.CODE_GENERATION_FAILED,
+          ex.getErrorType(),
+          "Should detect CODE_GENERATION_FAILED from 'codegen' keyword");
+    }
+
+    @Test
+    @DisplayName("Should default to UNKNOWN error type for unrecognized messages")
+    void shouldDefaultToUnknownErrorType() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "some random error xyz");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.UNKNOWN,
+          ex.getErrorType(),
+          "Should default to UNKNOWN error type");
+    }
+
+    @Test
+    @DisplayName("Should extract function name from error message")
+    void shouldExtractFunctionName() {
+      final WasmException result =
+          ErrorMapper.mapError(
+              ErrorMapper.COMPILATION_ERROR, "error in function:add_numbers is too complex");
+
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException ex = (ModuleCompilationException) result;
+      assertEquals("add_numbers", ex.getFunctionName(), "Should extract function name");
     }
   }
 
@@ -368,33 +575,253 @@ class ErrorMapperTest {
   class ValidationErrorMappingTests {
 
     @Test
-    @DisplayName("Should detect magic number errors")
+    @DisplayName("Should detect magic number errors with correct error type")
     void shouldDetectMagicNumberErrors() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "invalid magic number");
 
       assertInstanceOf(
           ModuleValidationException.class, result, "Should return ModuleValidationException");
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.INVALID_MAGIC_NUMBER,
+          ex.getErrorType(),
+          "Should detect INVALID_MAGIC_NUMBER error type");
     }
 
     @Test
-    @DisplayName("Should detect type mismatch errors")
-    void shouldDetectTypeMismatchErrors() {
+    @DisplayName("Should detect version keyword in error message")
+    void shouldDetectVersionKeyword() {
       final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "type mismatch in function");
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "unsupported wasm version");
 
-      assertInstanceOf(
-          ModuleValidationException.class, result, "Should return ModuleValidationException");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.INVALID_MAGIC_NUMBER,
+          ex.getErrorType(),
+          "Should detect INVALID_MAGIC_NUMBER from 'version' keyword");
     }
 
     @Test
-    @DisplayName("Should detect malformed module errors")
+    @DisplayName("Should detect malformed module errors with correct error type")
     void shouldDetectMalformedModuleErrors() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "malformed module structure");
 
       assertInstanceOf(
           ModuleValidationException.class, result, "Should return ModuleValidationException");
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.MALFORMED_MODULE,
+          ex.getErrorType(),
+          "Should detect MALFORMED_MODULE error type");
+    }
+
+    @Test
+    @DisplayName("Should detect corrupt keyword in error message")
+    void shouldDetectCorruptKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "corrupt binary format");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.MALFORMED_MODULE,
+          ex.getErrorType(),
+          "Should detect MALFORMED_MODULE from 'corrupt' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect type mismatch errors with correct error type")
+    void shouldDetectTypeMismatchErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "type mismatch in function");
+
+      assertInstanceOf(
+          ModuleValidationException.class, result, "Should return ModuleValidationException");
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.TYPE_MISMATCH,
+          ex.getErrorType(),
+          "Should detect TYPE_MISMATCH error type");
+    }
+
+    @Test
+    @DisplayName("Should detect type keyword alone in error message")
+    void shouldDetectTypeKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "invalid type definition");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.TYPE_MISMATCH,
+          ex.getErrorType(),
+          "Should detect TYPE_MISMATCH from 'type' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect import errors with correct error type")
+    void shouldDetectImportErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "invalid import specification");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.INVALID_IMPORT,
+          ex.getErrorType(),
+          "Should detect INVALID_IMPORT error type");
+    }
+
+    @Test
+    @DisplayName("Should detect export errors with correct error type")
+    void shouldDetectExportErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "duplicate export name");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.INVALID_EXPORT,
+          ex.getErrorType(),
+          "Should detect INVALID_EXPORT error type");
+    }
+
+    @Test
+    @DisplayName("Should detect memory definition errors with correct error type")
+    void shouldDetectMemoryDefinitionErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "invalid memory limits");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.INVALID_MEMORY_DEFINITION,
+          ex.getErrorType(),
+          "Should detect INVALID_MEMORY_DEFINITION error type");
+    }
+
+    @Test
+    @DisplayName("Should detect table definition errors with correct error type")
+    void shouldDetectTableDefinitionErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "invalid table definition");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.INVALID_TABLE_DEFINITION,
+          ex.getErrorType(),
+          "Should detect INVALID_TABLE_DEFINITION error type");
+    }
+
+    @Test
+    @DisplayName("Should detect function body errors with correct error type")
+    void shouldDetectFunctionBodyErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "invalid function body");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.INVALID_FUNCTION_BODY,
+          ex.getErrorType(),
+          "Should detect INVALID_FUNCTION_BODY error type");
+    }
+
+    @Test
+    @DisplayName("Should detect unsupported feature errors with correct error type")
+    void shouldDetectUnsupportedFeatureErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "unsupported feature used");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.UNSUPPORTED_FEATURE,
+          ex.getErrorType(),
+          "Should detect UNSUPPORTED_FEATURE error type");
+    }
+
+    @Test
+    @DisplayName("Should detect feature keyword in error message")
+    void shouldDetectFeatureKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "experimental feature enabled");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.UNSUPPORTED_FEATURE,
+          ex.getErrorType(),
+          "Should detect UNSUPPORTED_FEATURE from 'feature' keyword");
+    }
+
+    @Test
+    @DisplayName("Should detect limit exceeded errors with correct error type")
+    void shouldDetectLimitExceededErrors() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "limit exceeded for locals");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.LIMIT_EXCEEDED,
+          ex.getErrorType(),
+          "Should detect LIMIT_EXCEEDED error type");
+    }
+
+    @Test
+    @DisplayName("Should detect exceed keyword in error message")
+    void shouldDetectExceedKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "maximum size exceeded");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.LIMIT_EXCEEDED,
+          ex.getErrorType(),
+          "Should detect LIMIT_EXCEEDED from 'exceed' keyword");
+    }
+
+    @Test
+    @DisplayName("Should default to UNKNOWN error type for unrecognized messages")
+    void shouldDefaultToUnknownErrorType() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "some random xyz error");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.UNKNOWN,
+          ex.getErrorType(),
+          "Should default to UNKNOWN error type");
+    }
+
+    @Test
+    @DisplayName("Should extract section name from error message")
+    void shouldExtractSectionName() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "error in section:code is invalid");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals("code", ex.getModuleSection(), "Should extract section name");
+    }
+
+    @Test
+    @DisplayName("Should extract byte offset from error message")
+    void shouldExtractByteOffset() {
+      final WasmException result =
+          ErrorMapper.mapError(
+              ErrorMapper.VALIDATION_ERROR, "validation error at offset 12345: invalid");
+
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException ex = (ModuleValidationException) result;
+      assertEquals(Integer.valueOf(12345), ex.getByteOffset(), "Should extract byte offset");
     }
   }
 
