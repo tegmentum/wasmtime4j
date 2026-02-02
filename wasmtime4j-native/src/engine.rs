@@ -1794,9 +1794,9 @@ impl Default for Engine {
                         concurrent_ops_lock: Arc::new(RwLock::new(())),
                     },
                     Err(_) => {
-                        // Last resort: create engine with completely default wasmtime config
+                        // Last resort: create engine with safe wasmtime config
                         // This should virtually never fail unless the system is severely broken
-                        let default_config = Config::default();
+                        let default_config = safe_wasmtime_config();
                         Engine {
                             inner: Arc::new(WasmtimeEngine::new(&default_config)
                                 .unwrap_or_else(|_| panic!("Critical: Cannot create fallback engine - system unusable"))),

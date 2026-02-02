@@ -351,7 +351,7 @@ impl ComponentEngine {
     /// due to system resource constraints or configuration issues.
     pub fn new() -> WasmtimeResult<Self> {
         // Create a properly configured engine with component model support
-        let mut config = wasmtime::Config::default();
+        let mut config = crate::engine::safe_wasmtime_config();
         config.wasm_component_model(true);
 
         let engine = WasmtimeEngine::new(&config)

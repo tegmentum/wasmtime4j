@@ -1752,7 +1752,81 @@ pub mod ffi_utils {
             }
         }
     }
-    
+
+    /// Comprehensive test cleanup function to reset global state between tests.
+    ///
+    /// This function should be called at the end of each test (or test suite) to
+    /// prevent state accumulation that can cause heap corruption when running
+    /// many tests together.
+    ///
+    /// # Returns
+    /// A tuple of (destroyed_pointers_cleared, memory_handles_cleared, store_handles_cleared)
+    ///
+    /// # Safety
+    /// Only call this when all test resources have been properly dropped.
+    /// Calling while resources are still in use will cause validation errors.
+    #[cfg(test)]
+    pub fn cleanup_test_state() -> (usize, usize, usize) {
+        // Clear destroyed pointers tracking
+        let destroyed_count = clear_destroyed_pointers();
+
+        // Clear memory and store handle registries
+        let (memory_count, store_count) = match crate::memory::core::clear_handle_registries() {
+            Ok(()) => {
+                // Get counts before clearing (approximate)
+                (0, 0) // We don't track individual counts in clear_handle_registries
+            }
+            Err(e) => {
+                log::warn!("Failed to clear handle registries: {}", e);
+                (0, 0)
+            }
+        };
+
+        log::debug!(
+            "Test cleanup: cleared {} destroyed pointers, {} memory handles, {} store handles",
+            destroyed_count, memory_count, store_count
+        );
+
+        (destroyed_count, memory_count, store_count)
+    }
+
+    /// Guard struct that automatically cleans up test state when dropped.
+    ///
+    /// Use this at the start of tests that create wasmtime resources to ensure
+    /// cleanup happens even if the test panics.
+    ///
+    /// # Example
+    /// ```ignore
+    /// #[test]
+    /// fn my_test() {
+    ///     let _guard = TestCleanupGuard::new();
+    ///     // ... test code that creates Engine/Store/Module/Instance ...
+    ///     // cleanup happens automatically when _guard is dropped
+    /// }
+    /// ```
+    #[cfg(test)]
+    pub struct TestCleanupGuard {
+        test_name: &'static str,
+    }
+
+    #[cfg(test)]
+    impl TestCleanupGuard {
+        /// Create a new test cleanup guard
+        pub fn new(test_name: &'static str) -> Self {
+            Self { test_name }
+        }
+    }
+
+    #[cfg(test)]
+    impl Drop for TestCleanupGuard {
+        fn drop(&mut self) {
+            let (destroyed, _memory, _store) = cleanup_test_state();
+            if destroyed > 0 {
+                log::debug!("TestCleanupGuard({}): cleaned up {} destroyed pointers", self.test_name, destroyed);
+            }
+        }
+    }
+
     /// Convert C string to Rust string with validation
     pub unsafe fn c_str_to_string(c_str: *const c_char, name: &str) -> WasmtimeResult<String> {
         if c_str.is_null() {
