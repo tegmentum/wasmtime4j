@@ -884,6 +884,258 @@ class ErrorMapperTest {
           trap.getTrapType(),
           "Should be UNREACHABLE_CODE_REACHED type");
     }
+
+    @Test
+    @DisplayName("Should detect table out of bounds trap")
+    void shouldDetectTableOutOfBoundsTrap() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: table out of bounds access");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.TABLE_OUT_OF_BOUNDS,
+          trap.getTrapType(),
+          "Should be TABLE_OUT_OF_BOUNDS type");
+    }
+
+    @Test
+    @DisplayName("Should detect array out of bounds trap")
+    void shouldDetectArrayOutOfBoundsTrap() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: array out of bounds access");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.ARRAY_OUT_OF_BOUNDS,
+          trap.getTrapType(),
+          "Should be ARRAY_OUT_OF_BOUNDS type");
+    }
+
+    @Test
+    @DisplayName("Should detect heap misaligned trap from misaligned keyword")
+    void shouldDetectHeapMisalignedTrapFromMisaligned() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: misaligned memory access");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.HEAP_MISALIGNED,
+          trap.getTrapType(),
+          "Should be HEAP_MISALIGNED type");
+    }
+
+    @Test
+    @DisplayName("Should detect heap misaligned trap from alignment keyword")
+    void shouldDetectHeapMisalignedTrapFromAlignment() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: alignment error");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.HEAP_MISALIGNED,
+          trap.getTrapType(),
+          "Should be HEAP_MISALIGNED type");
+    }
+
+    @Test
+    @DisplayName("Should detect indirect call to null trap")
+    void shouldDetectIndirectCallToNullTrap() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: null call target");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.INDIRECT_CALL_TO_NULL,
+          trap.getTrapType(),
+          "Should be INDIRECT_CALL_TO_NULL type");
+    }
+
+    @Test
+    @DisplayName("Should detect null reference trap")
+    void shouldDetectNullReferenceTrap() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: null reference access");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.NULL_REFERENCE,
+          trap.getTrapType(),
+          "Should be NULL_REFERENCE type");
+    }
+
+    @Test
+    @DisplayName("Should detect bad signature trap from signature keyword")
+    void shouldDetectBadSignatureTrapFromSignature() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: function signature mismatch");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.BAD_SIGNATURE,
+          trap.getTrapType(),
+          "Should be BAD_SIGNATURE type");
+    }
+
+    @Test
+    @DisplayName("Should detect bad signature trap from type mismatch keyword")
+    void shouldDetectBadSignatureTrapFromTypeMismatch() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: type mismatch in call");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.BAD_SIGNATURE,
+          trap.getTrapType(),
+          "Should be BAD_SIGNATURE type");
+    }
+
+    @Test
+    @DisplayName("Should detect integer overflow trap")
+    void shouldDetectIntegerOverflowTrap() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: integer overflow occurred");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.INTEGER_OVERFLOW,
+          trap.getTrapType(),
+          "Should be INTEGER_OVERFLOW type");
+    }
+
+    @Test
+    @DisplayName("Should detect division by zero trap with divide keyword")
+    void shouldDetectDivisionByZeroTrapWithDivideKeyword() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: divide by zero error");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.INTEGER_DIVISION_BY_ZERO,
+          trap.getTrapType(),
+          "Should be INTEGER_DIVISION_BY_ZERO type");
+    }
+
+    @Test
+    @DisplayName("Should detect bad conversion trap from conversion keyword")
+    void shouldDetectBadConversionTrapFromConversion() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: invalid conversion to integer");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.BAD_CONVERSION_TO_INTEGER,
+          trap.getTrapType(),
+          "Should be BAD_CONVERSION_TO_INTEGER type");
+    }
+
+    @Test
+    @DisplayName("Should detect bad conversion trap from float keyword")
+    void shouldDetectBadConversionTrapFromFloat() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: float to int error");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.BAD_CONVERSION_TO_INTEGER,
+          trap.getTrapType(),
+          "Should be BAD_CONVERSION_TO_INTEGER type");
+    }
+
+    @Test
+    @DisplayName("Should detect interrupt trap")
+    void shouldDetectInterruptTrap() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: execution interrupt");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.INTERRUPT,
+          trap.getTrapType(),
+          "Should be INTERRUPT type");
+    }
+
+    @Test
+    @DisplayName("Should detect out of fuel trap from fuel keyword")
+    void shouldDetectOutOfFuelTrapFromFuel() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: fuel depleted");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.OUT_OF_FUEL,
+          trap.getTrapType(),
+          "Should be OUT_OF_FUEL type");
+    }
+
+    @Test
+    @DisplayName("Should detect out of fuel trap from out of fuel keyword")
+    void shouldDetectOutOfFuelTrapFromOutOfFuel() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: out of fuel error");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.OUT_OF_FUEL,
+          trap.getTrapType(),
+          "Should be OUT_OF_FUEL type");
+    }
+
+    @Test
+    @DisplayName("Should default to unknown trap type for unrecognized trap message")
+    void shouldDefaultToUnknownTrapType() {
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: some unknown error xyz");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.UNKNOWN,
+          trap.getTrapType(),
+          "Should be UNKNOWN type for unrecognized messages");
+    }
+
+    @Test
+    @DisplayName("Should extract function name from trap message")
+    void shouldExtractFunctionNameFromTrapMessage() {
+      final WasmException result =
+          ErrorMapper.mapError(
+              ErrorMapper.RUNTIME_ERROR, "trap: stack overflow in function:my_recursive_func");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          "my_recursive_func", trap.getFunctionName(), "Should extract function name from trap");
+    }
+
+    @Test
+    @DisplayName("Should extract instruction offset from trap message")
+    void shouldExtractInstructionOffsetFromTrapMessage() {
+      final WasmException result =
+          ErrorMapper.mapError(
+              ErrorMapper.RUNTIME_ERROR, "trap: memory out of bounds at offset 12345");
+
+      assertInstanceOf(TrapException.class, result, "Should return TrapException");
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          Integer.valueOf(12345),
+          trap.getInstructionOffset(),
+          "Should extract instruction offset from trap");
+    }
   }
 
   @Nested
