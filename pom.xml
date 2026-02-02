@@ -69,6 +69,8 @@
         <pmd.plugin.version>3.25.0</pmd.plugin.version>
         <pmd.version>7.6.0</pmd.version>
         <jacoco.plugin.version>0.8.12</jacoco.plugin.version>
+        <pitest.plugin.version>1.15.3</pitest.plugin.version>
+        <pitest.junit5.version>1.2.1</pitest.junit5.version>
 
         <!-- Native build properties -->
         <native.library.name>wasmtime4j</native.library.name>
@@ -113,6 +115,7 @@
         <module>wasmtime4j-fuzz</module>
         <module>wasmtime4j-bindgen</module>
         <module>wasmtime4j-coverage-report</module>
+        <module>wasmtime4j-stress-tests</module>
     </modules>
 
     <dependencyManagement>
@@ -307,6 +310,8 @@
                         <showDeprecation>true</showDeprecation>
                         <compilerArgs>
                             <arg>-Xlint:all</arg>
+                            <arg>-Xlint:-options</arg>
+                            <arg>-Xlint:-restricted</arg>
                             <arg>-Werror</arg>
                         </compilerArgs>
                     </configuration>
@@ -658,6 +663,84 @@
                             </configuration>
                         </execution>
                     </executions>
+                </plugin>
+
+                <!-- PIT Mutation Testing -->
+                <plugin>
+                    <groupId>org.pitest</groupId>
+                    <artifactId>pitest-maven</artifactId>
+                    <version>${pitest.plugin.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.pitest</groupId>
+                            <artifactId>pitest-junit5-plugin</artifactId>
+                            <version>${pitest.junit5.version}</version>
+                        </dependency>
+                    </dependencies>
+                    <configuration>
+                        <!-- Target classes for mutation (high-priority semantic packages) -->
+                        <targetClasses>
+                            <!-- WIT type marshalling - critical for data transformation -->
+                            <param>ai.tegmentum.wasmtime4j.wit.*</param>
+                            <!-- Exception handling - critical for error mapping -->
+                            <param>ai.tegmentum.wasmtime4j.exception.*</param>
+                            <!-- Serialization - critical for module caching -->
+                            <param>ai.tegmentum.wasmtime4j.serialization.*</param>
+                            <!-- Execution context - core runtime behavior -->
+                            <param>ai.tegmentum.wasmtime4j.execution.*</param>
+                            <!-- Validation - critical for safety -->
+                            <param>ai.tegmentum.wasmtime4j.validation.*</param>
+                        </targetClasses>
+                        <!-- Test classes to run against mutations -->
+                        <targetTests>
+                            <param>ai.tegmentum.wasmtime4j.*</param>
+                        </targetTests>
+                        <!-- Mutation operators to apply -->
+                        <mutators>
+                            <!-- Default strong mutators -->
+                            <mutator>DEFAULTS</mutator>
+                            <!-- Additional operators for thorough testing -->
+                            <mutator>CONSTRUCTOR_CALLS</mutator>
+                            <mutator>INLINE_CONSTS</mutator>
+                            <mutator>REMOVE_CONDITIONALS</mutator>
+                            <mutator>REMOVE_INCREMENTS</mutator>
+                        </mutators>
+                        <!-- Excluded classes (generated code, constants, etc.) -->
+                        <excludedClasses>
+                            <param>*Generated*</param>
+                            <param>*Constants</param>
+                            <param>*Builder</param>
+                        </excludedClasses>
+                        <!-- Exclude test classes that require native libraries -->
+                        <excludedTestClasses>
+                            <param>*NativeLibraryUtilsTest*</param>
+                            <param>*WasmRuntimeFactoryTest*</param>
+                        </excludedTestClasses>
+                        <!-- Exclude methods that are hard to test meaningfully -->
+                        <excludedMethods>
+                            <param>toString</param>
+                            <param>hashCode</param>
+                            <param>equals</param>
+                        </excludedMethods>
+                        <!-- Performance tuning -->
+                        <threads>4</threads>
+                        <timeoutConstant>10000</timeoutConstant>
+                        <timeoutFactor>1.5</timeoutFactor>
+                        <!-- Output configuration -->
+                        <outputFormats>
+                            <outputFormat>HTML</outputFormat>
+                            <outputFormat>XML</outputFormat>
+                        </outputFormats>
+                        <timestampedReports>false</timestampedReports>
+                        <!-- Mutation score thresholds (start at baseline, increase over time) -->
+                        <!-- Current baseline: 45% mutation score, 64% coverage -->
+                        <mutationThreshold>45</mutationThreshold>
+                        <coverageThreshold>60</coverageThreshold>
+                        <!-- Fail build if thresholds not met (disabled by default) -->
+                        <failWhenNoMutations>false</failWhenNoMutations>
+                        <!-- Verbose output for debugging -->
+                        <verbose>false</verbose>
+                    </configuration>
                 </plugin>
 
                 <!-- JMH Benchmark plugin -->
@@ -1078,6 +1161,197 @@
                         <configuration>
                             <skipITs>false</skipITs>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for mutation testing (nightly/on-demand) -->
+        <!-- Usage: ./mvnw test -P mutation-tests -->
+        <!-- Usage with specific module: ./mvnw test -P mutation-tests -pl wasmtime4j -->
+        <profile>
+            <id>mutation-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <executions>
+                            <execution>
+                                <id>mutation-testing</id>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for quick mutation testing (PR-level, faster) -->
+        <!-- Usage: ./mvnw test -P mutation-tests-quick -->
+        <profile>
+            <id>mutation-tests-quick</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <configuration>
+                            <!-- Reduced mutators for faster execution -->
+                            <mutators>
+                                <mutator>CONDITIONALS_BOUNDARY</mutator>
+                                <mutator>NEGATE_CONDITIONALS</mutator>
+                                <mutator>MATH</mutator>
+                                <mutator>VOID_METHOD_CALLS</mutator>
+                                <mutator>RETURN_VALS</mutator>
+                            </mutators>
+                            <!-- Lower thresholds for quick checks -->
+                            <mutationThreshold>50</mutationThreshold>
+                            <coverageThreshold>60</coverageThreshold>
+                            <!-- Faster timeouts -->
+                            <timeoutConstant>5000</timeoutConstant>
+                            <threads>4</threads>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>quick-mutation-testing</id>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for thorough mutation testing (release candidate) -->
+        <!-- Usage: ./mvnw test -P mutation-tests-thorough -->
+        <profile>
+            <id>mutation-tests-thorough</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <configuration>
+                            <!-- Extended target classes for thorough testing -->
+                            <targetClasses>
+                                <!-- Core semantic packages -->
+                                <param>ai.tegmentum.wasmtime4j.wit.*</param>
+                                <param>ai.tegmentum.wasmtime4j.exception.*</param>
+                                <param>ai.tegmentum.wasmtime4j.serialization.*</param>
+                                <param>ai.tegmentum.wasmtime4j.execution.*</param>
+                                <param>ai.tegmentum.wasmtime4j.validation.*</param>
+                                <!-- Medium priority packages -->
+                                <param>ai.tegmentum.wasmtime4j.cache.*</param>
+                                <param>ai.tegmentum.wasmtime4j.async.*</param>
+                                <param>ai.tegmentum.wasmtime4j.concurrent.*</param>
+                                <param>ai.tegmentum.wasmtime4j.config.*</param>
+                                <param>ai.tegmentum.wasmtime4j.pool.*</param>
+                                <param>ai.tegmentum.wasmtime4j.compilation.*</param>
+                            </targetClasses>
+                            <!-- All strong mutators -->
+                            <mutators>
+                                <mutator>ALL</mutator>
+                            </mutators>
+                            <!-- Strict thresholds -->
+                            <mutationThreshold>70</mutationThreshold>
+                            <coverageThreshold>80</coverageThreshold>
+                            <!-- Fail if thresholds not met -->
+                            <failWhenNoMutations>true</failWhenNoMutations>
+                            <!-- Longer timeouts for comprehensive testing -->
+                            <timeoutConstant>15000</timeoutConstant>
+                            <timeoutFactor>2.0</timeoutFactor>
+                            <threads>2</threads>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>thorough-mutation-testing</id>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for JNI-specific mutation testing -->
+        <!-- Usage: ./mvnw test -P mutation-tests-jni -pl wasmtime4j-jni -->
+        <profile>
+            <id>mutation-tests-jni</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <configuration>
+                            <targetClasses>
+                                <!-- JNI implementation packages -->
+                                <param>ai.tegmentum.wasmtime4j.jni.*</param>
+                                <param>ai.tegmentum.wasmtime4j.jni.util.*</param>
+                                <param>ai.tegmentum.wasmtime4j.jni.exception.*</param>
+                                <param>ai.tegmentum.wasmtime4j.jni.adapter.*</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>ai.tegmentum.wasmtime4j.jni.*</param>
+                            </targetTests>
+                            <mutationThreshold>60</mutationThreshold>
+                            <coverageThreshold>70</coverageThreshold>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>jni-mutation-testing</id>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for Panama-specific mutation testing -->
+        <!-- Usage: ./mvnw test -P mutation-tests-panama -pl wasmtime4j-panama -->
+        <profile>
+            <id>mutation-tests-panama</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <configuration>
+                            <targetClasses>
+                                <!-- Panama implementation packages -->
+                                <param>ai.tegmentum.wasmtime4j.panama.*</param>
+                                <param>ai.tegmentum.wasmtime4j.panama.util.*</param>
+                                <param>ai.tegmentum.wasmtime4j.panama.exception.*</param>
+                                <param>ai.tegmentum.wasmtime4j.panama.ffi.*</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>ai.tegmentum.wasmtime4j.panama.*</param>
+                            </targetTests>
+                            <mutationThreshold>60</mutationThreshold>
+                            <coverageThreshold>70</coverageThreshold>
+                            <!-- Panama requires preview features -->
+                            <jvmArgs>
+                                <jvmArg>--enable-preview</jvmArg>
+                                <jvmArg>--enable-native-access=ALL-UNNAMED</jvmArg>
+                            </jvmArgs>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>panama-mutation-testing</id>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
