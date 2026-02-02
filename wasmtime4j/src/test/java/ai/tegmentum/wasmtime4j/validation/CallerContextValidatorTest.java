@@ -761,4 +761,303 @@ class CallerContextValidatorTest {
       assertFalse(result.getWarnings().isEmpty(), "Should have warnings for non-IAE handling");
     }
   }
+
+  @Nested
+  @DisplayName("Success Count Verification Tests")
+  class SuccessCountVerificationTests {
+
+    @Test
+    @DisplayName("validateFuelOperations should add multiple success messages when working correctly")
+    @SuppressWarnings("unchecked")
+    void validateFuelOperationsShouldAddMultipleSuccessMessages() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenReturn(Optional.of(50L));
+      // Initial: 1000, after adding 100: >= 1100
+      when(mockCaller.fuelRemaining())
+          .thenReturn(Optional.of(1000L))
+          .thenReturn(Optional.of(1100L));
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      // Should have: basic data access + fuel consumed + fuel remaining + fuel addition
+      // Count fuel-related successes
+      long fuelSuccesses =
+          result.getSuccesses().stream().filter(s -> s.toLowerCase().contains("fuel")).count();
+      assertTrue(
+          fuelSuccesses >= 3,
+          "Should have at least 3 fuel-related successes for consumption, remaining, and addition: "
+              + result.getSuccesses());
+    }
+
+    @Test
+    @DisplayName("validateEpochOperations should add multiple success messages when working")
+    @SuppressWarnings("unchecked")
+    void validateEpochOperationsShouldAddMultipleSuccessMessages() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasEpochDeadline()).thenReturn(false, true);
+      when(mockCaller.epochDeadline()).thenReturn(Optional.of(System.currentTimeMillis() + 10000));
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, true, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      // Count epoch-related successes
+      long epochSuccesses =
+          result.getSuccesses().stream().filter(s -> s.toLowerCase().contains("epoch")).count();
+      assertTrue(
+          epochSuccesses >= 3,
+          "Should have at least 3 epoch-related successes for checking, retrieval, and setting: "
+              + result.getSuccesses());
+    }
+
+    @Test
+    @DisplayName("validateErrorHandling should add success for each proper null rejection")
+    @SuppressWarnings("unchecked")
+    void validateErrorHandlingShouldAddSuccessForEachProperNullRejection() throws Exception {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenThrow(new IllegalArgumentException("null"));
+      when(mockCaller.getMemory(null)).thenThrow(new IllegalArgumentException("null"));
+      doThrow(new IllegalArgumentException("negative")).when(mockCaller).addFuel(-100);
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      // Count rejection successes
+      long rejectSuccesses =
+          result.getSuccesses().stream().filter(s -> s.toLowerCase().contains("reject")).count();
+      assertTrue(
+          rejectSuccesses >= 3,
+          "Should have at least 3 rejection successes for hasExport, getMemory, and addFuel: "
+              + result.getSuccesses());
+    }
+
+    @Test
+    @DisplayName("validateExportAccess should add success for successful export check")
+    @SuppressWarnings("unchecked")
+    void validateExportAccessShouldAddSuccessForSuccessfulExportCheck() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(anyString())).thenReturn(true);
+      when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(Memory.class)));
+      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(Function.class)));
+      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(Global.class)));
+      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(Table.class)));
+
+      final ValidationConfig config = new ValidationConfig(true, true, false, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      // Verify export access successes
+      long exportSuccesses =
+          result.getSuccesses().stream()
+              .filter(s -> s.toLowerCase().contains("export") || s.toLowerCase().contains("memory")
+                  || s.toLowerCase().contains("function") || s.toLowerCase().contains("global")
+                  || s.toLowerCase().contains("table"))
+              .count();
+      assertTrue(
+          exportSuccesses >= 2,
+          "Should have multiple export-related successes: " + result.getSuccesses());
+    }
+  }
+
+  @Nested
+  @DisplayName("Fuel Addition Boundary Tests")
+  class FuelAdditionBoundaryTests {
+
+    @Test
+    @DisplayName("fuel addition should check against initialFuel plus exactly 100")
+    @SuppressWarnings("unchecked")
+    void fuelAdditionShouldCheckAgainstInitialFuelPlusExactly100() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenReturn(Optional.of(0L));
+      // Initial: 500, after: exactly 600 (= 500 + 100)
+      when(mockCaller.fuelRemaining())
+          .thenReturn(Optional.of(500L))
+          .thenReturn(Optional.of(600L));
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      // Should succeed because 600 >= 500 + 100
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("Fuel addition works correctly")),
+          "Should have success when afterAddition >= initialFuel + 100: " + result.getSuccesses());
+    }
+
+    @Test
+    @DisplayName("fuel addition should warn when fuel does not increase by at least 100")
+    @SuppressWarnings("unchecked")
+    void fuelAdditionShouldWarnWhenFuelDoesNotIncreaseByAtLeast100() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenReturn(Optional.of(0L));
+      // Initial: 500, after: 599 (= 500 + 99, less than 500 + 100)
+      when(mockCaller.fuelRemaining())
+          .thenReturn(Optional.of(500L))
+          .thenReturn(Optional.of(599L));
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      // Should warn because 599 < 500 + 100
+      assertTrue(
+          result.getWarnings().stream().anyMatch(s -> s.contains("may not be working")),
+          "Should warn when afterAddition < initialFuel + 100: " + result.getWarnings());
+    }
+
+    @Test
+    @DisplayName("fuel addition should succeed at boundary when fuel increases by exactly 100")
+    @SuppressWarnings("unchecked")
+    void fuelAdditionShouldSucceedAtBoundaryWhenFuelIncreasesByExactly100() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenReturn(Optional.of(0L));
+      // Initial: 0, after: exactly 100 (= 0 + 100)
+      when(mockCaller.fuelRemaining())
+          .thenReturn(Optional.of(0L))
+          .thenReturn(Optional.of(100L));
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      // Should succeed because 100 >= 0 + 100
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("Fuel addition works correctly")),
+          "Should succeed when afterAddition equals initialFuel + 100: " + result.getSuccesses());
+    }
+  }
+
+  @Nested
+  @DisplayName("Epoch Deadline Constant Tests")
+  class EpochDeadlineConstantTests {
+
+    @Test
+    @DisplayName("epoch deadline should be set using system time plus offset")
+    @SuppressWarnings("unchecked")
+    void epochDeadlineShouldBeSetUsingSystemTimePlusOffset() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      // hasEpochDeadline returns false initially, then true after setting
+      when(mockCaller.hasEpochDeadline()).thenReturn(false, true);
+      when(mockCaller.epochDeadline()).thenReturn(Optional.of(System.currentTimeMillis() + 5000));
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, true, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      // The setEpochDeadline method should have been called and epoch should be set
+      assertTrue(
+          result.getSuccesses().stream()
+              .anyMatch(s -> s.contains("Epoch deadline setting works correctly")),
+          "Should have success for epoch deadline setting: " + result.getSuccesses());
+    }
+  }
+
+  @Nested
+  @DisplayName("Error and Warning Count Verification Tests")
+  class ErrorAndWarningCountVerificationTests {
+
+    @Test
+    @DisplayName("validateErrorHandling should add error when hasExport does not reject null")
+    @SuppressWarnings("unchecked")
+    void validateErrorHandlingShouldAddErrorWhenHasExportDoesNotRejectNull() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenReturn(false); // Should throw IAE
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(
+          result.getErrors().stream().anyMatch(e -> e.contains("should reject null")),
+          "Should add error message about rejecting null: " + result.getErrors());
+      assertEquals(
+          1,
+          result.getErrors().stream().filter(e -> e.contains("hasExport")).count(),
+          "Should have exactly one error about hasExport null rejection");
+    }
+
+    @Test
+    @DisplayName("validateErrorHandling should add warning for non-IAE hasExport exception")
+    @SuppressWarnings("unchecked")
+    void validateErrorHandlingShouldAddWarningForNonIaeHasExportException() throws Exception {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenThrow(new NullPointerException("npe"));
+      when(mockCaller.getMemory(null)).thenThrow(new IllegalArgumentException("iae"));
+      doThrow(new IllegalArgumentException("iae")).when(mockCaller).addFuel(anyLong());
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(
+          result.getWarnings().stream().anyMatch(w -> w.contains("hasExport")),
+          "Should add warning for non-IAE exception in hasExport: " + result.getWarnings());
+    }
+
+    @Test
+    @DisplayName("validateErrorHandling should add warning for non-IAE addFuel exception")
+    @SuppressWarnings("unchecked")
+    void validateErrorHandlingShouldAddWarningForNonIaeAddFuelException() throws Exception {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenThrow(new IllegalArgumentException("iae"));
+      when(mockCaller.getMemory(null)).thenThrow(new IllegalArgumentException("iae"));
+      doThrow(new RuntimeException("not IAE")).when(mockCaller).addFuel(-100);
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(
+          result.getWarnings().stream().anyMatch(w -> w.contains("addFuel")),
+          "Should add warning for non-IAE exception in addFuel: " + result.getWarnings());
+    }
+
+    @Test
+    @DisplayName("validateSpecificExportTypes should add success for memory access")
+    @SuppressWarnings("unchecked")
+    void validateSpecificExportTypesShouldAddSuccessForMemoryAccess() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(anyString())).thenReturn(false);
+      when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(Memory.class)));
+      when(mockCaller.getFunction(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getTable(anyString())).thenReturn(Optional.empty());
+
+      final ValidationConfig config = new ValidationConfig(true, true, false, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(
+          result.getSuccesses().stream()
+              .anyMatch(s -> s.toLowerCase().contains("memory")),
+          "Should add success for memory access: " + result.getSuccesses());
+    }
+
+    @Test
+    @DisplayName("validateSpecificExportTypes should add warning when memory access throws")
+    @SuppressWarnings("unchecked")
+    void validateSpecificExportTypesShouldAddWarningWhenMemoryAccessThrows() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(anyString())).thenReturn(false);
+      when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getMemory(anyString())).thenThrow(new RuntimeException("no memory"));
+      when(mockCaller.getFunction(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getTable(anyString())).thenReturn(Optional.empty());
+
+      final ValidationConfig config = new ValidationConfig(true, true, false, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(
+          result.getWarnings().stream()
+              .anyMatch(w -> w.toLowerCase().contains("memory")),
+          "Should add warning for failed memory access: " + result.getWarnings());
+    }
+  }
 }
