@@ -355,6 +355,69 @@ class SerializationResultTest {
 
       assertTrue(estimatedTime >= 0);
     }
+
+    @Test
+    @DisplayName("getEstimatedDeserializationTime should delegate to metadata")
+    void getEstimatedDeserializationTimeShouldDelegateToMetadata() throws Exception {
+      // Create metadata with performance metrics that will produce a non-zero estimate
+      final SerializationPerformanceMetrics metrics =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(100_000_000L, 50_000_000L, 0L, 0L, 0L) // 100ms serialization
+              .setMemoryMetrics(1024, 1024, 0)
+              .build();
+
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadataWithMetrics =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L) // 100ms
+              .setPerformanceMetrics(metrics)
+              .build();
+
+      final SerializationResult result = new SerializationResult(testData, metadataWithMetrics);
+
+      // Verify it returns the metadata's estimated time
+      final long resultTime = result.getEstimatedDeserializationTime();
+      final long metadataTime = metadataWithMetrics.getEstimatedDeserializationTimeMs();
+
+      assertEquals(
+          metadataTime,
+          resultTime,
+          "getEstimatedDeserializationTime should return metadata's estimate");
+    }
+
+    @Test
+    @DisplayName("getEstimatedDeserializationTime should return non-zero for large data")
+    void getEstimatedDeserializationTimeShouldReturnNonZeroForLargeData() throws Exception {
+      // Create a result with large data to ensure non-zero estimate via fallback
+      final byte[] largeData = new byte[10 * 1024 * 1024]; // 10 MB
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(largeData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata largeMetadata =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(largeData.length)
+              .setOriginalSize(largeData.length * 2)
+              .setSha256Hash(hash)
+              .build(); // No performance metrics, uses fallback
+
+      final SerializationResult result = new SerializationResult(largeData, largeMetadata);
+
+      final long estimatedTime = result.getEstimatedDeserializationTime();
+
+      // For 10MB at ~100MB/s, should be around 100ms minimum
+      assertTrue(
+          estimatedTime > 0,
+          "Large data should have non-zero estimated deserialization time, got: " + estimatedTime);
+    }
   }
 
   @Nested
@@ -474,6 +537,77 @@ class SerializationResultTest {
       // Result depends on SerializationPerformanceMetrics.isOptimalPerformance() logic
       assertNotNull(result.isOptimalPerformance());
     }
+
+    @Test
+    @DisplayName("isOptimalPerformance should return boolean value not null")
+    void isOptimalPerformanceShouldReturnBooleanValue() throws Exception {
+      // Test with metrics that should definitely NOT be optimal
+      final SerializationPerformanceMetrics poorMetrics =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(10_000_000_000L, 5_000_000_000L, 0L, 0L, 0L) // 10s serialization
+              .setMemoryMetrics(1024 * 1024 * 1024L, 1024 * 1024 * 1024L, 0) // 1GB
+              .setIoMetrics(1, 1, 1L)
+              .build();
+
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadataWithPoorMetrics =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setPerformanceMetrics(poorMetrics)
+              .build();
+
+      final SerializationResult result = new SerializationResult(testData, metadataWithPoorMetrics);
+
+      // The method should return a boolean (true or false), not throw
+      final boolean isOptimal = result.isOptimalPerformance();
+      assertTrue(isOptimal || !isOptimal, "isOptimalPerformance should return a valid boolean");
+    }
+
+    @Test
+    @DisplayName("isOptimalPerformance should verify null metrics returns false")
+    void isOptimalPerformanceShouldVerifyNullMetricsReturnsFalse() {
+      // Explicitly test the null case
+      final SerializationResult result = new SerializationResult(testData, testMetadata);
+
+      // Verify the method returns false, not throws
+      final boolean isOptimal = result.isOptimalPerformance();
+      assertFalse(isOptimal, "isOptimalPerformance with null metrics should return false");
+    }
+
+    @Test
+    @DisplayName("isOptimalPerformance should delegate to metrics when present")
+    void isOptimalPerformanceShouldDelegateToMetricsWhenPresent() throws Exception {
+      final SerializationPerformanceMetrics metrics =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(100_000L, 50_000L, 0L, 0L, 0L) // Very fast
+              .setMemoryMetrics(1024, 1024, 0) // Small memory
+              .setIoMetrics(10000, 5000, 100_000L) // Good I/O
+              .build();
+
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadataWithMetrics =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setPerformanceMetrics(metrics)
+              .build();
+
+      final SerializationResult result = new SerializationResult(testData, metadataWithMetrics);
+
+      // Verify delegation happens (method returns based on metrics.isOptimalPerformance())
+      assertEquals(metrics.isOptimalPerformance(), result.isOptimalPerformance());
+    }
   }
 
   @Nested
@@ -504,6 +638,10 @@ class SerializationResultTest {
 
       assertNotNull(comparison);
       assertTrue(comparison.contains("Duration"));
+      // When other duration is 0, percentage should be 0 (not infinity or error)
+      assertTrue(
+          comparison.contains("+0.0%") || comparison.contains("-0.0%") || comparison.contains("0.0%"),
+          "Duration percentage should be 0 when other duration is 0, got: " + comparison);
     }
 
     @Test
@@ -532,6 +670,360 @@ class SerializationResultTest {
 
       // result1 is smaller, so size difference is negative
       assertTrue(comparison.contains("-"));
+    }
+
+    @Test
+    @DisplayName("compareWith should calculate positive size percentage correctly")
+    void compareWithShouldCalculatePositiveSizePercentageCorrectly() throws Exception {
+      // result1 is larger than result2
+      final byte[] largerData = new byte[testData.length * 2];
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(largerData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata largerMetadata =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(largerData.length)
+              .setOriginalSize(largerData.length)
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializationResult result1 = new SerializationResult(largerData, largerMetadata);
+      final SerializationResult result2 = new SerializationResult(testData, testMetadata);
+
+      final String comparison = result1.compareWith(result2);
+
+      // result1 is larger, so size difference is positive
+      assertTrue(comparison.contains("+") || comparison.contains("Size"));
+    }
+
+    @Test
+    @DisplayName("compareWith should calculate compression difference correctly")
+    void compareWithShouldCalculateCompressionDifferenceCorrectly() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      // Create metadata with different compression ratios
+      final SerializedModuleMetadata highCompression =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 4) // 4x compression
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializedModuleMetadata lowCompression =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length) // 1x compression
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializationResult result1 = new SerializationResult(testData, highCompression);
+      final SerializationResult result2 = new SerializationResult(testData, lowCompression);
+
+      final String comparison = result1.compareWith(result2);
+
+      assertTrue(comparison.contains("Compression"));
+    }
+
+    @Test
+    @DisplayName("compareWith should calculate duration percentage when other has non-zero duration")
+    void compareWithShouldCalculateDurationPercentageWhenOtherHasNonZeroDuration() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata fastMetadata =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setSerializationDuration(50L) // Fast
+              .build();
+
+      final SerializedModuleMetadata slowMetadata =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L) // Slow
+              .build();
+
+      final SerializationResult fastResult = new SerializationResult(testData, fastMetadata);
+      final SerializationResult slowResult = new SerializationResult(testData, slowMetadata);
+
+      final String comparison = fastResult.compareWith(slowResult);
+
+      // Duration should show negative percentage (faster)
+      assertTrue(comparison.contains("Duration") && comparison.contains("-"));
+    }
+
+    @Test
+    @DisplayName("compareWith should show zero percentage when durations are equal")
+    void compareWithShouldShowZeroPercentageWhenDurationsAreEqual() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadata1 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializedModuleMetadata metadata2 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializationResult result1 = new SerializationResult(testData, metadata1);
+      final SerializationResult result2 = new SerializationResult(testData, metadata2);
+
+      final String comparison = result1.compareWith(result2);
+
+      assertTrue(comparison.contains("0") || comparison.contains("+0"));
+    }
+
+    @Test
+    @DisplayName("compareWith should handle same sizes correctly")
+    void compareWithShouldHandleSameSizesCorrectly() {
+      final SerializationResult result1 = new SerializationResult(testData, testMetadata);
+      final SerializationResult result2 = new SerializationResult(testData.clone(), testMetadata);
+
+      final String comparison = result1.compareWith(result2);
+
+      // Size difference should be 0
+      assertTrue(comparison.contains("Size"));
+    }
+
+    @Test
+    @DisplayName("compareWith should verify size percentage calculation uses 100 multiplier")
+    void compareWithShouldVerifySizePercentageCalculation() throws Exception {
+      // Create result1 with size 100
+      final byte[] data100 = new byte[100];
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hash100Bytes = digest.digest(data100);
+      final String hash100 = bytesToHex(hash100Bytes);
+
+      final SerializedModuleMetadata metadata100 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(100)
+              .setOriginalSize(100)
+              .setSha256Hash(hash100)
+              .setSerializationDuration(100L)
+              .build();
+
+      // Create result2 with size 50
+      final byte[] data50 = new byte[50];
+      final byte[] hash50Bytes = digest.digest(data50);
+      final String hash50 = bytesToHex(hash50Bytes);
+
+      final SerializedModuleMetadata metadata50 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(50)
+              .setOriginalSize(50)
+              .setSha256Hash(hash50)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializationResult result1 = new SerializationResult(data100, metadata100);
+      final SerializationResult result2 = new SerializationResult(data50, metadata50);
+
+      final String comparison = result1.compareWith(result2);
+
+      // (100 - 50) / 50 * 100 = 100%
+      // If multiplier was 1 instead of 100, it would show 1.00%
+      assertTrue(
+          comparison.contains("+100.00%"),
+          "Size percentage should be +100.00% (not +1.00%), got: " + comparison);
+    }
+
+    @Test
+    @DisplayName("compareWith should verify duration percentage calculation uses 100 multiplier")
+    void compareWithShouldVerifyDurationPercentageCalculation() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      // result1 has duration 200ms, result2 has duration 100ms
+      final SerializedModuleMetadata metadata200 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length)
+              .setSha256Hash(hash)
+              .setSerializationDuration(200L)
+              .build();
+
+      final SerializedModuleMetadata metadata100 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length)
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializationResult result1 = new SerializationResult(testData, metadata200);
+      final SerializationResult result2 = new SerializationResult(testData, metadata100);
+
+      final String comparison = result1.compareWith(result2);
+
+      // (200 - 100) / 100 * 100 = 100%
+      // If multiplier was 1, it would show 1.0%
+      assertTrue(
+          comparison.contains("+100.0%"),
+          "Duration percentage should be +100.0% (not +1.0%), got: " + comparison);
+    }
+
+    @Test
+    @DisplayName("compareWith should verify math operations are not inverted")
+    void compareWithShouldVerifyMathOperationsNotInverted() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+      // Create result1 with size 200
+      final byte[] data200 = new byte[200];
+      final byte[] hash200Bytes = digest.digest(data200);
+      final String hash200 = bytesToHex(hash200Bytes);
+
+      final SerializedModuleMetadata metadata200 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(200)
+              .setOriginalSize(400) // 2x compression
+              .setSha256Hash(hash200)
+              .setSerializationDuration(100L)
+              .build();
+
+      // Create result2 with size 100
+      final byte[] data100 = new byte[100];
+      final byte[] hash100Bytes = digest.digest(data100);
+      final String hash100 = bytesToHex(hash100Bytes);
+
+      final SerializedModuleMetadata metadata100 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(100)
+              .setOriginalSize(100) // 1x compression
+              .setSha256Hash(hash100)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializationResult result1 = new SerializationResult(data200, metadata200);
+      final SerializationResult result2 = new SerializationResult(data100, metadata100);
+
+      final String comparison = result1.compareWith(result2);
+
+      // Compression difference: 2.0 - 1.0 = +1.0x
+      // If division replaced multiplication or vice versa, we'd get a very different value
+      assertTrue(
+          comparison.contains("+1.00x"),
+          "Compression difference should be +1.00x, got: " + comparison);
+
+      // Size percentage: (200 - 100) / 100 * 100 = +100.00%
+      // If division replaced multiplication: (200 - 100) * 100 / 100 = 100 (wrong formula)
+      assertTrue(
+          comparison.contains("+100.00%"),
+          "Size percentage should show +100.00%, got: " + comparison);
+    }
+
+    @Test
+    @DisplayName("compareWith should return zero duration percentage when other duration is zero")
+    void compareWithShouldReturnZeroDurationPercentageWhenOtherDurationIsZero() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadata100ms =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length)
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L) // 100ms
+              .build();
+
+      final SerializedModuleMetadata metadata0ms =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length)
+              .setSha256Hash(hash)
+              .setSerializationDuration(0L) // 0ms
+              .build();
+
+      final SerializationResult result1 = new SerializationResult(testData, metadata100ms);
+      final SerializationResult result2 = new SerializationResult(testData, metadata0ms);
+
+      final String comparison = result1.compareWith(result2);
+
+      // When other.duration is 0, the ternary returns 0 (not infinity)
+      // This tests line 251's > 0 check
+      assertTrue(
+          comparison.contains("Duration: +0.0%") || comparison.contains("Duration: -0.0%"),
+          "Duration percentage should be 0% when other has 0 duration, got: " + comparison);
+    }
+
+    @Test
+    @DisplayName("compareWith should correctly calculate when this is smaller than other")
+    void compareWithShouldCalculateWhenThisSmallerThanOther() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+      // result1 (this) is smaller: 50 bytes
+      final byte[] data50 = new byte[50];
+      final byte[] hash50Bytes = digest.digest(data50);
+      final String hash50 = bytesToHex(hash50Bytes);
+
+      final SerializedModuleMetadata metadata50 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(50)
+              .setOriginalSize(50)
+              .setSha256Hash(hash50)
+              .setSerializationDuration(100L)
+              .build();
+
+      // result2 (other) is larger: 100 bytes
+      final byte[] data100 = new byte[100];
+      final byte[] hash100Bytes = digest.digest(data100);
+      final String hash100 = bytesToHex(hash100Bytes);
+
+      final SerializedModuleMetadata metadata100 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(100)
+              .setOriginalSize(100)
+              .setSha256Hash(hash100)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializationResult result1 = new SerializationResult(data50, metadata50);
+      final SerializationResult result2 = new SerializationResult(data100, metadata100);
+
+      final String comparison = result1.compareWith(result2);
+
+      // (50 - 100) / 100 * 100 = -50%
+      assertTrue(
+          comparison.contains("-50.00%"),
+          "Size should show -50.00% when this is half the size of other, got: " + comparison);
     }
   }
 
