@@ -372,4 +372,655 @@ class SecurityExceptionTest {
       }
     }
   }
+
+  // ============================================================================
+  // MUTATION TESTING COVERAGE TESTS
+  // ============================================================================
+  // The following tests are specifically designed to kill PIT mutations that
+  // survive basic functionality tests. They test:
+  // 1. Boolean return value mutations for violation check methods
+  // 2. Exact count verification for security context categories
+  // 3. getSecurityViolationDescription edge cases (null fields)
+  // 4. Getter return value exactness
+  // ============================================================================
+
+  @Nested
+  @DisplayName("Violation Check Boolean Return Mutation Tests")
+  class ViolationCheckBooleanReturnMutationTests {
+
+    // -------------------------------------------------------------------------
+    // isHostFunctionViolation() - Tests for false returns on non-HOST_FUNCTION contexts
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("isHostFunctionViolation returns false for WASI_CAPABILITY")
+    void isHostFunctionViolationReturnsFalseForWasiCapability() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.WASI_CAPABILITY);
+      assertFalse(ex.isHostFunctionViolation(), "WASI_CAPABILITY should NOT be host function");
+    }
+
+    @Test
+    @DisplayName("isHostFunctionViolation returns false for MODULE_IMPORT_EXPORT")
+    void isHostFunctionViolationReturnsFalseForModuleImportExport() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MODULE_IMPORT_EXPORT);
+      assertFalse(ex.isHostFunctionViolation(), "MODULE_IMPORT_EXPORT should NOT be host function");
+    }
+
+    @Test
+    @DisplayName("isHostFunctionViolation returns false for MEMORY_ACCESS")
+    void isHostFunctionViolationReturnsFalseForMemoryAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MEMORY_ACCESS);
+      assertFalse(ex.isHostFunctionViolation(), "MEMORY_ACCESS should NOT be host function");
+    }
+
+    @Test
+    @DisplayName("isHostFunctionViolation returns false for FILE_SYSTEM_ACCESS")
+    void isHostFunctionViolationReturnsFalseForFileSystemAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.FILE_SYSTEM_ACCESS);
+      assertFalse(ex.isHostFunctionViolation(), "FILE_SYSTEM_ACCESS should NOT be host function");
+    }
+
+    @Test
+    @DisplayName("isHostFunctionViolation returns false for NETWORK_ACCESS")
+    void isHostFunctionViolationReturnsFalseForNetworkAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.NETWORK_ACCESS);
+      assertFalse(ex.isHostFunctionViolation(), "NETWORK_ACCESS should NOT be host function");
+    }
+
+    @Test
+    @DisplayName("isHostFunctionViolation returns false for SYSTEM_RESOURCE")
+    void isHostFunctionViolationReturnsFalseForSystemResource() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SYSTEM_RESOURCE);
+      assertFalse(ex.isHostFunctionViolation(), "SYSTEM_RESOURCE should NOT be host function");
+    }
+
+    @Test
+    @DisplayName("isHostFunctionViolation returns false for SANDBOX_POLICY")
+    void isHostFunctionViolationReturnsFalseForSandboxPolicy() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SANDBOX_POLICY);
+      assertFalse(ex.isHostFunctionViolation(), "SANDBOX_POLICY should NOT be host function");
+    }
+
+    // -------------------------------------------------------------------------
+    // isWasiCapabilityViolation() - Tests for false returns
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("isWasiCapabilityViolation returns false for HOST_FUNCTION")
+    void isWasiCapabilityViolationReturnsFalseForHostFunction() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.HOST_FUNCTION);
+      assertFalse(ex.isWasiCapabilityViolation(), "HOST_FUNCTION should NOT be WASI capability");
+    }
+
+    @Test
+    @DisplayName("isWasiCapabilityViolation returns false for MODULE_IMPORT_EXPORT")
+    void isWasiCapabilityViolationReturnsFalseForModuleImportExport() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MODULE_IMPORT_EXPORT);
+      assertFalse(
+          ex.isWasiCapabilityViolation(), "MODULE_IMPORT_EXPORT should NOT be WASI capability");
+    }
+
+    @Test
+    @DisplayName("isWasiCapabilityViolation returns false for MEMORY_ACCESS")
+    void isWasiCapabilityViolationReturnsFalseForMemoryAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MEMORY_ACCESS);
+      assertFalse(ex.isWasiCapabilityViolation(), "MEMORY_ACCESS should NOT be WASI capability");
+    }
+
+    @Test
+    @DisplayName("isWasiCapabilityViolation returns false for FILE_SYSTEM_ACCESS")
+    void isWasiCapabilityViolationReturnsFalseForFileSystemAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.FILE_SYSTEM_ACCESS);
+      assertFalse(
+          ex.isWasiCapabilityViolation(), "FILE_SYSTEM_ACCESS should NOT be WASI capability");
+    }
+
+    @Test
+    @DisplayName("isWasiCapabilityViolation returns false for NETWORK_ACCESS")
+    void isWasiCapabilityViolationReturnsFalseForNetworkAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.NETWORK_ACCESS);
+      assertFalse(ex.isWasiCapabilityViolation(), "NETWORK_ACCESS should NOT be WASI capability");
+    }
+
+    @Test
+    @DisplayName("isWasiCapabilityViolation returns false for SYSTEM_RESOURCE")
+    void isWasiCapabilityViolationReturnsFalseForSystemResource() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SYSTEM_RESOURCE);
+      assertFalse(ex.isWasiCapabilityViolation(), "SYSTEM_RESOURCE should NOT be WASI capability");
+    }
+
+    @Test
+    @DisplayName("isWasiCapabilityViolation returns false for SANDBOX_POLICY")
+    void isWasiCapabilityViolationReturnsFalseForSandboxPolicy() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SANDBOX_POLICY);
+      assertFalse(ex.isWasiCapabilityViolation(), "SANDBOX_POLICY should NOT be WASI capability");
+    }
+
+    // -------------------------------------------------------------------------
+    // isFileSystemViolation() - Tests for false returns
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("isFileSystemViolation returns false for HOST_FUNCTION")
+    void isFileSystemViolationReturnsFalseForHostFunction() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.HOST_FUNCTION);
+      assertFalse(ex.isFileSystemViolation(), "HOST_FUNCTION should NOT be file system");
+    }
+
+    @Test
+    @DisplayName("isFileSystemViolation returns false for WASI_CAPABILITY")
+    void isFileSystemViolationReturnsFalseForWasiCapability() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.WASI_CAPABILITY);
+      assertFalse(ex.isFileSystemViolation(), "WASI_CAPABILITY should NOT be file system");
+    }
+
+    @Test
+    @DisplayName("isFileSystemViolation returns false for MODULE_IMPORT_EXPORT")
+    void isFileSystemViolationReturnsFalseForModuleImportExport() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MODULE_IMPORT_EXPORT);
+      assertFalse(ex.isFileSystemViolation(), "MODULE_IMPORT_EXPORT should NOT be file system");
+    }
+
+    @Test
+    @DisplayName("isFileSystemViolation returns false for MEMORY_ACCESS")
+    void isFileSystemViolationReturnsFalseForMemoryAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MEMORY_ACCESS);
+      assertFalse(ex.isFileSystemViolation(), "MEMORY_ACCESS should NOT be file system");
+    }
+
+    @Test
+    @DisplayName("isFileSystemViolation returns false for NETWORK_ACCESS")
+    void isFileSystemViolationReturnsFalseForNetworkAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.NETWORK_ACCESS);
+      assertFalse(ex.isFileSystemViolation(), "NETWORK_ACCESS should NOT be file system");
+    }
+
+    @Test
+    @DisplayName("isFileSystemViolation returns false for SYSTEM_RESOURCE")
+    void isFileSystemViolationReturnsFalseForSystemResource() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SYSTEM_RESOURCE);
+      assertFalse(ex.isFileSystemViolation(), "SYSTEM_RESOURCE should NOT be file system");
+    }
+
+    @Test
+    @DisplayName("isFileSystemViolation returns false for SANDBOX_POLICY")
+    void isFileSystemViolationReturnsFalseForSandboxPolicy() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SANDBOX_POLICY);
+      assertFalse(ex.isFileSystemViolation(), "SANDBOX_POLICY should NOT be file system");
+    }
+
+    // -------------------------------------------------------------------------
+    // isNetworkViolation() - Tests for false returns
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("isNetworkViolation returns false for HOST_FUNCTION")
+    void isNetworkViolationReturnsFalseForHostFunction() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.HOST_FUNCTION);
+      assertFalse(ex.isNetworkViolation(), "HOST_FUNCTION should NOT be network");
+    }
+
+    @Test
+    @DisplayName("isNetworkViolation returns false for WASI_CAPABILITY")
+    void isNetworkViolationReturnsFalseForWasiCapability() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.WASI_CAPABILITY);
+      assertFalse(ex.isNetworkViolation(), "WASI_CAPABILITY should NOT be network");
+    }
+
+    @Test
+    @DisplayName("isNetworkViolation returns false for MODULE_IMPORT_EXPORT")
+    void isNetworkViolationReturnsFalseForModuleImportExport() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MODULE_IMPORT_EXPORT);
+      assertFalse(ex.isNetworkViolation(), "MODULE_IMPORT_EXPORT should NOT be network");
+    }
+
+    @Test
+    @DisplayName("isNetworkViolation returns false for MEMORY_ACCESS")
+    void isNetworkViolationReturnsFalseForMemoryAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MEMORY_ACCESS);
+      assertFalse(ex.isNetworkViolation(), "MEMORY_ACCESS should NOT be network");
+    }
+
+    @Test
+    @DisplayName("isNetworkViolation returns false for FILE_SYSTEM_ACCESS")
+    void isNetworkViolationReturnsFalseForFileSystemAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.FILE_SYSTEM_ACCESS);
+      assertFalse(ex.isNetworkViolation(), "FILE_SYSTEM_ACCESS should NOT be network");
+    }
+
+    @Test
+    @DisplayName("isNetworkViolation returns false for SYSTEM_RESOURCE")
+    void isNetworkViolationReturnsFalseForSystemResource() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SYSTEM_RESOURCE);
+      assertFalse(ex.isNetworkViolation(), "SYSTEM_RESOURCE should NOT be network");
+    }
+
+    @Test
+    @DisplayName("isNetworkViolation returns false for SANDBOX_POLICY")
+    void isNetworkViolationReturnsFalseForSandboxPolicy() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SANDBOX_POLICY);
+      assertFalse(ex.isNetworkViolation(), "SANDBOX_POLICY should NOT be network");
+    }
+
+    // -------------------------------------------------------------------------
+    // isMemoryViolation() - Tests for false returns
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("isMemoryViolation returns false for HOST_FUNCTION")
+    void isMemoryViolationReturnsFalseForHostFunction() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.HOST_FUNCTION);
+      assertFalse(ex.isMemoryViolation(), "HOST_FUNCTION should NOT be memory");
+    }
+
+    @Test
+    @DisplayName("isMemoryViolation returns false for WASI_CAPABILITY")
+    void isMemoryViolationReturnsFalseForWasiCapability() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.WASI_CAPABILITY);
+      assertFalse(ex.isMemoryViolation(), "WASI_CAPABILITY should NOT be memory");
+    }
+
+    @Test
+    @DisplayName("isMemoryViolation returns false for MODULE_IMPORT_EXPORT")
+    void isMemoryViolationReturnsFalseForModuleImportExport() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MODULE_IMPORT_EXPORT);
+      assertFalse(ex.isMemoryViolation(), "MODULE_IMPORT_EXPORT should NOT be memory");
+    }
+
+    @Test
+    @DisplayName("isMemoryViolation returns false for FILE_SYSTEM_ACCESS")
+    void isMemoryViolationReturnsFalseForFileSystemAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.FILE_SYSTEM_ACCESS);
+      assertFalse(ex.isMemoryViolation(), "FILE_SYSTEM_ACCESS should NOT be memory");
+    }
+
+    @Test
+    @DisplayName("isMemoryViolation returns false for NETWORK_ACCESS")
+    void isMemoryViolationReturnsFalseForNetworkAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.NETWORK_ACCESS);
+      assertFalse(ex.isMemoryViolation(), "NETWORK_ACCESS should NOT be memory");
+    }
+
+    @Test
+    @DisplayName("isMemoryViolation returns false for SYSTEM_RESOURCE")
+    void isMemoryViolationReturnsFalseForSystemResource() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SYSTEM_RESOURCE);
+      assertFalse(ex.isMemoryViolation(), "SYSTEM_RESOURCE should NOT be memory");
+    }
+
+    @Test
+    @DisplayName("isMemoryViolation returns false for SANDBOX_POLICY")
+    void isMemoryViolationReturnsFalseForSandboxPolicy() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SANDBOX_POLICY);
+      assertFalse(ex.isMemoryViolation(), "SANDBOX_POLICY should NOT be memory");
+    }
+
+    // -------------------------------------------------------------------------
+    // isSandboxViolation() - Tests for false returns
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("isSandboxViolation returns false for HOST_FUNCTION")
+    void isSandboxViolationReturnsFalseForHostFunction() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.HOST_FUNCTION);
+      assertFalse(ex.isSandboxViolation(), "HOST_FUNCTION should NOT be sandbox");
+    }
+
+    @Test
+    @DisplayName("isSandboxViolation returns false for WASI_CAPABILITY")
+    void isSandboxViolationReturnsFalseForWasiCapability() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.WASI_CAPABILITY);
+      assertFalse(ex.isSandboxViolation(), "WASI_CAPABILITY should NOT be sandbox");
+    }
+
+    @Test
+    @DisplayName("isSandboxViolation returns false for MODULE_IMPORT_EXPORT")
+    void isSandboxViolationReturnsFalseForModuleImportExport() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MODULE_IMPORT_EXPORT);
+      assertFalse(ex.isSandboxViolation(), "MODULE_IMPORT_EXPORT should NOT be sandbox");
+    }
+
+    @Test
+    @DisplayName("isSandboxViolation returns false for MEMORY_ACCESS")
+    void isSandboxViolationReturnsFalseForMemoryAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.MEMORY_ACCESS);
+      assertFalse(ex.isSandboxViolation(), "MEMORY_ACCESS should NOT be sandbox");
+    }
+
+    @Test
+    @DisplayName("isSandboxViolation returns false for FILE_SYSTEM_ACCESS")
+    void isSandboxViolationReturnsFalseForFileSystemAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.FILE_SYSTEM_ACCESS);
+      assertFalse(ex.isSandboxViolation(), "FILE_SYSTEM_ACCESS should NOT be sandbox");
+    }
+
+    @Test
+    @DisplayName("isSandboxViolation returns false for NETWORK_ACCESS")
+    void isSandboxViolationReturnsFalseForNetworkAccess() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.NETWORK_ACCESS);
+      assertFalse(ex.isSandboxViolation(), "NETWORK_ACCESS should NOT be sandbox");
+    }
+
+    @Test
+    @DisplayName("isSandboxViolation returns false for SYSTEM_RESOURCE")
+    void isSandboxViolationReturnsFalseForSystemResource() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", SecurityContext.SYSTEM_RESOURCE);
+      assertFalse(ex.isSandboxViolation(), "SYSTEM_RESOURCE should NOT be sandbox");
+    }
+  }
+
+  @Nested
+  @DisplayName("Violation Category Count Verification Tests")
+  class ViolationCategoryCountVerificationTests {
+
+    @Test
+    @DisplayName("Should have exactly 1 host function context")
+    void shouldHaveExactlyOneHostFunctionContext() {
+      int count = 0;
+      for (final SecurityContext ctx : SecurityContext.values()) {
+        final SecurityException ex = new SecurityException("Error", "p", "a", ctx);
+        if (ex.isHostFunctionViolation()) {
+          count++;
+        }
+      }
+      assertEquals(1, count, "Should have exactly 1 host function context");
+    }
+
+    @Test
+    @DisplayName("Should have exactly 1 WASI capability context")
+    void shouldHaveExactlyOneWasiCapabilityContext() {
+      int count = 0;
+      for (final SecurityContext ctx : SecurityContext.values()) {
+        final SecurityException ex = new SecurityException("Error", "p", "a", ctx);
+        if (ex.isWasiCapabilityViolation()) {
+          count++;
+        }
+      }
+      assertEquals(1, count, "Should have exactly 1 WASI capability context");
+    }
+
+    @Test
+    @DisplayName("Should have exactly 1 file system context")
+    void shouldHaveExactlyOneFileSystemContext() {
+      int count = 0;
+      for (final SecurityContext ctx : SecurityContext.values()) {
+        final SecurityException ex = new SecurityException("Error", "p", "a", ctx);
+        if (ex.isFileSystemViolation()) {
+          count++;
+        }
+      }
+      assertEquals(1, count, "Should have exactly 1 file system context");
+    }
+
+    @Test
+    @DisplayName("Should have exactly 1 network context")
+    void shouldHaveExactlyOneNetworkContext() {
+      int count = 0;
+      for (final SecurityContext ctx : SecurityContext.values()) {
+        final SecurityException ex = new SecurityException("Error", "p", "a", ctx);
+        if (ex.isNetworkViolation()) {
+          count++;
+        }
+      }
+      assertEquals(1, count, "Should have exactly 1 network context");
+    }
+
+    @Test
+    @DisplayName("Should have exactly 1 memory context")
+    void shouldHaveExactlyOneMemoryContext() {
+      int count = 0;
+      for (final SecurityContext ctx : SecurityContext.values()) {
+        final SecurityException ex = new SecurityException("Error", "p", "a", ctx);
+        if (ex.isMemoryViolation()) {
+          count++;
+        }
+      }
+      assertEquals(1, count, "Should have exactly 1 memory context");
+    }
+
+    @Test
+    @DisplayName("Should have exactly 1 sandbox context")
+    void shouldHaveExactlyOneSandboxContext() {
+      int count = 0;
+      for (final SecurityContext ctx : SecurityContext.values()) {
+        final SecurityException ex = new SecurityException("Error", "p", "a", ctx);
+        if (ex.isSandboxViolation()) {
+          count++;
+        }
+      }
+      assertEquals(1, count, "Should have exactly 1 sandbox context");
+    }
+  }
+
+  @Nested
+  @DisplayName("GetSecurityViolationDescription Edge Case Mutation Tests")
+  class GetSecurityViolationDescriptionEdgeCaseMutationTests {
+
+    @Test
+    @DisplayName("Description with null policy should not include policy section")
+    void descriptionWithNullPolicyShouldNotIncludePolicySection() {
+      final SecurityException ex =
+          new SecurityException("Error", null, "action", SecurityContext.HOST_FUNCTION);
+      final String desc = ex.getSecurityViolationDescription();
+      assertFalse(desc.contains("[policy:"), "Should NOT include policy section when null");
+      assertTrue(desc.contains("[action:"), "Should include action section");
+    }
+
+    @Test
+    @DisplayName("Description with null action should not include action section")
+    void descriptionWithNullActionShouldNotIncludeActionSection() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", null, SecurityContext.HOST_FUNCTION);
+      final String desc = ex.getSecurityViolationDescription();
+      assertTrue(desc.contains("[policy:"), "Should include policy section");
+      assertFalse(desc.contains("[action:"), "Should NOT include action section when null");
+    }
+
+    @Test
+    @DisplayName("Description with null resource should not include resource section")
+    void descriptionWithNullResourceShouldNotIncludeResourceSection() {
+      final SecurityException ex =
+          new SecurityException("Error", "policy", "action", null, SecurityContext.HOST_FUNCTION);
+      final String desc = ex.getSecurityViolationDescription();
+      assertFalse(desc.contains("[resource:"), "Should NOT include resource section when null");
+    }
+
+    @Test
+    @DisplayName("Description with all null optional fields should only have context")
+    void descriptionWithAllNullOptionalFieldsShouldOnlyHaveContext() {
+      final SecurityException ex = new SecurityException("Error");
+      final String desc = ex.getSecurityViolationDescription();
+      assertTrue(desc.contains("[context:"), "Should include context section");
+      assertFalse(desc.contains("[policy:"), "Should NOT include policy section");
+      assertFalse(desc.contains("[action:"), "Should NOT include action section");
+      assertFalse(desc.contains("[resource:"), "Should NOT include resource section");
+    }
+
+    @Test
+    @DisplayName("Description with all fields should include all sections")
+    void descriptionWithAllFieldsShouldIncludeAllSections() {
+      final SecurityException ex =
+          new SecurityException(
+              "Error", "test-policy", "test-action", "test-resource", SecurityContext.HOST_FUNCTION);
+      final String desc = ex.getSecurityViolationDescription();
+      assertTrue(desc.contains("[context:"), "Should include context section");
+      assertTrue(desc.contains("[policy: test-policy]"), "Should include policy section");
+      assertTrue(desc.contains("[action: test-action]"), "Should include action section");
+      assertTrue(desc.contains("[resource: test-resource]"), "Should include resource section");
+    }
+
+    @Test
+    @DisplayName("Context name should be lowercase with spaces")
+    void contextNameShouldBeLowercaseWithSpaces() {
+      final SecurityException ex =
+          new SecurityException("Error", "p", "a", SecurityContext.FILE_SYSTEM_ACCESS);
+      final String desc = ex.getSecurityViolationDescription();
+      assertTrue(
+          desc.contains("file system access"),
+          "FILE_SYSTEM_ACCESS should be 'file system access': " + desc);
+    }
+
+    @Test
+    @DisplayName("Each context has unique description prefix")
+    void eachContextHasUniqueDescriptionPrefix() {
+      final java.util.Set<String> contextPrefixes = new java.util.HashSet<>();
+      for (final SecurityContext ctx : SecurityContext.values()) {
+        final SecurityException ex = new SecurityException("Error", null, null, ctx);
+        final String desc = ex.getSecurityViolationDescription();
+        // Extract just the context part
+        final int start = desc.indexOf("[context: ") + 10;
+        final int end = desc.indexOf("]", start);
+        final String contextPart = desc.substring(start, end);
+        assertFalse(
+            contextPrefixes.contains(contextPart),
+            "Context '" + contextPart + "' should be unique for " + ctx.name());
+        contextPrefixes.add(contextPart);
+      }
+      assertEquals(
+          SecurityContext.values().length,
+          contextPrefixes.size(),
+          "All contexts should have unique prefixes");
+    }
+  }
+
+  @Nested
+  @DisplayName("Getter Return Value Mutation Tests")
+  class GetterReturnValueMutationTests {
+
+    @Test
+    @DisplayName("getViolatedPolicy returns exact value set in constructor")
+    void getViolatedPolicyReturnsExactValue() {
+      final String policy = "unique-policy-12345";
+      final SecurityException ex =
+          new SecurityException("Error", policy, "action", SecurityContext.HOST_FUNCTION);
+      assertSame(policy, ex.getViolatedPolicy(), "Should return exact same policy instance");
+    }
+
+    @Test
+    @DisplayName("getAttemptedAction returns exact value set in constructor")
+    void getAttemptedActionReturnsExactValue() {
+      final String action = "unique-action-12345";
+      final SecurityException ex =
+          new SecurityException("Error", "policy", action, SecurityContext.HOST_FUNCTION);
+      assertSame(action, ex.getAttemptedAction(), "Should return exact same action instance");
+    }
+
+    @Test
+    @DisplayName("getDeniedResource returns exact value set in constructor")
+    void getDeniedResourceReturnsExactValue() {
+      final String resource = "unique-resource-12345";
+      final SecurityException ex =
+          new SecurityException(
+              "Error", "policy", "action", resource, SecurityContext.HOST_FUNCTION);
+      assertSame(resource, ex.getDeniedResource(), "Should return exact same resource instance");
+    }
+
+    @Test
+    @DisplayName("getSecurityContext returns exact context set in constructor")
+    void getSecurityContextReturnsExactValue() {
+      for (final SecurityContext ctx : SecurityContext.values()) {
+        final SecurityException ex = new SecurityException("Error", "p", "a", ctx);
+        assertSame(ctx, ex.getSecurityContext(), "Should return same context for " + ctx.name());
+      }
+    }
+
+    @Test
+    @DisplayName("getViolatedPolicy returns null when not provided")
+    void getViolatedPolicyReturnsNullWhenNotProvided() {
+      final SecurityException ex = new SecurityException("Error");
+      assertNull(ex.getViolatedPolicy(), "Should return null when not provided");
+    }
+
+    @Test
+    @DisplayName("getAttemptedAction returns null when not provided")
+    void getAttemptedActionReturnsNullWhenNotProvided() {
+      final SecurityException ex = new SecurityException("Error");
+      assertNull(ex.getAttemptedAction(), "Should return null when not provided");
+    }
+
+    @Test
+    @DisplayName("getDeniedResource returns null when not provided")
+    void getDeniedResourceReturnsNullWhenNotProvided() {
+      final SecurityException ex = new SecurityException("Error");
+      assertNull(ex.getDeniedResource(), "Should return null when not provided");
+    }
+
+    @Test
+    @DisplayName("getCause returns exact cause set in constructor")
+    void getCauseReturnsExactValue() {
+      final Throwable cause = new java.lang.RuntimeException("cause");
+      final SecurityException ex =
+          new SecurityException(
+              "Error", "policy", "action", "resource", SecurityContext.HOST_FUNCTION, cause);
+      assertSame(cause, ex.getCause(), "Should return exact same cause instance");
+    }
+  }
+
+  @Nested
+  @DisplayName("Default Security Context Mutation Tests")
+  class DefaultSecurityContextMutationTests {
+
+    @Test
+    @DisplayName("Simple constructor defaults to SANDBOX_POLICY")
+    void simpleConstructorDefaultsToSandboxPolicy() {
+      final SecurityException ex = new SecurityException("Error");
+      assertEquals(
+          SecurityContext.SANDBOX_POLICY,
+          ex.getSecurityContext(),
+          "Simple constructor should default to SANDBOX_POLICY");
+    }
+
+    @Test
+    @DisplayName("Constructor with cause defaults to SANDBOX_POLICY")
+    void constructorWithCauseDefaultsToSandboxPolicy() {
+      final SecurityException ex =
+          new SecurityException("Error", new java.lang.RuntimeException("cause"));
+      assertEquals(
+          SecurityContext.SANDBOX_POLICY,
+          ex.getSecurityContext(),
+          "Constructor with cause should default to SANDBOX_POLICY");
+    }
+  }
 }
