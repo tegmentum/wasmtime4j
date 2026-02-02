@@ -34,6 +34,7 @@
         <slf4j.version>2.0.9</slf4j.version>
         <logback.version>1.4.11</logback.version>
         <mockito.version>5.15.2</mockito.version>
+        <bytebuddy.version>1.18.4</bytebuddy.version>
         <assertj.version>3.24.2</assertj.version>
 
         <!-- OpenTelemetry versions -->
@@ -189,6 +190,19 @@
                 <version>${mockito.version}</version>
                 <scope>test</scope>
             </dependency>
+            <!-- Explicit ByteBuddy version for Java 26 support -->
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${bytebuddy.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-agent</artifactId>
+                <version>${bytebuddy.version}</version>
+                <scope>test</scope>
+            </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
@@ -326,7 +340,8 @@
                     <version>${maven.surefire.plugin.version}</version>
                     <configuration>
                         <!-- @{argLine} is set by jacoco-maven-plugin -->
-                        <argLine>@{argLine}</argLine>
+                        <!-- net.bytebuddy.experimental enables ByteBuddy for early-access Java versions -->
+                        <argLine>@{argLine} -Dnet.bytebuddy.experimental=true</argLine>
                         <useModulePath>false</useModulePath>
                         <!-- Parallel execution at class level for faster test runs -->
                         <parallel>classes</parallel>

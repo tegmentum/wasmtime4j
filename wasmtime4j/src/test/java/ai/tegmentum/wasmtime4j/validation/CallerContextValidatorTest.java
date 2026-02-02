@@ -21,9 +21,22 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.Function;
+import ai.tegmentum.wasmtime4j.Global;
+import ai.tegmentum.wasmtime4j.Memory;
+import ai.tegmentum.wasmtime4j.Table;
 import ai.tegmentum.wasmtime4j.validation.CallerContextValidator.ValidationConfig;
 import ai.tegmentum.wasmtime4j.validation.CallerContextValidator.ValidationResult;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -347,4 +360,405 @@ class CallerContextValidatorTest {
     }
   }
 
+  @Nested
+  @DisplayName("Validate Method Tests")
+  class ValidateMethodTests {
+
+    private Caller<String> mockCaller;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      mockCaller = mock(Caller.class);
+    }
+
+    @Test
+    @DisplayName("validate with basic config should only validate basic functionality")
+    void validateWithBasicConfigShouldOnlyValidateBasicFunctionality() {
+      when(mockCaller.data()).thenReturn("test data");
+
+      final ValidationConfig config = CallerContextValidator.createBasicConfig();
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Validation should pass with working basic functionality");
+      assertFalse(
+          result.getSuccesses().isEmpty(), "Should have at least one success for basic validation");
+    }
+
+    @Test
+    @DisplayName("validate with comprehensive config should validate all aspects")
+    @SuppressWarnings("unchecked")
+    void validateWithComprehensiveConfigShouldValidateAllAspects() throws Exception {
+      // Setup mock for all validation methods
+      when(mockCaller.data()).thenReturn("test data");
+      when(mockCaller.hasExport(anyString())).thenReturn(true);
+      when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(Memory.class)));
+      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(Function.class)));
+      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(Global.class)));
+      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(Table.class)));
+      when(mockCaller.fuelConsumed()).thenReturn(Optional.of(100L));
+      when(mockCaller.fuelRemaining()).thenReturn(Optional.of(1000L));
+      when(mockCaller.hasEpochDeadline()).thenReturn(true);
+      when(mockCaller.epochDeadline()).thenReturn(Optional.of(System.currentTimeMillis() + 5000));
+      // Error handling - null parameter rejection
+      when(mockCaller.hasExport(null)).thenThrow(new IllegalArgumentException("null not allowed"));
+      when(mockCaller.getMemory(null)).thenThrow(new IllegalArgumentException("null not allowed"));
+      doThrow(new IllegalArgumentException("negative fuel"))
+          .when(mockCaller)
+          .addFuel(-100);
+
+      final ValidationConfig config = CallerContextValidator.createComprehensiveConfig();
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(
+          result.getSuccesses().size() > 5,
+          "Should have multiple successes for comprehensive validation: " + result.getSuccesses());
+    }
+
+    @Test
+    @DisplayName("validate should handle exception during validation")
+    void validateShouldHandleExceptionDuringValidation() {
+      when(mockCaller.data()).thenThrow(new RuntimeException("Simulated failure"));
+
+      final ValidationConfig config = CallerContextValidator.createBasicConfig();
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertFalse(result.isValid(), "Validation should fail when exception occurs");
+      assertTrue(
+          result.getErrors().stream().anyMatch(e -> e.contains("Failed to access caller data")),
+          "Should record exception in errors: " + result.getErrors());
+    }
+  }
+
+  @Nested
+  @DisplayName("Validate Basic Functionality Tests")
+  class ValidateBasicFunctionalityTests {
+
+    @Test
+    @DisplayName("should succeed when data() works")
+    @SuppressWarnings("unchecked")
+    void shouldSucceedWhenDataWorks() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Should be valid");
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("Basic data access")),
+          "Should have basic data access success");
+    }
+
+    @Test
+    @DisplayName("should add error when data() throws")
+    @SuppressWarnings("unchecked")
+    void shouldAddErrorWhenDataThrows() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenThrow(new RuntimeException("data access failed"));
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertFalse(result.isValid(), "Should be invalid when data() throws");
+    }
+  }
+
+  @Nested
+  @DisplayName("Validate Export Access Tests")
+  class ValidateExportAccessTests {
+
+    @Test
+    @DisplayName("should succeed when export methods work")
+    @SuppressWarnings("unchecked")
+    void shouldSucceedWhenExportMethodsWork() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(anyString())).thenReturn(true);
+      when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(Memory.class)));
+      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(Function.class)));
+      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(Global.class)));
+      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(Table.class)));
+
+      final ValidationConfig config = new ValidationConfig(true, true, false, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Should be valid when export access works");
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("hasExport")),
+          "Should have hasExport success");
+    }
+
+    @Test
+    @DisplayName("should add error when export access fails")
+    @SuppressWarnings("unchecked")
+    void shouldAddErrorWhenExportAccessFails() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(anyString())).thenThrow(new RuntimeException("export failed"));
+
+      final ValidationConfig config = new ValidationConfig(true, true, false, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertFalse(result.isValid(), "Should be invalid when export access fails");
+    }
+
+    @Test
+    @DisplayName("should add warnings when specific export types fail")
+    @SuppressWarnings("unchecked")
+    void shouldAddWarningsWhenSpecificExportTypesFail() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(anyString())).thenReturn(false);
+      when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
+      when(mockCaller.getMemory(anyString())).thenThrow(new RuntimeException("no memory"));
+      when(mockCaller.getFunction(anyString())).thenThrow(new RuntimeException("no function"));
+      when(mockCaller.getGlobal(anyString())).thenThrow(new RuntimeException("no global"));
+      when(mockCaller.getTable(anyString())).thenThrow(new RuntimeException("no table"));
+
+      final ValidationConfig config = new ValidationConfig(true, true, false, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Should still be valid (warnings, not errors)");
+      assertFalse(result.getWarnings().isEmpty(), "Should have warnings for failed export types");
+    }
+  }
+
+  @Nested
+  @DisplayName("Validate Fuel Operations Tests")
+  class ValidateFuelOperationsTests {
+
+    @Test
+    @DisplayName("should succeed when fuel operations work")
+    @SuppressWarnings("unchecked")
+    void shouldSucceedWhenFuelOperationsWork() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenReturn(Optional.of(100L));
+      when(mockCaller.fuelRemaining()).thenReturn(Optional.of(1000L), Optional.of(1100L));
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Should be valid when fuel operations work");
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("Fuel")),
+          "Should have fuel-related success");
+    }
+
+    @Test
+    @DisplayName("should add warning when fuel metering not enabled")
+    @SuppressWarnings("unchecked")
+    void shouldAddWarningWhenFuelMeteringNotEnabled() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenReturn(Optional.of(0L));
+      when(mockCaller.fuelRemaining()).thenReturn(Optional.empty());
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Should still be valid");
+      assertTrue(
+          result.getWarnings().stream().anyMatch(s -> s.contains("not enabled")),
+          "Should have warning about fuel metering not enabled");
+    }
+
+    @Test
+    @DisplayName("should add warning when fuel addition not working correctly")
+    @SuppressWarnings("unchecked")
+    void shouldAddWarningWhenFuelAdditionNotWorkingCorrectly() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenReturn(Optional.of(100L));
+      // Return same value before and after addFuel (simulating it not working)
+      when(mockCaller.fuelRemaining()).thenReturn(Optional.of(1000L));
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(
+          result.getWarnings().stream().anyMatch(s -> s.contains("may not be working")),
+          "Should have warning about fuel addition not working correctly");
+    }
+
+    @Test
+    @DisplayName("should handle IllegalArgumentException for input validation")
+    @SuppressWarnings("unchecked")
+    void shouldHandleIllegalArgumentExceptionForInputValidation() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenThrow(new IllegalArgumentException("invalid"));
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "IAE should be treated as proper input validation");
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("properly validate")),
+          "Should note that inputs are properly validated");
+    }
+
+    @Test
+    @DisplayName("should add error when fuel operations fail")
+    @SuppressWarnings("unchecked")
+    void shouldAddErrorWhenFuelOperationsFail() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.fuelConsumed()).thenThrow(new RuntimeException("fuel error"));
+
+      final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertFalse(result.isValid(), "Should be invalid when fuel operations fail");
+    }
+  }
+
+  @Nested
+  @DisplayName("Validate Epoch Operations Tests")
+  class ValidateEpochOperationsTests {
+
+    @Test
+    @DisplayName("should succeed when epoch operations work")
+    @SuppressWarnings("unchecked")
+    void shouldSucceedWhenEpochOperationsWork() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasEpochDeadline()).thenReturn(false, true);
+      when(mockCaller.epochDeadline()).thenReturn(Optional.of(System.currentTimeMillis() + 5000));
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, true, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Should be valid when epoch operations work");
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("Epoch")),
+          "Should have epoch-related success");
+    }
+
+    @Test
+    @DisplayName("should add warning when epoch deadline setting not working")
+    @SuppressWarnings("unchecked")
+    void shouldAddWarningWhenEpochDeadlineSettingNotWorking() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasEpochDeadline()).thenReturn(false);
+      when(mockCaller.epochDeadline()).thenReturn(Optional.empty());
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, true, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(
+          result.getWarnings().stream().anyMatch(s -> s.contains("may not be working")),
+          "Should have warning about epoch deadline not working");
+    }
+
+    @Test
+    @DisplayName("should add error when epoch operations fail")
+    @SuppressWarnings("unchecked")
+    void shouldAddErrorWhenEpochOperationsFail() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasEpochDeadline()).thenThrow(new RuntimeException("epoch error"));
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, true, false);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertFalse(result.isValid(), "Should be invalid when epoch operations fail");
+    }
+  }
+
+  @Nested
+  @DisplayName("Validate Error Handling Tests")
+  class ValidateErrorHandlingTests {
+
+    @Test
+    @DisplayName("should succeed when null parameters are properly rejected")
+    @SuppressWarnings("unchecked")
+    void shouldSucceedWhenNullParametersProperlyRejected() throws Exception {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenThrow(new IllegalArgumentException("null"));
+      when(mockCaller.getMemory(null)).thenThrow(new IllegalArgumentException("null"));
+      doThrow(new IllegalArgumentException("negative")).when(mockCaller).addFuel(-100);
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Should be valid when error handling works");
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("rejects null")),
+          "Should note proper null rejection");
+      assertTrue(
+          result.getSuccesses().stream().anyMatch(s -> s.contains("rejects negative")),
+          "Should note proper negative value rejection");
+    }
+
+    @Test
+    @DisplayName("should add error when hasExport accepts null")
+    @SuppressWarnings("unchecked")
+    void shouldAddErrorWhenHasExportAcceptsNull() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenReturn(false); // Should throw, not return
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertFalse(result.isValid(), "Should be invalid when hasExport accepts null");
+      assertTrue(
+          result.getErrors().stream().anyMatch(e -> e.contains("should reject null")),
+          "Should have error about accepting null");
+    }
+
+    @Test
+    @DisplayName("should add error when getMemory accepts null")
+    @SuppressWarnings("unchecked")
+    void shouldAddErrorWhenGetMemoryAcceptsNull() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenThrow(new IllegalArgumentException("null"));
+      when(mockCaller.getMemory(null)).thenReturn(Optional.empty()); // Should throw
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertFalse(result.isValid(), "Should be invalid when getMemory accepts null");
+    }
+
+    @Test
+    @DisplayName("should add error when addFuel accepts negative values")
+    @SuppressWarnings("unchecked")
+    void shouldAddErrorWhenAddFuelAcceptsNegativeValues() {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenThrow(new IllegalArgumentException("null"));
+      when(mockCaller.getMemory(null)).thenThrow(new IllegalArgumentException("null"));
+      // addFuel doesn't throw for negative - should be an error
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertFalse(result.isValid(), "Should be invalid when addFuel accepts negative");
+    }
+
+    @Test
+    @DisplayName("should add warnings for non-IAE exceptions")
+    @SuppressWarnings("unchecked")
+    void shouldAddWarningsForNonIaeExceptions() throws Exception {
+      final Caller<String> mockCaller = mock(Caller.class);
+      when(mockCaller.data()).thenReturn("test");
+      when(mockCaller.hasExport(null)).thenThrow(new NullPointerException("null"));
+      when(mockCaller.getMemory(null)).thenThrow(new NullPointerException("null"));
+      doThrow(new RuntimeException("error")).when(mockCaller).addFuel(-100);
+
+      final ValidationConfig config = new ValidationConfig(true, false, false, false, true);
+      final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
+
+      assertTrue(result.isValid(), "Non-IAE exceptions should result in warnings, not errors");
+      assertFalse(result.getWarnings().isEmpty(), "Should have warnings for non-IAE handling");
+    }
+  }
 }
