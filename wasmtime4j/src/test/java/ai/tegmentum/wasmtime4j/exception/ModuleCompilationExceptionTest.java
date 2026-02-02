@@ -438,4 +438,496 @@ class ModuleCompilationExceptionTest {
       }
     }
   }
+
+  @Nested
+  @DisplayName("Error Category Boolean Return Mutation Tests")
+  class ErrorCategoryBooleanReturnMutationTests {
+
+    @Test
+    @DisplayName("isResourceError should return false for all non-resource types")
+    void isResourceErrorShouldReturnFalseForAllNonResourceTypes() {
+      final CompilationErrorType[] nonResourceTypes = {
+        CompilationErrorType.FUNCTION_TOO_COMPLEX,
+        CompilationErrorType.UNSUPPORTED_INSTRUCTION,
+        CompilationErrorType.CODE_GENERATION_FAILED,
+        CompilationErrorType.OPTIMIZATION_FAILED,
+        CompilationErrorType.REGISTER_ALLOCATION_FAILED,
+        CompilationErrorType.CFG_CONSTRUCTION_FAILED,
+        CompilationErrorType.UNSUPPORTED_TARGET,
+        CompilationErrorType.COMPILER_INTERNAL_ERROR,
+        CompilationErrorType.FEATURE_CONFIGURATION_ERROR,
+        CompilationErrorType.UNKNOWN
+      };
+
+      for (CompilationErrorType type : nonResourceTypes) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(type, "Error");
+        assertFalse(
+            exception.isResourceError(),
+            type.name() + " should NOT be a resource error");
+      }
+    }
+
+    @Test
+    @DisplayName("Should have exactly 3 resource error types")
+    void shouldHaveExactly3ResourceErrorTypes() {
+      int count = 0;
+      for (CompilationErrorType type : CompilationErrorType.values()) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(type, "Error");
+        if (exception.isResourceError()) {
+          count++;
+        }
+      }
+      assertEquals(
+          3,
+          count,
+          "Should have exactly 3 resource error types: OUT_OF_MEMORY, TIMEOUT, RESOURCE_LIMIT_EXCEEDED");
+    }
+
+    @Test
+    @DisplayName("isComplexityError should return false for all non-complexity types")
+    void isComplexityErrorShouldReturnFalseForAllNonComplexityTypes() {
+      final CompilationErrorType[] nonComplexityTypes = {
+        CompilationErrorType.OUT_OF_MEMORY,
+        CompilationErrorType.TIMEOUT,
+        CompilationErrorType.UNSUPPORTED_INSTRUCTION,
+        CompilationErrorType.CODE_GENERATION_FAILED,
+        CompilationErrorType.OPTIMIZATION_FAILED,
+        CompilationErrorType.UNSUPPORTED_TARGET,
+        CompilationErrorType.COMPILER_INTERNAL_ERROR,
+        CompilationErrorType.RESOURCE_LIMIT_EXCEEDED,
+        CompilationErrorType.FEATURE_CONFIGURATION_ERROR,
+        CompilationErrorType.UNKNOWN
+      };
+
+      for (CompilationErrorType type : nonComplexityTypes) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(type, "Error");
+        assertFalse(
+            exception.isComplexityError(),
+            type.name() + " should NOT be a complexity error");
+      }
+    }
+
+    @Test
+    @DisplayName("Should have exactly 3 complexity error types")
+    void shouldHaveExactly3ComplexityErrorTypes() {
+      int count = 0;
+      for (CompilationErrorType type : CompilationErrorType.values()) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(type, "Error");
+        if (exception.isComplexityError()) {
+          count++;
+        }
+      }
+      assertEquals(
+          3,
+          count,
+          "Should have exactly 3 complexity error types: "
+              + "FUNCTION_TOO_COMPLEX, CFG_CONSTRUCTION_FAILED, REGISTER_ALLOCATION_FAILED");
+    }
+
+    @Test
+    @DisplayName("isFeatureError should return false for all non-feature types")
+    void isFeatureErrorShouldReturnFalseForAllNonFeatureTypes() {
+      for (CompilationErrorType type : CompilationErrorType.values()) {
+        if (type != CompilationErrorType.UNSUPPORTED_INSTRUCTION
+            && type != CompilationErrorType.UNSUPPORTED_TARGET
+            && type != CompilationErrorType.FEATURE_CONFIGURATION_ERROR) {
+          final ModuleCompilationException exception =
+              new ModuleCompilationException(type, "Error");
+          assertFalse(
+              exception.isFeatureError(),
+              type.name() + " should NOT be a feature error");
+        }
+      }
+    }
+
+    @Test
+    @DisplayName("Should have exactly 3 feature error types")
+    void shouldHaveExactly3FeatureErrorTypes() {
+      int count = 0;
+      for (CompilationErrorType type : CompilationErrorType.values()) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(type, "Error");
+        if (exception.isFeatureError()) {
+          count++;
+        }
+      }
+      assertEquals(
+          3,
+          count,
+          "Should have exactly 3 feature error types: "
+              + "UNSUPPORTED_INSTRUCTION, UNSUPPORTED_TARGET, FEATURE_CONFIGURATION_ERROR");
+    }
+
+    @Test
+    @DisplayName("isInternalError should return false for all non-internal types")
+    void isInternalErrorShouldReturnFalseForAllNonInternalTypes() {
+      for (CompilationErrorType type : CompilationErrorType.values()) {
+        if (type != CompilationErrorType.COMPILER_INTERNAL_ERROR
+            && type != CompilationErrorType.CODE_GENERATION_FAILED
+            && type != CompilationErrorType.OPTIMIZATION_FAILED) {
+          final ModuleCompilationException exception =
+              new ModuleCompilationException(type, "Error");
+          assertFalse(
+              exception.isInternalError(),
+              type.name() + " should NOT be an internal error");
+        }
+      }
+    }
+
+    @Test
+    @DisplayName("Should have exactly 3 internal error types")
+    void shouldHaveExactly3InternalErrorTypes() {
+      int count = 0;
+      for (CompilationErrorType type : CompilationErrorType.values()) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(type, "Error");
+        if (exception.isInternalError()) {
+          count++;
+        }
+      }
+      assertEquals(
+          3,
+          count,
+          "Should have exactly 3 internal error types: "
+              + "COMPILER_INTERNAL_ERROR, CODE_GENERATION_FAILED, OPTIMIZATION_FAILED");
+    }
+  }
+
+  @Nested
+  @DisplayName("formatMessage Edge Case Mutation Tests")
+  class FormatMessageEdgeCaseMutationTests {
+
+    @Test
+    @DisplayName("Message should not include phase when phase is UNKNOWN")
+    void messageShouldNotIncludePhaseWhenUnknown() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              CompilationErrorType.OUT_OF_MEMORY,
+              "Error message",
+              CompilationPhase.UNKNOWN,
+              null,
+              null,
+              null);
+
+      assertFalse(
+          exception.getMessage().contains("(phase:"),
+          "Message should not contain phase when UNKNOWN");
+    }
+
+    @Test
+    @DisplayName("Message should include phase when phase is not UNKNOWN")
+    void messageShouldIncludePhaseWhenNotUnknown() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              CompilationErrorType.OPTIMIZATION_FAILED,
+              "Error message",
+              CompilationPhase.OPTIMIZATION,
+              null,
+              null,
+              null);
+
+      assertTrue(
+          exception.getMessage().contains("(phase: Optimization)"),
+          "Message should contain phase when not UNKNOWN");
+    }
+
+    @Test
+    @DisplayName("Message should not include function when functionName is empty")
+    void messageShouldNotIncludeFunctionWhenEmpty() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              CompilationErrorType.UNKNOWN,
+              "Error message",
+              CompilationPhase.UNKNOWN,
+              "",
+              null,
+              null);
+
+      assertFalse(
+          exception.getMessage().contains("(function:"),
+          "Message should not contain function when empty");
+    }
+
+    @Test
+    @DisplayName("Message should include function index when functionName is null")
+    void messageShouldIncludeFunctionIndexWhenNameIsNull() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              CompilationErrorType.FUNCTION_TOO_COMPLEX,
+              "Error message",
+              CompilationPhase.CODE_GENERATION,
+              null,
+              42,
+              null);
+
+      assertTrue(
+          exception.getMessage().contains("(function index: 42)"),
+          "Message should contain function index when name is null");
+      assertFalse(
+          exception.getMessage().contains("(function: "),
+          "Message should not contain function name marker");
+    }
+
+    @Test
+    @DisplayName("Message should prefer functionName over functionIndex")
+    void messageShouldPreferFunctionNameOverIndex() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              CompilationErrorType.UNKNOWN,
+              "Error message",
+              CompilationPhase.UNKNOWN,
+              "my_func",
+              100,
+              null);
+
+      assertTrue(
+          exception.getMessage().contains("(function: my_func)"),
+          "Message should contain function name");
+      assertFalse(
+          exception.getMessage().contains("(function index:"),
+          "Message should not contain function index when name is provided");
+    }
+
+    @Test
+    @DisplayName("Message with all optional fields should contain all sections")
+    void messageWithAllFieldsShouldContainAllSections() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              CompilationErrorType.REGISTER_ALLOCATION_FAILED,
+              "Test error",
+              CompilationPhase.REGISTER_ALLOCATION,
+              "complex_func",
+              99,
+              null);
+
+      final String message = exception.getMessage();
+      assertTrue(
+          message.contains("[REGISTER_ALLOCATION_FAILED]"),
+          "Should contain error type");
+      assertTrue(message.contains("Test error"), "Should contain base message");
+      assertTrue(message.contains("(phase: Register Allocation)"), "Should contain phase");
+      assertTrue(
+          message.contains("(function: complex_func)"),
+          "Should contain function name");
+    }
+
+    @Test
+    @DisplayName("Message sections should appear in correct order")
+    void messageSectionsShouldAppearInCorrectOrder() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              CompilationErrorType.CFG_CONSTRUCTION_FAILED,
+              "Control flow error",
+              CompilationPhase.CFG_CONSTRUCTION,
+              "flow_func",
+              null,
+              null);
+
+      final String message = exception.getMessage();
+      final int errorTypeIndex = message.indexOf("[CFG_CONSTRUCTION_FAILED]");
+      final int baseMessageIndex = message.indexOf("Control flow error");
+      final int phaseIndex = message.indexOf("(phase:");
+      final int functionIndex = message.indexOf("(function:");
+
+      assertTrue(errorTypeIndex < baseMessageIndex, "Error type should come before message");
+      assertTrue(baseMessageIndex < phaseIndex, "Message should come before phase");
+      assertTrue(phaseIndex < functionIndex, "Phase should come before function");
+    }
+  }
+
+  @Nested
+  @DisplayName("generateRecoverySuggestion Mutation Tests")
+  class GenerateRecoverySuggestionMutationTests {
+
+    @Test
+    @DisplayName("All error types should have distinct recovery suggestions")
+    void allErrorTypesShouldHaveDistinctRecoverySuggestions() {
+      final java.util.Set<String> suggestions = new java.util.HashSet<>();
+      for (CompilationErrorType type : CompilationErrorType.values()) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(type, "Error");
+        final String suggestion = exception.getRecoverySuggestion();
+        assertNotNull(suggestion, type.name() + " should have a recovery suggestion");
+        assertFalse(suggestion.isEmpty(), type.name() + " should have non-empty suggestion");
+        // UNKNOWN and default share the same suggestion
+        if (type != CompilationErrorType.UNKNOWN) {
+          assertTrue(
+              suggestions.add(suggestion),
+              type.name() + " should have distinct suggestion but got duplicate: " + suggestion);
+        }
+      }
+    }
+
+    @Test
+    @DisplayName("OUT_OF_MEMORY should suggest increasing heap or splitting module")
+    void outOfMemoryShouldSuggestHeapOrSplit() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(CompilationErrorType.OUT_OF_MEMORY, "Error");
+      final String suggestion = exception.getRecoverySuggestion().toLowerCase();
+      assertTrue(
+          suggestion.contains("heap") || suggestion.contains("split"),
+          "OUT_OF_MEMORY recovery should mention heap or split");
+    }
+
+    @Test
+    @DisplayName("TIMEOUT should suggest increasing timeout or simplifying")
+    void timeoutShouldSuggestTimeoutOrSimplify() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(CompilationErrorType.TIMEOUT, "Error");
+      final String suggestion = exception.getRecoverySuggestion().toLowerCase();
+      assertTrue(
+          suggestion.contains("timeout") || suggestion.contains("simplify"),
+          "TIMEOUT recovery should mention timeout or simplify");
+    }
+
+    @Test
+    @DisplayName("FUNCTION_TOO_COMPLEX should suggest simplifying function")
+    void functionTooComplexShouldSuggestSimplify() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(CompilationErrorType.FUNCTION_TOO_COMPLEX, "Error");
+      final String suggestion = exception.getRecoverySuggestion().toLowerCase();
+      assertTrue(
+          suggestion.contains("simplify") || suggestion.contains("split"),
+          "FUNCTION_TOO_COMPLEX recovery should mention simplify or split");
+    }
+
+    @Test
+    @DisplayName("COMPILER_INTERNAL_ERROR should suggest reporting issue")
+    void compilerInternalErrorShouldSuggestReport() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(CompilationErrorType.COMPILER_INTERNAL_ERROR, "Error");
+      final String suggestion = exception.getRecoverySuggestion().toLowerCase();
+      assertTrue(
+          suggestion.contains("report") || suggestion.contains("maintainer"),
+          "COMPILER_INTERNAL_ERROR recovery should mention reporting");
+    }
+
+    @Test
+    @DisplayName("Each specific error type should have contextual suggestion")
+    void eachErrorTypeShouldHaveContextualSuggestion() {
+      final java.util.Map<CompilationErrorType, String[]> expectedKeywords =
+          new java.util.HashMap<>();
+      expectedKeywords.put(CompilationErrorType.OUT_OF_MEMORY, new String[] {"heap", "split"});
+      expectedKeywords.put(CompilationErrorType.TIMEOUT, new String[] {"timeout", "simplify"});
+      expectedKeywords.put(
+          CompilationErrorType.FUNCTION_TOO_COMPLEX, new String[] {"simplify", "split", "smaller"});
+      expectedKeywords.put(
+          CompilationErrorType.UNSUPPORTED_INSTRUCTION, new String[] {"feature", "instruction"});
+      expectedKeywords.put(
+          CompilationErrorType.CODE_GENERATION_FAILED, new String[] {"optimization", "target"});
+      expectedKeywords.put(
+          CompilationErrorType.OPTIMIZATION_FAILED, new String[] {"optimization", "disable"});
+      expectedKeywords.put(
+          CompilationErrorType.REGISTER_ALLOCATION_FAILED, new String[] {"complexity", "optimization"});
+      expectedKeywords.put(
+          CompilationErrorType.CFG_CONSTRUCTION_FAILED, new String[] {"control flow", "simplify"});
+      expectedKeywords.put(
+          CompilationErrorType.UNSUPPORTED_TARGET, new String[] {"target", "architecture"});
+      expectedKeywords.put(
+          CompilationErrorType.COMPILER_INTERNAL_ERROR, new String[] {"report", "maintainer"});
+      expectedKeywords.put(
+          CompilationErrorType.RESOURCE_LIMIT_EXCEEDED, new String[] {"limit", "size"});
+      expectedKeywords.put(
+          CompilationErrorType.FEATURE_CONFIGURATION_ERROR, new String[] {"configuration", "feature"});
+      expectedKeywords.put(
+          CompilationErrorType.UNKNOWN, new String[] {"complexity", "configuration"});
+
+      for (java.util.Map.Entry<CompilationErrorType, String[]> entry :
+          expectedKeywords.entrySet()) {
+        final CompilationErrorType type = entry.getKey();
+        final String[] keywords = entry.getValue();
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(type, "Error");
+        final String suggestion = exception.getRecoverySuggestion().toLowerCase();
+
+        boolean hasKeyword = false;
+        for (String keyword : keywords) {
+          if (suggestion.contains(keyword.toLowerCase())) {
+            hasKeyword = true;
+            break;
+          }
+        }
+        assertTrue(
+            hasKeyword,
+            type.name()
+                + " recovery suggestion should contain one of "
+                + java.util.Arrays.toString(keywords)
+                + " but was: "
+                + suggestion);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Getter Return Value Mutation Tests")
+  class GetterReturnValueMutationTests {
+
+    @Test
+    @DisplayName("getFunctionName should return exact name passed to constructor")
+    void getFunctionNameShouldReturnExactName() {
+      final String[] testNames = {"func1", "my_function", "complex_name_123", "", null};
+      for (String name : testNames) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(
+                CompilationErrorType.UNKNOWN,
+                "Error",
+                CompilationPhase.UNKNOWN,
+                name,
+                null,
+                null);
+        assertEquals(
+            name,
+            exception.getFunctionName(),
+            "getFunctionName should return: " + name);
+      }
+    }
+
+    @Test
+    @DisplayName("getFunctionIndex should return exact index passed to constructor")
+    void getFunctionIndexShouldReturnExactIndex() {
+      final Integer[] testIndices = {null, 0, 1, 100, Integer.MAX_VALUE};
+      for (Integer index : testIndices) {
+        final ModuleCompilationException exception =
+            new ModuleCompilationException(
+                CompilationErrorType.UNKNOWN,
+                "Error",
+                CompilationPhase.UNKNOWN,
+                null,
+                index,
+                null);
+        assertEquals(
+            index,
+            exception.getFunctionIndex(),
+            "getFunctionIndex should return: " + index);
+      }
+    }
+
+    @Test
+    @DisplayName("getPhase should return UNKNOWN when null is passed")
+    void getPhaseShouldReturnUnknownWhenNullPassed() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              CompilationErrorType.UNKNOWN, "Error", null, null, null, null);
+      assertEquals(
+          CompilationPhase.UNKNOWN,
+          exception.getPhase(),
+          "getPhase should return UNKNOWN when null was passed");
+    }
+
+    @Test
+    @DisplayName("getErrorType should return UNKNOWN when null is passed")
+    void getErrorTypeShouldReturnUnknownWhenNullPassed() {
+      final ModuleCompilationException exception =
+          new ModuleCompilationException(
+              null, "Error", CompilationPhase.UNKNOWN, null, null, null);
+      assertEquals(
+          CompilationErrorType.UNKNOWN,
+          exception.getErrorType(),
+          "getErrorType should return UNKNOWN when null was passed");
+    }
+  }
 }
