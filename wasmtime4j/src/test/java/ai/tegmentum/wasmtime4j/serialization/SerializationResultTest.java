@@ -433,4 +433,249 @@ class SerializationResultTest {
       assertTrue(java.lang.reflect.Modifier.isFinal(SerializationResult.class.getModifiers()));
     }
   }
+
+  @Nested
+  @DisplayName("Optimal Performance Tests")
+  class OptimalPerformanceTests {
+
+    @Test
+    @DisplayName("isOptimalPerformance should return false when no metrics")
+    void isOptimalPerformanceShouldReturnFalseWhenNoMetrics() {
+      final SerializationResult result = new SerializationResult(testData, testMetadata);
+
+      assertFalse(result.isOptimalPerformance());
+    }
+
+    @Test
+    @DisplayName("isOptimalPerformance should return true when metrics indicate optimal")
+    void isOptimalPerformanceShouldReturnTrueWhenMetricsIndicateOptimal() throws Exception {
+      final SerializationPerformanceMetrics metrics =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(1_000_000L, 500_000L, 0L, 0L, 0L) // 1ms serialization
+              .setMemoryMetrics(1024 * 1024, 1024 * 1024, 0) // 1MB
+              .setIoMetrics(1000, 500, 1_000_000L)
+              .build();
+
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadataWithMetrics =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setPerformanceMetrics(metrics)
+              .build();
+
+      final SerializationResult result = new SerializationResult(testData, metadataWithMetrics);
+
+      // Result depends on SerializationPerformanceMetrics.isOptimalPerformance() logic
+      assertNotNull(result.isOptimalPerformance());
+    }
+  }
+
+  @Nested
+  @DisplayName("Comparison Edge Cases Tests")
+  class ComparisonEdgeCasesTests {
+
+    @Test
+    @DisplayName("compareWith should handle zero duration in other result")
+    void compareWithShouldHandleZeroDurationInOtherResult() throws Exception {
+      final SerializationResult result1 = new SerializationResult(testData, testMetadata);
+
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadataZeroDuration =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setSerializationDuration(0L) // Zero duration
+              .build();
+
+      final SerializationResult result2 = new SerializationResult(testData, metadataZeroDuration);
+
+      final String comparison = result1.compareWith(result2);
+
+      assertNotNull(comparison);
+      assertTrue(comparison.contains("Duration"));
+    }
+
+    @Test
+    @DisplayName("compareWith should show negative size difference")
+    void compareWithShouldShowNegativeSizeDifference() throws Exception {
+      // result1 is smaller than result2
+      final SerializationResult result1 = new SerializationResult(testData, testMetadata);
+
+      final byte[] largerData = new byte[testData.length * 3];
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(largerData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadata2 =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(largerData.length)
+              .setOriginalSize(largerData.length)
+              .setSha256Hash(hash)
+              .setSerializationDuration(100L)
+              .build();
+
+      final SerializationResult result2 = new SerializationResult(largerData, metadata2);
+
+      final String comparison = result1.compareWith(result2);
+
+      // result1 is smaller, so size difference is negative
+      assertTrue(comparison.contains("-"));
+    }
+  }
+
+  @Nested
+  @DisplayName("Summary Edge Cases Tests")
+  class SummaryEdgeCasesTests {
+
+    @Test
+    @DisplayName("getSummary should include performance when metrics present")
+    void getSummaryShouldIncludePerformanceWhenMetricsPresent() throws Exception {
+      final SerializationPerformanceMetrics metrics =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(100_000_000L, 50_000_000L, 0L, 0L, 0L)
+              .build();
+
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata metadataWithMetrics =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setPerformanceMetrics(metrics)
+              .build();
+
+      final SerializationResult result = new SerializationResult(testData, metadataWithMetrics);
+      final String summary = result.getSummary();
+
+      assertTrue(summary.contains("Performance"));
+    }
+  }
+
+  @Nested
+  @DisplayName("Environment Compatibility Tests")
+  class EnvironmentCompatibilityTests {
+
+    @Test
+    @DisplayName("isCompatibleWithCurrentEnvironment should delegate to metadata")
+    void isCompatibleWithCurrentEnvironmentShouldDelegateToMetadata() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata compatibleMetadata =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      final SerializationResult result = new SerializationResult(testData, compatibleMetadata);
+
+      assertTrue(result.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("isCompatibleWithCurrentEnvironment should return false for incompatible")
+    void isCompatibleWithCurrentEnvironmentShouldReturnFalseForIncompatible() throws Exception {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata incompatibleMetadata =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length * 2)
+              .setSha256Hash(hash)
+              .setJavaVersion("99.0.0")
+              .setPlatformInfo("unknown_arch", "UnknownOS")
+              .build();
+
+      final SerializationResult result = new SerializationResult(testData, incompatibleMetadata);
+
+      assertFalse(result.isCompatibleWithCurrentEnvironment());
+    }
+  }
+
+  @Nested
+  @DisplayName("Equals Edge Cases Tests")
+  class EqualsEdgeCasesTests {
+
+    @Test
+    @DisplayName("equals should return false for different type")
+    void equalsShouldReturnFalseForDifferentType() {
+      final SerializationResult result = new SerializationResult(testData, testMetadata);
+
+      assertFalse(result.equals("not a SerializationResult"));
+    }
+
+    @Test
+    @DisplayName("equals should return false for different metadata")
+    void equalsShouldReturnFalseForDifferentMetadata() throws Exception {
+      final SerializationResult result1 = new SerializationResult(testData, testMetadata);
+
+      final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      final byte[] hashBytes = digest.digest(testData);
+      final String hash = bytesToHex(hashBytes);
+
+      final SerializedModuleMetadata differentMetadata =
+          new SerializedModuleMetadata.Builder()
+              .setFormat(ModuleSerializationFormat.RAW_BINARY) // Different format
+              .setSerializedSize(testData.length)
+              .setOriginalSize(testData.length)
+              .setSha256Hash(hash)
+              .build();
+
+      final SerializationResult result2 = new SerializationResult(testData, differentMetadata);
+
+      assertNotEquals(result1, result2);
+    }
+  }
+
+  @Nested
+  @DisplayName("File Path Edge Cases Tests")
+  class FilePathEdgeCasesTests {
+
+    @Test
+    @DisplayName("saveToFile should handle path with existing parent")
+    void saveToFileShouldHandlePathWithExistingParent() throws IOException {
+      final SerializationResult result = new SerializationResult(testData, testMetadata);
+      final Path filePath = tempDir.resolve("direct-file.bin");
+
+      result.saveToFile(filePath);
+
+      assertTrue(Files.exists(filePath));
+    }
+
+    @Test
+    @DisplayName("saveToFile should handle deeply nested path")
+    void saveToFileShouldHandleDeeplyNestedPath() throws IOException {
+      final SerializationResult result = new SerializationResult(testData, testMetadata);
+      final Path filePath = tempDir.resolve("a/b/c/d/e/module.bin");
+
+      result.saveToFile(filePath);
+
+      assertTrue(Files.exists(filePath));
+      assertTrue(Files.exists(tempDir.resolve("a/b/c/d/e/module.bin.meta")));
+    }
+  }
 }

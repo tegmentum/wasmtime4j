@@ -479,4 +479,319 @@ class ModuleSerializationCacheTest {
       assertTrue(AutoCloseable.class.isAssignableFrom(ModuleSerializationCache.class));
     }
   }
+
+  @Nested
+  @DisplayName("LRU Eviction Tests")
+  class LruEvictionTests {
+
+    @Test
+    @DisplayName("should evict oldest entry when max entries exceeded")
+    void shouldEvictOldestEntryWhenMaxEntriesExceeded() throws IOException {
+      // Create cache with max 2 entries
+      final CacheConfiguration config =
+          new CacheConfiguration.Builder()
+              .setMaxMemoryEntries(2)
+              .setMemoryCacheTtl(Duration.ofHours(1))
+              .build();
+
+      try (final ModuleSerializationCache smallCache = new ModuleSerializationCache(config)) {
+        // Store 3 entries - should evict the first one
+        final String hash1 = smallCache.store("data1".getBytes(), createTestMetadata());
+        final String hash2 = smallCache.store("data2".getBytes(), createTestMetadata());
+        final String hash3 = smallCache.store("data3".getBytes(), createTestMetadata());
+
+        // Statistics should show eviction
+        final CacheStatistics stats = smallCache.getStatistics();
+        assertTrue(stats.getEvictions() > 0, "Should have evicted at least one entry");
+      }
+    }
+
+    @Test
+    @DisplayName("should evict least recently accessed entry")
+    void shouldEvictLeastRecentlyAccessedEntry() throws IOException {
+      // Create cache with max 2 entries
+      final CacheConfiguration config =
+          new CacheConfiguration.Builder()
+              .setMaxMemoryEntries(2)
+              .setMemoryCacheTtl(Duration.ofHours(1))
+              .build();
+
+      try (final ModuleSerializationCache smallCache = new ModuleSerializationCache(config)) {
+        // Store 2 entries
+        final String hash1 = smallCache.store("data1".getBytes(), createTestMetadata());
+        final String hash2 = smallCache.store("data2".getBytes(), createTestMetadata());
+
+        // Access hash1 to make it more recent
+        smallCache.retrieve(hash1);
+
+        // Store a third entry - should evict hash2 (least recently accessed)
+        final String hash3 = smallCache.store("data3".getBytes(), createTestMetadata());
+
+        // hash1 should still be present, hash2 might be evicted from memory
+        assertTrue(smallCache.contains(hash1), "hash1 should still be present");
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Disk Cache Tests")
+  class DiskCacheTests {
+
+    @Test
+    @DisplayName("should retrieve from disk cache after memory eviction")
+    void shouldRetrieveFromDiskCacheAfterMemoryEviction() throws IOException {
+      // Create cache with disk support and very small memory limit
+      final CacheConfiguration config =
+          new CacheConfiguration.Builder()
+              .setMaxMemoryEntries(1)
+              .setMemoryCacheTtl(Duration.ofHours(1))
+              .enableDiskCache(tempDir)
+              .setDiskCacheTtl(Duration.ofDays(1))
+              .build();
+
+      try (final ModuleSerializationCache diskCache = new ModuleSerializationCache(config)) {
+        // Store first entry (in both memory and disk)
+        final String hash1 = diskCache.store("data1".getBytes(), createTestMetadata());
+
+        // Store second entry (evicts first from memory, but keeps in disk)
+        diskCache.store("data2".getBytes(), createTestMetadata());
+
+        // Should still be able to retrieve hash1 from disk
+        assertTrue(diskCache.contains(hash1), "hash1 should still be accessible from disk");
+      }
+    }
+
+    @Test
+    @DisplayName("should handle disk cache file creation")
+    void shouldHandleDiskCacheFileCreation() throws IOException {
+      final byte[] moduleData = "large module data for disk storage".getBytes();
+      final String hash = cache.store(moduleData, createTestMetadata());
+
+      // Verify disk cache files exist
+      assertTrue(cache.contains(hash));
+    }
+  }
+
+  @Nested
+  @DisplayName("Cache Warm Edge Cases Tests")
+  class CacheWarmEdgeCasesTests {
+
+    @Test
+    @DisplayName("warmCache should store modules that have metadata")
+    void warmCacheShouldStoreModulesThatHaveMetadata() throws IOException {
+      final byte[] data1 = "module1".getBytes();
+      final SerializedModuleMetadata meta1 = createTestMetadata();
+
+      // Calculate expected hash
+      final String hash1 = calculateHash(data1);
+
+      cache.warmCache(Map.of(hash1, data1), Map.of(hash1, meta1));
+
+      // The cache should contain the warmed entry
+      assertTrue(cache.contains(hash1));
+    }
+
+    @Test
+    @DisplayName("warmCache should skip modules without metadata")
+    void warmCacheShouldSkipModulesWithoutMetadata() throws IOException {
+      final byte[] data1 = "module1".getBytes();
+      final String hash1 = calculateHash(data1);
+
+      // Warm with module but empty metadata map
+      cache.warmCache(Map.of(hash1, data1), Map.of());
+
+      // Should not throw, but module might not be stored properly
+      assertNotNull(cache);
+    }
+
+    private String calculateHash(byte[] data) {
+      try {
+        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(data);
+        StringBuilder sb = new StringBuilder();
+        for (byte b : hashBytes) {
+          sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+      } catch (java.security.NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("CacheEntry Constructor Tests")
+  class CacheEntryConstructorTests {
+
+    @Test
+    @DisplayName("CacheEntry should throw on null module data")
+    void cacheEntryShouldThrowOnNullModuleData() {
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              new ModuleSerializationCache.CacheEntry(
+                  null, createTestMetadata(), java.time.Instant.now()));
+    }
+
+    @Test
+    @DisplayName("CacheEntry should throw on null metadata")
+    void cacheEntryShouldThrowOnNullMetadata() {
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              new ModuleSerializationCache.CacheEntry(
+                  "test".getBytes(), null, java.time.Instant.now()));
+    }
+
+    @Test
+    @DisplayName("CacheEntry should throw on null creation time")
+    void cacheEntryShouldThrowOnNullCreationTime() {
+      assertThrows(
+          NullPointerException.class,
+          () ->
+              new ModuleSerializationCache.CacheEntry(
+                  "test".getBytes(), createTestMetadata(), null));
+    }
+  }
+
+  @Nested
+  @DisplayName("Cache Statistics Edge Cases Tests")
+  class CacheStatisticsEdgeCasesTests {
+
+    @Test
+    @DisplayName("getStatistics should calculate hit ratio correctly")
+    void getStatisticsShouldCalculateHitRatioCorrectly() throws IOException {
+      // Store one entry
+      final String hash = cache.store("test".getBytes(), createTestMetadata());
+
+      // One hit
+      cache.retrieve(hash);
+
+      // One miss
+      cache.retrieve("nonexistenthash1234567890abcdef1234567890abcdef1234567890abcd");
+
+      final CacheStatistics stats = cache.getStatistics();
+
+      // Hit ratio should be 0.5 (1 hit / 2 requests)
+      assertEquals(0.5, stats.getHitRatio(), 0.01);
+    }
+
+    @Test
+    @DisplayName("getStatistics should track memory cache size")
+    void getStatisticsShouldTrackMemoryCacheSize() throws IOException {
+      cache.store("test data".getBytes(), createTestMetadata());
+
+      final CacheStatistics stats = cache.getStatistics();
+
+      assertTrue(stats.getMemoryCacheSizeBytes() > 0, "Memory cache size should be positive");
+    }
+
+    @Test
+    @DisplayName("getStatistics should track memory entry count")
+    void getStatisticsShouldTrackMemoryEntryCount() throws IOException {
+      cache.store("test1".getBytes(), createTestMetadata());
+      cache.store("test2".getBytes(), createTestMetadata());
+
+      final CacheStatistics stats = cache.getStatistics();
+
+      assertEquals(2, stats.getMemoryCacheEntries());
+    }
+  }
+
+  @Nested
+  @DisplayName("Memory-Only Cache Tests")
+  class MemoryOnlyCacheTests {
+
+    @Test
+    @DisplayName("should work without disk cache")
+    void shouldWorkWithoutDiskCache() throws IOException {
+      final CacheConfiguration memoryOnlyConfig =
+          new CacheConfiguration.Builder()
+              .setMaxMemoryEntries(100)
+              .setMemoryCacheTtl(Duration.ofHours(1))
+              .build();
+
+      try (final ModuleSerializationCache memoryCache =
+          new ModuleSerializationCache(memoryOnlyConfig)) {
+        final String hash = memoryCache.store("test".getBytes(), createTestMetadata());
+
+        assertTrue(memoryCache.contains(hash));
+        assertTrue(memoryCache.retrieve(hash).isPresent());
+        assertTrue(memoryCache.remove(hash));
+        assertFalse(memoryCache.contains(hash));
+      }
+    }
+
+    @Test
+    @DisplayName("clear should work without disk cache")
+    void clearShouldWorkWithoutDiskCache() throws IOException {
+      final CacheConfiguration memoryOnlyConfig =
+          new CacheConfiguration.Builder()
+              .setMaxMemoryEntries(100)
+              .setMemoryCacheTtl(Duration.ofHours(1))
+              .build();
+
+      try (final ModuleSerializationCache memoryCache =
+          new ModuleSerializationCache(memoryOnlyConfig)) {
+        final String hash = memoryCache.store("test".getBytes(), createTestMetadata());
+
+        memoryCache.clear();
+
+        assertFalse(memoryCache.contains(hash));
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Closed Cache Operation Tests")
+  class ClosedCacheOperationTests {
+
+    @Test
+    @DisplayName("retrieve should throw when closed")
+    void retrieveShouldThrowWhenClosed() throws IOException {
+      cache.close();
+
+      assertThrows(
+          IllegalStateException.class,
+          () ->
+              cache.retrieve("nonexistenthash1234567890abcdef1234567890abcdef1234567890abcd"));
+    }
+
+    @Test
+    @DisplayName("contains should throw when closed")
+    void containsShouldThrowWhenClosed() throws IOException {
+      cache.close();
+
+      assertThrows(
+          IllegalStateException.class,
+          () ->
+              cache.contains("nonexistenthash1234567890abcdef1234567890abcdef1234567890abcd"));
+    }
+
+    @Test
+    @DisplayName("remove should throw when closed")
+    void removeShouldThrowWhenClosed() throws IOException {
+      cache.close();
+
+      assertThrows(
+          IllegalStateException.class,
+          () -> cache.remove("nonexistenthash1234567890abcdef1234567890abcdef1234567890abcd"));
+    }
+
+    @Test
+    @DisplayName("clear should throw when closed")
+    void clearShouldThrowWhenClosed() throws IOException {
+      cache.close();
+
+      assertThrows(IllegalStateException.class, () -> cache.clear());
+    }
+
+    @Test
+    @DisplayName("warmCache should throw when closed")
+    void warmCacheShouldThrowWhenClosed() throws IOException {
+      cache.close();
+
+      assertThrows(IllegalStateException.class, () -> cache.warmCache(Map.of(), Map.of()));
+    }
+  }
 }

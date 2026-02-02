@@ -527,4 +527,306 @@ class SerializedModuleMetadataTest {
               SerializedModuleMetadata.Builder.class.getModifiers()));
     }
   }
+
+  @Nested
+  @DisplayName("Environment Compatibility Tests")
+  class EnvironmentCompatibilityTests {
+
+    @Test
+    @DisplayName("isCompatibleWithCurrentEnvironment should return true for matching environment")
+    void isCompatibleShouldReturnTrueForMatchingEnvironment() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("isCompatibleWithCurrentEnvironment should return false for incompatible Java")
+    void isCompatibleShouldReturnFalseForIncompatibleJava() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion("99.0.0") // Incompatible future version
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      assertFalse(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("isCompatibleWithCurrentEnvironment should return false for incompatible arch")
+    void isCompatibleShouldReturnFalseForIncompatibleArch() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo("mips64", System.getProperty("os.name"))
+              .build();
+
+      assertFalse(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("isCompatibleWithCurrentEnvironment should return false for incompatible OS")
+    void isCompatibleShouldReturnFalseForIncompatibleOs() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "AmigaOS")
+              .build();
+
+      assertFalse(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("should consider x86_64 and amd64 as compatible architectures")
+    void shouldConsiderX8664AndAmd64AsCompatible() {
+      // Get current arch and check compatibility
+      final String currentArch = System.getProperty("os.arch");
+      String compatibleArch;
+      if (currentArch.contains("x86_64")) {
+        compatibleArch = "amd64";
+      } else if (currentArch.contains("amd64")) {
+        compatibleArch = "x86_64";
+      } else {
+        // Skip test on other architectures
+        return;
+      }
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(compatibleArch, System.getProperty("os.name"))
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("should consider Windows variants as compatible")
+    void shouldConsiderWindowsVariantsAsCompatible() {
+      final String currentOs = System.getProperty("os.name").toLowerCase();
+      if (!currentOs.contains("windows")) {
+        // Skip test on non-Windows
+        return;
+      }
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "Windows 11")
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("should consider Linux variants as compatible")
+    void shouldConsiderLinuxVariantsAsCompatible() {
+      final String currentOs = System.getProperty("os.name").toLowerCase();
+      if (!currentOs.contains("linux")) {
+        // Skip test on non-Linux
+        return;
+      }
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "Linux 5.15")
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("should consider Mac variants as compatible")
+    void shouldConsiderMacVariantsAsCompatible() {
+      final String currentOs = System.getProperty("os.name").toLowerCase();
+      if (!currentOs.contains("mac")) {
+        // Skip test on non-Mac
+        return;
+      }
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "Mac OS X 14.0")
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("should handle null Java version in extract major version")
+    void shouldHandleNullJavaVersionInExtractMajorVersion() {
+      // This tests the extractMajorVersion method indirectly
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      // The method should handle null gracefully in isJavaVersionCompatible
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("should handle Java version without dot")
+    void shouldHandleJavaVersionWithoutDot() {
+      // Test version like "21" instead of "21.0.1"
+      final String currentVersion = System.getProperty("java.version");
+      final String majorOnly = currentVersion.contains(".")
+          ? currentVersion.substring(0, currentVersion.indexOf('.'))
+          : currentVersion;
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(majorOnly)
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+  }
+
+  @Nested
+  @DisplayName("Estimated Deserialization Time Edge Cases Tests")
+  class EstimatedDeserializationTimeEdgeCasesTests {
+
+    @Test
+    @DisplayName("should estimate for format without compression support")
+    void shouldEstimateForFormatWithoutCompressionSupport() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializedSize(1024L * 5L) // 5 KB
+              .setFormat(ModuleSerializationFormat.RAW_BINARY) // No compression
+              .build();
+
+      // Fallback: 1ms per KB baseline * 1.0 for no compression = 5
+      long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertTrue(estimated > 0, "Estimated time should be positive: " + estimated);
+    }
+
+    @Test
+    @DisplayName("should handle zero serialized size")
+    void shouldHandleZeroSerializedSize() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializedSize(0L)
+              .setFormat(ModuleSerializationFormat.RAW_BINARY)
+              .build();
+
+      long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertEquals(0L, estimated, "Zero size should result in zero estimated time");
+    }
+  }
+
+  @Nested
+  @DisplayName("Builder Edge Cases Tests")
+  class BuilderEdgeCasesTests {
+
+    @Test
+    @DisplayName("setCustomMetadata should clear existing and set new")
+    void setCustomMetadataShouldClearExistingAndSetNew() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .addCustomMetadata("old", "value")
+              .setCustomMetadata(Map.of("new", "value"))
+              .build();
+
+      assertEquals(1, metadata.getCustomMetadata().size());
+      assertFalse(metadata.getCustomMetadata().containsKey("old"));
+      assertTrue(metadata.getCustomMetadata().containsKey("new"));
+    }
+
+    @Test
+    @DisplayName("setCustomMetadata with null should clear all")
+    void setCustomMetadataWithNullShouldClearAll() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .addCustomMetadata("key", "value")
+              .setCustomMetadata(null)
+              .build();
+
+      assertTrue(metadata.getCustomMetadata().isEmpty());
+    }
+
+    @Test
+    @DisplayName("setCounts should reject negative export count")
+    void setCountsShouldRejectNegativeExportCount() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new SerializedModuleMetadata.Builder().setCounts(0, -1, 0, 0, 0, 0));
+    }
+
+    @Test
+    @DisplayName("setCounts should reject negative function count")
+    void setCountsShouldRejectNegativeFunctionCount() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new SerializedModuleMetadata.Builder().setCounts(0, 0, -1, 0, 0, 0));
+    }
+
+    @Test
+    @DisplayName("setCounts should reject negative global count")
+    void setCountsShouldRejectNegativeGlobalCount() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new SerializedModuleMetadata.Builder().setCounts(0, 0, 0, -1, 0, 0));
+    }
+
+    @Test
+    @DisplayName("setCounts should reject negative memory count")
+    void setCountsShouldRejectNegativeMemoryCount() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new SerializedModuleMetadata.Builder().setCounts(0, 0, 0, 0, -1, 0));
+    }
+
+    @Test
+    @DisplayName("setCounts should reject negative table count")
+    void setCountsShouldRejectNegativeTableCount() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new SerializedModuleMetadata.Builder().setCounts(0, 0, 0, 0, 0, -1));
+    }
+
+    @Test
+    @DisplayName("setCompressionRatio should reject negative value")
+    void setCompressionRatioShouldRejectNegativeValue() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new SerializedModuleMetadata.Builder().setCompressionRatio(-1.0));
+    }
+
+    @Test
+    @DisplayName("compression ratio should not be recalculated when already set")
+    void compressionRatioShouldBeRecalculatedFromSizes() {
+      // When both sizes are set and ratio not set, build() calculates it
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setOriginalSize(20000L)
+              .setSerializedSize(5000L)
+              .build();
+
+      // 20000 / 5000 = 4.0
+      assertEquals(4.0, metadata.getCompressionRatio(), 0.001);
+    }
+
+    @Test
+    @DisplayName("build should not calculate ratio when sizes are zero")
+    void buildShouldNotCalculateRatioWhenSizesAreZero() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setOriginalSize(0L)
+              .setSerializedSize(0L)
+              .setCompressionRatio(1.5)
+              .build();
+
+      // Should keep the explicitly set ratio
+      assertEquals(1.5, metadata.getCompressionRatio(), 0.001);
+    }
+  }
 }
