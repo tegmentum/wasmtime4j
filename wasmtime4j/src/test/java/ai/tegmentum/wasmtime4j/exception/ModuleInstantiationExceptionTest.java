@@ -504,4 +504,505 @@ class ModuleInstantiationExceptionTest {
       assertTrue(exception.getMessage().contains("my_func"), "Message should contain import name");
     }
   }
+
+  @Nested
+  @DisplayName("Error Category Boolean Return Mutation Tests")
+  class ErrorCategoryBooleanReturnMutationTests {
+
+    @Test
+    @DisplayName("isImportError should return false for all non-import types")
+    void isImportErrorShouldReturnFalseForAllNonImportTypes() {
+      final InstantiationErrorType[] nonImportTypes = {
+        InstantiationErrorType.START_FUNCTION_FAILED,
+        InstantiationErrorType.DATA_SEGMENT_INIT_FAILED,
+        InstantiationErrorType.ELEMENT_SEGMENT_INIT_FAILED,
+        InstantiationErrorType.MEMORY_ALLOCATION_FAILED,
+        InstantiationErrorType.TABLE_ALLOCATION_FAILED,
+        InstantiationErrorType.GLOBAL_INIT_FAILED,
+        InstantiationErrorType.RESOURCE_LIMIT_EXCEEDED,
+        InstantiationErrorType.TIMEOUT,
+        InstantiationErrorType.MULTIPLE_MEMORIES_UNSUPPORTED,
+        InstantiationErrorType.MULTIPLE_TABLES_UNSUPPORTED,
+        InstantiationErrorType.LINKER_ERROR,
+        InstantiationErrorType.STORE_INCOMPATIBLE,
+        InstantiationErrorType.UNKNOWN
+      };
+
+      for (InstantiationErrorType type : nonImportTypes) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(type, "Error");
+        assertFalse(
+            exception.isImportError(),
+            type.name() + " should NOT be an import error");
+      }
+    }
+
+    @Test
+    @DisplayName("Should have exactly 7 import error types")
+    void shouldHaveExactly7ImportErrorTypes() {
+      int count = 0;
+      for (InstantiationErrorType type : InstantiationErrorType.values()) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(type, "Error");
+        if (exception.isImportError()) {
+          count++;
+        }
+      }
+      assertEquals(
+          7,
+          count,
+          "Should have exactly 7 import error types: MISSING_IMPORT, IMPORT_TYPE_MISMATCH, "
+              + "FUNCTION_SIGNATURE_MISMATCH, MEMORY_IMPORT_INCOMPATIBLE, TABLE_IMPORT_INCOMPATIBLE, "
+              + "GLOBAL_IMPORT_MISMATCH, IMPORT_RESOLUTION_FAILED");
+    }
+
+    @Test
+    @DisplayName("isResourceError should return false for all non-resource types")
+    void isResourceErrorShouldReturnFalseForAllNonResourceTypes() {
+      for (InstantiationErrorType type : InstantiationErrorType.values()) {
+        if (type != InstantiationErrorType.MEMORY_ALLOCATION_FAILED
+            && type != InstantiationErrorType.TABLE_ALLOCATION_FAILED
+            && type != InstantiationErrorType.RESOURCE_LIMIT_EXCEEDED
+            && type != InstantiationErrorType.TIMEOUT) {
+          final ModuleInstantiationException exception =
+              new ModuleInstantiationException(type, "Error");
+          assertFalse(
+              exception.isResourceError(),
+              type.name() + " should NOT be a resource error");
+        }
+      }
+    }
+
+    @Test
+    @DisplayName("Should have exactly 4 resource error types")
+    void shouldHaveExactly4ResourceErrorTypes() {
+      int count = 0;
+      for (InstantiationErrorType type : InstantiationErrorType.values()) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(type, "Error");
+        if (exception.isResourceError()) {
+          count++;
+        }
+      }
+      assertEquals(
+          4,
+          count,
+          "Should have exactly 4 resource error types: MEMORY_ALLOCATION_FAILED, "
+              + "TABLE_ALLOCATION_FAILED, RESOURCE_LIMIT_EXCEEDED, TIMEOUT");
+    }
+
+    @Test
+    @DisplayName("isInitializationError should return false for all non-initialization types")
+    void isInitializationErrorShouldReturnFalseForAllNonInitTypes() {
+      for (InstantiationErrorType type : InstantiationErrorType.values()) {
+        if (type != InstantiationErrorType.START_FUNCTION_FAILED
+            && type != InstantiationErrorType.DATA_SEGMENT_INIT_FAILED
+            && type != InstantiationErrorType.ELEMENT_SEGMENT_INIT_FAILED
+            && type != InstantiationErrorType.GLOBAL_INIT_FAILED) {
+          final ModuleInstantiationException exception =
+              new ModuleInstantiationException(type, "Error");
+          assertFalse(
+              exception.isInitializationError(),
+              type.name() + " should NOT be an initialization error");
+        }
+      }
+    }
+
+    @Test
+    @DisplayName("Should have exactly 4 initialization error types")
+    void shouldHaveExactly4InitializationErrorTypes() {
+      int count = 0;
+      for (InstantiationErrorType type : InstantiationErrorType.values()) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(type, "Error");
+        if (exception.isInitializationError()) {
+          count++;
+        }
+      }
+      assertEquals(
+          4,
+          count,
+          "Should have exactly 4 initialization error types: START_FUNCTION_FAILED, "
+              + "DATA_SEGMENT_INIT_FAILED, ELEMENT_SEGMENT_INIT_FAILED, GLOBAL_INIT_FAILED");
+    }
+
+    @Test
+    @DisplayName("isConfigurationError should return false for all non-configuration types")
+    void isConfigurationErrorShouldReturnFalseForAllNonConfigTypes() {
+      for (InstantiationErrorType type : InstantiationErrorType.values()) {
+        if (type != InstantiationErrorType.LINKER_ERROR
+            && type != InstantiationErrorType.STORE_INCOMPATIBLE
+            && type != InstantiationErrorType.MULTIPLE_MEMORIES_UNSUPPORTED
+            && type != InstantiationErrorType.MULTIPLE_TABLES_UNSUPPORTED) {
+          final ModuleInstantiationException exception =
+              new ModuleInstantiationException(type, "Error");
+          assertFalse(
+              exception.isConfigurationError(),
+              type.name() + " should NOT be a configuration error");
+        }
+      }
+    }
+
+    @Test
+    @DisplayName("Should have exactly 4 configuration error types")
+    void shouldHaveExactly4ConfigurationErrorTypes() {
+      int count = 0;
+      for (InstantiationErrorType type : InstantiationErrorType.values()) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(type, "Error");
+        if (exception.isConfigurationError()) {
+          count++;
+        }
+      }
+      assertEquals(
+          4,
+          count,
+          "Should have exactly 4 configuration error types: LINKER_ERROR, STORE_INCOMPATIBLE, "
+              + "MULTIPLE_MEMORIES_UNSUPPORTED, MULTIPLE_TABLES_UNSUPPORTED");
+    }
+  }
+
+  @Nested
+  @DisplayName("formatMessage Edge Case Mutation Tests")
+  class FormatMessageEdgeCaseMutationTests {
+
+    @Test
+    @DisplayName("Message should not include phase when phase is UNKNOWN")
+    void messageShouldNotIncludePhaseWhenUnknown() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              InstantiationErrorType.MISSING_IMPORT,
+              "Error message",
+              InstantiationPhase.UNKNOWN,
+              null,
+              null,
+              null);
+
+      assertFalse(
+          exception.getMessage().contains("(phase:"),
+          "Message should not contain phase when UNKNOWN");
+    }
+
+    @Test
+    @DisplayName("Message should include import name only when moduleName is null/empty")
+    void messageShouldIncludeImportNameOnlyWhenModuleNameIsNull() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              InstantiationErrorType.MISSING_IMPORT,
+              "Error message",
+              InstantiationPhase.UNKNOWN,
+              "my_func",
+              null,
+              null);
+
+      assertTrue(
+          exception.getMessage().contains("(import: my_func)"),
+          "Message should contain import name without module prefix");
+      assertFalse(
+          exception.getMessage().contains(".my_func"),
+          "Message should not have module.import format");
+    }
+
+    @Test
+    @DisplayName("Message should include module name only when importName is null/empty")
+    void messageShouldIncludeModuleNameOnlyWhenImportNameIsNull() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              InstantiationErrorType.MISSING_IMPORT,
+              "Error message",
+              InstantiationPhase.UNKNOWN,
+              null,
+              "my_module",
+              null);
+
+      assertTrue(
+          exception.getMessage().contains("(module: my_module)"),
+          "Message should contain module name alone");
+    }
+
+    @Test
+    @DisplayName("Message should include module.import format when both are provided")
+    void messageShouldIncludeModuleImportFormatWhenBothProvided() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              InstantiationErrorType.MISSING_IMPORT,
+              "Error message",
+              InstantiationPhase.UNKNOWN,
+              "my_func",
+              "my_module",
+              null);
+
+      assertTrue(
+          exception.getMessage().contains("(import: my_module.my_func)"),
+          "Message should contain module.import format");
+    }
+
+    @Test
+    @DisplayName("Message should not include import when both importName and moduleName are empty")
+    void messageShouldNotIncludeImportWhenBothEmpty() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              InstantiationErrorType.UNKNOWN,
+              "Error message",
+              InstantiationPhase.UNKNOWN,
+              "",
+              "",
+              null);
+
+      assertFalse(
+          exception.getMessage().contains("(import:"),
+          "Message should not contain import marker when empty");
+      assertFalse(
+          exception.getMessage().contains("(module:"),
+          "Message should not contain module marker when empty");
+    }
+
+    @Test
+    @DisplayName("Message with all fields should contain all sections in order")
+    void messageWithAllFieldsShouldContainAllSectionsInOrder() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              InstantiationErrorType.IMPORT_RESOLUTION_FAILED,
+              "Test error",
+              InstantiationPhase.IMPORT_RESOLUTION,
+              "test_func",
+              "test_module",
+              null);
+
+      final String message = exception.getMessage();
+      final int errorTypeIndex = message.indexOf("[IMPORT_RESOLUTION_FAILED]");
+      final int baseMessageIndex = message.indexOf("Test error");
+      final int phaseIndex = message.indexOf("(phase:");
+      final int importIndex = message.indexOf("(import:");
+
+      assertTrue(errorTypeIndex < baseMessageIndex, "Error type should come before message");
+      assertTrue(baseMessageIndex < phaseIndex, "Message should come before phase");
+      assertTrue(phaseIndex < importIndex, "Phase should come before import");
+    }
+
+    @Test
+    @DisplayName("Message should handle importName empty but moduleName provided")
+    void messageShouldHandleEmptyImportNameWithModuleName() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              InstantiationErrorType.UNKNOWN,
+              "Error message",
+              InstantiationPhase.UNKNOWN,
+              "",
+              "my_module",
+              null);
+
+      assertTrue(
+          exception.getMessage().contains("(module: my_module)"),
+          "Message should contain module when import is empty");
+      assertFalse(
+          exception.getMessage().contains("(import:"),
+          "Message should not contain import marker when import is empty");
+    }
+  }
+
+  @Nested
+  @DisplayName("generateRecoverySuggestion Mutation Tests")
+  class GenerateRecoverySuggestionMutationTests {
+
+    @Test
+    @DisplayName("All error types should have distinct recovery suggestions")
+    void allErrorTypesShouldHaveDistinctRecoverySuggestions() {
+      final java.util.Set<String> suggestions = new java.util.HashSet<>();
+      for (InstantiationErrorType type : InstantiationErrorType.values()) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(type, "Error");
+        final String suggestion = exception.getRecoverySuggestion();
+        assertNotNull(suggestion, type.name() + " should have a recovery suggestion");
+        assertFalse(suggestion.isEmpty(), type.name() + " should have non-empty suggestion");
+        // UNKNOWN and default share the same suggestion
+        if (type != InstantiationErrorType.UNKNOWN) {
+          assertTrue(
+              suggestions.add(suggestion),
+              type.name() + " should have distinct suggestion but got duplicate: " + suggestion);
+        }
+      }
+    }
+
+    @Test
+    @DisplayName("MISSING_IMPORT should suggest providing imports through linker")
+    void missingImportShouldSuggestLinker() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(InstantiationErrorType.MISSING_IMPORT, "Error");
+      final String suggestion = exception.getRecoverySuggestion().toLowerCase();
+      assertTrue(
+          suggestion.contains("import") || suggestion.contains("linker"),
+          "MISSING_IMPORT recovery should mention import or linker");
+    }
+
+    @Test
+    @DisplayName("TIMEOUT should suggest increasing timeout")
+    void timeoutShouldSuggestIncreasingTimeout() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(InstantiationErrorType.TIMEOUT, "Error");
+      final String suggestion = exception.getRecoverySuggestion().toLowerCase();
+      assertTrue(
+          suggestion.contains("timeout") || suggestion.contains("optimize"),
+          "TIMEOUT recovery should mention timeout or optimize");
+    }
+
+    @Test
+    @DisplayName("Each specific error type should have contextual suggestion")
+    void eachErrorTypeShouldHaveContextualSuggestion() {
+      final java.util.Map<InstantiationErrorType, String[]> expectedKeywords =
+          new java.util.HashMap<>();
+      expectedKeywords.put(
+          InstantiationErrorType.MISSING_IMPORT, new String[] {"import", "linker"});
+      expectedKeywords.put(
+          InstantiationErrorType.IMPORT_TYPE_MISMATCH, new String[] {"import", "type"});
+      expectedKeywords.put(
+          InstantiationErrorType.FUNCTION_SIGNATURE_MISMATCH, new String[] {"function", "signature"});
+      expectedKeywords.put(
+          InstantiationErrorType.MEMORY_IMPORT_INCOMPATIBLE, new String[] {"memory", "limit"});
+      expectedKeywords.put(
+          InstantiationErrorType.TABLE_IMPORT_INCOMPATIBLE, new String[] {"table", "size"});
+      expectedKeywords.put(
+          InstantiationErrorType.GLOBAL_IMPORT_MISMATCH, new String[] {"global", "mutability"});
+      expectedKeywords.put(
+          InstantiationErrorType.START_FUNCTION_FAILED, new String[] {"start", "function"});
+      expectedKeywords.put(
+          InstantiationErrorType.DATA_SEGMENT_INIT_FAILED, new String[] {"data", "segment"});
+      expectedKeywords.put(
+          InstantiationErrorType.ELEMENT_SEGMENT_INIT_FAILED, new String[] {"element", "segment"});
+      expectedKeywords.put(
+          InstantiationErrorType.MEMORY_ALLOCATION_FAILED, new String[] {"memory", "limit"});
+      expectedKeywords.put(
+          InstantiationErrorType.TABLE_ALLOCATION_FAILED, new String[] {"table", "limit"});
+      expectedKeywords.put(
+          InstantiationErrorType.GLOBAL_INIT_FAILED, new String[] {"global", "initializer"});
+      expectedKeywords.put(
+          InstantiationErrorType.RESOURCE_LIMIT_EXCEEDED, new String[] {"resource", "limit"});
+      expectedKeywords.put(
+          InstantiationErrorType.TIMEOUT, new String[] {"timeout", "optimize"});
+      expectedKeywords.put(
+          InstantiationErrorType.MULTIPLE_MEMORIES_UNSUPPORTED, new String[] {"memory", "multi"});
+      expectedKeywords.put(
+          InstantiationErrorType.MULTIPLE_TABLES_UNSUPPORTED, new String[] {"table", "multi"});
+      expectedKeywords.put(
+          InstantiationErrorType.IMPORT_RESOLUTION_FAILED, new String[] {"import", "resolution"});
+      expectedKeywords.put(
+          InstantiationErrorType.LINKER_ERROR, new String[] {"linker", "configuration"});
+      expectedKeywords.put(
+          InstantiationErrorType.STORE_INCOMPATIBLE, new String[] {"store", "configuration"});
+      expectedKeywords.put(
+          InstantiationErrorType.UNKNOWN, new String[] {"import", "configuration"});
+
+      for (java.util.Map.Entry<InstantiationErrorType, String[]> entry :
+          expectedKeywords.entrySet()) {
+        final InstantiationErrorType type = entry.getKey();
+        final String[] keywords = entry.getValue();
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(type, "Error");
+        final String suggestion = exception.getRecoverySuggestion().toLowerCase();
+
+        boolean hasKeyword = false;
+        for (String keyword : keywords) {
+          if (suggestion.contains(keyword.toLowerCase())) {
+            hasKeyword = true;
+            break;
+          }
+        }
+        assertTrue(
+            hasKeyword,
+            type.name()
+                + " recovery suggestion should contain one of "
+                + java.util.Arrays.toString(keywords)
+                + " but was: "
+                + suggestion);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Getter Return Value Mutation Tests")
+  class GetterReturnValueMutationTests {
+
+    @Test
+    @DisplayName("getImportName should return exact name passed to constructor")
+    void getImportNameShouldReturnExactName() {
+      final String[] testNames = {"func1", "my_import", "complex_name_123", "", null};
+      for (String name : testNames) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(
+                InstantiationErrorType.UNKNOWN,
+                "Error",
+                InstantiationPhase.UNKNOWN,
+                name,
+                null,
+                null);
+        assertEquals(
+            name,
+            exception.getImportName(),
+            "getImportName should return: " + name);
+      }
+    }
+
+    @Test
+    @DisplayName("getModuleName should return exact name passed to constructor")
+    void getModuleNameShouldReturnExactName() {
+      final String[] testNames = {"module1", "wasi_snapshot_preview1", "", null};
+      for (String name : testNames) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(
+                InstantiationErrorType.UNKNOWN,
+                "Error",
+                InstantiationPhase.UNKNOWN,
+                null,
+                name,
+                null);
+        assertEquals(
+            name,
+            exception.getModuleName(),
+            "getModuleName should return: " + name);
+      }
+    }
+
+    @Test
+    @DisplayName("getPhase should return UNKNOWN when null is passed")
+    void getPhaseShouldReturnUnknownWhenNullPassed() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              InstantiationErrorType.UNKNOWN, "Error", null, null, null, null);
+      assertEquals(
+          InstantiationPhase.UNKNOWN,
+          exception.getPhase(),
+          "getPhase should return UNKNOWN when null was passed");
+    }
+
+    @Test
+    @DisplayName("getErrorType should return UNKNOWN when null is passed")
+    void getErrorTypeShouldReturnUnknownWhenNullPassed() {
+      final ModuleInstantiationException exception =
+          new ModuleInstantiationException(
+              null, "Error", InstantiationPhase.UNKNOWN, null, null, null);
+      assertEquals(
+          InstantiationErrorType.UNKNOWN,
+          exception.getErrorType(),
+          "getErrorType should return UNKNOWN when null was passed");
+    }
+
+    @Test
+    @DisplayName("All phases should return correct value from getPhase")
+    void allPhasesShouldReturnCorrectValueFromGetPhase() {
+      for (InstantiationPhase phase : InstantiationPhase.values()) {
+        final ModuleInstantiationException exception =
+            new ModuleInstantiationException(
+                InstantiationErrorType.UNKNOWN,
+                "Error",
+                phase,
+                null,
+                null,
+                null);
+        assertEquals(
+            phase,
+            exception.getPhase(),
+            "getPhase should return: " + phase);
+      }
+    }
+  }
 }
