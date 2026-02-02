@@ -829,4 +829,481 @@ class SerializedModuleMetadataTest {
       assertEquals(1.5, metadata.getCompressionRatio(), 0.001);
     }
   }
+
+  @Nested
+  @DisplayName("Platform Compatibility Individual Branch Tests")
+  class PlatformCompatibilityIndividualBranchTests {
+
+    @Test
+    @DisplayName("isPlatformArchCompatible should return true for exact match")
+    void isPlatformArchCompatibleShouldReturnTrueForExactMatch() {
+      final String currentArch = System.getProperty("os.arch");
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(currentArch, System.getProperty("os.name"))
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("isPlatformOsCompatible should return true for exact match")
+    void isPlatformOsCompatibleShouldReturnTrueForExactMatch() {
+      final String currentOs = System.getProperty("os.name");
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), currentOs)
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("should detect aarch64 and arm64 as incompatible with x86")
+    void shouldDetectAarch64AndArm64AsIncompatibleWithX86() {
+      final String currentArch = System.getProperty("os.arch");
+      final String incompatibleArch;
+      if (currentArch.contains("aarch64") || currentArch.contains("arm")) {
+        incompatibleArch = "x86_64";
+      } else if (currentArch.contains("x86") || currentArch.contains("amd64")) {
+        incompatibleArch = "aarch64";
+      } else {
+        return; // Skip test on other architectures
+      }
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(incompatibleArch, System.getProperty("os.name"))
+              .build();
+
+      assertFalse(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("isPlatformOsCompatible should detect completely different OS as incompatible")
+    void isPlatformOsCompatibleShouldDetectDifferentOsAsIncompatible() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "FreeBSD 14.0")
+              .build();
+
+      // FreeBSD is not Windows, Linux, or Mac
+      final String currentOs = System.getProperty("os.name").toLowerCase();
+      if (currentOs.contains("freebsd")) {
+        assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+      } else {
+        assertFalse(metadata.isCompatibleWithCurrentEnvironment());
+      }
+    }
+
+    @Test
+    @DisplayName("isJavaVersionCompatible should return true for exact version match")
+    void isJavaVersionCompatibleShouldReturnTrueForExactVersionMatch() {
+      final String currentVersion = System.getProperty("java.version");
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(currentVersion)
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("isJavaVersionCompatible should return true when major version matches")
+    void isJavaVersionCompatibleShouldReturnTrueWhenMajorVersionMatches() {
+      final String currentVersion = System.getProperty("java.version");
+      // Extract major version and append different minor version
+      final String majorVersion;
+      if (currentVersion.contains(".")) {
+        majorVersion = currentVersion.substring(0, currentVersion.indexOf('.'));
+      } else {
+        majorVersion = currentVersion;
+      }
+      final String differentMinorVersion = majorVersion + ".99.99";
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(differentMinorVersion)
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      // Current Java version should start with the same major version
+      assertTrue(metadata.isCompatibleWithCurrentEnvironment());
+    }
+
+    @Test
+    @DisplayName("isJavaVersionCompatible should return false for different major version")
+    void isJavaVersionCompatibleShouldReturnFalseForDifferentMajorVersion() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion("99.0.0") // Future major version
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      assertFalse(metadata.isCompatibleWithCurrentEnvironment());
+    }
+  }
+
+  @Nested
+  @DisplayName("Estimated Deserialization Time Boundary Tests")
+  class EstimatedDeserializationTimeBoundaryTests {
+
+    @Test
+    @DisplayName("should estimate correctly for various compression formats")
+    void shouldEstimateCorrectlyForVariousCompressionFormats() {
+      // Test each format's compression factor
+      for (final ModuleSerializationFormat format : ModuleSerializationFormat.values()) {
+        final SerializedModuleMetadata metadata =
+            new SerializedModuleMetadata.Builder()
+                .setSerializedSize(1024L * 10L) // 10 KB
+                .setFormat(format)
+                .build();
+
+        final long estimated = metadata.getEstimatedDeserializationTimeMs();
+        assertTrue(estimated >= 0, "Estimated time should be non-negative for format: " + format);
+      }
+    }
+
+    @Test
+    @DisplayName("should use performance metrics ratio when available")
+    void shouldUsePerformanceMetricsRatioWhenAvailable() {
+      final SerializationPerformanceMetrics metrics =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(200_000_000L, 100_000_000L, 0L, 0L, 0L) // 200ms ser, 100ms deser
+              .build();
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializationDuration(200L)
+              .setPerformanceMetrics(metrics)
+              .build();
+
+      // Speed ratio is 0.5, so 200ms * 0.5 = 100ms
+      final long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertEquals(100L, estimated);
+    }
+
+    @Test
+    @DisplayName("should return zero when metrics exist but serialization duration is zero")
+    void shouldReturnZeroWhenMetricsExistButSerializationDurationIsZero() {
+      final SerializationPerformanceMetrics metrics =
+          new SerializationPerformanceMetrics.Builder()
+              .setTimingMetrics(0L, 100_000_000L, 0L, 0L, 0L) // 0 serialization time
+              .build();
+
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializationDuration(0L) // 0ms duration
+              .setSerializedSize(1024L * 10L) // 10 KB
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              .setPerformanceMetrics(metrics)
+              .build();
+
+      // With metrics present, it uses: serializationDurationMs * deserializationRatio
+      // 0 * ratio = 0, regardless of ratio value
+      final long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertEquals(0L, estimated, "0ms * ratio should be 0");
+    }
+
+    @Test
+    @DisplayName("should use fallback when no performance metrics are set")
+    void shouldUseFallbackWhenNoPerformanceMetricsAreSet() {
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializedSize(1024L * 10L) // 10 KB
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4)
+              // No performance metrics set
+              .build();
+
+      // Fallback: sizeInKB * formatFactor = 10 * 1.5 = 15
+      final long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertTrue(estimated > 0, "Should have positive estimate using size-based fallback");
+    }
+
+    @Test
+    @DisplayName("should calculate 1ms per KB baseline for non-compressed format")
+    void shouldCalculate1msPerKbBaselineForNonCompressedFormat() {
+      // 1024 bytes = 1 KB = 1ms baseline for non-compressed format
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializedSize(1024L) // Exactly 1 KB
+              .setFormat(ModuleSerializationFormat.RAW_BINARY) // 1.0 factor
+              .build();
+
+      // Calculation: 1024 / 1024.0 * 1.0 = 1.0 -> rounds to 1
+      final long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertEquals(1L, estimated, "1 KB with 1.0 factor should be exactly 1ms");
+    }
+
+    @Test
+    @DisplayName("should calculate 1.5x factor for compressed format")
+    void shouldCalculate1Point5FactorForCompressedFormat() {
+      // Test that compression formats use 1.5 multiplier (not 1.0 or 2.0)
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializedSize(1024L * 10L) // 10 KB
+              .setFormat(ModuleSerializationFormat.COMPACT_BINARY_LZ4) // Supports compression
+              .build();
+
+      // Calculation: 10 KB * 1.5 = 15ms
+      // If factor was 1.0, result would be 10
+      // If factor was 2.0, result would be 20
+      final long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertEquals(15L, estimated, "10 KB with 1.5 compression factor should be 15ms");
+    }
+
+    @Test
+    @DisplayName("should use division not multiplication for KB calculation")
+    void shouldUseDivisionNotMultiplicationForKbCalculation() {
+      // 2048 bytes = 2 KB
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializedSize(2048L) // 2 KB
+              .setFormat(ModuleSerializationFormat.RAW_BINARY) // 1.0 factor
+              .build();
+
+      // Correct: 2048 / 1024.0 * 1.0 = 2.0 -> 2ms
+      // If multiplication used instead of division: 2048 * 1024.0 = huge number
+      final long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertEquals(2L, estimated, "2048 bytes should be 2ms (2 KB baseline)");
+    }
+
+    @Test
+    @DisplayName("should verify 1024 is the divisor not 1")
+    void shouldVerify1024IsTheDivisorNot1() {
+      // If divisor was 1 instead of 1024, 10240 bytes would be 10240ms
+      // With 1024 divisor, it should be 10ms (for non-compressed)
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setSerializedSize(10240L) // 10 KB = 10240 bytes
+              .setFormat(ModuleSerializationFormat.RAW_BINARY) // 1.0 factor
+              .build();
+
+      // Correct: 10240 / 1024.0 * 1.0 = 10.0 -> 10ms
+      // If divisor was 1: 10240 / 1.0 * 1.0 = 10240ms
+      final long estimated = metadata.getEstimatedDeserializationTimeMs();
+      assertEquals(10L, estimated, "10 KB should be 10ms, not 10240ms");
+    }
+  }
+
+  @Nested
+  @DisplayName("Platform OS Compatibility Branch Tests")
+  class PlatformOsCompatibilityBranchTests {
+
+    @Test
+    @DisplayName("Windows variants should be compatible with each other")
+    void windowsVariantsShouldBeCompatible() {
+      // Test that "Windows 10" and "Windows 11" are compatible
+      final SerializedModuleMetadata metadataWin10 =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "Windows 10")
+              .build();
+
+      final SerializedModuleMetadata metadataWin11 =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "Windows 11")
+              .build();
+
+      // Both should contain "windows" when lowercased
+      final String currentOs = System.getProperty("os.name").toLowerCase();
+      if (currentOs.contains("windows")) {
+        assertTrue(metadataWin10.isCompatibleWithCurrentEnvironment());
+        assertTrue(metadataWin11.isCompatibleWithCurrentEnvironment());
+      }
+    }
+
+    @Test
+    @DisplayName("Linux variants should be compatible with each other")
+    void linuxVariantsShouldBeCompatible() {
+      final SerializedModuleMetadata metadataUbuntu =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "Linux Ubuntu 22.04")
+              .build();
+
+      final String currentOs = System.getProperty("os.name").toLowerCase();
+      if (currentOs.contains("linux")) {
+        assertTrue(metadataUbuntu.isCompatibleWithCurrentEnvironment());
+      }
+    }
+
+    @Test
+    @DisplayName("Mac variants should be compatible with each other")
+    void macVariantsShouldBeCompatible() {
+      final SerializedModuleMetadata metadataMacos =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(System.getProperty("java.version"))
+              .setPlatformInfo(System.getProperty("os.arch"), "Mac OS X 14.0")
+              .build();
+
+      final String currentOs = System.getProperty("os.name").toLowerCase();
+      if (currentOs.contains("mac")) {
+        assertTrue(metadataMacos.isCompatibleWithCurrentEnvironment());
+      }
+    }
+
+    @Test
+    @DisplayName("Windows should not be compatible with Linux")
+    void windowsShouldNotBeCompatibleWithLinux() {
+      final String currentOs = System.getProperty("os.name").toLowerCase();
+
+      if (currentOs.contains("linux")) {
+        // Running on Linux, test Windows metadata
+        final SerializedModuleMetadata metadataWin =
+            new SerializedModuleMetadata.Builder()
+                .setJavaVersion(System.getProperty("java.version"))
+                .setPlatformInfo(System.getProperty("os.arch"), "Windows 10")
+                .build();
+        assertFalse(metadataWin.isCompatibleWithCurrentEnvironment());
+      } else if (currentOs.contains("windows")) {
+        // Running on Windows, test Linux metadata
+        final SerializedModuleMetadata metadataLinux =
+            new SerializedModuleMetadata.Builder()
+                .setJavaVersion(System.getProperty("java.version"))
+                .setPlatformInfo(System.getProperty("os.arch"), "Linux")
+                .build();
+        assertFalse(metadataLinux.isCompatibleWithCurrentEnvironment());
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Platform Architecture Compatibility Branch Tests")
+  class PlatformArchCompatibilityBranchTests {
+
+    @Test
+    @DisplayName("x86_64 and amd64 should be compatible")
+    void x86_64AndAmd64ShouldBeCompatible() {
+      final String currentArch = System.getProperty("os.arch");
+
+      // Only test on x86-64 compatible systems
+      if (currentArch.contains("x86_64") || currentArch.contains("amd64")) {
+        // Test x86_64 metadata on current system
+        final SerializedModuleMetadata metadataX86 =
+            new SerializedModuleMetadata.Builder()
+                .setJavaVersion(System.getProperty("java.version"))
+                .setPlatformInfo("x86_64", System.getProperty("os.name"))
+                .build();
+        assertTrue(
+            metadataX86.isCompatibleWithCurrentEnvironment(),
+            "x86_64 should be compatible on " + currentArch);
+
+        // Test amd64 metadata on current system
+        final SerializedModuleMetadata metadataAmd =
+            new SerializedModuleMetadata.Builder()
+                .setJavaVersion(System.getProperty("java.version"))
+                .setPlatformInfo("amd64", System.getProperty("os.name"))
+                .build();
+        assertTrue(
+            metadataAmd.isCompatibleWithCurrentEnvironment(),
+            "amd64 should be compatible on " + currentArch);
+      }
+    }
+
+    @Test
+    @DisplayName("arm64 should not be compatible with x86_64")
+    void arm64ShouldNotBeCompatibleWithX86_64() {
+      final String currentArch = System.getProperty("os.arch");
+
+      if (currentArch.contains("x86_64") || currentArch.contains("amd64")) {
+        final SerializedModuleMetadata metadataArm =
+            new SerializedModuleMetadata.Builder()
+                .setJavaVersion(System.getProperty("java.version"))
+                .setPlatformInfo("arm64", System.getProperty("os.name"))
+                .build();
+        assertFalse(
+            metadataArm.isCompatibleWithCurrentEnvironment(),
+            "arm64 should NOT be compatible with x86_64/amd64");
+      } else if (currentArch.contains("aarch64") || currentArch.contains("arm64")) {
+        final SerializedModuleMetadata metadataX86 =
+            new SerializedModuleMetadata.Builder()
+                .setJavaVersion(System.getProperty("java.version"))
+                .setPlatformInfo("x86_64", System.getProperty("os.name"))
+                .build();
+        assertFalse(
+            metadataX86.isCompatibleWithCurrentEnvironment(),
+            "x86_64 should NOT be compatible with arm64/aarch64");
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Extract Major Version Tests")
+  class ExtractMajorVersionTests {
+
+    @Test
+    @DisplayName("should handle version with dot correctly")
+    void shouldHandleVersionWithDotCorrectly() {
+      // Test indirectly through isCompatibleWithCurrentEnvironment
+      // Version "21.0.1" should have major version "21"
+      final String currentVersion = System.getProperty("java.version");
+      final String majorVersion;
+      if (currentVersion.contains(".")) {
+        majorVersion = currentVersion.substring(0, currentVersion.indexOf('.'));
+      } else {
+        majorVersion = currentVersion;
+      }
+
+      // Create metadata with same major but different minor
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(majorVersion + ".99.99")
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      assertTrue(
+          metadata.isCompatibleWithCurrentEnvironment(),
+          "Same major version should be compatible");
+    }
+
+    @Test
+    @DisplayName("should handle version without dot")
+    void shouldHandleVersionWithoutDot() {
+      // Test with version that has no dot (like "21")
+      final String currentVersion = System.getProperty("java.version");
+      final String majorVersion;
+      if (currentVersion.contains(".")) {
+        majorVersion = currentVersion.substring(0, currentVersion.indexOf('.'));
+      } else {
+        majorVersion = currentVersion;
+      }
+
+      // Create metadata with just major version (no dots)
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(majorVersion) // No dots
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      assertTrue(
+          metadata.isCompatibleWithCurrentEnvironment(),
+          "Version without dots should still work");
+    }
+
+    @Test
+    @DisplayName("extractMajorVersion should handle dot at position 0")
+    void extractMajorVersionShouldHandleDotAtPosition0() {
+      // Edge case: ".1" should extract empty string (dotIndex = 0, not > 0)
+      // This tests the > 0 boundary condition
+      final SerializedModuleMetadata metadata =
+          new SerializedModuleMetadata.Builder()
+              .setJavaVersion(".1.2.3") // Dot at position 0
+              .setPlatformInfo(System.getProperty("os.arch"), System.getProperty("os.name"))
+              .build();
+
+      // extractMajorVersion(".1.2.3") returns ".1.2.3" (full string) because dotIndex = 0
+      // which is not > 0, so it returns the full version string
+      // This will likely not match current version
+      assertFalse(
+          metadata.isCompatibleWithCurrentEnvironment(),
+          "Version starting with dot should not match");
+    }
+  }
 }
