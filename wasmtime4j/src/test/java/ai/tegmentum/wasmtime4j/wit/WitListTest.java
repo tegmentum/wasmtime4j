@@ -239,4 +239,59 @@ class WitListTest {
       assertNotNull(list.getType(), "Should have WitType");
     }
   }
+
+  @Nested
+  @DisplayName("Validation Tests")
+  class ValidationTests {
+
+    @Test
+    @DisplayName("should reject null element in list")
+    void shouldRejectNullElementInList() {
+      final List<WitValue> elementsWithNull = new java.util.ArrayList<>();
+      elementsWithNull.add(WitS32.of(1));
+      elementsWithNull.add(null);
+      elementsWithNull.add(WitS32.of(3));
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitList.of(elementsWithNull),
+              "Should throw for null element");
+      assertTrue(
+          ex.getMessage().contains("null"),
+          "Exception message should mention null: " + ex.getMessage());
+      assertTrue(
+          ex.getMessage().contains("index"),
+          "Exception message should mention index: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("should reject type mismatch in list elements")
+    void shouldRejectTypeMismatchInListElements() {
+      // First create a list with S32 elements, then try to add U64
+      final List<WitValue> mixedTypes = new java.util.ArrayList<>();
+      mixedTypes.add(WitS32.of(1));
+      mixedTypes.add(WitU64.of(100L)); // Different type
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitList.of(mixedTypes),
+              "Should throw for type mismatch");
+      assertTrue(
+          ex.getMessage().contains("type"),
+          "Exception message should mention type: " + ex.getMessage());
+      assertTrue(
+          ex.getMessage().contains("expected"),
+          "Exception message should mention expected: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("should accept homogeneous list")
+    void shouldAcceptHomogeneousList() {
+      final List<WitValue> sameType = List.of(WitS32.of(1), WitS32.of(2), WitS32.of(3));
+      final WitList list = WitList.of(sameType);
+      assertEquals(3, list.size(), "Should create list with all elements");
+    }
+  }
 }

@@ -272,4 +272,51 @@ class WitRecordTest {
       assertNotNull(record.getType(), "Should have WitType");
     }
   }
+
+  @Nested
+  @DisplayName("Validation Tests")
+  class ValidationTests {
+
+    @Test
+    @DisplayName("of should reject map with null value")
+    void ofShouldRejectMapWithNullValue() {
+      final Map<String, WitValue> fieldsWithNull = new LinkedHashMap<>();
+      fieldsWithNull.put("valid", WitS32.of(1));
+      fieldsWithNull.put("invalid", null);
+
+      // NPE is thrown during type construction when accessing null.getType()
+      assertThrows(
+          NullPointerException.class,
+          () -> WitRecord.of(fieldsWithNull),
+          "Should throw NPE for null field value during type construction");
+    }
+
+    @Test
+    @DisplayName("of should reject map with empty field name")
+    void ofShouldRejectMapWithEmptyFieldName() {
+      final Map<String, WitValue> fieldsWithEmptyName = new LinkedHashMap<>();
+      fieldsWithEmptyName.put("", WitS32.of(1));
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitRecord.of(fieldsWithEmptyName),
+              "Should throw for empty field name");
+      assertTrue(
+          ex.getMessage().contains("empty") || ex.getMessage().contains("null"),
+          "Exception message should mention empty or null: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("should accept valid field names and values")
+    void shouldAcceptValidFieldNamesAndValues() {
+      final Map<String, WitValue> validFields = new LinkedHashMap<>();
+      validFields.put("field1", WitS32.of(1));
+      validFields.put("field2", WitS64.of(2L));
+      validFields.put("field3", WitBool.of(true));
+
+      final WitRecord record = WitRecord.of(validFields);
+      assertEquals(3, record.getFieldCount(), "Should create record with all fields");
+    }
+  }
 }

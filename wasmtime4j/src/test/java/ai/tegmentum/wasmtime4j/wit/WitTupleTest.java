@@ -268,4 +268,55 @@ class WitTupleTest {
       assertNotNull(tuple.getType(), "Should have WitType");
     }
   }
+
+  @Nested
+  @DisplayName("Validation Tests")
+  class ValidationTests {
+
+    @Test
+    @DisplayName("should reject null element in list")
+    void shouldRejectNullElementInList() {
+      final java.util.List<WitValue> elementsWithNull = new java.util.ArrayList<>();
+      elementsWithNull.add(WitS32.of(1));
+      elementsWithNull.add(null);
+      elementsWithNull.add(WitS32.of(3));
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitTuple.of(elementsWithNull),
+              "Should throw for null element");
+      assertTrue(
+          ex.getMessage().contains("null"),
+          "Exception message should mention null: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("should reject type mismatch when using explicit types")
+    void shouldRejectTypeMismatchWithExplicitTypes() {
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () ->
+                  WitTuple.builder()
+                      .add(WitType.createS64(), WitS32.of(42)) // Declare S64, provide S32
+                      .build(),
+              "Should throw for type mismatch");
+      assertTrue(
+          ex.getMessage().contains("type") || ex.getMessage().contains("expected"),
+          "Exception message should mention type mismatch: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("should accept matching types")
+    void shouldAcceptMatchingTypes() {
+      final WitTuple tuple =
+          WitTuple.builder()
+              .add(WitType.createS32(), WitS32.of(1))
+              .add(WitType.createS64(), WitS64.of(2L))
+              .add(WitType.createBool(), WitBool.of(true))
+              .build();
+      assertEquals(3, tuple.size(), "Should create tuple with all elements");
+    }
+  }
 }
