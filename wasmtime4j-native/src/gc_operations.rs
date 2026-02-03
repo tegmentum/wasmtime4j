@@ -1685,17 +1685,9 @@ mod tests {
     use crate::gc_types::{FieldDefinition, FieldType};
 
     fn create_test_operations() -> WasmtimeResult<WasmtimeGcOperations> {
-        let mut config = crate::engine::safe_wasmtime_config();
-        config.wasm_gc(true);
-        config.wasm_reference_types(true);
-
-        let engine = wasmtime::Engine::new(&config)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to create engine: {}", e),
-                backtrace: None,
-            })?;
+        // Use the shared GC engine to avoid GLOBAL_CODE registry accumulation
+        let engine = crate::engine::get_shared_gc_wasmtime_engine();
         let store = wasmtime::Store::new(&engine, ());
-
         WasmtimeGcOperations::new(store)
     }
 

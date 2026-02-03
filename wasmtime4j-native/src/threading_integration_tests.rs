@@ -45,42 +45,47 @@ mod tests {
         let scheduler = WorkStealingScheduler::new(config).expect("Failed to create scheduler");
         let execution_count = Arc::new(AtomicU64::new(0));
 
-        // Create multiple WebAssembly computation tasks
+        // Create a shared engine and pre-compile the module once to avoid
+        // accumulating state in wasmtime's global code registry
+        let shared_engine = Arc::new(crate::engine::get_shared_engine());
+        let wat = r#"
+            (module
+                (func $compute (result i32)
+                    (local $i i32)
+                    (local $sum i32)
+                    (local.set $i (i32.const 0))
+                    (local.set $sum (i32.const 0))
+                    (loop $loop
+                        (local.set $sum
+                            (i32.add (local.get $sum) (local.get $i)))
+                        (local.set $i
+                            (i32.add (local.get $i) (i32.const 1)))
+                        (br_if $loop
+                            (i32.lt_s (local.get $i) (i32.const 1000)))
+                    )
+                    (local.get $sum)
+                )
+                (export "compute" (func $compute))
+            )
+        "#;
+        let shared_module = Arc::new(
+            Module::compile_wat(&shared_engine, wat).expect("Failed to compile module")
+        );
+
+        // Create multiple WebAssembly computation tasks sharing the engine and module
         for i in 0..100 {
             let count = execution_count.clone();
+            let engine = shared_engine.clone();
+            let module = shared_module.clone();
             let task = Arc::new(WorkStealingTask::new(
                 format!("wasm_task_{}", i),
                 TaskPriority::Normal,
                 move || {
-                    // Simulate WebAssembly module execution
-                    let engine = Engine::default();
-                    let wat = r#"
-                        (module
-                            (func $compute (result i32)
-                                (local $i i32)
-                                (local $sum i32)
-                                (local.set $i (i32.const 0))
-                                (local.set $sum (i32.const 0))
-                                (loop $loop
-                                    (local.set $sum
-                                        (i32.add (local.get $sum) (local.get $i)))
-                                    (local.set $i
-                                        (i32.add (local.get $i) (i32.const 1)))
-                                    (br_if $loop
-                                        (i32.lt_s (local.get $i) (i32.const 1000)))
-                                )
-                                (local.get $sum)
-                            )
-                            (export "compute" (func $compute))
-                        )
-                    "#;
-
-                    if let Ok(module) = Module::compile_wat(&engine, wat) {
-                        let mut store = Store::new(&engine)?;
-                        if let Ok(mut instance) = Instance::new(&mut store, &module, &[]) {
-                            let params = vec![];
-                            let _ = instance.call_export_function(&mut store, "compute", &params);
-                        }
+                    // Each task creates its own store (cheap) but shares engine/module
+                    let mut store = Store::new(&engine)?;
+                    if let Ok(mut instance) = Instance::new(&mut store, &module, &[]) {
+                        let params = vec![];
+                        let _ = instance.call_export_function(&mut store, "compute", &params);
                     }
 
                     count.fetch_add(1, Ordering::SeqCst);

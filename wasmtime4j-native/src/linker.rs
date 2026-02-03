@@ -1923,11 +1923,16 @@ mod tests {
     use super::*;
     use std::os::raw::c_void;
 
+    // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
+    fn shared_engine() -> crate::engine::Engine {
+        crate::engine::get_shared_engine()
+    }
+
     #[test]
     #[ignore = "Passes individually and in WASI subset but SIGABRTs in full suite due to pre-existing global state corruption from earlier tests"]
     fn test_enable_wasi() {
         // Create engine with default config
-        let engine = crate::engine::Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
 
         // Create linker
         let mut linker = Linker::new(&engine).expect("Failed to create linker");
@@ -1940,7 +1945,7 @@ mod tests {
 
     #[test]
     fn test_linker_creation() {
-        let engine = crate::engine::Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let linker = Linker::new(&engine).expect("Failed to create linker");
         assert!(linker.is_valid());
         assert!(!linker.metadata().wasi_enabled);
@@ -1951,7 +1956,7 @@ mod tests {
     fn test_enable_wasi_ffi_style() {
         // Simulate FFI pattern: create via Box::into_raw, use via pointer
         println!("Creating engine...");
-        let engine = crate::engine::Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let engine_ptr = Box::into_raw(Box::new(engine)) as *mut c_void;
 
         println!("Creating linker...");
@@ -1984,7 +1989,7 @@ mod tests {
     fn test_wasi_module_instantiation() {
         // Test instantiating a WASI module using the linker
         println!("Creating engine...");
-        let engine = crate::engine::Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
 
         println!("Creating store...");
         let mut store = crate::store::Store::new(&engine).expect("Failed to create store");

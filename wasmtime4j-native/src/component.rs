@@ -350,14 +350,8 @@ impl ComponentEngine {
     /// Returns `WasmtimeError::EngineConfig` if the engine cannot be created
     /// due to system resource constraints or configuration issues.
     pub fn new() -> WasmtimeResult<Self> {
-        // Create a properly configured engine with component model support
-        let mut config = crate::engine::safe_wasmtime_config();
-        config.wasm_component_model(true);
-
-        let engine = WasmtimeEngine::new(&config)
-            .map_err(|e| WasmtimeError::EngineConfig {
-                message: format!("Failed to create component engine: {}", e),
-            })?;
+        // Use the shared component engine to avoid GLOBAL_CODE registry accumulation
+        let engine = crate::engine::get_shared_component_wasmtime_engine();
         let linker = Linker::new(&engine);
         
         Ok(ComponentEngine {
@@ -2574,7 +2568,8 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(engine_ptr:
     // Use catch_unwind to prevent panics from crashing the JVM
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         // Create a fresh engine with component model support enabled
-        // This is a workaround for issues with passing engine pointers across FFI
+        // Note: This creates a new engine per call, but is necessary for FFI safety
+        // as the ComponentLinker stores ownership of the engine
         let mut config = crate::engine::safe_wasmtime_config();
         config.wasm_component_model(true);
         config.wasm_bulk_memory(true);

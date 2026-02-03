@@ -1162,16 +1162,21 @@ mod tests {
     use crate::engine::Engine;
     use std::time::Duration;
 
+    // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
+    fn shared_engine() -> Engine {
+        crate::engine::get_shared_engine()
+    }
+
     #[test]
     fn test_store_creation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
         assert!(store.validate().is_ok());
     }
 
     #[test]
     fn test_store_builder() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::builder()
             .fuel_limit(1000)
             .memory_limit(1024 * 1024)
@@ -1211,7 +1216,7 @@ mod tests {
 
     #[test]
     fn test_execution_context() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let result = store.with_context(|_ctx| {
@@ -1227,7 +1232,7 @@ mod tests {
 
     #[test]
     fn test_memory_usage() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let usage = store.memory_usage().expect("Failed to get memory usage");
@@ -1236,7 +1241,7 @@ mod tests {
 
     #[test]
     fn test_garbage_collection() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // GC should succeed without error
@@ -1247,7 +1252,7 @@ mod tests {
     fn test_store_core_functions() {
         use crate::store::core;
         
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         
         // Test core store creation
         let store = core::create_store(&engine).expect("Failed to create store via core");
@@ -1271,7 +1276,7 @@ mod tests {
     fn test_store_with_config_core() {
         use crate::store::core;
         
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         
         // Test core store creation with config
         let store = core::create_store_with_config(
@@ -1334,7 +1339,7 @@ mod tests {
     fn test_execution_statistics_core() {
         use crate::store::core;
         
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = core::create_store(&engine).expect("Failed to create store");
         
         let store_ref = unsafe { 
@@ -1377,7 +1382,7 @@ mod tests {
     fn test_store_destroy() {
         use crate::store::core;
         
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = core::create_store(&engine).expect("Failed to create store");
         let store_ptr = Box::into_raw(store) as *mut std::os::raw::c_void;
         
@@ -1394,7 +1399,7 @@ mod tests {
 
     #[test]
     fn test_resource_limits() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::builder()
             .fuel_limit(5000)
             .memory_limit(4 * 1024 * 1024)
@@ -1415,7 +1420,7 @@ mod tests {
 
     #[test]
     fn test_epoch_deadline() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Setting epoch deadline should not fail
@@ -1493,7 +1498,7 @@ mod tests {
     fn test_store_for_module() {
         use crate::module::Module;
 
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
 
         // A simple WebAssembly module that exports an add function
         let wasm_bytes = wat::parse_str(r#"
@@ -1532,7 +1537,7 @@ mod tests {
     fn test_store_builder_for_module() {
         use crate::module::Module;
 
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
 
         // A simple WebAssembly module
         let wasm_bytes = wat::parse_str(r#"

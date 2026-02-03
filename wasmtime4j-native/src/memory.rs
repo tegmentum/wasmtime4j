@@ -3503,9 +3503,14 @@ mod tests {
     use super::*;
     use crate::engine::Engine;
 
+    // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
+    fn shared_engine() -> Engine {
+        crate::engine::get_shared_engine()
+    }
+
     #[test]
     fn test_memory_creation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
@@ -3515,7 +3520,7 @@ mod tests {
 
     #[test]
     fn test_memory_growth() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
@@ -3527,7 +3532,7 @@ mod tests {
 
     #[test]
     fn test_bounds_checking() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
@@ -3544,7 +3549,7 @@ mod tests {
 
     #[test]
     fn test_memory_statistics() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
@@ -3561,7 +3566,7 @@ mod tests {
 
     #[test]
     fn test_memory_registry() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         let registry = MemoryRegistry::new();
         
@@ -3577,7 +3582,7 @@ mod tests {
 
     #[test]
     fn test_memory_handle_validation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
@@ -3627,7 +3632,7 @@ mod tests {
 
     #[test]
     fn test_memory_access_counting() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
@@ -3654,7 +3659,7 @@ mod tests {
 
     #[test]
     fn test_handle_registry_diagnostics() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         // Get initial state
@@ -3700,7 +3705,7 @@ mod tests {
 
     #[test]
     fn test_corrupted_handle_detection() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
@@ -3729,7 +3734,7 @@ mod tests {
     fn test_thread_safety_basic() {
         use std::thread;
         
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
         
         let memory = Memory::new(&mut store, 1).expect("Failed to create memory");

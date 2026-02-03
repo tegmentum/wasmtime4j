@@ -508,9 +508,14 @@ mod tests {
     use crate::engine::Engine;
     use crate::store::Store;
 
+    // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
+    fn shared_engine() -> Engine {
+        crate::engine::get_shared_engine()
+    }
+
     #[test]
     fn test_global_creation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let global = Global::new(
@@ -528,7 +533,7 @@ mod tests {
 
     #[test]
     fn test_global_get_set() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let global = Global::new(
@@ -559,7 +564,7 @@ mod tests {
 
     #[test]
     fn test_immutable_global() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let global = Global::new(
@@ -577,7 +582,7 @@ mod tests {
 
     #[test]
     fn test_type_validation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let global = Global::new(
@@ -595,7 +600,7 @@ mod tests {
 
     #[test]
     fn test_different_value_types() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Test I64 global

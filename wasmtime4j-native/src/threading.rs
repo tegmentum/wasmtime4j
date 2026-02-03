@@ -1193,10 +1193,15 @@ mod tests {
     use super::*;
     use crate::engine::Engine;
 
+    // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
+    fn shared_engine() -> Engine {
+        crate::engine::get_shared_engine()
+    }
+
     #[test]
     #[ignore = "SharedMemory requires 'shared' flag on memory type - needs MemoryType configuration"]
     fn test_thread_creation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
             SharedMemory::new(engine.inner(), memory_type)
@@ -1215,7 +1220,7 @@ mod tests {
     #[test]
     #[ignore = "SharedMemory requires 'shared' flag on memory type - needs MemoryType configuration"]
     fn test_thread_local_storage() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
             SharedMemory::new(engine.inner(), memory_type)
@@ -1257,7 +1262,7 @@ mod tests {
         };
 
         let pool = WasmThreadPool::new(config);
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
             SharedMemory::new(engine.inner(), memory_type)
@@ -1289,7 +1294,7 @@ mod tests {
     #[test]
     #[ignore = "SharedMemory requires 'shared' flag on memory type - needs MemoryType configuration"]
     fn test_thread_termination() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
             SharedMemory::new(engine.inner(), memory_type)
@@ -1311,7 +1316,7 @@ mod tests {
     #[test]
     #[ignore = "SharedMemory requires 'shared' flag on memory type - needs MemoryType configuration"]
     fn test_atomic_operations() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let memory_type = MemoryType::new(1, Some(10));
         let shared_memory = Arc::new(
             SharedMemory::new(engine.inner(), memory_type)

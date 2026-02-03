@@ -947,7 +947,15 @@ mod tests {
     use std::time::Duration;
 
     fn test_config() -> ModuleCacheConfig {
-        let dir = std::env::temp_dir().join(format!("wasmtime4j_cache_test_{}", std::process::id()));
+        // Use a unique cache directory per test invocation to avoid cross-test interference
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static TEST_COUNTER: AtomicU64 = AtomicU64::new(0);
+        let test_id = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
+        let dir = std::env::temp_dir().join(format!(
+            "wasmtime4j_cache_test_{}_{}",
+            std::process::id(),
+            test_id
+        ));
         let _ = std::fs::create_dir_all(&dir);
         ModuleCacheConfig {
             cache_dir: dir,
@@ -962,9 +970,10 @@ mod tests {
         }
     }
 
+    // module_cache works with wasmtime::Engine directly, so we use the shared component engine
+    // which has all required features enabled and avoids GLOBAL_CODE registry accumulation
     fn test_engine() -> Engine {
-        let config = crate::engine::safe_wasmtime_config();
-        Engine::new(&config).unwrap()
+        crate::engine::get_shared_component_wasmtime_engine()
     }
 
     // Minimal valid WASM module: (module)

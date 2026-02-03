@@ -310,13 +310,8 @@ impl Module {
             });
         }
 
-        // Use wasmparser for comprehensive validation
-        let safe_config = crate::engine::safe_wasmtime_config();
-        let validation_engine = wasmtime::Engine::new(&safe_config)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to create validation engine: {}", e),
-                backtrace: None,
-            })?;
+        // Use the shared wasmtime engine for validation to avoid GLOBAL_CODE accumulation
+        let validation_engine = crate::engine::get_shared_wasmtime_engine();
         match wasmtime::Module::validate(&validation_engine, wasm_bytes) {
             Ok(_) => Ok(()),
             Err(e) => Err(WasmtimeError::Validation {
@@ -922,9 +917,14 @@ pub mod core {
 mod tests {
     use super::*;
 
+    // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
+    fn shared_engine() -> Engine {
+        crate::engine::get_shared_engine()
+    }
+
     #[test]
     fn test_module_compilation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         
         // Simple WAT module for testing
         let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
@@ -938,14 +938,14 @@ mod tests {
 
     #[test]
     fn test_empty_bytes() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let result = Module::compile(&engine, &[]);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_module_metadata() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let wat = "(module 
                      (import \"env\" \"print\" (func $print (param i32)))
                      (func (export \"main\") (result i32) i32.const 42))";
@@ -964,7 +964,7 @@ mod tests {
 
     #[test]
     fn test_function_exports() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let wat = "(module 
                      (func (export \"add\") (param i32 i32) (result i32) 
                        local.get 0 local.get 1 i32.add)

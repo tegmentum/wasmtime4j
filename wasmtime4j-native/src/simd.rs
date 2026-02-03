@@ -2628,9 +2628,8 @@ mod tests {
 
         let vec = V128::from_i32s(1, 2, 3, 4);
 
-        // Test invalid alignment values
-        let safe_config = crate::engine::safe_wasmtime_config();
-        let engine = wasmtime::Engine::new(&safe_config).unwrap();
+        // Test invalid alignment values - use shared engine to avoid GLOBAL_CODE accumulation
+        let engine = crate::engine::get_shared_wasmtime_engine();
         let mut store = wasmtime::Store::new(&engine, ());
         let memory_type = wasmtime::MemoryType::new(1, None);
         let memory = wasmtime::Memory::new(&mut store, memory_type).unwrap();

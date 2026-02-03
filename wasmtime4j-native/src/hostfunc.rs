@@ -702,6 +702,11 @@ mod tests {
     use crate::store::Store;
     use wasmtime::ValType;
 
+    // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
+    fn shared_engine() -> Engine {
+        crate::engine::get_shared_engine()
+    }
+
     struct TestCallback;
     impl HostFunctionCallback for TestCallback {
         fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
@@ -729,7 +734,7 @@ mod tests {
 
     #[test]
     fn test_host_function_creation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Create function type
@@ -800,7 +805,7 @@ mod tests {
     fn test_registry_operations() {
         let (initial_count, _) = core::get_registry_stats().unwrap();
 
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Create function type
@@ -836,7 +841,7 @@ mod tests {
 
     #[test]
     fn test_host_function_callback_execution() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Create function type for add function
@@ -872,7 +877,7 @@ mod tests {
 
     #[test]
     fn test_host_function_error_handling() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Create function type
@@ -909,7 +914,7 @@ mod tests {
 
     #[test]
     fn test_multiple_host_functions() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Create multiple host functions with different signatures

@@ -149,22 +149,8 @@ impl EnhancedComponentEngine {
     ///
     /// Returns `WasmtimeError::EngineConfig` if the engine cannot be created.
     pub fn new() -> WasmtimeResult<Self> {
-        let mut config = crate::engine::safe_wasmtime_config();
-
-        // Only enable component model - minimal required feature
-        config.wasm_component_model(true);
-
-        // Explicitly disable async support to prevent fiber/future initialization
-        // that can cause crashes during Store destruction
-        config.async_support(false);
-
-        // Cranelift is the default, but be explicit
-        config.strategy(wasmtime::Strategy::Cranelift);
-
-        let engine = Engine::new(&config).map_err(|e| WasmtimeError::EngineConfig {
-            message: format!("Failed to create component engine: {}", e),
-        })?;
-
+        // Use the shared component engine to avoid GLOBAL_CODE registry accumulation
+        let engine = crate::engine::get_shared_component_wasmtime_engine();
         let linker = ComponentLinker::new(&engine);
 
         Ok(EnhancedComponentEngine {
@@ -187,6 +173,8 @@ impl EnhancedComponentEngine {
     ///
     /// Returns a new `EnhancedComponentEngine` with the provided configuration.
     pub fn with_config(mut config: Config) -> WasmtimeResult<Self> {
+        // CRITICAL: Disable signal-based traps to prevent conflicts with JVM signal handlers
+        config.signals_based_traps(false);
         // Ensure component model is enabled
         config.wasm_component_model(true);
         // Explicitly disable async support to prevent fiber/future crashes

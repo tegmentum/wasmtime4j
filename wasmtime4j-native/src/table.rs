@@ -1235,9 +1235,14 @@ mod tests {
     use crate::engine::Engine;
     use crate::store::Store;
 
+    // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
+    fn shared_engine() -> Engine {
+        crate::engine::get_shared_engine()
+    }
+
     #[test]
     fn test_table_creation() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let table = Table::new(
@@ -1257,7 +1262,7 @@ mod tests {
 
     #[test]
     fn test_table_size() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let table = Table::new(
@@ -1275,7 +1280,7 @@ mod tests {
     #[test]
     #[ignore = "Table get returns None when expecting Some(0) - table initialization issue"]
     fn test_table_get_set() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let table = Table::new(
@@ -1307,7 +1312,7 @@ mod tests {
 
     #[test]
     fn test_table_bounds_checking() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let table = Table::new(
@@ -1329,7 +1334,7 @@ mod tests {
 
     #[test]
     fn test_table_grow() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let table = Table::new(
@@ -1354,7 +1359,7 @@ mod tests {
 
     #[test]
     fn test_table_grow_maximum_limit() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let table = Table::new(
@@ -1373,7 +1378,7 @@ mod tests {
     #[test]
     #[ignore = "Table fill assertion fails - table initialization issue"]
     fn test_table_fill() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let table = Table::new(
@@ -1400,7 +1405,7 @@ mod tests {
 
     #[test]
     fn test_invalid_element_type() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Test creating table with invalid element type (I32)
@@ -1416,7 +1421,7 @@ mod tests {
 
     #[test]
     fn test_type_mismatch() {
-        let engine = Engine::new().expect("Failed to create engine");
+        let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
         let table = Table::new(

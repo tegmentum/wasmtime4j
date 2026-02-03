@@ -14465,17 +14465,8 @@ mod async_runtime_jni {
                 }
             }
 
-            // Try to compile the module
-            let config = crate::engine::safe_wasmtime_config();
-            let engine = match wasmtime::Engine::new(&config) {
-                Ok(e) => e,
-                Err(e) => {
-                    log::error!("Failed to create engine: {:?}", e);
-                    // Create failed AsyncResult and invoke callback
-                    invoke_completion_callback(&mut guard, &completion_global, false, &format!("Engine creation failed: {}", e));
-                    return;
-                }
-            };
+            // Use the shared wasmtime engine to avoid GLOBAL_CODE accumulation
+            let engine = crate::engine::get_shared_wasmtime_engine();
 
             let compile_result = wasmtime::Module::new(&engine, &bytes);
 

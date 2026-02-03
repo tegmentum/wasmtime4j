@@ -393,13 +393,8 @@ fn create_gc_runtime_internal(engine_handle: i64) -> WasmtimeResult<WasmGcRuntim
         return Err(WasmtimeError::InvalidParameter { message:"Invalid engine handle".to_string() });
     }
 
-    // In a real implementation, we would get the engine from the handle
-    let safe_config = crate::engine::safe_wasmtime_config();
-    let engine = wasmtime::Engine::new(&safe_config)
-        .map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to create engine: {}", e),
-            backtrace: None,
-        })?;
+    // Use the shared wasmtime engine which has GC enabled
+    let engine = crate::engine::get_shared_gc_wasmtime_engine();
     WasmGcRuntime::new(engine)
 }
 
