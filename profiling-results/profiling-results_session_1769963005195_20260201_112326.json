@@ -1,0 +1,25 @@
+{
+  "timestamp" : "2026-02-01T11:23:26.429971",
+  "session" : {
+    "sessionId" : "session_1769963005195",
+    "benchmarkName" : "ProfilingBenchmark",
+    "runtimeType" : "PANAMA",
+    "duration" : 1004
+  },
+  "insights" : {
+    "avgHeapUtilization" : 0.21445191382813106,
+    "avgGcTime" : 29639.390376452273,
+    "avgThreadCount" : 10.0,
+    "avgSystemLoad" : 23.87646484375,
+    "analysis" : "Session analyzed 408498 snapshots over 1004 ms. Average heap utilization: 21.4%, GC time: 29639 ms, thread count: 10, system load: 23.88"
+  },
+  "recommendations" : [ "High GC overhead detected (>100ms average). Consider tuning GC parameters or reducing allocation pressure.", "System load average exceeds available processors. Consider reducing concurrent operations." ],
+  "keyMetrics" : {
+    "totalGcTime" : 29660.0,
+    "peakThreadCount" : 19.0,
+    "sessionDuration" : 1004.0,
+    "avgHeapUtilization" : 0.21445191382813106,
+    "maxHeapUsed" : 2.822897264E9,
+    "totalGcCollections" : 2095.0
+  }
+}
