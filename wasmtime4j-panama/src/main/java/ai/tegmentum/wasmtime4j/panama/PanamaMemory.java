@@ -26,6 +26,9 @@ public final class PanamaMemory implements WasmMemory {
   private static final int MEDIUM_BUFFER_SIZE = 65536; // 64KB
   private static final long BUFFER_CACHE_VALIDITY_MS = 100; // Cache validity in milliseconds
 
+  // Performance threshold: use ByteBuffer for small ops, MemorySegment.copy for large
+  private static final int BULK_OPERATION_THRESHOLD = 1024;
+
   private final Arena arena;
   private final MemorySegment nativeMemory;
   private final String memoryName;
@@ -264,10 +267,8 @@ public final class PanamaMemory implements WasmMemory {
     }
     ensureNotClosed();
 
-    // Performance optimization: zero-copy direct memory access
+    // Bounds check against cached size (initializes direct memory if needed)
     final MemorySegment directMem = getDirectMemorySegment();
-
-    // Bounds check against cached size
     if ((long) offset + length > directMemorySize) {
       throw new IndexOutOfBoundsException(
           "Memory access out of bounds: offset="
@@ -278,8 +279,16 @@ public final class PanamaMemory implements WasmMemory {
               + directMemorySize);
     }
 
-    // Direct copy from native memory to Java array
-    MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, offset, dest, destOffset, length);
+    // Performance optimization: use ByteBuffer for small operations (JVM intrinsics)
+    // MemorySegment.copy is better for large bulk transfers
+    if (length < BULK_OPERATION_THRESHOLD) {
+      final ByteBuffer buffer = getDirectByteBuffer();
+      buffer.position(offset);
+      buffer.get(dest, destOffset, length);
+    } else {
+      // Use MemorySegment.copy for large operations
+      MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, offset, dest, destOffset, length);
+    }
   }
 
   @Override
@@ -308,10 +317,8 @@ public final class PanamaMemory implements WasmMemory {
     }
     ensureNotClosed();
 
-    // Performance optimization: zero-copy direct memory access
+    // Bounds check against cached size (initializes direct memory if needed)
     final MemorySegment directMem = getDirectMemorySegment();
-
-    // Bounds check against cached size
     if ((long) offset + length > directMemorySize) {
       throw new IndexOutOfBoundsException(
           "Memory access out of bounds: offset="
@@ -322,8 +329,16 @@ public final class PanamaMemory implements WasmMemory {
               + directMemorySize);
     }
 
-    // Direct copy from Java array to native memory
-    MemorySegment.copy(src, srcOffset, directMem, ValueLayout.JAVA_BYTE, offset, length);
+    // Performance optimization: use ByteBuffer for small operations (JVM intrinsics)
+    // MemorySegment.copy is better for large bulk transfers
+    if (length < BULK_OPERATION_THRESHOLD) {
+      final ByteBuffer buffer = getDirectByteBuffer();
+      buffer.position(offset);
+      buffer.put(src, srcOffset, length);
+    } else {
+      // Use MemorySegment.copy for large operations
+      MemorySegment.copy(src, srcOffset, directMem, ValueLayout.JAVA_BYTE, offset, length);
+    }
   }
 
   @Override
