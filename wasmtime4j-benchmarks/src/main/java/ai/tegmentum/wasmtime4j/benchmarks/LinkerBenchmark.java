@@ -62,133 +62,23 @@ public class LinkerBenchmark {
 
   // Simple WebAssembly module that imports a function called "add" from module "env"
   // and exports a function called "call_add" that calls the imported function
-  private static final byte[] WASM_MODULE_WITH_IMPORTS = {
-    0x00,
-    0x61,
-    0x73,
-    0x6d, // WASM magic number
-    0x01,
-    0x00,
-    0x00,
-    0x00, // Version 1
-
-    // Type section
-    0x01,
-    0x07, // Section id=1, length=7
-    0x01, // 1 type
-    0x60,
-    0x02,
-    0x7f,
-    0x7f,
-    0x01,
-    0x7f, // (i32, i32) -> i32
-
-    // Import section
-    0x02,
-    0x0b, // Section id=2, length=11
-    0x01, // 1 import
-    0x03,
-    0x65,
-    0x6e,
-    0x76, // Module name "env"
-    0x03,
-    0x61,
-    0x64,
-    0x64, // Field name "add"
-    0x00,
-    0x00, // Import type: function index 0
-
-    // Function section
-    0x03,
-    0x02, // Section id=3, length=2
-    0x01,
-    0x00, // 1 function, type index 0
-
-    // Export section
-    0x07,
-    0x0c, // Section id=7, length=12
-    0x01, // 1 export
-    0x08,
-    0x63,
-    0x61,
-    0x6c,
-    0x6c,
-    0x5f,
-    0x61,
-    0x64,
-    0x64, // Name "call_add"
-    0x00,
-    0x01, // Export type: function index 1
-
-    // Code section
-    0x0a,
-    0x09, // Section id=10, length=9
-    0x01, // 1 function body
-    0x07, // Body length=7
-    0x00, // Local declarations count=0
-    0x20,
-    0x00, // local.get 0
-    0x20,
-    0x01, // local.get 1
-    0x10,
-    0x00, // call 0
-    0x0b // end
-  };
+  private static final String WAT_MODULE_WITH_IMPORTS =
+      "(module\n"
+          + "  (import \"env\" \"add\" (func $add (param i32 i32) (result i32)))\n"
+          + "  (func (export \"call_add\") (param i32 i32) (result i32)\n"
+          + "    local.get 0\n"
+          + "    local.get 1\n"
+          + "    call $add\n"
+          + "  )\n"
+          + ")";
 
   // Simple WebAssembly module with no imports
-  private static final byte[] WASM_MODULE_NO_IMPORTS = {
-    0x00,
-    0x61,
-    0x73,
-    0x6d, // WASM magic number
-    0x01,
-    0x00,
-    0x00,
-    0x00, // Version 1
-
-    // Type section
-    0x01,
-    0x05, // Section id=1, length=5
-    0x01, // 1 type
-    0x60,
-    0x00,
-    0x01,
-    0x7f, // () -> i32
-
-    // Function section
-    0x03,
-    0x02, // Section id=3, length=2
-    0x01,
-    0x00, // 1 function, type index 0
-
-    // Export section
-    0x07,
-    0x0e, // Section id=7, length=14
-    0x01, // 1 export
-    0x0a,
-    0x67,
-    0x65,
-    0x74,
-    0x5f,
-    0x61,
-    0x6e,
-    0x73,
-    0x77,
-    0x65,
-    0x72, // Name "get_answer"
-    0x00,
-    0x00, // Export type: function index 0
-
-    // Code section
-    0x0a,
-    0x06, // Section id=10, length=6
-    0x01, // 1 function body
-    0x04, // Body length=4
-    0x00, // Local declarations count=0
-    0x41,
-    0x2a, // i32.const 42
-    0x0b // end
-  };
+  private static final String WAT_MODULE_NO_IMPORTS =
+      "(module\n"
+          + "  (func (export \"get_answer\") (result i32)\n"
+          + "    i32.const 42\n"
+          + "  )\n"
+          + ")";
 
   @Setup(Level.Trial)
   public void setup() throws WasmException {
@@ -198,8 +88,8 @@ public class LinkerBenchmark {
     linker = runtime.createLinker(engine);
 
     // Compile modules
-    moduleWithImports = runtime.compileModule(engine, WASM_MODULE_WITH_IMPORTS);
-    moduleNoImports = runtime.compileModule(engine, WASM_MODULE_NO_IMPORTS);
+    moduleWithImports = runtime.compileModuleWat(engine, WAT_MODULE_WITH_IMPORTS);
+    moduleNoImports = runtime.compileModuleWat(engine, WAT_MODULE_NO_IMPORTS);
 
     // Define a host function for the import-dependent module
     final FunctionType addType =

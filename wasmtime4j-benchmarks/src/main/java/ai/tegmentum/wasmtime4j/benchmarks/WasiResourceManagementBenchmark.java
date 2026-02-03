@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
-import ai.tegmentum.wasmtime4j.jni.wasi.WasiContextIsolationValidator;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiResourceLeakDetector;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiResourceUsageTracker;
@@ -44,12 +43,8 @@ public class WasiResourceManagementBenchmark {
   @Param({"false", "true"})
   private boolean detailedTracking;
 
-  @Param({"STANDARD", "STRICT"})
-  private String isolationLevel;
-
   private WasiResourceLeakDetector leakDetector;
   private WasiResourceUsageTracker usageTracker;
-  private WasiContextIsolationValidator isolationValidator;
   private WasiResourceLimits resourceLimits;
 
   // Test data
@@ -80,18 +75,17 @@ public class WasiResourceManagementBenchmark {
 
     usageTracker = new WasiResourceUsageTracker(resourceLimits, detailedTracking);
 
-    isolationValidator = new WasiContextIsolationValidator(true); // strict mode enabled
-
     // Setup test data
     contextId = "benchmark-context";
     testPath = Paths.get("/tmp/benchmark/test.txt");
     testMemorySegment = new Object();
     mockContext = new MockWasiContext(contextId);
 
-    // Register context in components
+    // Register context in usage tracker only
+    // Note: IsolationValidator requires a real WasiContext with native handle,
+    // so we skip registering with isolationValidator for benchmarking purposes.
+    // The isolation validator benchmarks will be skipped.
     usageTracker.registerContext(contextId);
-    isolationValidator.registerContext(
-        contextId, null, WasiContextIsolationValidator.IsolationLevel.valueOf(isolationLevel));
   }
 
   @TearDown(Level.Trial)
@@ -101,9 +95,6 @@ public class WasiResourceManagementBenchmark {
     }
     if (usageTracker != null) {
       usageTracker.unregisterContext(contextId);
-    }
-    if (isolationValidator != null) {
-      isolationValidator.unregisterContext(contextId);
     }
   }
 
@@ -182,44 +173,17 @@ public class WasiResourceManagementBenchmark {
   }
 
   @Benchmark
-  public void benchmarkPathAccessValidation() {
-    // Benchmark path access validation
-    isolationValidator.validatePathAccess(contextId, testPath, WasiFileOperation.READ);
-  }
-
-  @Benchmark
-  public void benchmarkResourceAccessValidation() {
-    // Benchmark resource access validation
-    isolationValidator.validateResourceAccess(contextId, "benchmark-resource", "file");
-  }
-
-  @Benchmark
-  public void benchmarkMemoryAccessValidation() {
-    // Benchmark memory access validation
-    isolationValidator.validateMemoryAccess(contextId, 0x100000L, 4096);
-  }
-
-  @Benchmark
-  public void benchmarkIsolationStatistics() {
-    // Benchmark getting isolation statistics
-    isolationValidator.getStatistics();
-  }
-
-  @Benchmark
   public void benchmarkCompleteResourceOperation() {
-    // Benchmark a complete resource operation that involves all components
+    // Benchmark a complete resource operation using leak detector and usage tracker
     final long startTime = System.nanoTime();
 
-    // 1. Validate access
-    isolationValidator.validatePathAccess(contextId, testPath, WasiFileOperation.READ);
-
-    // 2. Track operation
+    // 1. Track operation
     usageTracker.recordFileSystemOperation(contextId, WasiFileOperation.READ, 2048, 1500000);
 
-    // 3. Track memory allocation
+    // 2. Track memory allocation
     usageTracker.recordMemoryAllocation(contextId, 2048);
 
-    // 4. Track execution time
+    // 3. Track execution time
     final long executionTime = System.nanoTime() - startTime;
     usageTracker.recordExecutionTime(contextId, executionTime);
   }
@@ -228,10 +192,8 @@ public class WasiResourceManagementBenchmark {
   public void benchmarkConcurrentResourceTracking() {
     // Benchmark concurrent operations that might happen in real usage
     final long timestamp = System.nanoTime();
-    final String dynamicResourceId = "resource-" + timestamp;
 
     // Simulate concurrent resource management operations
-    isolationValidator.validateResourceAccess(contextId, dynamicResourceId, "concurrent");
     usageTracker.recordMemoryAllocation(contextId, 512);
     usageTracker.recordCpuTime(contextId, 500000);
     leakDetector.trackMemorySegment(timestamp, testMemorySegment);
@@ -258,10 +220,9 @@ public class WasiResourceManagementBenchmark {
 
   @Benchmark
   public void benchmarkStatisticsCollection() {
-    // Benchmark collecting statistics from all components
+    // Benchmark collecting statistics from leak detector and usage tracker
     leakDetector.getStatistics();
     usageTracker.getGlobalUsage();
-    isolationValidator.getStatistics();
   }
 
   /** Benchmark-specific resource limits for performance testing. */
