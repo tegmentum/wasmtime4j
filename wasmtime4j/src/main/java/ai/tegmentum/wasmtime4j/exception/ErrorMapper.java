@@ -427,6 +427,8 @@ public final class ErrorMapper {
       errorType = LinkingException.LinkingErrorType.IMPORT_NOT_FOUND;
     } else if (lowerMessage.contains("export") && lowerMessage.contains("not found")) {
       errorType = LinkingException.LinkingErrorType.EXPORT_NOT_FOUND;
+    } else if (lowerMessage.contains("host function")) {
+      errorType = LinkingException.LinkingErrorType.HOST_FUNCTION_BINDING_FAILED;
     } else if (lowerMessage.contains("signature") || lowerMessage.contains("function")) {
       errorType = LinkingException.LinkingErrorType.FUNCTION_SIGNATURE_MISMATCH;
     } else if (lowerMessage.contains("memory") && lowerMessage.contains("size")) {
@@ -445,8 +447,6 @@ public final class ErrorMapper {
       errorType = LinkingException.LinkingErrorType.CIRCULAR_DEPENDENCY;
     } else if (lowerMessage.contains("namespace")) {
       errorType = LinkingException.LinkingErrorType.NAMESPACE_CONFLICT;
-    } else if (lowerMessage.contains("host function")) {
-      errorType = LinkingException.LinkingErrorType.HOST_FUNCTION_BINDING_FAILED;
     } else if (lowerMessage.contains("wasi")) {
       errorType = LinkingException.LinkingErrorType.WASI_IMPORT_FAILED;
     } else if (lowerMessage.contains("component")) {

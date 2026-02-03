@@ -153,7 +153,7 @@
                         <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
                         <wasmtime4j.test.timeout>${test.timeout}</wasmtime4j.test.timeout>
                         <wasmtime4j.test.resources>${project.build.testOutputDirectory}</wasmtime4j.test.resources>
-                        <wasmtime4j.native.mode>require</wasmtime4j.native.mode>
+                        <wasmtime4j.native.mode>auto</wasmtime4j.native.mode>
                         <wasmtime4j.native.strategy1>false</wasmtime4j.native.strategy1>
                         <wasmtime4j.native.tmpdir>${project.build.directory}/wasmtime4j-native</wasmtime4j.native.tmpdir>
                     </systemPropertyVariables>

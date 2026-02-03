@@ -160,12 +160,17 @@ public final class WasmRuntimeFactory {
     if (version.startsWith("1.")) {
       return Integer.parseInt(version.substring(2, 3));
     } else {
-      final int dot = version.indexOf('.');
+      // Strip any suffix after a dot or hyphen (e.g., "26-ea", "23.0.1")
+      String majorStr = version;
+      final int dot = majorStr.indexOf('.');
       if (dot != -1) {
-        return Integer.parseInt(version.substring(0, dot));
-      } else {
-        return Integer.parseInt(version);
+        majorStr = majorStr.substring(0, dot);
       }
+      final int hyphen = majorStr.indexOf('-');
+      if (hyphen != -1) {
+        majorStr = majorStr.substring(0, hyphen);
+      }
+      return Integer.parseInt(majorStr);
     }
   }
 
