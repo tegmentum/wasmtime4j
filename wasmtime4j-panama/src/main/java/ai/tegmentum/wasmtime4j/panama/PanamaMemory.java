@@ -283,8 +283,8 @@ public final class PanamaMemory implements WasmMemory {
     // MemorySegment.copy is better for large bulk transfers
     if (length < BULK_OPERATION_THRESHOLD) {
       final ByteBuffer buffer = getDirectByteBuffer();
-      buffer.position(offset);
-      buffer.get(dest, destOffset, length);
+      // Use absolute get to avoid position() overhead (Java 13+)
+      buffer.get(offset, dest, destOffset, length);
     } else {
       // Use MemorySegment.copy for large operations
       MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, offset, dest, destOffset, length);
@@ -333,8 +333,8 @@ public final class PanamaMemory implements WasmMemory {
     // MemorySegment.copy is better for large bulk transfers
     if (length < BULK_OPERATION_THRESHOLD) {
       final ByteBuffer buffer = getDirectByteBuffer();
-      buffer.position(offset);
-      buffer.put(src, srcOffset, length);
+      // Use absolute put to avoid position() overhead (Java 13+)
+      buffer.put(offset, src, srcOffset, length);
     } else {
       // Use MemorySegment.copy for large operations
       MemorySegment.copy(src, srcOffset, directMem, ValueLayout.JAVA_BYTE, offset, length);

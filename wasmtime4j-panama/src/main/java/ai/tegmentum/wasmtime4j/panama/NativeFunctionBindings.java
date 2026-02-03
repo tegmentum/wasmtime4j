@@ -70,6 +70,15 @@ public final class NativeFunctionBindings {
   // Signature: (ADDRESS) -> ADDRESS
   private volatile MethodHandle mhStoreCreate;
 
+  // Signature: (ADDRESS, ADDRESS, JAVA_LONG, JAVA_LONG, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle mhPanamaMemoryReadBytes;
+
+  // Signature: (ADDRESS, ADDRESS, JAVA_LONG, JAVA_LONG, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle mhPanamaMemoryWriteBytes;
+
+  // Signature: (ADDRESS, ADDRESS) -> ADDRESS
+  private volatile MethodHandle mhInstanceCreate;
+
   /** Private constructor for singleton pattern. */
   private NativeFunctionBindings() {
     try {
@@ -108,6 +117,21 @@ public final class NativeFunctionBindings {
       FunctionBinding storeCreateBinding = functionBindings.get("wasmtime4j_store_create");
       if (storeCreateBinding != null) {
         this.mhStoreCreate = storeCreateBinding.getMethodHandle().orElse(null);
+      }
+
+      FunctionBinding memReadBinding = functionBindings.get("wasmtime4j_panama_memory_read_bytes");
+      if (memReadBinding != null) {
+        this.mhPanamaMemoryReadBytes = memReadBinding.getMethodHandle().orElse(null);
+      }
+
+      FunctionBinding memWriteBinding = functionBindings.get("wasmtime4j_panama_memory_write_bytes");
+      if (memWriteBinding != null) {
+        this.mhPanamaMemoryWriteBytes = memWriteBinding.getMethodHandle().orElse(null);
+      }
+
+      FunctionBinding instanceCreateBinding = functionBindings.get("wasmtime4j_instance_create");
+      if (instanceCreateBinding != null) {
+        this.mhInstanceCreate = instanceCreateBinding.getMethodHandle().orElse(null);
       }
 
       this.initialized = true;
@@ -1653,6 +1677,16 @@ public final class NativeFunctionBindings {
   public MemorySegment instanceCreate(final MemorySegment storePtr, final MemorySegment modulePtr) {
     validatePointer(storePtr, "storePtr");
     validatePointer(modulePtr, "modulePtr");
+
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhInstanceCreate;
+    if (mh != null) {
+      try {
+        return (MemorySegment) mh.invokeExact(storePtr, modulePtr);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native instanceCreate failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_instance_create", MemorySegment.class, storePtr, modulePtr);
   }
@@ -3797,6 +3831,15 @@ public final class NativeFunctionBindings {
     validatePointer(storePtr, "storePtr");
     validatePointer(bufferPtr, "bufferPtr");
 
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhPanamaMemoryReadBytes;
+    if (mh != null) {
+      try {
+        return (int) mh.invokeExact(memoryPtr, storePtr, offset, length, bufferPtr);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native panamaMemoryReadBytes failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_panama_memory_read_bytes",
         Integer.class,
@@ -3827,6 +3870,15 @@ public final class NativeFunctionBindings {
     validatePointer(storePtr, "storePtr");
     validatePointer(bufferPtr, "bufferPtr");
 
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhPanamaMemoryWriteBytes;
+    if (mh != null) {
+      try {
+        return (int) mh.invokeExact(memoryPtr, storePtr, offset, length, bufferPtr);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native panamaMemoryWriteBytes failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_panama_memory_write_bytes",
         Integer.class,
