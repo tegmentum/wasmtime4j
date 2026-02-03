@@ -288,4 +288,295 @@ class WasiExceptionTest {
       assertEquals("", exception.getResource(), "Empty resource should be preserved");
     }
   }
+
+  @Nested
+  @DisplayName("Category Check Methods - False Cases")
+  class CategoryCheckMethodsFalseCaseTests {
+
+    @Test
+    @DisplayName("isPermissionError should return false for non-PERMISSION categories")
+    void isPermissionErrorShouldReturnFalseForOtherCategories() {
+      // Test with FILE_SYSTEM
+      final WasiException fsException =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.FILE_SYSTEM);
+      assertFalse(fsException.isPermissionError());
+
+      // Test with NETWORK
+      final WasiException netException =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.NETWORK);
+      assertFalse(netException.isPermissionError());
+
+      // Test with SYSTEM (default)
+      final WasiException sysException = new WasiException("error");
+      assertFalse(sysException.isPermissionError());
+    }
+
+    @Test
+    @DisplayName("isResourceLimitError should return false for non-RESOURCE_LIMIT categories")
+    void isResourceLimitErrorShouldReturnFalseForOtherCategories() {
+      // Test with FILE_SYSTEM
+      final WasiException fsException =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.FILE_SYSTEM);
+      assertFalse(fsException.isResourceLimitError());
+
+      // Test with PERMISSION
+      final WasiException permException =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.PERMISSION);
+      assertFalse(permException.isResourceLimitError());
+
+      // Test with SYSTEM (default)
+      final WasiException sysException = new WasiException("error");
+      assertFalse(sysException.isResourceLimitError());
+    }
+
+    @Test
+    @DisplayName("isComponentError should return false for non-COMPONENT categories")
+    void isComponentErrorShouldReturnFalseForOtherCategories() {
+      // Test with FILE_SYSTEM
+      final WasiException fsException =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.FILE_SYSTEM);
+      assertFalse(fsException.isComponentError());
+
+      // Test with NETWORK
+      final WasiException netException =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.NETWORK);
+      assertFalse(netException.isComponentError());
+
+      // Test with SYSTEM (default)
+      final WasiException sysException = new WasiException("error");
+      assertFalse(sysException.isComponentError());
+    }
+
+    @Test
+    @DisplayName("isConfigurationError should return false for non-CONFIGURATION categories")
+    void isConfigurationErrorShouldReturnFalseForOtherCategories() {
+      // Test with FILE_SYSTEM
+      final WasiException fsException =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.FILE_SYSTEM);
+      assertFalse(fsException.isConfigurationError());
+
+      // Test with PERMISSION
+      final WasiException permException =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.PERMISSION);
+      assertFalse(permException.isConfigurationError());
+
+      // Test with SYSTEM (default)
+      final WasiException sysException = new WasiException("error");
+      assertFalse(sysException.isConfigurationError());
+    }
+  }
+
+  @Nested
+  @DisplayName("Message and Cause Constructor Mutation Tests")
+  class MessageAndCauseConstructorMutationTests {
+
+    @Test
+    @DisplayName("message with cause constructor should default retryable to false")
+    void messageCauseConstructorShouldDefaultRetryableToFalse() {
+      final RuntimeException cause = new RuntimeException("Native error");
+      final WasiException exception = new WasiException("Error occurred", cause);
+
+      // Verify retryable is false, not true (kills InlineConstant mutation)
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+
+    @Test
+    @DisplayName("message with cause constructor should default to SYSTEM category")
+    void messageCauseConstructorShouldDefaultToSystemCategory() {
+      final RuntimeException cause = new RuntimeException("Native error");
+      final WasiException exception = new WasiException("Error occurred", cause);
+
+      assertEquals(WasiException.ErrorCategory.SYSTEM, exception.getCategory());
+    }
+
+    @Test
+    @DisplayName("message with cause constructor should preserve cause")
+    void messageCauseConstructorShouldPreserveCause() {
+      final RuntimeException cause = new RuntimeException("Native error");
+      final WasiException exception = new WasiException("Error occurred", cause);
+
+      assertSame(cause, exception.getCause());
+    }
+  }
+
+  @Nested
+  @DisplayName("formatMessage Mutation Tests")
+  class FormatMessageMutationTests {
+
+    @Test
+    @DisplayName("operation null and empty should not add operation to message")
+    void operationNullOrEmptyShouldNotAddToMessage() {
+      // Null operation
+      final WasiException nullOpException =
+          new WasiException("error", null, "resource", false, WasiException.ErrorCategory.SYSTEM);
+      assertFalse(nullOpException.getMessage().contains("operation:"));
+
+      // Empty operation
+      final WasiException emptyOpException =
+          new WasiException("error", "", "resource", false, WasiException.ErrorCategory.SYSTEM);
+      assertFalse(emptyOpException.getMessage().contains("operation:"));
+    }
+
+    @Test
+    @DisplayName("resource null and empty should not add resource to message")
+    void resourceNullOrEmptyShouldNotAddToMessage() {
+      // Null resource
+      final WasiException nullResException =
+          new WasiException("error", "operation", null, false, WasiException.ErrorCategory.SYSTEM);
+      assertFalse(nullResException.getMessage().contains("resource:"));
+
+      // Empty resource
+      final WasiException emptyResException =
+          new WasiException("error", "operation", "", false, WasiException.ErrorCategory.SYSTEM);
+      assertFalse(emptyResException.getMessage().contains("resource:"));
+    }
+
+    @Test
+    @DisplayName("non-null non-empty operation should be added to message")
+    void nonNullNonEmptyOperationShouldBeAddedToMessage() {
+      final WasiException exception =
+          new WasiException("error", "my-operation", null, false, WasiException.ErrorCategory.SYSTEM);
+      assertTrue(exception.getMessage().contains("operation: my-operation"));
+    }
+
+    @Test
+    @DisplayName("non-null non-empty resource should be added to message")
+    void nonNullNonEmptyResourceShouldBeAddedToMessage() {
+      final WasiException exception =
+          new WasiException("error", null, "my-resource", false, WasiException.ErrorCategory.SYSTEM);
+      assertTrue(exception.getMessage().contains("resource: my-resource"));
+    }
+
+    @Test
+    @DisplayName("both operation and resource should be added when present")
+    void bothOperationAndResourceShouldBeAddedWhenPresent() {
+      final WasiException exception =
+          new WasiException(
+              "error", "my-operation", "my-resource", false, WasiException.ErrorCategory.SYSTEM);
+      assertTrue(exception.getMessage().contains("operation: my-operation"));
+      assertTrue(exception.getMessage().contains("resource: my-resource"));
+    }
+
+    @Test
+    @DisplayName("whitespace-only operation should not be treated as empty")
+    void whitespaceOnlyOperationShouldNotBeTreatedAsEmpty() {
+      // Whitespace is not empty, so it should be included
+      final WasiException exception =
+          new WasiException("error", " ", null, false, WasiException.ErrorCategory.SYSTEM);
+      assertTrue(exception.getMessage().contains("operation:"));
+    }
+
+    @Test
+    @DisplayName("whitespace-only resource should not be treated as empty")
+    void whitespaceOnlyResourceShouldNotBeTreatedAsEmpty() {
+      // Whitespace is not empty, so it should be included
+      final WasiException exception =
+          new WasiException("error", null, " ", false, WasiException.ErrorCategory.SYSTEM);
+      assertTrue(exception.getMessage().contains("resource:"));
+    }
+  }
+
+  @Nested
+  @DisplayName("Category Check - All Categories")
+  class AllCategoryChecksTests {
+
+    @Test
+    @DisplayName("PERMISSION category should only make isPermissionError return true")
+    void permissionCategoryShouldOnlyMakeIsPermissionErrorTrue() {
+      final WasiException exception =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.PERMISSION);
+
+      assertTrue(exception.isPermissionError());
+      assertFalse(exception.isFileSystemError());
+      assertFalse(exception.isNetworkError());
+      assertFalse(exception.isResourceLimitError());
+      assertFalse(exception.isComponentError());
+      assertFalse(exception.isConfigurationError());
+    }
+
+    @Test
+    @DisplayName("RESOURCE_LIMIT category should only make isResourceLimitError return true")
+    void resourceLimitCategoryShouldOnlyMakeIsResourceLimitErrorTrue() {
+      final WasiException exception =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.RESOURCE_LIMIT);
+
+      assertTrue(exception.isResourceLimitError());
+      assertFalse(exception.isFileSystemError());
+      assertFalse(exception.isNetworkError());
+      assertFalse(exception.isPermissionError());
+      assertFalse(exception.isComponentError());
+      assertFalse(exception.isConfigurationError());
+    }
+
+    @Test
+    @DisplayName("COMPONENT category should only make isComponentError return true")
+    void componentCategoryShouldOnlyMakeIsComponentErrorTrue() {
+      final WasiException exception =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.COMPONENT);
+
+      assertTrue(exception.isComponentError());
+      assertFalse(exception.isFileSystemError());
+      assertFalse(exception.isNetworkError());
+      assertFalse(exception.isPermissionError());
+      assertFalse(exception.isResourceLimitError());
+      assertFalse(exception.isConfigurationError());
+    }
+
+    @Test
+    @DisplayName("CONFIGURATION category should only make isConfigurationError return true")
+    void configurationCategoryShouldOnlyMakeIsConfigurationErrorTrue() {
+      final WasiException exception =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.CONFIGURATION);
+
+      assertTrue(exception.isConfigurationError());
+      assertFalse(exception.isFileSystemError());
+      assertFalse(exception.isNetworkError());
+      assertFalse(exception.isPermissionError());
+      assertFalse(exception.isResourceLimitError());
+      assertFalse(exception.isComponentError());
+    }
+
+    @Test
+    @DisplayName("FILE_SYSTEM category should only make isFileSystemError return true")
+    void fileSystemCategoryShouldOnlyMakeIsFileSystemErrorTrue() {
+      final WasiException exception =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.FILE_SYSTEM);
+
+      assertTrue(exception.isFileSystemError());
+      assertFalse(exception.isNetworkError());
+      assertFalse(exception.isPermissionError());
+      assertFalse(exception.isResourceLimitError());
+      assertFalse(exception.isComponentError());
+      assertFalse(exception.isConfigurationError());
+    }
+
+    @Test
+    @DisplayName("NETWORK category should only make isNetworkError return true")
+    void networkCategoryShouldOnlyMakeIsNetworkErrorTrue() {
+      final WasiException exception =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.NETWORK);
+
+      assertTrue(exception.isNetworkError());
+      assertFalse(exception.isFileSystemError());
+      assertFalse(exception.isPermissionError());
+      assertFalse(exception.isResourceLimitError());
+      assertFalse(exception.isComponentError());
+      assertFalse(exception.isConfigurationError());
+    }
+
+    @Test
+    @DisplayName("SYSTEM category should make all is*Error methods return false")
+    void systemCategoryShouldMakeAllIsErrorMethodsReturnFalse() {
+      final WasiException exception =
+          new WasiException("error", "op", null, false, WasiException.ErrorCategory.SYSTEM);
+
+      assertFalse(exception.isFileSystemError());
+      assertFalse(exception.isNetworkError());
+      assertFalse(exception.isPermissionError());
+      assertFalse(exception.isResourceLimitError());
+      assertFalse(exception.isComponentError());
+      assertFalse(exception.isConfigurationError());
+    }
+  }
 }

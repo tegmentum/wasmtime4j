@@ -518,4 +518,361 @@ class WasiConfigurationExceptionTest {
       assertEquals("", exception.getExpectedValue());
     }
   }
+
+  @Nested
+  class ConstructorRetryableDefaultTests {
+
+    @Test
+    void testSimpleMessageConstructorRetryableDefaultsFalse() {
+      final WasiConfigurationException exception = new WasiConfigurationException("Error");
+
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+
+    @Test
+    void testMessageCauseConstructorRetryableDefaultsFalse() {
+      // Kill mutation on line 77: Substituted 0 with 1
+      final RuntimeException cause = new RuntimeException("Test cause");
+      final WasiConfigurationException exception = new WasiConfigurationException("Error", cause);
+
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+
+    @Test
+    void testAreaConstructorRetryableDefaultsFalse() {
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
+
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+
+    @Test
+    void testFiveArgConstructorRetryableDefaultsFalse() {
+      // Kill mutation on line 122: Substituted 0 with 1
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.RESOURCE_LIMITS,
+              "param",
+              "provided",
+              "expected");
+
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+
+    @Test
+    void testSixArgConstructorRetryableDefaultsFalse() {
+      // Kill mutation on line 151: Substituted 0 with 1
+      final RuntimeException cause = new RuntimeException("Test cause");
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION,
+              "param",
+              "provided",
+              "expected",
+              cause);
+
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+  }
+
+  @Nested
+  class NullParameterHandlingTests {
+
+    @Test
+    void testFormatOperationWithNullArea() {
+      // Test with null configurationArea - formatOperation should return "configuration"
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", (WasiConfigurationException.ConfigurationArea) null);
+
+      assertEquals("configuration", exception.getOperation());
+    }
+
+    @Test
+    void testFormatResourceIdentifierBothNull() {
+      // Test formatResourceIdentifier(null, null) returns null
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", (WasiConfigurationException.ConfigurationArea) null);
+
+      assertNull(exception.getResource());
+    }
+
+    @Test
+    void testFormatResourceIdentifierNullAreaWithParameter() {
+      // Test with null configurationArea but non-null parameter
+      // This tests the branch at line 349
+      final WasiConfigurationException exception =
+          new WasiConfigurationException("Error", null, "my-param", "value", "expected");
+
+      // formatResourceIdentifier(null, "my-param") should return "my-param"
+      assertEquals("my-param", exception.getResource());
+    }
+
+    @Test
+    void testFormatResourceIdentifierNullParameter() {
+      // Test with non-null configurationArea but null parameter
+      final WasiConfigurationException exception =
+          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.SYSTEM);
+
+      // formatResourceIdentifier(SYSTEM, null) should return "system"
+      assertEquals("system", exception.getResource());
+    }
+
+    @Test
+    void testFiveArgConstructorWithNullArea() {
+      final WasiConfigurationException exception =
+          new WasiConfigurationException("Error", null, "param", "provided", "expected");
+
+      assertEquals("configuration", exception.getOperation());
+      assertEquals("param", exception.getResource());
+      assertNull(exception.getConfigurationArea());
+    }
+
+    @Test
+    void testSixArgConstructorWithNullArea() {
+      final RuntimeException cause = new RuntimeException("Test");
+      final WasiConfigurationException exception =
+          new WasiConfigurationException("Error", null, "param", "provided", "expected", cause);
+
+      assertEquals("configuration", exception.getOperation());
+      assertEquals("param", exception.getResource());
+      assertNull(exception.getConfigurationArea());
+      assertEquals(cause, exception.getCause());
+    }
+
+    @Test
+    void testFiveArgConstructorWithAllNulls() {
+      final WasiConfigurationException exception =
+          new WasiConfigurationException("Error", null, null, null, null);
+
+      assertEquals("configuration", exception.getOperation());
+      assertNull(exception.getResource());
+      assertNull(exception.getConfigurationArea());
+      assertNull(exception.getConfigurationParameter());
+      assertNull(exception.getProvidedValue());
+      assertNull(exception.getExpectedValue());
+    }
+  }
+
+  @Nested
+  class GetConfigurationGuidanceMutationTests {
+
+    @Test
+    void testGuidanceWithParameterAndExpectedValue() {
+      // Kill RemoveConditional_EQUAL_IF mutations on line 268
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.ENVIRONMENT,
+              "MY_VAR",
+              "bad-value",
+              "good-value");
+
+      final String guidance = exception.getConfigurationGuidance();
+      assertTrue(guidance.contains("Set 'MY_VAR' to good-value"));
+      assertFalse(guidance.contains("Check configuration for"));
+    }
+
+    @Test
+    void testGuidanceWithParameterButNullExpectedValue() {
+      // When parameter is not null but expectedValue is null,
+      // the condition (configurationParameter != null && expectedValue != null) is false
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.ENVIRONMENT,
+              "MY_VAR",
+              "bad-value",
+              null);
+
+      final String guidance = exception.getConfigurationGuidance();
+      // Should use the else branch
+      assertTrue(guidance.contains("Check configuration for"));
+      assertFalse(guidance.contains("Set 'MY_VAR'"));
+    }
+
+    @Test
+    void testGuidanceWithNullParameterAndExpectedValue() {
+      // When parameter is null but expectedValue is not null,
+      // the condition (configurationParameter != null && expectedValue != null) is false
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.ENVIRONMENT,
+              null,
+              "bad-value",
+              "good-value");
+
+      final String guidance = exception.getConfigurationGuidance();
+      // Should use the else branch
+      assertTrue(guidance.contains("Check configuration for"));
+      assertFalse(guidance.contains("Set '"));
+    }
+
+    @Test
+    void testGuidanceWithBothNullParameterAndExpectedValue() {
+      // When both parameter and expectedValue are null,
+      // the condition (configurationParameter != null && expectedValue != null) is false
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
+
+      final String guidance = exception.getConfigurationGuidance();
+      // Should use the else branch
+      assertTrue(guidance.contains("Check configuration for"));
+      assertFalse(guidance.contains("Set '"));
+    }
+
+    @Test
+    void testGuidanceUnderscoreToSpaceConversion() {
+      // Kill InlineConstant mutations on line 273 (95 -> 96, 32 -> 33)
+      // These are character constants for '_' (95) and ' ' (32)
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.FILE_SYSTEM_PERMISSIONS);
+
+      final String guidance = exception.getConfigurationGuidance();
+      // Should contain "file system permissions" (underscores replaced with spaces)
+      assertTrue(guidance.contains("file system permissions"));
+      assertFalse(guidance.contains("file_system_permissions"));
+    }
+  }
+
+  @Nested
+  class FormatResourceIdentifierMutationTests {
+
+    @Test
+    void testFormatResourceIdentifierUnderscoreToDashConversion() {
+      // Kill InlineConstant mutations on line 345 (95 -> 96, 45 -> 46)
+      // These are character constants for '_' (95) and '-' (45)
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.FILE_SYSTEM_PERMISSIONS);
+
+      // Should contain "file-system-permissions" (underscores replaced with dashes)
+      assertEquals("file-system-permissions", exception.getResource());
+      assertFalse(exception.getResource().contains("_"));
+    }
+
+    @Test
+    void testFormatResourceIdentifierWithParameterAndUnderscores() {
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.COMPONENT_INSTANTIATION,
+              "my_param",
+              "value",
+              "expected");
+
+      // Area should have dashes, but parameter keeps its original format
+      assertEquals("component-instantiation:my_param", exception.getResource());
+    }
+
+    @Test
+    void testFormatResourceIdentifierFirstConditionBothNull() {
+      // Test: configurationArea == null && configurationParameter == null
+      final WasiConfigurationException bothNull =
+          new WasiConfigurationException(
+              "Error", (WasiConfigurationException.ConfigurationArea) null);
+      assertNull(bothNull.getResource());
+
+      // Test: configurationArea != null && configurationParameter == null
+      final WasiConfigurationException onlyParamNull =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
+      assertNotNull(onlyParamNull.getResource());
+      assertEquals("environment", onlyParamNull.getResource());
+
+      // Test: configurationArea == null && configurationParameter != null
+      final WasiConfigurationException onlyAreaNull =
+          new WasiConfigurationException("Error", null, "param", "v", "e");
+      assertNotNull(onlyAreaNull.getResource());
+      assertEquals("param", onlyAreaNull.getResource());
+    }
+
+    @Test
+    void testFormatResourceIdentifierSecondConditionParameterNull() {
+      // Test: configurationParameter == null with area not null (line 343-346)
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.RUNTIME_ENGINE,
+              null,
+              null,
+              null);
+
+      assertEquals("runtime-engine", exception.getResource());
+      assertFalse(exception.getResource().contains(":"));
+    }
+
+    @Test
+    void testFormatResourceIdentifierThirdConditionAreaNull() {
+      // Test: configurationArea == null with parameter not null (line 349-350)
+      final WasiConfigurationException exception =
+          new WasiConfigurationException("Error", null, "my-standalone-param", "v", "e");
+
+      assertEquals("my-standalone-param", exception.getResource());
+      assertFalse(exception.getResource().contains(":"));
+    }
+
+    @Test
+    void testFormatResourceIdentifierBothPresent() {
+      // Test: both configurationArea and configurationParameter are present (line 353)
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error",
+              WasiConfigurationException.ConfigurationArea.SECURITY_POLICY,
+              "policy_name",
+              "invalid",
+              "valid");
+
+      assertEquals("security-policy:policy_name", exception.getResource());
+      assertTrue(exception.getResource().contains(":"));
+    }
+  }
+
+  @Nested
+  class FormatOperationMutationTests {
+
+    @Test
+    void testFormatOperationNullReturnsConfiguration() {
+      // Kill RemoveConditional_EQUAL_ELSE mutation on line 316
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", (WasiConfigurationException.ConfigurationArea) null);
+
+      assertEquals("configuration", exception.getOperation());
+    }
+
+    @Test
+    void testFormatOperationNonNullDoesNotReturnConfiguration() {
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.ENVIRONMENT);
+
+      assertFalse("configuration".equals(exception.getOperation()));
+      assertEquals("environment-configuration", exception.getOperation());
+    }
+
+    @Test
+    void testFormatOperationNetworkConfigurationNoSuffix() {
+      // NETWORK_CONFIGURATION already ends with "configuration" so no suffix added
+      final WasiConfigurationException exception =
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.NETWORK_CONFIGURATION);
+
+      assertEquals("network-configuration", exception.getOperation());
+      // Should NOT be "network-configuration-configuration"
+      assertFalse(exception.getOperation().contains("configuration-configuration"));
+    }
+  }
 }

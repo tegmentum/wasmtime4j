@@ -516,4 +516,814 @@ class WasiResourceExceptionTest {
       return false;
     }
   }
+
+  /** Tests for null parameter handling in private static methods. */
+  @Nested
+  class NullParameterHandlingTests {
+
+    @Test
+    void testFormatOperationWithBothNull() {
+      // Passing both null to formatOperation should return "resource-operation"
+      final WasiResourceException exception =
+          new WasiResourceException("Error", null, null);
+
+      // When both operation and resourceType are null, formatOperation returns "resource-operation"
+      assertEquals("resource-operation", exception.getOperation());
+      // formatResourceIdentifier(null, null) returns null
+      assertNull(exception.getResource());
+      // isRetryableOperation(null) returns false
+      assertFalse(exception.isRetryable());
+      // getErrorCategory(null, null) returns RESOURCE_LIMIT
+      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, exception.getCategory());
+      // requiresCleanup(null) returns false
+      assertFalse(exception.isCleanupRequired());
+    }
+
+    @Test
+    void testFormatOperationWithNullOperation() {
+      // Passing null operation with non-null resourceType
+      final WasiResourceException exception =
+          new WasiResourceException("Error", WasiResourceException.ResourceType.FILE, null);
+
+      // formatOperation should use "operation" for null operation part
+      assertEquals("file-operation", exception.getOperation());
+      // formatResourceIdentifier(FILE, null) returns "file"
+      assertEquals("file", exception.getResource());
+      // isRetryableOperation(null) returns false
+      assertFalse(exception.isRetryable());
+      // getErrorCategory(FILE, null) returns FILE_SYSTEM
+      assertEquals(WasiException.ErrorCategory.FILE_SYSTEM, exception.getCategory());
+      // requiresCleanup(null) returns false
+      assertFalse(exception.isCleanupRequired());
+    }
+
+    @Test
+    void testFormatOperationWithNullResourceType() {
+      // Passing null resourceType with non-null operation
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error", null, WasiResourceException.ResourceOperation.ALLOCATION);
+
+      // formatOperation should use "resource" for null resourceType part
+      assertEquals("resource-allocation", exception.getOperation());
+      // formatResourceIdentifier(null, null) returns null
+      assertNull(exception.getResource());
+      // isRetryableOperation(ALLOCATION) returns true
+      assertTrue(exception.isRetryable());
+      // getErrorCategory(null, ALLOCATION) returns RESOURCE_LIMIT
+      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, exception.getCategory());
+      // requiresCleanup(ALLOCATION) returns true
+      assertTrue(exception.isCleanupRequired());
+    }
+
+    @Test
+    void testFormatResourceIdentifierWithNullTypeAndHandle() {
+      // formatResourceIdentifier(null, resourceHandle) should return just the handle
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              null,
+              "handle-123",
+              WasiResourceException.ResourceOperation.ACCESS);
+
+      // formatResourceIdentifier(null, "handle-123") returns "handle-123"
+      assertEquals("handle-123", exception.getResource());
+    }
+
+    @Test
+    void testNullResourceTypeWithHandle() {
+      // Test the branch where resourceType is null but handle is provided
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              null,
+              "my-handle",
+              WasiResourceException.ResourceOperation.CLEANUP);
+
+      assertEquals("resource-cleanup", exception.getOperation());
+      assertEquals("my-handle", exception.getResource());
+      assertFalse(exception.isRetryable());
+      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, exception.getCategory());
+      assertFalse(exception.isCleanupRequired());
+    }
+
+    @Test
+    void testNullResourceTypeWithNullHandle() {
+      // Test the branch where both resourceType and handle are null
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              null,
+              null,
+              WasiResourceException.ResourceOperation.MODIFICATION);
+
+      assertEquals("resource-modification", exception.getOperation());
+      assertNull(exception.getResource());
+      assertFalse(exception.isRetryable());
+      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, exception.getCategory());
+      assertFalse(exception.isCleanupRequired());
+    }
+
+    @Test
+    void testNullOperationWithHandle() {
+      // Test with null operation but with a handle
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.SOCKET,
+              "socket-handle",
+              null);
+
+      assertEquals("socket-operation", exception.getOperation());
+      assertEquals("socket:socket-handle", exception.getResource());
+      assertFalse(exception.isRetryable());
+      assertEquals(WasiException.ErrorCategory.NETWORK, exception.getCategory());
+      assertFalse(exception.isCleanupRequired());
+    }
+  }
+
+  /** Tests for mutation killing in formatOperation method. */
+  @Nested
+  class FormatOperationMutationTests {
+
+    @Test
+    void testFormatOperationBothNullReturnsExactString() {
+      // Mutation: InlineConstant on "resource-operation" at line 274
+      final WasiResourceException exception =
+          new WasiResourceException("Error", null, null);
+
+      // The exact string must be "resource-operation", not any mutation of it
+      final String operation = exception.getOperation();
+      assertEquals("resource-operation", operation);
+      assertTrue(operation.contains("resource"));
+      assertTrue(operation.contains("operation"));
+      assertTrue(operation.contains("-"));
+      assertEquals(18, operation.length());
+    }
+
+    @Test
+    void testFormatOperationNullOperationUsesOperationString() {
+      // Mutation: InlineConstant on "operation" at line 278
+      final WasiResourceException exception =
+          new WasiResourceException("Error", WasiResourceException.ResourceType.MEMORY, null);
+
+      final String operation = exception.getOperation();
+      assertEquals("memory-operation", operation);
+      assertTrue(operation.endsWith("-operation"));
+      assertTrue(operation.startsWith("memory"));
+    }
+
+    @Test
+    void testFormatOperationNullResourceTypeUsesResourceString() {
+      // Mutation: InlineConstant on "resource" at line 280
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error", null, WasiResourceException.ResourceOperation.CLEANUP);
+
+      final String operation = exception.getOperation();
+      assertEquals("resource-cleanup", operation);
+      assertTrue(operation.startsWith("resource-"));
+      assertTrue(operation.endsWith("-cleanup"));
+    }
+
+    @Test
+    void testFormatOperationOrConditionFirstPartTrue() {
+      // Test when operation == null (first part of OR is true)
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.TIMER,
+              null);
+
+      // Should not return "resource-operation" because resourceType is not null
+      assertFalse("resource-operation".equals(exception.getOperation()));
+      assertEquals("timer-operation", exception.getOperation());
+    }
+
+    @Test
+    void testFormatOperationOrConditionSecondPartTrue() {
+      // Test when resourceType == null (second part of OR is true)
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              null,
+              WasiResourceException.ResourceOperation.ACCESS);
+
+      // Should not return "resource-operation" because operation is not null
+      assertFalse("resource-operation".equals(exception.getOperation()));
+      assertEquals("resource-access", exception.getOperation());
+    }
+
+    @Test
+    void testFormatOperationNeitherNull() {
+      // Test when neither is null (both parts of OR are false)
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.EVENT,
+              WasiResourceException.ResourceOperation.LIFETIME_MANAGEMENT);
+
+      assertFalse("resource-operation".equals(exception.getOperation()));
+      assertEquals("event-lifetime-management", exception.getOperation());
+    }
+  }
+
+  /** Tests for mutation killing in formatResourceIdentifier method. */
+  @Nested
+  class FormatResourceIdentifierMutationTests {
+
+    @Test
+    void testFormatResourceIdentifierBothNullReturnsNull() {
+      // Mutation: at line 294-295, both null should return null
+      final WasiResourceException exception =
+          new WasiResourceException("Error", null, null);
+
+      assertNull(exception.getResource());
+    }
+
+    @Test
+    void testFormatResourceIdentifierNullHandleReturnsTypeLowercase() {
+      // Mutation: at line 298-299, null handle with type should return type lowercase
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.DIRECTORY,
+              WasiResourceException.ResourceOperation.ACCESS);
+
+      assertEquals("directory", exception.getResource());
+      // Verify it's lowercase
+      assertEquals(exception.getResource(), exception.getResource().toLowerCase());
+    }
+
+    @Test
+    void testFormatResourceIdentifierNullTypeReturnsHandle() {
+      // Mutation: at line 302-303, null type with handle should return handle
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              null,
+              "my-unique-handle",
+              WasiResourceException.ResourceOperation.ACCESS);
+
+      assertEquals("my-unique-handle", exception.getResource());
+    }
+
+    @Test
+    void testFormatResourceIdentifierBothPresentReturnsTypeColonHandle() {
+      // Mutation: at line 306, both present should return "type:handle"
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.EXECUTION_CONTEXT,
+              "ctx-999",
+              WasiResourceException.ResourceOperation.ACCESS);
+
+      assertEquals("execution_context:ctx-999", exception.getResource());
+      assertTrue(exception.getResource().contains(":"));
+    }
+
+    @Test
+    void testFormatResourceIdentifierFirstConditionResourceTypeNull() {
+      // Test: resourceType == null && resourceHandle == null (line 294)
+      final WasiResourceException ex1 =
+          new WasiResourceException("Error", null, null);
+      assertNull(ex1.getResource());
+
+      // Test: resourceType != null && resourceHandle == null (line 298)
+      final WasiResourceException ex2 =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ACCESS);
+      assertEquals("file", ex2.getResource());
+    }
+
+    @Test
+    void testFormatResourceIdentifierSecondConditionHandleNull() {
+      // Test: resourceHandle == null (line 298) with resourceType not null
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.SOCKET,
+              null,
+              WasiResourceException.ResourceOperation.ACCESS);
+
+      assertEquals("socket", exception.getResource());
+      assertFalse(exception.getResource().contains(":"));
+    }
+
+    @Test
+    void testFormatResourceIdentifierThirdConditionTypeNull() {
+      // Test: resourceType == null (line 302) with resourceHandle not null
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              null,
+              "handle-only-test",
+              WasiResourceException.ResourceOperation.ACCESS);
+
+      assertEquals("handle-only-test", exception.getResource());
+    }
+  }
+
+  /** Tests for mutation killing in getErrorCategory method. */
+  @Nested
+  class GetErrorCategoryMutationTests {
+
+    @Test
+    void testGetErrorCategoryWithNullResourceType() {
+      // Mutation: at line 342-343, null resourceType should return RESOURCE_LIMIT
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error", null, WasiResourceException.ResourceOperation.ACCESS);
+
+      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, exception.getCategory());
+    }
+
+    @Test
+    void testGetErrorCategoryNullResourceTypeExactCategory() {
+      // Verify exact category when resourceType is null
+      final WasiResourceException exception =
+          new WasiResourceException("Error", null, null);
+
+      final WasiException.ErrorCategory category = exception.getCategory();
+      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, category);
+      // Verify it's not any other category
+      assertFalse(WasiException.ErrorCategory.FILE_SYSTEM.equals(category));
+      assertFalse(WasiException.ErrorCategory.NETWORK.equals(category));
+      assertFalse(WasiException.ErrorCategory.SYSTEM.equals(category));
+    }
+
+    @Test
+    void testGetErrorCategoryAllResourceTypes() {
+      // Test all resource types to ensure switch coverage
+      assertEquals(
+          WasiException.ErrorCategory.FILE_SYSTEM,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+
+      assertEquals(
+          WasiException.ErrorCategory.FILE_SYSTEM,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.DIRECTORY,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+
+      assertEquals(
+          WasiException.ErrorCategory.NETWORK,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.SOCKET,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.MEMORY,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.EXECUTION_CONTEXT,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.TIMER,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.EVENT,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.SYSTEM,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .getCategory());
+    }
+  }
+
+  /** Tests for mutation killing in isRetryableOperation method. */
+  @Nested
+  class IsRetryableOperationMutationTests {
+
+    @Test
+    void testIsRetryableOperationWithNull() {
+      // Mutation: at line 316-317, null operation should return false
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error", WasiResourceException.ResourceType.FILE, null);
+
+      assertFalse(exception.isRetryable());
+    }
+
+    @Test
+    void testIsRetryableOperationNullExplicitCheck() {
+      // Verify null operation returns false, not true
+      final WasiResourceException exception =
+          new WasiResourceException("Error", null, null);
+
+      final boolean retryable = exception.isRetryable();
+      assertFalse(retryable);
+      assertEquals(false, retryable);
+    }
+
+    @Test
+    void testIsRetryableOperationAllCases() {
+      // ALLOCATION - returns true
+      assertTrue(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ALLOCATION)
+              .isRetryable());
+
+      // ACCESS - returns true
+      assertTrue(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .isRetryable());
+
+      // MODIFICATION - returns false
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.MODIFICATION)
+              .isRetryable());
+
+      // CLEANUP - returns false
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.CLEANUP)
+              .isRetryable());
+
+      // LIFETIME_MANAGEMENT - returns false
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.LIFETIME_MANAGEMENT)
+              .isRetryable());
+    }
+  }
+
+  /** Tests for mutation killing in requiresCleanup method. */
+  @Nested
+  class RequiresCleanupMutationTests {
+
+    @Test
+    void testRequiresCleanupWithNull() {
+      // Mutation: at line 370-371, null operation should return false
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error", WasiResourceException.ResourceType.MEMORY, null);
+
+      assertFalse(exception.isCleanupRequired());
+    }
+
+    @Test
+    void testRequiresCleanupNullExplicitCheck() {
+      // Verify null operation returns false, not true
+      final WasiResourceException exception =
+          new WasiResourceException("Error", null, null);
+
+      final boolean cleanupRequired = exception.isCleanupRequired();
+      assertFalse(cleanupRequired);
+      assertEquals(false, cleanupRequired);
+    }
+
+    @Test
+    void testRequiresCleanupAllCases() {
+      // ALLOCATION - returns true
+      assertTrue(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ALLOCATION)
+              .isCleanupRequired());
+
+      // ACCESS - returns false
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.ACCESS)
+              .isCleanupRequired());
+
+      // MODIFICATION - returns false
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.MODIFICATION)
+              .isCleanupRequired());
+
+      // CLEANUP - returns false
+      assertFalse(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.CLEANUP)
+              .isCleanupRequired());
+
+      // LIFETIME_MANAGEMENT - returns true
+      assertTrue(
+          new WasiResourceException(
+                  "Error",
+                  WasiResourceException.ResourceType.FILE,
+                  WasiResourceException.ResourceOperation.LIFETIME_MANAGEMENT)
+              .isCleanupRequired());
+    }
+  }
+
+  /** Tests for constructor default value mutations. */
+  @Nested
+  class ConstructorDefaultValueMutationTests {
+
+    @Test
+    void testMessageCauseConstructorCleanupRequiredDefaultsFalse() {
+      // Mutation: at line 94, cleanupRequired is set to false
+      final WasiResourceException exception =
+          new WasiResourceException("Error", new RuntimeException("cause"));
+
+      // Verify cleanupRequired is false, not true
+      assertFalse(exception.isCleanupRequired());
+      assertEquals(false, exception.isCleanupRequired());
+    }
+
+    @Test
+    void testSimpleMessageConstructorCleanupRequiredDefaultsFalse() {
+      // Line 80: cleanupRequired = false
+      final WasiResourceException exception = new WasiResourceException("Error");
+
+      assertFalse(exception.isCleanupRequired());
+      assertEquals(false, exception.isCleanupRequired());
+    }
+
+    @Test
+    void testSimpleConstructorDefaultResourceType() {
+      // Verify default resource type is SYSTEM
+      final WasiResourceException exception = new WasiResourceException("Error");
+
+      assertEquals(WasiResourceException.ResourceType.SYSTEM, exception.getResourceType());
+    }
+
+    @Test
+    void testSimpleConstructorDefaultResourceOperation() {
+      // Verify default resource operation is ACCESS
+      final WasiResourceException exception = new WasiResourceException("Error");
+
+      assertEquals(WasiResourceException.ResourceOperation.ACCESS, exception.getResourceOperation());
+    }
+
+    @Test
+    void testMessageCauseConstructorDefaultResourceType() {
+      // Verify default resource type is SYSTEM
+      final WasiResourceException exception =
+          new WasiResourceException("Error", new RuntimeException("cause"));
+
+      assertEquals(WasiResourceException.ResourceType.SYSTEM, exception.getResourceType());
+    }
+
+    @Test
+    void testMessageCauseConstructorDefaultResourceOperation() {
+      // Verify default resource operation is ACCESS
+      final WasiResourceException exception =
+          new WasiResourceException("Error", new RuntimeException("cause"));
+
+      assertEquals(WasiResourceException.ResourceOperation.ACCESS, exception.getResourceOperation());
+    }
+  }
+
+  /** Tests for RemoveConditional mutations in formatOperation. */
+  @Nested
+  class FormatOperationConditionalMutationTests {
+
+    @Test
+    void testBothNullMustReturnResourceOperation() {
+      // Kill RemoveConditional_EQUAL_IF on line 273
+      // If mutation makes condition always true, we'd always get "resource-operation"
+      // If mutation makes condition always false, we'd never get "resource-operation"
+      final WasiResourceException bothNull =
+          new WasiResourceException("Error", null, null);
+      assertEquals("resource-operation", bothNull.getOperation());
+
+      final WasiResourceException onlyTypeNull =
+          new WasiResourceException(
+              "Error", null, WasiResourceException.ResourceOperation.ACCESS);
+      assertFalse("resource-operation".equals(onlyTypeNull.getOperation()));
+      assertEquals("resource-access", onlyTypeNull.getOperation());
+
+      final WasiResourceException onlyOpNull =
+          new WasiResourceException(
+              "Error", WasiResourceException.ResourceType.FILE, null);
+      assertFalse("resource-operation".equals(onlyOpNull.getOperation()));
+      assertEquals("file-operation", onlyOpNull.getOperation());
+
+      final WasiResourceException neitherNull =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ACCESS);
+      assertFalse("resource-operation".equals(neitherNull.getOperation()));
+      assertEquals("file-access", neitherNull.getOperation());
+    }
+
+    @Test
+    void testTernaryOperationNull() {
+      // Kill RemoveConditional_EQUAL_IF on line 278
+      // When operation is null, operationStr should be "operation"
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error", WasiResourceException.ResourceType.SOCKET, null);
+
+      final String op = exception.getOperation();
+      assertTrue(op.contains("operation"));
+      assertEquals("socket-operation", op);
+    }
+
+    @Test
+    void testTernaryOperationNotNull() {
+      // When operation is not null, operationStr should be operation name
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.SOCKET,
+              WasiResourceException.ResourceOperation.ALLOCATION);
+
+      final String op = exception.getOperation();
+      assertFalse(op.contains("operation"));
+      assertTrue(op.contains("allocation"));
+      assertEquals("socket-allocation", op);
+    }
+
+    @Test
+    void testTernaryResourceTypeNull() {
+      // Kill RemoveConditional_EQUAL_IF on line 280
+      // When resourceType is null, resourceStr should be "resource"
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error", null, WasiResourceException.ResourceOperation.CLEANUP);
+
+      final String op = exception.getOperation();
+      assertTrue(op.contains("resource"));
+      assertEquals("resource-cleanup", op);
+    }
+
+    @Test
+    void testTernaryResourceTypeNotNull() {
+      // When resourceType is not null, resourceStr should be resourceType name
+      final WasiResourceException exception =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.TIMER,
+              WasiResourceException.ResourceOperation.CLEANUP);
+
+      final String op = exception.getOperation();
+      assertFalse(op.startsWith("resource-"));
+      assertTrue(op.contains("timer"));
+      assertEquals("timer-cleanup", op);
+    }
+  }
+
+  /** Tests for RemoveConditional mutations in formatResourceIdentifier. */
+  @Nested
+  class FormatResourceIdentifierConditionalMutationTests {
+
+    @Test
+    void testBothNullMustReturnNull() {
+      // Kill RemoveConditional_EQUAL_IF/ELSE on line 294
+      final WasiResourceException bothNull =
+          new WasiResourceException("Error", null, null);
+      assertNull(bothNull.getResource());
+    }
+
+    @Test
+    void testOnlyHandleNullMustReturnTypeName() {
+      // Kill RemoveConditional_EQUAL_IF/ELSE on line 298
+      final WasiResourceException typeOnlyEx =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.EVENT,
+              WasiResourceException.ResourceOperation.ACCESS);
+      assertEquals("event", typeOnlyEx.getResource());
+      assertFalse(typeOnlyEx.getResource().contains(":"));
+    }
+
+    @Test
+    void testOnlyTypeNullMustReturnHandle() {
+      // Kill RemoveConditional_EQUAL_IF/ELSE on line 302
+      final WasiResourceException handleOnly =
+          new WasiResourceException(
+              "Error",
+              null,
+              "standalone-handle",
+              WasiResourceException.ResourceOperation.ACCESS);
+      assertEquals("standalone-handle", handleOnly.getResource());
+      assertFalse(handleOnly.getResource().contains(":"));
+    }
+
+    @Test
+    void testBothPresentMustReturnTypeColonHandle() {
+      final WasiResourceException both =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.SYSTEM,
+              "system-handle",
+              WasiResourceException.ResourceOperation.ACCESS);
+      assertEquals("system:system-handle", both.getResource());
+      assertTrue(both.getResource().contains(":"));
+    }
+  }
+
+  /** Tests for RemoveConditional mutations in getErrorCategory. */
+  @Nested
+  class GetErrorCategoryConditionalMutationTests {
+
+    @Test
+    void testNullResourceTypeMustReturnResourceLimit() {
+      // Kill RemoveConditional_EQUAL_IF/ELSE on line 342
+      final WasiResourceException nullType =
+          new WasiResourceException(
+              "Error", null, WasiResourceException.ResourceOperation.ACCESS);
+      assertEquals(WasiException.ErrorCategory.RESOURCE_LIMIT, nullType.getCategory());
+
+      // Verify non-null types return their specific categories
+      final WasiResourceException fileType =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ACCESS);
+      assertEquals(WasiException.ErrorCategory.FILE_SYSTEM, fileType.getCategory());
+    }
+  }
+
+  /** Tests for RemoveConditional mutations in isRetryableOperation. */
+  @Nested
+  class IsRetryableOperationConditionalMutationTests {
+
+    @Test
+    void testNullOperationMustReturnFalse() {
+      // Kill RemoveConditional_EQUAL_IF/ELSE on line 316
+      final WasiResourceException nullOp =
+          new WasiResourceException(
+              "Error", WasiResourceException.ResourceType.FILE, null);
+      assertFalse(nullOp.isRetryable());
+
+      // Verify non-null operations that should be retryable return true
+      final WasiResourceException allocation =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ALLOCATION);
+      assertTrue(allocation.isRetryable());
+    }
+  }
+
+  /** Tests for RemoveConditional mutations in requiresCleanup. */
+  @Nested
+  class RequiresCleanupConditionalMutationTests {
+
+    @Test
+    void testNullOperationMustReturnFalse() {
+      // Kill RemoveConditional_EQUAL_IF/ELSE on line 370
+      final WasiResourceException nullOp =
+          new WasiResourceException(
+              "Error", WasiResourceException.ResourceType.FILE, null);
+      assertFalse(nullOp.isCleanupRequired());
+
+      // Verify non-null operations that should require cleanup return true
+      final WasiResourceException allocation =
+          new WasiResourceException(
+              "Error",
+              WasiResourceException.ResourceType.FILE,
+              WasiResourceException.ResourceOperation.ALLOCATION);
+      assertTrue(allocation.isCleanupRequired());
+    }
+  }
 }

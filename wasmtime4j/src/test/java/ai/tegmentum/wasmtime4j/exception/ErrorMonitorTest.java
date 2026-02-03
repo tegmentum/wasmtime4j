@@ -2511,4 +2511,222 @@ class ErrorMonitorTest {
           "Should have logged something during error recording");
     }
   }
+
+  @Nested
+  @DisplayName("RateTracker Mutation Tests")
+  class RateTrackerMutationTests {
+
+    @Test
+    @DisplayName("Fresh monitor should have exactly zero error rate")
+    void freshMonitorShouldHaveExactlyZeroErrorRate() {
+      // This kills line 127 mutation: Substituted 0 with 1
+      // If totalEvents starts at 1 instead of 0, rate would be 1/15 = 0.0667
+      monitor.reset();
+
+      final double rate = monitor.getOverallErrorRate();
+
+      assertEquals(0.0, rate, 0.0001,
+          "Fresh monitor with no errors should have exactly 0.0 rate, not 1/15");
+    }
+
+    @Test
+    @DisplayName("Single error should give rate of 1/15 per minute")
+    void singleErrorShouldGiveCorrectRate() {
+      // This kills line 134 mutation: Substituted 15.0 with 1.0
+      // With 1 event, rate should be 1/15 = 0.0667, not 1/1 = 1.0
+      // Also kills line 113 mutation: Substituted 0 with 1 (initial value)
+      // If AtomicLong starts at 1 instead of 0, incrementAndGet gives 2, rate = 2/15
+      monitor.reset();
+      monitor.recordError(new WasmException("Single error"));
+
+      final double rate = monitor.getOverallErrorRate();
+
+      // Rate should be 1/15 = 0.0667 (events per minute over 15 minute window)
+      assertEquals(1.0 / 15.0, rate, 0.0001,
+          "Single error should give rate of 1/15 per minute");
+    }
+
+    @Test
+    @DisplayName("Multiple errors should give correct rate calculation")
+    void multipleErrorsShouldGiveCorrectRate() {
+      // This kills line 134 mutation and validates rate calculation
+      monitor.reset();
+
+      final int errorCount = 30;
+      for (int i = 0; i < errorCount; i++) {
+        monitor.recordError(new WasmException("Error " + i));
+      }
+
+      final double rate = monitor.getOverallErrorRate();
+
+      // Rate should be 30/15 = 2.0 events per minute
+      assertEquals(30.0 / 15.0, rate, 0.0001,
+          "30 errors should give rate of 2.0 per minute");
+    }
+
+    @Test
+    @DisplayName("Error rate per type should match overall rate for single type")
+    void errorRatePerTypeShouldMatchOverallRateForSingleType() {
+      // This verifies RateTracker.getRate() is consistent
+      monitor.reset();
+
+      for (int i = 0; i < 15; i++) {
+        monitor.recordError(new WasmException("Error " + i));
+      }
+
+      final double overallRate = monitor.getOverallErrorRate();
+      final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
+
+      assertEquals(1, stats.size(), "Should have one error type");
+      assertEquals(overallRate, stats.get(0).getErrorRate(), 0.0001,
+          "Per-type rate should match overall rate for single type");
+      assertEquals(1.0, stats.get(0).getErrorRate(), 0.0001,
+          "15 errors should give rate of 1.0 per minute");
+    }
+
+    @Test
+    @DisplayName("Rate calculation divisor should be 15 (RATE_WINDOW_MINUTES)")
+    void rateCalculationDivisorShouldBe15() {
+      // This specifically kills line 125 mutation: Substituted 15 with 16
+      // and line 134 mutation: Substituted 15.0 with 1.0
+      monitor.reset();
+
+      // Record exactly 15 errors
+      for (int i = 0; i < 15; i++) {
+        monitor.recordError(new WasmException("Error " + i));
+      }
+
+      final double rate = monitor.getOverallErrorRate();
+
+      // 15 errors / 15 minute window = 1.0 per minute
+      // If divisor was 16, rate would be 15/16 = 0.9375
+      // If divisor was 1, rate would be 15/1 = 15.0
+      assertEquals(1.0, rate, 0.0001,
+          "Rate divisor should be 15 (RATE_WINDOW_MINUTES)");
+      assertTrue(rate < 15.0, "Rate should not be 15.0 (divisor 1)");
+      assertTrue(rate > 0.9, "Rate should not be 0.9375 (divisor 16)");
+    }
+
+    @Test
+    @DisplayName("Error count in rate tracking should start at zero")
+    void errorCountInRateTrackingShouldStartAtZero() {
+      // This kills line 127 mutation: Substituted 0 with 1
+      // and line 113 mutation: Substituted 0 with 1
+      monitor.reset();
+
+      // Get rate before any errors
+      final double rateBefore = monitor.getOverallErrorRate();
+      assertEquals(0.0, rateBefore, 0.0001,
+          "Rate before any errors should be exactly 0.0");
+
+      // Record one error
+      monitor.recordError(new WasmException("First error"));
+
+      // Get rate after one error
+      final double rateAfter = monitor.getOverallErrorRate();
+      assertEquals(1.0 / 15.0, rateAfter, 0.0001,
+          "Rate after one error should be exactly 1/15");
+
+      // The difference should be exactly 1/15
+      final double rateDiff = rateAfter - rateBefore;
+      assertEquals(1.0 / 15.0, rateDiff, 0.0001,
+          "Rate difference after first error should be exactly 1/15");
+    }
+
+    @Test
+    @DisplayName("Multiple error types should sum rates correctly")
+    void multipleErrorTypesShouldSumRatesCorrectly() {
+      // This verifies that each error type has its own RateTracker
+      monitor.reset();
+
+      // Record 10 WasmException and 5 TrapException
+      for (int i = 0; i < 10; i++) {
+        monitor.recordError(new WasmException("Wasm error " + i));
+      }
+      for (int i = 0; i < 5; i++) {
+        monitor.recordError(new TrapException(TrapException.TrapType.UNKNOWN, "Trap " + i));
+      }
+
+      // Overall rate should be 15/15 = 1.0
+      final double overallRate = monitor.getOverallErrorRate();
+      assertEquals(1.0, overallRate, 0.0001,
+          "Overall rate should be 15/15 = 1.0");
+
+      // Get per-type rates
+      final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
+      assertEquals(2, stats.size(), "Should have two error types");
+
+      double sumOfRates = 0;
+      for (ErrorMonitor.ErrorStatistics stat : stats) {
+        sumOfRates += stat.getErrorRate();
+      }
+
+      assertEquals(overallRate, sumOfRates, 0.0001,
+          "Sum of per-type rates should equal overall rate");
+    }
+
+    @Test
+    @DisplayName("Rate calculation should use correct bucket boundaries")
+    void rateCalculationShouldUseCorrectBucketBoundaries() {
+      // This kills line 129 mutation: changed conditional boundary
+      // The condition is: if (entry.getKey() >= windowStart)
+      // If changed to >, buckets at exactly windowStart would be excluded
+      monitor.reset();
+
+      // Record errors - they all go in the current minute bucket
+      for (int i = 0; i < 5; i++) {
+        monitor.recordError(new WasmException("Error " + i));
+      }
+
+      final double rate = monitor.getOverallErrorRate();
+
+      // All 5 errors should be counted
+      assertEquals(5.0 / 15.0, rate, 0.0001,
+          "All 5 errors in current bucket should be counted");
+    }
+
+    @Test
+    @DisplayName("Reset should clear rate tracking completely")
+    void resetShouldClearRateTrackingCompletely() {
+      // Verify reset clears rate trackers
+      monitor.reset();
+
+      // Record some errors
+      for (int i = 0; i < 10; i++) {
+        monitor.recordError(new WasmException("Error " + i));
+      }
+
+      // Verify rate is non-zero
+      final double rateBeforeReset = monitor.getOverallErrorRate();
+      assertEquals(10.0 / 15.0, rateBeforeReset, 0.0001,
+          "Rate should be 10/15 before reset");
+
+      // Reset and verify rate is zero
+      monitor.reset();
+      final double rateAfterReset = monitor.getOverallErrorRate();
+      assertEquals(0.0, rateAfterReset, 0.0001,
+          "Rate should be exactly 0.0 after reset");
+    }
+
+    @Test
+    @DisplayName("AtomicLong initial value should be 0 and increment gives 1")
+    void atomicLongInitialValueShouldBeZero() {
+      // This specifically tests line 113: new AtomicLong(0)
+      // If mutation changes to AtomicLong(1), incrementAndGet returns 2
+      monitor.reset();
+
+      // Record exactly 1 error
+      monitor.recordError(new WasmException("Single error"));
+
+      // The bucket should have count 1 (0 + increment = 1)
+      // Rate = 1 / 15 = 0.0667
+      final double rate = monitor.getOverallErrorRate();
+      assertEquals(1.0 / 15.0, rate, 0.00001,
+          "Single error should give rate 1/15, proving AtomicLong starts at 0");
+
+      // If AtomicLong started at 1, rate would be 2/15 = 0.1333
+      assertTrue(rate < 0.1,
+          "Rate should be less than 0.1 (2/15 would be 0.1333)");
+    }
+  }
 }

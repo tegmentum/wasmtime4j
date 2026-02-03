@@ -374,4 +374,283 @@ class WasiComponentExceptionTest {
       assertEquals("", exception.getInterfaceName());
     }
   }
+
+  @Nested
+  class NullParameterHandlingTests {
+
+    @Test
+    void testNullOperationTypeInThreeArgConstructor() {
+      // Test with null operationType - formatOperation should return "component-operation"
+      final WasiComponentException exception =
+          new WasiComponentException("Error", "test-component", null);
+
+      assertEquals("component-operation", exception.getOperation());
+      assertEquals("test-component", exception.getResource());
+      assertFalse(exception.isRetryable());
+      assertNull(exception.getOperationType());
+    }
+
+    @Test
+    void testNullOperationTypeInFourArgConstructor() {
+      // Test with null operationType in 4-arg constructor
+      final WasiComponentException exception =
+          new WasiComponentException("Error", "test-component", "test-interface", null);
+
+      assertEquals("component-operation", exception.getOperation());
+      assertEquals("test-component:test-interface", exception.getResource());
+      assertFalse(exception.isRetryable());
+      assertNull(exception.getOperationType());
+    }
+
+    @Test
+    void testNullOperationTypeInFiveArgConstructor() {
+      // Test with null operationType in 5-arg constructor
+      final RuntimeException cause = new RuntimeException("Test cause");
+      final WasiComponentException exception =
+          new WasiComponentException("Error", "test-component", "test-interface", null, cause);
+
+      assertEquals("component-operation", exception.getOperation());
+      assertEquals("test-component:test-interface", exception.getResource());
+      assertFalse(exception.isRetryable());
+      assertNull(exception.getOperationType());
+      assertEquals(cause, exception.getCause());
+    }
+
+    @Test
+    void testNullComponentIdAndInterfaceName() {
+      // Test with both componentId and interfaceName null
+      final WasiComponentException exception =
+          new WasiComponentException(
+              "Error", null, null, WasiComponentException.ComponentOperation.EXECUTION);
+
+      assertNull(exception.getResource());
+      assertNull(exception.getComponentId());
+      assertNull(exception.getInterfaceName());
+    }
+
+    @Test
+    void testNullComponentIdWithInterfaceName() {
+      // Test with null componentId but non-null interfaceName
+      final WasiComponentException exception =
+          new WasiComponentException(
+              "Error",
+              null,
+              "test-interface",
+              WasiComponentException.ComponentOperation.INTERFACE_BINDING);
+
+      assertEquals("interface:test-interface", exception.getResource());
+      assertNull(exception.getComponentId());
+      assertEquals("test-interface", exception.getInterfaceName());
+    }
+
+    @Test
+    void testAllNullsInFourArgConstructor() {
+      // Test with all optional parameters as null
+      final WasiComponentException exception =
+          new WasiComponentException("Error", null, null, null);
+
+      assertEquals("component-operation", exception.getOperation());
+      assertNull(exception.getResource());
+      assertFalse(exception.isRetryable());
+      assertNull(exception.getOperationType());
+      assertNull(exception.getComponentId());
+      assertNull(exception.getInterfaceName());
+    }
+  }
+
+  @Nested
+  class ConstructorDefaultValueMutationTests {
+
+    @Test
+    void testMessageWithCauseConstructorDefaultsRetryableToFalse() {
+      // Kill mutation on line 71: Substituted 0 with 1
+      final RuntimeException cause = new RuntimeException("Test cause");
+      final WasiComponentException exception = new WasiComponentException("Error", cause);
+
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+
+    @Test
+    void testSimpleMessageConstructorDefaultsRetryableToFalse() {
+      final WasiComponentException exception = new WasiComponentException("Error");
+
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+
+    @Test
+    void testNullOperationTypeDefaultsRetryableToFalse() {
+      // When operationType is null, isRetryableOperation should return false
+      final WasiComponentException exception =
+          new WasiComponentException("Error", "comp", null);
+
+      assertFalse(exception.isRetryable());
+      assertEquals(false, exception.isRetryable());
+    }
+  }
+
+  @Nested
+  class FormatOperationMutationTests {
+
+    @Test
+    void testFormatOperationWithNullReturnsComponentOperation() {
+      // Kill mutation at line 228: null check
+      final WasiComponentException exception =
+          new WasiComponentException("Error", "comp", null);
+
+      assertEquals("component-operation", exception.getOperation());
+      // Verify it's exactly this string
+      assertTrue(exception.getOperation().equals("component-operation"));
+    }
+
+    @Test
+    void testFormatOperationWithNonNullReturnsFormattedString() {
+      final WasiComponentException exception =
+          new WasiComponentException(
+              "Error", "comp", WasiComponentException.ComponentOperation.LIFECYCLE);
+
+      assertEquals("component-lifecycle", exception.getOperation());
+      assertFalse(exception.getOperation().equals("component-operation"));
+    }
+  }
+
+  @Nested
+  class FormatResourceMutationTests {
+
+    @Test
+    void testFormatResourceBothNull() {
+      // Kill mutations at line 260: compound null check
+      final WasiComponentException exception =
+          new WasiComponentException(
+              "Error", null, null, WasiComponentException.ComponentOperation.EXECUTION);
+
+      assertNull(exception.getResource());
+    }
+
+    @Test
+    void testFormatResourceOnlyComponentIdNull() {
+      // Kill mutations at line 264/268: null componentId with non-null interface
+      final WasiComponentException exception =
+          new WasiComponentException(
+              "Error",
+              null,
+              "my-interface",
+              WasiComponentException.ComponentOperation.INTERFACE_BINDING);
+
+      assertEquals("interface:my-interface", exception.getResource());
+      assertTrue(exception.getResource().startsWith("interface:"));
+    }
+
+    @Test
+    void testFormatResourceOnlyInterfaceNameNull() {
+      // When interfaceName is null but componentId is not
+      final WasiComponentException exception =
+          new WasiComponentException(
+              "Error",
+              "my-component",
+              null,
+              WasiComponentException.ComponentOperation.EXECUTION);
+
+      assertEquals("my-component", exception.getResource());
+      assertFalse(exception.getResource().contains(":"));
+    }
+
+    @Test
+    void testFormatResourceBothPresent() {
+      final WasiComponentException exception =
+          new WasiComponentException(
+              "Error",
+              "my-component",
+              "my-interface",
+              WasiComponentException.ComponentOperation.INTERFACE_BINDING);
+
+      assertEquals("my-component:my-interface", exception.getResource());
+      assertTrue(exception.getResource().contains(":"));
+    }
+
+    @Test
+    void testFormatResourceFirstConditionBothNull() {
+      // Test first condition: componentId == null && interfaceName == null
+      final WasiComponentException bothNull =
+          new WasiComponentException(
+              "Error", null, null, WasiComponentException.ComponentOperation.EXECUTION);
+      assertNull(bothNull.getResource());
+
+      // Test when only one is null (should not return null)
+      final WasiComponentException onlyCompNull =
+          new WasiComponentException(
+              "Error",
+              null,
+              "interface",
+              WasiComponentException.ComponentOperation.EXECUTION);
+      assertNotNull(onlyCompNull.getResource());
+
+      final WasiComponentException onlyIntfNull =
+          new WasiComponentException(
+              "Error",
+              "component",
+              null,
+              WasiComponentException.ComponentOperation.EXECUTION);
+      assertNotNull(onlyIntfNull.getResource());
+    }
+  }
+
+  @Nested
+  class IsRetryableOperationMutationTests {
+
+    @Test
+    void testIsRetryableOperationWithNull() {
+      // Kill mutation at line 282: null check
+      final WasiComponentException exception =
+          new WasiComponentException("Error", "comp", null);
+
+      assertFalse(exception.isRetryable());
+    }
+
+    @Test
+    void testIsRetryableOperationAllCases() {
+      // INSTANTIATION - returns true
+      assertTrue(
+          new WasiComponentException(
+                  "Error", "comp", WasiComponentException.ComponentOperation.INSTANTIATION)
+              .isRetryable());
+
+      // EXECUTION - returns true
+      assertTrue(
+          new WasiComponentException(
+                  "Error", "comp", WasiComponentException.ComponentOperation.EXECUTION)
+              .isRetryable());
+
+      // INTERFACE_BINDING - returns false
+      assertFalse(
+          new WasiComponentException(
+                  "Error", "comp", WasiComponentException.ComponentOperation.INTERFACE_BINDING)
+              .isRetryable());
+
+      // EXPORT_RESOLUTION - returns false
+      assertFalse(
+          new WasiComponentException(
+                  "Error", "comp", WasiComponentException.ComponentOperation.EXPORT_RESOLUTION)
+              .isRetryable());
+
+      // IMPORT_RESOLUTION - returns false
+      assertFalse(
+          new WasiComponentException(
+                  "Error", "comp", WasiComponentException.ComponentOperation.IMPORT_RESOLUTION)
+              .isRetryable());
+
+      // LINKING - returns false
+      assertFalse(
+          new WasiComponentException(
+                  "Error", "comp", WasiComponentException.ComponentOperation.LINKING)
+              .isRetryable());
+
+      // LIFECYCLE - returns false
+      assertFalse(
+          new WasiComponentException(
+                  "Error", "comp", WasiComponentException.ComponentOperation.LIFECYCLE)
+              .isRetryable());
+    }
+  }
 }
