@@ -54,9 +54,21 @@ public final class NativeFunctionBindings {
   // Status
   private volatile boolean initialized = false;
 
-  // Hot-path typed MethodHandle for invokeExact optimization
+  // Hot-path typed MethodHandles for invokeExact optimization
   // Signature: (ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS, JAVA_LONG) -> JAVA_LONG
   private volatile MethodHandle mhInstanceCallFunction;
+
+  // Signature: () -> ADDRESS
+  private volatile MethodHandle mhEngineCreate;
+
+  // Signature: (ADDRESS, ADDRESS, JAVA_LONG) -> ADDRESS
+  private volatile MethodHandle mhModuleCreate;
+
+  // Signature: (ADDRESS, ADDRESS, JAVA_LONG) -> JAVA_INT
+  private volatile MethodHandle mhModuleValidate;
+
+  // Signature: (ADDRESS) -> ADDRESS
+  private volatile MethodHandle mhStoreCreate;
 
   /** Private constructor for singleton pattern. */
   private NativeFunctionBindings() {
@@ -72,10 +84,30 @@ public final class NativeFunctionBindings {
 
       initializeFunctionBindings();
 
-      // Eagerly initialize hot-path MethodHandle for invokeExact optimization
+      // Eagerly initialize hot-path MethodHandles for invokeExact optimization
       FunctionBinding callBinding = functionBindings.get("wasmtime4j_instance_call_function");
       if (callBinding != null) {
         this.mhInstanceCallFunction = callBinding.getMethodHandle().orElse(null);
+      }
+
+      FunctionBinding engineCreateBinding = functionBindings.get("wasmtime4j_engine_create");
+      if (engineCreateBinding != null) {
+        this.mhEngineCreate = engineCreateBinding.getMethodHandle().orElse(null);
+      }
+
+      FunctionBinding moduleCreateBinding = functionBindings.get("wasmtime4j_module_create");
+      if (moduleCreateBinding != null) {
+        this.mhModuleCreate = moduleCreateBinding.getMethodHandle().orElse(null);
+      }
+
+      FunctionBinding moduleValidateBinding = functionBindings.get("wasmtime4j_module_validate");
+      if (moduleValidateBinding != null) {
+        this.mhModuleValidate = moduleValidateBinding.getMethodHandle().orElse(null);
+      }
+
+      FunctionBinding storeCreateBinding = functionBindings.get("wasmtime4j_store_create");
+      if (storeCreateBinding != null) {
+        this.mhStoreCreate = storeCreateBinding.getMethodHandle().orElse(null);
       }
 
       this.initialized = true;
@@ -136,14 +168,21 @@ public final class NativeFunctionBindings {
         return null;
       }
 
-      MemorySegment result = callNativeFunction("wasmtime4j_engine_create", MemorySegment.class);
+      // Use fast path with invokeExact if available
+      final MethodHandle mh = mhEngineCreate;
+      MemorySegment result;
+      if (mh != null) {
+        result = (MemorySegment) mh.invokeExact();
+      } else {
+        result = callNativeFunction("wasmtime4j_engine_create", MemorySegment.class);
+      }
       if (result == null || result.equals(MemorySegment.NULL)) {
         LOGGER.warning("Engine creation returned null - this may indicate symbol lookup failure");
       } else {
         LOGGER.fine("Engine created successfully: " + result);
       }
       return result;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOGGER.severe("Exception during engine creation: " + e.getMessage());
       return null;
     }
@@ -443,6 +482,16 @@ public final class NativeFunctionBindings {
     validatePointer(enginePtr, "enginePtr");
     validatePointer(wasmBytes, "wasmBytes");
     validateSize(wasmSize, "wasmSize");
+
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhModuleCreate;
+    if (mh != null) {
+      try {
+        return (MemorySegment) mh.invokeExact(enginePtr, wasmBytes, wasmSize);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native moduleCreate failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_module_create", MemorySegment.class, enginePtr, wasmBytes, wasmSize);
   }
@@ -1131,6 +1180,16 @@ public final class NativeFunctionBindings {
    */
   public MemorySegment storeCreate(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
+
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhStoreCreate;
+    if (mh != null) {
+      try {
+        return (MemorySegment) mh.invokeExact(enginePtr);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native storeCreate failed", t);
+      }
+    }
     return callNativeFunction("wasmtime4j_store_create", MemorySegment.class, enginePtr);
   }
 
@@ -1631,6 +1690,18 @@ public final class NativeFunctionBindings {
     validatePointer(instancePtr, "instancePtr");
     validatePointer(storePtr, "storePtr");
     validatePointer(functionName, "functionName");
+
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhInstanceCallFunction;
+    if (mh != null) {
+      try {
+        return (long)
+            mh.invokeExact(
+                instancePtr, storePtr, functionName, paramsPtr, paramCount, resultsPtr, maxResults);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native instanceCallFunction failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_instance_call_function",
         Long.class,
