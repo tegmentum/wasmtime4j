@@ -1,0 +1,25 @@
+Benchmark                                       (operationCategory)  (workloadIntensity)   Mode  Cnt        Score         Error  Units
+ComparisonBenchmark.benchmarkJniPerformance          INITIALIZATION                LIGHT  thrpt    3      456.032 ±     216.321  ops/s
+ComparisonBenchmark.benchmarkJniPerformance          INITIALIZATION               MEDIUM  thrpt    3     1649.780 ±     627.743  ops/s
+ComparisonBenchmark.benchmarkJniPerformance          INITIALIZATION                HEAVY  thrpt    3      778.562 ±    7210.644  ops/s
+ComparisonBenchmark.benchmarkJniPerformance           FUNCTION_CALL                LIGHT  thrpt    3     1204.587 ±      28.485  ops/s
+ComparisonBenchmark.benchmarkJniPerformance           FUNCTION_CALL               MEDIUM  thrpt    3      590.614 ±      54.476  ops/s
+ComparisonBenchmark.benchmarkJniPerformance           FUNCTION_CALL                HEAVY  thrpt    3      284.093 ±     373.139  ops/s
+ComparisonBenchmark.benchmarkJniPerformance           MEMORY_ACCESS                LIGHT  thrpt    3  1568862.469 ±  662661.709  ops/s
+ComparisonBenchmark.benchmarkJniPerformance           MEMORY_ACCESS               MEDIUM  thrpt    3  1450210.326 ± 2892442.357  ops/s
+ComparisonBenchmark.benchmarkJniPerformance           MEMORY_ACCESS                HEAVY  thrpt    3  1936374.256 ± 1089487.211  ops/s
+ComparisonBenchmark.benchmarkJniPerformance          MIXED_WORKLOAD                LIGHT  thrpt    3  2629153.936 ± 4404535.467  ops/s
+ComparisonBenchmark.benchmarkJniPerformance          MIXED_WORKLOAD               MEDIUM  thrpt    3  3031962.886 ±   87667.974  ops/s
+ComparisonBenchmark.benchmarkJniPerformance          MIXED_WORKLOAD                HEAVY  thrpt    3  2898454.045 ± 3847300.269  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance       INITIALIZATION                LIGHT  thrpt    3     1421.075 ±    3708.608  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance       INITIALIZATION               MEDIUM  thrpt    3     1193.379 ±     121.480  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance       INITIALIZATION                HEAVY  thrpt    3     1310.260 ±    4454.484  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance        FUNCTION_CALL                LIGHT  thrpt    3     5434.077 ±     454.122  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance        FUNCTION_CALL               MEDIUM  thrpt    3     2767.766 ±      43.173  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance        FUNCTION_CALL                HEAVY  thrpt    3     1385.021 ±      40.991  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance        MEMORY_ACCESS                LIGHT  thrpt    3  1201808.215 ±   31727.106  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance        MEMORY_ACCESS               MEDIUM  thrpt    3  1061628.815 ± 3205304.654  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance        MEMORY_ACCESS                HEAVY  thrpt    3  1202011.917 ±  401284.924  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance       MIXED_WORKLOAD                LIGHT  thrpt    3  1199530.439 ±  129140.633  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance       MIXED_WORKLOAD               MEDIUM  thrpt    3  1201539.527 ±   44748.734  ops/s
+ComparisonBenchmark.benchmarkPanamaPerformance       MIXED_WORKLOAD                HEAVY  thrpt    3  1196560.818 ±  181234.860  ops/s
