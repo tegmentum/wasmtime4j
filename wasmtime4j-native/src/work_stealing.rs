@@ -798,15 +798,8 @@ impl WorkStealingScheduler {
         let mut last_steal_attempt = Instant::now();
 
         log::debug!("Worker {} started on CPU core {:?}", context.id, context.cpu_core);
-        println!("DEBUG: Worker {} started", context.id);
 
-        let mut loop_count = 0u64;
         while !shutdown.load(Ordering::Acquire) {
-            loop_count += 1;
-            // Reduced debug output frequency
-            if loop_count % 100000 == 0 {
-                println!("DEBUG: Worker {} loop iteration {}", context.id, loop_count);
-            }
             // Update worker state and activity
             context.last_activity.store(
                 std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64,
@@ -1233,6 +1226,25 @@ impl WorkStealingScheduler {
 
         log::info!("Work-stealing scheduler shutdown complete");
         Ok(())
+    }
+}
+
+impl Drop for WorkStealingScheduler {
+    fn drop(&mut self) {
+        // Ensure workers are shut down when scheduler is dropped
+        if !self.shutdown.load(Ordering::Acquire) {
+            log::info!("WorkStealingScheduler dropped - initiating shutdown");
+            self.shutdown.store(true, Ordering::Release);
+
+            // Wait for all worker threads to complete
+            let mut worker_threads = self.worker_threads.lock();
+            for handle in worker_threads.drain(..) {
+                if let Err(e) = handle.join() {
+                    log::warn!("Worker thread join failed during drop: {:?}", e);
+                }
+            }
+            log::info!("WorkStealingScheduler shutdown complete during drop");
+        }
     }
 }
 
