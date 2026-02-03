@@ -270,6 +270,7 @@ public final class AddressReuseRegressionTest {
     // Run 200 cycles of creating shared memory engines then destroying them
     // This specifically tests that DESTROYED_POINTERS entries are cleaned up
     for (int i = 0; i < 200; i++) {
+      final int cycle = i;
       final WasmRuntime runtime = WasmRuntimeFactory.create();
       final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
       final Engine engine = runtime.createEngine(config);
@@ -278,10 +279,10 @@ public final class AddressReuseRegressionTest {
       final Instance instance = module.instantiate(store);
 
       final WasmMemory memory = instance.getMemory("memory").orElseThrow(
-          () -> new RuntimeException("memory export not found at cycle " + i));
+          () -> new RuntimeException("memory export not found at cycle " + cycle));
 
       assertTrue(memory.isShared(),
-          "isShared() should return true at cycle " + i);
+          "isShared() should return true at cycle " + cycle);
 
       instance.close();
       module.close();
