@@ -217,3 +217,16 @@ debug = true
 name = "build-info"
 path = "src/bin/build-info.rs"
 required-features = []
+
+# Patch wasmtime to use our fork with idempotent GLOBAL_CODE registry fix
+# This prevents SIGABRT crashes in long-running JVM processes
+[patch.crates-io]
+wasmtime = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
+wasmtime-wasi = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
+wasmtime-wasi-http = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
+wasmtime-wasi-nn = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
+wasmtime-wasi-threads = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
+wasmtime-wasi-keyvalue = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
+wasmtime-wasi-config = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
+wasi-common = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
+wasmtime-wast = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent" }
