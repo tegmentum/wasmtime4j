@@ -18,9 +18,9 @@
 
     <properties>
         <!-- Override parent to require Java 23+ for Panama FFI -->
-        <maven.compiler.source>23</maven.compiler.source>
-        <maven.compiler.target>23</maven.compiler.target>
-        
+        <maven.compiler.source>26</maven.compiler.source>
+        <maven.compiler.target>26</maven.compiler.target>
+
         <!-- Panama FFI requires preview features in Java 23+ -->
         <panama.preview.enabled>true</panama.preview.enabled>
     </properties>
@@ -144,8 +144,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>23</source>
-                    <target>23</target>
+                    <source>26</source>
+                    <target>26</target>
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                         <arg>-Xlint:all</arg>
