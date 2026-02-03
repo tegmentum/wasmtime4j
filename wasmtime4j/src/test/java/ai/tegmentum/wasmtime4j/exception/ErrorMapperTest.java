@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -4849,6 +4850,913 @@ class ErrorMapperTest {
           WasiException.class,
           result.getClass(),
           "Should be exactly WasiException (not WasiFileSystemException)");
+    }
+  }
+
+  @Nested
+  @DisplayName("OR Conditional Second-Branch Mutation Tests")
+  class OrConditionalSecondBranchMutationTests {
+
+    // ===== mapCompilationError OR branches (lines 205, 207, 209) =====
+
+    @Test
+    @DisplayName("Line 205: 'memory' without 'out of memory' should trigger OUT_OF_MEMORY")
+    void memoryOnlyShouldTriggerOutOfMemory() {
+      // This kills mutation: contains("out of memory") replaced with true
+      // Message has "memory" but NOT "out of memory"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "failed due to memory issues");
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException compilation = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.OUT_OF_MEMORY,
+          compilation.getErrorType(),
+          "'memory' alone (without 'out of memory') should still trigger OUT_OF_MEMORY");
+    }
+
+    @Test
+    @DisplayName("Line 207: 'time' without 'timeout' should trigger TIMEOUT")
+    void timeOnlyShouldTriggerTimeout() {
+      // This kills mutation: contains("timeout") replaced with true
+      // Message has "time" but NOT "timeout"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "exceeded time limit");
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException compilation = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.TIMEOUT,
+          compilation.getErrorType(),
+          "'time' alone (without 'timeout') should still trigger TIMEOUT");
+    }
+
+    @Test
+    @DisplayName("Line 209: 'complex' without 'too complex' should trigger FUNCTION_TOO_COMPLEX")
+    void complexOnlyShouldTriggerFunctionTooComplex() {
+      // This kills mutation: contains("too complex") replaced with true
+      // Message has "complex" but NOT "too complex"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "function is complex");
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException compilation = (ModuleCompilationException) result;
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.FUNCTION_TOO_COMPLEX,
+          compilation.getErrorType(),
+          "'complex' alone (without 'too complex') should still trigger FUNCTION_TOO_COMPLEX");
+    }
+
+    // ===== mapValidationError OR branches (lines 246, 258, 260) =====
+
+    @Test
+    @DisplayName("Line 246: 'type' without 'type mismatch' should trigger TYPE_MISMATCH")
+    void typeOnlyShouldTriggerTypeMismatch() {
+      // This kills mutation: contains("type mismatch") replaced with true
+      // Message has "type" but NOT "type mismatch"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "invalid type definition");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException validation = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.TYPE_MISMATCH,
+          validation.getErrorType(),
+          "'type' alone (without 'type mismatch') should still trigger TYPE_MISMATCH");
+    }
+
+    @Test
+    @DisplayName("Line 258: 'feature' without 'unsupported' should trigger UNSUPPORTED_FEATURE")
+    void featureOnlyShouldTriggerUnsupportedFeature() {
+      // This kills mutation: contains("unsupported") replaced with true
+      // Message has "feature" but NOT "unsupported"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "feature not available");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException validation = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.UNSUPPORTED_FEATURE,
+          validation.getErrorType(),
+          "'feature' alone (without 'unsupported') should still trigger UNSUPPORTED_FEATURE");
+    }
+
+    @Test
+    @DisplayName("Line 260: 'exceed' without 'limit' should trigger LIMIT_EXCEEDED")
+    void exceedOnlyShouldTriggerLimitExceeded() {
+      // This kills mutation: contains("limit") replaced with true
+      // Message has "exceed" but NOT "limit"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "values exceed maximum");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException validation = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.LIMIT_EXCEEDED,
+          validation.getErrorType(),
+          "'exceed' alone (without 'limit') should still trigger LIMIT_EXCEEDED");
+    }
+
+    // ===== mapRuntimeError OR branches (lines 284, 291, 295) =====
+
+    @Test
+    @DisplayName("Line 284: 'trap' substring without trap pattern should still route to trapError")
+    void trapSubstringWithoutPatternShouldRouteTrapError() {
+      // This kills mutation: trapMatcher.find() replaced with true
+      // Message has "trap" substring but doesn't match trap pattern "trap: X"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trapped in error state");
+      assertInstanceOf(TrapException.class, result);
+    }
+
+    @Test
+    @DisplayName("Line 291: 'time' without 'timeout' should trigger TIMEOUT")
+    void runtimeTimeOnlyShouldTriggerTimeout() {
+      // This kills mutation: contains("timeout") replaced with true
+      // Message has "time" but NOT "timeout" and NOT "trap"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "exceeded time");
+      assertInstanceOf(RuntimeException.class, result);
+      assertNotEquals(TrapException.class, result.getClass());
+      final RuntimeException runtime = (RuntimeException) result;
+      assertEquals(
+          RuntimeException.RuntimeErrorType.TIMEOUT,
+          runtime.getErrorType(),
+          "'time' alone (without 'timeout') should still trigger TIMEOUT");
+    }
+
+    @Test
+    @DisplayName("Line 295: 'access' without 'memory' should trigger MEMORY_ACCESS_VIOLATION")
+    void accessOnlyShouldTriggerMemoryAccessViolation() {
+      // This kills mutation: contains("memory") replaced with true
+      // Message has "access" but NOT "memory" and NOT "trap"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "access violation detected");
+      assertInstanceOf(RuntimeException.class, result);
+      assertNotEquals(TrapException.class, result.getClass());
+      final RuntimeException runtime = (RuntimeException) result;
+      assertEquals(
+          RuntimeException.RuntimeErrorType.MEMORY_ACCESS_VIOLATION,
+          runtime.getErrorType(),
+          "'access' alone (without 'memory') should still trigger MEMORY_ACCESS_VIOLATION");
+    }
+
+    // ===== mapTrapError OR branches (line 350) =====
+
+    @Test
+    @DisplayName("Line 350: 'out of fuel' should trigger OUT_OF_FUEL")
+    void outOfFuelShouldTriggerOutOfFuel() {
+      // This kills mutation: contains("fuel") replaced with false
+      // "out of fuel" contains "fuel", so both branches should work
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: out of fuel");
+      assertInstanceOf(TrapException.class, result);
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.OUT_OF_FUEL,
+          trap.getTrapType(),
+          "'out of fuel' should trigger OUT_OF_FUEL");
+    }
+
+    @Test
+    @DisplayName("Line 350: 'fuel' without 'out of' should trigger OUT_OF_FUEL")
+    void fuelOnlyShouldTriggerOutOfFuel() {
+      // This ensures the first branch (contains("fuel")) is exercised
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: fuel exhausted");
+      assertInstanceOf(TrapException.class, result);
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.OUT_OF_FUEL,
+          trap.getTrapType(),
+          "'fuel' alone should trigger OUT_OF_FUEL");
+    }
+
+    // ===== mapWasiError OR branches (line 485) =====
+
+    @Test
+    @DisplayName("Line 485: 'limit' without 'resource' should trigger RESOURCE_LIMIT")
+    void limitOnlyShouldTriggerResourceLimit() {
+      // This kills mutation: contains("resource") replaced with true
+      // Message has "limit" but NOT "resource"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit exceeded");
+      assertInstanceOf(WasiException.class, result);
+      assertNotEquals(WasiFileSystemException.class, result.getClass());
+      final WasiException wasi = (WasiException) result;
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          wasi.getCategory(),
+          "'limit' alone (without 'resource') should still trigger RESOURCE_LIMIT");
+    }
+  }
+
+  @Nested
+  @DisplayName("AND Conditional Mutation Tests")
+  class AndConditionalMutationTests {
+
+    // ===== mapInstantiationError AND branches (lines 380, 389) =====
+
+    @Test
+    @DisplayName("Line 380: 'type' without 'import' should NOT trigger IMPORT_TYPE_MISMATCH")
+    void typeWithoutImportShouldNotTriggerImportTypeMismatch() {
+      // This kills mutation: contains("import") replaced with true
+      // If mutated to true, "type mismatch error" would incorrectly match
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.ENGINE_CONFIG_ERROR, "type mismatch error");
+      assertInstanceOf(ModuleInstantiationException.class, result);
+      final ModuleInstantiationException inst = (ModuleInstantiationException) result;
+      assertNotEquals(
+          ModuleInstantiationException.InstantiationErrorType.IMPORT_TYPE_MISMATCH,
+          inst.getErrorType(),
+          "'type' without 'import' should NOT trigger IMPORT_TYPE_MISMATCH");
+    }
+
+    @Test
+    @DisplayName("Line 389: 'allocation' without 'table' should NOT trigger TABLE_ALLOCATION_FAILED")
+    void allocationWithoutTableShouldNotTriggerTableAllocation() {
+      // This kills mutation: contains("table") replaced with true
+      // If mutated to true, "allocation error" would incorrectly match
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.ENGINE_CONFIG_ERROR, "allocation error");
+      assertInstanceOf(ModuleInstantiationException.class, result);
+      final ModuleInstantiationException inst = (ModuleInstantiationException) result;
+      assertNotEquals(
+          ModuleInstantiationException.InstantiationErrorType.TABLE_ALLOCATION_FAILED,
+          inst.getErrorType(),
+          "'allocation' without 'table' should NOT trigger TABLE_ALLOCATION_FAILED");
+    }
+
+    // ===== mapLinkingError AND branches (lines 428, 436, 438, 440, 444) =====
+
+    @Test
+    @DisplayName("Line 428: 'not found' without 'export' should NOT trigger EXPORT_NOT_FOUND")
+    void notFoundWithoutExportShouldNotTriggerExportNotFound() {
+      // This kills mutation: contains("export") replaced with true
+      // "import not found" has "not found" but not "export"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "import not found");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.EXPORT_NOT_FOUND,
+          linking.getErrorType(),
+          "'not found' without 'export' should NOT trigger EXPORT_NOT_FOUND");
+    }
+
+    @Test
+    @DisplayName("Line 436: 'limit' without 'memory' should NOT trigger MEMORY_LIMITS_INCOMPATIBLE")
+    void limitWithoutMemoryShouldNotTriggerMemoryLimits() {
+      // This kills mutation: contains("memory") replaced with true
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "limit exceeded");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.MEMORY_LIMITS_INCOMPATIBLE,
+          linking.getErrorType(),
+          "'limit' without 'memory' should NOT trigger MEMORY_LIMITS_INCOMPATIBLE");
+    }
+
+    @Test
+    @DisplayName("Line 438: 'size' without 'table' should NOT trigger TABLE_SIZE_MISMATCH")
+    void sizeWithoutTableShouldNotTriggerTableSize() {
+      // This kills mutation: contains("table") replaced with true
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "size mismatch error");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.TABLE_SIZE_MISMATCH,
+          linking.getErrorType(),
+          "'size' without 'table' should NOT trigger TABLE_SIZE_MISMATCH");
+    }
+
+    @Test
+    @DisplayName("Line 440: 'type' without 'table' should NOT trigger TABLE_TYPE_MISMATCH")
+    void typeWithoutTableShouldNotTriggerTableType() {
+      // This kills mutation: contains("table") replaced with true
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "type mismatch error");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.TABLE_TYPE_MISMATCH,
+          linking.getErrorType(),
+          "'type' without 'table' should NOT trigger TABLE_TYPE_MISMATCH");
+    }
+
+    @Test
+    @DisplayName("Line 444: 'mutability' without 'global' should NOT trigger GLOBAL_MUTABILITY_MISMATCH")
+    void mutabilityWithoutGlobalShouldNotTriggerGlobalMutability() {
+      // This kills mutation: contains("global") replaced with true
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "mutability error");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.GLOBAL_MUTABILITY_MISMATCH,
+          linking.getErrorType(),
+          "'mutability' without 'global' should NOT trigger GLOBAL_MUTABILITY_MISMATCH");
+    }
+  }
+
+  @Nested
+  @DisplayName("Matcher Find False Replacement Mutation Tests")
+  class MatcherFindFalseReplacementMutationTests {
+
+    // ===== Line 412: mapInstantiationError second importMatcher.find() =====
+
+    @Test
+    @DisplayName("Line 412: Instantiation error with import pattern should extract module name")
+    void instantiationErrorWithImportPatternShouldExtractModuleName() {
+      // The pattern is "import[: ](word).(word)" - expects import:mod.name or import mod.name
+      // This kills mutation: find() replaced with false
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.ENGINE_CONFIG_ERROR, "import:test_module.test_func failed");
+      assertInstanceOf(ModuleInstantiationException.class, result);
+      final ModuleInstantiationException inst = (ModuleInstantiationException) result;
+      // The first find() extracts moduleName (group 1)
+      assertNotNull(inst.getModuleName(), "Module name should be extracted from import pattern");
+      assertEquals("test_module", inst.getModuleName(), "Module name should be 'test_module'");
+    }
+
+    // ===== Line 463: mapLinkingError second importMatcher.find() =====
+
+    @Test
+    @DisplayName("Line 463: Linking error with import pattern should extract module name")
+    void linkingErrorWithImportPatternShouldExtractModuleName() {
+      // The pattern is "import[: ](word).(word)" - expects import:mod.name or import mod.name
+      // This kills mutation: find() replaced with false
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "import:env.memory_func not found");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotNull(linking.getModuleName(), "Module name should be extracted from import pattern");
+      assertEquals("env", linking.getModuleName(), "Module name should be 'env'");
+    }
+
+    // ===== Line 532: mapWasiFileSystemError errnoMatcher.find() =====
+
+    @Test
+    @DisplayName("Line 532: File error with errno pattern should extract errno code")
+    void fileErrorWithErrnoShouldExtractErrnoCode() {
+      // This kills mutation: find() replaced with false
+      // When the mutation is active, errnoCode is always null
+      // When find() returns true, errnoCode should be non-null
+      // Pattern is "errno[: ](digits)" - expects errno:N or errno N
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file operation failed errno:2");
+      assertInstanceOf(WasiFileSystemException.class, result);
+      final WasiFileSystemException fsError = (WasiFileSystemException) result;
+      assertNotNull(
+          fsError.getErrnoCode(),
+          "Errno code should be extracted when 'errno:N' pattern is present");
+      assertEquals(2, fsError.getErrnoCode(), "Errno code should be 2");
+    }
+
+    @Test
+    @DisplayName("Line 532: File error without errno pattern should use error type default")
+    void fileErrorWithoutErrnoPatternShouldUseErrorTypeDefault() {
+      // This tests the else branch (find() returns false)
+      // When no errno pattern is present, constructor falls back to error type's default
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file operation error");
+      assertInstanceOf(WasiFileSystemException.class, result);
+      final WasiFileSystemException fsError = (WasiFileSystemException) result;
+      // The error type is UNKNOWN which has errno code -1
+      assertEquals(
+          WasiFileSystemException.FileSystemErrorType.UNKNOWN.getErrnoCode(),
+          fsError.getErrnoCode(),
+          "Errno code should be error type's default when pattern not present");
+    }
+
+    @Test
+    @DisplayName("Line 532: Extracted errno should override error type default")
+    void extractedErrnoShouldOverrideDefault() {
+      // This strongly kills mutation: find() replaced with false
+      // The error type UNKNOWN has default errno -1, but we extract errno:99
+      // If mutation is active (find() -> false), errnoCode would be -1
+      // If mutation is NOT active (find() works), errnoCode would be 99
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file operation error errno:99");
+      assertInstanceOf(WasiFileSystemException.class, result);
+      final WasiFileSystemException fsError = (WasiFileSystemException) result;
+      assertEquals(
+          WasiFileSystemException.FileSystemErrorType.UNKNOWN,
+          fsError.getFileSystemErrorType(),
+          "Error type should be UNKNOWN for this message");
+      assertEquals(
+          99,
+          fsError.getErrnoCode(),
+          "Errno code should be extracted value (99), not default (-1)");
+    }
+  }
+
+  @Nested
+  @DisplayName("First Operand True Replacement Mutation Tests")
+  class FirstOperandTrueReplacementMutationTests {
+
+    // These tests kill mutations where the FIRST operand of an OR is replaced with TRUE
+    // The strategy: test with message that matches a LATER condition but NOT the mutated one
+    // If mutated, the earlier condition would incorrectly match
+
+    // ===== mapCompilationError: Line 205 contains("out of memory") -> true =====
+
+    @Test
+    @DisplayName("Line 205: 'timeout' should NOT trigger OUT_OF_MEMORY")
+    void timeoutShouldNotTriggerOutOfMemory() {
+      // This kills: contains("out of memory") replaced with true on line 205
+      // "timeout" doesn't contain "out of memory" or "memory"
+      // If mutated, would incorrectly get OUT_OF_MEMORY
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "compilation timeout");
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException compilation = (ModuleCompilationException) result;
+      assertNotEquals(
+          ModuleCompilationException.CompilationErrorType.OUT_OF_MEMORY,
+          compilation.getErrorType(),
+          "'timeout' should NOT trigger OUT_OF_MEMORY");
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.TIMEOUT,
+          compilation.getErrorType(),
+          "'timeout' should trigger TIMEOUT");
+    }
+
+    // ===== mapCompilationError: Line 207 contains("timeout") -> true =====
+
+    @Test
+    @DisplayName("Line 207: 'too complex' should NOT trigger TIMEOUT")
+    void tooComplexShouldNotTriggerTimeout() {
+      // This kills: contains("timeout") replaced with true on line 207
+      // "too complex" doesn't contain "timeout" or "time"
+      // If mutated, would incorrectly get TIMEOUT
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "function too complex");
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException compilation = (ModuleCompilationException) result;
+      assertNotEquals(
+          ModuleCompilationException.CompilationErrorType.TIMEOUT,
+          compilation.getErrorType(),
+          "'too complex' should NOT trigger TIMEOUT");
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.FUNCTION_TOO_COMPLEX,
+          compilation.getErrorType(),
+          "'too complex' should trigger FUNCTION_TOO_COMPLEX");
+    }
+
+    // ===== mapCompilationError: Line 209 contains("too complex") -> true =====
+
+    @Test
+    @DisplayName("Line 209: 'unsupported' should NOT trigger FUNCTION_TOO_COMPLEX")
+    void unsupportedShouldNotTriggerFunctionTooComplex() {
+      // This kills: contains("too complex") replaced with true on line 209
+      // "unsupported instruction" doesn't contain "too complex" or "complex"
+      // If mutated, would incorrectly get FUNCTION_TOO_COMPLEX
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "unsupported instruction");
+      assertInstanceOf(ModuleCompilationException.class, result);
+      final ModuleCompilationException compilation = (ModuleCompilationException) result;
+      assertNotEquals(
+          ModuleCompilationException.CompilationErrorType.FUNCTION_TOO_COMPLEX,
+          compilation.getErrorType(),
+          "'unsupported' should NOT trigger FUNCTION_TOO_COMPLEX");
+      assertEquals(
+          ModuleCompilationException.CompilationErrorType.UNSUPPORTED_INSTRUCTION,
+          compilation.getErrorType(),
+          "'unsupported' should trigger UNSUPPORTED_INSTRUCTION");
+    }
+
+    // ===== mapValidationError: Line 246 contains("type mismatch") -> true =====
+
+    @Test
+    @DisplayName("Line 246: 'import' should NOT trigger TYPE_MISMATCH")
+    void importShouldNotTriggerTypeMismatch() {
+      // This kills: contains("type mismatch") replaced with true on line 246
+      // "import error" doesn't contain "type mismatch" or "type"
+      // If mutated, would incorrectly get TYPE_MISMATCH
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "import error");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException validation = (ModuleValidationException) result;
+      assertNotEquals(
+          ModuleValidationException.ValidationErrorType.TYPE_MISMATCH,
+          validation.getErrorType(),
+          "'import' should NOT trigger TYPE_MISMATCH");
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.INVALID_IMPORT,
+          validation.getErrorType(),
+          "'import' should trigger INVALID_IMPORT");
+    }
+
+    // ===== mapValidationError: Line 258 contains("unsupported") -> true =====
+
+    @Test
+    @DisplayName("Line 258: 'limit exceeded' should NOT trigger UNSUPPORTED_FEATURE")
+    void limitExceededShouldNotTriggerUnsupportedFeature() {
+      // This kills: contains("unsupported") replaced with true on line 258
+      // "limit exceeded" doesn't contain "unsupported" or "feature"
+      // If mutated, would incorrectly get UNSUPPORTED_FEATURE
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "limit exceeded");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException validation = (ModuleValidationException) result;
+      assertNotEquals(
+          ModuleValidationException.ValidationErrorType.UNSUPPORTED_FEATURE,
+          validation.getErrorType(),
+          "'limit exceeded' should NOT trigger UNSUPPORTED_FEATURE");
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.LIMIT_EXCEEDED,
+          validation.getErrorType(),
+          "'limit exceeded' should trigger LIMIT_EXCEEDED");
+    }
+
+    // ===== mapValidationError: Line 260 contains("limit") -> true =====
+
+    @Test
+    @DisplayName("Line 260: unknown validation error should NOT trigger LIMIT_EXCEEDED")
+    void unknownValidationShouldNotTriggerLimitExceeded() {
+      // This kills: contains("limit") replaced with true on line 260
+      // "parsing failed" doesn't contain "limit" or "exceed"
+      // If mutated, would incorrectly get LIMIT_EXCEEDED
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "parsing failed");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException validation = (ModuleValidationException) result;
+      assertNotEquals(
+          ModuleValidationException.ValidationErrorType.LIMIT_EXCEEDED,
+          validation.getErrorType(),
+          "'parsing failed' should NOT trigger LIMIT_EXCEEDED");
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.UNKNOWN,
+          validation.getErrorType(),
+          "'parsing failed' should trigger UNKNOWN");
+    }
+
+    // ===== mapRuntimeError: Line 284 trapMatcher.find() -> true =====
+
+    @Test
+    @DisplayName("Line 284: 'timeout' should NOT route to trapError")
+    void timeoutShouldNotRouteTrapError() {
+      // This kills: trapMatcher.find() replaced with true on line 284
+      // "timeout" doesn't match trap pattern and doesn't contain "trap"
+      // If mutated, would incorrectly route to trapError
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "timeout occurred");
+      assertInstanceOf(RuntimeException.class, result);
+      assertNotEquals(
+          TrapException.class,
+          result.getClass(),
+          "'timeout' should return RuntimeException, not TrapException");
+    }
+
+    // ===== mapRuntimeError: Line 291 contains("timeout") -> true =====
+
+    @Test
+    @DisplayName("Line 291: 'interrupt' should NOT trigger TIMEOUT")
+    void interruptShouldNotTriggerTimeout() {
+      // This kills: contains("timeout") replaced with true on line 291
+      // "interrupt" doesn't contain "timeout" or "time"
+      // If mutated, would incorrectly get TIMEOUT
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "interrupt signal");
+      assertInstanceOf(RuntimeException.class, result);
+      assertNotEquals(TrapException.class, result.getClass());
+      final RuntimeException runtime = (RuntimeException) result;
+      assertNotEquals(
+          RuntimeException.RuntimeErrorType.TIMEOUT,
+          runtime.getErrorType(),
+          "'interrupt' should NOT trigger TIMEOUT");
+      assertEquals(
+          RuntimeException.RuntimeErrorType.INTERRUPTED,
+          runtime.getErrorType(),
+          "'interrupt' should trigger INTERRUPTED");
+    }
+
+    // ===== mapRuntimeError: Line 295 contains("memory") -> true =====
+
+    @Test
+    @DisplayName("Line 295: 'stack' should NOT trigger MEMORY_ACCESS_VIOLATION")
+    void stackShouldNotTriggerMemoryAccessViolation() {
+      // This kills: contains("memory") replaced with true on line 295
+      // "stack error" doesn't contain "memory" or "access"
+      // If mutated, would incorrectly get MEMORY_ACCESS_VIOLATION
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "stack error");
+      assertInstanceOf(RuntimeException.class, result);
+      assertNotEquals(TrapException.class, result.getClass());
+      final RuntimeException runtime = (RuntimeException) result;
+      assertNotEquals(
+          RuntimeException.RuntimeErrorType.MEMORY_ACCESS_VIOLATION,
+          runtime.getErrorType(),
+          "'stack' should NOT trigger MEMORY_ACCESS_VIOLATION");
+      assertEquals(
+          RuntimeException.RuntimeErrorType.STACK_ERROR,
+          runtime.getErrorType(),
+          "'stack' should trigger STACK_ERROR");
+    }
+
+    // ===== mapTrapError: Line 339 contains("overflow") -> true =====
+    // Already covered by TrapErrorIntegerOverflowMutationTests
+
+    // ===== mapInstantiationError: Line 380 contains("import") -> true =====
+
+    @Test
+    @DisplayName("Line 380: 'signature' should NOT trigger IMPORT_TYPE_MISMATCH")
+    void signatureShouldNotTriggerImportTypeMismatch() {
+      // This kills: contains("import") replaced with true on line 380
+      // "signature mismatch" doesn't contain "import"
+      // If mutated, would incorrectly get IMPORT_TYPE_MISMATCH
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.ENGINE_CONFIG_ERROR, "signature mismatch");
+      assertInstanceOf(ModuleInstantiationException.class, result);
+      final ModuleInstantiationException inst = (ModuleInstantiationException) result;
+      assertNotEquals(
+          ModuleInstantiationException.InstantiationErrorType.IMPORT_TYPE_MISMATCH,
+          inst.getErrorType(),
+          "'signature' should NOT trigger IMPORT_TYPE_MISMATCH");
+      assertEquals(
+          ModuleInstantiationException.InstantiationErrorType.FUNCTION_SIGNATURE_MISMATCH,
+          inst.getErrorType(),
+          "'signature' should trigger FUNCTION_SIGNATURE_MISMATCH");
+    }
+
+    // ===== mapLinkingError: Line 428 contains("export") -> true =====
+
+    @Test
+    @DisplayName("Line 428: 'host function' should NOT trigger EXPORT_NOT_FOUND")
+    void hostFunctionShouldNotTriggerExportNotFound() {
+      // This kills: contains("export") replaced with true on line 428
+      // "host function binding" doesn't contain "export"
+      // If mutated, would incorrectly get EXPORT_NOT_FOUND
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "host function binding failed");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.EXPORT_NOT_FOUND,
+          linking.getErrorType(),
+          "'host function' should NOT trigger EXPORT_NOT_FOUND");
+      assertEquals(
+          LinkingException.LinkingErrorType.HOST_FUNCTION_BINDING_FAILED,
+          linking.getErrorType(),
+          "'host function' should trigger HOST_FUNCTION_BINDING_FAILED");
+    }
+
+    // ===== mapLinkingError: Line 436 contains("memory") -> true =====
+
+    @Test
+    @DisplayName("Line 436: 'table size' should NOT trigger MEMORY_LIMITS_INCOMPATIBLE")
+    void tableSizeShouldNotTriggerMemoryLimits() {
+      // This kills: contains("memory") replaced with true on line 436
+      // "table size mismatch" doesn't contain "memory"
+      // If mutated, would incorrectly get MEMORY_LIMITS_INCOMPATIBLE
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "table size mismatch");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.MEMORY_LIMITS_INCOMPATIBLE,
+          linking.getErrorType(),
+          "'table size' should NOT trigger MEMORY_LIMITS_INCOMPATIBLE");
+      assertEquals(
+          LinkingException.LinkingErrorType.TABLE_SIZE_MISMATCH,
+          linking.getErrorType(),
+          "'table size' should trigger TABLE_SIZE_MISMATCH");
+    }
+
+    // ===== mapLinkingError: Line 440 contains("table") -> true =====
+
+    @Test
+    @DisplayName("Line 440: 'global type' should NOT trigger TABLE_TYPE_MISMATCH")
+    void globalTypeShouldNotTriggerTableType() {
+      // This kills: contains("table") replaced with true on line 440
+      // "global type mismatch" doesn't contain "table"
+      // If mutated, would incorrectly get TABLE_TYPE_MISMATCH
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "global type mismatch");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.TABLE_TYPE_MISMATCH,
+          linking.getErrorType(),
+          "'global type' should NOT trigger TABLE_TYPE_MISMATCH");
+      assertEquals(
+          LinkingException.LinkingErrorType.GLOBAL_TYPE_MISMATCH,
+          linking.getErrorType(),
+          "'global type' should trigger GLOBAL_TYPE_MISMATCH");
+    }
+
+    // ===== mapLinkingError: Line 444 contains("global") -> true =====
+
+    @Test
+    @DisplayName("Line 444: 'circular' should NOT trigger GLOBAL_MUTABILITY_MISMATCH")
+    void circularShouldNotTriggerGlobalMutability() {
+      // This kills: contains("global") replaced with true on line 444
+      // "circular dependency" doesn't contain "global"
+      // If mutated, would incorrectly get GLOBAL_MUTABILITY_MISMATCH
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "circular dependency");
+      assertInstanceOf(LinkingException.class, result);
+      final LinkingException linking = (LinkingException) result;
+      assertNotEquals(
+          LinkingException.LinkingErrorType.GLOBAL_MUTABILITY_MISMATCH,
+          linking.getErrorType(),
+          "'circular' should NOT trigger GLOBAL_MUTABILITY_MISMATCH");
+      assertEquals(
+          LinkingException.LinkingErrorType.CIRCULAR_DEPENDENCY,
+          linking.getErrorType(),
+          "'circular' should trigger CIRCULAR_DEPENDENCY");
+    }
+
+    // ===== mapWasiError: Line 485 contains("resource") -> true =====
+
+    @Test
+    @DisplayName("Line 485: 'component' should NOT trigger RESOURCE_LIMIT")
+    void componentShouldNotTriggerResourceLimit() {
+      // This kills: contains("resource") replaced with true on line 485
+      // "component error" doesn't contain "resource" or "limit"
+      // If mutated, would incorrectly get RESOURCE_LIMIT
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "component error");
+      assertInstanceOf(WasiException.class, result);
+      assertNotEquals(WasiFileSystemException.class, result.getClass());
+      final WasiException wasi = (WasiException) result;
+      assertNotEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          wasi.getCategory(),
+          "'component' should NOT trigger RESOURCE_LIMIT");
+      assertEquals(
+          WasiException.ErrorCategory.COMPONENT,
+          wasi.getCategory(),
+          "'component' should trigger COMPONENT");
+    }
+  }
+
+  @Nested
+  @DisplayName("First Operand Only Tests - Kills EQUAL_IF True Replacement Mutations")
+  class FirstOperandOnlyMutationTests {
+
+    // These tests use ONLY the first operand keyword (not the second) to kill mutations
+    // where the first operand's equality check is replaced with TRUE
+    // The key: if mutation makes first check always-jump, it would skip short-circuit
+
+    // ===== mapCompilationError Line 205: "out of memory" without "memory" alone =====
+    // Note: "out of memory" always contains "memory", so this is an equivalent mutant
+
+    // ===== mapCompilationError Line 207: "timeout" without "time" alone =====
+    // Note: "timeout" always contains "time", so this is an equivalent mutant
+
+    // ===== mapCompilationError Line 209: "too complex" without "complex" alone =====
+    // Note: "too complex" always contains "complex", so this is an equivalent mutant
+
+    // ===== mapValidationError Line 246: "type mismatch" without "type" alone =====
+    // Note: "type mismatch" always contains "type", so this is an equivalent mutant
+
+    // ===== mapValidationError Line 258: "unsupported" without "feature" =====
+
+    @Test
+    @DisplayName("Line 258: 'unsupported' alone (no 'feature') should trigger UNSUPPORTED_FEATURE")
+    void unsupportedAloneShouldTriggerUnsupportedFeature() {
+      // This kills mutation: first operand equality check replaced with true
+      // Use message with "unsupported" that doesn't contain earlier keywords
+      // (not magic, version, malformed, corrupt, type, import, export, memory, table, function)
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "unsupported opcode detected");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException validation = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.UNSUPPORTED_FEATURE,
+          validation.getErrorType(),
+          "'unsupported' alone should trigger UNSUPPORTED_FEATURE");
+    }
+
+    // ===== mapValidationError Line 260: "limit" without "exceed" =====
+    // Note: We need a message with just "limit" that doesn't match earlier conditions
+
+    @Test
+    @DisplayName("Line 260: 'limit' alone (no 'exceed') should trigger LIMIT_EXCEEDED")
+    void limitAloneShouldTriggerLimitExceeded() {
+      // This kills mutation: first operand equality check replaced with true
+      // Use message with "limit" that doesn't contain earlier keywords
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "limit reached");
+      assertInstanceOf(ModuleValidationException.class, result);
+      final ModuleValidationException validation = (ModuleValidationException) result;
+      assertEquals(
+          ModuleValidationException.ValidationErrorType.LIMIT_EXCEEDED,
+          validation.getErrorType(),
+          "'limit' alone should trigger LIMIT_EXCEEDED");
+    }
+
+    // ===== mapRuntimeError Line 291: "timeout" without "time" =====
+    // Note: "timeout" always contains "time", so this is an equivalent mutant
+
+    // ===== mapRuntimeError Line 295: "memory" without "access" =====
+
+    @Test
+    @DisplayName("Line 295: 'memory' alone (no 'access') should trigger MEMORY_ACCESS_VIOLATION")
+    void memoryAloneShouldTriggerMemoryAccessViolation() {
+      // This kills mutation: first operand equality check replaced with true
+      // Use message with "memory" that doesn't match trap pattern
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "memory error occurred");
+      assertInstanceOf(RuntimeException.class, result);
+      // Verify it's not a TrapException (which it would be if "trap" matched)
+      assertNotEquals(TrapException.class, result.getClass());
+      final RuntimeException runtime = (RuntimeException) result;
+      assertEquals(
+          RuntimeException.RuntimeErrorType.MEMORY_ACCESS_VIOLATION,
+          runtime.getErrorType(),
+          "'memory' alone should trigger MEMORY_ACCESS_VIOLATION");
+    }
+
+    // ===== mapTrapError Line 339: "overflow" with "integer" - both needed =====
+    // This is an AND condition, handled separately
+
+    // ===== mapTrapError Line 350: "fuel" without "out of fuel" =====
+
+    @Test
+    @DisplayName("Line 350: 'fuel' alone (no 'out of fuel') should trigger OUT_OF_FUEL")
+    void fuelAloneShouldTriggerOutOfFuel() {
+      // "fuel exhausted" contains "fuel" but not "out of fuel"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: fuel exhausted");
+      assertInstanceOf(TrapException.class, result);
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.OUT_OF_FUEL,
+          trap.getTrapType(),
+          "'fuel' alone should trigger OUT_OF_FUEL");
+    }
+
+    // ===== mapLinkingError Line 436: "memory" with "limit" - needs both for MEMORY_LIMITS =====
+    // Actually this is an AND condition, covered by other tests
+
+    // ===== mapWasiError Line 485: "resource" without "limit" =====
+
+    @Test
+    @DisplayName("Line 485: 'resource' alone (no 'limit') should trigger RESOURCE_LIMIT")
+    void resourceAloneShouldTriggerResourceLimit() {
+      // This kills mutation: first operand equality check replaced with true
+      // Use message with "resource" that doesn't contain file/directory/path
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "resource unavailable");
+      assertInstanceOf(WasiException.class, result);
+      assertNotEquals(WasiFileSystemException.class, result.getClass());
+      final WasiException wasi = (WasiException) result;
+      assertEquals(
+          WasiException.ErrorCategory.RESOURCE_LIMIT,
+          wasi.getCategory(),
+          "'resource' alone should trigger RESOURCE_LIMIT");
+    }
+  }
+
+  @Nested
+  @DisplayName("Trap Error Integer Overflow AND Conditional Mutation Tests")
+  class TrapErrorIntegerOverflowMutationTests {
+
+    // ===== Line 339: mapTrapError contains("overflow") && contains("integer") =====
+
+    @Test
+    @DisplayName("Line 339: 'overflow' without 'integer' should NOT trigger INTEGER_OVERFLOW")
+    void overflowWithoutIntegerShouldNotTriggerIntegerOverflow() {
+      // This kills mutation: contains("overflow") replaced with true
+      // "stack overflow" has "overflow" but NOT "integer"
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: stack overflow");
+      assertInstanceOf(TrapException.class, result);
+      final TrapException trap = (TrapException) result;
+      assertNotEquals(
+          TrapException.TrapType.INTEGER_OVERFLOW,
+          trap.getTrapType(),
+          "'overflow' without 'integer' should NOT trigger INTEGER_OVERFLOW");
+      assertEquals(
+          TrapException.TrapType.STACK_OVERFLOW,
+          trap.getTrapType(),
+          "'stack overflow' should trigger STACK_OVERFLOW");
+    }
+
+    @Test
+    @DisplayName("Line 339: 'integer' without 'overflow' should NOT trigger INTEGER_OVERFLOW")
+    void integerWithoutOverflowShouldNotTriggerIntegerOverflow() {
+      // This tests that both conditions must be true
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: integer error");
+      assertInstanceOf(TrapException.class, result);
+      final TrapException trap = (TrapException) result;
+      assertNotEquals(
+          TrapException.TrapType.INTEGER_OVERFLOW,
+          trap.getTrapType(),
+          "'integer' without 'overflow' should NOT trigger INTEGER_OVERFLOW");
+    }
+
+    @Test
+    @DisplayName("Line 339: Both 'integer' and 'overflow' should trigger INTEGER_OVERFLOW")
+    void integerAndOverflowShouldTriggerIntegerOverflow() {
+      // This tests the happy path
+      final WasmException result =
+          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: integer overflow detected");
+      assertInstanceOf(TrapException.class, result);
+      final TrapException trap = (TrapException) result;
+      assertEquals(
+          TrapException.TrapType.INTEGER_OVERFLOW,
+          trap.getTrapType(),
+          "'integer overflow' should trigger INTEGER_OVERFLOW");
     }
   }
 }

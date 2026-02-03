@@ -281,4 +281,102 @@ class ResourceExceptionTest {
       assertNull(exception.getResourceId(), "Resource ID should be null");
     }
   }
+
+  @Nested
+  @DisplayName("Constructor Default Value Mutation Tests")
+  class ConstructorDefaultValueMutationTests {
+
+    @Test
+    @DisplayName("Message+cause constructor should set cleanupRecommended to exactly false")
+    void messageCauseConstructorShouldSetCleanupRecommendedToFalse() {
+      // This kills line 59 mutation: Substituted 0 with 1 (false -> true)
+      final Throwable cause = new RuntimeException("test cause");
+      final ResourceException exception = new ResourceException("Error message", cause);
+
+      // cleanupRecommended should be false, not true
+      assertFalse(exception.isCleanupRecommended(),
+          "Message+cause constructor should set cleanupRecommended to false, not true");
+    }
+
+    @Test
+    @DisplayName("Message-only constructor should also set cleanupRecommended to false")
+    void messageOnlyConstructorShouldSetCleanupRecommendedToFalse() {
+      final ResourceException exception = new ResourceException("Error message");
+
+      assertFalse(exception.isCleanupRecommended(),
+          "Message-only constructor should set cleanupRecommended to false");
+    }
+  }
+
+  @Nested
+  @DisplayName("getResourceErrorDescription Conditional Mutation Tests")
+  class GetResourceErrorDescriptionConditionalMutationTests {
+
+    @Test
+    @DisplayName("Description should NOT include id section when resourceId is null")
+    void descriptionShouldNotIncludeIdSectionWhenResourceIdIsNull() {
+      // This kills line 157 mutation: resourceId != null replaced with true
+      // If mutated, it would try to append "[id: null]" to the description
+      final ResourceException exception = new ResourceException("Error", "memory", null);
+
+      final String description = exception.getResourceErrorDescription();
+
+      // Should contain type but NOT id (since resourceId is null)
+      assertTrue(description.contains("[type: memory]"),
+          "Description should contain type section");
+      assertFalse(description.contains("[id:"),
+          "Description should NOT contain id section when resourceId is null");
+      assertFalse(description.contains("null"),
+          "Description should not contain 'null' as literal text for id");
+    }
+
+    @Test
+    @DisplayName("Description should NOT include cleanup section when cleanupRecommended is false")
+    void descriptionShouldNotIncludeCleanupSectionWhenCleanupRecommendedIsFalse() {
+      // This kills line 161 mutation: cleanupRecommended replaced with true
+      // If mutated, it would always append "[cleanup recommended]"
+      final ResourceException exception =
+          new ResourceException("Error", "handle", "h1", false, null);
+
+      final String description = exception.getResourceErrorDescription();
+
+      // Should contain type and id but NOT cleanup (since cleanupRecommended is false)
+      assertTrue(description.contains("[type: handle]"),
+          "Description should contain type section");
+      assertTrue(description.contains("[id: h1]"),
+          "Description should contain id section");
+      assertFalse(description.contains("cleanup recommended"),
+          "Description should NOT contain 'cleanup recommended' when cleanupRecommended is false");
+    }
+
+    @Test
+    @DisplayName("Description with all null fields should be minimal")
+    void descriptionWithAllNullFieldsShouldBeMinimal() {
+      // Test both conditionals with null/false values
+      final ResourceException exception = new ResourceException("Error");
+
+      final String description = exception.getResourceErrorDescription();
+
+      // Should only contain "Resource error" without any brackets
+      assertEquals("Resource error", description,
+          "Description should be exactly 'Resource error' when all fields are null/false");
+    }
+
+    @Test
+    @DisplayName("Description should include all sections when all fields are set")
+    void descriptionShouldIncludeAllSectionsWhenAllFieldsAreSet() {
+      final ResourceException exception =
+          new ResourceException("Error", "file", "f123", true, null);
+
+      final String description = exception.getResourceErrorDescription();
+
+      // Should contain all three sections
+      assertTrue(description.contains("[type: file]"),
+          "Description should contain type section");
+      assertTrue(description.contains("[id: f123]"),
+          "Description should contain id section");
+      assertTrue(description.contains("[cleanup recommended]"),
+          "Description should contain cleanup section");
+    }
+  }
 }
