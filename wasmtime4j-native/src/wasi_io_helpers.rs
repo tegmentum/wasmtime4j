@@ -388,10 +388,9 @@ mod tests {
     use crate::wasi_preview2::{WasiPreview2Config, WasiStream, WasiStreamStatus, WasiStreamType};
     use wasmtime::Engine;
 
+    // Use shared async engine to reduce wasmtime GLOBAL_CODE registry accumulation
     fn test_context() -> WasiPreview2Context {
-        let mut config = crate::engine::safe_wasmtime_config();
-        config.async_support(true);
-        let engine = Engine::new(&config).unwrap();
+        let engine = crate::engine::get_shared_async_wasmtime_engine();
         WasiPreview2Context::new(engine, WasiPreview2Config::default()).unwrap()
     }
 

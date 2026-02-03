@@ -1374,9 +1374,9 @@ mod tests {
     use super::*;
     use crate::gc_types::{FieldDefinition, FieldType};
 
+    // Use shared GC wasmtime engine to reduce wasmtime GLOBAL_CODE registry accumulation
     fn create_test_runtime() -> WasmGcRuntime {
-        let config = crate::engine::safe_wasmtime_config();
-        let engine = Engine::new(&config).unwrap();
+        let engine = crate::engine::get_shared_gc_wasmtime_engine();
         WasmGcRuntime::new(engine).unwrap()
     }
 

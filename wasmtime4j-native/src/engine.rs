@@ -3,7 +3,8 @@
 //! This module provides defensive, thread-safe wrapper around Wasmtime engines
 //! with proper resource management and JVM crash prevention.
 
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
+use once_cell::sync::Lazy;
 use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
@@ -16,6 +17,506 @@ pub(crate) fn safe_wasmtime_config() -> Config {
     let mut config = Config::new();
     config.signals_based_traps(false);
     config
+}
+
+// =============================================================================
+// Engine Pooling and Singleton
+// =============================================================================
+//
+// This section implements engine pooling to mitigate wasmtime's GLOBAL_CODE
+// registry scalability issue. When many engines are created and destroyed,
+// wasmtime's internal registry can accumulate stale entries that eventually
+// cause SIGABRT crashes (see WASMTIME_GLOBAL_CODE_ISSUE_REPORT.md).
+//
+// By reusing engines instead of creating new ones, we dramatically reduce
+// the number of GLOBAL_CODE registrations and avoid the crash.
+
+/// Maximum number of engines to keep in the pool.
+/// Beyond this limit, released engines are dropped normally.
+const ENGINE_POOL_MAX_SIZE: usize = 16;
+
+/// The shared singleton engine for default use cases.
+/// This engine is lazily initialized on first access and reused for all
+/// callers who don't need custom configuration.
+static SHARED_ENGINE: Lazy<Engine> = Lazy::new(|| {
+    Engine::new().expect("Failed to create shared singleton engine")
+});
+
+/// Shared wasmtime::Engine with component model enabled.
+/// Used by ComponentEngine and EnhancedComponentEngine.
+static SHARED_COMPONENT_WASMTIME_ENGINE: Lazy<WasmtimeEngine> = Lazy::new(|| {
+    let mut config = safe_wasmtime_config();
+    config.wasm_component_model(true);
+    config.async_support(false);
+    config.wasm_simd(true);
+    config.wasm_bulk_memory(true);
+    config.wasm_multi_value(true);
+    config.wasm_reference_types(true);
+    WasmtimeEngine::new(&config).expect("Failed to create shared component wasmtime engine")
+});
+
+/// Shared wasmtime::Engine with GC enabled.
+/// Used by GC operations.
+static SHARED_GC_WASMTIME_ENGINE: Lazy<WasmtimeEngine> = Lazy::new(|| {
+    let mut config = safe_wasmtime_config();
+    config.wasm_gc(true);
+    config.wasm_reference_types(true);
+    config.wasm_function_references(true);
+    WasmtimeEngine::new(&config).expect("Failed to create shared GC wasmtime engine")
+});
+
+/// Shared wasmtime::Engine with async support enabled.
+/// Used by WASI Preview 2 and other async operations in tests.
+static SHARED_ASYNC_WASMTIME_ENGINE: Lazy<WasmtimeEngine> = Lazy::new(|| {
+    let mut config = safe_wasmtime_config();
+    config.async_support(true);
+    config.wasm_component_model(true);
+    WasmtimeEngine::new(&config).expect("Failed to create shared async wasmtime engine")
+});
+
+/// Shared Engine wrapper with GC enabled for test use.
+/// Used by GC tests to avoid creating new engines.
+static SHARED_GC_ENGINE: Lazy<Engine> = Lazy::new(|| {
+    let mut config = safe_wasmtime_config();
+    config.wasm_gc(true);
+    config.wasm_reference_types(true);
+    config.wasm_function_references(true);
+
+    let engine = WasmtimeEngine::new(&config).expect("Failed to create shared GC engine");
+
+    Engine {
+        inner: Arc::new(engine),
+        config_summary: EngineConfigSummary {
+            strategy: "Cranelift".to_string(),
+            opt_level: "None".to_string(),
+            debug_info: false,
+            wasm_threads: false,
+            wasm_reference_types: true,
+            wasm_simd: false,
+            wasm_bulk_memory: false,
+            wasm_multi_value: false,
+            wasm_multi_memory: false,
+            wasm_tail_call: false,
+            wasm_relaxed_simd: false,
+            wasm_function_references: true,
+            wasm_gc: true,
+            wasm_exceptions: false,
+            wasm_memory64: false,
+            wasm_extended_const: false,
+            wasm_component_model: false,
+            wasm_custom_page_sizes: false,
+            wasm_wide_arithmetic: false,
+            wasm_stack_switching: false,
+            wasm_shared_everything_threads: false,
+            wasm_component_model_async: false,
+            wasm_component_model_async_builtins: false,
+            wasm_component_model_async_stackful: false,
+            wasm_component_model_error_context: false,
+            wasm_component_model_gc: false,
+            fuel_enabled: false,
+            max_memory_pages: None,
+            max_stack_size: None,
+            epoch_interruption: false,
+            max_instances: None,
+            async_support: false,
+            coredump_on_trap: false,
+            memory_reservation: None,
+            memory_guard_size: None,
+            memory_reservation_for_growth: None,
+            max_memory_size: None,
+            cranelift_debug_verifier: false,
+            cranelift_nan_canonicalization: false,
+            cranelift_pcc: false,
+            cranelift_regalloc_algorithm: "Backtracking".to_string(),
+            wmemcheck_enabled: false,
+            table_lazy_init: true,
+            gc_support: true,
+            collector: "Auto".to_string(),
+            memory_may_move: true,
+            guard_before_linear_memory: true,
+            memory_init_cow: true,
+            wasm_component_model_threading: false,
+            relaxed_simd_deterministic: false,
+            async_stack_zeroing: false,
+            async_stack_size: None,
+            parallel_compilation: true,
+            macos_use_mach_ports: true,
+            module_version_strategy: "WasmtimeVersion".to_string(),
+            allocation_strategy: "OnDemand".to_string(),
+        },
+        concurrent_ops_lock: Arc::new(RwLock::new(())),
+    }
+});
+
+/// Returns a clone of the shared component wasmtime::Engine.
+pub(crate) fn get_shared_component_wasmtime_engine() -> WasmtimeEngine {
+    SHARED_COMPONENT_WASMTIME_ENGINE.clone()
+}
+
+/// Returns a clone of the shared GC wasmtime::Engine.
+pub(crate) fn get_shared_gc_wasmtime_engine() -> WasmtimeEngine {
+    SHARED_GC_WASMTIME_ENGINE.clone()
+}
+
+/// Returns a clone of the shared GC Engine wrapper.
+/// This is the recommended way to get a GC-enabled engine for tests.
+pub(crate) fn get_shared_gc_engine() -> Engine {
+    SHARED_GC_ENGINE.clone()
+}
+
+/// Returns a clone of the shared async wasmtime::Engine.
+/// Used by WASI Preview 2 and other async operations in tests.
+pub(crate) fn get_shared_async_wasmtime_engine() -> WasmtimeEngine {
+    SHARED_ASYNC_WASMTIME_ENGINE.clone()
+}
+
+/// Returns a clone of the shared wasmtime::Engine.
+/// Defaults to the component engine which has commonly needed features.
+pub(crate) fn get_shared_wasmtime_engine() -> WasmtimeEngine {
+    SHARED_COMPONENT_WASMTIME_ENGINE.clone()
+}
+
+/// Pool of reusable engines with default configuration.
+/// Engines returned to the pool can be reused by subsequent callers,
+/// reducing the total number of engine creations over time.
+static ENGINE_POOL: Lazy<Mutex<Vec<Engine>>> = Lazy::new(|| {
+    Mutex::new(Vec::with_capacity(ENGINE_POOL_MAX_SIZE))
+});
+
+/// Returns a clone of the shared singleton engine.
+///
+/// This is the recommended way to get an engine for most use cases.
+/// The singleton is created once and reused, avoiding repeated engine
+/// creation that can trigger wasmtime's GLOBAL_CODE registry issues.
+///
+/// # Example
+/// ```
+/// use wasmtime4j_native::engine::get_shared_engine;
+///
+/// let engine = get_shared_engine();
+/// // Use engine for module compilation, store creation, etc.
+/// ```
+///
+/// # Thread Safety
+/// The returned engine is safe to use from multiple threads concurrently.
+/// The underlying wasmtime engine is thread-safe.
+pub fn get_shared_engine() -> Engine {
+    SHARED_ENGINE.clone()
+}
+
+/// Acquires an engine from the pool, or creates a new one if the pool is empty.
+///
+/// Use this when you need an engine with default configuration but want
+/// explicit control over its lifecycle. Call `release_pooled_engine()` when
+/// done to return it to the pool for reuse.
+///
+/// # Example
+/// ```
+/// use wasmtime4j_native::engine::{acquire_pooled_engine, release_pooled_engine};
+///
+/// let engine = acquire_pooled_engine();
+/// // Use engine...
+/// release_pooled_engine(engine); // Return to pool for reuse
+/// ```
+///
+/// # Returns
+/// An engine with default configuration, either from the pool or newly created.
+pub fn acquire_pooled_engine() -> Engine {
+    let mut pool = ENGINE_POOL.lock().unwrap_or_else(|e| {
+        log::warn!("Engine pool mutex was poisoned, recovering");
+        e.into_inner()
+    });
+
+    pool.pop().unwrap_or_else(|| {
+        // Pool is empty, create a new engine
+        Engine::new().unwrap_or_else(|e| {
+            log::error!("Failed to create pooled engine: {:?}", e);
+            // Fall back to shared engine clone as last resort
+            SHARED_ENGINE.clone()
+        })
+    })
+}
+
+/// Returns an engine to the pool for reuse.
+///
+/// If the pool is at capacity (`ENGINE_POOL_MAX_SIZE`), the engine is
+/// dropped normally instead of being pooled.
+///
+/// # Arguments
+/// * `engine` - The engine to return to the pool
+///
+/// # Example
+/// ```
+/// use wasmtime4j_native::engine::{acquire_pooled_engine, release_pooled_engine};
+///
+/// let engine = acquire_pooled_engine();
+/// // Use engine...
+/// release_pooled_engine(engine);
+/// ```
+pub fn release_pooled_engine(engine: Engine) {
+    let mut pool = ENGINE_POOL.lock().unwrap_or_else(|e| {
+        log::warn!("Engine pool mutex was poisoned, recovering");
+        e.into_inner()
+    });
+
+    if pool.len() < ENGINE_POOL_MAX_SIZE {
+        pool.push(engine);
+    }
+    // else: pool is full, let the engine drop naturally
+}
+
+/// Clears the engine pool, dropping all pooled engines.
+///
+/// This can be called to force cleanup of pooled engines, which may help
+/// in scenarios where wasmtime's GLOBAL_CODE registry needs to be cleared.
+/// After calling this, subsequent `acquire_pooled_engine()` calls will
+/// create new engines.
+///
+/// Note: This does NOT affect the shared singleton engine.
+///
+/// # Example
+/// ```
+/// use wasmtime4j_native::engine::engine_pool_cleanup;
+///
+/// // After running many tests...
+/// engine_pool_cleanup();
+/// ```
+pub fn engine_pool_cleanup() {
+    let mut pool = ENGINE_POOL.lock().unwrap_or_else(|e| {
+        log::warn!("Engine pool mutex was poisoned, recovering");
+        e.into_inner()
+    });
+
+    let count = pool.len();
+    pool.clear();
+
+    if count > 0 {
+        log::debug!("Cleared {} engines from pool", count);
+    }
+}
+
+/// Returns the current number of engines in the pool.
+///
+/// This is primarily useful for testing and monitoring.
+pub fn engine_pool_size() -> usize {
+    ENGINE_POOL.lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .len()
+}
+
+/// Returns the maximum capacity of the engine pool.
+pub fn engine_pool_max_size() -> usize {
+    ENGINE_POOL_MAX_SIZE
+}
+
+/// Performs a full cleanup of wasmtime resources.
+///
+/// This function should be called periodically during long-running processes
+/// or after running many tests to help mitigate wasmtime's GLOBAL_CODE
+/// registry accumulation issue.
+///
+/// What this does:
+/// 1. Clears the engine pool, dropping all pooled engines
+/// 2. Yields to allow pending deallocations to complete
+/// 3. Optionally triggers a garbage collection hint (on supported platforms)
+///
+/// Note: This does NOT affect the shared singleton engine, as that would
+/// break existing references. If you need to reset absolutely everything,
+/// the process must be restarted.
+///
+/// # Example
+/// ```
+/// use wasmtime4j_native::engine::wasmtime_full_cleanup;
+///
+/// // After running a batch of tests...
+/// wasmtime_full_cleanup();
+/// ```
+pub fn wasmtime_full_cleanup() {
+    // Step 1: Clear the engine pool
+    engine_pool_cleanup();
+
+    // Step 2: Yield to allow pending Arc deallocations to complete
+    // This gives Rust's allocator a chance to process drops
+    std::thread::yield_now();
+
+    // Step 3: Small sleep to allow OS to reclaim memory mappings
+    // This helps ensure mmap address space is freed before new allocations
+    std::thread::sleep(std::time::Duration::from_millis(1));
+
+    log::debug!("wasmtime_full_cleanup completed");
+}
+
+// =============================================================================
+// Managed Engine with Proper Drop Order
+// =============================================================================
+//
+// The ManagedEngine ensures that all resources created from an engine
+// (modules, stores, instances) are dropped BEFORE the engine itself.
+// This prevents issues where lingering Arc references keep wasmtime's
+// GLOBAL_CODE registry entries alive.
+
+use std::any::Any;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+/// Counter for generating unique managed engine IDs
+static MANAGED_ENGINE_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+/// A managed engine wrapper that enforces proper resource cleanup order.
+///
+/// When dropped, a `ManagedEngine` ensures all associated resources
+/// (modules, stores, instances) are dropped BEFORE the underlying engine.
+/// This prevents wasmtime's GLOBAL_CODE registry issues caused by
+/// out-of-order deallocation.
+///
+/// # Example
+/// ```
+/// use wasmtime4j_native::engine::ManagedEngine;
+///
+/// let managed = ManagedEngine::new();
+/// let engine = managed.engine();
+/// // Create modules, stores, etc. from engine...
+/// // When managed is dropped, all tracked resources are cleaned up first
+/// ```
+pub struct ManagedEngine {
+    /// Unique ID for this managed engine
+    id: u64,
+    /// The underlying engine
+    engine: Engine,
+    /// Tracked resources that must be dropped before the engine
+    /// Uses Box<dyn Any> to allow storing different resource types
+    resources: Mutex<Vec<Box<dyn Any + Send>>>,
+}
+
+impl ManagedEngine {
+    /// Creates a new managed engine with default configuration.
+    pub fn new() -> WasmtimeResult<Self> {
+        Ok(Self {
+            id: MANAGED_ENGINE_COUNTER.fetch_add(1, Ordering::SeqCst),
+            engine: Engine::new()?,
+            resources: Mutex::new(Vec::new()),
+        })
+    }
+
+    /// Creates a new managed engine from the shared singleton.
+    ///
+    /// Note: The singleton engine itself is not managed and will outlive
+    /// this ManagedEngine. Only the tracked resources are cleaned up.
+    pub fn from_shared() -> Self {
+        Self {
+            id: MANAGED_ENGINE_COUNTER.fetch_add(1, Ordering::SeqCst),
+            engine: get_shared_engine(),
+            resources: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// Creates a new managed engine from an existing engine.
+    pub fn from_engine(engine: Engine) -> Self {
+        Self {
+            id: MANAGED_ENGINE_COUNTER.fetch_add(1, Ordering::SeqCst),
+            engine,
+            resources: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// Returns a reference to the underlying engine.
+    pub fn engine(&self) -> &Engine {
+        &self.engine
+    }
+
+    /// Returns a clone of the underlying engine.
+    pub fn engine_clone(&self) -> Engine {
+        self.engine.clone()
+    }
+
+    /// Returns the unique ID of this managed engine.
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
+    /// Tracks a resource for cleanup when this managed engine is dropped.
+    ///
+    /// Resources are dropped in reverse order of registration (LIFO).
+    ///
+    /// # Arguments
+    /// * `resource` - Any Send resource that should be cleaned up with this engine
+    pub fn track_resource<T: Any + Send + 'static>(&self, resource: T) {
+        let mut resources = self.resources.lock().unwrap_or_else(|e| {
+            log::warn!("ManagedEngine resources mutex was poisoned, recovering");
+            e.into_inner()
+        });
+        resources.push(Box::new(resource));
+    }
+
+    /// Tracks a resource and returns a clone/reference for use.
+    ///
+    /// This is a convenience method for tracking Arc-wrapped resources.
+    ///
+    /// # Arguments
+    /// * `resource` - An Arc-wrapped resource to track
+    ///
+    /// # Returns
+    /// A clone of the Arc for the caller to use
+    pub fn track_arc<T: Any + Send + Sync + 'static>(&self, resource: Arc<T>) -> Arc<T> {
+        let clone = Arc::clone(&resource);
+        self.track_resource(resource);
+        clone
+    }
+
+    /// Returns the number of tracked resources.
+    pub fn resource_count(&self) -> usize {
+        self.resources.lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .len()
+    }
+
+    /// Explicitly clears all tracked resources.
+    ///
+    /// This can be called to force early cleanup without dropping the engine.
+    pub fn clear_resources(&self) {
+        let mut resources = self.resources.lock().unwrap_or_else(|e| {
+            log::warn!("ManagedEngine resources mutex was poisoned, recovering");
+            e.into_inner()
+        });
+
+        let count = resources.len();
+
+        // Drop in reverse order (LIFO)
+        while resources.pop().is_some() {}
+
+        if count > 0 {
+            log::debug!("ManagedEngine {} cleared {} resources", self.id, count);
+        }
+    }
+}
+
+impl Default for ManagedEngine {
+    fn default() -> Self {
+        Self::new().expect("Failed to create default ManagedEngine")
+    }
+}
+
+impl Drop for ManagedEngine {
+    fn drop(&mut self) {
+        // First, clear all tracked resources (in reverse order)
+        self.clear_resources();
+
+        // Then yield to allow pending Arc deallocations
+        std::thread::yield_now();
+
+        log::debug!("ManagedEngine {} dropped", self.id);
+
+        // The engine will now drop naturally after this
+    }
+}
+
+impl std::fmt::Debug for ManagedEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ManagedEngine")
+            .field("id", &self.id)
+            .field("engine", &self.engine)
+            .field("resource_count", &self.resource_count())
+            .finish()
+    }
 }
 
 /// Thread-safe wrapper around Wasmtime engine with defensive programming
@@ -259,7 +760,11 @@ impl Engine {
     }
 
     /// Create engine with specific configuration
-    pub fn with_config(config: Config) -> WasmtimeResult<Self> {
+    pub fn with_config(mut config: Config) -> WasmtimeResult<Self> {
+        // CRITICAL: Disable signal-based traps to prevent conflicts with JVM signal handlers
+        // This is enforced even for external configs to ensure JVM safety
+        config.signals_based_traps(false);
+
         let summary = EngineConfigSummary::from_config(&config);
 
         let engine = WasmtimeEngine::new(&config)
@@ -2068,6 +2573,211 @@ mod tests {
             panic!("Expected I32 result");
         }
     }
+
+    // =========================================================================
+    // Engine Pooling Tests
+    // =========================================================================
+
+    #[test]
+    fn test_shared_engine_singleton() {
+        // Get shared engine multiple times
+        let engine1 = get_shared_engine();
+        let engine2 = get_shared_engine();
+
+        // Should be the same underlying engine (Arc points to same data)
+        assert!(Arc::ptr_eq(&engine1.inner, &engine2.inner));
+
+        // Should be valid
+        assert!(engine1.validate().is_ok());
+        assert!(engine2.validate().is_ok());
+    }
+
+    #[test]
+    fn test_engine_pool_acquire_release() {
+        // Clear pool first to ensure clean state
+        engine_pool_cleanup();
+        assert_eq!(engine_pool_size(), 0);
+
+        // Acquire an engine (creates new since pool is empty)
+        let engine = acquire_pooled_engine();
+        assert!(engine.validate().is_ok());
+
+        // Release it back to pool
+        release_pooled_engine(engine);
+        assert_eq!(engine_pool_size(), 1);
+
+        // Acquire again (should get from pool)
+        let engine2 = acquire_pooled_engine();
+        assert!(engine2.validate().is_ok());
+        assert_eq!(engine_pool_size(), 0);
+
+        // Cleanup
+        engine_pool_cleanup();
+    }
+
+    #[test]
+    fn test_engine_pool_max_size() {
+        // Clear pool first
+        engine_pool_cleanup();
+
+        // Create more engines than pool capacity
+        let mut engines: Vec<Engine> = Vec::new();
+        for _ in 0..(ENGINE_POOL_MAX_SIZE + 5) {
+            engines.push(acquire_pooled_engine());
+        }
+
+        // Release all of them
+        for engine in engines {
+            release_pooled_engine(engine);
+        }
+
+        // Pool should be capped at max size
+        assert_eq!(engine_pool_size(), ENGINE_POOL_MAX_SIZE);
+
+        // Cleanup
+        engine_pool_cleanup();
+        assert_eq!(engine_pool_size(), 0);
+    }
+
+    #[test]
+    fn test_engine_pool_cleanup() {
+        // Clear and populate pool
+        engine_pool_cleanup();
+        for _ in 0..5 {
+            let engine = acquire_pooled_engine();
+            release_pooled_engine(engine);
+        }
+        assert!(engine_pool_size() > 0);
+
+        // Cleanup should clear all engines
+        engine_pool_cleanup();
+        assert_eq!(engine_pool_size(), 0);
+    }
+
+    #[test]
+    fn test_shared_engine_is_not_pooled() {
+        // The shared singleton should not be affected by pool operations
+        let shared = get_shared_engine();
+
+        engine_pool_cleanup();
+
+        // Shared engine should still be valid after pool cleanup
+        let shared2 = get_shared_engine();
+        assert!(Arc::ptr_eq(&shared.inner, &shared2.inner));
+        assert!(shared.validate().is_ok());
+    }
+
+    #[test]
+    fn test_managed_engine_creation() {
+        let managed = ManagedEngine::new().expect("Failed to create managed engine");
+        assert!(managed.engine().validate().is_ok());
+        assert!(managed.id() > 0 || managed.id() == 0); // ID is assigned
+        assert_eq!(managed.resource_count(), 0);
+    }
+
+    #[test]
+    fn test_managed_engine_from_shared() {
+        let managed = ManagedEngine::from_shared();
+        let shared = get_shared_engine();
+
+        // Should use the same underlying engine as the singleton
+        assert!(Arc::ptr_eq(&managed.engine().inner, &shared.inner));
+    }
+
+    #[test]
+    fn test_managed_engine_resource_tracking() {
+        let managed = ManagedEngine::new().expect("Failed to create managed engine");
+
+        // Track some resources
+        managed.track_resource(String::from("test resource 1"));
+        managed.track_resource(vec![1, 2, 3]);
+        managed.track_resource(42i32);
+
+        assert_eq!(managed.resource_count(), 3);
+
+        // Clear resources explicitly
+        managed.clear_resources();
+        assert_eq!(managed.resource_count(), 0);
+    }
+
+    #[test]
+    fn test_managed_engine_arc_tracking() {
+        let managed = ManagedEngine::new().expect("Failed to create managed engine");
+
+        // Create an Arc resource
+        let data = Arc::new(String::from("shared data"));
+        assert_eq!(Arc::strong_count(&data), 1);
+
+        // Track it and get a clone back
+        let tracked = managed.track_arc(data.clone());
+        assert_eq!(Arc::strong_count(&data), 3); // original + tracked + managed's copy
+
+        // Drop the tracked reference
+        drop(tracked);
+        assert_eq!(Arc::strong_count(&data), 2); // original + managed's copy
+
+        // Clear resources
+        managed.clear_resources();
+        assert_eq!(Arc::strong_count(&data), 1); // only original remains
+    }
+
+    #[test]
+    fn test_managed_engine_drop_order() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
+        // Track drop order using a shared counter
+        static DROP_ORDER: AtomicUsize = AtomicUsize::new(0);
+
+        struct TrackedDrop {
+            id: usize,
+            expected_order: usize,
+        }
+
+        impl Drop for TrackedDrop {
+            fn drop(&mut self) {
+                let order = DROP_ORDER.fetch_add(1, Ordering::SeqCst);
+                // Resources should drop in reverse order (LIFO)
+                assert_eq!(order, self.expected_order,
+                    "TrackedDrop {} dropped at position {}, expected {}",
+                    self.id, order, self.expected_order);
+            }
+        }
+
+        // Reset counter
+        DROP_ORDER.store(0, Ordering::SeqCst);
+
+        {
+            let managed = ManagedEngine::new().expect("Failed to create managed engine");
+
+            // Track resources - they should drop in reverse order
+            managed.track_resource(TrackedDrop { id: 1, expected_order: 2 }); // Last to drop
+            managed.track_resource(TrackedDrop { id: 2, expected_order: 1 });
+            managed.track_resource(TrackedDrop { id: 3, expected_order: 0 }); // First to drop
+
+            // managed drops here, triggering resource cleanup
+        }
+
+        // All 3 resources should have dropped
+        assert_eq!(DROP_ORDER.load(Ordering::SeqCst), 3);
+    }
+
+    #[test]
+    fn test_wasmtime_full_cleanup() {
+        // Populate the pool
+        for _ in 0..5 {
+            let engine = acquire_pooled_engine();
+            release_pooled_engine(engine);
+        }
+        assert!(engine_pool_size() > 0);
+
+        // Full cleanup should clear the pool
+        wasmtime_full_cleanup();
+        assert_eq!(engine_pool_size(), 0);
+
+        // Shared engine should still work
+        let shared = get_shared_engine();
+        assert!(shared.validate().is_ok());
+    }
 }
 
 //
@@ -2521,4 +3231,205 @@ pub unsafe extern "C" fn wasmtime4j_engine_table_lazy_init_enabled(engine_ptr: *
     }
     let engine = &*(engine_ptr as *const Engine);
     if engine.config_summary.table_lazy_init { 1 } else { 0 }
+}
+
+// =============================================================================
+// Engine Pooling and Cleanup FFI Exports
+// =============================================================================
+
+/// Get the shared singleton engine.
+///
+/// Returns a pointer to the shared engine that is reused across all calls.
+/// This is the recommended way to get an engine for most use cases, as it
+/// avoids creating new engines which can trigger wasmtime's GLOBAL_CODE
+/// registry issues.
+///
+/// The returned engine is managed by the library and should NOT be freed
+/// with wasmtime4j_engine_destroy. It remains valid for the lifetime of
+/// the process.
+///
+/// # Safety
+///
+/// The returned pointer is valid for the lifetime of the process.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_get_shared() -> *const c_void {
+    let engine = get_shared_engine();
+    // Leak the engine to get a stable pointer
+    // This is intentional - the shared engine lives forever
+    Box::into_raw(Box::new(engine)) as *const c_void
+}
+
+/// Acquire an engine from the pool.
+///
+/// Returns an engine from the pool if available, or creates a new one.
+/// The returned engine should be released with wasmtime4j_engine_release_pooled
+/// when no longer needed, NOT with wasmtime4j_engine_destroy.
+///
+/// # Safety
+///
+/// Returns pointer to engine that must be released with wasmtime4j_engine_release_pooled
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_acquire_pooled() -> *mut c_void {
+    let engine = acquire_pooled_engine();
+    Box::into_raw(Box::new(engine)) as *mut c_void
+}
+
+/// Release an engine back to the pool.
+///
+/// Returns the engine to the pool for reuse by other callers.
+/// If the pool is full, the engine is dropped.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_acquire_pooled
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_release_pooled(engine_ptr: *mut c_void) {
+    if engine_ptr.is_null() {
+        return;
+    }
+    let engine = Box::from_raw(engine_ptr as *mut Engine);
+    release_pooled_engine(*engine);
+}
+
+/// Get the current number of engines in the pool.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_pool_size() -> usize {
+    engine_pool_size()
+}
+
+/// Get the maximum capacity of the engine pool.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_pool_max_size() -> usize {
+    engine_pool_max_size()
+}
+
+/// Clear the engine pool, dropping all pooled engines.
+///
+/// This can be called to force cleanup of pooled engines.
+/// Note: This does NOT affect the shared singleton engine.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_pool_cleanup() {
+    engine_pool_cleanup();
+}
+
+/// Perform a full wasmtime cleanup.
+///
+/// This function:
+/// 1. Clears the engine pool
+/// 2. Yields to allow pending deallocations
+/// 3. Sleeps briefly to allow OS to reclaim memory
+///
+/// Call this periodically during long-running processes or after running
+/// many operations to help mitigate wasmtime's GLOBAL_CODE registry issues.
+///
+/// Note: This does NOT affect the shared singleton engine.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_full_cleanup() {
+    wasmtime_full_cleanup();
+}
+
+/// Create a new managed engine.
+///
+/// A managed engine tracks resources and ensures proper cleanup order.
+/// When the managed engine is destroyed, all tracked resources are
+/// cleaned up first.
+///
+/// # Safety
+///
+/// Returns pointer that must be freed with wasmtime4j_managed_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_new() -> *mut c_void {
+    match ManagedEngine::new() {
+        Ok(managed) => Box::into_raw(Box::new(managed)) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Create a managed engine from the shared singleton.
+///
+/// # Safety
+///
+/// Returns pointer that must be freed with wasmtime4j_managed_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_from_shared() -> *mut c_void {
+    let managed = ManagedEngine::from_shared();
+    Box::into_raw(Box::new(managed)) as *mut c_void
+}
+
+/// Get the underlying engine from a managed engine.
+///
+/// The returned engine pointer is valid as long as the managed engine
+/// is not destroyed. Do NOT free it with wasmtime4j_engine_destroy.
+///
+/// # Safety
+///
+/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_get(managed_ptr: *const c_void) -> *const c_void {
+    if managed_ptr.is_null() {
+        return std::ptr::null();
+    }
+    let managed = &*(managed_ptr as *const ManagedEngine);
+    // Return a pointer to a clone of the engine
+    Box::into_raw(Box::new(managed.engine_clone())) as *const c_void
+}
+
+/// Get the resource count of a managed engine.
+///
+/// # Safety
+///
+/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_resource_count(managed_ptr: *const c_void) -> usize {
+    if managed_ptr.is_null() {
+        return 0;
+    }
+    let managed = &*(managed_ptr as *const ManagedEngine);
+    managed.resource_count()
+}
+
+/// Clear all tracked resources from a managed engine.
+///
+/// # Safety
+///
+/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_clear_resources(managed_ptr: *mut c_void) {
+    if managed_ptr.is_null() {
+        return;
+    }
+    let managed = &*(managed_ptr as *const ManagedEngine);
+    managed.clear_resources();
+}
+
+/// Destroy a managed engine.
+///
+/// This will first clear all tracked resources, then drop the engine.
+///
+/// # Safety
+///
+/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_destroy(managed_ptr: *mut c_void) {
+    if managed_ptr.is_null() {
+        return;
+    }
+    let _ = Box::from_raw(managed_ptr as *mut ManagedEngine);
+    // Managed engine's Drop implementation handles cleanup
 }

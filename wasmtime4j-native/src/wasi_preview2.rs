@@ -1409,10 +1409,8 @@ mod tests {
 
     #[test]
     fn test_wasi_preview2_context_creation() {
-        // WASI Preview 2 requires async support
-        let mut engine_config = crate::engine::safe_wasmtime_config();
-        engine_config.async_support(true);
-        let engine = Engine::new(&engine_config).unwrap();
+        // Use shared async engine to reduce wasmtime GLOBAL_CODE registry accumulation
+        let engine = crate::engine::get_shared_async_wasmtime_engine();
         let config = WasiPreview2Config::default();
 
         let context = WasiPreview2Context::new(engine, config);
@@ -1451,9 +1449,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_component_compilation() {
-        let mut engine_config = crate::engine::safe_wasmtime_config();
-        engine_config.async_support(true);
-        let engine = Engine::new(&engine_config).unwrap();
+        // Use shared async engine to reduce wasmtime GLOBAL_CODE registry accumulation
+        let engine = crate::engine::get_shared_async_wasmtime_engine();
         let config = WasiPreview2Config::default();
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
@@ -1477,9 +1474,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_stream_operations() {
-        let mut engine_config = crate::engine::safe_wasmtime_config();
-        engine_config.async_support(true);
-        let engine = Engine::new(&engine_config).unwrap();
+        // Use shared async engine to reduce wasmtime GLOBAL_CODE registry accumulation
+        let engine = crate::engine::get_shared_async_wasmtime_engine();
         let config = WasiPreview2Config::default();
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
@@ -1510,9 +1506,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_async_operation_cancellation() {
-        let mut engine_config = crate::engine::safe_wasmtime_config();
-        engine_config.async_support(true);
-        let engine = Engine::new(&engine_config).unwrap();
+        // Use shared async engine to reduce wasmtime GLOBAL_CODE registry accumulation
+        let engine = crate::engine::get_shared_async_wasmtime_engine();
         let config = WasiPreview2Config::default();
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
@@ -1543,10 +1538,8 @@ mod tests {
 
     #[test]
     fn test_operation_cleanup() {
-        // WASI Preview 2 requires async support
-        let mut engine_config = crate::engine::safe_wasmtime_config();
-        engine_config.async_support(true);
-        let engine = Engine::new(&engine_config).unwrap();
+        // Use shared async engine to reduce wasmtime GLOBAL_CODE registry accumulation
+        let engine = crate::engine::get_shared_async_wasmtime_engine();
         let config = WasiPreview2Config::default();
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
