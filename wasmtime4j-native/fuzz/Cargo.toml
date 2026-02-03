@@ -17,8 +17,11 @@ features = ["jni-bindings", "panama-ffi", "wasi"]
 
 # Additional dependencies for fuzzing
 [dependencies.wasmtime]
-version = "41.0.0"
+version = "41.0.1"
 features = ["component-model"]
+
+[dependencies.anyhow]
+version = "1.0"
 
 [dependencies.wat]
 version = "1.0"
@@ -51,6 +54,22 @@ bench = false
 [[bin]]
 name = "memory_access"
 path = "fuzz_targets/memory_access.rs"
+test = false
+doc = false
+bench = false
+
+# Module serialization round-trip fuzz target
+[[bin]]
+name = "module_serialize"
+path = "fuzz_targets/module_serialize.rs"
+test = false
+doc = false
+bench = false
+
+# Error message formatting fuzz target
+[[bin]]
+name = "error_message"
+path = "fuzz_targets/error_message.rs"
 test = false
 doc = false
 bench = false
