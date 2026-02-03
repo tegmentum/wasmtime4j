@@ -99,8 +99,8 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
     engine = createEngine(runtime);
     store = createStore(engine);
 
-    // Create test module
-    module = engine.compileModule(SIMPLE_WASM_MODULE);
+    // Create test module from WAT
+    module = engine.compileWat(SIMPLE_WAT_MODULE);
     instance = module.instantiate(store);
 
     // Get test function
@@ -235,7 +235,7 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
   @OutputTimeUnit(TimeUnit.SECONDS)
   public Module benchmarkModuleCompilation(final Blackhole bh) throws WasmException {
     // Compile the same module repeatedly to measure compilation throughput
-    final Module compiledModule = engine.compileModule(SIMPLE_WASM_MODULE);
+    final Module compiledModule = engine.compileWat(SIMPLE_WAT_MODULE);
     bh.consume(compiledModule);
 
     // Clean up immediately to avoid resource leaks
@@ -248,10 +248,11 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
   @Benchmark
   @BenchmarkMode(Mode.Throughput)
   @OutputTimeUnit(TimeUnit.SECONDS)
-  public Instance benchmarkInstanceCreation(final Blackhole bh) throws WasmException {
-    try (final Instance testInstance = module.instantiate(store)) {
+  public void benchmarkInstanceCreation(final Blackhole bh) throws WasmException {
+    // Use a fresh store per call to avoid instance count resource limits
+    try (final Store freshStore = createStore(engine);
+        final Instance testInstance = module.instantiate(freshStore)) {
       bh.consume(testInstance);
-      return testInstance;
     }
   }
 
@@ -294,7 +295,7 @@ public class PerformanceOptimizationBenchmark extends BenchmarkBase {
 
     // Create temporary modules and instances
     for (int i = 0; i < Math.min(operationCount, 50); i++) {
-      try (final Module tempModule = engine.compileModule(SIMPLE_WASM_MODULE);
+      try (final Module tempModule = engine.compileWat(SIMPLE_WAT_MODULE);
           final Instance tempInstance = tempModule.instantiate(store)) {
 
         final WasmFunction tempFunc = tempInstance.getFunction("add").orElse(addFunction);

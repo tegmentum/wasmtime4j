@@ -78,8 +78,8 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
   /** Thread pool for concurrent execution. */
   private ExecutorService executorService;
 
-  /** Module bytecode. */
-  private byte[] moduleBytes;
+  /** WAT source for benchmarks. Uses LARGE_WAT_MODULE which has both add and memory exports. */
+  private String watSource;
 
   /** WebAssembly context for concurrent operations. */
   private static final class ConcurrentWasmContext {
@@ -92,25 +92,24 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
     private final WasmMemory memory;
     private final RuntimeType runtimeType;
 
-    ConcurrentWasmContext(final RuntimeType runtimeType, final byte[] moduleBytes)
+    ConcurrentWasmContext(final RuntimeType runtimeType, final String watSource)
         throws WasmException {
       this.runtimeType = runtimeType;
       this.runtime = BenchmarkBase.createRuntime(runtimeType);
       this.engine = BenchmarkBase.createEngine(runtime);
       this.store = BenchmarkBase.createStore(engine);
-      this.module = BenchmarkBase.compileModule(engine, moduleBytes);
+      this.module = BenchmarkBase.compileWatModule(engine, watSource);
       this.instance = BenchmarkBase.instantiateModule(store, module);
       this.function = instance.getFunction("add").orElse(null);
       this.memory = instance.getMemory("memory").orElse(null);
     }
 
-    ConcurrentWasmContext(final Engine sharedEngine, final byte[] moduleBytes)
-        throws WasmException {
+    ConcurrentWasmContext(final Engine sharedEngine, final String watSource) throws WasmException {
       this.runtimeType = getRecommendedRuntime(); // Inherited from shared engine
       this.runtime = null; // Using shared runtime
       this.engine = sharedEngine;
       this.store = BenchmarkBase.createStore(engine);
-      this.module = BenchmarkBase.compileModule(engine, moduleBytes);
+      this.module = BenchmarkBase.compileWatModule(engine, watSource);
       this.instance = BenchmarkBase.instantiateModule(store, module);
       this.function = instance.getFunction("add").orElse(null);
       this.memory = instance.getMemory("memory").orElse(null);
@@ -169,7 +168,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() throws WasmException {
-    moduleBytes = SIMPLE_WASM_MODULE.clone();
+    watSource = LARGE_WAT_MODULE; // Has both add function and memory exports
     executorService = Executors.newFixedThreadPool(threadCount);
 
     // Setup shared runtime for SHARED_RUNTIME pattern
@@ -216,7 +215,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
       sharedRuntime = null;
     }
 
-    moduleBytes = null;
+    watSource = null;
   }
 
   /**
@@ -236,9 +235,9 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
                 try {
                   final ConcurrentWasmContext context;
                   if (concurrencyPattern.equals("SHARED_RUNTIME")) {
-                    context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
+                    context = new ConcurrentWasmContext(sharedEngine, watSource);
                   } else {
-                    context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                    context = new ConcurrentWasmContext(getRuntimeType(), watSource);
                   }
 
                   int result = 0;
@@ -289,9 +288,9 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
                 try {
                   final ConcurrentWasmContext context;
                   if (concurrencyPattern.equals("SHARED_RUNTIME")) {
-                    context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
+                    context = new ConcurrentWasmContext(sharedEngine, watSource);
                   } else {
-                    context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                    context = new ConcurrentWasmContext(getRuntimeType(), watSource);
                   }
 
                   final byte[] writeData = new byte[64];
@@ -353,9 +352,9 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
                 try {
                   final ConcurrentWasmContext context;
                   if (concurrencyPattern.equals("SHARED_RUNTIME")) {
-                    context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
+                    context = new ConcurrentWasmContext(sharedEngine, watSource);
                   } else {
-                    context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                    context = new ConcurrentWasmContext(getRuntimeType(), watSource);
                   }
 
                   final StringBuilder result = new StringBuilder();
@@ -426,7 +425,7 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
                 for (int j = 0; j < 10; j++) {
                   try {
                     final ConcurrentWasmContext context =
-                        new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                        new ConcurrentWasmContext(getRuntimeType(), watSource);
 
                     // Perform a simple operation
                     final WasmValue[] result = context.callFunction(threadId, j);
@@ -479,9 +478,9 @@ public class ConcurrencyBenchmark extends BenchmarkBase {
                 try {
                   final ConcurrentWasmContext context;
                   if (concurrencyPattern.equals("SHARED_RUNTIME")) {
-                    context = new ConcurrentWasmContext(sharedEngine, moduleBytes);
+                    context = new ConcurrentWasmContext(sharedEngine, watSource);
                   } else {
-                    context = new ConcurrentWasmContext(getRuntimeType(), moduleBytes);
+                    context = new ConcurrentWasmContext(getRuntimeType(), watSource);
                   }
 
                   final long startTime = System.nanoTime();

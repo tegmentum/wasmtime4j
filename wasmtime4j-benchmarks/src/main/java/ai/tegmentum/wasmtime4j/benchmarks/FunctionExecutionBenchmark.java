@@ -60,10 +60,6 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
   @Param({"SIMPLE", "COMPLEX", "RECURSIVE"})
   private String functionType;
 
-  /** Number of parameters to pass to the function. */
-  @Param({"1", "2", "4"})
-  private int parameterCount;
-
   /** WebAssembly runtime components. */
   private WasmRuntime runtime;
 
@@ -78,9 +74,6 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
   /** Test parameters for function calls with current parameter count. */
   private WasmValue[] testParams;
 
-  /** Current module bytecode. */
-  private byte[] moduleBytes;
-
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() throws WasmException {
@@ -90,24 +83,23 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     engine = createEngine(runtime);
     store = createStore(engine);
 
-    // Select appropriate module based on function type
+    // Select appropriate WAT source based on function type
+    final String watSource;
     switch (functionType) {
       case "SIMPLE":
-        moduleBytes = SIMPLE_WASM_MODULE.clone();
+        watSource = SIMPLE_WAT_MODULE;
         break;
       case "COMPLEX":
-        moduleBytes = COMPLEX_WASM_MODULE.clone();
-        break;
       case "RECURSIVE":
-        moduleBytes = COMPLEX_WASM_MODULE.clone(); // Uses fibonacci
+        watSource = COMPLEX_WAT_MODULE; // Uses fibonacci
         break;
       default:
-        moduleBytes = SIMPLE_WASM_MODULE.clone();
+        watSource = SIMPLE_WAT_MODULE;
         break;
     }
 
     // Compile and instantiate module
-    module = compileModule(engine, moduleBytes);
+    module = compileWatModule(engine, watSource);
     instance = instantiateModule(store, module);
 
     // Get the target function
@@ -118,10 +110,11 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     }
     targetFunction = functionOpt.get();
 
-    // Setup test parameters based on parameter count
-    testParams = new WasmValue[Math.min(parameterCount, 2)]; // Limit to available params
+    // Setup test parameters matching actual function arity
+    final int arity = "SIMPLE".equals(functionType) ? 2 : 1;
+    testParams = new WasmValue[arity];
     for (int i = 0; i < testParams.length; i++) {
-      testParams[i] = WasmValue.i32(i + 1); // Use simple sequential values
+      testParams[i] = WasmValue.i32(i + 1);
     }
   }
 
@@ -130,7 +123,6 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
   public void teardownIteration() {
     cleanup();
     testParams = null;
-    moduleBytes = null;
   }
 
   /** Helper method to clean up WebAssembly resources. */
@@ -214,10 +206,8 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
 
     try {
       for (final WasmValue[] params : paramVariations) {
-        if (params.length <= testParams.length) {
-          final WasmValue[] result = targetFunction.call(params);
-          blackhole.consume(result.length);
-        }
+        final WasmValue[] result = targetFunction.call(params);
+        blackhole.consume(result.length);
       }
     } catch (final WasmException e) {
       throw new RuntimeException("Parameter variations benchmark failed", e);
@@ -358,7 +348,10 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
    * @return array of parameter combinations
    */
   private WasmValue[][] generateParameterVariations() {
-    final int actualParamCount = Math.min(parameterCount, testParams.length);
+    final int actualParamCount = testParams.length;
+    // Cap values to avoid O(2^n) blowup for naive recursive fibonacci
+    final boolean isRecursive = "COMPLEX".equals(functionType) || "RECURSIVE".equals(functionType);
+    final int maxValue = isRecursive ? 15 : 1000;
     final WasmValue[][] variations = new WasmValue[6][];
 
     // Variation 1: All zeros
@@ -376,13 +369,13 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     // Variation 3: All same value
     variations[2] = new WasmValue[actualParamCount];
     for (int i = 0; i < actualParamCount; i++) {
-      variations[2][i] = WasmValue.i32(42);
+      variations[2][i] = WasmValue.i32(Math.min(42, maxValue));
     }
 
-    // Variation 4: Large values
+    // Variation 4: Larger values (capped for recursive functions)
     variations[3] = new WasmValue[actualParamCount];
     for (int i = 0; i < actualParamCount; i++) {
-      variations[3][i] = WasmValue.i32(1000 + i);
+      variations[3][i] = WasmValue.i32(Math.min(maxValue, maxValue + i));
     }
 
     // Variation 5: Small positive values
@@ -394,7 +387,7 @@ public class FunctionExecutionBenchmark extends BenchmarkBase {
     // Variation 6: Mixed values
     variations[5] = new WasmValue[actualParamCount];
     for (int i = 0; i < actualParamCount; i++) {
-      variations[5][i] = WasmValue.i32((i % 2 == 0) ? i : i + 10);
+      variations[5][i] = WasmValue.i32(Math.min((i % 2 == 0) ? i : i + 10, maxValue));
     }
 
     return variations;

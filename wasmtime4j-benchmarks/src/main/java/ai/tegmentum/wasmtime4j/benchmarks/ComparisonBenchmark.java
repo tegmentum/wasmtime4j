@@ -127,23 +127,12 @@ public class ComparisonBenchmark extends BenchmarkBase {
       this.intensity = intensity;
     }
 
-    void initialize(final byte[] moduleBytes) throws WasmException {
+    void initialize(final String watSource) throws WasmException {
       // Create WebAssembly runtime components
-      switch (runtimeType) {
-        case JNI:
-          runtime = BenchmarkBase.createRuntime(RuntimeType.JNI);
-          break;
-        case PANAMA:
-          runtime = BenchmarkBase.createRuntime(RuntimeType.PANAMA);
-          break;
-        default:
-          runtime = BenchmarkBase.createRuntime(null); // Auto-selection
-          break;
-      }
-
+      runtime = BenchmarkBase.createRuntime(runtimeType);
       engine = BenchmarkBase.createEngine(runtime);
       store = BenchmarkBase.createStore(engine);
-      module = BenchmarkBase.compileModule(engine, moduleBytes);
+      module = BenchmarkBase.compileWatModule(engine, watSource);
       instance = BenchmarkBase.instantiateModule(store, module);
 
       // Get function and memory based on category
@@ -360,11 +349,6 @@ public class ComparisonBenchmark extends BenchmarkBase {
       return result;
     }
 
-    private double simulateFunctionCall(final int param1, final int param2) {
-      // Simulate simple WebAssembly function
-      return Math.pow(param1 + param2, 1.5) % 1000;
-    }
-
     private long getMemoryUsage() {
       final Runtime runtime = Runtime.getRuntime();
       return runtime.totalMemory() - runtime.freeMemory();
@@ -377,18 +361,18 @@ public class ComparisonBenchmark extends BenchmarkBase {
   /** Panama workload executor. */
   private WorkloadExecutor panamaExecutor;
 
-  /** Module bytecode for benchmarks. */
-  private byte[] moduleBytes;
+  /** WAT source for benchmarks. */
+  private String watSource;
 
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() {
     try {
-      // Select appropriate module based on operation category
+      // Select appropriate WAT source based on operation category
       if (operationCategory.equals("MEMORY_ACCESS") || operationCategory.equals("MIXED_WORKLOAD")) {
-        moduleBytes = COMPLEX_WASM_MODULE.clone(); // Has memory
+        watSource = COMPLEX_WAT_MODULE; // Has memory
       } else {
-        moduleBytes = SIMPLE_WASM_MODULE.clone();
+        watSource = SIMPLE_WAT_MODULE;
       }
 
       jniExecutor = new WorkloadExecutor(RuntimeType.JNI, operationCategory, workloadIntensity);
@@ -397,8 +381,8 @@ public class ComparisonBenchmark extends BenchmarkBase {
 
       // Initialize executors if not initialization benchmark
       if (!operationCategory.equals("INITIALIZATION")) {
-        jniExecutor.initialize(moduleBytes);
-        panamaExecutor.initialize(moduleBytes);
+        jniExecutor.initialize(watSource);
+        panamaExecutor.initialize(watSource);
       }
 
       // Force garbage collection for clean comparison
@@ -424,7 +408,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
       panamaExecutor.cleanup();
       panamaExecutor = null;
     }
-    moduleBytes = null;
+    watSource = null;
 
     // Final cleanup
     System.gc();
@@ -441,7 +425,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
     try {
       // For initialization benchmarks, initialize on each call
       if (operationCategory.equals("INITIALIZATION")) {
-        jniExecutor.initialize(moduleBytes);
+        jniExecutor.initialize(watSource);
       }
 
       final PerformanceResult result = jniExecutor.execute();
@@ -472,7 +456,7 @@ public class ComparisonBenchmark extends BenchmarkBase {
     try {
       // For initialization benchmarks, initialize on each call
       if (operationCategory.equals("INITIALIZATION")) {
-        panamaExecutor.initialize(moduleBytes);
+        panamaExecutor.initialize(watSource);
       }
 
       final PerformanceResult result = panamaExecutor.execute();
@@ -502,8 +486,8 @@ public class ComparisonBenchmark extends BenchmarkBase {
     try {
       // For initialization benchmarks, initialize on each call
       if (operationCategory.equals("INITIALIZATION")) {
-        jniExecutor.initialize(moduleBytes);
-        panamaExecutor.initialize(moduleBytes);
+        jniExecutor.initialize(watSource);
+        panamaExecutor.initialize(watSource);
       }
 
       final PerformanceResult jniResult = jniExecutor.execute();

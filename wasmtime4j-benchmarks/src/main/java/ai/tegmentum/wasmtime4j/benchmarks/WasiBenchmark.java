@@ -1,11 +1,17 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Linker;
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -25,22 +31,21 @@ import org.openjdk.jmh.infra.Blackhole;
 /**
  * Benchmarks for WASI (WebAssembly System Interface) operations performance.
  *
- * <p>This benchmark class measures the performance characteristics of WASI operations, comparing
- * JNI and Panama implementations across different system interface patterns.
+ * <p>This benchmark class measures the performance characteristics of real Wasmtime WASI
+ * operations, comparing JNI and Panama implementations across WASI linker initialization, module
+ * compilation, instantiation, function calls, configuration creation, and resource cleanup.
  *
  * <p>Key metrics measured:
  *
  * <ul>
- *   <li>File I/O operations (read, write, seek)
- *   <li>Directory operations (list, create, remove)
- *   <li>Process operations (spawn, wait, signal)
- *   <li>Network operations (socket, connect, send/receive)
- *   <li>Environment variable access
- *   <li>Clock and time operations
+ *   <li>WASI linker creation and initialization overhead
+ *   <li>WASI module compilation with WASI imports
+ *   <li>WASI module instantiation via linker
+ *   <li>Function call overhead in WASI-linked instances
+ *   <li>WasiConfig builder API overhead
+ *   <li>Batch WASI operations (end-to-end)
+ *   <li>WASI resource cleanup performance
  * </ul>
- *
- * <p>Note: Some WASI operations are simulated for benchmarking purposes as the actual WASI
- * implementation may not be fully available in all environments.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
@@ -52,521 +57,348 @@ import org.openjdk.jmh.infra.Blackhole;
     jvmArgs = {"-Xms1g", "-Xmx2g"})
 public class WasiBenchmark extends BenchmarkBase {
 
+  /**
+   * Simple WASI WAT module that imports proc_exit from wasi_snapshot_preview1, exports a compute
+   * function (i32 add), a _start function, and memory.
+   */
+  private static final String SIMPLE_WASI_WAT =
+      "(module\n"
+          + "  (import \"wasi_snapshot_preview1\" \"proc_exit\" (func $proc_exit (param i32)))\n"
+          + "  (memory (export \"memory\") 1)\n"
+          + "  (func $compute (export \"compute\") (param i32 i32) (result i32)\n"
+          + "    local.get 0\n"
+          + "    local.get 1\n"
+          + "    i32.add)\n"
+          + "  (func $_start (export \"_start\")\n"
+          + "    nop))\n";
+
+  /**
+   * Complex WASI WAT module with additional functions and larger memory, importing proc_exit.
+   * Exports: compute, fibonacci, accumulate, _start, memory.
+   */
+  private static final String COMPLEX_WASI_WAT =
+      "(module\n"
+          + "  (import \"wasi_snapshot_preview1\" \"proc_exit\" (func $proc_exit (param i32)))\n"
+          + "  (memory (export \"memory\") 4 64)\n"
+          + "  (func $compute (export \"compute\") (param i32 i32) (result i32)\n"
+          + "    local.get 0\n"
+          + "    local.get 1\n"
+          + "    i32.add)\n"
+          + "  (func $fibonacci (export \"fibonacci\") (param i32) (result i32)\n"
+          + "    (if (result i32) (i32.lt_s (local.get 0) (i32.const 2))\n"
+          + "      (then (local.get 0))\n"
+          + "      (else\n"
+          + "        (i32.add\n"
+          + "          (call $fibonacci (i32.sub (local.get 0) (i32.const 1)))\n"
+          + "          (call $fibonacci (i32.sub (local.get 0) (i32.const 2)))))))\n"
+          + "  (func $accumulate (export \"accumulate\") (param i32) (result i32)\n"
+          + "    (local i32)\n"
+          + "    (local.set 1 (i32.const 0))\n"
+          + "    (block $break\n"
+          + "      (loop $loop\n"
+          + "        (br_if $break (i32.le_s (local.get 0) (i32.const 0)))\n"
+          + "        (local.set 1 (i32.add (local.get 1) (local.get 0)))\n"
+          + "        (local.set 0 (i32.sub (local.get 0) (i32.const 1)))\n"
+          + "        (br $loop)))\n"
+          + "    (local.get 1))\n"
+          + "  (func $_start (export \"_start\")\n"
+          + "    nop))\n";
+
+  /** Number of function calls per batch benchmark iteration. */
+  private static final int BATCH_CALL_COUNT = 10;
+
   /** Runtime implementation to benchmark. */
   @Param({"JNI", "PANAMA"})
   private String runtimeTypeName;
 
-  /** WASI operation category to benchmark. */
-  @Param({"FILE_IO", "DIRECTORY_OPS", "PROCESS_OPS", "ENVIRONMENT"})
-  private String operationCategory;
+  /** Module complexity level for benchmarks. */
+  @Param({"SIMPLE", "COMPLEX"})
+  private String moduleComplexity;
 
-  /** Data size for I/O operations. */
-  @Param({"1024", "4096", "16384"})
-  private int dataSize;
+  /** Pre-created runtime for trial-level reuse. */
+  private WasmRuntime trialRuntime;
 
-  /** Mock WASI context for simulated operations. */
-  private static final class MockWasiContext {
-    private final RuntimeType runtimeType;
-    private final Path tempDir;
-    private final byte[] testData;
+  /** Pre-created engine for trial-level reuse. */
+  private Engine trialEngine;
 
-    MockWasiContext(final RuntimeType runtimeType, final int dataSize) throws IOException {
-      this.runtimeType = runtimeType;
-      this.tempDir = Files.createTempDirectory("wasi-benchmark");
-      this.testData = new byte[dataSize];
-      for (int i = 0; i < testData.length; i++) {
-        testData[i] = (byte) (i % 256);
-      }
+  /** Pre-created store for trial-level reuse. */
+  private Store trialStore;
+
+  /** Pre-compiled WASI module for benchmarks that need it. */
+  private Module trialModule;
+
+  /** Pre-created linker with WASI enabled for benchmarks that need it. */
+  private Linker<?> trialLinker;
+
+  /** Pre-instantiated instance for function call benchmarks. */
+  private Instance trialInstance;
+
+  /** Pre-resolved compute function for function call benchmarks. */
+  private WasmFunction computeFunction;
+
+  /**
+   * Returns the appropriate WASI WAT source based on the current module complexity parameter.
+   *
+   * @return the WAT module source string
+   */
+  private String getWasiWatSource() {
+    if ("COMPLEX".equals(moduleComplexity)) {
+      return COMPLEX_WASI_WAT;
     }
-
-    long fileWrite(final String filename, final byte[] data) throws IOException {
-      final long startTime = System.nanoTime();
-      final Path filePath = tempDir.resolve(filename);
-
-      // Add runtime-specific overhead simulation
-      simulateRuntimeOverhead();
-
-      Files.write(filePath, data, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-
-      final long endTime = System.nanoTime();
-      return endTime - startTime;
-    }
-
-    long fileRead(final String filename) throws IOException {
-      final long startTime = System.nanoTime();
-      final Path filePath = tempDir.resolve(filename);
-
-      // Add runtime-specific overhead simulation
-      simulateRuntimeOverhead();
-
-      if (Files.exists(filePath)) {
-        Files.readAllBytes(filePath);
-      }
-
-      final long endTime = System.nanoTime();
-      return endTime - startTime;
-    }
-
-    long directoryCreate(final String dirName) throws IOException {
-      final long startTime = System.nanoTime();
-      final Path dirPath = tempDir.resolve(dirName);
-
-      simulateRuntimeOverhead();
-
-      Files.createDirectories(dirPath);
-
-      final long endTime = System.nanoTime();
-      return endTime - startTime;
-    }
-
-    long directoryList() throws IOException {
-      final long startTime = System.nanoTime();
-
-      simulateRuntimeOverhead();
-
-      Files.list(tempDir)
-          .forEach(
-              path -> {
-                // Simulate processing each entry
-                Math.abs(path.hashCode());
-              });
-
-      final long endTime = System.nanoTime();
-      return endTime - startTime;
-    }
-
-    long processSpawn() {
-      final long startTime = System.nanoTime();
-
-      simulateRuntimeOverhead();
-
-      // Simulate process spawn overhead
-      try {
-        final ProcessBuilder pb = new ProcessBuilder("echo", "hello");
-        final Process process = pb.start();
-        process.waitFor(100, TimeUnit.MILLISECONDS);
-        process.destroyForcibly();
-      } catch (final Exception e) {
-        // Ignore process errors for benchmark
-      }
-
-      final long endTime = System.nanoTime();
-      return endTime - startTime;
-    }
-
-    long environmentAccess() {
-      final long startTime = System.nanoTime();
-
-      simulateRuntimeOverhead();
-
-      // Simulate environment variable access
-      System.getenv("PATH");
-      System.getenv("HOME");
-      System.getenv("USER");
-
-      final long endTime = System.nanoTime();
-      return endTime - startTime;
-    }
-
-    long clockOperations() {
-      final long startTime = System.nanoTime();
-
-      simulateRuntimeOverhead();
-
-      // Simulate clock and time operations
-      System.currentTimeMillis();
-      System.nanoTime();
-      final long currentTime = System.currentTimeMillis() / 1000;
-
-      final long endTime = System.nanoTime();
-      return endTime
-          - startTime
-          + currentTime
-          - currentTime; // Ensure clock read is not optimized away
-    }
-
-    private void simulateRuntimeOverhead() {
-      // Simulate different overhead for different runtimes
-      if (runtimeType == RuntimeType.PANAMA) {
-        // Panama might have slightly more overhead for system calls
-        for (int i = 0; i < 5; i++) {
-          Math.sqrt(i + 1);
-        }
-      } else {
-        // JNI overhead simulation
-        for (int i = 0; i < 3; i++) {
-          Math.abs(i);
-        }
-      }
-    }
-
-    void cleanup() {
-      try {
-        // Clean up temporary files and directories
-        Files.walk(tempDir)
-            .sorted((a, b) -> b.compareTo(a)) // Delete files before directories
-            .forEach(
-                path -> {
-                  try {
-                    Files.deleteIfExists(path);
-                  } catch (final IOException e) {
-                    // Ignore cleanup errors
-                  }
-                });
-      } catch (final Exception e) {
-        // Ignore cleanup errors
-      }
-    }
-
-    public byte[] getTestData() {
-      return testData.clone();
-    }
-  }
-
-  /** WASI context for benchmarking. */
-  private MockWasiContext wasiContext;
-
-  /** Test file names for operations. */
-  private String[] testFiles;
-
-  /** Converts string runtime type name to RuntimeType enum. */
-  private RuntimeType getRuntimeType() {
-    return RuntimeType.valueOf(runtimeTypeName);
-  }
-
-  /** Setup performed before each benchmark iteration. */
-  @Setup(Level.Iteration)
-  public void setupIteration() throws IOException {
-    wasiContext = new MockWasiContext(getRuntimeType(), dataSize);
-
-    // Prepare test files based on operation category
-    testFiles = new String[5];
-    for (int i = 0; i < testFiles.length; i++) {
-      testFiles[i] = String.format("test_file_%d_%s.dat", i, operationCategory);
-    }
-
-    // Pre-create some files for read operations
-    if (operationCategory.equals("FILE_IO")) {
-      for (int i = 0; i < testFiles.length / 2; i++) {
-        try {
-          wasiContext.fileWrite(testFiles[i], wasiContext.getTestData());
-        } catch (final IOException e) {
-          // Ignore setup errors
-        }
-      }
-    }
-  }
-
-  /** Cleanup performed after each benchmark iteration. */
-  @TearDown(Level.Iteration)
-  public void teardownIteration() {
-    if (wasiContext != null) {
-      wasiContext.cleanup();
-      wasiContext = null;
-    }
-    testFiles = null;
+    return SIMPLE_WASI_WAT;
   }
 
   /**
-   * Benchmarks file write operations.
+   * Trial-level setup that creates reusable runtime components, compiles the WASI module,
+   * initializes the WASI linker, instantiates the module, and resolves the compute function.
+   *
+   * @throws WasmException if any Wasmtime operation fails during setup
+   */
+  @Setup(Level.Trial)
+  public void setupTrial() throws WasmException {
+    final RuntimeType runtimeType = RuntimeType.valueOf(runtimeTypeName);
+    trialRuntime = createRuntime(runtimeType);
+    trialEngine = createEngine(trialRuntime);
+    trialStore = createStore(trialEngine);
+
+    trialModule = compileWatModule(trialEngine, getWasiWatSource());
+
+    trialLinker = Linker.create(trialEngine);
+    trialLinker.enableWasi();
+
+    trialInstance = trialLinker.instantiate(trialStore, trialModule);
+
+    final Optional<WasmFunction> funcOpt = trialInstance.getFunction("compute");
+    if (!funcOpt.isPresent()) {
+      throw new WasmException("compute function not found in WASI module");
+    }
+    computeFunction = funcOpt.get();
+  }
+
+  /**
+   * Trial-level teardown that closes all resources in reverse creation order.
+   *
+   * @throws Exception if resource cleanup fails
+   */
+  @TearDown(Level.Trial)
+  public void teardownTrial() throws Exception {
+    computeFunction = null;
+    closeQuietly(trialInstance);
+    trialInstance = null;
+    closeQuietly(trialLinker);
+    trialLinker = null;
+    closeQuietly(trialModule);
+    trialModule = null;
+    closeQuietly(trialStore);
+    trialStore = null;
+    closeQuietly(trialEngine);
+    trialEngine = null;
+    closeQuietly(trialRuntime);
+    trialRuntime = null;
+  }
+
+  /**
+   * Benchmarks WASI linker creation and initialization.
+   *
+   * <p>Creates a new engine, creates a linker, enables WASI, then closes both. Measures the full
+   * cost of WASI initialization.
    *
    * @param blackhole JMH blackhole to prevent dead code elimination
    */
   @Benchmark
-  public void benchmarkFileWrite(final Blackhole blackhole) {
-    if (!operationCategory.equals("FILE_IO")) {
-      return;
-    }
-
-    final byte[] data = wasiContext.getTestData();
-    long totalTime = 0;
-
-    for (final String filename : testFiles) {
-      try {
-        final long writeTime = wasiContext.fileWrite(filename, data);
-        totalTime += writeTime;
-      } catch (final IOException e) {
-        blackhole.consume(e.getMessage());
-      }
-    }
-
-    blackhole.consume(totalTime);
-    blackhole.consume(data.length);
-    blackhole.consume(testFiles.length);
-  }
-
-  /**
-   * Benchmarks file read operations.
-   *
-   * @param blackhole JMH blackhole to prevent dead code elimination
-   */
-  @Benchmark
-  public void benchmarkFileRead(final Blackhole blackhole) {
-    if (!operationCategory.equals("FILE_IO")) {
-      return;
-    }
-
-    long totalTime = 0;
-    int successfulReads = 0;
-
-    for (final String filename : testFiles) {
-      try {
-        final long readTime = wasiContext.fileRead(filename);
-        totalTime += readTime;
-        successfulReads++;
-      } catch (final IOException e) {
-        blackhole.consume(e.getMessage());
-      }
-    }
-
-    blackhole.consume(totalTime);
-    blackhole.consume(successfulReads);
-  }
-
-  /**
-   * Benchmarks mixed file I/O operations.
-   *
-   * @param blackhole JMH blackhole to prevent dead code elimination
-   */
-  @Benchmark
-  public void benchmarkMixedFileOperations(final Blackhole blackhole) {
-    if (!operationCategory.equals("FILE_IO")) {
-      return;
-    }
-
-    final byte[] data = wasiContext.getTestData();
-    long totalTime = 0;
-
-    for (int i = 0; i < testFiles.length; i++) {
-      try {
-        // Alternate between write and read operations
-        if (i % 2 == 0) {
-          final long writeTime = wasiContext.fileWrite(testFiles[i], data);
-          totalTime += writeTime;
-        } else {
-          final long readTime = wasiContext.fileRead(testFiles[i - 1]);
-          totalTime += readTime;
-        }
-      } catch (final IOException e) {
-        blackhole.consume(e.getMessage());
-      }
-    }
-
-    blackhole.consume(totalTime);
-    blackhole.consume(data.length);
-  }
-
-  /**
-   * Benchmarks directory operations.
-   *
-   * @param blackhole JMH blackhole to prevent dead code elimination
-   */
-  @Benchmark
-  public void benchmarkDirectoryOperations(final Blackhole blackhole) {
-    if (!operationCategory.equals("DIRECTORY_OPS")) {
-      return;
-    }
-
-    long totalTime = 0;
-    int successfulOps = 0;
-
-    // Create directories
-    for (int i = 0; i < 5; i++) {
-      try {
-        final String dirName = String.format("test_dir_%d", i);
-        final long createTime = wasiContext.directoryCreate(dirName);
-        totalTime += createTime;
-        successfulOps++;
-      } catch (final IOException e) {
-        blackhole.consume(e.getMessage());
-      }
-    }
-
-    // List directory contents
-    for (int i = 0; i < 3; i++) {
-      try {
-        final long listTime = wasiContext.directoryList();
-        totalTime += listTime;
-        successfulOps++;
-      } catch (final IOException e) {
-        blackhole.consume(e.getMessage());
-      }
-    }
-
-    blackhole.consume(totalTime);
-    blackhole.consume(successfulOps);
-  }
-
-  /**
-   * Benchmarks process operations.
-   *
-   * @param blackhole JMH blackhole to prevent dead code elimination
-   */
-  @Benchmark
-  public void benchmarkProcessOperations(final Blackhole blackhole) {
-    if (!operationCategory.equals("PROCESS_OPS")) {
-      return;
-    }
-
-    long totalTime = 0;
-    int successfulOps = 0;
-
-    // Simulate process spawn operations
-    for (int i = 0; i < 3; i++) {
-      try {
-        final long spawnTime = wasiContext.processSpawn();
-        totalTime += spawnTime;
-        successfulOps++;
-      } catch (final Exception e) {
-        blackhole.consume(e.getMessage());
-      }
-    }
-
-    blackhole.consume(totalTime);
-    blackhole.consume(successfulOps);
-  }
-
-  /**
-   * Benchmarks environment and system operations.
-   *
-   * @param blackhole JMH blackhole to prevent dead code elimination
-   */
-  @Benchmark
-  public void benchmarkEnvironmentOperations(final Blackhole blackhole) {
-    if (!operationCategory.equals("ENVIRONMENT")) {
-      return;
-    }
-
-    long totalTime = 0;
-
-    // Environment access
-    for (int i = 0; i < 10; i++) {
-      final long envTime = wasiContext.environmentAccess();
-      totalTime += envTime;
-    }
-
-    // Clock operations
-    for (int i = 0; i < 5; i++) {
-      final long clockTime = wasiContext.clockOperations();
-      totalTime += clockTime;
-    }
-
-    blackhole.consume(totalTime);
-    blackhole.consume(getRuntimeType().name());
-  }
-
-  /**
-   * Benchmarks WASI operation batching.
-   *
-   * @param blackhole JMH blackhole to prevent dead code elimination
-   */
-  @Benchmark
-  public void benchmarkBatchedWasiOperations(final Blackhole blackhole) {
-    final ByteArrayOutputStream results = new ByteArrayOutputStream();
-    long totalTime = 0;
-
+  public void benchmarkWasiLinkerCreation(final Blackhole blackhole) throws WasmException {
+    Engine engine = null;
+    Linker<?> linker = null;
     try {
-      switch (operationCategory) {
-        case "FILE_IO":
-          // Batch file operations
-          final byte[] data = wasiContext.getTestData();
-          for (int i = 0; i < 10; i++) {
-            final String filename = String.format("batch_file_%d.dat", i);
-            totalTime += wasiContext.fileWrite(filename, data);
-            totalTime += wasiContext.fileRead(filename);
-          }
-          break;
-
-        case "DIRECTORY_OPS":
-          // Batch directory operations
-          for (int i = 0; i < 5; i++) {
-            totalTime += wasiContext.directoryCreate(String.format("batch_dir_%d", i));
-            totalTime += wasiContext.directoryList();
-          }
-          break;
-
-        case "PROCESS_OPS":
-          // Batch process operations
-          for (int i = 0; i < 3; i++) {
-            totalTime += wasiContext.processSpawn();
-          }
-          break;
-
-        case "ENVIRONMENT":
-          // Batch environment operations
-          for (int i = 0; i < 15; i++) {
-            totalTime += wasiContext.environmentAccess();
-            totalTime += wasiContext.clockOperations();
-          }
-          break;
-
-        default:
-          break;
-      }
-
-      results.write(String.valueOf(totalTime).getBytes());
-    } catch (final Exception e) {
-      blackhole.consume(e.getMessage());
+      engine = createEngine(trialRuntime);
+      linker = Linker.create(engine);
+      linker.enableWasi();
+      blackhole.consume(linker.isValid());
+    } finally {
+      closeQuietly(linker);
+      closeQuietly(engine);
     }
-
-    blackhole.consume(totalTime);
-    blackhole.consume(results.size());
   }
 
   /**
-   * Benchmarks WASI error handling performance.
+   * Benchmarks WASI module compilation.
+   *
+   * <p>Uses the pre-created trial engine to compile the WASI WAT module, then closes the compiled
+   * module. Measures compilation overhead for modules with WASI imports.
    *
    * @param blackhole JMH blackhole to prevent dead code elimination
    */
   @Benchmark
-  public void benchmarkWasiErrorHandling(final Blackhole blackhole) {
-    int successCount = 0;
-    int errorCount = 0;
-
-    for (int i = 0; i < 20; i++) {
-      try {
-        if (i % 5 == 0) {
-          // Intentionally cause errors
-          switch (operationCategory) {
-            case "FILE_IO":
-              wasiContext.fileRead("non_existent_file.dat");
-              break;
-            case "DIRECTORY_OPS":
-              // Try to create directory with invalid name
-              wasiContext.directoryCreate("invalid\\:*?\"<>|name");
-              break;
-            default:
-              // Simulate other errors
-              throw new IOException("Simulated error");
-          }
-        } else {
-          // Normal operations
-          switch (operationCategory) {
-            case "FILE_IO":
-              wasiContext.fileWrite(
-                  String.format("error_test_%d.dat", i), wasiContext.getTestData());
-              successCount++;
-              break;
-            case "DIRECTORY_OPS":
-              wasiContext.directoryCreate(String.format("error_test_dir_%d", i));
-              successCount++;
-              break;
-            case "ENVIRONMENT":
-              wasiContext.environmentAccess();
-              successCount++;
-              break;
-            default:
-              successCount++;
-              break;
-          }
-        }
-      } catch (final Exception e) {
-        errorCount++;
-        blackhole.consume(e.getMessage());
-      }
+  public void benchmarkWasiModuleCompilation(final Blackhole blackhole) throws WasmException {
+    Module module = null;
+    try {
+      module = compileWatModule(trialEngine, getWasiWatSource());
+      blackhole.consume(module);
+    } finally {
+      closeQuietly(module);
     }
+  }
 
-    blackhole.consume(successCount);
-    blackhole.consume(errorCount);
+  /**
+   * Benchmarks WASI module instantiation.
+   *
+   * <p>Uses the pre-created WASI linker and pre-compiled module to instantiate, then closes the
+   * instance. Measures the cost of instantiating a module with WASI imports resolved.
+   *
+   * @param blackhole JMH blackhole to prevent dead code elimination
+   */
+  @Benchmark
+  public void benchmarkWasiInstantiation(final Blackhole blackhole) throws WasmException {
+    // Create a fresh engine/linker/store/module pipeline per call to avoid both the 10,000
+    // instance count limit (when reusing a store) and mmap exhaustion (when creating a second
+    // store on the same engine). Module must be compiled with the same engine used for the
+    // linker/store, since Wasmtime modules are engine-bound.
+    Engine engine = null;
+    Linker<?> linker = null;
+    Store store = null;
+    Module module = null;
+    Instance instance = null;
+    try {
+      engine = createEngine(trialRuntime);
+      linker = Linker.create(engine);
+      linker.enableWasi();
+      store = createStore(engine);
+      module = compileWatModule(engine, getWasiWatSource());
+      instance = linker.instantiate(store, module);
+      blackhole.consume(instance);
+    } finally {
+      closeQuietly(instance);
+      closeQuietly(module);
+      closeQuietly(store);
+      closeQuietly(linker);
+      closeQuietly(engine);
+    }
+  }
+
+  /**
+   * Benchmarks function call overhead in a WASI-linked instance.
+   *
+   * <p>Calls the pre-resolved compute function with i32 parameters and consumes the result.
+   * Measures the per-call cost of invoking functions in a WASI-enabled module.
+   *
+   * @param blackhole JMH blackhole to prevent dead code elimination
+   */
+  @Benchmark
+  public void benchmarkWasiFunctionCall(final Blackhole blackhole) throws WasmException {
+    final WasmValue[] result = computeFunction.call(WasmValue.i32(17), WasmValue.i32(25));
+    blackhole.consume(result[0].asInt());
+  }
+
+  /**
+   * Benchmarks WasiConfig creation overhead.
+   *
+   * <p>Builds WasiConfig objects using the builder API with various configuration options. Measures
+   * the cost of constructing WASI configuration.
+   *
+   * @param blackhole JMH blackhole to prevent dead code elimination
+   */
+  @Benchmark
+  public void benchmarkWasiConfigCreation(final Blackhole blackhole) throws WasmException {
+    // Default config
+    final WasiConfig defaultConfig = WasiConfig.defaultConfig();
+    blackhole.consume(defaultConfig);
+
+    // Config with environment variables
+    final WasiConfig envConfig =
+        WasiConfig.builder()
+            .withEnvironment("HOME", "/app")
+            .withEnvironment("PATH", "/usr/bin:/bin")
+            .withEnvironment("USER", "benchmark")
+            .build();
+    blackhole.consume(envConfig.getEnvironment().size());
+
+    // Config with arguments
+    final WasiConfig argConfig =
+        WasiConfig.builder()
+            .withArgument("--verbose")
+            .withArgument("--config")
+            .withArgument("/etc/app.conf")
+            .build();
+    blackhole.consume(argConfig.getArguments().size());
+  }
+
+  /**
+   * Benchmarks end-to-end batch WASI operations.
+   *
+   * <p>Creates a linker with WASI, compiles a module, instantiates it, calls the compute function
+   * multiple times, and closes all resources. Measures the full pipeline cost of WASI usage.
+   *
+   * @param blackhole JMH blackhole to prevent dead code elimination
+   */
+  @Benchmark
+  public void benchmarkBatchWasiOperations(final Blackhole blackhole) throws WasmException {
+    Engine engine = null;
+    Linker<?> linker = null;
+    Module module = null;
+    Store store = null;
+    Instance instance = null;
+    try {
+      engine = createEngine(trialRuntime);
+      linker = Linker.create(engine);
+      linker.enableWasi();
+
+      store = createStore(engine);
+      module = compileWatModule(engine, getWasiWatSource());
+      instance = linker.instantiate(store, module);
+
+      final Optional<WasmFunction> funcOpt = instance.getFunction("compute");
+      if (!funcOpt.isPresent()) {
+        throw new WasmException("compute function not found in batch WASI benchmark");
+      }
+      final WasmFunction func = funcOpt.get();
+
+      int accumulator = 0;
+      for (int i = 0; i < BATCH_CALL_COUNT; i++) {
+        final WasmValue[] result = func.call(WasmValue.i32(i), WasmValue.i32(i + 1));
+        accumulator += result[0].asInt();
+      }
+      blackhole.consume(accumulator);
+    } finally {
+      closeQuietly(instance);
+      closeQuietly(module);
+      closeQuietly(store);
+      closeQuietly(linker);
+      closeQuietly(engine);
+    }
+  }
+
+  /**
+   * Benchmarks WASI resource cleanup performance.
+   *
+   * <p>Creates a full set of WASI resources (engine, linker, module, instance) and immediately
+   * closes them. Measures the overhead of resource allocation and deallocation for WASI-linked
+   * components.
+   *
+   * @param blackhole JMH blackhole to prevent dead code elimination
+   */
+  @Benchmark
+  public void benchmarkWasiResourceCleanup(final Blackhole blackhole) throws WasmException {
+    Engine engine = null;
+    Linker<?> linker = null;
+    Module module = null;
+    Store store = null;
+    Instance instance = null;
+    try {
+      engine = createEngine(trialRuntime);
+      linker = Linker.create(engine);
+      linker.enableWasi();
+
+      store = createStore(engine);
+      module = compileWatModule(engine, getWasiWatSource());
+      instance = linker.instantiate(store, module);
+
+      blackhole.consume(instance);
+    } finally {
+      closeQuietly(instance);
+      closeQuietly(module);
+      closeQuietly(store);
+      closeQuietly(linker);
+      closeQuietly(engine);
+    }
   }
 }

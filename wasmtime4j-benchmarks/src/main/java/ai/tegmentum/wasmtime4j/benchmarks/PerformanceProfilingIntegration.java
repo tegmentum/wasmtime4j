@@ -666,7 +666,7 @@ public class PerformanceProfilingIntegration extends BenchmarkBase {
     final var runtime = createRuntime(RuntimeType.JNI);
     final var engine = createEngine(runtime);
     final var store = createStore(engine);
-    final var module = compileModule(engine, COMPLEX_WASM_MODULE);
+    final var module = compileWatModule(engine, COMPLEX_WAT_MODULE);
     final var instance = instantiateModule(store, module);
 
     // Perform memory-intensive operations
@@ -683,7 +683,7 @@ public class PerformanceProfilingIntegration extends BenchmarkBase {
     final var runtime = createRuntime(RuntimeType.PANAMA);
     final var engine = createEngine(runtime);
     final var store = createStore(engine);
-    final var module = compileModule(engine, COMPLEX_WASM_MODULE);
+    final var module = compileWatModule(engine, COMPLEX_WAT_MODULE);
     final var instance = instantiateModule(store, module);
 
     // Perform memory-intensive operations

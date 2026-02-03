@@ -28,7 +28,19 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -54,54 +66,71 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 5, time = 3, timeUnit = TimeUnit.SECONDS)
 public class SharedMemoryBenchmark {
 
+  /** WAT module with shared memory (requires threads feature). */
+  private static final String SHARED_MEMORY_WAT =
+      "(module\n" + "  (memory (export \"memory\") 1 16 shared))\n";
+
+  /** WAT module with regular (non-shared) memory. */
+  private static final String REGULAR_MEMORY_WAT =
+      "(module\n" + "  (memory (export \"memory\") 1 16))\n";
+
   @Param({"JNI", "PANAMA"})
   private String runtimeType;
 
   private WasmRuntime runtime;
   private Engine engine;
   private Store store;
-  private Instance instance;
+  private Instance sharedInstance;
+  private Instance regularInstance;
   private WasmMemory sharedMemory;
   private WasmMemory regularMemory;
 
+  /** Sets up the benchmark trial with shared and regular memory instances. */
   @Setup(Level.Trial)
   public void setupTrial() throws Exception {
-    // Initialize runtime based on parameter
-    RuntimeType type = RuntimeType.valueOf(runtimeType);
+    final RuntimeType type = RuntimeType.valueOf(runtimeType);
     if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
       throw new RuntimeException("Runtime not available: " + type);
     }
     runtime = WasmRuntimeFactory.create(type);
 
     // Create engine with threads support for shared memory
-    EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+    final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
     engine = runtime.createEngine(config);
     store = engine.createStore();
 
-    // Create instances with shared and regular memory
-    byte[] sharedMemoryWasm = createSharedMemoryModule();
-    Module sharedModule = engine.compileModule(sharedMemoryWasm);
-    instance = store.createInstance(sharedModule);
+    // Create shared memory instance
+    final Module sharedModule = engine.compileWat(SHARED_MEMORY_WAT);
+    sharedInstance = sharedModule.instantiate(store);
     sharedMemory =
-        instance
+        sharedInstance
             .getMemory("memory")
             .orElseThrow(() -> new RuntimeException("Shared memory not found"));
+    sharedModule.close();
 
-    byte[] regularMemoryWasm = createRegularMemoryModule();
-    Module regularModule = engine.compileModule(regularMemoryWasm);
-    Instance regularInstance = store.createInstance(regularModule);
+    // Create regular memory instance
+    final Module regularModule = engine.compileWat(REGULAR_MEMORY_WAT);
+    regularInstance = regularModule.instantiate(store);
     regularMemory =
         regularInstance
             .getMemory("memory")
             .orElseThrow(() -> new RuntimeException("Regular memory not found"));
+    regularModule.close();
 
     System.out.println("Shared memory benchmark setup complete");
-    System.out.println("Shared memory size: " + sharedMemory.getSize() + " pages");
+    System.out.println("Shared memory size: " + sharedMemory.getSize() + " bytes");
     System.out.println("Shared memory is shared: " + sharedMemory.isShared());
   }
 
+  /** Cleans up all resources. */
   @TearDown(Level.Trial)
   public void tearDownTrial() throws Exception {
+    if (sharedInstance != null) {
+      sharedInstance.close();
+    }
+    if (regularInstance != null) {
+      regularInstance.close();
+    }
     if (store != null) {
       store.close();
     }
@@ -115,83 +144,95 @@ public class SharedMemoryBenchmark {
 
   // Atomic Operation Benchmarks
 
+  /** Benchmarks atomic compare-and-swap on 32-bit values. */
   @Benchmark
   public int atomicCompareAndSwapInt() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
-    int expected = sharedMemory.atomicLoadInt(offset);
-    int newValue = ThreadLocalRandom.current().nextInt();
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
+    final int expected = sharedMemory.atomicLoadInt(offset);
+    final int newValue = ThreadLocalRandom.current().nextInt();
     return sharedMemory.atomicCompareAndSwapInt(offset, expected, newValue);
   }
 
+  /** Benchmarks atomic compare-and-swap on 64-bit values. */
   @Benchmark
   public long atomicCompareAndSwapLong() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~7); // Align to 8-byte boundary
-    long expected = sharedMemory.atomicLoadLong(offset);
-    long newValue = ThreadLocalRandom.current().nextLong();
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~7);
+    final long expected = sharedMemory.atomicLoadLong(offset);
+    final long newValue = ThreadLocalRandom.current().nextLong();
     return sharedMemory.atomicCompareAndSwapLong(offset, expected, newValue);
   }
 
+  /** Benchmarks atomic load of 32-bit values. */
   @Benchmark
   public int atomicLoadInt() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
     return sharedMemory.atomicLoadInt(offset);
   }
 
+  /** Benchmarks atomic store of 32-bit values. */
   @Benchmark
   public void atomicStoreInt() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
-    int value = ThreadLocalRandom.current().nextInt();
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
+    final int value = ThreadLocalRandom.current().nextInt();
     sharedMemory.atomicStoreInt(offset, value);
   }
 
+  /** Benchmarks atomic load of 64-bit values. */
   @Benchmark
   public long atomicLoadLong() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~7); // Align to 8-byte boundary
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~7);
     return sharedMemory.atomicLoadLong(offset);
   }
 
+  /** Benchmarks atomic store of 64-bit values. */
   @Benchmark
   public void atomicStoreLong() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~7); // Align to 8-byte boundary
-    long value = ThreadLocalRandom.current().nextLong();
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~7);
+    final long value = ThreadLocalRandom.current().nextLong();
     sharedMemory.atomicStoreLong(offset, value);
   }
 
+  /** Benchmarks atomic add on 32-bit values. */
   @Benchmark
   public int atomicAddInt() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
-    int value = ThreadLocalRandom.current().nextInt(100);
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
+    final int value = ThreadLocalRandom.current().nextInt(100);
     return sharedMemory.atomicAddInt(offset, value);
   }
 
+  /** Benchmarks atomic add on 64-bit values. */
   @Benchmark
   public long atomicAddLong() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~7); // Align to 8-byte boundary
-    long value = ThreadLocalRandom.current().nextLong(100);
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~7);
+    final long value = ThreadLocalRandom.current().nextLong(100);
     return sharedMemory.atomicAddLong(offset, value);
   }
 
+  /** Benchmarks atomic AND on 32-bit values. */
   @Benchmark
   public int atomicAndInt() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
-    int mask = ThreadLocalRandom.current().nextInt();
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
+    final int mask = ThreadLocalRandom.current().nextInt();
     return sharedMemory.atomicAndInt(offset, mask);
   }
 
+  /** Benchmarks atomic OR on 32-bit values. */
   @Benchmark
   public int atomicOrInt() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
-    int mask = ThreadLocalRandom.current().nextInt();
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
+    final int mask = ThreadLocalRandom.current().nextInt();
     return sharedMemory.atomicOrInt(offset, mask);
   }
 
+  /** Benchmarks atomic XOR on 32-bit values. */
   @Benchmark
   public int atomicXorInt() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
-    int mask = ThreadLocalRandom.current().nextInt();
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
+    final int mask = ThreadLocalRandom.current().nextInt();
     return sharedMemory.atomicXorInt(offset, mask);
   }
 
+  /** Benchmarks atomic fence operation. */
   @Benchmark
   public void atomicFence() {
     sharedMemory.atomicFence();
@@ -199,102 +240,84 @@ public class SharedMemoryBenchmark {
 
   // Comparison benchmarks with regular memory
 
+  /** Benchmarks byte read from regular (non-shared) memory. */
   @Benchmark
   public byte regularMemoryRead() {
-    int offset = ThreadLocalRandom.current().nextInt(1024);
+    final int offset = ThreadLocalRandom.current().nextInt(1024);
     return regularMemory.readByte(offset);
   }
 
+  /** Benchmarks byte write to regular (non-shared) memory. */
   @Benchmark
   public void regularMemoryWrite() {
-    int offset = ThreadLocalRandom.current().nextInt(1024);
-    byte value = (byte) ThreadLocalRandom.current().nextInt();
+    final int offset = ThreadLocalRandom.current().nextInt(1024);
+    final byte value = (byte) ThreadLocalRandom.current().nextInt();
     regularMemory.writeByte(offset, value);
   }
 
+  /** Benchmarks byte read from shared memory. */
   @Benchmark
   public byte sharedMemoryRead() {
-    int offset = ThreadLocalRandom.current().nextInt(1024);
+    final int offset = ThreadLocalRandom.current().nextInt(1024);
     return sharedMemory.readByte(offset);
   }
 
+  /** Benchmarks byte write to shared memory. */
   @Benchmark
   public void sharedMemoryWrite() {
-    int offset = ThreadLocalRandom.current().nextInt(1024);
-    byte value = (byte) ThreadLocalRandom.current().nextInt();
+    final int offset = ThreadLocalRandom.current().nextInt(1024);
+    final byte value = (byte) ThreadLocalRandom.current().nextInt();
     sharedMemory.writeByte(offset, value);
   }
 
-  // Wait/Notify benchmarks (simplified)
+  // Wait/Notify benchmarks
 
+  /** Benchmarks atomic wait32 with immediate return (value mismatch). */
   @Benchmark
   public int atomicWait32Immediate() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
-    int current = sharedMemory.atomicLoadInt(offset);
-    int different = current + 1; // Ensure mismatch for immediate return
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
+    final int current = sharedMemory.atomicLoadInt(offset);
+    final int different = current + 1; // Ensure mismatch for immediate return
     return sharedMemory.atomicWait32(offset, different, 0L);
   }
 
+  /** Benchmarks atomic notify operation. */
   @Benchmark
   public int atomicNotify() {
-    int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3); // Align to 4-byte boundary
-    int count = ThreadLocalRandom.current().nextInt(1, 5);
+    final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
+    final int count = ThreadLocalRandom.current().nextInt(1, 5);
     return sharedMemory.atomicNotify(offset, count);
   }
 
   // Concurrent access simulation
 
+  /** Per-thread state for concurrent access benchmarks. */
   @State(Scope.Thread)
   public static class ThreadState {
     private int threadOffset;
 
+    /** Assigns each thread its own offset range. */
     @Setup(Level.Trial)
     public void setup() {
-      // Give each thread its own offset range to reduce contention for some benchmarks
-      threadOffset = ThreadLocalRandom.current().nextInt(256) * 4; // 4-byte aligned
+      threadOffset = ThreadLocalRandom.current().nextInt(256) * 4;
     }
   }
 
+  /** Benchmarks contended atomic increment (all threads on same location). */
   @Benchmark
-  public int concurrentAtomicIncrement(ThreadState threadState) {
-    // All threads increment the same location for maximum contention
+  public int concurrentAtomicIncrement(final ThreadState threadState) {
     return sharedMemory.atomicAddInt(0, 1);
   }
 
+  /** Benchmarks uncontended atomic increment (each thread on its own location). */
   @Benchmark
-  public int threadLocalAtomicIncrement(ThreadState threadState) {
-    // Each thread increments its own location
+  public int threadLocalAtomicIncrement(final ThreadState threadState) {
     return sharedMemory.atomicAddInt(threadState.threadOffset, 1);
   }
 
-  // Utility methods
-
-  /**
-   * Creates a WebAssembly module with shared memory. In a real implementation, this would contain
-   * actual WASM bytecode.
-   */
-  private byte[] createSharedMemoryModule() {
-    // Placeholder - in practice this would be actual WASM bytecode with shared memory
-    return new byte[] {
-      0x00, 0x61, 0x73, 0x6d, // magic number
-      0x01, 0x00, 0x00, 0x00, // version
-      // Memory section with shared memory would be defined here
-    };
-  }
-
-  /** Creates a WebAssembly module with regular (non-shared) memory. */
-  private byte[] createRegularMemoryModule() {
-    // Placeholder - in practice this would be actual WASM bytecode with regular memory
-    return new byte[] {
-      0x00, 0x61, 0x73, 0x6d, // magic number
-      0x01, 0x00, 0x00, 0x00, // version
-      // Memory section with regular memory would be defined here
-    };
-  }
-
   /** Main method to run the benchmark. */
-  public static void main(String[] args) throws RunnerException {
-    Options opt =
+  public static void main(final String[] args) throws RunnerException {
+    final Options opt =
         new OptionsBuilder()
             .include(SharedMemoryBenchmark.class.getSimpleName())
             .shouldFailOnError(true)

@@ -229,35 +229,13 @@
             </properties>
         </profile>
 
-        <!-- Profile for loading performance benchmarks -->
+        <!-- Profile for smoke testing benchmarks (verify they compile and execute) -->
         <profile>
-            <id>loading-benchmarks</id>
+            <id>benchmark-smoke</id>
             <properties>
-                <jmh.benchmarks>.*LoadingBenchmark.*</jmh.benchmarks>
-            </properties>
-        </profile>
-
-        <!-- Profile for platform detection benchmarks -->
-        <profile>
-            <id>platform-benchmarks</id>
-            <properties>
-                <jmh.benchmarks>.*PlatformDetectorBenchmark.*</jmh.benchmarks>
-            </properties>
-        </profile>
-
-        <!-- Profile for memory allocation benchmarks -->
-        <profile>
-            <id>memory-benchmarks</id>
-            <properties>
-                <jmh.benchmarks>.*MemoryAllocationBenchmark.*</jmh.benchmarks>
-            </properties>
-        </profile>
-
-        <!-- Profile for baseline comparison benchmarks -->
-        <profile>
-            <id>baseline-benchmarks</id>
-            <properties>
-                <jmh.benchmarks>.*SystemLoadLibraryBaselineBenchmark.*</jmh.benchmarks>
+                <jmh.iterations>1</jmh.iterations>
+                <jmh.warmupIterations>0</jmh.warmupIterations>
+                <jmh.forks>0</jmh.forks>
             </properties>
         </profile>
 

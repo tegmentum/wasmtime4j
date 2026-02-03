@@ -67,10 +67,46 @@ public abstract class BenchmarkBase {
           + "  (func $sum (export \"sum\") (param i32 i32) (result i32)\n"
           + "    i32.const 0))\n";
 
-  // Legacy byte array references - kept for backward compatibility with benchmarks that use bytes
-  // These are now lazily compiled from WAT format
-  protected static final byte[] SIMPLE_WASM_MODULE = null;
-  protected static final byte[] COMPLEX_WASM_MODULE = null;
+  /**
+   * Large WebAssembly module with multiple functions and memory for benchmarking module compilation
+   * overhead. Exports: add(i32, i32) -> i32, sub(i32, i32) -> i32, mul(i32, i32) -> i32,
+   * div_safe(i32, i32) -> i32, fibonacci(i32) -> i32, accumulate(i32) -> i32, memory.
+   */
+  protected static final String LARGE_WAT_MODULE =
+      "(module\n"
+          + "  (memory (export \"memory\") 4 64)\n"
+          + "  (func $add (export \"add\") (param i32 i32) (result i32)\n"
+          + "    local.get 0\n"
+          + "    local.get 1\n"
+          + "    i32.add)\n"
+          + "  (func $sub (export \"sub\") (param i32 i32) (result i32)\n"
+          + "    local.get 0\n"
+          + "    local.get 1\n"
+          + "    i32.sub)\n"
+          + "  (func $mul (export \"mul\") (param i32 i32) (result i32)\n"
+          + "    local.get 0\n"
+          + "    local.get 1\n"
+          + "    i32.mul)\n"
+          + "  (func $div_safe (export \"div_safe\") (param i32 i32) (result i32)\n"
+          + "    (if (result i32) (i32.eqz (local.get 1))\n"
+          + "      (then (i32.const 0))\n"
+          + "      (else (i32.div_s (local.get 0) (local.get 1)))))\n"
+          + "  (func $fibonacci (export \"fibonacci\") (param i32) (result i32)\n"
+          + "    (if (result i32) (i32.lt_s (local.get 0) (i32.const 2))\n"
+          + "      (then (local.get 0))\n"
+          + "      (else\n"
+          + "        (i32.add\n"
+          + "          (call $fibonacci (i32.sub (local.get 0) (i32.const 1)))\n"
+          + "          (call $fibonacci (i32.sub (local.get 0) (i32.const 2)))))))\n"
+          + "  (func $accumulate (export \"accumulate\") (param i32) (result i32)\n"
+          + "    (local i32)\n"
+          + "    (local.set 1 (i32.const 0))\n"
+          + "    (block $break\n"
+          + "      (loop $loop\n"
+          + "        (br_if $break (i32.le_s (local.get 0) (i32.const 0)))\n"
+          + "        (local.set 1 (i32.add (local.get 1) (local.get 0)))\n"
+          + "        (local.set 0 (i32.sub (local.get 0) (i32.const 1)))\n"
+          + "        (br $loop)))    (local.get 1)))\n";
 
   /**
    * Gets the current Java version for runtime selection logic.

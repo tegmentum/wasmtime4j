@@ -63,8 +63,8 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   private Engine engine;
   private Store store;
 
-  /** Module bytecode based on the selected type. */
-  private byte[] moduleBytes;
+  /** WAT source for the selected module type. */
+  private String watSource;
 
   /** Compiled WebAssembly module. */
   private Module compiledModule;
@@ -81,34 +81,38 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
     engine = createEngine(runtime);
     store = createStore(engine);
 
-    // Select appropriate module bytes based on type
+    // Select appropriate WAT source based on type
     switch (moduleType) {
       case "SIMPLE":
-        moduleBytes = SIMPLE_WASM_MODULE.clone();
+        watSource = SIMPLE_WAT_MODULE;
         break;
       case "COMPLEX":
-        moduleBytes = COMPLEX_WASM_MODULE.clone();
+        watSource = COMPLEX_WAT_MODULE;
         break;
       case "LARGE":
-        moduleBytes = generateLargeModule();
+        watSource = LARGE_WAT_MODULE;
         break;
       default:
-        moduleBytes = SIMPLE_WASM_MODULE.clone();
+        watSource = SIMPLE_WAT_MODULE;
         break;
     }
 
-    // Clean up any existing compiled resources
-    cleanup();
-
-    // Force GC to ensure clean state
-    System.gc();
+    // Clean up any leftover compiled resources from prior iteration
+    if (wasmInstance != null) {
+      wasmInstance.close();
+      wasmInstance = null;
+    }
+    if (compiledModule != null) {
+      compiledModule.close();
+      compiledModule = null;
+    }
   }
 
   /** Cleanup performed after each benchmark iteration. */
   @TearDown(Level.Iteration)
   public void teardownIteration() {
     cleanup();
-    moduleBytes = null;
+    watSource = null;
   }
 
   /** Helper method to clean up WebAssembly resources. */
@@ -148,9 +152,9 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   @Benchmark
   public Module benchmarkModuleCompilation(final Blackhole blackhole) {
     try {
-      final Module module = compileModule(engine, moduleBytes);
+      final Module module = compileWatModule(engine, watSource);
       blackhole.consume(module.getName());
-      blackhole.consume(moduleBytes.length);
+      blackhole.consume(watSource.length());
       return module;
     } catch (final WasmException e) {
       throw new RuntimeException("Module compilation failed", e);
@@ -158,17 +162,20 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   }
 
   /**
-   * Benchmarks module validation without compilation.
+   * Benchmarks module validation by compiling and checking the result.
    *
    * @param blackhole JMH blackhole to prevent dead code elimination
    */
   @Benchmark
   public void benchmarkModuleValidation(final Blackhole blackhole) {
-    // Validate the WebAssembly module
-    // TODO: Uncomment when engine.validateModule() API is implemented
-    final boolean isValid = true; // engine.validateModule(moduleBytes);
-    blackhole.consume(isValid);
-    blackhole.consume(moduleBytes.length);
+    try {
+      final Module module = compileWatModule(engine, watSource);
+      blackhole.consume(module.getName());
+      module.close();
+      blackhole.consume(true);
+    } catch (final WasmException e) {
+      blackhole.consume(false);
+    }
     blackhole.consume(moduleType);
   }
 
@@ -181,12 +188,10 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   @Benchmark
   public Instance benchmarkModuleInstantiation(final Blackhole blackhole) {
     try {
-      final Module module = compileModule(engine, moduleBytes);
+      final Module module = compileWatModule(engine, watSource);
       final Instance instance = instantiateModule(store, module);
 
       blackhole.consume(module.getName());
-      // TODO: Replace with actual export counting when getExports() API is implemented
-      blackhole.consume(1); // Assume at least one export
 
       // Clean up for next iteration
       instance.close();
@@ -208,13 +213,11 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   public Instance benchmarkCompileThenInstantiate(final Blackhole blackhole) {
     try {
       // First compile
-      final Module module = compileModule(engine, moduleBytes);
+      final Module module = compileWatModule(engine, watSource);
       blackhole.consume(module.getName());
 
       // Then instantiate
       final Instance instance = instantiateModule(store, module);
-      // TODO: Replace with actual export counting when getExports() API is implemented
-      blackhole.consume(1); // Assume at least one export
 
       // Clean up
       instance.close();
@@ -238,7 +241,7 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
 
     try {
       for (int i = 0; i < batchSize; i++) {
-        modules[i] = compileModule(engine, moduleBytes);
+        modules[i] = compileWatModule(engine, watSource);
         blackhole.consume(modules[i].getName());
       }
     } catch (final WasmException e) {
@@ -271,7 +274,7 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
     }
 
     try {
-      final Module module = compileModule(engine, moduleBytes);
+      final Module module = compileWatModule(engine, watSource);
       blackhole.consume(module.getName());
       blackhole.consume(memoryPressure.length);
       module.close();
@@ -293,48 +296,16 @@ public class ModuleOperationBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkModuleSerialization(final Blackhole blackhole) {
     try {
-      final Module module = compileModule(engine, moduleBytes);
+      final Module module = compileWatModule(engine, watSource);
 
       // Serialize compiled module
-      // TODO: Uncomment when module.serialize() API is implemented
-      final byte[] serialized = new byte[0]; // module.serialize();
+      final byte[] serialized = module.serialize();
       blackhole.consume(serialized.length);
-
-      // Deserialize from bytes
-      // TODO: Uncomment when engine.deserializeModule() API is implemented
-      final Module deserializedModule = module; // engine.deserializeModule(serialized);
-      blackhole.consume(deserializedModule.getName());
 
       // Clean up
       module.close();
-      // deserializedModule.close(); // Same as module now
     } catch (final WasmException e) {
       throw new RuntimeException("Module serialization failed", e);
     }
-  }
-
-  /**
-   * Generates a larger WebAssembly module for testing scalability.
-   *
-   * @return byte array representing a large WebAssembly module
-   */
-  private byte[] generateLargeModule() {
-    // Create a larger module by duplicating and modifying the complex module
-    final byte[] base = COMPLEX_WASM_MODULE.clone();
-    final byte[] large = new byte[base.length * 3];
-
-    // Copy base module multiple times with slight modifications
-    System.arraycopy(base, 0, large, 0, base.length);
-    System.arraycopy(base, 0, large, base.length, base.length);
-    System.arraycopy(base, 0, large, base.length * 2, base.length);
-
-    // Add some variation to make it realistic
-    for (int i = base.length; i < large.length; i++) {
-      if (large[i] != 0x00 && large[i] != 0x61 && large[i] != 0x73 && large[i] != 0x6d) {
-        large[i] = (byte) ((large[i] + i) % 256);
-      }
-    }
-
-    return large;
   }
 }

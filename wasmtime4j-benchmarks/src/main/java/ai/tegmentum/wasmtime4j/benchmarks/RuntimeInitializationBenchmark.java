@@ -1,6 +1,17 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -51,57 +62,6 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
   @Param({"DEFAULT", "OPTIMIZED", "DEBUG"})
   private String configType;
 
-  /** Mock runtime implementation for testing without actual Wasmtime dependencies. */
-  private static final class MockRuntime {
-    private final RuntimeType type;
-    private final String config;
-    private boolean initialized;
-
-    MockRuntime(final RuntimeType type, final String config) {
-      this.type = type;
-      this.config = config;
-      this.initialized = false;
-    }
-
-    void initialize() {
-      // Simulate initialization work based on runtime type
-      final int workAmount = type == RuntimeType.PANAMA ? 100 : 50;
-      final int configMultiplier = "OPTIMIZED".equals(config) ? 2 : "DEBUG".equals(config) ? 3 : 1;
-
-      // Simulate CPU work
-      for (int i = 0; i < workAmount * configMultiplier; i++) {
-        Math.sqrt(i * 1.0);
-      }
-
-      this.initialized = true;
-    }
-
-    void cleanup() {
-      if (this.initialized) {
-        // Simulate cleanup work
-        for (int i = 0; i < 25; i++) {
-          Math.log(i + 1.0);
-        }
-        this.initialized = false;
-      }
-    }
-
-    boolean isInitialized() {
-      return initialized;
-    }
-
-    RuntimeType getType() {
-      return type;
-    }
-
-    String getConfig() {
-      return config;
-    }
-  }
-
-  /** Current runtime instance being benchmarked. */
-  private MockRuntime runtime;
-
   /** Converts string runtime type name to RuntimeType enum, handling AUTO case. */
   private RuntimeType getRuntimeType() {
     if ("AUTO".equals(runtimeTypeName)) {
@@ -110,19 +70,30 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
     return RuntimeType.valueOf(runtimeTypeName);
   }
 
+  /**
+   * Creates an {@link EngineConfig} based on the current {@code configType} parameter.
+   *
+   * @return the engine configuration matching the current config type
+   */
+  private EngineConfig createConfig() {
+    switch (configType) {
+      case "OPTIMIZED":
+        return new EngineConfig().optimizationLevel(OptimizationLevel.SPEED);
+      case "DEBUG":
+        return EngineConfig.forDebug();
+      case "DEFAULT":
+      default:
+        return new EngineConfig();
+    }
+  }
+
   /** Setup performed before each benchmark iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() {
-    // Ensure clean state for each iteration
-    if (runtime != null) {
-      runtime.cleanup();
-    }
-    runtime = null;
-
     // Force garbage collection to ensure clean memory state
     System.gc();
     try {
-      Thread.sleep(10); // Allow GC to complete
+      Thread.sleep(10);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
     }
@@ -131,146 +102,256 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
   /** Cleanup performed after each benchmark iteration. */
   @TearDown(Level.Iteration)
   public void teardownIteration() {
-    if (runtime != null) {
-      runtime.cleanup();
-      runtime = null;
-    }
+    // Each benchmark method manages its own resources.
   }
 
   /**
    * Benchmarks basic engine creation performance.
    *
+   * <p>Creates a WasmRuntime and Engine with the current configuration, then closes both. Measures
+   * the overhead of engine creation across runtime types and configurations.
+   *
    * @param blackhole JMH blackhole to prevent dead code elimination
-   * @return the created runtime instance
+   * @return the created engine instance
    */
   @Benchmark
-  public MockRuntime benchmarkEngineCreation(final Blackhole blackhole) {
-    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
-    blackhole.consume(newRuntime.getType());
-    blackhole.consume(newRuntime.getConfig());
-    return newRuntime;
+  public Engine benchmarkEngineCreation(final Blackhole blackhole) throws WasmException {
+    WasmRuntime wasmRuntime = null;
+    Engine engine = null;
+    try {
+      wasmRuntime = createRuntime(getRuntimeType());
+      engine = createEngine(wasmRuntime);
+      blackhole.consume(engine);
+      return engine;
+    } finally {
+      closeQuietly(engine);
+      closeQuietly(wasmRuntime);
+    }
   }
 
   /**
    * Benchmarks full runtime initialization performance.
    *
+   * <p>Creates a WasmRuntime, Engine with configuration, Store, and compiles the simple WAT module.
+   * Measures the total initialization cost including module compilation.
+   *
    * @param blackhole JMH blackhole to prevent dead code elimination
-   * @return the initialized runtime instance
    */
   @Benchmark
-  public MockRuntime benchmarkRuntimeInitialization(final Blackhole blackhole) {
-    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
-    newRuntime.initialize();
-
-    blackhole.consume(newRuntime.isInitialized());
-    blackhole.consume(newRuntime.getType());
-
-    return newRuntime;
+  public void benchmarkRuntimeInitialization(final Blackhole blackhole) throws WasmException {
+    WasmRuntime wasmRuntime = null;
+    Engine engine = null;
+    Store store = null;
+    Module module = null;
+    try {
+      wasmRuntime = createRuntime(getRuntimeType());
+      engine = wasmRuntime.createEngine(createConfig());
+      store = createStore(engine);
+      module = compileWatModule(engine, SIMPLE_WAT_MODULE);
+      blackhole.consume(store);
+      blackhole.consume(module);
+    } finally {
+      closeQuietly(module);
+      closeQuietly(store);
+      closeQuietly(engine);
+      closeQuietly(wasmRuntime);
+    }
   }
 
   /**
-   * Benchmarks the complete create-and-initialize cycle.
+   * Benchmarks the complete initialization cycle including function invocation.
+   *
+   * <p>Creates a WasmRuntime, Engine with configuration, Store, compiles a module, instantiates it,
+   * retrieves the exported "add" function, and calls it. Measures end-to-end initialization through
+   * first function call.
    *
    * @param blackhole JMH blackhole to prevent dead code elimination
-   * @return the fully initialized runtime instance
    */
   @Benchmark
-  public MockRuntime benchmarkFullInitializationCycle(final Blackhole blackhole) {
-    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
-    newRuntime.initialize();
+  public void benchmarkFullInitializationCycle(final Blackhole blackhole) throws WasmException {
+    WasmRuntime wasmRuntime = null;
+    Engine engine = null;
+    Store store = null;
+    Module module = null;
+    Instance instance = null;
+    try {
+      wasmRuntime = createRuntime(getRuntimeType());
+      engine = wasmRuntime.createEngine(createConfig());
+      store = createStore(engine);
+      module = compileWatModule(engine, SIMPLE_WAT_MODULE);
+      instance = instantiateModule(store, module);
 
-    // Simulate additional post-initialization work
-    final boolean isReady = newRuntime.isInitialized();
-    final String benchmarkId = formatBenchmarkId("full_init", getRuntimeType());
+      final Optional<WasmFunction> addFunc = instance.getFunction("add");
+      if (addFunc.isPresent()) {
+        final WasmValue[] result = addFunc.get().call(WasmValue.i32(3), WasmValue.i32(7));
+        blackhole.consume(result);
+      }
 
-    blackhole.consume(isReady);
-    blackhole.consume(benchmarkId);
-
-    return newRuntime;
+      final String benchmarkId = formatBenchmarkId("full_init", getRuntimeType());
+      blackhole.consume(benchmarkId);
+    } finally {
+      closeQuietly(instance);
+      closeQuietly(module);
+      closeQuietly(store);
+      closeQuietly(engine);
+      closeQuietly(wasmRuntime);
+    }
   }
 
   /**
    * Benchmarks runtime creation and immediate cleanup performance.
    *
+   * <p>Creates the full resource chain (runtime, engine, store, module, instance), invokes a
+   * function, then immediately closes all resources. Focuses on measuring the resource lifecycle
+   * cost.
+   *
    * @param blackhole JMH blackhole to prevent dead code elimination
    */
   @Benchmark
-  public void benchmarkCreateAndCleanup(final Blackhole blackhole) {
-    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
-    newRuntime.initialize();
+  public void benchmarkCreateAndCleanup(final Blackhole blackhole) throws WasmException {
+    WasmRuntime wasmRuntime = null;
+    Engine engine = null;
+    Store store = null;
+    Module module = null;
+    Instance instance = null;
+    try {
+      wasmRuntime = createRuntime(getRuntimeType());
+      engine = wasmRuntime.createEngine(createConfig());
+      store = createStore(engine);
+      module = compileWatModule(engine, SIMPLE_WAT_MODULE);
+      instance = instantiateModule(store, module);
 
-    final boolean wasInitialized = newRuntime.isInitialized();
-    blackhole.consume(wasInitialized);
-
-    newRuntime.cleanup();
-
-    final boolean isCleanedUp = !newRuntime.isInitialized();
-    blackhole.consume(isCleanedUp);
+      final Optional<WasmFunction> addFunc = instance.getFunction("add");
+      if (addFunc.isPresent()) {
+        final WasmValue[] result = addFunc.get().call(WasmValue.i32(1), WasmValue.i32(2));
+        blackhole.consume(result);
+      }
+    } finally {
+      closeQuietly(instance);
+      closeQuietly(module);
+      closeQuietly(store);
+      closeQuietly(engine);
+      closeQuietly(wasmRuntime);
+    }
   }
 
   /**
    * Benchmarks multiple engine creation for pooling scenarios.
    *
+   * <p>Creates 5 separate engines, each with its own store, compiled module, and instance. Each
+   * instance's "add" function is invoked before all resources are closed. Measures the overhead of
+   * managing multiple concurrent engine instances.
+   *
    * @param blackhole JMH blackhole to prevent dead code elimination
    */
   @Benchmark
-  public void benchmarkMultipleEngineCreation(final Blackhole blackhole) {
-    final MockRuntime[] runtimes = new MockRuntime[5];
+  public void benchmarkMultipleEngineCreation(final Blackhole blackhole) throws WasmException {
+    final int engineCount = 5;
+    final WasmRuntime[] runtimes = new WasmRuntime[engineCount];
+    final Engine[] engines = new Engine[engineCount];
+    final Store[] stores = new Store[engineCount];
+    final Module[] modules = new Module[engineCount];
+    final Instance[] instances = new Instance[engineCount];
 
-    for (int i = 0; i < runtimes.length; i++) {
-      runtimes[i] = new MockRuntime(getRuntimeType(), configType);
-      runtimes[i].initialize();
-      blackhole.consume(runtimes[i].isInitialized());
-    }
+    try {
+      for (int i = 0; i < engineCount; i++) {
+        runtimes[i] = createRuntime(getRuntimeType());
+        engines[i] = createEngine(runtimes[i]);
+        stores[i] = createStore(engines[i]);
+        modules[i] = compileWatModule(engines[i], SIMPLE_WAT_MODULE);
+        instances[i] = instantiateModule(stores[i], modules[i]);
 
-    // Cleanup all engines
-    for (final MockRuntime runtime : runtimes) {
-      runtime.cleanup();
-      blackhole.consume(runtime.isInitialized());
+        final Optional<WasmFunction> addFunc = instances[i].getFunction("add");
+        if (addFunc.isPresent()) {
+          final WasmValue[] result = addFunc.get().call(WasmValue.i32(i), WasmValue.i32(i + 1));
+          blackhole.consume(result);
+        }
+      }
+    } finally {
+      for (int i = engineCount - 1; i >= 0; i--) {
+        closeQuietly(instances[i]);
+        closeQuietly(modules[i]);
+        closeQuietly(stores[i]);
+        closeQuietly(engines[i]);
+        closeQuietly(runtimes[i]);
+      }
     }
   }
 
   /**
    * Benchmarks engine creation with different configuration types.
    *
+   * <p>Creates three engines with DEFAULT, OPTIMIZED, and DEBUG configurations respectively,
+   * comparing the overhead of each configuration path.
+   *
    * @param blackhole JMH blackhole to prevent dead code elimination
    */
   @Benchmark
-  public void benchmarkConfigurationOverhead(final Blackhole blackhole) {
-    // Create engines with each configuration type to compare overhead
-    final String[] configs = {"DEFAULT", "OPTIMIZED", "DEBUG"};
+  public void benchmarkConfigurationOverhead(final Blackhole blackhole) throws WasmException {
+    final EngineConfig[] configs = {
+      new EngineConfig(), EngineConfig.forSpeed(), EngineConfig.forDebug()
+    };
 
-    for (final String config : configs) {
-      final MockRuntime configRuntime = new MockRuntime(getRuntimeType(), config);
-      configRuntime.initialize();
+    for (final EngineConfig config : configs) {
+      WasmRuntime wasmRuntime = null;
+      Engine engine = null;
+      Store store = null;
+      Module module = null;
+      Instance instance = null;
+      try {
+        wasmRuntime = createRuntime(getRuntimeType());
+        engine = wasmRuntime.createEngine(config);
+        store = createStore(engine);
+        module = compileWatModule(engine, SIMPLE_WAT_MODULE);
+        instance = instantiateModule(store, module);
 
-      blackhole.consume(configRuntime.getConfig());
-      blackhole.consume(configRuntime.isInitialized());
-
-      configRuntime.cleanup();
+        blackhole.consume(config.getOptimizationLevel());
+        blackhole.consume(instance);
+      } finally {
+        closeQuietly(instance);
+        closeQuietly(module);
+        closeQuietly(store);
+        closeQuietly(engine);
+        closeQuietly(wasmRuntime);
+      }
     }
   }
 
   /**
    * Benchmarks runtime initialization under memory pressure.
    *
+   * <p>Allocates 100 arrays of 1KB each to simulate memory pressure, then creates the full resource
+   * chain (runtime, engine, store, module). Measures initialization performance when the JVM heap
+   * is under load.
+   *
    * @param blackhole JMH blackhole to prevent dead code elimination
    */
   @Benchmark
-  public void benchmarkInitializationWithMemoryPressure(final Blackhole blackhole) {
+  public void benchmarkInitializationWithMemoryPressure(final Blackhole blackhole)
+      throws WasmException {
     // Allocate memory to simulate pressure
     final byte[][] memoryPressure = new byte[100][];
     for (int i = 0; i < memoryPressure.length; i++) {
-      memoryPressure[i] = new byte[1024]; // 1KB per allocation
+      memoryPressure[i] = new byte[1024];
       blackhole.consume(memoryPressure[i].length);
     }
 
-    final MockRuntime newRuntime = new MockRuntime(getRuntimeType(), configType);
-    newRuntime.initialize();
-
-    blackhole.consume(newRuntime.isInitialized());
-
-    newRuntime.cleanup();
+    WasmRuntime wasmRuntime = null;
+    Engine engine = null;
+    Store store = null;
+    Module module = null;
+    try {
+      wasmRuntime = createRuntime(getRuntimeType());
+      engine = wasmRuntime.createEngine(createConfig());
+      store = createStore(engine);
+      module = compileWatModule(engine, SIMPLE_WAT_MODULE);
+      blackhole.consume(module);
+    } finally {
+      closeQuietly(module);
+      closeQuietly(store);
+      closeQuietly(engine);
+      closeQuietly(wasmRuntime);
+    }
 
     // Clear memory pressure
     for (int i = 0; i < memoryPressure.length; i++) {

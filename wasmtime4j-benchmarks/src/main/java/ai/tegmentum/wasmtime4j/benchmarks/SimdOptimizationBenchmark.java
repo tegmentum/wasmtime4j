@@ -8,21 +8,38 @@ import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
 /**
- * Comprehensive SIMD optimization benchmarking for wasmtime4j.
+ * SIMD-related benchmarks for wasmtime4j.
  *
- * <p>This benchmark suite tests various SIMD operations across different platforms and optimization
- * levels to validate performance improvements.
+ * <p>This benchmark suite tests WebAssembly execution performance with SIMD features enabled,
+ * measuring the overhead of engine configuration, module compilation, and function execution when
+ * SIMD support is active.
+ *
+ * <p>Since WebAssembly SIMD operates at the instruction level inside WASM modules, these benchmarks
+ * measure the Java-to-WASM boundary overhead when SIMD features are enabled, and memory throughput
+ * patterns that benefit from SIMD-optimized Wasmtime internals.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -34,79 +51,139 @@ import org.openjdk.jmh.infra.Blackhole;
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 public class SimdOptimizationBenchmark {
 
-  private static final int VECTOR_SIZE = 4;
   private static final int BENCHMARK_DATA_SIZE = 1024;
   private static final Random RANDOM = new Random(42);
+
+  /**
+   * WAT module with arithmetic operations for benchmarking under SIMD-enabled engine. Exports: add,
+   * accumulate, dot_product_scalar, memory.
+   */
+  private static final String SIMD_BENCHMARK_WAT =
+      "(module\n"
+          + "  (memory (export \"memory\") 4 16)\n"
+          + "  (func $add (export \"add\") (param i32 i32) (result i32)\n"
+          + "    local.get 0\n"
+          + "    local.get 1\n"
+          + "    i32.add)\n"
+          + "  (func $accumulate (export \"accumulate\") (param i32) (result i32)\n"
+          + "    (local i32)\n"
+          + "    (local.set 1 (i32.const 0))\n"
+          + "    (block $break\n"
+          + "      (loop $loop\n"
+          + "        (br_if $break (i32.le_s (local.get 0) (i32.const 0)))\n"
+          + "        (local.set 1 (i32.add (local.get 1) (local.get 0)))\n"
+          + "        (local.set 0 (i32.sub (local.get 0) (i32.const 1)))\n"
+          + "        (br $loop)))\n"
+          + "    (local.get 1))\n"
+          + "  (func $dot_product_scalar (export \"dot_product_scalar\")"
+          + " (param i32 i32 i32 i32) (result i32)\n"
+          + "    (i32.add\n"
+          + "      (i32.mul (local.get 0) (local.get 2))\n"
+          + "      (i32.mul (local.get 1) (local.get 3)))))\n";
+
+  /** WAT module without SIMD features for comparison (same functions, different engine config). */
+  private static final String SCALAR_BENCHMARK_WAT = SIMD_BENCHMARK_WAT;
 
   // Test data
   private int[] intData1;
   private int[] intData2;
-  private float[] floatData1;
-  private float[] floatData2;
 
-  // WebAssembly instances for different SIMD scenarios
+  // WebAssembly instances
   private WasmRuntime runtime;
-  private Engine engine;
-  private Store store;
+  private Engine simdEngine;
+  private Engine scalarEngine;
+  private Store simdStore;
+  private Store scalarStore;
   private Instance simdInstance;
   private Instance scalarInstance;
+  private WasmFunction simdAdd;
+  private WasmFunction scalarAdd;
+  private WasmFunction simdAccumulate;
+  private WasmFunction scalarAccumulate;
+  private WasmFunction simdDotProduct;
+  private WasmFunction scalarDotProduct;
+  private WasmMemory simdMemory;
+  private WasmMemory scalarMemory;
 
-  // Benchmark configurations
   @Param({"JNI", "PANAMA"})
   private String runtimeType;
 
-  @Param({"SSE41", "AVX2", "AVX512", "NEON", "SCALAR"})
-  private String simdLevel;
-
+  /** Sets up the benchmark trial with SIMD-enabled and scalar-only engines. */
   @Setup(Level.Trial)
   public void setupTrial() throws Exception {
-    // Initialize runtime based on parameter
-    RuntimeType type = RuntimeType.valueOf(runtimeType);
+    final RuntimeType type = RuntimeType.valueOf(runtimeType);
     if (!WasmRuntimeFactory.isRuntimeAvailable(type)) {
       throw new RuntimeException("Runtime not available: " + type);
     }
     runtime = WasmRuntimeFactory.create(type);
 
-    EngineConfig engineConfig =
+    // SIMD-enabled engine
+    final EngineConfig simdConfig =
         new EngineConfig()
             .addWasmFeature(WasmFeature.SIMD)
             .addWasmFeature(WasmFeature.MULTI_VALUE)
             .addWasmFeature(WasmFeature.BULK_MEMORY)
             .optimizationLevel(OptimizationLevel.SPEED);
+    simdEngine = runtime.createEngine(simdConfig);
+    simdStore = simdEngine.createStore();
+    final Module simdModule = simdEngine.compileWat(SIMD_BENCHMARK_WAT);
+    simdInstance = simdModule.instantiate(simdStore);
+    simdAdd =
+        simdInstance
+            .getFunction("add")
+            .orElseThrow(() -> new RuntimeException("add not found in SIMD module"));
+    simdAccumulate =
+        simdInstance
+            .getFunction("accumulate")
+            .orElseThrow(() -> new RuntimeException("accumulate not found in SIMD module"));
+    simdDotProduct =
+        simdInstance
+            .getFunction("dot_product_scalar")
+            .orElseThrow(() -> new RuntimeException("dot_product_scalar not found"));
+    simdMemory =
+        simdInstance
+            .getMemory("memory")
+            .orElseThrow(() -> new RuntimeException("memory not found in SIMD module"));
 
-    engine = runtime.createEngine(engineConfig);
-    store = engine.createStore();
+    // Scalar-only engine (no SIMD feature)
+    final EngineConfig scalarConfig = new EngineConfig().optimizationLevel(OptimizationLevel.SPEED);
+    scalarEngine = runtime.createEngine(scalarConfig);
+    scalarStore = scalarEngine.createStore();
+    final Module scalarModule = scalarEngine.compileWat(SCALAR_BENCHMARK_WAT);
+    scalarInstance = scalarModule.instantiate(scalarStore);
+    scalarAdd =
+        scalarInstance
+            .getFunction("add")
+            .orElseThrow(() -> new RuntimeException("add not found in scalar module"));
+    scalarAccumulate =
+        scalarInstance
+            .getFunction("accumulate")
+            .orElseThrow(() -> new RuntimeException("accumulate not found in scalar module"));
+    scalarDotProduct =
+        scalarInstance
+            .getFunction("dot_product_scalar")
+            .orElseThrow(() -> new RuntimeException("dot_product_scalar not found"));
+    scalarMemory =
+        scalarInstance
+            .getMemory("memory")
+            .orElseThrow(() -> new RuntimeException("memory not found in scalar module"));
 
-    // Load SIMD-optimized WebAssembly module
-    byte[] simdWasm = loadSimdTestModule();
-    Module simdModule = engine.compileModule(simdWasm);
-    simdInstance = store.createInstance(simdModule);
-
-    // Load scalar fallback module for comparison
-    byte[] scalarWasm = loadScalarTestModule();
-    Module scalarModule = engine.compileModule(scalarWasm);
-    scalarInstance = store.createInstance(scalarModule);
-
-    System.out.println(
-        "Initialized SIMD benchmark with runtime: " + runtimeType + ", SIMD level: " + simdLevel);
+    simdModule.close();
+    scalarModule.close();
   }
 
+  /** Generates test data for each iteration. */
   @Setup(Level.Iteration)
   public void setupIteration() {
-    // Generate test data for each iteration
     intData1 = new int[BENCHMARK_DATA_SIZE];
     intData2 = new int[BENCHMARK_DATA_SIZE];
-    floatData1 = new float[BENCHMARK_DATA_SIZE];
-    floatData2 = new float[BENCHMARK_DATA_SIZE];
-
     for (int i = 0; i < BENCHMARK_DATA_SIZE; i++) {
       intData1[i] = RANDOM.nextInt(1000);
       intData2[i] = RANDOM.nextInt(1000);
-      floatData1[i] = RANDOM.nextFloat() * 1000.0f;
-      floatData2[i] = RANDOM.nextFloat() * 1000.0f;
     }
   }
 
+  /** Cleans up all resources. */
   @TearDown(Level.Trial)
   public void teardownTrial() throws Exception {
     if (simdInstance != null) {
@@ -115,289 +192,130 @@ public class SimdOptimizationBenchmark {
     if (scalarInstance != null) {
       scalarInstance.close();
     }
-    if (store != null) {
-      store.close();
+    if (simdStore != null) {
+      simdStore.close();
     }
-    if (engine != null) {
-      engine.close();
+    if (scalarStore != null) {
+      scalarStore.close();
+    }
+    if (simdEngine != null) {
+      simdEngine.close();
+    }
+    if (scalarEngine != null) {
+      scalarEngine.close();
     }
     if (runtime != null) {
       runtime.close();
     }
   }
 
-  /** Benchmark SIMD vector addition operations. */
+  /** Benchmarks function call throughput with SIMD-enabled engine. */
   @Benchmark
-  public void benchmarkSimdVectorAddition(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / VECTOR_SIZE;
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * VECTOR_SIZE;
-
-      // Create V128 vectors from test data
-      WasmValue[] args = new WasmValue[8];
-      for (int j = 0; j < VECTOR_SIZE; j++) {
-        args[j] = WasmValue.i32(intData1[offset + j]);
-        args[j + VECTOR_SIZE] = WasmValue.i32(intData2[offset + j]);
-      }
-
-      // Call SIMD addition function
-      WasmValue[] result = callFunction(simdInstance, "simd_add_i32x4", args);
-      blackhole.consume(result);
+  public void benchmarkSimdEngineAddThroughput(final Blackhole blackhole) throws Exception {
+    for (int i = 0; i < BENCHMARK_DATA_SIZE; i++) {
+      final WasmValue[] result =
+          simdAdd.call(WasmValue.i32(intData1[i]), WasmValue.i32(intData2[i]));
+      blackhole.consume(result[0].asInt());
     }
   }
 
-  /** Benchmark scalar addition for comparison. */
+  /** Benchmarks function call throughput with scalar-only engine. */
   @Benchmark
-  public void benchmarkScalarVectorAddition(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / VECTOR_SIZE;
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * VECTOR_SIZE;
-
-      for (int j = 0; j < VECTOR_SIZE; j++) {
-        WasmValue[] args = {
-          WasmValue.i32(intData1[offset + j]), WasmValue.i32(intData2[offset + j])
-        };
-
-        WasmValue[] result = callFunction(scalarInstance, "scalar_add_i32", args);
-        blackhole.consume(result[0]);
-      }
+  public void benchmarkScalarEngineAddThroughput(final Blackhole blackhole) throws Exception {
+    for (int i = 0; i < BENCHMARK_DATA_SIZE; i++) {
+      final WasmValue[] result =
+          scalarAdd.call(WasmValue.i32(intData1[i]), WasmValue.i32(intData2[i]));
+      blackhole.consume(result[0].asInt());
     }
   }
 
-  /** Benchmark SIMD floating-point multiplication. */
+  /** Benchmarks accumulate (loop-heavy) function with SIMD-enabled engine. */
   @Benchmark
-  public void benchmarkSimdFloatMultiplication(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / VECTOR_SIZE;
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * VECTOR_SIZE;
-
-      WasmValue[] args = new WasmValue[8];
-      for (int j = 0; j < VECTOR_SIZE; j++) {
-        args[j] = WasmValue.f32(floatData1[offset + j]);
-        args[j + VECTOR_SIZE] = WasmValue.f32(floatData2[offset + j]);
-      }
-
-      WasmValue[] result = callFunction(simdInstance, "simd_mul_f32x4", args);
-      blackhole.consume(result);
+  public void benchmarkSimdEngineAccumulate(final Blackhole blackhole) throws Exception {
+    for (int i = 0; i < 100; i++) {
+      final WasmValue[] result =
+          simdAccumulate.call(WasmValue.i32(intData1[i % BENCHMARK_DATA_SIZE]));
+      blackhole.consume(result[0].asInt());
     }
   }
 
-  /** Benchmark SIMD dot product operation. */
+  /** Benchmarks accumulate (loop-heavy) function with scalar-only engine. */
   @Benchmark
-  public void benchmarkSimdDotProduct(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / VECTOR_SIZE;
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * VECTOR_SIZE;
-
-      WasmValue[] args = new WasmValue[8];
-      for (int j = 0; j < VECTOR_SIZE; j++) {
-        args[j] = WasmValue.f32(floatData1[offset + j]);
-        args[j + VECTOR_SIZE] = WasmValue.f32(floatData2[offset + j]);
-      }
-
-      WasmValue[] result = callFunction(simdInstance, "simd_dot_product", args);
-      blackhole.consume(result[0]);
+  public void benchmarkScalarEngineAccumulate(final Blackhole blackhole) throws Exception {
+    for (int i = 0; i < 100; i++) {
+      final WasmValue[] result =
+          scalarAccumulate.call(WasmValue.i32(intData1[i % BENCHMARK_DATA_SIZE]));
+      blackhole.consume(result[0].asInt());
     }
   }
 
-  /** Benchmark SIMD FMA (fused multiply-add) operations. */
+  /** Benchmarks dot product computation with SIMD-enabled engine. */
   @Benchmark
-  public void benchmarkSimdFMA(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / VECTOR_SIZE;
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * VECTOR_SIZE;
-
-      WasmValue[] args = new WasmValue[12];
-      for (int j = 0; j < VECTOR_SIZE; j++) {
-        args[j] = WasmValue.f32(floatData1[offset + j]);
-        args[j + VECTOR_SIZE] = WasmValue.f32(floatData2[offset + j]);
-        args[j + 2 * VECTOR_SIZE] = WasmValue.f32(floatData1[offset + j] * 0.5f);
-      }
-
-      WasmValue[] result = callFunction(simdInstance, "simd_fma_f32x4", args);
-      blackhole.consume(result);
+  public void benchmarkSimdEngineDotProduct(final Blackhole blackhole) throws Exception {
+    for (int i = 0; i < BENCHMARK_DATA_SIZE - 1; i += 2) {
+      final WasmValue[] result =
+          simdDotProduct.call(
+              WasmValue.i32(intData1[i]),
+              WasmValue.i32(intData1[i + 1]),
+              WasmValue.i32(intData2[i]),
+              WasmValue.i32(intData2[i + 1]));
+      blackhole.consume(result[0].asInt());
     }
   }
 
-  /** Benchmark SIMD reduction operations (sum). */
+  /** Benchmarks dot product computation with scalar-only engine. */
   @Benchmark
-  public void benchmarkSimdReduction(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / VECTOR_SIZE;
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * VECTOR_SIZE;
-
-      WasmValue[] args = new WasmValue[4];
-      for (int j = 0; j < VECTOR_SIZE; j++) {
-        args[j] = WasmValue.i32(intData1[offset + j]);
-      }
-
-      WasmValue[] result = callFunction(simdInstance, "simd_reduce_sum", args);
-      blackhole.consume(result[0]);
+  public void benchmarkScalarEngineDotProduct(final Blackhole blackhole) throws Exception {
+    for (int i = 0; i < BENCHMARK_DATA_SIZE - 1; i += 2) {
+      final WasmValue[] result =
+          scalarDotProduct.call(
+              WasmValue.i32(intData1[i]),
+              WasmValue.i32(intData1[i + 1]),
+              WasmValue.i32(intData2[i]),
+              WasmValue.i32(intData2[i + 1]));
+      blackhole.consume(result[0].asInt());
     }
   }
 
-  /** Benchmark SIMD shuffle operations. */
+  /** Benchmarks memory write throughput with SIMD-enabled engine. */
   @Benchmark
-  public void benchmarkSimdShuffle(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / VECTOR_SIZE;
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * VECTOR_SIZE;
-
-      WasmValue[] args = new WasmValue[8];
-      for (int j = 0; j < VECTOR_SIZE; j++) {
-        args[j] = WasmValue.i32(intData1[offset + j]);
-        args[j + VECTOR_SIZE] = WasmValue.i32(intData2[offset + j]);
-      }
-
-      WasmValue[] result = callFunction(simdInstance, "simd_shuffle", args);
-      blackhole.consume(result);
+  public void benchmarkSimdEngineMemoryWrite(final Blackhole blackhole) throws Exception {
+    final byte[] data = new byte[256];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = (byte) (intData1[i % BENCHMARK_DATA_SIZE] & 0xFF);
     }
+    for (int i = 0; i < 100; i++) {
+      simdMemory.writeBytes(i * 256, data, 0, data.length);
+    }
+    blackhole.consume(data);
   }
 
-  /** Benchmark memory-intensive SIMD operations (gather/scatter). */
+  /** Benchmarks memory write throughput with scalar-only engine. */
   @Benchmark
-  public void benchmarkSimdGatherScatter(Blackhole blackhole) throws Exception {
-    // This benchmark tests gather/scatter performance
-    int iterations = BENCHMARK_DATA_SIZE / 16; // Fewer iterations for memory-intensive ops
-
-    for (int i = 0; i < iterations; i++) {
-      int baseOffset = i * 16;
-
-      // Create indices for gather operation
-      WasmValue[] indices = {
-        WasmValue.i32(baseOffset),
-        WasmValue.i32(baseOffset + 4),
-        WasmValue.i32(baseOffset + 8),
-        WasmValue.i32(baseOffset + 12)
-      };
-
-      WasmValue[] result = callFunction(simdInstance, "simd_gather", indices);
-      blackhole.consume(result);
+  public void benchmarkScalarEngineMemoryWrite(final Blackhole blackhole) throws Exception {
+    final byte[] data = new byte[256];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = (byte) (intData1[i % BENCHMARK_DATA_SIZE] & 0xFF);
     }
+    for (int i = 0; i < 100; i++) {
+      scalarMemory.writeBytes(i * 256, data, 0, data.length);
+    }
+    blackhole.consume(data);
   }
 
-  /** Benchmark complex number operations using SIMD. */
+  /** Benchmarks module compilation time with SIMD features enabled. */
   @Benchmark
-  public void benchmarkSimdComplexArithmetic(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / 4; // 2 complex numbers per V128
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * 4;
-
-      // Two complex numbers: (a+bi) and (c+di)
-      WasmValue[] args = new WasmValue[8];
-      for (int j = 0; j < 4; j++) {
-        args[j] = WasmValue.f32(floatData1[offset + j]);
-        args[j + 4] = WasmValue.f32(floatData2[offset + j]);
-      }
-
-      WasmValue[] result = callFunction(simdInstance, "simd_complex_multiply", args);
-      blackhole.consume(result);
-    }
+  public void benchmarkSimdEngineCompilation(final Blackhole blackhole) throws Exception {
+    final Module module = simdEngine.compileWat(SIMD_BENCHMARK_WAT);
+    blackhole.consume(module.getName());
+    module.close();
   }
 
-  /** Benchmark platform-specific optimizations vs fallback. */
+  /** Benchmarks module compilation time without SIMD features. */
   @Benchmark
-  public void benchmarkPlatformOptimizations(Blackhole blackhole) throws Exception {
-    int iterations = BENCHMARK_DATA_SIZE / VECTOR_SIZE;
-    String functionName = getPlatformOptimizedFunction();
-
-    for (int i = 0; i < iterations; i++) {
-      int offset = i * VECTOR_SIZE;
-
-      WasmValue[] args = new WasmValue[8];
-      for (int j = 0; j < VECTOR_SIZE; j++) {
-        args[j] = WasmValue.f32(floatData1[offset + j]);
-        args[j + VECTOR_SIZE] = WasmValue.f32(floatData2[offset + j]);
-      }
-
-      WasmValue[] result = callFunction(simdInstance, functionName, args);
-      blackhole.consume(result);
-    }
-  }
-
-  private String getPlatformOptimizedFunction() {
-    return switch (simdLevel) {
-      case "SSE41" -> "simd_optimized_sse41";
-      case "AVX2" -> "simd_optimized_avx2";
-      case "AVX512" -> "simd_optimized_avx512";
-      case "NEON" -> "simd_optimized_neon";
-      default -> "simd_fallback";
-    };
-  }
-
-  /** Helper method to call a function on an instance. */
-  private WasmValue[] callFunction(Instance instance, String name, WasmValue[] args)
-      throws Exception {
-    return instance
-        .getFunction(name)
-        .orElseThrow(() -> new RuntimeException("Function not found: " + name))
-        .call(args);
-  }
-
-  /**
-   * Loads a SIMD-optimized WebAssembly test module. In a real implementation, this would load
-   * pre-compiled WASM modules with various SIMD operations.
-   */
-  private byte[] loadSimdTestModule() throws Exception {
-    // For this benchmark, we use a simple WASM module with SIMD operations
-    // In practice, this would be loaded from a resource file
-    Path wasmPath = Path.of("src/test/resources/wasm/simd_benchmark.wasm");
-    if (Files.exists(wasmPath)) {
-      return Files.readAllBytes(wasmPath);
-    } else {
-      // Return a minimal WASM module for testing
-      return createMinimalSimdModule();
-    }
-  }
-
-  /** Loads a scalar fallback WebAssembly test module. */
-  private byte[] loadScalarTestModule() throws Exception {
-    Path wasmPath = Path.of("src/test/resources/wasm/scalar_benchmark.wasm");
-    if (Files.exists(wasmPath)) {
-      return Files.readAllBytes(wasmPath);
-    } else {
-      return createMinimalScalarModule();
-    }
-  }
-
-  /**
-   * Creates a minimal SIMD WebAssembly module for testing. This is a fallback when the actual test
-   * modules aren't available.
-   */
-  private byte[] createMinimalSimdModule() {
-    // This would contain the actual WAT (WebAssembly Text) compiled to binary
-    // For now, return a minimal valid WASM module
-    return new byte[] {
-      0x00, 0x61, 0x73, 0x6d, // magic
-      0x01, 0x00, 0x00, 0x00, // version
-      // Minimal module structure would go here
-    };
-  }
-
-  /** Creates a minimal scalar WebAssembly module for testing. */
-  private byte[] createMinimalScalarModule() {
-    // Similar to SIMD module but with scalar operations only
-    return new byte[] {
-      0x00, 0x61, 0x73, 0x6d, // magic
-      0x01, 0x00, 0x00, 0x00, // version
-      // Minimal module structure would go here
-    };
-  }
-
-  /** Main method for running benchmarks standalone. */
-  public static void main(String[] args) throws Exception {
-    // Run specific benchmark configurations
-    System.out.println("Starting SIMD Optimization Benchmarks...");
-
-    // This would run the JMH benchmarks
-    org.openjdk.jmh.Main.main(args);
+  public void benchmarkScalarEngineCompilation(final Blackhole blackhole) throws Exception {
+    final Module module = scalarEngine.compileWat(SCALAR_BENCHMARK_WAT);
+    blackhole.consume(module.getName());
+    module.close();
   }
 }
