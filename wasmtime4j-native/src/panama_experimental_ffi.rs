@@ -28,13 +28,10 @@ pub extern "C" fn wasmtime4j_create_experimental_features() -> *mut c_void {
 }
 
 fn create_experimental_features_impl() -> WasmtimeResult<*mut c_void> {
-    // Create both experimental and advanced features
+    // Create experimental features config - this is what exp_core functions expect
     let exp_config = exp_core::create_experimental_features_config()?;
-    let adv_features = adv_core::create_advanced_features()?;
 
-    // For simplicity, we'll return the advanced features pointer
-    // In a production implementation, you might want a combined structure
-    let ptr = Box::into_raw(adv_features) as *mut c_void;
+    let ptr = Box::into_raw(exp_config) as *mut c_void;
 
     log::info!("Created native experimental features instance: ptr={:p}", ptr);
     Ok(ptr)
@@ -341,7 +338,7 @@ pub extern "C" fn wasmtime4j_destroy_experimental_features(handle: *mut c_void) 
     }
 
     unsafe {
-        adv_core::destroy_advanced_features(handle);
+        exp_core::destroy_experimental_features_config(handle);
     }
 
     log::info!("Destroyed experimental features instance: {:p}", handle);

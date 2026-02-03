@@ -276,11 +276,14 @@ mod tests {
         let ptr = into_raw(value);
 
         unsafe {
-            let reentrant_ref = ref_from_raw::<String>(ptr);
-            let guard = reentrant_ref.lock();
-            assert_eq!(*guard, "hello");
+            // Use a scope to ensure the lock guard is dropped before dispose
+            {
+                let reentrant_ref = ref_from_raw::<String>(ptr);
+                let guard = reentrant_ref.lock();
+                assert_eq!(*guard, "hello");
+            } // guard dropped here, releasing the lock before memory is freed
 
-            // Clean up
+            // Clean up - now safe since no references exist
             dispose_inner::<String>(ptr as *mut _);
         }
     }
