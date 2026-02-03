@@ -7,6 +7,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -477,8 +478,8 @@ public final class PanamaMemory implements WasmMemory {
       final MemorySegment storePtr = panamaStore.getNativeStore();
       final int result = NATIVE_BINDINGS.panamaMemoryIsShared(memPtr, storePtr, isSharedOut);
       if (result != 0) {
-        // On failure, return false as safe default
-        return false;
+        throw new RuntimeException(
+            "Failed to query memory shared status (native error code: " + result + ")");
       }
       return isSharedOut.get(ValueLayout.JAVA_INT, 0) != 0;
     }
@@ -687,9 +688,7 @@ public final class PanamaMemory implements WasmMemory {
             memPtr, storePtr, offset, expected, newValue, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -716,9 +715,7 @@ public final class PanamaMemory implements WasmMemory {
             memPtr, storePtr, offset, expected, newValue, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_LONG, 0);
@@ -743,9 +740,7 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -770,9 +765,7 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_LONG, 0);
@@ -796,9 +789,7 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicStoreI32(memPtr, storePtr, offset, value);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
   }
 
@@ -820,9 +811,7 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicStoreI64(memPtr, storePtr, offset, value);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
   }
 
@@ -846,9 +835,7 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicAddI32(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -874,9 +861,7 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicAddI64(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_LONG, 0);
@@ -902,9 +887,7 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicAndI32(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -930,9 +913,7 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicOrI32(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -958,9 +939,7 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicXorI32(memPtr, storePtr, offset, value, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -1166,9 +1145,7 @@ public final class PanamaMemory implements WasmMemory {
     final int errorCode = NATIVE_BINDINGS.memoryAtomicFence(memPtr, storePtr);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
   }
 
@@ -1195,9 +1172,7 @@ public final class PanamaMemory implements WasmMemory {
         NATIVE_BINDINGS.memoryAtomicNotify(memPtr, storePtr, offset, count, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -1227,9 +1202,7 @@ public final class PanamaMemory implements WasmMemory {
             memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -1259,9 +1232,7 @@ public final class PanamaMemory implements WasmMemory {
             memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
 
     if (errorCode != 0) {
-      // Atomic operations require shared memory - throw UnsupportedOperationException
-      throw new UnsupportedOperationException(
-          "Atomic operations require shared memory (error code: " + errorCode + ")");
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
@@ -1384,5 +1355,48 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalStateException("Store is not a PanamaStore");
     }
     return ((PanamaStore) instance.getStore()).getNativeStore();
+  }
+
+  /**
+   * Retrieves the last native error message from the Wasmtime runtime.
+   *
+   * @return the error message, or null if no error
+   */
+  private static String retrieveNativeErrorMessage() {
+    try {
+      final MemorySegment errorPtr = NATIVE_BINDINGS.getLastErrorMessage();
+      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
+        return null;
+      }
+      try {
+        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
+      } finally {
+        NATIVE_BINDINGS.freeErrorMessage(errorPtr);
+      }
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
+      return null;
+    }
+  }
+
+  /**
+   * Throws an appropriate exception for a failed atomic operation based on
+   * the native error code and error message.
+   *
+   * @param errorCode the native error code
+   * @param operation description of the failed operation
+   */
+  private static void throwAtomicOperationError(final int errorCode, final String operation) {
+    final String nativeMessage = retrieveNativeErrorMessage();
+    final String message;
+    if (nativeMessage != null && !nativeMessage.isEmpty()) {
+      message = operation + ": " + nativeMessage;
+    } else {
+      message = operation + " (native error code: " + errorCode + ")";
+    }
+    if (nativeMessage != null && nativeMessage.contains("shared memory")) {
+      throw new UnsupportedOperationException(message);
+    }
+    throw new RuntimeException(message);
   }
 }

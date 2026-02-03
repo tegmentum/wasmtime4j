@@ -92,7 +92,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <wasmtime4j.native.mode>require</wasmtime4j.native.mode>
+                        <wasmtime4j.native.mode>auto</wasmtime4j.native.mode>
                         <wasmtime4j.native.strategy1>false</wasmtime4j.native.strategy1>
                         <wasmtime4j.native.tmpdir>${project.build.directory}/wasmtime4j-native</wasmtime4j.native.tmpdir>
                     </systemPropertyVariables>
@@ -109,6 +109,33 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+
+            <!-- Copy native libraries from wasmtime4j-native build output for tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-native-for-tests</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/../wasmtime4j-native/target/classes</directory>
+                                    <includes>
+                                        <include>natives/**</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                            <overwrite>true</overwrite>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Unpack native libraries from wasmtime4j-native for packaging -->
@@ -130,7 +157,6 @@
                             <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                             <overWriteReleases>true</overWriteReleases>
                             <overWriteSnapshots>true</overWriteSnapshots>
-                            <!-- Skip if artifact not available (for compile-only builds) -->
                             <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
                         </configuration>
                     </execution>

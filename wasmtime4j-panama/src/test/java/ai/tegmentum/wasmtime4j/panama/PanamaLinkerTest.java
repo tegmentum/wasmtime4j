@@ -706,17 +706,15 @@ class PanamaLinkerTest {
     }
 
     @Test
-    @DisplayName("defineUnknownImportsAsTraps should throw for unimplemented native function")
+    @DisplayName("defineUnknownImportsAsTraps should succeed for module with unknown imports")
     void shouldDefineUnknownImportsAsTraps() throws Exception {
       final PanamaLinker<?> linker = createLinker();
       final PanamaModule module = compileWat(IMPORT_MODULE_WAT);
       final PanamaStore store = createStore();
 
-      // Native function wasmtime4j_panama_linker_define_unknown_imports_as_traps not yet
-      // implemented
-      assertThrows(
-          IllegalArgumentException.class, () -> linker.defineUnknownImportsAsTraps(store, module));
-      LOGGER.info("defineUnknownImportsAsTraps correctly throws for unimplemented native");
+      // Native function defines trap stubs for unknown imports
+      assertDoesNotThrow(() -> linker.defineUnknownImportsAsTraps(store, module));
+      LOGGER.info("defineUnknownImportsAsTraps successfully defined trap stubs for unknown imports");
     }
 
     @Test
@@ -744,17 +742,17 @@ class PanamaLinkerTest {
     }
 
     @Test
-    @DisplayName("defineUnknownImportsAsDefaultValues should throw for unimplemented native")
+    @DisplayName(
+        "defineUnknownImportsAsDefaultValues should succeed for module with unknown imports")
     void shouldDefineUnknownImportsAsDefaultValues() throws Exception {
       final PanamaLinker<?> linker = createLinker();
       final PanamaModule module = compileWat(IMPORT_MODULE_WAT);
       final PanamaStore store = createStore();
 
-      // Native function not yet implemented
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.defineUnknownImportsAsDefaultValues(store, module));
-      LOGGER.info("defineUnknownImportsAsDefaultValues correctly throws for unimplemented native");
+      // Native function defines default-value stubs for unknown imports
+      assertDoesNotThrow(() -> linker.defineUnknownImportsAsDefaultValues(store, module));
+      LOGGER.info(
+          "defineUnknownImportsAsDefaultValues successfully defined default-value stubs");
     }
   }
 

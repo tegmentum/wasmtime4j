@@ -792,8 +792,10 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureNotClosed();
     try {
       return nativeIsShared(getNativeHandle(), store.getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
     } catch (final Exception e) {
-      return false; // Default to non-shared if query fails
+      throw new RuntimeException("Failed to query memory shared status", e);
     }
   }
 

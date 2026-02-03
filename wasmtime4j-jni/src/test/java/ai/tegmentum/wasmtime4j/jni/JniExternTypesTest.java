@@ -609,4 +609,138 @@ class JniExternTypesTest {
       return true;
     }
   }
+
+  // --- Behavioral Tests ---
+  // These test actual method behavior using null store references.
+  // The constructors and getType()/getNativeHandle() methods are pure Java
+  // and do not touch the store reference, so null is safe here.
+
+  private static final long TEST_HANDLE = 0xDEADBEEFL;
+
+  @Nested
+  @DisplayName("JniExternFunc Behavioral Tests")
+  class JniExternFuncBehavioralTests {
+
+    @Test
+    @DisplayName("getType returns FUNC")
+    void getTypeReturnsFuncType() {
+      final JniExternFunc extern = new JniExternFunc(TEST_HANDLE, null);
+      assertEquals(ExternType.FUNC, extern.getType(),
+          "JniExternFunc.getType() should return ExternType.FUNC");
+    }
+
+    @Test
+    @DisplayName("getNativeHandle returns stored handle")
+    void getNativeHandleReturnsStoredHandle() {
+      final JniExternFunc extern = new JniExternFunc(TEST_HANDLE, null);
+      assertEquals(TEST_HANDLE, extern.getNativeHandle(),
+          "getNativeHandle() should return the handle passed to constructor");
+    }
+
+    @Test
+    @DisplayName("implements Extern interface")
+    void implementsExternInterface() {
+      final JniExternFunc extern = new JniExternFunc(TEST_HANDLE, null);
+      assertTrue(extern instanceof Extern,
+          "JniExternFunc should implement Extern interface");
+    }
+
+    @Test
+    @DisplayName("different handles produce different instances")
+    void differentHandlesProduceDifferentInstances() {
+      final JniExternFunc extern1 = new JniExternFunc(1L, null);
+      final JniExternFunc extern2 = new JniExternFunc(2L, null);
+      assertEquals(1L, extern1.getNativeHandle(),
+          "First extern should have handle 1");
+      assertEquals(2L, extern2.getNativeHandle(),
+          "Second extern should have handle 2");
+    }
+  }
+
+  @Nested
+  @DisplayName("JniExternGlobal Behavioral Tests")
+  class JniExternGlobalBehavioralTests {
+
+    @Test
+    @DisplayName("getType returns GLOBAL")
+    void getTypeReturnsGlobalType() {
+      final JniExternGlobal extern = new JniExternGlobal(TEST_HANDLE, null);
+      assertEquals(ExternType.GLOBAL, extern.getType(),
+          "JniExternGlobal.getType() should return ExternType.GLOBAL");
+    }
+
+    @Test
+    @DisplayName("getNativeHandle returns stored handle")
+    void getNativeHandleReturnsStoredHandle() {
+      final JniExternGlobal extern = new JniExternGlobal(TEST_HANDLE, null);
+      assertEquals(TEST_HANDLE, extern.getNativeHandle(),
+          "getNativeHandle() should return the handle passed to constructor");
+    }
+
+    @Test
+    @DisplayName("implements Extern interface")
+    void implementsExternInterface() {
+      final JniExternGlobal extern = new JniExternGlobal(TEST_HANDLE, null);
+      assertTrue(extern instanceof Extern,
+          "JniExternGlobal should implement Extern interface");
+    }
+  }
+
+  @Nested
+  @DisplayName("JniExternMemory Behavioral Tests")
+  class JniExternMemoryBehavioralTests {
+
+    @Test
+    @DisplayName("getType returns MEMORY")
+    void getTypeReturnsMemoryType() {
+      final JniExternMemory extern = new JniExternMemory(TEST_HANDLE, null);
+      assertEquals(ExternType.MEMORY, extern.getType(),
+          "JniExternMemory.getType() should return ExternType.MEMORY");
+    }
+
+    @Test
+    @DisplayName("getNativeHandle returns stored handle")
+    void getNativeHandleReturnsStoredHandle() {
+      final JniExternMemory extern = new JniExternMemory(TEST_HANDLE, null);
+      assertEquals(TEST_HANDLE, extern.getNativeHandle(),
+          "getNativeHandle() should return the handle passed to constructor");
+    }
+
+    @Test
+    @DisplayName("implements Extern interface")
+    void implementsExternInterface() {
+      final JniExternMemory extern = new JniExternMemory(TEST_HANDLE, null);
+      assertTrue(extern instanceof Extern,
+          "JniExternMemory should implement Extern interface");
+    }
+  }
+
+  @Nested
+  @DisplayName("JniExternTable Behavioral Tests")
+  class JniExternTableBehavioralTests {
+
+    @Test
+    @DisplayName("getType returns TABLE")
+    void getTypeReturnsTableType() {
+      final JniExternTable extern = new JniExternTable(TEST_HANDLE, null);
+      assertEquals(ExternType.TABLE, extern.getType(),
+          "JniExternTable.getType() should return ExternType.TABLE");
+    }
+
+    @Test
+    @DisplayName("getNativeHandle returns stored handle")
+    void getNativeHandleReturnsStoredHandle() {
+      final JniExternTable extern = new JniExternTable(TEST_HANDLE, null);
+      assertEquals(TEST_HANDLE, extern.getNativeHandle(),
+          "getNativeHandle() should return the handle passed to constructor");
+    }
+
+    @Test
+    @DisplayName("implements Extern interface")
+    void implementsExternInterface() {
+      final JniExternTable extern = new JniExternTable(TEST_HANDLE, null);
+      assertTrue(extern instanceof Extern,
+          "JniExternTable should implement Extern interface");
+    }
+  }
 }
