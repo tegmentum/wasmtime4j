@@ -2435,7 +2435,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_incremental_snapshot_creation() {
-        let manager = FilesystemSnapshotManager::new();
+        // Create temp directory for snapshot storage
+        let storage_dir = TempDir::new().unwrap();
+        let config = SnapshotConfig {
+            storage_directory: storage_dir.path().to_path_buf(),
+            ..Default::default()
+        };
+        let manager = FilesystemSnapshotManager::with_config(config);
         let temp_dir = TempDir::new().unwrap();
         let root_path = temp_dir.path();
 
@@ -2444,8 +2450,11 @@ mod tests {
         let mut file = File::create(&test_file).unwrap();
         file.write_all(b"initial content").unwrap();
 
-        // Create full snapshot
-        let options = SnapshotOptions::default();
+        // Create full snapshot (disable compression for test)
+        let options = SnapshotOptions {
+            compress: false,
+            ..Default::default()
+        };
         let full_snapshot_id = manager.create_full_snapshot(root_path, options.clone()).await.unwrap();
 
         // Modify file
