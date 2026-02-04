@@ -1435,23 +1435,36 @@ impl WitInterfaceManager {
         method_name: &str,
         parameters: Vec<Val>,
     ) -> WasmtimeResult<Vec<Val>> {
+        // Validate parameters against method signature
+        self.validate_method_parameters(context.method, &parameters)?;
+
         // Get the exported function from the component instance
-        let exported_func = context.instance
-            .get_export(&mut *context.store, None, method_name)
+        let func = context.instance
+            .get_func(&mut *context.store, method_name)
             .ok_or_else(|| WasmtimeError::ImportExport {
                 message: format!("Method '{}' not found in component exports", method_name),
             })?;
 
-        // Validate parameters against method signature
-        self.validate_method_parameters(context.method, &parameters)?;
+        // Pre-allocate results vector with correct size
+        // Wasmtime requires the results vec to be pre-sized, not just have capacity
+        let result_count = func.ty(&*context.store).results().len();
+        let mut results: Vec<Val> = vec![Val::Bool(false); result_count];
 
-        // TODO: Use Wasmtime's component model call mechanism
-        // This is placeholder code - full implementation requires proper type handling
+        // Call the function
+        func.call(&mut *context.store, &parameters, &mut results)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to call component method '{}': {}", method_name, e),
+                backtrace: None,
+            })?;
 
-        // For now, return an error until proper component invocation is implemented
-        Err(WasmtimeError::Module {
-            message: format!("Component method invocation not yet fully implemented for method '{}'", method_name),
-        })
+        // Perform post-return cleanup required by the component model
+        func.post_return(&mut *context.store)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to complete post-return cleanup for '{}': {}", method_name, e),
+                backtrace: None,
+            })?;
+
+        Ok(results)
     }
 
     /// Convert ComponentValueType to WitType

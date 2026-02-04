@@ -24,7 +24,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetLib
     _class: JClass,
 ) -> jstring {
     let version = "wasmtime4j-native-DEBUG-2025-10-06-18:45-WITH-SIGNALS-DISABLED";
-    env.new_string(version).unwrap().into_raw()
+    match env.new_string(version) {
+        Ok(s) => s.into_raw(),
+        Err(_) => std::ptr::null_mut()
+    }
 }
 
 /// JNI binding for NativeMethodBindings.nativeGetWasmtimeVersion (TOP LEVEL)
@@ -2439,12 +2442,12 @@ pub mod jni_store {
     }
 
     fn register_jni_epoch_callback(callback_id: i64, jvm: std::sync::Arc<jni::JavaVM>, jni_store_global: jni::objects::GlobalRef) {
-        let mut callbacks = get_jni_epoch_callbacks().lock().unwrap();
+        let mut callbacks = get_jni_epoch_callbacks().lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         callbacks.insert(callback_id, JniEpochCallbackContext { jvm, jni_store_global });
     }
 
     pub(crate) fn unregister_jni_epoch_callback(callback_id: i64) {
-        let mut callbacks = get_jni_epoch_callbacks().lock().unwrap();
+        let mut callbacks = get_jni_epoch_callbacks().lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         callbacks.remove(&callback_id);
     }
 
@@ -7807,10 +7810,10 @@ pub mod jni_table {
                 });
             }
 
-            // Return previous size (5) and simulate growth by delta
-            // TODO: Integrate with actual table instance when store context available
-            let previous_size = 5; // Current size before growth
-            log::debug!("JNI Table.nativeGrow: returning previous size {} for table 0x{:x} with delta {}", previous_size, table_ptr, delta);
+            // DEPRECATED: This legacy stub returns a hardcoded value.
+            // Use nativeTableGrow() which accepts store context for real implementation.
+            let previous_size = 5;
+            log::warn!("JNI Table.nativeGrow: deprecated stub called - use nativeTableGrow instead");
             Ok(previous_size)
         })
     }
@@ -7857,9 +7860,10 @@ pub mod jni_table {
                 });
             }
 
-            // TODO: Implement proper table fill when Wasmtime API provides access to table operations
-            log::debug!("JNI Table.nativeFill: placeholder implementation for table 0x{:x} start {} count {}", table_ptr, start, count);
-            Ok(true) // Return success for now
+            // DEPRECATED: This legacy stub returns success without action.
+            // Use nativeTableFill() which accepts store context for real implementation.
+            log::warn!("JNI Table.nativeFill: deprecated stub called - use nativeTableFill instead");
+            Ok(true)
         }) {
             true => 1,
             false => 0,

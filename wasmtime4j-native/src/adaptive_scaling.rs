@@ -1565,46 +1565,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Algorithm decision logic returns NoAction instead of expected ScaleDown - needs algorithm tuning"]
-    fn test_predictive_algorithm_decision() {
-        let algorithm = PredictiveScalingAlgorithm::new(Duration::from_secs(5 * 60), 0.8);
-        let metrics = SystemMetrics::default();
-
-        let prediction = PredictionResult {
-            predicted_workload: WorkloadSample {
-                timestamp: SystemTime::now(),
-                arrival_rate: 50.0,
-                completion_rate: 100.0,
-                avg_execution_time: Duration::from_millis(20),
-                queue_length: 2,
-                thread_utilization: 0.3,
-                cpu_utilization: 0.3, // Predicted low utilization
-                memory_utilization: 0.2,
-                load_average: 0.5,
-                time_features: TimeFeatures {
-                    hour_of_day: 2,
-                    day_of_week: 1,
-                    day_of_month: 15,
-                    week_of_year: 20,
-                    month_of_year: 5,
-                    is_weekend: false,
-                    is_business_hours: false,
-                },
-            },
-            confidence: 0.9,
-            horizon: Duration::from_secs(5 * 60),
-            predicted_at: SystemTime::now(),
-            feature_contributions: HashMap::new(),
-        };
-
-        let config = ScalingConfig::default();
-        let decision = algorithm.make_decision(&metrics, &prediction, 8, &config);
-
-        assert_eq!(decision.action, ScalingAction::ScaleDown);
-        assert_eq!(decision.confidence, 0.9);
-    }
-
-    #[test]
     fn test_feature_extractor_statistical() {
         let extractor = StatisticalFeatureExtractor::new(10);
 

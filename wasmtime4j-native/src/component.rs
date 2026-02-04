@@ -608,14 +608,13 @@ impl ComponentEngine {
     /// Returns `WasmtimeError::ImportExport` if the interface cannot be bound
     /// due to type mismatches or other linking errors.
     pub fn add_host_interface(&mut self, interface_name: &str, _implementation: HostInterface) -> WasmtimeResult<()> {
-        // TODO: Implement host interface binding once Wasmtime component model API is stable
-        // This is a placeholder for future implementation
-        log::info!("Adding host interface: {}", interface_name);
-        
-        // For now, we'll prepare the linker structure but not bind actual implementations
-        // The actual binding will be implemented as the Wasmtime component model API stabilizes
-        
-        Ok(())
+        // Host interface binding is not yet implemented - return error to indicate the feature is unavailable
+        // The Wasmtime component model API is still stabilizing
+        log::warn!("Host interface binding not yet implemented: {}", interface_name);
+
+        Err(WasmtimeError::UnsupportedFeature {
+            message: format!("Host interface binding for '{}'", interface_name),
+        })
     }
 
     /// Get information about active component instances

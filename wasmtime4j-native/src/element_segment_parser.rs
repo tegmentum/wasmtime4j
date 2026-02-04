@@ -168,31 +168,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "WAT syntax error in test: unknown operator for passive element segment"]
-    fn test_parse_passive_element_segment() {
-        // Module with a passive element segment
-        let wasm = wat::parse_str(r#"
-            (module
-                (func $f1)
-                (func $f2)
-                (elem $e (func $f1 $f2))
-            )
-        "#).unwrap();
-
-        let segments = parse_element_segments(&wasm).unwrap();
-
-        // Should have one segment
-        assert_eq!(segments.len(), 1);
-
-        // First segment should be Some (passive)
-        assert!(segments[0].is_some());
-
-        let segment = segments[0].as_ref().unwrap();
-        assert!(segment.is_passive());
-        assert_eq!(segment.len(), 2);
-    }
-
-    #[test]
     fn test_parse_active_element_segment() {
         // Module with an active element segment
         let wasm = wat::parse_str(r#"

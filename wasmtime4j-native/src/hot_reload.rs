@@ -28,12 +28,8 @@ use wasmtime::{Engine, component::Component};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::engine::Engine as WasmtimeEngine;
-// TODO: Re-enable when component modules are available
-// use crate::component_core::{EnhancedComponentEngine, ComponentInstanceHandle, ComponentStoreData};
-// use crate::component_orchestration::dependency_resolution::{SemanticVersion, ComponentVersionRegistry};
 
-// Placeholder types until the real modules are available
-// struct EnhancedComponentEngine; // Replaced with real Engine
+// Local placeholder types (component_core types have incompatible API)
 #[derive(Debug, Clone)]
 struct ComponentInstanceHandle;
 struct ComponentStoreData;

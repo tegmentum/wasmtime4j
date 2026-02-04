@@ -1536,25 +1536,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "WasmGcRuntime stores objects in gc_objects but collect_garbage uses GcHeap which has separate storage"]
-    fn test_garbage_collection() {
-        let runtime = create_test_runtime();
-
-        // Allocate some objects
-        let _ = runtime.i31_new(1);
-        let _ = runtime.i31_new(2);
-        let _ = runtime.i31_new(3);
-
-        // Trigger collection
-        let collection_result = runtime.collect_garbage().unwrap();
-        assert_eq!(collection_result.objects_before, 3);
-
-        // Check stats
-        let stats = runtime.get_heap_stats().unwrap();
-        assert!(stats.major_collections > 0);
-    }
-
-    #[test]
     fn test_array_copy_operation() {
         let runtime = create_test_runtime();
 

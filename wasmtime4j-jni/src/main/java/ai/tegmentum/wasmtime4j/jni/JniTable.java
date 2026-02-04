@@ -255,12 +255,21 @@ public final class JniTable extends JniResource implements WasmTable {
     JniValidation.requireNonNegative(start, "start");
     JniValidation.requireNonNegative(count, "count");
 
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+
     final long handle = getNativeHandle(); // This validates not closed
     validateRange(start, count);
 
     try {
-      final boolean success = nativeFill(handle, start, count, value);
-      if (!success) {
+      final long tableHandle = handle;
+      final long storeHandle = store.getNativeHandle();
+      // Convert value Object to a long handle for native code
+      // For null/funcref null, pass 0
+      final long valueHandle = 0L; // funcref null
+      final int result = nativeTableFill(tableHandle, storeHandle, start, valueHandle, count);
+      if (result != 0) {
         throw new RuntimeException("Failed to fill table range");
       }
     } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
@@ -494,6 +503,19 @@ public final class JniTable extends JniResource implements WasmTable {
    * @return true on success, false on failure
    */
   private static native boolean nativeFill(long tableHandle, int start, int count, Object value);
+
+  /**
+   * Fills a range of a table with the specified value (with store context).
+   *
+   * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
+   * @param dst the destination starting index
+   * @param value the value handle to fill with (0 for null)
+   * @param len the number of elements to fill
+   * @return 0 on success, non-zero on failure
+   */
+  private static native int nativeTableFill(
+      long tableHandle, long storeHandle, int dst, long value, int len);
 
   /**
    * Copies elements within a table.

@@ -166,12 +166,6 @@ impl Default for ResourceLimitsConfig {
 pub struct SecurityConfig {
     /// Placeholder for future advanced security configuration
     pub placeholder: bool,
-    // TODO: Implement advanced security features
-    // pub control_flow_integrity: CfiConfig,
-    // pub stack_canaries: StackCanaryConfig,
-    // pub data_execution_prevention: DepConfig,
-    // pub address_sanitization: AddressSanitizationConfig,
-    // pub capability_security: CapabilitySecurityConfig,
 }
 
 /// Performance monitoring configuration (advanced features disabled)
@@ -179,12 +173,6 @@ pub struct SecurityConfig {
 pub struct PerformanceMonitoringConfig {
     /// Placeholder for future advanced monitoring configuration
     pub placeholder: bool,
-    // TODO: Implement advanced performance monitoring
-    // pub execution_metrics: ExecutionMetricsConfig,
-    // pub memory_monitoring: MemoryMonitoringConfig,
-    // pub compilation_metrics: CompilationMetricsConfig,
-    // pub cache_monitoring: CacheMonitoringConfig,
-    // pub system_monitoring: SystemMonitoringConfig,
 }
 
 /// Compilation parallelism configuration (advanced features disabled)
@@ -192,12 +180,6 @@ pub struct PerformanceMonitoringConfig {
 pub struct CompilationParallelismConfig {
     /// Placeholder for future advanced parallelism configuration
     pub placeholder: bool,
-    // TODO: Implement advanced compilation parallelism
-    // pub parallel_compilation: ParallelCompilationSettings,
-    // pub function_parallelism: FunctionParallelismConfig,
-    // pub module_parallelism: ModuleParallelismConfig,
-    // pub thread_pool: ThreadPoolConfig,
-    // pub work_scheduling: WorkSchedulingConfig,
 }
 
 // Enumeration types for various strategies and policies
@@ -1250,10 +1232,6 @@ impl AdvancedEngineConfig {
         config.dynamic_optimization.profile_guided_optimization.enabled = true;
         config.dynamic_optimization.hot_path_detection.enabled = true;
 
-        // Enable parallelism (TODO: implement advanced parallelism features)
-        // config.compilation_parallelism.parallel_compilation.enabled = true;
-        // config.compilation_parallelism.function_parallelism.enabled = true;
-
         config
     }
 
@@ -1266,12 +1244,6 @@ impl AdvancedEngineConfig {
         config.memory_protection.memory_isolation.enabled = true;
         config.memory_protection.stack_overflow_protection.enabled = true;
         config.memory_protection.aslr.enabled = true;
-
-        // Enable security features (TODO: implement advanced security features)
-        // config.security_config.control_flow_integrity.enabled = true;
-        // config.security_config.stack_canaries.enabled = true;
-        // config.security_config.data_execution_prevention.enabled = true;
-        // config.security_config.address_sanitization.enabled = true;
 
         // Strict validation
         config.memory_protection.memory_access_validation.performance_mode =
@@ -1287,11 +1259,6 @@ impl AdvancedEngineConfig {
         // Enable profiling integrations
         config.profiling_integration.perf_integration.enabled = true;
         config.profiling_integration.custom_profiling.enabled = true;
-
-        // Enable performance monitoring (TODO: implement advanced monitoring features)
-        // config.performance_monitoring.execution_metrics.enabled = true;
-        // config.performance_monitoring.memory_monitoring.enabled = true;
-        // config.performance_monitoring.compilation_metrics.enabled = true;
 
         // Disable aggressive optimizations for better debugging
         config.compilation_pipeline.optimization_passes.standard_passes.inlining = false;
@@ -1351,11 +1318,6 @@ impl AdvancedEngineConfig {
             // Apply guard page settings if Wasmtime supports it
         }
 
-        // Apply parallelism settings (TODO: implement advanced parallelism)
-        // if self.compilation_parallelism.parallel_compilation.enabled {
-        //     config.parallel_compilation(true);
-        // }
-
         // Apply max_wasm_stack limit (applies to Config directly)
         if let Some(max_wasm_stack) = self.resource_limits.max_wasm_stack {
             config.max_wasm_stack(max_wasm_stack);
@@ -1381,14 +1343,6 @@ impl AdvancedEngineConfig {
                 message: "Maximum cache size must be greater than zero".to_string(),
             });
         }
-
-        // Validate security settings compatibility (TODO: re-enable when security features implemented)
-        // if self.security_config.address_sanitization.enabled &&
-        //    self.allocation_strategy.pooling_allocator.enabled {
-        //     return Err(WasmtimeError::EngineConfig {
-        //         message: "Address sanitization may conflict with pooling allocator".to_string(),
-        //     });
-        // }
 
         Ok(())
     }
@@ -1503,8 +1457,6 @@ mod tests {
         let config = AdvancedEngineConfig::development_optimized();
         assert!(config.validate().is_ok());
         assert!(config.profiling_integration.perf_integration.enabled);
-        // TODO: Re-enable when performance monitoring is implemented
-        // assert!(config.performance_monitoring.execution_metrics.enabled);
         assert!(!config.compilation_pipeline.optimization_passes.standard_passes.inlining);
     }
 

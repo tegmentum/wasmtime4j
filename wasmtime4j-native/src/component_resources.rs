@@ -21,10 +21,8 @@ use std::time::{Duration, Instant};
 use wasmtime::component::ResourceAny;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-// TODO: Re-enable when component_core module is available
-// use crate::component_core::{ComponentInstanceHandle, ComponentStoreData};
 
-// Placeholder types until the real modules are available
+// Local placeholder types (component_core types have incompatible API)
 struct ComponentInstanceHandle;
 struct ComponentStoreData;
 

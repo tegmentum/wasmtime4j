@@ -252,11 +252,6 @@ pub mod memory_bandwidth_optimization;
 pub mod cpu_microarchitecture_detection;
 pub mod platform_config;
 
-// Advanced networking protocols (WebSocket, HTTP/2, gRPC)
-#[cfg(feature = "advanced-networking")]
-// TODO: Fix tungstenite dependency issues
-// pub mod advanced_networking;
-
 // Enhanced filesystem operations
 pub mod filesystem;
 
@@ -287,9 +282,6 @@ pub mod component_orchestration;
 #[cfg(feature = "component-model")]
 pub mod component_resources;
 #[cfg(feature = "component-model")]
-// TODO: Advanced distributed features need missing type implementations
-// pub mod distributed_components;
-#[cfg(feature = "component-model")]
 pub mod component_composition;
 #[cfg(feature = "component-model")]
 pub mod resource_dynamic;
@@ -297,9 +289,6 @@ pub mod resource_dynamic;
 // Experimental modules for cutting-edge WebAssembly proposals
 pub mod exceptions;
 pub mod simd;
-pub mod simd_crypto;
-pub mod simd_ml;
-pub mod simd_domain;
 pub mod multi_value;
 
 // Development tooling modules for developer experience
@@ -426,18 +415,6 @@ pub use networking::{
     NetworkStats, HttpRequest, HttpResponse
 };
 
-// Re-export advanced networking functionality
-// TODO: Re-enable when advanced_networking module is implemented
-/*
-#[cfg(feature = "advanced-networking")]
-pub use advanced_networking::{
-    AdvancedNetworkManager, AdvancedNetworkConfig, WebSocketConnection, WebSocketConnectionType,
-    Http2Connection, Http2ConnectionType, GrpcConnection, ProtocolNegotiator, SupportedProtocol,
-    NetworkPerformanceMonitor, ProtocolMetrics, ConnectionMetrics, ThroughputMetrics,
-    AdvancedConnectionPool, TlsConfiguration
-};
-*/
-
 // Re-export filesystem functionality
 pub use filesystem::{
     FileSystemManager, FileSystemConfig, FileHandle, DirectoryHandle,
@@ -496,14 +473,6 @@ pub use component_resources::{
 };
 
 #[cfg(feature = "component-model")]
-// TODO: Re-enable when distributed_components module is implemented
-// pub use distributed_components::{
-//     DistributedComponentManager, ComponentDiscoveryService, ComponentAdvertisement,
-//     NodeInfo, NodeCapabilities, SecureCommunicationManager, DistributedSyncService,
-//     ComponentBackupService, NetworkTopologyManager
-// };
-
-#[cfg(feature = "component-model")]
 pub use component_composition::{
     ComponentCompositionManager, ComponentDependencyGraph, GraphNode, GraphEdge,
     CompositionEngine, DependencyInjectionContainer, DependencyGraphAnalyzer,
@@ -511,59 +480,6 @@ pub use component_composition::{
     CompositionSpecification, CompositionResult, ComposedApplication,
     GraphAnalysisResult, OptimizationGoals, OptimizationResults
 };
-//
-// pub use type_introspection::{
-//     IntrospectionValueType, MemoryTypeInfo, TableTypeInfo, GlobalTypeInfo, FuncTypeInfo,
-//     TypeKind, ImportDescriptorInfo, ExportDescriptorInfo,
-//     ModuleTypeIntrospector, InstanceTypeIntrospector
-// };
-//
-// pub use async_runtime::{
-//     AsyncOperation, AsyncOperationType, AsyncOperationStatus,
-//     AsyncFunctionCallContext, AsyncCompilationContext, CompilationOptions,
-//     AsyncCallback, ProgressCallback,
-//     get_async_runtime, get_runtime_handle,
-//     execute_async_function_call, compile_module_async,
-//     cancel_async_operation, get_operation_status, wait_for_operation
-// };
-//
-// pub use security::{
-//     ModuleSigner, ModuleVerifier, ModuleSignature, SignatureAlgorithm,
-//     TrustStore, CertificateInfo, SecurityPolicy
-// };
-//
-// pub use sandbox::{
-//     SandboxManager, SandboxConfig, SandboxConfigBuilder, SecurityContext,
-//     SandboxedInstance, Capability, FilePermissions, ResourceLimits as SandboxResourceLimits,
-//     ResourceUsage, CapabilityAuditor, AuditEntry
-// };
-
-// Disabled re-exports for modules not currently compiling
-// pub use access_control::{
-//     AuthorizationEngine, RbacEngine, AbacEngine, UserIdentity, Role, Permission,
-//     AccessRequest, AuthorizationDecision, SessionToken, SessionManager,
-//     AbacPolicy, AbacCondition, CombiningAlgorithm
-// };
-//
-// pub use audit::{
-//     AuditLogger, AuditLoggerConfig, AuditEvent, AuditEventType, AuditSeverity,
-//     ComplianceReport, ComplianceReportConfig, ComplianceFramework,
-//     EventCorrelator, AlertManager, Alert
-// };
-//
-// pub use exceptions::{
-//     ExceptionHandler, ExceptionTag, ExceptionPayload, ExceptionHandlingConfig,
-//     UnwindContext
-// };
-//
-// pub use simd::{
-//     SIMDOperations, SIMDConfig, V128 as SIMDVector
-// };
-//
-// pub use multi_value::{
-//     MultiValueFunction, MultiValueSignature, MultiValueResult, MultiValueConfig,
-//     MultiValueHostFunction, ClosureHostFunction
-// };
 
 // Re-export WebAssembly GC types for garbage collection support
 pub use gc::{
@@ -595,15 +511,6 @@ pub use shared_ffi::{
     validation, error_mapping
 };
 
-// TODO: Re-enable debugging functionality when debug module is implemented
-// pub use debug::{
-//     DebugSession, DebugSessionId, Breakpoint, BreakpointId, BreakpointType,
-//     ExecutionState as DebugExecutionState, ExecutionStateType, StackFrame, Variable, VariableValue, VariableScope,
-//     MemoryInspector, MemoryInfo, VariableInspector, ProfilingData, FunctionProfile as DebugFunctionProfile,
-//     DebugEventHandler, ExecutionResult as DebugExecutionResult, StepType, EvaluationResult,
-//     create_debug_session, get_debug_session, close_debug_session, get_active_debug_sessions
-// };
-
 // Re-export enterprise features for production use
 pub use pooling_allocator::{
     PoolingAllocator, PoolingAllocatorConfig, PoolStatistics
@@ -624,47 +531,12 @@ pub use error_recovery::{
     RecoveryAction, RetryStrategy, RecoveryStatistics, ChaosConfig
 };
 
-// Disabled development tooling re-exports
-// pub use module_analyzer::{
-//     ModuleAnalyzer, FunctionInfo, ImportInfo, ExportInfo, MemoryInfo, TableInfo, GlobalInfo,
-//     SecurityAnalysis, PerformanceAnalysis, SizeAnalysis
-// };
-
 // Re-export hot-reload functionality
 pub use hot_reload::{
     HotReloadManager, HotReloadConfig, SwapStrategy, LoadRequest, LoadPriority, ValidationConfig,
     ComponentVersion, SwapOperation, SwapStatus, TrafficStats, RollbackPlan, RollbackTrigger,
     HealthCheckResult, ComponentStateSnapshot, HotReloadMetrics, BackgroundComponentLoader
 };
-
-// Re-export platform optimization functionality
-// NOTE: Disabled pending full implementation of platform optimization modules
-// pub use numa_topology::{
-//     AdvancedNumaTopology, NumaBindingStrategy, WorkloadType, MemoryAllocationPolicy,
-//     CpuAffinityPolicy, NumaLoadBalancing, MigrationPolicies
-// };
-// pub use cpu_cache_management::{
-//     CachePartitioningManager, CachePartition, CacheAffinityPolicy, PartitionType,
-//     AffinityStrategy, CacheTopology
-// };
-// TODO: Re-enable when modules are fully implemented
-// pub use memory_bandwidth_optimization::{
-//     MemoryBandwidthOptimizer, BandwidthAllocationPolicy, CacheAwareAllocationStrategy,
-//     MemoryTopology, BandwidthOptimizationReport, OptimizationRecommendation
-// };
-// pub use cpu_microarchitecture_detection::{
-//     CpuMicroarchitectureDetector, ArchitectureInfo, FeatureDetectionResults,
-//     PerformanceCharacteristics, X86FeatureSet, ArmFeatureSet, RiscVFeatureSet
-// };
-// pub use platform_config::{
-//     PlatformConfig, PlatformInfo, CpuOptimization, MemoryHierarchyConfig, NumaConfig,
-//     ThreadAffinityConfig, PowerManagementConfig, Architecture, OsType
-// };
-
-// pub use debug_server::{
-//     DebugServer, DebugSession, Breakpoint, ExecutionContext, StackFrame,
-//     VariableValue, WatchResult, ExecutionState as DebugExecutionState, DebugEvent
-// };
 
 /// Library version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

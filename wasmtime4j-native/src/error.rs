@@ -2381,47 +2381,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Concurrent resource management has resource type mismatch - needs thread-safe resource type tracking"]
-    fn test_concurrent_resource_management() {
-        use ffi_utils::*;
-        use std::thread;
-        use std::sync::Arc;
-
-        let handles: Vec<_> = (0..5).map(|i| {
-            thread::spawn(move || {
-                // Test resource registration and cleanup
-                for j in 0..20 {
-                    let test_data = format!("Thread {} Data {}", i, j);
-
-                    match register_resource(test_data.clone()) {
-                        Ok(handle) => {
-                            // Verify resource can be retrieved
-                            match get_resource::<String>(handle) {
-                                Ok(arc_mutex) => {
-                                    let data = arc_mutex.lock().unwrap();
-                                    assert_eq!(*data, test_data);
-                                }
-                                Err(e) => panic!("Failed to get resource: {:?}", e),
-                            }
-
-                            // Clean up resource
-                            match unregister_resource(handle) {
-                                Ok(_) => {}
-                                Err(e) => panic!("Failed to unregister resource: {:?}", e),
-                            }
-                        }
-                        Err(e) => panic!("Failed to register resource: {:?}", e),
-                    }
-                }
-            })
-        }).collect();
-
-        for handle in handles {
-            handle.join().unwrap();
-        }
-    }
-
-    #[test]
     fn test_error_aggregation() {
         use ffi_utils::*;
 

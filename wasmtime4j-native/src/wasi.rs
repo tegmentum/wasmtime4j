@@ -3454,29 +3454,38 @@ impl WasiContext {
     ) -> WasmtimeResult<()> {
         #[cfg(feature = "wasi")]
         {
-            // Note: wasmtime_wasi::add_to_linker might not be available in this version
-            // use wasmtime_wasi::add_to_linker;
-
             // Get the linker guard
-            let linker_guard = linker.inner()
+            let mut linker_guard = linker.inner()
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to get linker: {}", e),
                     backtrace: None,
                 })?;
 
-            // Add WASI imports using wasmtime-wasi
-            let wasi_ctx = self.inner.lock()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to lock WASI context: {}", e),
-                    backtrace: None,
-                })?;
+            // First, ensure the Store has the WASI context from this WasiContext
+            // The wasmtime_wasi add_to_linker expects to extract WasiP1Ctx from StoreData
+            store.with_context(|mut ctx| {
+                if ctx.data().wasi_ctx.is_none() {
+                    // Clone our WasiP1Ctx into the store's data
+                    // Note: WasiP1Ctx doesn't implement Clone, so we need to build a new one
+                    // with the same configuration. For now, log a warning if not set.
+                    log::warn!("Store does not have WASI context. Call store.set_wasi_context() first.");
+                }
+                Ok(())
+            })?;
 
-            // This would normally add all WASI imports to the linker
-            // For now, we'll simulate this by logging the operation
-            log::debug!("Adding WASI imports to linker");
+            // Add WASI Preview 1 imports to the linker
+            // The closure extracts the WasiP1Ctx directly from StoreData
+            wasmtime_wasi::p1::add_to_linker_sync(&mut *linker_guard, |data: &mut crate::store::StoreData| {
+                data.wasi_ctx.as_mut().expect(
+                    "Store does not have a WASI context attached. \
+                     Call store.set_wasi_context() before adding WASI to linker."
+                )
+            })
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to add WASI to linker: {}", e),
+            })?;
 
-            // TODO: Implement actual WASI import addition when wasmtime-wasi supports it
-            // add_to_linker(&mut linker_guard, |_| &wasi_ctx)?;
+            log::debug!("WASI Preview 1 imports successfully added to linker");
         }
 
         #[cfg(not(feature = "wasi"))]
@@ -3596,14 +3605,13 @@ impl WasiContext {
         module_name: &str,
         function_name: &str,
     ) -> WasmtimeResult<()> {
-        // For now, just log the import addition
-        // In a full implementation, this would create proper host function wrappers
-        // for each WASI function that delegate to the methods in this WasiContext
-        log::debug!("Adding WASI import: {}::{}", module_name, function_name);
-
-        // TODO: Create actual host function wrappers that call the corresponding
-        // methods in this WasiContext (like self.path_open, self.fd_read, etc.)
-
+        // DEPRECATED: Individual WASI import addition is not supported.
+        // Use add_to_linker() which adds ALL WASI functions via wasmtime_wasi.
+        // This method exists for API compatibility but does not add actual imports.
+        log::warn!(
+            "add_wasi_import called for {}::{} - use add_to_linker() instead for actual WASI support",
+            module_name, function_name
+        );
         Ok(())
     }
 

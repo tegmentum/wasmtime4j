@@ -845,16 +845,17 @@ pub unsafe extern "C" fn wasmtime4j_async_runtime_shutdown() -> c_int {
 /// # Arguments
 ///
 /// * `instance_ptr` - Pointer to Instance object
+/// * `store_ptr` - Pointer to Store object (required for Wasmtime function calls)
 /// * `function_name` - Name of function to call
-/// * `args_ptr` - Pointer to arguments array
+/// * `args_ptr` - Pointer to i64 array of arguments (values encoded as i64)
 /// * `args_len` - Number of arguments
-/// * `timeout_ms` - Timeout in milliseconds
+/// * `timeout_ms` - Timeout in milliseconds (0 for no timeout)
 /// * `callback` - Completion callback function
 /// * `user_data` - User data for callback
 ///
 /// # Returns
 ///
-/// Operation ID on success, negative value on error
+/// Operation ID (> 0) on success, negative value on error
 ///
 /// # Safety
 ///
@@ -862,16 +863,18 @@ pub unsafe extern "C" fn wasmtime4j_async_runtime_shutdown() -> c_int {
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_func_call_async(
     instance_ptr: *mut c_void,
+    store_ptr: *mut c_void,
     function_name: *const c_char,
-    args_ptr: *const c_void,
+    args_ptr: *const i64,
     args_len: c_uint,
     timeout_ms: c_ulong,
     callback: AsyncCallback,
     user_data: *mut c_void
 ) -> c_int {
     // Validate inputs
-    if instance_ptr.is_null() || function_name.is_null() {
-        error!("Invalid parameters for async function call");
+    if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
+        error!("Invalid parameters for async function call: instance_ptr={:?}, store_ptr={:?}",
+               instance_ptr.is_null(), store_ptr.is_null());
         return -1;
     }
 
@@ -884,10 +887,83 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
         }
     };
 
-    // TODO: Parse actual arguments from args_ptr and get instance from pointer
-    // For now, return error as we need proper instance handling
-    error!("Async function calls not yet fully implemented - instance handling needed");
-    -1
+    // Get instance reference
+    let instance = match crate::instance::ffi_core::get_instance_mut(instance_ptr) {
+        Ok(inst) => inst,
+        Err(e) => {
+            error!("Failed to get instance: {}", e);
+            return -1;
+        }
+    };
+
+    // Get store reference
+    let store = match crate::store::core::get_store_mut(store_ptr) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to get store: {}", e);
+            return -1;
+        }
+    };
+
+    // Parse arguments from i64 array (treat as i32 params for simplicity)
+    let arguments: Vec<WasmValue> = if args_len > 0 && !args_ptr.is_null() {
+        std::slice::from_raw_parts(args_ptr, args_len as usize)
+            .iter()
+            .map(|&v| WasmValue::I64(v))
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    // Generate operation ID
+    let operation_id = next_operation_id();
+    debug!("Starting async function call operation {} for function '{}'", operation_id, function_name_str);
+
+    // Create raw pointers that are Send-safe by converting to usize
+    let instance_addr = instance_ptr as usize;
+    let store_addr = store_ptr as usize;
+    let user_data_addr = user_data as usize;
+    let function_name_owned = function_name_str.clone();
+    let timeout = if timeout_ms > 0 { timeout_ms as u64 } else { 30000 }; // Default 30s timeout
+
+    // Spawn async task on the global runtime
+    get_async_runtime().spawn(async move {
+        let result = tokio::time::timeout(
+            Duration::from_millis(timeout),
+            async {
+                // SAFETY: We're in a single async context with the original thread's pointers
+                // The caller is responsible for ensuring these remain valid for the duration
+                let instance = unsafe { &mut *(instance_addr as *mut Instance) };
+                let store = unsafe { &mut *(store_addr as *mut Store) };
+
+                // Call the function
+                instance.call_export_function(store, &function_name_owned, &arguments)
+            }
+        ).await;
+
+        // Invoke callback with result
+        let (status_code, message) = match result {
+            Ok(Ok(call_result)) => {
+                info!("Async function '{}' completed successfully with {} results",
+                      function_name_owned, call_result.values.len());
+                (0, "Success".to_string())
+            }
+            Ok(Err(e)) => {
+                error!("Async function '{}' failed: {}", function_name_owned, e);
+                (-1, format!("Error: {}", e))
+            }
+            Err(_) => {
+                warn!("Async function '{}' timed out after {}ms", function_name_owned, timeout);
+                (-2, format!("Timeout after {}ms", timeout))
+            }
+        };
+
+        // Call the C callback
+        let c_message = CString::new(message).unwrap_or_else(|_| CString::new("Unknown error").unwrap());
+        callback(user_data_addr as *mut c_void, status_code, c_message.as_ptr());
+    });
+
+    operation_id as c_int
 }
 
 /// Compile module asynchronously (C API)
@@ -926,9 +1002,10 @@ pub unsafe extern "C" fn wasmtime4j_module_compile_async(
     // Copy module bytes safely
     let bytes = std::slice::from_raw_parts(module_bytes, module_len as usize).to_vec();
 
-    // TODO: Implement full async compilation - for now just return success to allow compilation
-    info!("Async module compilation started for {} bytes", bytes.len());
-    1 // Return dummy operation ID
+    // Async module compilation is not yet implemented
+    // Return error to indicate the operation cannot be performed
+    warn!("Async module compilation not yet implemented ({} bytes requested)", bytes.len());
+    -1
 }
 
 #[cfg(test)]
@@ -998,6 +1075,21 @@ mod tests {
             // Test null instance
             let result = wasmtime4j_func_call_async(
                 ptr::null_mut(),
+                ptr::null_mut(), // store_ptr
+                b"test\0".as_ptr() as *const c_char,
+                ptr::null(),
+                0,
+                1000,
+                dummy_callback,
+                ptr::null_mut()
+            );
+            assert_eq!(result, -1);
+
+            // Test null store
+            let dummy_instance = 0x1000 as *mut c_void;
+            let result = wasmtime4j_func_call_async(
+                dummy_instance,
+                ptr::null_mut(), // store_ptr
                 b"test\0".as_ptr() as *const c_char,
                 ptr::null(),
                 0,
@@ -1008,9 +1100,10 @@ mod tests {
             assert_eq!(result, -1);
 
             // Test null function name
-            let dummy_instance = 0x1000 as *mut c_void;
+            let dummy_store = 0x2000 as *mut c_void;
             let result = wasmtime4j_func_call_async(
                 dummy_instance,
+                dummy_store,
                 ptr::null(),
                 ptr::null(),
                 0,
