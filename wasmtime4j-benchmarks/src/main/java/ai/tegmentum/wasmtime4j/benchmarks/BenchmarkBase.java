@@ -114,10 +114,15 @@ public abstract class BenchmarkBase {
    * @return the major Java version number
    */
   protected static int getJavaVersion() {
-    final String version = System.getProperty("java.version");
+    String version = System.getProperty("java.version");
     if (version.startsWith("1.")) {
       return Integer.parseInt(version.substring(2, 3));
     } else {
+      // Handle suffixes like "-ea", "-internal", etc.
+      final int dash = version.indexOf("-");
+      if (dash != -1) {
+        version = version.substring(0, dash);
+      }
       final int dot = version.indexOf(".");
       if (dot != -1) {
         return Integer.parseInt(version.substring(0, dot));
