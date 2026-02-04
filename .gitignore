@@ -85,3 +85,6 @@ wasmtime4j-benchmarks/benchmark-results/benchmark-results.csv
 wasmtime4j-benchmarks/benchmark-results/performance-report.html
 .cargo-target/
 benchmark-results/
+monitoring/
+profiling-results/
+tests/logs/
