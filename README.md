@@ -13,7 +13,7 @@ Wasmtime4j provides unified Java bindings for the [Wasmtime](https://wasmtime.de
 - **Unified API**: Single interface across different runtime implementations
 - **Cross-Platform Support**: Linux, Windows, macOS (x86_64 and ARM64)
 - **Production Ready**: Comprehensive error handling, resource management, and defensive programming
-- **Latest Wasmtime**: Built against Wasmtime 41.0.0 for cutting-edge WebAssembly support
+- **Latest Wasmtime**: Built against Wasmtime 41.0.1 for cutting-edge WebAssembly support
 
 ## Quick Start
 

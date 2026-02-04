@@ -2778,6 +2778,41 @@ mod tests {
         let shared = get_shared_engine();
         assert!(shared.validate().is_ok());
     }
+
+    /// Stress test to verify GLOBAL_CODE registry fix.
+    /// This test creates 500 engines with modules in a loop, which previously
+    /// caused SIGABRT after ~350-400 iterations due to address reuse in the
+    /// GLOBAL_CODE registry.
+    #[test]
+    fn test_global_code_registry_stress() {
+        const ITERATIONS: usize = 500;
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+
+        for i in 0..ITERATIONS {
+            // Create engine with signals_based_traps(false) as required for JVM
+            let engine = Engine::new().expect("Failed to create engine");
+
+            // Compile a module - this registers code in GLOBAL_CODE registry
+            let module_result = wasmtime::Module::new(engine.inner(), wat);
+            assert!(
+                module_result.is_ok(),
+                "Failed to compile module at iteration {}: {:?}",
+                i,
+                module_result.err()
+            );
+
+            // Drop happens automatically at end of scope, triggering unregister_code
+
+            if (i + 1) % 100 == 0 {
+                eprintln!("GLOBAL_CODE stress test: completed {} iterations", i + 1);
+            }
+        }
+
+        eprintln!(
+            "GLOBAL_CODE stress test: all {} iterations completed successfully",
+            ITERATIONS
+        );
+    }
 }
 
 //
