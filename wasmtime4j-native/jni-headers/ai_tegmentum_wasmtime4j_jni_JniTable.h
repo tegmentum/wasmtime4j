@@ -73,6 +73,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeFill
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
+ * Method:    nativeTableFill
+ * Signature: (JJIJI)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableFill
+  (JNIEnv *, jclass, jlong, jlong, jint, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeCopy
  * Signature: (JIII)Z
  */
