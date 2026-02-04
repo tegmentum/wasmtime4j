@@ -270,7 +270,7 @@ impl AsyncOperationsManager {
         handle.spawn(async move {
             // Set status to running
             {
-                let mut status_guard = status.lock().unwrap();
+                let mut status_guard = status.lock().unwrap_or_else(|e| e.into_inner());
                 *status_guard = AsyncOperationStatus::Running;
             }
 
@@ -313,8 +313,8 @@ impl AsyncOperationsManager {
 
             // Update status and result
             {
-                let mut status_guard = status.lock().unwrap();
-                let mut result_guard = result.lock().unwrap();
+                let mut status_guard = status.lock().unwrap_or_else(|e| e.into_inner());
+                let mut result_guard = result.lock().unwrap_or_else(|e| e.into_inner());
 
                 match &final_result {
                     AsyncOperationResult::Success(_) => {
@@ -346,7 +346,7 @@ impl AsyncOperationsManager {
 
         // Update stats
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_started += 1;
             stats.active_operations += 1;
         }
@@ -408,7 +408,7 @@ impl AsyncOperationsManager {
         handle.spawn(async move {
             // Set status to running
             {
-                let mut status_guard = status.lock().unwrap();
+                let mut status_guard = status.lock().unwrap_or_else(|e| e.into_inner());
                 *status_guard = AsyncOperationStatus::Running;
             }
 
@@ -453,8 +453,8 @@ impl AsyncOperationsManager {
 
             // Update status and result
             {
-                let mut status_guard = status.lock().unwrap();
-                let mut result_guard = result.lock().unwrap();
+                let mut status_guard = status.lock().unwrap_or_else(|e| e.into_inner());
+                let mut result_guard = result.lock().unwrap_or_else(|e| e.into_inner());
 
                 match &final_result {
                     AsyncOperationResult::Number(_) => {
@@ -486,7 +486,7 @@ impl AsyncOperationsManager {
 
         // Update stats
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_started += 1;
             stats.active_operations += 1;
         }
@@ -656,7 +656,7 @@ impl AsyncOperationsManager {
 
     /// Get operation statistics
     pub fn get_stats(&self) -> AsyncOperationStats {
-        let stats = self.stats.lock().unwrap();
+        let stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         (*stats).clone()
     }
 }
@@ -672,14 +672,14 @@ impl AsyncOperation for AsyncFileIOOperation {
     }
 
     fn status(&self) -> AsyncOperationStatus {
-        let status = self.status.lock().unwrap();
+        let status = self.status.lock().unwrap_or_else(|e| e.into_inner());
         status.clone()
     }
 
     fn cancel(&mut self) -> WasmtimeResult<()> {
         if let Some(cancel_tx) = self.cancel_tx.take() {
             let _ = cancel_tx.send(());
-            let mut status = self.status.lock().unwrap();
+            let mut status = self.status.lock().unwrap_or_else(|e| e.into_inner());
             *status = AsyncOperationStatus::Cancelled;
             Ok(())
         } else {
@@ -690,7 +690,7 @@ impl AsyncOperation for AsyncFileIOOperation {
     }
 
     fn is_complete(&self) -> bool {
-        let status = self.status.lock().unwrap();
+        let status = self.status.lock().unwrap_or_else(|e| e.into_inner());
         matches!(*status,
             AsyncOperationStatus::Completed |
             AsyncOperationStatus::Failed(_) |
@@ -700,7 +700,7 @@ impl AsyncOperation for AsyncFileIOOperation {
     }
 
     fn get_result(&self) -> Option<AsyncOperationResult> {
-        let result = self.result.lock().unwrap();
+        let result = self.result.lock().unwrap_or_else(|e| e.into_inner());
         result.clone()
     }
 }

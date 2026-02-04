@@ -546,7 +546,7 @@ impl AuditLogger {
 
         // Add to correlation engine
         {
-            let mut correlator = self.correlator.lock().unwrap();
+            let mut correlator = self.correlator.lock().unwrap_or_else(|e| e.into_inner());
             correlator.add_event(event.clone());
         }
 
@@ -557,7 +557,7 @@ impl AuditLogger {
 
         // Buffer the event
         {
-            let mut buffer = self.event_buffer.lock().unwrap();
+            let mut buffer = self.event_buffer.lock().unwrap_or_else(|e| e.into_inner());
             buffer.push_back(event);
 
             // Flush if buffer is full
@@ -572,11 +572,11 @@ impl AuditLogger {
     /// Flush buffered events to disk
     pub fn flush_buffer(&self) -> WasmtimeResult<()> {
         let events: Vec<AuditEvent> = {
-            let mut buffer = self.event_buffer.lock().unwrap();
+            let mut buffer = self.event_buffer.lock().unwrap_or_else(|e| e.into_inner());
             buffer.drain(..).collect()
         };
 
-        let mut writer = self.log_writer.lock().unwrap();
+        let mut writer = self.log_writer.lock().unwrap_or_else(|e| e.into_inner());
         for event in events {
             let event_json = serde_json::to_string(&event)
                 .map_err(|e| WasmtimeError::Serialization {
@@ -683,7 +683,7 @@ impl AuditLogger {
                 context: event.attributes.clone(),
             };
 
-            let mut alert_manager = self.alert_manager.lock().unwrap();
+            let mut alert_manager = self.alert_manager.lock().unwrap_or_else(|e| e.into_inner());
             alert_manager.handle_alert(alert)?;
         }
 

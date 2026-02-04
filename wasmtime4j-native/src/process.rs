@@ -490,7 +490,7 @@ impl ProcessManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_spawned += 1;
             stats.running_processes += 1;
         }
@@ -541,7 +541,7 @@ impl ProcessManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.running_processes = stats.running_processes.saturating_sub(1);
             if exit_status.success() {
                 stats.finished_successfully += 1;
@@ -603,7 +603,7 @@ impl ProcessManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.running_processes = stats.running_processes.saturating_sub(1);
             stats.killed_processes += 1;
             stats.signal_operations += 1;
@@ -642,7 +642,7 @@ impl ProcessManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.env_operations += 1;
         }
 
@@ -673,7 +673,7 @@ impl ProcessManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.env_operations += 1;
         }
 
@@ -701,7 +701,7 @@ impl ProcessManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.env_operations += 1;
         }
 
@@ -747,7 +747,7 @@ impl ProcessManager {
 
             // Update statistics when monitoring stops
             {
-                let mut stats_guard = stats.lock().unwrap();
+                let mut stats_guard = stats.lock().unwrap_or_else(|e| e.into_inner());
                 stats_guard.running_processes = stats_guard.running_processes.saturating_sub(1);
             }
         });
@@ -755,7 +755,7 @@ impl ProcessManager {
 
     /// Get process statistics
     pub fn get_stats(&self) -> ProcessStats {
-        let stats = self.stats.lock().unwrap();
+        let stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.clone()
     }
 

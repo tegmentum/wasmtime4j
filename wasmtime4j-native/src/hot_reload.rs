@@ -828,7 +828,7 @@ impl BackgroundComponentLoader {
             // Check for shutdown signal
             {
                 let (lock, _) = &*shutdown;
-                let shutdown_flag = lock.lock().unwrap();
+                let shutdown_flag = lock.lock().unwrap_or_else(|e| e.into_inner());
                 if *shutdown_flag {
                     break;
                 }
@@ -836,7 +836,7 @@ impl BackgroundComponentLoader {
 
             // Get next load request
             let request = {
-                let mut queue = load_queue.lock().unwrap();
+                let mut queue = load_queue.lock().unwrap_or_else(|e| e.into_inner());
                 queue.pop_front()
             };
 
@@ -863,7 +863,7 @@ impl BackgroundComponentLoader {
 
                 // Add to completion queue
                 {
-                    let mut completion = completion_queue.lock().unwrap();
+                    let mut completion = completion_queue.lock().unwrap_or_else(|e| e.into_inner());
                     completion.push_back(result);
                 }
             } else {

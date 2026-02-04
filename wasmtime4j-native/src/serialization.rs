@@ -202,7 +202,7 @@ impl ModuleSerializer {
 
         // Check cache first
         if let Some(cached_data) = self.get_from_cache(&content_hash)? {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.cache_hits += 1;
             stats.deserialization_time += start_time.elapsed();
             return Ok(cached_data);
@@ -231,7 +231,7 @@ impl ModuleSerializer {
         }
 
         // Update statistics
-        let mut stats = self.stats.lock().unwrap();
+        let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.serializations += 1;
         stats.cache_misses += 1;
         stats.bytes_serialized += final_data.len() as u64;
@@ -261,7 +261,7 @@ impl ModuleSerializer {
             .map_err(|e| WasmtimeError::SerializationError { message: format!("Failed to deserialize module: {}", e) })?;
 
         // Update statistics
-        let mut stats = self.stats.lock().unwrap();
+        let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.deserializations += 1;
         stats.bytes_deserialized += data.len() as u64;
         stats.deserialization_time += start_time.elapsed();
@@ -295,7 +295,7 @@ impl ModuleSerializer {
 
     /// Get cache statistics
     pub fn get_statistics(&self) -> SerializationStats {
-        (*self.stats.lock().unwrap()).clone()
+        (*self.stats.lock().unwrap_or_else(|e| e.into_inner())).clone()
     }
 
     /// Clear the cache
@@ -386,7 +386,7 @@ impl ModuleSerializer {
                 if let Some(old_entry) = cache.entries.remove(&oldest_hash) {
                     cache.current_size -= old_entry.data.len();
 
-                    let mut stats = self.stats.lock().unwrap();
+                    let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
                     stats.evicted_entries += 1;
                 }
             }
@@ -571,7 +571,7 @@ impl ModuleSerializer {
 
     /// Calculate cache hit rate
     fn calculate_hit_rate(&self) -> f64 {
-        let stats = self.stats.lock().unwrap();
+        let stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         let total_requests = stats.cache_hits + stats.cache_misses;
         if total_requests == 0 {
             0.0
@@ -593,7 +593,7 @@ impl ModuleSerializer {
     /// Get cache information
     pub fn cache_info(&self) -> CacheInfo {
         let cache = self.cache.read().unwrap();
-        let stats = self.stats.lock().unwrap();
+        let stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
 
         // Find the oldest entry
         let oldest_entry = cache.entries.values()

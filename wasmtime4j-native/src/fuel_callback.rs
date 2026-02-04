@@ -161,7 +161,7 @@ impl FuelCallbackHandler {
 
     /// Handle a fuel exhaustion event
     pub fn handle_exhaustion(&self, context: &FuelExhaustionContext) -> FuelExhaustionResult {
-        let mut stats = self.stats.lock().unwrap();
+        let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.exhaustion_events += 1;
 
         // Check refill limits
@@ -230,12 +230,12 @@ impl FuelCallbackHandler {
 
     /// Get statistics
     pub fn stats(&self) -> FuelCallbackStats {
-        self.stats.lock().unwrap().clone()
+        self.stats.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
     /// Reset statistics
     pub fn reset_stats(&self) {
-        let mut stats = self.stats.lock().unwrap();
+        let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         *stats = FuelCallbackStats::default();
     }
 }

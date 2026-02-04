@@ -1608,7 +1608,7 @@ impl PlatformMemoryAllocator {
             },
         };
 
-        self.allocations.lock().unwrap().insert(ptr, allocation_info);
+        self.allocations.lock().unwrap_or_else(|e| e.into_inner()).insert(ptr, allocation_info);
 
         if let Some(ref detector) = self.leak_detector {
             detector.record_allocation(ptr, size)?;
@@ -1618,7 +1618,7 @@ impl PlatformMemoryAllocator {
     }
 
     fn remove_allocation_record(&self, ptr: *mut c_void) -> Result<AllocationInfo> {
-        let allocation_info = self.allocations.lock().unwrap()
+        let allocation_info = self.allocations.lock().unwrap_or_else(|e| e.into_inner())
             .remove(&ptr)
             .ok_or_else(|| anyhow!("Allocation not found for pointer {:p}", ptr))?;
 
@@ -1634,7 +1634,7 @@ impl PlatformMemoryAllocator {
     }
 
     fn update_allocation_stats(&self, size: usize) {
-        let mut stats = self.stats.lock().unwrap();
+        let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.total_allocated += size as u64;
         stats.current_usage += size as u64;
         stats.allocation_count += 1;
@@ -1645,7 +1645,7 @@ impl PlatformMemoryAllocator {
     }
 
     fn update_deallocation_stats(&self, size: usize) {
-        let mut stats = self.stats.lock().unwrap();
+        let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.total_freed += size as u64;
         stats.current_usage -= size as u64;
         stats.deallocation_count += 1;
@@ -1657,7 +1657,7 @@ impl PlatformMemoryAllocator {
 
     /// Gets memory statistics
     pub fn get_stats(&self) -> PlatformMemoryPoolStats {
-        self.stats.lock().unwrap().clone()
+        self.stats.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
     /// Detects memory leaks
@@ -1741,7 +1741,7 @@ impl PlatformMemoryAllocator {
         let hash = hasher.finalize();
         let hash_u64 = u64::from_le_bytes(hash[..8].try_into().unwrap());
 
-        let mut dedup_map = self.deduplication_map.lock().unwrap();
+        let mut dedup_map = self.deduplication_map.lock().unwrap_or_else(|e| e.into_inner());
 
         // Check if we already have this data
         if let Some((existing_ptr, existing_size)) = dedup_map.get(&hash_u64) {
@@ -1753,7 +1753,7 @@ impl PlatformMemoryAllocator {
 
                 if existing_data == data {
                     // Update statistics
-                    let mut stats = self.stats.lock().unwrap();
+                    let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
                     stats.deduplication_savings += data.len() as u64;
 
                     return Ok(*existing_ptr);
@@ -1826,7 +1826,7 @@ impl PlatformNumaTopology {
 
     fn get_optimal_node(&self) -> i32 {
         // Simple round-robin selection
-        let mut current = self.current_node.lock().unwrap();
+        let mut current = self.current_node.lock().unwrap_or_else(|e| e.into_inner());
         let node = *current;
         *current = (*current + 1) % self.node_count;
         node as i32
@@ -1844,18 +1844,18 @@ impl PlatformMemoryLeakDetector {
     }
 
     fn record_allocation(&self, ptr: *mut c_void, size: usize) -> Result<()> {
-        self.allocations.lock().unwrap().insert(ptr, (size, SystemTime::now()));
+        self.allocations.lock().unwrap_or_else(|e| e.into_inner()).insert(ptr, (size, SystemTime::now()));
         Ok(())
     }
 
     fn record_deallocation(&self, ptr: *mut c_void) -> Result<()> {
-        self.allocations.lock().unwrap().remove(&ptr);
+        self.allocations.lock().unwrap_or_else(|e| e.into_inner()).remove(&ptr);
         Ok(())
     }
 
     fn detect_leaks(&self) -> Result<Vec<PlatformMemoryLeak>> {
         let now = SystemTime::now();
-        let allocations = self.allocations.lock().unwrap();
+        let allocations = self.allocations.lock().unwrap_or_else(|e| e.into_inner());
         let mut leaks = Vec::new();
 
         for (&ptr, &(size, timestamp)) in allocations.iter() {

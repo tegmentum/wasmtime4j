@@ -705,11 +705,21 @@ impl Table {
     #[allow(dead_code)]
     fn default_value_for_type(element_type: &ValType) -> WasmtimeResult<Val> {
         let default_val = match element_type {
-            ValType::Ref(_ref_type) => {
-                // Use FuncRef null as default for now
-                // TODO: Determine correct reference type based on ref_type
-                Val::FuncRef(None)
-            },
+            ValType::Ref(ref_type) => {
+                // Determine correct reference type based on heap type
+                match ref_type.heap_type() {
+                    HeapType::Func | HeapType::NoFunc | HeapType::ConcreteFunc(_) => {
+                        Val::FuncRef(None)
+                    }
+                    HeapType::Extern | HeapType::NoExtern => {
+                        Val::ExternRef(None)
+                    }
+                    // GC types, exception types, continuation types - all map to AnyRef
+                    _ => {
+                        Val::AnyRef(None)
+                    }
+                }
+            }
             _ => return Err(WasmtimeError::Type {
                 message: format!("No default value for non-reference type: {:?}", element_type),
             }),
@@ -722,21 +732,56 @@ impl Table {
     #[allow(dead_code)]
     fn table_element_to_wasmtime_val(element: TableElement) -> WasmtimeResult<Val> {
         let wasmtime_val = match element {
-            TableElement::FuncRef(_) => {
-                // For now, we only support null function references
-                // TODO: Implement proper function reference handling
-                Val::FuncRef(None)
-            },
-            TableElement::ExternRef(_) => {
-                // For now, we only support null external references
-                // TODO: Implement proper external reference handling
-                Val::ExternRef(None)
-            },
-            TableElement::AnyRef(_) => {
-                // AnyRef is not directly supported by wasmtime::Val
-                // Default to null function reference for now
-                Val::FuncRef(None)
-            },
+            TableElement::FuncRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Look up function reference in the registry
+                    let registry = REFERENCE_REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
+                    if let Some(arc_func) = registry.get_function(id) {
+                        Val::FuncRef(Some(Clone::clone(&*arc_func)))
+                    } else {
+                        return Err(WasmtimeError::Runtime {
+                            message: format!(
+                                "Function reference with id {} not found in registry",
+                                id
+                            ),
+                            backtrace: None,
+                        });
+                    }
+                } else {
+                    Val::FuncRef(None)
+                }
+            }
+            TableElement::ExternRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Look up external reference in the registry
+                    let registry = REFERENCE_REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
+                    if let Some(arc_external) = registry.get_external(id) {
+                        // Convert Extern to appropriate Val type
+                        match &*arc_external {
+                            Extern::Func(func) => Val::FuncRef(Some(Clone::clone(func))),
+                            _ => {
+                                // For other external types, use null externref
+                                // as there's no direct conversion
+                                Val::ExternRef(None)
+                            }
+                        }
+                    } else {
+                        // External not found, return null reference
+                        Val::ExternRef(None)
+                    }
+                } else {
+                    Val::ExternRef(None)
+                }
+            }
+            TableElement::AnyRef(ref_id) => {
+                // AnyRef maps to anyref in wasmtime (GC types)
+                if ref_id.is_some() {
+                    // For non-null anyref, we'd need the actual rooted reference
+                    // which requires Store context - return null for now
+                    log::debug!("AnyRef with id {:?} cannot be converted to Val without Store context", ref_id);
+                }
+                Val::AnyRef(None)
+            }
         };
 
         Ok(wasmtime_val)
@@ -1098,14 +1143,26 @@ pub mod core {
         ref_id: Option<u64>,
     ) -> WasmtimeResult<TableElement> {
         let table_element = match element_type {
-            ValType::Ref(_ref_type) => {
-                // For now, treat all ref types as AnyRef
-                // TODO: Discriminate between different reference types
-                TableElement::AnyRef(ref_id)
-            },
-            _ => return Err(WasmtimeError::Type {
-                message: format!("Invalid table element type: {:?}", element_type),
-            }),
+            ValType::Ref(ref_type) => {
+                // Discriminate between different reference types based on heap type
+                match ref_type.heap_type() {
+                    HeapType::Func | HeapType::NoFunc | HeapType::ConcreteFunc(_) => {
+                        TableElement::FuncRef(ref_id)
+                    }
+                    HeapType::Extern | HeapType::NoExtern => {
+                        TableElement::ExternRef(ref_id)
+                    }
+                    // GC types, exception types, continuation types - all map to AnyRef
+                    _ => {
+                        TableElement::AnyRef(ref_id)
+                    }
+                }
+            }
+            _ => {
+                return Err(WasmtimeError::Type {
+                    message: format!("Invalid table element type: {:?}", element_type),
+                })
+            }
         };
 
         Ok(table_element)

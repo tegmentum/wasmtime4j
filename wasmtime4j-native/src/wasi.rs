@@ -1181,11 +1181,12 @@ pub unsafe extern "C" fn wasi_ctx_store_has_wasi(
                 message: "Store handle cannot be null".to_string(),
             });
         }
-        
-        // TODO: Implement proper Store-WASI context checking
-        // For now, return false (0) to indicate no WASI context
-        log::debug!("Checking for WASI context in Store - placeholder implementation");
-        Ok(0) // No WASI context attached
+
+        // Cast to Store and check for WASI context
+        let store = &*(store_ptr as *const crate::store::Store);
+        let has_wasi = store.has_wasi_context();
+        log::debug!("Checking for WASI context in Store - has_wasi: {}", has_wasi);
+        Ok(if has_wasi { 1 } else { 0 })
     });
     result.1
 }

@@ -211,7 +211,7 @@ pub fn tcp_socket_create(_context: &WasiPreview2Context, is_ipv6: bool) -> Wasmt
     info.state = TcpSocketStateEnum::Created;
 
     // Store socket state
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     states.insert(handle, info);
 
     Ok(handle)
@@ -223,7 +223,7 @@ pub fn tcp_socket_start_bind(
     socket_handle: u64,
     addr: &IpSocketAddress,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -248,7 +248,7 @@ pub fn tcp_socket_finish_bind(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -274,7 +274,7 @@ pub fn tcp_socket_start_connect(
     socket_handle: u64,
     addr: &IpSocketAddress,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -300,7 +300,7 @@ pub fn tcp_socket_finish_connect(
 ) -> WasmtimeResult<(u64, u64)> {
     // Get the remote address first
     let remote_addr = {
-        let states = TCP_SOCKET_STATE.lock().unwrap();
+        let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -337,13 +337,13 @@ pub fn tcp_socket_finish_connect(
 
     // Store the stream
     {
-        let mut streams = TCP_STREAMS.lock().unwrap();
+        let mut streams = TCP_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
         streams.insert(stream_handle, Arc::new(Mutex::new(stream)));
     }
 
     // Update socket state
     {
-        let mut states = TCP_SOCKET_STATE.lock().unwrap();
+        let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(info) = states.get_mut(&socket_handle) {
             info.state = TcpSocketStateEnum::Connected;
             info.stream_handle = Some(stream_handle);
@@ -358,7 +358,7 @@ pub fn tcp_socket_start_listen(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -382,7 +382,7 @@ pub fn tcp_socket_finish_listen(
 ) -> WasmtimeResult<()> {
     // Get socket info
     let (bound_addr, backlog) = {
-        let states = TCP_SOCKET_STATE.lock().unwrap();
+        let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -428,13 +428,13 @@ pub fn tcp_socket_finish_listen(
     // Store the listener
     let listener_handle = next_handle();
     {
-        let mut listeners = TCP_LISTENERS.lock().unwrap();
+        let mut listeners = TCP_LISTENERS.lock().unwrap_or_else(|e| e.into_inner());
         listeners.insert(listener_handle, Arc::new(Mutex::new(listener)));
     }
 
     // Update socket state
     {
-        let mut states = TCP_SOCKET_STATE.lock().unwrap();
+        let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(info) = states.get_mut(&socket_handle) {
             info.state = TcpSocketStateEnum::Listening;
             info.listener_handle = Some(listener_handle);
@@ -456,7 +456,7 @@ pub fn tcp_socket_accept(
 ) -> WasmtimeResult<(u64, u64, u64)> {
     // Get the listener handle
     let (listener_handle, is_ipv6) = {
-        let states = TCP_SOCKET_STATE.lock().unwrap();
+        let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -480,13 +480,13 @@ pub fn tcp_socket_accept(
 
     // Get the listener and accept a connection
     let (stream, remote_addr) = {
-        let listeners = TCP_LISTENERS.lock().unwrap();
+        let listeners = TCP_LISTENERS.lock().unwrap_or_else(|e| e.into_inner());
         let listener_arc = listeners.get(&listener_handle).ok_or_else(|| {
             WasmtimeError::InvalidState {
                 message: "Listener not found".to_string(),
             }
         })?;
-        let listener = listener_arc.lock().unwrap();
+        let listener = listener_arc.lock().unwrap_or_else(|e| e.into_inner());
 
         listener.accept().map_err(|e| {
             if e.kind() == std::io::ErrorKind::WouldBlock {
@@ -512,13 +512,13 @@ pub fn tcp_socket_accept(
 
     // Store the stream
     {
-        let mut streams = TCP_STREAMS.lock().unwrap();
+        let mut streams = TCP_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
         streams.insert(stream_handle, Arc::new(Mutex::new(stream)));
     }
 
     // Create socket info for the new connection
     {
-        let mut states = TCP_SOCKET_STATE.lock().unwrap();
+        let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let mut new_info = TcpSocketInfo::default();
         new_info.is_ipv6 = is_ipv6;
         new_info.state = TcpSocketStateEnum::Connected;
@@ -536,7 +536,7 @@ pub fn tcp_socket_local_address(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<IpSocketAddress> {
-    let states = TCP_SOCKET_STATE.lock().unwrap();
+    let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -557,7 +557,7 @@ pub fn tcp_socket_remote_address(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<IpSocketAddress> {
-    let states = TCP_SOCKET_STATE.lock().unwrap();
+    let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -578,7 +578,7 @@ pub fn tcp_socket_address_family(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<bool> {
-    let states = TCP_SOCKET_STATE.lock().unwrap();
+    let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -594,7 +594,7 @@ pub fn tcp_socket_set_listen_backlog_size(
     socket_handle: u64,
     value: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -611,7 +611,7 @@ pub fn tcp_socket_set_keep_alive_enabled(
     socket_handle: u64,
     enabled: bool,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -628,7 +628,7 @@ pub fn tcp_socket_set_keep_alive_idle_time(
     socket_handle: u64,
     duration_nanos: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -645,7 +645,7 @@ pub fn tcp_socket_set_keep_alive_interval(
     socket_handle: u64,
     duration_nanos: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -662,7 +662,7 @@ pub fn tcp_socket_set_keep_alive_count(
     socket_handle: u64,
     count: u32,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -679,7 +679,7 @@ pub fn tcp_socket_set_hop_limit(
     socket_handle: u64,
     value: u8,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -695,7 +695,7 @@ pub fn tcp_socket_receive_buffer_size(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<u64> {
-    let states = TCP_SOCKET_STATE.lock().unwrap();
+    let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -711,7 +711,7 @@ pub fn tcp_socket_set_receive_buffer_size(
     socket_handle: u64,
     value: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -727,7 +727,7 @@ pub fn tcp_socket_send_buffer_size(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<u64> {
-    let states = TCP_SOCKET_STATE.lock().unwrap();
+    let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -743,7 +743,7 @@ pub fn tcp_socket_set_send_buffer_size(
     socket_handle: u64,
     value: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = TCP_SOCKET_STATE.lock().unwrap();
+    let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -760,7 +760,7 @@ pub fn tcp_socket_subscribe(
     socket_handle: u64,
 ) -> WasmtimeResult<u64> {
     // Verify socket exists
-    let states = TCP_SOCKET_STATE.lock().unwrap();
+    let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     if !states.contains_key(&socket_handle) {
         return Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -780,7 +780,7 @@ pub fn tcp_socket_shutdown(
 ) -> WasmtimeResult<()> {
     // Get the stream handle
     let stream_handle = {
-        let states = TCP_SOCKET_STATE.lock().unwrap();
+        let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -795,13 +795,13 @@ pub fn tcp_socket_shutdown(
     };
 
     // Get the stream and shutdown
-    let streams = TCP_STREAMS.lock().unwrap();
+    let streams = TCP_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
     let stream_arc = streams.get(&stream_handle).ok_or_else(|| {
         WasmtimeError::InvalidState {
             message: "Stream not found".to_string(),
         }
     })?;
-    let stream = stream_arc.lock().unwrap();
+    let stream = stream_arc.lock().unwrap_or_else(|e| e.into_inner());
 
     let shutdown = match shutdown_type {
         0 => std::net::Shutdown::Read,
@@ -825,7 +825,7 @@ pub fn tcp_socket_close(
 ) -> WasmtimeResult<()> {
     // Remove socket state and get associated handles
     let (listener_handle, stream_handle) = {
-        let mut states = TCP_SOCKET_STATE.lock().unwrap();
+        let mut states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.remove(&socket_handle);
         match info {
             Some(i) => (i.listener_handle, i.stream_handle),
@@ -835,13 +835,13 @@ pub fn tcp_socket_close(
 
     // Remove listener if present
     if let Some(lh) = listener_handle {
-        let mut listeners = TCP_LISTENERS.lock().unwrap();
+        let mut listeners = TCP_LISTENERS.lock().unwrap_or_else(|e| e.into_inner());
         listeners.remove(&lh);
     }
 
     // Remove stream if present
     if let Some(sh) = stream_handle {
-        let mut streams = TCP_STREAMS.lock().unwrap();
+        let mut streams = TCP_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
         streams.remove(&sh);
     }
 
@@ -856,7 +856,7 @@ pub fn tcp_stream_read(
 ) -> WasmtimeResult<Vec<u8>> {
     // Get the stream handle
     let stream_handle = {
-        let states = TCP_SOCKET_STATE.lock().unwrap();
+        let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -871,13 +871,13 @@ pub fn tcp_stream_read(
     };
 
     // Read from the stream
-    let streams = TCP_STREAMS.lock().unwrap();
+    let streams = TCP_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
     let stream_arc = streams.get(&stream_handle).ok_or_else(|| {
         WasmtimeError::InvalidState {
             message: "Stream not found".to_string(),
         }
     })?;
-    let mut stream = stream_arc.lock().unwrap();
+    let mut stream = stream_arc.lock().unwrap_or_else(|e| e.into_inner());
 
     // Set non-blocking for this read
     stream.set_nonblocking(true).map_err(|e| {
@@ -917,7 +917,7 @@ pub fn tcp_stream_write(
 ) -> WasmtimeResult<usize> {
     // Get the stream handle
     let stream_handle = {
-        let states = TCP_SOCKET_STATE.lock().unwrap();
+        let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -932,13 +932,13 @@ pub fn tcp_stream_write(
     };
 
     // Write to the stream
-    let streams = TCP_STREAMS.lock().unwrap();
+    let streams = TCP_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
     let stream_arc = streams.get(&stream_handle).ok_or_else(|| {
         WasmtimeError::InvalidState {
             message: "Stream not found".to_string(),
         }
     })?;
-    let mut stream = stream_arc.lock().unwrap();
+    let mut stream = stream_arc.lock().unwrap_or_else(|e| e.into_inner());
 
     // Set non-blocking for this write
     stream.set_nonblocking(true).map_err(|e| {
@@ -968,7 +968,7 @@ pub fn tcp_stream_flush(
 ) -> WasmtimeResult<()> {
     // Get the stream handle
     let stream_handle = {
-        let states = TCP_SOCKET_STATE.lock().unwrap();
+        let states = TCP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid TCP socket handle: {}", socket_handle),
@@ -983,13 +983,13 @@ pub fn tcp_stream_flush(
     };
 
     // Flush the stream
-    let streams = TCP_STREAMS.lock().unwrap();
+    let streams = TCP_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
     let stream_arc = streams.get(&stream_handle).ok_or_else(|| {
         WasmtimeError::InvalidState {
             message: "Stream not found".to_string(),
         }
     })?;
-    let mut stream = stream_arc.lock().unwrap();
+    let mut stream = stream_arc.lock().unwrap_or_else(|e| e.into_inner());
 
     use std::io::Write;
     stream.flush().map_err(|e| {
@@ -1013,7 +1013,7 @@ pub fn udp_socket_create(_context: &WasiPreview2Context, is_ipv6: bool) -> Wasmt
     info.state = UdpSocketStateEnum::Created;
 
     // Store socket state (socket itself will be created during bind)
-    let mut states = UDP_SOCKET_STATE.lock().unwrap();
+    let mut states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     states.insert(handle, info);
 
     Ok(handle)
@@ -1025,7 +1025,7 @@ pub fn udp_socket_start_bind(
     socket_handle: u64,
     addr: &IpSocketAddress,
 ) -> WasmtimeResult<()> {
-    let mut states = UDP_SOCKET_STATE.lock().unwrap();
+    let mut states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1052,7 +1052,7 @@ pub fn udp_socket_finish_bind(
 ) -> WasmtimeResult<()> {
     // Get the bind address
     let bind_addr = {
-        let states = UDP_SOCKET_STATE.lock().unwrap();
+        let states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1091,13 +1091,13 @@ pub fn udp_socket_finish_bind(
 
     // Store the socket
     {
-        let mut sockets = UDP_SOCKETS.lock().unwrap();
+        let mut sockets = UDP_SOCKETS.lock().unwrap_or_else(|e| e.into_inner());
         sockets.insert(socket_handle, Arc::new(Mutex::new(socket)));
     }
 
     // Update socket state
     {
-        let mut states = UDP_SOCKET_STATE.lock().unwrap();
+        let mut states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(info) = states.get_mut(&socket_handle) {
             info.state = UdpSocketStateEnum::Bound;
             info.bound_addr = Some(actual_addr);
@@ -1115,7 +1115,7 @@ pub fn udp_socket_stream(
 ) -> WasmtimeResult<()> {
     // Update state first
     {
-        let mut states = UDP_SOCKET_STATE.lock().unwrap();
+        let mut states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         let info = states.get_mut(&socket_handle).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1134,13 +1134,13 @@ pub fn udp_socket_stream(
 
     // Connect the socket
     let dest = remote_addr.to_socket_addr();
-    let sockets = UDP_SOCKETS.lock().unwrap();
+    let sockets = UDP_SOCKETS.lock().unwrap_or_else(|e| e.into_inner());
     let socket_arc = sockets.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidState {
             message: "Socket not found".to_string(),
         }
     })?;
-    let socket = socket_arc.lock().unwrap();
+    let socket = socket_arc.lock().unwrap_or_else(|e| e.into_inner());
 
     socket.connect(dest).map_err(|e| {
         WasmtimeError::Io {
@@ -1157,9 +1157,9 @@ pub fn udp_socket_local_address(
     socket_handle: u64,
 ) -> WasmtimeResult<IpSocketAddress> {
     // First check if we have a bound socket
-    let sockets = UDP_SOCKETS.lock().unwrap();
+    let sockets = UDP_SOCKETS.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(socket_arc) = sockets.get(&socket_handle) {
-        let socket = socket_arc.lock().unwrap();
+        let socket = socket_arc.lock().unwrap_or_else(|e| e.into_inner());
         let addr = socket.local_addr().map_err(|e| {
             WasmtimeError::Io {
                 source: std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to get local address: {}", e)),
@@ -1169,7 +1169,7 @@ pub fn udp_socket_local_address(
     }
 
     // Fall back to state info for unbound sockets
-    let states = UDP_SOCKET_STATE.lock().unwrap();
+    let states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1190,7 +1190,7 @@ pub fn udp_socket_remote_address(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<IpSocketAddress> {
-    let states = UDP_SOCKET_STATE.lock().unwrap();
+    let states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1217,7 +1217,7 @@ pub fn udp_socket_address_family(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<bool> {
-    let states = UDP_SOCKET_STATE.lock().unwrap();
+    let states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1233,7 +1233,7 @@ pub fn udp_socket_set_unicast_hop_limit(
     socket_handle: u64,
     value: u8,
 ) -> WasmtimeResult<()> {
-    let mut states = UDP_SOCKET_STATE.lock().unwrap();
+    let mut states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1244,9 +1244,9 @@ pub fn udp_socket_set_unicast_hop_limit(
 
     // If socket is already bound, try to set the TTL on the actual socket
     drop(states);
-    let sockets = UDP_SOCKETS.lock().unwrap();
+    let sockets = UDP_SOCKETS.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(socket_arc) = sockets.get(&socket_handle) {
-        let socket = socket_arc.lock().unwrap();
+        let socket = socket_arc.lock().unwrap_or_else(|e| e.into_inner());
         // Note: set_ttl may not be supported on all platforms
         let _ = socket.set_ttl(value as u32);
     }
@@ -1259,7 +1259,7 @@ pub fn udp_socket_receive_buffer_size(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<u64> {
-    let states = UDP_SOCKET_STATE.lock().unwrap();
+    let states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1275,7 +1275,7 @@ pub fn udp_socket_set_receive_buffer_size(
     socket_handle: u64,
     value: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = UDP_SOCKET_STATE.lock().unwrap();
+    let mut states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1291,7 +1291,7 @@ pub fn udp_socket_send_buffer_size(
     _context: &WasiPreview2Context,
     socket_handle: u64,
 ) -> WasmtimeResult<u64> {
-    let states = UDP_SOCKET_STATE.lock().unwrap();
+    let states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1307,7 +1307,7 @@ pub fn udp_socket_set_send_buffer_size(
     socket_handle: u64,
     value: u64,
 ) -> WasmtimeResult<()> {
-    let mut states = UDP_SOCKET_STATE.lock().unwrap();
+    let mut states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     let info = states.get_mut(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1324,7 +1324,7 @@ pub fn udp_socket_subscribe(
     socket_handle: u64,
 ) -> WasmtimeResult<u64> {
     // Verify socket exists
-    let states = UDP_SOCKET_STATE.lock().unwrap();
+    let states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
     if !states.contains_key(&socket_handle) {
         return Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
@@ -1345,13 +1345,13 @@ pub fn udp_socket_receive(
     // TODO: Replace with actual Wasmtime WASI socket integration
 
     // Get the socket from the registry
-    let sockets = UDP_SOCKETS.lock().unwrap();
+    let sockets = UDP_SOCKETS.lock().unwrap_or_else(|e| e.into_inner());
     let socket_arc = sockets.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
         }
     })?;
-    let socket = socket_arc.lock().unwrap();
+    let socket = socket_arc.lock().unwrap_or_else(|e| e.into_inner());
 
     // Set non-blocking mode for receive
     socket.set_nonblocking(true).map_err(|e| {
@@ -1395,13 +1395,13 @@ pub fn udp_socket_send(
     // TODO: Replace with actual Wasmtime WASI socket integration
 
     // Get the socket from the registry
-    let sockets = UDP_SOCKETS.lock().unwrap();
+    let sockets = UDP_SOCKETS.lock().unwrap_or_else(|e| e.into_inner());
     let socket_arc = sockets.get(&socket_handle).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Invalid UDP socket handle: {}", socket_handle),
         }
     })?;
-    let socket = socket_arc.lock().unwrap();
+    let socket = socket_arc.lock().unwrap_or_else(|e| e.into_inner());
 
     // Set non-blocking mode for send
     socket.set_nonblocking(true).map_err(|e| {
@@ -1457,7 +1457,7 @@ pub fn udp_socket_close(
 ) -> WasmtimeResult<()> {
     // Remove socket state
     {
-        let mut states = UDP_SOCKET_STATE.lock().unwrap();
+        let mut states = UDP_SOCKET_STATE.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(info) = states.get_mut(&socket_handle) {
             info.state = UdpSocketStateEnum::Closed;
         }
@@ -1466,7 +1466,7 @@ pub fn udp_socket_close(
 
     // Remove actual socket
     {
-        let mut sockets = UDP_SOCKETS.lock().unwrap();
+        let mut sockets = UDP_SOCKETS.lock().unwrap_or_else(|e| e.into_inner());
         sockets.remove(&socket_handle);
     }
 
@@ -1583,7 +1583,7 @@ pub fn ip_name_lookup_resolve_addresses(
     };
 
     {
-        let mut streams = RESOLVE_STREAMS.lock().unwrap();
+        let mut streams = RESOLVE_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
         streams.insert(stream_handle, stream_state);
     }
 
@@ -1606,7 +1606,7 @@ pub fn resolve_address_stream_next(
     _context: &WasiPreview2Context,
     stream_handle: u64,
 ) -> WasmtimeResult<(bool, bool, [u8; 4], [u16; 8])> {
-    let mut streams = RESOLVE_STREAMS.lock().unwrap();
+    let mut streams = RESOLVE_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
 
     let stream_state = streams.get_mut(&stream_handle).ok_or_else(|| {
         WasmtimeError::Runtime {
@@ -1652,7 +1652,7 @@ pub fn resolve_address_stream_subscribe(
     _context: &WasiPreview2Context,
     stream_handle: u64,
 ) -> WasmtimeResult<()> {
-    let streams = RESOLVE_STREAMS.lock().unwrap();
+    let streams = RESOLVE_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
 
     let stream_state = streams.get(&stream_handle).ok_or_else(|| {
         WasmtimeError::Runtime {
@@ -1684,7 +1684,7 @@ pub fn resolve_address_stream_is_closed(
     _context: &WasiPreview2Context,
     stream_handle: u64,
 ) -> WasmtimeResult<bool> {
-    let streams = RESOLVE_STREAMS.lock().unwrap();
+    let streams = RESOLVE_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
 
     match streams.get(&stream_handle) {
         Some(state) => Ok(state.closed),
@@ -1701,7 +1701,7 @@ pub fn resolve_address_stream_close(
     _context: &WasiPreview2Context,
     stream_handle: u64,
 ) -> WasmtimeResult<()> {
-    let mut streams = RESOLVE_STREAMS.lock().unwrap();
+    let mut streams = RESOLVE_STREAMS.lock().unwrap_or_else(|e| e.into_inner());
 
     // Mark as closed if it exists, then remove
     if let Some(state) = streams.get_mut(&stream_handle) {

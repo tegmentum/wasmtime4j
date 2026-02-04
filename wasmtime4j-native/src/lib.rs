@@ -22,6 +22,8 @@
 
 #![allow(missing_docs)]
 #![allow(unused_imports)]
+// TODO: Remove this and audit ~249 dead code warnings - significant unused infrastructure exists
+// (adaptive scaling, work stealing, NUMA awareness, etc. - features built but not integrated)
 #![allow(dead_code)]
 #![allow(unused_unsafe)]
 #![allow(unused_assignments)]

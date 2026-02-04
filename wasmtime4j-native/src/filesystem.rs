@@ -494,7 +494,7 @@ impl FileSystemManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_files_opened += 1;
             stats.open_files += 1;
         }
@@ -541,7 +541,7 @@ impl FileSystemManager {
 
         // Update global statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_bytes_read += bytes_read as u64;
             stats.operations_completed += 1;
         }
@@ -595,7 +595,7 @@ impl FileSystemManager {
 
         // Update global statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_bytes_written += bytes_written as u64;
             stats.operations_completed += 1;
         }
@@ -613,7 +613,7 @@ impl FileSystemManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.directory_operations += 1;
             stats.operations_completed += 1;
         }
@@ -631,7 +631,7 @@ impl FileSystemManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.directory_operations += 1;
             stats.operations_completed += 1;
         }
@@ -721,7 +721,7 @@ impl FileSystemManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.directory_operations += 1;
             stats.operations_completed += 1;
         }
@@ -878,7 +878,7 @@ impl FileSystemManager {
             }
 
             // Update statistics
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.open_files = stats.open_files.saturating_sub(1);
 
             Ok(())
@@ -891,14 +891,14 @@ impl FileSystemManager {
 
     /// Get file system statistics
     pub fn get_stats(&self) -> FileSystemStats {
-        let stats = self.stats.lock().unwrap();
+        let stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.clone()
     }
 
     /// Check quota for file operation
     async fn check_quota_for_file(&self, _path: &Path) -> WasmtimeResult<()> {
         // Simplified quota check - in real implementation would check user quotas
-        let quota_manager = self.quota_manager.lock().unwrap();
+        let quota_manager = self.quota_manager.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(ref global_quota) = quota_manager.global_quota {
             if global_quota.current_files >= global_quota.max_total_files {
                 return Err(WasmtimeError::Wasi {
@@ -912,7 +912,7 @@ impl FileSystemManager {
     /// Check quota for write operation
     async fn check_quota_for_write(&self, size: usize) -> WasmtimeResult<()> {
         // Simplified quota check - in real implementation would check user quotas
-        let quota_manager = self.quota_manager.lock().unwrap();
+        let quota_manager = self.quota_manager.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(ref global_quota) = quota_manager.global_quota {
             if global_quota.current_size + size as u64 > global_quota.max_total_size {
                 return Err(WasmtimeError::Wasi {

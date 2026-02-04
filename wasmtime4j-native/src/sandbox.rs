@@ -435,7 +435,7 @@ impl SandboxManager {
 
         // Update resource tracking
         {
-            let mut tracker = self.resource_tracker.lock().unwrap();
+            let mut tracker = self.resource_tracker.lock().unwrap_or_else(|e| e.into_inner());
             tracker.active_instances += 1;
         }
 
@@ -465,7 +465,7 @@ impl SandboxManager {
 
         // Log audit entry if auditing is enabled
         if let Some(auditor) = &self.auditor {
-            let mut auditor = auditor.lock().unwrap();
+            let mut auditor = auditor.lock().unwrap_or_else(|e| e.into_inner());
             auditor.log_capability_check(
                 instance_id.to_string(),
                 capability,
@@ -563,7 +563,7 @@ impl SandboxManager {
 
         // Update resource tracking
         {
-            let mut tracker = self.resource_tracker.lock().unwrap();
+            let mut tracker = self.resource_tracker.lock().unwrap_or_else(|e| e.into_inner());
             tracker.active_instances = tracker.active_instances.saturating_sub(1);
         }
 
@@ -573,7 +573,7 @@ impl SandboxManager {
     /// Get audit log entries
     pub fn get_audit_log(&self) -> Vec<AuditEntry> {
         if let Some(auditor) = &self.auditor {
-            let auditor = auditor.lock().unwrap();
+            let auditor = auditor.lock().unwrap_or_else(|e| e.into_inner());
             auditor.audit_log.clone()
         } else {
             Vec::new()
@@ -582,7 +582,7 @@ impl SandboxManager {
 
     /// Get resource usage statistics
     pub fn get_resource_statistics(&self) -> ResourceTracker {
-        let tracker = self.resource_tracker.lock().unwrap();
+        let tracker = self.resource_tracker.lock().unwrap_or_else(|e| e.into_inner());
         ResourceTracker {
             total_memory: tracker.total_memory,
             total_cpu_time: tracker.total_cpu_time,

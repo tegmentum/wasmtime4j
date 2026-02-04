@@ -342,7 +342,7 @@ impl NetworkManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_connections += 1;
             stats.active_connections += 1;
         }
@@ -440,7 +440,7 @@ impl NetworkManager {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_connections += 1;
             stats.active_connections += 1;
         }
@@ -487,7 +487,7 @@ impl NetworkManager {
 
         // Update global statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_bytes_received += bytes_read as u64;
         }
 
@@ -535,7 +535,7 @@ impl NetworkManager {
 
         // Update global statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_bytes_sent += bytes_written as u64;
         }
 
@@ -612,7 +612,7 @@ impl NetworkManager {
 
         // Update global statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_bytes_sent += bytes_sent as u64;
         }
 
@@ -657,7 +657,7 @@ impl NetworkManager {
 
         // Update global statistics
         {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.total_bytes_received += bytes_received as u64;
         }
 
@@ -673,7 +673,7 @@ impl NetworkManager {
                 connection.status = ConnectionStatus::Closed;
 
                 // Update statistics
-                let mut stats = self.stats.lock().unwrap();
+                let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
                 stats.active_connections = stats.active_connections.saturating_sub(1);
 
                 return Ok(());
@@ -705,7 +705,7 @@ impl NetworkManager {
 
     /// Get network statistics
     pub fn get_stats(&self) -> NetworkStats {
-        let stats = self.stats.lock().unwrap();
+        let stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.clone()
     }
 
@@ -730,7 +730,7 @@ impl NetworkManager {
 
         // Update statistics
         if cleaned_up > 0 {
-            let mut stats = self.stats.lock().unwrap();
+            let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
             stats.active_connections = stats.active_connections.saturating_sub(cleaned_up as u64);
         }
 

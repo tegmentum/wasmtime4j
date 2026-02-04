@@ -864,8 +864,8 @@ impl NnExecutionContext {
 
     /// Compute inference
     ///
-    /// This is a placeholder implementation. The actual implementation would
-    /// use the wasmtime-wasi-nn crate to perform inference.
+    /// This requires integration with wasmtime-wasi-nn crate and a configured
+    /// neural network backend (OpenVINO, ONNX Runtime, etc.).
     pub fn compute(&self) -> WasmtimeResult<()> {
         if !self.is_valid() {
             return Err(WasmtimeError::InvalidState {
@@ -886,30 +886,15 @@ impl NnExecutionContext {
             });
         }
 
-        // Calculate total tensor bytes for stats
-        let total_bytes: u64 = inputs.values().map(|t| t.data.len() as u64).sum();
-
-        // In a real implementation, this would:
-        // 1. Marshal input tensors to the native format
-        // 2. Execute the graph using wasmtime-wasi-nn
-        // 3. Marshal output tensors back
-
-        // For now, create placeholder outputs
-        let mut outputs = self
-            .outputs
-            .write()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire write lock on outputs".to_string(),
-            })?;
-
-        // Copy first input as a placeholder output
-        if let Some((_, first_input)) = inputs.iter().next() {
-            outputs.insert(0, first_input.clone());
-        }
-
-        self.stats.record_inference(total_bytes);
-
-        Ok(())
+        // Neural network inference requires a configured backend
+        // (OpenVINO, ONNX Runtime, etc.) and wasmtime-wasi-nn integration.
+        // Without a backend, we cannot perform actual inference.
+        Err(WasmtimeError::UnsupportedFeature {
+            message: "Neural network inference requires a configured backend \
+                (OpenVINO, ONNX Runtime, etc.). Configure wasi-nn with a backend \
+                to enable inference."
+                .to_string(),
+        })
     }
 
     /// Get an output tensor

@@ -1215,7 +1215,7 @@ impl FilesystemSnapshotManager {
 
     /// Get snapshot metrics
     pub async fn get_metrics(&self) -> SnapshotMetrics {
-        let metrics = self.metrics.lock().unwrap();
+        let metrics = self.metrics.lock().unwrap_or_else(|e| e.into_inner());
         metrics.clone()
     }
 
@@ -1777,7 +1777,7 @@ impl FilesystemSnapshotManager {
     }
 
     async fn update_creation_metrics(&self, creation_time_ms: f64) {
-        let mut metrics = self.metrics.lock().unwrap();
+        let mut metrics = self.metrics.lock().unwrap_or_else(|e| e.into_inner());
         metrics.total_snapshots_created += 1;
         metrics.active_snapshots += 1;
         metrics.successful_operations += 1;
@@ -1790,7 +1790,7 @@ impl FilesystemSnapshotManager {
     }
 
     async fn update_restore_metrics(&self, restore_time_ms: f64) {
-        let mut metrics = self.metrics.lock().unwrap();
+        let mut metrics = self.metrics.lock().unwrap_or_else(|e| e.into_inner());
         metrics.successful_operations += 1;
         metrics.total_operations += 1;
 
@@ -1800,7 +1800,7 @@ impl FilesystemSnapshotManager {
     }
 
     async fn update_validation_metrics(&self, validation_time_ms: f64) {
-        let mut metrics = self.metrics.lock().unwrap();
+        let mut metrics = self.metrics.lock().unwrap_or_else(|e| e.into_inner());
         metrics.successful_operations += 1;
         metrics.total_operations += 1;
 
@@ -1988,7 +1988,7 @@ impl DeduplicationEngine {
                 index.insert(content_hash.clone(), block);
 
                 // Update stats
-                let mut stats = self.stats.lock().unwrap();
+                let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
                 stats.total_blocks += 1;
                 stats.unique_blocks += 1;
 
@@ -2030,7 +2030,7 @@ impl DeduplicationEngine {
                         storage.remove(dedup_ref);
 
                         // Update stats
-                        let mut stats = self.stats.lock().unwrap();
+                        let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
                         stats.unique_blocks = stats.unique_blocks.saturating_sub(1);
                     }
                 }
@@ -2055,7 +2055,7 @@ impl CompressionEngine {
         let compressed = self.compress_data(original_data, compression_level)?;
 
         // Update stats
-        let mut stats = self.stats.lock().unwrap();
+        let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
         stats.compressed_files += 1;
         stats.original_size += original_data.len() as u64;
         stats.compressed_size += compressed.len() as u64;
@@ -2200,7 +2200,7 @@ impl TransactionManager {
             success,
         };
 
-        let mut log = self.transaction_log.lock().unwrap();
+        let mut log = self.transaction_log.lock().unwrap_or_else(|e| e.into_inner());
         log.push(entry);
     }
 }

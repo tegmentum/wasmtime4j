@@ -103,20 +103,20 @@ impl ResourceRegistry {
 
 /// Store a ResourceAny in the registry and return a handle ID.
 pub fn store_resource(resource: ResourceAny) -> u64 {
-    let mut guard = RESOURCE_REGISTRY.lock().unwrap();
+    let mut guard = RESOURCE_REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
     let registry = guard.get_or_insert_with(ResourceRegistry::new);
     registry.store(resource)
 }
 
 /// Retrieve a ResourceAny from the registry by handle ID (does not remove it).
 pub fn get_resource(handle_id: u64) -> Option<ResourceAny> {
-    let guard = RESOURCE_REGISTRY.lock().unwrap();
+    let guard = RESOURCE_REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
     guard.as_ref().and_then(|r| r.get(handle_id).cloned())
 }
 
 /// Remove and return a ResourceAny from the registry by handle ID.
 pub fn take_resource(handle_id: u64) -> Option<ResourceAny> {
-    let mut guard = RESOURCE_REGISTRY.lock().unwrap();
+    let mut guard = RESOURCE_REGISTRY.lock().unwrap_or_else(|e| e.into_inner());
     guard.as_mut().and_then(|r| r.remove(handle_id))
 }
 

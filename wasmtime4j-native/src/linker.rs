@@ -1776,7 +1776,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate_pre(
             match crate::module::ffi_core::get_module_ref(module_ptr) {
                 Ok(module) => {
                     // Get the inner wasmtime linker and module
-                    let inner_linker = linker.inner.lock().unwrap();
+                    let inner_linker = linker.inner.lock().unwrap_or_else(|e| e.into_inner());
                     let wasmtime_module = module.inner();
 
                     match inner_linker.instantiate_pre(wasmtime_module) {
