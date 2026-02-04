@@ -35,6 +35,10 @@ pub struct AdvancedRwLock<T> {
     statistics: Arc<ParkingRwLock<RwLockStatistics>>,
     /// Priority inheritance tracker
     priority_tracker: Arc<ParkingMutex<PriorityInheritanceTracker>>,
+    /// Shared condition variable for waiting threads
+    waiter_condvar: Arc<Condvar>,
+    /// Mutex for the condition variable
+    waiter_mutex: Arc<ParkingMutex<()>>,
 }
 
 /// Fairness policy for reader-writer locks
@@ -683,7 +687,14 @@ impl<T> AdvancedRwLock<T> {
             fairness_policy,
             statistics: Arc::new(ParkingRwLock::new(RwLockStatistics::default())),
             priority_tracker: Arc::new(ParkingMutex::new(PriorityInheritanceTracker::default())),
+            waiter_condvar: Arc::new(Condvar::new()),
+            waiter_mutex: Arc::new(ParkingMutex::new(())),
         }
+    }
+
+    /// Notify waiting threads that the lock may be available
+    fn notify_waiters(&self) {
+        self.waiter_condvar.notify_all();
     }
 
     /// Acquire read lock with priority and timeout
@@ -764,12 +775,11 @@ impl<T> AdvancedRwLock<T> {
 
     /// Enqueue reader with priority
     fn enqueue_reader(&self, thread_id: ThreadId, priority: ThreadPriority, timeout: Option<Duration>, start_time: Instant) -> WasmtimeResult<parking_lot::RwLockReadGuard<'_, T>> {
-        let condition = Arc::new(Condvar::new());
         let waiting_reader = WaitingReader {
             thread_id,
             priority,
             wait_start: start_time,
-            condition: condition.clone(),
+            condition: self.waiter_condvar.clone(),
             timeout,
         };
 
@@ -778,41 +788,52 @@ impl<T> AdvancedRwLock<T> {
             queue.push(waiting_reader);
         }
 
-        // Wait for notification or timeout
-        let mutex = ParkingMutex::new(());
-        let mut guard = mutex.lock();
+        // Use the shared condvar and mutex for waiting
+        let deadline = timeout.map(|t| Instant::now() + t);
+        let retry_interval = Duration::from_millis(10);
 
-        if let Some(timeout_duration) = timeout {
-            let wait_result = condition.wait_for(&mut guard, timeout_duration);
-            if wait_result.timed_out() {
-                return Err(WasmtimeError::Timeout {
-                    message: "Read lock acquisition timed out".to_string(),
-                });
+        loop {
+            // Check if we've exceeded the timeout
+            if let Some(dl) = deadline {
+                if Instant::now() >= dl {
+                    // Remove ourselves from the queue on timeout
+                    let mut queue = self.reader_queue.lock();
+                    queue.retain(|r| r.thread_id != thread_id);
+                    return Err(WasmtimeError::Timeout {
+                        message: "Read lock acquisition timed out".to_string(),
+                    });
+                }
             }
-        } else {
-            condition.wait(&mut guard);
-        }
 
-        // Try to acquire the lock after wait
-        if let Some(read_guard) = self.data.try_read() {
-            self.reader_count.fetch_add(1, Ordering::Release);
-            self.update_read_statistics(start_time.elapsed());
-            Ok(read_guard)
-        } else {
-            Err(WasmtimeError::Concurrency {
-                message: "Failed to acquire read lock after notification".to_string(),
-            })
+            // Try to acquire the lock
+            if let Some(read_guard) = self.data.try_read() {
+                // Remove ourselves from the queue on success
+                let mut queue = self.reader_queue.lock();
+                queue.retain(|r| r.thread_id != thread_id);
+                self.reader_count.fetch_add(1, Ordering::Release);
+                self.update_read_statistics(start_time.elapsed());
+                return Ok(read_guard);
+            }
+
+            // Wait on the shared condvar with a short timeout
+            let mut guard = self.waiter_mutex.lock();
+            let wait_time = if let Some(dl) = deadline {
+                let remaining = dl.saturating_duration_since(Instant::now());
+                remaining.min(retry_interval)
+            } else {
+                retry_interval
+            };
+            self.waiter_condvar.wait_for(&mut guard, wait_time);
         }
     }
 
     /// Enqueue writer with priority
     fn enqueue_writer(&self, thread_id: ThreadId, priority: ThreadPriority, timeout: Option<Duration>, start_time: Instant) -> WasmtimeResult<parking_lot::RwLockWriteGuard<'_, T>> {
-        let condition = Arc::new(Condvar::new());
         let waiting_writer = WaitingWriter {
             thread_id,
             priority,
             wait_start: start_time,
-            condition: condition.clone(),
+            condition: self.waiter_condvar.clone(),
             timeout,
         };
 
@@ -821,30 +842,43 @@ impl<T> AdvancedRwLock<T> {
             queue.push(waiting_writer);
         }
 
-        // Wait for notification or timeout
-        let mutex = ParkingMutex::new(());
-        let mut guard = mutex.lock();
+        // Use the shared condvar and mutex for waiting
+        let deadline = timeout.map(|t| Instant::now() + t);
+        let retry_interval = Duration::from_millis(10);
 
-        if let Some(timeout_duration) = timeout {
-            let wait_result = condition.wait_for(&mut guard, timeout_duration);
-            if wait_result.timed_out() {
-                return Err(WasmtimeError::Timeout {
-                    message: "Write lock acquisition timed out".to_string(),
-                });
+        loop {
+            // Check if we've exceeded the timeout
+            if let Some(dl) = deadline {
+                if Instant::now() >= dl {
+                    // Remove ourselves from the queue on timeout
+                    let mut queue = self.writer_queue.lock();
+                    queue.retain(|w| w.thread_id != thread_id);
+                    self.writer_waiting.store(false, Ordering::Release);
+                    return Err(WasmtimeError::Timeout {
+                        message: "Write lock acquisition timed out".to_string(),
+                    });
+                }
             }
-        } else {
-            condition.wait(&mut guard);
-        }
 
-        // Try to acquire the lock after wait
-        if let Some(write_guard) = self.data.try_write() {
-            self.writer_waiting.store(false, Ordering::Release);
-            self.update_write_statistics(start_time.elapsed());
-            Ok(write_guard)
-        } else {
-            Err(WasmtimeError::Concurrency {
-                message: "Failed to acquire write lock after notification".to_string(),
-            })
+            // Try to acquire the lock
+            if let Some(write_guard) = self.data.try_write() {
+                // Remove ourselves from the queue on success
+                let mut queue = self.writer_queue.lock();
+                queue.retain(|w| w.thread_id != thread_id);
+                self.writer_waiting.store(false, Ordering::Release);
+                self.update_write_statistics(start_time.elapsed());
+                return Ok(write_guard);
+            }
+
+            // Wait on the shared condvar with a short timeout
+            let mut guard = self.waiter_mutex.lock();
+            let wait_time = if let Some(dl) = deadline {
+                let remaining = dl.saturating_duration_since(Instant::now());
+                remaining.min(retry_interval)
+            } else {
+                retry_interval
+            };
+            self.waiter_condvar.wait_for(&mut guard, wait_time);
         }
     }
 
