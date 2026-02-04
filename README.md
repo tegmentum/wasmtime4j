@@ -31,14 +31,14 @@ Add Wasmtime4j to your Maven project:
 <dependency>
     <groupId>ai.tegmentum</groupId>
     <artifactId>wasmtime4j</artifactId>
-    <version>1.0.0</version>
+    <version>41.0.1-1.0.0</version>
 </dependency>
 ```
 
 Or for Gradle:
 
 ```gradle
-implementation 'ai.tegmentum:wasmtime4j:1.0.0'
+implementation 'ai.tegmentum:wasmtime4j:41.0.1-1.0.0'
 ```
 
 ### Basic Usage

@@ -2,18 +2,51 @@
 
 All notable changes to wasmtime4j will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## Versioning Scheme
+
+This project uses a combined version format: `<wasmtime_version>-<wasmtime4j_version>[-lts]`
+
+### Format
+- **wasmtime_version**: The upstream Wasmtime version (e.g., `41.0.1`)
+- **wasmtime4j_version**: The Java bindings version following semantic versioning (e.g., `1.0.0`)
+- **-lts** (optional): Designates long-term support releases
+
+### Examples
+- `41.0.1-1.0.0` - Initial release with Wasmtime 41.0.1
+- `41.0.1-1.0.1` - Patch release (bug fixes only) for the same Wasmtime version
+- `41.0.1-1.1.0` - Minor release (new features, backward compatible) for the same Wasmtime version
+- `42.0.0-1.0.0` - New major Wasmtime version, Java bindings reset to 1.0.0
+- `41.0.1-1.0.0-lts` - Long-term support release
+
+### Version Progression
+1. **Patch releases** (`x.y.z-1.0.N`): Bug fixes only, no new features
+2. **Minor releases** (`x.y.z-1.N.0`): New features, backward compatible with same wasmtime version
+3. **Major releases** (`x.y.z-N.0.0`): Breaking changes to Java API (rare)
+4. **Wasmtime upgrades** (`NEW.x.y-1.0.0`): Reset Java version to 1.0.0 for each new Wasmtime major version
+
+### Branch Strategy
+- `main`: Latest development
+- `release/41.x`: Wasmtime 41.x maintenance branch
+- `lts/41.0.1-1.x`: Long-term support branch
+
+---
 
 ## [Unreleased]
 
+---
+
+## [41.0.1-1.0.0] - 2026-02-03
+
 ### Changed
 
-- **Wasmtime Upgrade**: Upgraded from Wasmtime 36.0.2 to Wasmtime 41.0.0
+- **Wasmtime Upgrade**: Upgraded from Wasmtime 36.0.2 to Wasmtime 41.0.1
   - New component model async patterns at Store level vs Instance level
   - SharedMemory now requires explicit `wasm_threads(true)` configuration
   - Updated WasiView trait implementations
   - Rust toolchain minimum version 1.90.0
+- **Version Scheme**: Adopted new versioning format `<wasmtime_version>-<wasmtime4j_version>`
 
 ### Added
 
@@ -21,12 +54,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Native Reference Registry**: Added function reference registry for tracking func references across JNI/Panama boundary
 - **Handle Registry Cleanup**: Added cleanup mechanism for JNI handle registry to improve test isolation
 - **Platform Detection**: Added platform detection to skip trap tests on aarch64
+- **GLOBAL_CODE Registry Fix**: Using patched Wasmtime fork to prevent SIGABRT crashes in long-running JVM processes
+  - Fixes idempotent register_code/unregister_code operations using BTreeSet tracking
+  - Prevents crashes after ~350-400 engine/module creation cycles
 
 ### Fixed
 
 - Fixed WASI API method names in native bindings
 - Improved test isolation with handle registry cleanup between tests
 - Resolved JVM crash issues related to GC type support
+- Fixed SIGABRT crashes caused by duplicate GLOBAL_CODE registry entries
 
 ---
 
@@ -231,10 +268,10 @@ Initial release of wasmtime4j with 100% Wasmtime 36.0.2 API coverage, featuring 
 
 ### Dependencies
 
-- **Wasmtime**: 41.0.0 (native dependency)
+- **Wasmtime**: 36.0.2 (native dependency)
 - **Java**: 8+ (JNI runtime), 23+ (Panama runtime)
 - **Maven**: 3.6+ for building
-- **Rust**: 1.90.0+ for native compilation
+- **Rust**: 1.75.0+ for native compilation
 
 ### Compatibility
 
@@ -266,6 +303,6 @@ None. This is the initial stable release with comprehensive testing.
 
 ---
 
-For detailed information about specific features, see the [Release Notes](docs/release-notes-v1.0.0.md) and [API Documentation](docs/api-documentation.md).
+For detailed information about specific features, see the [API Documentation](https://github.com/tegmentum/wasmtime4j).
 
 For questions or support, please visit our [GitHub repository](https://github.com/tegmentum/wasmtime4j) or contact our support team.
