@@ -768,9 +768,13 @@ impl Default for SnapshotOptions {
 }
 
 impl FilesystemSnapshotManager {
-    /// Create a new filesystem snapshot manager
+    /// Create a new filesystem snapshot manager with default configuration
     pub fn new() -> Self {
-        let config = SnapshotConfig::default();
+        Self::with_config(SnapshotConfig::default())
+    }
+
+    /// Create a new filesystem snapshot manager with custom configuration
+    pub fn with_config(config: SnapshotConfig) -> Self {
         let storage_dir = config.storage_directory.clone();
 
         Self {
@@ -2462,7 +2466,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_snapshot_restore() {
-        let manager = FilesystemSnapshotManager::new();
+        let storage_dir = TempDir::new().unwrap();
+        let config = SnapshotConfig {
+            storage_directory: storage_dir.path().to_path_buf(),
+            ..Default::default()
+        };
+        let manager = FilesystemSnapshotManager::with_config(config);
         let temp_dir = TempDir::new().unwrap();
         let root_path = temp_dir.path();
         let restore_dir = TempDir::new().unwrap();
@@ -2499,7 +2508,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_snapshot_validation() {
-        let manager = FilesystemSnapshotManager::new();
+        let storage_dir = TempDir::new().unwrap();
+        let config = SnapshotConfig {
+            storage_directory: storage_dir.path().to_path_buf(),
+            ..Default::default()
+        };
+        let manager = FilesystemSnapshotManager::with_config(config);
         let temp_dir = TempDir::new().unwrap();
         let root_path = temp_dir.path();
 
