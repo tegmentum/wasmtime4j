@@ -744,7 +744,6 @@ mod tests {
 
     /// Integration test for memory coordination and thread-safe sharing
     #[test]
-    #[ignore = "SharedMemory requires 'shared' flag on engine config - needs Config::shared_memory()"]
     fn test_memory_coordination_thread_safe_sharing() {
         let config = CoordinatorConfig {
             atomic_operations: true,

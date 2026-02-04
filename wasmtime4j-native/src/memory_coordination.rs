@@ -1491,9 +1491,10 @@ impl MemoryCoordinator {
 
     /// Create shared memory with the given configuration
     pub fn create_shared_memory(&self, memory_id: MemoryId, config: SharedMemoryConfig) -> WasmtimeResult<()> {
-        // Create engine with threads enabled for shared memory
+        // Create engine with threads and shared memory enabled
         let mut safe_config = crate::engine::safe_wasmtime_config();
         safe_config.wasm_threads(true);
+        safe_config.shared_memory(true);
         let engine = wasmtime::Engine::new(&safe_config).map_err(|e| {
             WasmtimeError::Runtime {
                 message: format!("Failed to create engine for shared memory: {}", e),
