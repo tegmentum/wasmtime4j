@@ -44,6 +44,12 @@ pub struct AdaptiveScalingManager {
     manager_thread: Option<JoinHandle<WasmtimeResult<()>>>,
     /// Shutdown flag
     shutdown: Arc<AtomicBool>,
+    /// Total scaling operations counter
+    total_scaling_operations: Arc<AtomicU64>,
+    /// Successful scaling operations counter
+    successful_operations: Arc<AtomicU64>,
+    /// Failed scaling operations counter
+    failed_operations: Arc<AtomicU64>,
 }
 
 /// Scaling configuration parameters
@@ -934,6 +940,9 @@ impl AdaptiveScalingManager {
             scaling_in_progress: Arc::new(AtomicBool::new(false)),
             manager_thread: None,
             shutdown: Arc::new(AtomicBool::new(false)),
+            total_scaling_operations: Arc::new(AtomicU64::new(0)),
+            successful_operations: Arc::new(AtomicU64::new(0)),
+            failed_operations: Arc::new(AtomicU64::new(0)),
         })
     }
 
@@ -975,9 +984,19 @@ impl AdaptiveScalingManager {
             current_pool_size: self.current_pool_size.load(Ordering::Relaxed),
             target_pool_size: self.target_pool_size.load(Ordering::Relaxed),
             scaling_in_progress: self.scaling_in_progress.load(Ordering::Relaxed),
-            total_scaling_operations: 0, // Would be tracked
-            successful_operations: 0,
-            failed_operations: 0,
+            total_scaling_operations: self.total_scaling_operations.load(Ordering::Relaxed),
+            successful_operations: self.successful_operations.load(Ordering::Relaxed),
+            failed_operations: self.failed_operations.load(Ordering::Relaxed),
+        }
+    }
+
+    /// Record a scaling operation attempt
+    pub fn record_scaling_attempt(&self, success: bool) {
+        self.total_scaling_operations.fetch_add(1, Ordering::Relaxed);
+        if success {
+            self.successful_operations.fetch_add(1, Ordering::Relaxed);
+        } else {
+            self.failed_operations.fetch_add(1, Ordering::Relaxed);
         }
     }
 }
