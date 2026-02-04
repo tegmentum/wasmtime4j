@@ -44,10 +44,7 @@ use crate::component::{
 /// Enhanced component engine with actual Wasmtime component model integration
 pub struct EnhancedComponentEngine {
     /// Active component instances with metadata
-    ///
-    /// IMPORTANT: Instances are wrapped in ManuallyDrop to prevent automatic cleanup
-    /// which crashes in Wasmtime's drop_fibers_and_futures function.
-    pub(crate) instances: Arc<RwLock<HashMap<u64, std::mem::ManuallyDrop<ComponentInstanceHandle>>>>,
+    pub(crate) instances: Arc<RwLock<HashMap<u64, ComponentInstanceHandle>>>,
     /// Component linker for interface resolution
     linker: ComponentLinker<ComponentStoreData>,
     /// Wasmtime engine configured for component model
@@ -58,20 +55,6 @@ pub struct EnhancedComponentEngine {
     next_instance_id: Arc<Mutex<u64>>,
     /// Performance metrics
     metrics: Arc<RwLock<ComponentMetrics>>,
-}
-
-/// Implement Drop to ensure proper cleanup order
-///
-/// Instances are wrapped in ManuallyDrop, so they won't be automatically dropped.
-/// This is intentional to avoid the crash in Wasmtime's drop_fibers_and_futures.
-impl Drop for EnhancedComponentEngine {
-    fn drop(&mut self) {
-        // Clear the instances HashMap - ManuallyDrop prevents automatic cleanup
-        // which would crash in Wasmtime's drop_fibers_and_futures
-        if let Ok(mut instances) = self.instances.write() {
-            instances.clear();
-        }
-    }
 }
 
 /// Extended store data for component instances
@@ -331,13 +314,12 @@ impl EnhancedComponentEngine {
 
         // Store the instance in the engine's HashMap to maintain Engine/Store/Instance ownership
         // This prevents the ownership violation that causes SIGSEGV
-        // Wrap in ManuallyDrop to prevent automatic cleanup that crashes in Wasmtime
         {
             let mut instances = self.instances.write()
                 .map_err(|_| WasmtimeError::Concurrency {
                     message: "Failed to acquire instances write lock".to_string(),
                 })?;
-            instances.insert(instance_id, std::mem::ManuallyDrop::new(handle));
+            instances.insert(instance_id, handle);
         }
 
         // Update metrics
@@ -499,15 +481,12 @@ impl EnhancedComponentEngine {
 
         log(&format!("Got instances lock, current count={}", instances.len()));
 
-        if let Some(handle) = instances.remove(&instance_id) {
-            log("Found instance, about to call mem::forget");
-            // WORKAROUND: Wasmtime 39.0.1 has a bug where Store<ComponentStoreData>
-            // crashes in drop_fibers_and_futures during destruction.
-            // We intentionally leak the handle here to prevent the crash.
-            // TODO: Remove this workaround once Wasmtime fixes the issue or
-            // we find the root cause.
-            std::mem::forget(handle);
-            log("mem::forget completed successfully");
+        if let Some(_handle) = instances.remove(&instance_id) {
+            log("Found instance, dropping it");
+            // Handle is dropped here - the Wasmtime fork now skips drop_fibers_and_futures
+            // when async_support is disabled, preventing the crash
+            drop(_handle);
+            log("Instance dropped successfully");
 
             // Update metrics
             if let Ok(mut metrics) = self.metrics.write() {

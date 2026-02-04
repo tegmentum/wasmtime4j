@@ -6336,7 +6336,7 @@ pub mod jni_component {
             use wasmtime::component::Func;
 
             // Get a single mutable reference so Rust can split borrows on different fields
-            let handle_ref = &mut **handle;
+            let handle_ref = &mut *handle;
 
             // Get the function using disjoint field borrows
             let func: Func = handle_ref.instance.get_func(&mut handle_ref.store, &func_name)
@@ -6345,7 +6345,7 @@ pub mod jni_component {
                 })?;
 
             // Call the function - need a fresh mutable reference
-            let handle_ref = &mut **handle;
+            let handle_ref = &mut *handle;
             let results_len = func.ty(&handle_ref.store).results().len();
             let mut results = vec![wasmtime::component::Val::Bool(false); results_len];
             func.call(&mut handle_ref.store, &params, &mut results)
@@ -6354,7 +6354,7 @@ pub mod jni_component {
                     backtrace: None,
                 })?;
 
-            let handle_ref = &mut **handle;
+            let handle_ref = &mut *handle;
             func.post_return(&mut handle_ref.store)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Post-return failed: {}", e),
