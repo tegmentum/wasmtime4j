@@ -111,14 +111,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     key: JString<'local>,
 ) -> jbyteArray {
     // Get the context
-    let ctx = unsafe { get_context(handle) };
-    if ctx.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle",
-        );
-        return std::ptr::null_mut();
-    }
+    let ctx = match unsafe { get_context(handle) } {
+        Some(c) => c,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid context handle",
+            );
+            return std::ptr::null_mut();
+        }
+    };
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -133,7 +135,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     };
 
     // Get the value
-    match ctx.unwrap().get(&key_str) {
+    match ctx.get(&key_str) {
         Ok(Some(value)) => {
             match env.byte_array_from_slice(&value) {
                 Ok(arr) => arr.into_raw(),
@@ -167,14 +169,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     value: JByteArray,
 ) -> jboolean {
     // Get the context
-    let ctx = unsafe { get_context(handle) };
-    if ctx.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle",
-        );
-        return JNI_FALSE;
-    }
+    let ctx = match unsafe { get_context(handle) } {
+        Some(c) => c,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid context handle",
+            );
+            return JNI_FALSE;
+        }
+    };
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -205,7 +209,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     };
 
     // Set the value
-    match ctx.unwrap().set(&key_str, value_vec) {
+    match ctx.set(&key_str, value_vec) {
         Ok(()) => JNI_TRUE,
         Err(e) => {
             let _ = env.throw_new(
@@ -226,14 +230,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     key: JString,
 ) -> jboolean {
     // Get the context
-    let ctx = unsafe { get_context(handle) };
-    if ctx.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle",
-        );
-        return JNI_FALSE;
-    }
+    let ctx = match unsafe { get_context(handle) } {
+        Some(c) => c,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid context handle",
+            );
+            return JNI_FALSE;
+        }
+    };
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -248,7 +254,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     };
 
     // Delete the key
-    match ctx.unwrap().delete(&key_str) {
+    match ctx.delete(&key_str) {
         Ok(deleted) => if deleted { JNI_TRUE } else { JNI_FALSE },
         Err(e) => {
             let _ = env.throw_new(
@@ -269,14 +275,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     key: JString,
 ) -> jboolean {
     // Get the context
-    let ctx = unsafe { get_context(handle) };
-    if ctx.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle",
-        );
-        return JNI_FALSE;
-    }
+    let ctx = match unsafe { get_context(handle) } {
+        Some(c) => c,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid context handle",
+            );
+            return JNI_FALSE;
+        }
+    };
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -291,7 +299,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     };
 
     // Check if key exists
-    match ctx.unwrap().exists(&key_str) {
+    match ctx.exists(&key_str) {
         Ok(exists) => if exists { JNI_TRUE } else { JNI_FALSE },
         Err(e) => {
             let _ = env.throw_new(
@@ -317,14 +325,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     delta: jlong,
 ) -> jlong {
     // Get the context
-    let ctx = unsafe { get_context(handle) };
-    if ctx.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle",
-        );
-        return 0;
-    }
+    let ctx = match unsafe { get_context(handle) } {
+        Some(c) => c,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid context handle",
+            );
+            return 0;
+        }
+    };
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -339,7 +349,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     };
 
     // Increment the value
-    match ctx.unwrap().increment(&key_str, delta) {
+    match ctx.increment(&key_str, delta) {
         Ok(new_value) => new_value as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -362,16 +372,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     _class: JClass,
     handle: jlong,
 ) -> jlong {
-    let ctx = unsafe { get_context(handle) };
-    if ctx.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle",
-        );
-        return 0;
-    }
+    let ctx = match unsafe { get_context(handle) } {
+        Some(c) => c,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid context handle",
+            );
+            return 0;
+        }
+    };
 
-    match ctx.unwrap().size() {
+    match ctx.size() {
         Ok(size) => size as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -390,16 +402,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     _class: JClass,
     handle: jlong,
 ) -> jboolean {
-    let ctx = unsafe { get_context(handle) };
-    if ctx.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle",
-        );
-        return JNI_FALSE;
-    }
+    let ctx = match unsafe { get_context(handle) } {
+        Some(c) => c,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid context handle",
+            );
+            return JNI_FALSE;
+        }
+    };
 
-    match ctx.unwrap().clear() {
+    match ctx.clear() {
         Ok(()) => JNI_TRUE,
         Err(e) => {
             let _ = env.throw_new(
@@ -418,16 +432,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     _class: JClass<'local>,
     handle: jlong,
 ) -> jobject {
-    let ctx = unsafe { get_context(handle) };
-    if ctx.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle",
-        );
-        return std::ptr::null_mut();
-    }
+    let ctx = match unsafe { get_context(handle) } {
+        Some(c) => c,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                "Invalid context handle",
+            );
+            return std::ptr::null_mut();
+        }
+    };
 
-    match ctx.unwrap().keys() {
+    match ctx.keys() {
         Ok(keys) => {
             // Convert to JSON string for simplicity
             let json = serde_json::to_string(&keys).unwrap_or_else(|_| "[]".to_string());

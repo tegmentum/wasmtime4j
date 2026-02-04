@@ -246,7 +246,7 @@ impl AsyncOperationsManager {
 
         // Store file handle
         {
-            let mut handles = self.file_handles.write().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
             handles.insert(operation_id, file_handle.clone());
         }
 
@@ -340,7 +340,7 @@ impl AsyncOperationsManager {
 
         // Store operation
         {
-            let mut operations = self.operations.write().unwrap();
+            let mut operations = self.operations.write().unwrap_or_else(|e| e.into_inner());
             operations.insert(operation_id, Box::new(operation));
         }
 
@@ -384,7 +384,7 @@ impl AsyncOperationsManager {
 
         // Store file handle
         {
-            let mut handles = self.file_handles.write().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
             handles.insert(operation_id, file_handle.clone());
         }
 
@@ -480,7 +480,7 @@ impl AsyncOperationsManager {
 
         // Store operation
         {
-            let mut operations = self.operations.write().unwrap();
+            let mut operations = self.operations.write().unwrap_or_else(|e| e.into_inner());
             operations.insert(operation_id, Box::new(operation));
         }
 
@@ -513,7 +513,7 @@ impl AsyncOperationsManager {
 
         // Store timer
         {
-            let mut timers = self.timers.write().unwrap();
+            let mut timers = self.timers.write().unwrap_or_else(|e| e.into_inner());
             timers.insert(operation_id, timer);
         }
 
@@ -523,7 +523,7 @@ impl AsyncOperationsManager {
         handle.spawn(async move {
             // Update status to running
             {
-                let mut timers = timers_ref.write().unwrap();
+                let mut timers = timers_ref.write().unwrap_or_else(|e| e.into_inner());
                 if let Some(timer) = timers.get_mut(&operation_id) {
                     timer.status = AsyncOperationStatus::Running;
                 }
@@ -558,7 +558,7 @@ impl AsyncOperationsManager {
 
             // Update final status
             {
-                let mut timers = timers_ref.write().unwrap();
+                let mut timers = timers_ref.write().unwrap_or_else(|e| e.into_inner());
                 if let Some(timer) = timers.get_mut(&operation_id) {
                     timer.status = result;
                 }
@@ -572,7 +572,7 @@ impl AsyncOperationsManager {
     pub fn get_operation_status(&self, operation_id: u64) -> Option<AsyncOperationStatus> {
         // Check file operations
         {
-            let operations = self.operations.read().unwrap();
+            let operations = self.operations.read().unwrap_or_else(|e| e.into_inner());
             if let Some(operation) = operations.get(&operation_id) {
                 return Some(operation.status());
             }
@@ -580,7 +580,7 @@ impl AsyncOperationsManager {
 
         // Check timers
         {
-            let timers = self.timers.read().unwrap();
+            let timers = self.timers.read().unwrap_or_else(|e| e.into_inner());
             if let Some(timer) = timers.get(&operation_id) {
                 return Some(timer.status.clone());
             }
@@ -593,7 +593,7 @@ impl AsyncOperationsManager {
     pub fn cancel_operation(&self, operation_id: u64) -> WasmtimeResult<()> {
         // Try to cancel file operation
         {
-            let mut operations = self.operations.write().unwrap();
+            let mut operations = self.operations.write().unwrap_or_else(|e| e.into_inner());
             if let Some(operation) = operations.get_mut(&operation_id) {
                 return operation.cancel();
             }
@@ -601,7 +601,7 @@ impl AsyncOperationsManager {
 
         // Try to cancel timer
         {
-            let mut timers = self.timers.write().unwrap();
+            let mut timers = self.timers.write().unwrap_or_else(|e| e.into_inner());
             if let Some(timer) = timers.get_mut(&operation_id) {
                 if let Some(cancel_tx) = timer.cancel_tx.take() {
                     let _ = cancel_tx.send(());
@@ -618,7 +618,7 @@ impl AsyncOperationsManager {
 
     /// Get operation result
     pub fn get_operation_result(&self, operation_id: u64) -> Option<AsyncOperationResult> {
-        let operations = self.operations.read().unwrap();
+        let operations = self.operations.read().unwrap_or_else(|e| e.into_inner());
         if let Some(operation) = operations.get(&operation_id) {
             operation.get_result()
         } else {
@@ -632,7 +632,7 @@ impl AsyncOperationsManager {
 
         // Clean up file operations
         {
-            let mut operations = self.operations.write().unwrap();
+            let mut operations = self.operations.write().unwrap_or_else(|e| e.into_inner());
             operations.retain(|_, op| {
                 !op.is_complete() || op.status() == AsyncOperationStatus::Running
             });
@@ -640,14 +640,14 @@ impl AsyncOperationsManager {
 
         // Clean up file handles for completed operations
         {
-            let mut handles = self.file_handles.write().unwrap();
-            let operations = self.operations.read().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
+            let operations = self.operations.read().unwrap_or_else(|e| e.into_inner());
             handles.retain(|id, _| operations.contains_key(id));
         }
 
         // Clean up old timers
         {
-            let mut timers = self.timers.write().unwrap();
+            let mut timers = self.timers.write().unwrap_or_else(|e| e.into_inner());
             timers.retain(|_, timer| {
                 timer.created_at > cutoff_time || timer.status == AsyncOperationStatus::Running
             });

@@ -638,7 +638,7 @@ impl ResourceManager {
             Err(violation) => {
                 // Update statistics
                 {
-                    let mut stats = self.statistics.write().unwrap();
+                    let mut stats = self.statistics.write().unwrap_or_else(|e| e.into_inner());
                     stats.preemptions_performed += 1;
                     stats.violations_detected += 1;
                 }
@@ -721,7 +721,7 @@ impl ResourceManager {
 
         let delay = resource.check_io_bandwidth(bytes)?;
         if delay > Duration::ZERO {
-            let mut stats = self.statistics.write().unwrap();
+            let mut stats = self.statistics.write().unwrap_or_else(|e| e.into_inner());
             stats.throttling_events += 1;
         }
         Ok(delay)

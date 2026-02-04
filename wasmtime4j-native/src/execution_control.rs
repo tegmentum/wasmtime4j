@@ -1020,7 +1020,7 @@ mod tests {
         assert_eq!(consumed.unwrap(), 500);
 
         // Check remaining fuel (1000 - 500 = 500)
-        let fuel_manager = context.fuel_manager.read().unwrap();
+        let fuel_manager = context.fuel_manager.read().unwrap_or_else(|e| e.into_inner());
         assert_eq!(fuel_manager.current_fuel, 500);
     }
 
@@ -1031,7 +1031,7 @@ mod tests {
 
         assert!(context.set_epoch_deadline(100, InterruptMode::Cooperative).is_ok());
 
-        let interrupt_manager = context.interrupt_manager.read().unwrap();
+        let interrupt_manager = context.interrupt_manager.read().unwrap_or_else(|e| e.into_inner());
         assert!(interrupt_manager.epoch_deadline.is_some());
     }
 
@@ -1117,7 +1117,7 @@ mod tests {
         let context = ExecutionContext::new("lifecycle_test".to_string(), config).unwrap();
 
         // Check initial state
-        let state = context.state.read().unwrap();
+        let state = context.state.read().unwrap_or_else(|e| e.into_inner());
         assert!(matches!(state.phase, ExecutionPhase::Created));
         assert_eq!(state.execution_cycles, 0);
 
@@ -1128,7 +1128,7 @@ mod tests {
         assert!(context.consume_fuel(100, Some("test")).is_ok());
 
         // Check updated state
-        let state = context.state.read().unwrap();
+        let state = context.state.read().unwrap_or_else(|e| e.into_inner());
         assert_eq!(state.execution_cycles, 1);
     }
 }

@@ -69,7 +69,7 @@ pub fn monotonic_subscribe_instant(
     let pollable = crate::wasi_preview2::WasiPollable::new_timer_instant(pollable_id, when);
 
     // Register the pollable
-    let mut pollables = context.pollables.write().unwrap();
+    let mut pollables = context.pollables.write().unwrap_or_else(|e| e.into_inner());
     pollables.insert(pollable_id, pollable);
 
     Ok(pollable_id as u64)
@@ -92,7 +92,7 @@ pub fn monotonic_subscribe_duration(
     let pollable = crate::wasi_preview2::WasiPollable::new_timer_duration(pollable_id, duration);
 
     // Register the pollable
-    let mut pollables = context.pollables.write().unwrap();
+    let mut pollables = context.pollables.write().unwrap_or_else(|e| e.into_inner());
     pollables.insert(pollable_id, pollable);
 
     Ok(pollable_id as u64)

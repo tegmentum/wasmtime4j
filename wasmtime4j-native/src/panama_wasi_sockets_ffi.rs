@@ -111,12 +111,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_create(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_create(context.unwrap(), is_ipv6 != 0) {
+    match wasi_sockets_helpers::tcp_socket_create(context, is_ipv6 != 0) {
         Ok(handle) => {
             unsafe {
                 *out_handle = handle as c_longlong;
@@ -139,22 +139,22 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_start_bind(
     flow_info: c_uint,
     scope_id: c_uint,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let addr = unsafe {
-        build_ip_socket_address_from_c(is_ipv4, ipv4_octets, ipv6_segments, port, flow_info, scope_id)
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
     };
-    if addr.is_none() {
-        return -1;
-    }
+
+    let addr = match unsafe {
+        build_ip_socket_address_from_c(is_ipv4, ipv4_octets, ipv6_segments, port, flow_info, scope_id)
+    } {
+        Some(a) => a,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_start_bind(
-        context.unwrap(),
+        context,
         socket_handle as u64,
-        &addr.unwrap(),
+        &addr,
     ) {
         Ok(_) => 0,
         Err(_) => -1,
@@ -167,12 +167,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_finish_bind(
     context_handle: *mut c_void,
     socket_handle: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_finish_bind(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_finish_bind(context, socket_handle as u64) {
         Ok(_) => 0,
         Err(_) => -1,
     }
@@ -190,22 +190,22 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_start_connect(
     flow_info: c_uint,
     scope_id: c_uint,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let addr = unsafe {
-        build_ip_socket_address_from_c(is_ipv4, ipv4_octets, ipv6_segments, port, flow_info, scope_id)
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
     };
-    if addr.is_none() {
-        return -1;
-    }
+
+    let addr = match unsafe {
+        build_ip_socket_address_from_c(is_ipv4, ipv4_octets, ipv6_segments, port, flow_info, scope_id)
+    } {
+        Some(a) => a,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_start_connect(
-        context.unwrap(),
+        context,
         socket_handle as u64,
-        &addr.unwrap(),
+        &addr,
     ) {
         Ok(_) => 0,
         Err(_) => -1,
@@ -224,12 +224,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_finish_connect(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_finish_connect(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_finish_connect(context, socket_handle as u64) {
         Ok((input, output)) => {
             unsafe {
                 *out_input_stream = input as c_longlong;
@@ -247,12 +247,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_start_listen(
     context_handle: *mut c_void,
     socket_handle: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_start_listen(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_start_listen(context, socket_handle as u64) {
         Ok(_) => 0,
         Err(_) => -1,
     }
@@ -264,12 +264,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_finish_listen(
     context_handle: *mut c_void,
     socket_handle: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_finish_listen(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_finish_listen(context, socket_handle as u64) {
         Ok(_) => 0,
         Err(_) => -1,
     }
@@ -288,12 +288,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_accept(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_accept(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_accept(context, socket_handle as u64) {
         Ok((new_socket, input, output)) => {
             unsafe {
                 *out_new_socket = new_socket as c_longlong;
@@ -322,12 +322,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_local_address(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_local_address(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_local_address(context, socket_handle as u64) {
         Ok(addr) => {
             unsafe {
                 encode_ip_socket_address_to_c(
@@ -362,12 +362,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_remote_address(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_remote_address(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_remote_address(context, socket_handle as u64) {
         Ok(addr) => {
             unsafe {
                 encode_ip_socket_address_to_c(
@@ -397,12 +397,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_address_family(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_address_family(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_address_family(context, socket_handle as u64) {
         Ok(is_ipv6) => {
             unsafe {
                 *out_is_ipv6 = if is_ipv6 { 1 } else { 0 };
@@ -420,13 +420,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_set_listen_backlog_size(
     socket_handle: c_longlong,
     value: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_set_listen_backlog_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -442,13 +442,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_set_keep_alive_enabled(
     socket_handle: c_longlong,
     enabled: c_int,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_set_keep_alive_enabled(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         enabled != 0,
     ) {
@@ -464,13 +464,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_set_keep_alive_idle_time(
     socket_handle: c_longlong,
     duration_nanos: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_set_keep_alive_idle_time(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         duration_nanos as u64,
     ) {
@@ -486,13 +486,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_set_keep_alive_interval(
     socket_handle: c_longlong,
     duration_nanos: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_set_keep_alive_interval(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         duration_nanos as u64,
     ) {
@@ -508,13 +508,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_set_keep_alive_count(
     socket_handle: c_longlong,
     count: c_uint,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_set_keep_alive_count(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         count,
     ) {
@@ -530,13 +530,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_set_hop_limit(
     socket_handle: c_longlong,
     value: c_uchar,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_set_hop_limit(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value,
     ) {
@@ -556,13 +556,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_receive_buffer_size(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_receive_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
     ) {
         Ok(size) => {
@@ -582,13 +582,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_set_receive_buffer_size(
     socket_handle: c_longlong,
     value: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_set_receive_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -608,12 +608,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_send_buffer_size(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_send_buffer_size(context.unwrap(), socket_handle as u64)
+    match wasi_sockets_helpers::tcp_socket_send_buffer_size(context, socket_handle as u64)
     {
         Ok(size) => {
             unsafe {
@@ -632,13 +632,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_set_send_buffer_size(
     socket_handle: c_longlong,
     value: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_set_send_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -658,12 +658,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_subscribe(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_subscribe(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_subscribe(context, socket_handle as u64) {
         Ok(handle) => {
             unsafe {
                 *out_pollable = handle as c_longlong;
@@ -681,13 +681,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_shutdown(
     socket_handle: c_longlong,
     shutdown_type: c_uchar,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::tcp_socket_shutdown(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         shutdown_type,
     ) {
@@ -702,12 +702,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_tcp_socket_close(
     context_handle: *mut c_void,
     socket_handle: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::tcp_socket_close(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_close(context, socket_handle as u64) {
         Ok(_) => 0,
         Err(_) => -1,
     }
@@ -728,12 +728,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_create(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::udp_socket_create(context.unwrap(), is_ipv6 != 0) {
+    match wasi_sockets_helpers::udp_socket_create(context, is_ipv6 != 0) {
         Ok(handle) => {
             unsafe {
                 *out_handle = handle as c_longlong;
@@ -756,22 +756,22 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_start_bind(
     flow_info: c_uint,
     scope_id: c_uint,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let addr = unsafe {
-        build_ip_socket_address_from_c(is_ipv4, ipv4_octets, ipv6_segments, port, flow_info, scope_id)
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
     };
-    if addr.is_none() {
-        return -1;
-    }
+
+    let addr = match unsafe {
+        build_ip_socket_address_from_c(is_ipv4, ipv4_octets, ipv6_segments, port, flow_info, scope_id)
+    } {
+        Some(a) => a,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::udp_socket_start_bind(
-        context.unwrap(),
+        context,
         socket_handle as u64,
-        &addr.unwrap(),
+        &addr,
     ) {
         Ok(_) => 0,
         Err(_) => -1,
@@ -784,12 +784,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_finish_bind(
     context_handle: *mut c_void,
     socket_handle: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::udp_socket_finish_bind(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_finish_bind(context, socket_handle as u64) {
         Ok(_) => 0,
         Err(_) => -1,
     }
@@ -807,22 +807,22 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_stream(
     flow_info: c_uint,
     scope_id: c_uint,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let addr = unsafe {
-        build_ip_socket_address_from_c(is_ipv4, ipv4_octets, ipv6_segments, port, flow_info, scope_id)
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
     };
-    if addr.is_none() {
-        return -1;
-    }
+
+    let addr = match unsafe {
+        build_ip_socket_address_from_c(is_ipv4, ipv4_octets, ipv6_segments, port, flow_info, scope_id)
+    } {
+        Some(a) => a,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::udp_socket_stream(
-        context.unwrap(),
+        context,
         socket_handle as u64,
-        &addr.unwrap(),
+        &addr,
     ) {
         Ok(_) => 0,
         Err(_) => -1,
@@ -845,12 +845,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_local_address(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::udp_socket_local_address(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_local_address(context, socket_handle as u64) {
         Ok(addr) => {
             unsafe {
                 encode_ip_socket_address_to_c(
@@ -885,12 +885,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_remote_address(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::udp_socket_remote_address(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_remote_address(context, socket_handle as u64) {
         Ok(addr) => {
             unsafe {
                 encode_ip_socket_address_to_c(
@@ -920,12 +920,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_address_family(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::udp_socket_address_family(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_address_family(context, socket_handle as u64) {
         Ok(is_ipv6) => {
             unsafe {
                 *out_is_ipv6 = if is_ipv6 { 1 } else { 0 };
@@ -943,13 +943,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_set_unicast_hop_limit(
     socket_handle: c_longlong,
     value: c_uchar,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::udp_socket_set_unicast_hop_limit(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value,
     ) {
@@ -969,13 +969,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_receive_buffer_size(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::udp_socket_receive_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
     ) {
         Ok(size) => {
@@ -995,13 +995,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_set_receive_buffer_size(
     socket_handle: c_longlong,
     value: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::udp_socket_set_receive_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -1021,12 +1021,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_send_buffer_size(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::udp_socket_send_buffer_size(context.unwrap(), socket_handle as u64)
+    match wasi_sockets_helpers::udp_socket_send_buffer_size(context, socket_handle as u64)
     {
         Ok(size) => {
             unsafe {
@@ -1045,13 +1045,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_set_send_buffer_size(
     socket_handle: c_longlong,
     value: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::udp_socket_set_send_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -1071,12 +1071,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_subscribe(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::udp_socket_subscribe(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_subscribe(context, socket_handle as u64) {
         Ok(handle) => {
             unsafe {
                 *out_pollable = handle as c_longlong;
@@ -1093,12 +1093,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_close(
     context_handle: *mut c_void,
     socket_handle: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::udp_socket_close(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_close(context, socket_handle as u64) {
         Ok(_) => 0,
         Err(_) => -1,
     }
@@ -1141,13 +1141,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_receive(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::udp_socket_receive(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         max_results as u64,
     ) {
@@ -1227,10 +1227,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_send(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     // Build datagrams vector
     let mut datagrams = Vec::new();
@@ -1262,7 +1262,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_udp_socket_send(
         }
     }
 
-    match wasi_sockets_helpers::udp_socket_send(context.unwrap(), socket_handle as u64, &datagrams)
+    match wasi_sockets_helpers::udp_socket_send(context, socket_handle as u64, &datagrams)
     {
         Ok(count) => {
             unsafe {
@@ -1288,12 +1288,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_network_create(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::network_create(context.unwrap()) {
+    match wasi_sockets_helpers::network_create(context) {
         Ok(handle) => {
             unsafe {
                 *out_handle = handle as c_longlong;
@@ -1310,12 +1310,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_network_close(
     context_handle: *mut c_void,
     network_handle: c_longlong,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::network_close(context.unwrap(), network_handle as u64) {
+    match wasi_sockets_helpers::network_close(context, network_handle as u64) {
         Ok(_) => 0,
         Err(_) => -1,
     }
@@ -1348,10 +1348,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_resolve_addresses(
         return 0;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return 0;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return 0,
+    };
 
     // Convert hostname to string
     let hostname_str = unsafe {
@@ -1363,7 +1363,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_resolve_addresses(
     };
 
     match wasi_sockets_helpers::ip_name_lookup_resolve_addresses(
-        context.unwrap(),
+        context,
         network_handle as u64,
         hostname_str,
         address_family,
@@ -1396,12 +1396,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_resolve_stream_next(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
-    match wasi_sockets_helpers::resolve_address_stream_next(context.unwrap(), stream_handle as u64)
+    match wasi_sockets_helpers::resolve_address_stream_next(context, stream_handle as u64)
     {
         Ok((has_address, is_ipv4, ipv4_bytes, ipv6_segments)) => {
             unsafe {
@@ -1440,13 +1440,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_resolve_stream_subscribe(
         return;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return,
+    };
 
     let _ = wasi_sockets_helpers::resolve_address_stream_subscribe(
-        context.unwrap(),
+        context,
         stream_handle as u64,
     );
 }
@@ -1468,13 +1468,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_resolve_stream_is_closed(
         return -1;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return -1,
+    };
 
     match wasi_sockets_helpers::resolve_address_stream_is_closed(
-        context.unwrap(),
+        context,
         stream_handle as u64,
     ) {
         Ok(closed) => {
@@ -1502,11 +1502,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_resolve_stream_close(
         return;
     }
 
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return,
+    };
 
     let _ =
-        wasi_sockets_helpers::resolve_address_stream_close(context.unwrap(), stream_handle as u64);
+        wasi_sockets_helpers::resolve_address_stream_close(context, stream_handle as u64);
 }

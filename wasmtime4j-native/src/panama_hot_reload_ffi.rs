@@ -128,7 +128,8 @@ pub extern "C" fn panama_start_hot_swap(
 
         match manager.start_hot_swap(name, version, strategy) {
             Ok(operation_id) => {
-                let c_string = CString::new(operation_id).unwrap();
+                let c_string = CString::new(operation_id)
+                    .unwrap_or_else(|_| CString::new("invalid").unwrap());
                 *operation_id_out = c_string.into_raw();
                 0
             }
@@ -161,9 +162,12 @@ pub extern "C" fn panama_get_swap_status(
         match manager.get_swap_status(op_id) {
             Ok(Some(operation)) => {
                 // Copy operation data to output struct
-                let component_name = CString::new(operation.component_name).unwrap();
-                let from_version = CString::new(format!("{}", operation.from_version)).unwrap();
-                let to_version = CString::new(format!("{}", operation.to_version)).unwrap();
+                let component_name = CString::new(operation.component_name)
+                    .unwrap_or_else(|_| CString::new("invalid").unwrap());
+                let from_version = CString::new(format!("{}", operation.from_version))
+                    .unwrap_or_else(|_| CString::new("0.0.0").unwrap());
+                let to_version = CString::new(format!("{}", operation.to_version))
+                    .unwrap_or_else(|_| CString::new("0.0.0").unwrap());
 
                 (*status_out).component_name = component_name.into_raw();
                 (*status_out).from_version = from_version.into_raw();
@@ -281,7 +285,8 @@ pub extern "C" fn panama_load_component_async(
 
         match manager.load_component_async(request) {
             Ok(request_id) => {
-                let c_string = CString::new(request_id).unwrap();
+                let c_string = CString::new(request_id)
+                    .unwrap_or_else(|_| CString::new("invalid").unwrap());
                 *request_id_out = c_string.into_raw();
                 0
             }

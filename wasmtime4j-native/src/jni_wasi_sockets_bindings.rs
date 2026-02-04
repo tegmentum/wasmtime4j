@@ -83,13 +83,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     is_ipv6: jboolean,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
-    match wasi_sockets_helpers::tcp_socket_create(context.unwrap(), is_ipv6 != 0) {
+    match wasi_sockets_helpers::tcp_socket_create(context, is_ipv6 != 0) {
         Ok(handle) => handle as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -118,11 +120,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     flow_info: jint,
     scope_id: jint,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     let addr = match build_ip_socket_address(
         &mut env,
@@ -141,7 +145,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_start_bind(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         &addr,
     ) {
@@ -163,14 +167,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) =
-        wasi_sockets_helpers::tcp_socket_finish_bind(context.unwrap(), socket_handle as u64)
+        wasi_sockets_helpers::tcp_socket_finish_bind(context, socket_handle as u64)
     {
         let _ = env.throw_new(
             "ai/tegmentum/wasmtime4j/exception/WasmException",
@@ -196,11 +202,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     flow_info: jint,
     scope_id: jint,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     let addr = match build_ip_socket_address(
         &mut env,
@@ -219,7 +227,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_start_connect(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         &addr,
     ) {
@@ -243,13 +251,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlongArray {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return JObject::null().into_raw();
+        }
+    };
 
-    match wasi_sockets_helpers::tcp_socket_finish_connect(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_finish_connect(context, socket_handle as u64) {
         Ok((input_handle, output_handle)) => {
             let result = env.new_long_array(2);
             if let Ok(arr) = result {
@@ -285,14 +295,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) =
-        wasi_sockets_helpers::tcp_socket_start_listen(context.unwrap(), socket_handle as u64)
+        wasi_sockets_helpers::tcp_socket_start_listen(context, socket_handle as u64)
     {
         let _ = env.throw_new(
             "ai/tegmentum/wasmtime4j/exception/WasmException",
@@ -312,14 +324,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) =
-        wasi_sockets_helpers::tcp_socket_finish_listen(context.unwrap(), socket_handle as u64)
+        wasi_sockets_helpers::tcp_socket_finish_listen(context, socket_handle as u64)
     {
         let _ = env.throw_new(
             "ai/tegmentum/wasmtime4j/exception/WasmException",
@@ -341,13 +355,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlongArray {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return JObject::null().into_raw();
+        }
+    };
 
-    match wasi_sockets_helpers::tcp_socket_accept(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_accept(context, socket_handle as u64) {
         Ok((new_socket, input_handle, output_handle)) => {
             let result = env.new_long_array(3);
             if let Ok(arr) = result {
@@ -389,13 +405,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlongArray {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return JObject::null().into_raw();
+        }
+    };
 
-    match wasi_sockets_helpers::tcp_socket_local_address(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_local_address(context, socket_handle as u64) {
         Ok(addr) => encode_ip_socket_address(&mut env, &addr),
         Err(e) => {
             let _ = env.throw_new(
@@ -420,13 +438,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlongArray {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return JObject::null().into_raw();
+        }
+    };
 
-    match wasi_sockets_helpers::tcp_socket_remote_address(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_remote_address(context, socket_handle as u64) {
         Ok(addr) => encode_ip_socket_address(&mut env, &addr),
         Err(e) => {
             let _ = env.throw_new(
@@ -449,13 +469,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jboolean {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return 0;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return 0;
+        }
+    };
 
-    match wasi_sockets_helpers::tcp_socket_address_family(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_address_family(context, socket_handle as u64) {
         Ok(is_ipv6) => {
             if is_ipv6 {
                 1
@@ -485,14 +507,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     value: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_set_listen_backlog_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -515,14 +539,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     enabled: jboolean,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_set_keep_alive_enabled(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         enabled != 0,
     ) {
@@ -545,14 +571,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     duration_nanos: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_set_keep_alive_idle_time(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         duration_nanos as u64,
     ) {
@@ -575,14 +603,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     duration_nanos: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_set_keep_alive_interval(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         duration_nanos as u64,
     ) {
@@ -605,14 +635,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     count: jint,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_set_keep_alive_count(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         count as u32,
     ) {
@@ -635,14 +667,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     value: jint,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_set_hop_limit(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u8,
     ) {
@@ -664,14 +698,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
     match wasi_sockets_helpers::tcp_socket_receive_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
     ) {
         Ok(size) => size as jlong,
@@ -697,14 +733,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     value: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_set_receive_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -726,13 +764,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
-    match wasi_sockets_helpers::tcp_socket_send_buffer_size(context.unwrap(), socket_handle as u64)
+    match wasi_sockets_helpers::tcp_socket_send_buffer_size(context, socket_handle as u64)
     {
         Ok(size) => size as jlong,
         Err(e) => {
@@ -757,14 +797,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     value: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_set_send_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -786,13 +828,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
-    match wasi_sockets_helpers::tcp_socket_subscribe(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::tcp_socket_subscribe(context, socket_handle as u64) {
         Ok(handle) => handle as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -816,14 +860,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     socket_handle: jlong,
     shutdown_type: jint,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::tcp_socket_shutdown(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         shutdown_type as u8,
     ) {
@@ -845,13 +891,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiTcpS
     context_handle: jlong,
     socket_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
-    if let Err(e) = wasi_sockets_helpers::tcp_socket_close(context.unwrap(), socket_handle as u64) {
+    if let Err(e) = wasi_sockets_helpers::tcp_socket_close(context, socket_handle as u64) {
         let _ = env.throw_new(
             "ai/tegmentum/wasmtime4j/exception/WasmException",
             format!("Failed to close socket: {}", e),
@@ -874,13 +922,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     is_ipv6: jboolean,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
-    match wasi_sockets_helpers::udp_socket_create(context.unwrap(), is_ipv6 != 0) {
+    match wasi_sockets_helpers::udp_socket_create(context, is_ipv6 != 0) {
         Ok(handle) => handle as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -909,11 +959,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     flow_info: jint,
     scope_id: jint,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     let addr = match build_ip_socket_address(
         &mut env,
@@ -932,7 +984,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     };
 
     if let Err(e) = wasi_sockets_helpers::udp_socket_start_bind(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         &addr,
     ) {
@@ -954,14 +1006,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     socket_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) =
-        wasi_sockets_helpers::udp_socket_finish_bind(context.unwrap(), socket_handle as u64)
+        wasi_sockets_helpers::udp_socket_finish_bind(context, socket_handle as u64)
     {
         let _ = env.throw_new(
             "ai/tegmentum/wasmtime4j/exception/WasmException",
@@ -987,11 +1041,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     flow_info: jint,
     scope_id: jint,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     let addr = match build_ip_socket_address(
         &mut env,
@@ -1010,7 +1066,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     };
 
     if let Err(e) =
-        wasi_sockets_helpers::udp_socket_stream(context.unwrap(), socket_handle as u64, &addr)
+        wasi_sockets_helpers::udp_socket_stream(context, socket_handle as u64, &addr)
     {
         let _ = env.throw_new(
             "ai/tegmentum/wasmtime4j/exception/WasmException",
@@ -1032,13 +1088,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlongArray {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return JObject::null().into_raw();
+        }
+    };
 
-    match wasi_sockets_helpers::udp_socket_local_address(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_local_address(context, socket_handle as u64) {
         Ok(addr) => encode_ip_socket_address(&mut env, &addr),
         Err(e) => {
             let _ = env.throw_new(
@@ -1063,13 +1121,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlongArray {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return JObject::null().into_raw();
+        }
+    };
 
-    match wasi_sockets_helpers::udp_socket_remote_address(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_remote_address(context, socket_handle as u64) {
         Ok(addr) => encode_ip_socket_address(&mut env, &addr),
         Err(e) => {
             let _ = env.throw_new(
@@ -1092,13 +1152,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jboolean {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return 0;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return 0;
+        }
+    };
 
-    match wasi_sockets_helpers::udp_socket_address_family(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_address_family(context, socket_handle as u64) {
         Ok(is_ipv6) => {
             if is_ipv6 {
                 1
@@ -1128,14 +1190,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     socket_handle: jlong,
     value: jint,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::udp_socket_set_unicast_hop_limit(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u8,
     ) {
@@ -1157,14 +1221,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
     match wasi_sockets_helpers::udp_socket_receive_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
     ) {
         Ok(size) => size as jlong,
@@ -1190,14 +1256,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     socket_handle: jlong,
     value: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::udp_socket_set_receive_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -1219,13 +1287,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
-    match wasi_sockets_helpers::udp_socket_send_buffer_size(context.unwrap(), socket_handle as u64)
+    match wasi_sockets_helpers::udp_socket_send_buffer_size(context, socket_handle as u64)
     {
         Ok(size) => size as jlong,
         Err(e) => {
@@ -1250,14 +1320,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     socket_handle: jlong,
     value: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::udp_socket_set_send_buffer_size(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         value as u64,
     ) {
@@ -1279,13 +1351,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     socket_handle: jlong,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
-    match wasi_sockets_helpers::udp_socket_subscribe(context.unwrap(), socket_handle as u64) {
+    match wasi_sockets_helpers::udp_socket_subscribe(context, socket_handle as u64) {
         Ok(handle) => handle as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -1308,13 +1382,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     context_handle: jlong,
     socket_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
-    if let Err(e) = wasi_sockets_helpers::udp_socket_close(context.unwrap(), socket_handle as u64) {
+    if let Err(e) = wasi_sockets_helpers::udp_socket_close(context, socket_handle as u64) {
         let _ = env.throw_new(
             "ai/tegmentum/wasmtime4j/exception/WasmException",
             format!("Failed to close socket: {}", e),
@@ -1344,14 +1420,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     socket_handle: jlong,
     max_results: jlong,
 ) -> jbyteArray {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return std::ptr::null_mut();
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return std::ptr::null_mut();
+        }
+    };
 
     match wasi_sockets_helpers::udp_socket_receive(
-        context.unwrap(),
+        context,
         socket_handle as u64,
         max_results as u64,
     ) {
@@ -1479,11 +1557,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
     socket_handle: jlong,
     encoded_datagrams: jbyteArray,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
     // Get byte array
     let arr = unsafe { JByteArray::from_raw(encoded_datagrams) };
@@ -1609,7 +1689,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
         datagrams.push((data, addr));
     }
 
-    match wasi_sockets_helpers::udp_socket_send(context.unwrap(), socket_handle as u64, &datagrams) {
+    match wasi_sockets_helpers::udp_socket_send(context, socket_handle as u64, &datagrams) {
         Ok(sent) => sent as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -1635,13 +1715,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiNetw
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return -1;
+        }
+    };
 
-    match wasi_sockets_helpers::network_create(context.unwrap()) {
+    match wasi_sockets_helpers::network_create(context) {
         Ok(handle) => handle as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -1664,14 +1746,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiNetw
     context_handle: jlong,
     network_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
+            return;
+        }
+    };
 
     if let Err(e) =
-        wasi_sockets_helpers::network_close(context.unwrap(), network_handle as u64)
+        wasi_sockets_helpers::network_close(context, network_handle as u64)
     {
         let _ = env.throw_new(
             "ai/tegmentum/wasmtime4j/exception/WasmException",
@@ -1761,14 +1845,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiIpNa
     hostname: JObject,
     address_family: jbyte,
 ) -> jlong {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalStateException",
-            "Invalid context handle",
-        );
-        return 0;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalStateException",
+                "Invalid context handle",
+            );
+            return 0;
+        }
+    };
 
     // Convert Java string to Rust string
     let hostname_str = match env.get_string(&hostname.into()) {
@@ -1783,7 +1869,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiIpNa
     };
 
     match wasi_sockets_helpers::ip_name_lookup_resolve_addresses(
-        context.unwrap(),
+        context,
         network_handle as u64,
         &hostname_str,
         address_family as u8,
@@ -1814,16 +1900,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveA
     context_handle: jlong,
     stream_handle: jlong,
 ) -> jlongArray {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalStateException",
-            "Invalid context handle",
-        );
-        return JObject::null().into_raw();
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalStateException",
+                "Invalid context handle",
+            );
+            return JObject::null().into_raw();
+        }
+    };
 
-    match wasi_sockets_helpers::resolve_address_stream_next(context.unwrap(), stream_handle as u64)
+    match wasi_sockets_helpers::resolve_address_stream_next(context, stream_handle as u64)
     {
         Ok((has_address, is_ipv4, ipv4_bytes, ipv6_segments)) => {
             // Create int array: [hasAddress, isIpv4, ipv4_b0-b3, ipv6_s0-s7]
@@ -1875,17 +1963,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveA
     context_handle: jlong,
     stream_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        let _ = env.throw_new(
-            "java/lang/IllegalStateException",
-            "Invalid context handle",
-        );
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalStateException",
+                "Invalid context handle",
+            );
+            return;
+        }
+    };
 
     if let Err(e) = wasi_sockets_helpers::resolve_address_stream_subscribe(
-        context.unwrap(),
+        context,
         stream_handle as u64,
     ) {
         let _ = env.throw_new(
@@ -1910,14 +2000,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveA
     context_handle: jlong,
     stream_handle: jlong,
 ) -> jboolean {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        // Return true (closed) if context is invalid
-        return 1;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => {
+            // Return true (closed) if context is invalid
+            return 1;
+        }
+    };
 
     match wasi_sockets_helpers::resolve_address_stream_is_closed(
-        context.unwrap(),
+        context,
         stream_handle as u64,
     ) {
         Ok(closed) => {
@@ -1943,11 +2035,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveA
     context_handle: jlong,
     stream_handle: jlong,
 ) {
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return;
-    }
+    let context = match unsafe { get_context(context_handle) } {
+        Some(ctx) => ctx,
+        None => return,
+    };
 
     let _ =
-        wasi_sockets_helpers::resolve_address_stream_close(context.unwrap(), stream_handle as u64);
+        wasi_sockets_helpers::resolve_address_stream_close(context, stream_handle as u64);
 }

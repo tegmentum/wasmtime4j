@@ -336,7 +336,7 @@ impl NetworkManager {
 
         // Store connection
         {
-            let mut connections = self.tcp_connections.write().unwrap();
+            let mut connections = self.tcp_connections.write().unwrap_or_else(|e| e.into_inner());
             connections.insert(connection_id, connection);
         }
 
@@ -375,7 +375,7 @@ impl NetworkManager {
 
         // Store listener
         {
-            let mut listeners = self.tcp_listeners.write().unwrap();
+            let mut listeners = self.tcp_listeners.write().unwrap_or_else(|e| e.into_inner());
             listeners.insert(listener_id, listener_wrapper);
         }
 
@@ -387,7 +387,7 @@ impl NetworkManager {
         let timeout_duration = Duration::from_millis(timeout_ms.unwrap_or(self.config.connection_timeout_ms));
 
         let (stream, remote_addr) = {
-            let mut listeners = self.tcp_listeners.write().unwrap();
+            let mut listeners = self.tcp_listeners.write().unwrap_or_else(|e| e.into_inner());
             let listener = listeners.get_mut(&listener_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("TCP listener {} not found", listener_id),
@@ -434,7 +434,7 @@ impl NetworkManager {
 
         // Store connection
         {
-            let mut connections = self.tcp_connections.write().unwrap();
+            let mut connections = self.tcp_connections.write().unwrap_or_else(|e| e.into_inner());
             connections.insert(connection_id, connection);
         }
 
@@ -453,7 +453,7 @@ impl NetworkManager {
         let timeout_duration = Duration::from_millis(timeout_ms.unwrap_or(self.config.read_timeout_ms));
 
         let read_future = async {
-            let mut connections = self.tcp_connections.write().unwrap();
+            let mut connections = self.tcp_connections.write().unwrap_or_else(|e| e.into_inner());
             let connection = connections.get_mut(&connection_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("TCP connection {} not found", connection_id),
@@ -478,7 +478,7 @@ impl NetworkManager {
 
         // Update connection statistics
         {
-            let mut connections = self.tcp_connections.write().unwrap();
+            let mut connections = self.tcp_connections.write().unwrap_or_else(|e| e.into_inner());
             if let Some(connection) = connections.get_mut(&connection_id) {
                 connection.bytes_received += bytes_read as u64;
                 connection.last_activity = Instant::now();
@@ -499,7 +499,7 @@ impl NetworkManager {
         let timeout_duration = Duration::from_millis(timeout_ms.unwrap_or(self.config.write_timeout_ms));
 
         let write_future = async {
-            let mut connections = self.tcp_connections.write().unwrap();
+            let mut connections = self.tcp_connections.write().unwrap_or_else(|e| e.into_inner());
             let connection = connections.get_mut(&connection_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("TCP connection {} not found", connection_id),
@@ -526,7 +526,7 @@ impl NetworkManager {
 
         // Update connection statistics
         {
-            let mut connections = self.tcp_connections.write().unwrap();
+            let mut connections = self.tcp_connections.write().unwrap_or_else(|e| e.into_inner());
             if let Some(connection) = connections.get_mut(&connection_id) {
                 connection.bytes_sent += bytes_written as u64;
                 connection.last_activity = Instant::now();
@@ -567,7 +567,7 @@ impl NetworkManager {
 
         // Store socket
         {
-            let mut sockets = self.udp_sockets.write().unwrap();
+            let mut sockets = self.udp_sockets.write().unwrap_or_else(|e| e.into_inner());
             sockets.insert(socket_id, socket_wrapper);
         }
 
@@ -579,7 +579,7 @@ impl NetworkManager {
         let timeout_duration = Duration::from_millis(timeout_ms.unwrap_or(self.config.write_timeout_ms));
 
         let send_future = async {
-            let mut sockets = self.udp_sockets.write().unwrap();
+            let mut sockets = self.udp_sockets.write().unwrap_or_else(|e| e.into_inner());
             let socket = sockets.get_mut(&socket_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("UDP socket {} not found", socket_id),
@@ -604,7 +604,7 @@ impl NetworkManager {
 
         // Update socket statistics
         {
-            let mut sockets = self.udp_sockets.write().unwrap();
+            let mut sockets = self.udp_sockets.write().unwrap_or_else(|e| e.into_inner());
             if let Some(socket) = sockets.get_mut(&socket_id) {
                 socket.bytes_sent += bytes_sent as u64;
             }
@@ -624,7 +624,7 @@ impl NetworkManager {
         let timeout_duration = Duration::from_millis(timeout_ms.unwrap_or(self.config.read_timeout_ms));
 
         let recv_future = async {
-            let mut sockets = self.udp_sockets.write().unwrap();
+            let mut sockets = self.udp_sockets.write().unwrap_or_else(|e| e.into_inner());
             let socket = sockets.get_mut(&socket_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("UDP socket {} not found", socket_id),
@@ -649,7 +649,7 @@ impl NetworkManager {
 
         // Update socket statistics
         {
-            let mut sockets = self.udp_sockets.write().unwrap();
+            let mut sockets = self.udp_sockets.write().unwrap_or_else(|e| e.into_inner());
             if let Some(socket) = sockets.get_mut(&socket_id) {
                 socket.bytes_received += bytes_received as u64;
             }
@@ -668,7 +668,7 @@ impl NetworkManager {
     pub async fn close_connection(&self, connection_id: u64) -> WasmtimeResult<()> {
         // Try to close TCP connection
         {
-            let mut connections = self.tcp_connections.write().unwrap();
+            let mut connections = self.tcp_connections.write().unwrap_or_else(|e| e.into_inner());
             if let Some(mut connection) = connections.remove(&connection_id) {
                 connection.status = ConnectionStatus::Closed;
 
@@ -682,7 +682,7 @@ impl NetworkManager {
 
         // Try to close UDP socket
         {
-            let mut sockets = self.udp_sockets.write().unwrap();
+            let mut sockets = self.udp_sockets.write().unwrap_or_else(|e| e.into_inner());
             if let Some(mut socket) = sockets.remove(&connection_id) {
                 socket.status = ConnectionStatus::Closed;
                 return Ok(());
@@ -691,7 +691,7 @@ impl NetworkManager {
 
         // Try to close TCP listener
         {
-            let mut listeners = self.tcp_listeners.write().unwrap();
+            let mut listeners = self.tcp_listeners.write().unwrap_or_else(|e| e.into_inner());
             if let Some(mut listener) = listeners.remove(&connection_id) {
                 listener.status = ConnectionStatus::Closed;
                 return Ok(());
@@ -717,7 +717,7 @@ impl NetworkManager {
 
         // Clean up TCP connections
         {
-            let mut connections = self.tcp_connections.write().unwrap();
+            let mut connections = self.tcp_connections.write().unwrap_or_else(|e| e.into_inner());
             connections.retain(|_, connection| {
                 if now.duration_since(connection.last_activity) > idle_timeout {
                     cleaned_up += 1;
@@ -981,7 +981,7 @@ mod tests {
 
         // Get the actual listener address
         let actual_addr = {
-            let listeners = manager.tcp_listeners.read().unwrap();
+            let listeners = manager.tcp_listeners.read().unwrap_or_else(|e| e.into_inner());
             listeners.get(&listener_id).unwrap().local_addr
         };
 
@@ -1020,7 +1020,7 @@ mod tests {
 
         // Get actual addresses
         let (socket1_actual, socket2_actual) = {
-            let sockets = manager.udp_sockets.read().unwrap();
+            let sockets = manager.udp_sockets.read().unwrap_or_else(|e| e.into_inner());
             (
                 sockets.get(&socket1_id).unwrap().local_addr,
                 sockets.get(&socket2_id).unwrap().local_addr,

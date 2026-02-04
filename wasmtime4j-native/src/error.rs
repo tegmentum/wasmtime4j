@@ -559,7 +559,8 @@ impl WasmtimeError {
     /// Get error message as C string for FFI
     pub fn to_c_string(&self) -> CString {
         CString::new(self.to_string()).unwrap_or_else(|_| {
-            CString::new("Error message contains null bytes").unwrap()
+            CString::new("Error message contains null bytes")
+                .unwrap_or_else(|_| CString::default())
         })
     }
 

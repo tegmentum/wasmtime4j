@@ -812,9 +812,9 @@ impl DebugSession {
 
     fn notify_breakpoint_set(&self, breakpoint: &Breakpoint) {
         // Notify event listeners
-        let listeners = self.event_listeners.read().unwrap();
+        let listeners = self.event_listeners.read().unwrap_or_else(|e| e.into_inner());
         for listener in listeners.iter() {
-            let state = self.execution_state.read().unwrap();
+            let state = self.execution_state.read().unwrap_or_else(|e| e.into_inner());
             listener.on_breakpoint_hit(self.id, breakpoint, &state);
         }
     }
@@ -824,14 +824,14 @@ impl DebugSession {
     }
 
     fn notify_execution_paused(&self, reason: &str, state: &ExecutionState) {
-        let listeners = self.event_listeners.read().unwrap();
+        let listeners = self.event_listeners.read().unwrap_or_else(|e| e.into_inner());
         for listener in listeners.iter() {
             listener.on_execution_paused(self.id, reason, state);
         }
     }
 
     fn notify_step_complete(&self, state: &ExecutionState) {
-        let listeners = self.event_listeners.read().unwrap();
+        let listeners = self.event_listeners.read().unwrap_or_else(|e| e.into_inner());
         for listener in listeners.iter() {
             listener.on_step_complete(self.id, state);
         }

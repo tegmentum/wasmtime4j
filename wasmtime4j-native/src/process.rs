@@ -378,7 +378,7 @@ impl ProcessManager {
             },
             EnvironmentInheritance::Selective(ref vars) => {
                 cmd.env_clear();
-                let current_env = self.environment.read().unwrap();
+                let current_env = self.environment.read().unwrap_or_else(|e| e.into_inner());
                 for var in vars {
                     if let Some(value) = current_env.get(var) {
                         cmd.env(var, value);
@@ -484,7 +484,7 @@ impl ProcessManager {
 
         // Store process handle
         {
-            let mut processes = self.processes.write().unwrap();
+            let mut processes = self.processes.write().unwrap_or_else(|e| e.into_inner());
             processes.insert(process_id, handle);
         }
 
@@ -508,7 +508,7 @@ impl ProcessManager {
         let timeout_duration = Duration::from_millis(timeout_ms.unwrap_or(self.config.default_timeout_ms));
 
         let wait_future = async {
-            let mut processes = self.processes.write().unwrap();
+            let mut processes = self.processes.write().unwrap_or_else(|e| e.into_inner());
             let handle = processes.get_mut(&process_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("Process {} not found", process_id),
@@ -532,7 +532,7 @@ impl ProcessManager {
 
         // Update process status
         {
-            let mut processes = self.processes.write().unwrap();
+            let mut processes = self.processes.write().unwrap_or_else(|e| e.into_inner());
             if let Some(handle) = processes.get_mut(&process_id) {
                 handle.status = ProcessStatus::Finished(exit_status);
                 handle.last_activity = Instant::now();
@@ -555,7 +555,7 @@ impl ProcessManager {
 
     /// Kill a process with specified signal
     pub async fn kill_process(&self, process_id: u64, signal: ProcessSignal) -> WasmtimeResult<()> {
-        let mut processes = self.processes.write().unwrap();
+        let mut processes = self.processes.write().unwrap_or_else(|e| e.into_inner());
         let handle = processes.get_mut(&process_id)
             .ok_or_else(|| WasmtimeError::InvalidParameter {
                 message: format!("Process {} not found", process_id),
@@ -614,19 +614,19 @@ impl ProcessManager {
 
     /// Get process status
     pub fn get_process_status(&self, process_id: u64) -> Option<ProcessStatus> {
-        let processes = self.processes.read().unwrap();
+        let processes = self.processes.read().unwrap_or_else(|e| e.into_inner());
         processes.get(&process_id).map(|handle| handle.status.clone())
     }
 
     /// Get process resource usage
     pub fn get_process_resource_usage(&self, process_id: u64) -> Option<ProcessResourceUsage> {
-        let processes = self.processes.read().unwrap();
+        let processes = self.processes.read().unwrap_or_else(|e| e.into_inner());
         processes.get(&process_id).map(|handle| handle.resource_usage.clone())
     }
 
     /// Set environment variable
     pub fn set_environment_variable(&self, key: &str, value: &str) -> WasmtimeResult<EnvironmentOperation> {
-        let mut environment = self.environment.write().unwrap();
+        let mut environment = self.environment.write().unwrap_or_else(|e| e.into_inner());
         let old_value = environment.insert(key.to_string(), value.to_string());
 
         let operation = EnvironmentOperation {
@@ -651,13 +651,13 @@ impl ProcessManager {
 
     /// Get environment variable
     pub fn get_environment_variable(&self, key: &str) -> Option<String> {
-        let environment = self.environment.read().unwrap();
+        let environment = self.environment.read().unwrap_or_else(|e| e.into_inner());
         environment.get(key).cloned()
     }
 
     /// Remove environment variable
     pub fn remove_environment_variable(&self, key: &str) -> WasmtimeResult<EnvironmentOperation> {
-        let mut environment = self.environment.write().unwrap();
+        let mut environment = self.environment.write().unwrap_or_else(|e| e.into_inner());
         let old_value = environment.remove(key);
 
         let operation = EnvironmentOperation {
@@ -682,13 +682,13 @@ impl ProcessManager {
 
     /// Get all environment variables
     pub fn get_all_environment_variables(&self) -> HashMap<String, String> {
-        let environment = self.environment.read().unwrap();
+        let environment = self.environment.read().unwrap_or_else(|e| e.into_inner());
         environment.clone()
     }
 
     /// Clear all environment variables
     pub fn clear_environment_variables(&self) -> WasmtimeResult<EnvironmentOperation> {
-        let mut environment = self.environment.write().unwrap();
+        let mut environment = self.environment.write().unwrap_or_else(|e| e.into_inner());
         environment.clear();
 
         let operation = EnvironmentOperation {
@@ -722,7 +722,7 @@ impl ProcessManager {
                 interval.tick().await;
 
                 let should_continue = {
-                    let mut processes_guard = processes.write().unwrap();
+                    let mut processes_guard = processes.write().unwrap_or_else(|e| e.into_inner());
                     if let Some(handle) = processes_guard.get_mut(&process_id) {
                         // Update resource usage (simplified implementation)
                         handle.resource_usage.elapsed_time = handle.created_at.elapsed();
@@ -765,7 +765,7 @@ impl ProcessManager {
         let cutoff_time = Instant::now() - Duration::from_secs(300); // Keep for 5 minutes
 
         {
-            let mut processes = self.processes.write().unwrap();
+            let mut processes = self.processes.write().unwrap_or_else(|e| e.into_inner());
             processes.retain(|_, handle| {
                 match &handle.status {
                     ProcessStatus::Finished(_) | ProcessStatus::Killed(_) | ProcessStatus::Error(_) => {

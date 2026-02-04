@@ -300,7 +300,7 @@ impl ModuleSerializer {
 
     /// Clear the cache
     pub fn clear_cache(&self) -> WasmtimeResult<()> {
-        let mut cache = self.cache.write().unwrap();
+        let mut cache = self.cache.write().unwrap_or_else(|e| e.into_inner());
         cache.entries.clear();
         cache.lru_order.clear();
         cache.current_size = 0;
@@ -310,7 +310,7 @@ impl ModuleSerializer {
 
     /// Get cache information
     pub fn get_cache_info(&self) -> CacheInfo {
-        let cache = self.cache.read().unwrap();
+        let cache = self.cache.read().unwrap_or_else(|e| e.into_inner());
 
         CacheInfo {
             entry_count: cache.entries.len(),
@@ -335,7 +335,7 @@ impl ModuleSerializer {
 
     /// Get module from cache
     fn get_from_cache(&self, hash: &str) -> WasmtimeResult<Option<Vec<u8>>> {
-        let mut cache = self.cache.write().unwrap();
+        let mut cache = self.cache.write().unwrap_or_else(|e| e.into_inner());
         let max_age = cache.max_age; // Extract max_age before mutable borrow
 
         // Check if entry exists and extract data to avoid borrowing conflict
@@ -367,7 +367,7 @@ impl ModuleSerializer {
 
     /// Store module in cache
     fn store_in_cache(&self, hash: String, data: Vec<u8>, uncompressed_size: usize, metadata: ModuleMetadata) -> WasmtimeResult<()> {
-        let mut cache = self.cache.write().unwrap();
+        let mut cache = self.cache.write().unwrap_or_else(|e| e.into_inner());
 
         let entry = CacheEntry {
             data: data.clone(),
@@ -592,7 +592,7 @@ impl ModuleSerializer {
 
     /// Get cache information
     pub fn cache_info(&self) -> CacheInfo {
-        let cache = self.cache.read().unwrap();
+        let cache = self.cache.read().unwrap_or_else(|e| e.into_inner());
         let stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
 
         // Find the oldest entry

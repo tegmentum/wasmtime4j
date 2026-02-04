@@ -225,7 +225,7 @@ impl ExperimentalCompilationBackend {
 
     /// Initialize available compilation backends
     fn initialize_backends(&mut self) -> Result<()> {
-        let mut backends = self.backends.write().unwrap();
+        let mut backends = self.backends.write().unwrap_or_else(|e| e.into_inner());
         let capability_manager = get_capability_manager();
 
         // Standard backend (always available)
@@ -462,7 +462,7 @@ impl ExperimentalCompilationBackend {
 
     /// Setup optimization profiles
     fn setup_optimization_profiles(&self) -> Result<()> {
-        let mut profiles = self.optimization_profiles.write().unwrap();
+        let mut profiles = self.optimization_profiles.write().unwrap_or_else(|e| e.into_inner());
 
         // High-performance profile
         profiles.insert("high_performance".to_string(), OptimizationProfile {
@@ -551,7 +551,7 @@ impl ExperimentalCompilationBackend {
         let start_time = Instant::now();
 
         // Get backend
-        let backends = self.backends.read().unwrap();
+        let backends = self.backends.read().unwrap_or_else(|e| e.into_inner());
         let backend = backends.get(&backend_type)
             .ok_or_else(|| anyhow!("Backend {:?} not available", backend_type))?;
 
@@ -593,11 +593,11 @@ impl ExperimentalCompilationBackend {
 
     /// Select optimal backend for given requirements
     pub fn select_optimal_backend(&self, profile_name: &str) -> Result<BackendType> {
-        let profiles = self.optimization_profiles.read().unwrap();
+        let profiles = self.optimization_profiles.read().unwrap_or_else(|e| e.into_inner());
         let profile = profiles.get(profile_name)
             .ok_or_else(|| anyhow!("Optimization profile {} not found", profile_name))?;
 
-        let backends = self.backends.read().unwrap();
+        let backends = self.backends.read().unwrap_or_else(|e| e.into_inner());
 
         // Try backends in preference order
         for &backend_type in &profile.backend_preferences {
@@ -627,7 +627,7 @@ impl ExperimentalCompilationBackend {
 
     /// Get module from cache
     fn get_from_cache(&self, cache_key: &str) -> Result<Option<CacheEntry>> {
-        let mut cache = self.compilation_cache.write().unwrap();
+        let mut cache = self.compilation_cache.write().unwrap_or_else(|e| e.into_inner());
         if let Some(entry) = cache.entries.get_mut(cache_key) {
             entry.access_count += 1;
             entry.last_accessed = SystemTime::now();
@@ -659,7 +659,7 @@ impl ExperimentalCompilationBackend {
             size: serialized.len(),
         };
 
-        let mut cache = self.compilation_cache.write().unwrap();
+        let mut cache = self.compilation_cache.write().unwrap_or_else(|e| e.into_inner());
 
         // Check if we need to evict entries
         while cache.current_size + entry.size > cache.max_size && !cache.entries.is_empty() {
@@ -707,13 +707,13 @@ impl ExperimentalCompilationBackend {
 
     /// Get compilation statistics for backend
     pub fn get_backend_statistics(&self, backend_type: BackendType) -> Option<CompilationStatistics> {
-        let backends = self.backends.read().unwrap();
+        let backends = self.backends.read().unwrap_or_else(|e| e.into_inner());
         backends.get(&backend_type).map(|backend| backend.statistics.clone())
     }
 
     /// Get all available backends
     pub fn get_available_backends(&self) -> Vec<BackendType> {
-        let backends = self.backends.read().unwrap();
+        let backends = self.backends.read().unwrap_or_else(|e| e.into_inner());
         backends.iter()
             .filter(|(_, backend)| backend.is_available)
             .map(|(&backend_type, _)| backend_type)
@@ -722,12 +722,12 @@ impl ExperimentalCompilationBackend {
 
     /// Set active backend
     pub fn set_active_backend(&self, backend_type: BackendType) -> Result<()> {
-        let backends = self.backends.read().unwrap();
+        let backends = self.backends.read().unwrap_or_else(|e| e.into_inner());
         if !backends.contains_key(&backend_type) {
             return Err(anyhow!("Backend {:?} not available", backend_type));
         }
 
-        let mut active = self.active_backend.write().unwrap();
+        let mut active = self.active_backend.write().unwrap_or_else(|e| e.into_inner());
         *active = backend_type;
 
         info!("Set active compilation backend to {:?}", backend_type);
@@ -736,7 +736,7 @@ impl ExperimentalCompilationBackend {
 
     /// Get active backend
     pub fn get_active_backend(&self) -> BackendType {
-        *self.active_backend.read().unwrap()
+        *self.active_backend.read().unwrap_or_else(|e| e.into_inner())
     }
 }
 

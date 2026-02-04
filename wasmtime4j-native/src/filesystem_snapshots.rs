@@ -1853,7 +1853,7 @@ impl SnapshotStorage {
 
         // Update index
         {
-            let mut index = self.index.write().unwrap();
+            let mut index = self.index.write().unwrap_or_else(|e| e.into_inner());
             index.insert(snapshot.id, StoredSnapshotInfo {
                 id: snapshot.id,
                 path: snapshot_dir.clone(),
@@ -1897,7 +1897,7 @@ impl SnapshotStorage {
 
     pub async fn delete_snapshot(&self, snapshot_id: u64) -> WasmtimeResult<()> {
         let snapshot_info = {
-            let mut index = self.index.write().unwrap();
+            let mut index = self.index.write().unwrap_or_else(|e| e.into_inner());
             index.remove(&snapshot_id)
         };
 
@@ -1922,7 +1922,7 @@ impl VersionManager {
     }
 
     pub async fn add_to_chain(&self, path: &Path, snapshot_id: u64, version: &SnapshotVersion, parent_id: Option<u64>) -> WasmtimeResult<()> {
-        let mut chains = self.version_chains.write().unwrap();
+        let mut chains = self.version_chains.write().unwrap_or_else(|e| e.into_inner());
         let chain = chains.entry(path.to_path_buf()).or_insert_with(|| VersionChain {
             path: path.to_path_buf(),
             chain: Vec::new(),
@@ -1943,7 +1943,7 @@ impl VersionManager {
     }
 
     pub async fn remove_from_chain(&self, path: &Path, snapshot_id: u64) -> WasmtimeResult<()> {
-        let mut chains = self.version_chains.write().unwrap();
+        let mut chains = self.version_chains.write().unwrap_or_else(|e| e.into_inner());
         if let Some(chain) = chains.get_mut(path) {
             chain.chain.retain(|entry| entry.snapshot_id != snapshot_id);
 
@@ -1968,7 +1968,7 @@ impl DeduplicationEngine {
 
     pub async fn add_content(&self, entry: &SnapshotEntry) -> WasmtimeResult<Option<String>> {
         if let Some(ref content_hash) = entry.content_hash {
-            let mut index = self.content_index.write().unwrap();
+            let mut index = self.content_index.write().unwrap_or_else(|e| e.into_inner());
 
             if let Some(block) = index.get_mut(content_hash) {
                 // Content already exists, increment reference count
@@ -2000,7 +2000,7 @@ impl DeduplicationEngine {
     }
 
     pub async fn get_content(&self, dedup_ref: &str) -> WasmtimeResult<Vec<u8>> {
-        let storage = self.block_storage.read().unwrap();
+        let storage = self.block_storage.read().unwrap_or_else(|e| e.into_inner());
         storage.get(dedup_ref).cloned().ok_or_else(|| {
             WasmtimeError::Wasi {
                 message: format!("Deduplication reference {} not found", dedup_ref),
@@ -2009,12 +2009,12 @@ impl DeduplicationEngine {
     }
 
     pub async fn validate_reference(&self, dedup_ref: &str) -> WasmtimeResult<bool> {
-        let index = self.content_index.read().unwrap();
+        let index = self.content_index.read().unwrap_or_else(|e| e.into_inner());
         Ok(index.contains_key(dedup_ref))
     }
 
     pub async fn cleanup_references(&self, entries: &[SnapshotEntry]) -> WasmtimeResult<()> {
-        let mut index = self.content_index.write().unwrap();
+        let mut index = self.content_index.write().unwrap_or_else(|e| e.into_inner());
 
         for entry in entries {
             if let Some(ref dedup_ref) = entry.dedup_ref {
@@ -2026,7 +2026,7 @@ impl DeduplicationEngine {
                         index.remove(dedup_ref);
 
                         // Also remove from block storage
-                        let mut storage = self.block_storage.write().unwrap();
+                        let mut storage = self.block_storage.write().unwrap_or_else(|e| e.into_inner());
                         storage.remove(dedup_ref);
 
                         // Update stats
@@ -2114,7 +2114,7 @@ impl TransactionManager {
         };
 
         {
-            let mut transactions = self.active_transactions.write().unwrap();
+            let mut transactions = self.active_transactions.write().unwrap_or_else(|e| e.into_inner());
             transactions.insert(tx_id, transaction);
         }
 
@@ -2124,7 +2124,7 @@ impl TransactionManager {
 
     pub async fn commit_transaction(&self, tx_id: u64) -> WasmtimeResult<()> {
         {
-            let mut transactions = self.active_transactions.write().unwrap();
+            let mut transactions = self.active_transactions.write().unwrap_or_else(|e| e.into_inner());
             if let Some(mut transaction) = transactions.remove(&tx_id) {
                 transaction.status = TransactionStatus::Committed;
                 // Transaction is committed and removed from active list
@@ -2141,7 +2141,7 @@ impl TransactionManager {
 
     pub async fn rollback_transaction(&self, tx_id: u64) -> WasmtimeResult<()> {
         {
-            let mut transactions = self.active_transactions.write().unwrap();
+            let mut transactions = self.active_transactions.write().unwrap_or_else(|e| e.into_inner());
             if let Some(mut transaction) = transactions.remove(&tx_id) {
                 transaction.status = TransactionStatus::RolledBack;
 

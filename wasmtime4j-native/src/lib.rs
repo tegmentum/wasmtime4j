@@ -22,8 +22,8 @@
 
 #![allow(missing_docs)]
 #![allow(unused_imports)]
-// TODO: Remove this and audit ~249 dead code warnings - significant unused infrastructure exists
-// (adaptive scaling, work stealing, NUMA awareness, etc. - features built but not integrated)
+// TODO: Further audit dead code - some unused infrastructure remains
+// (adaptive scaling, work stealing, thread profiler, deadlock prevention - used in integration tests)
 #![allow(dead_code)]
 #![allow(unused_unsafe)]
 #![allow(unused_assignments)]
@@ -248,9 +248,10 @@ pub mod networking;
 
 // Platform-specific optimizations for maximum performance
 pub mod platform_types;
-pub mod numa_topology;
-pub mod cpu_cache_management;
-pub mod memory_bandwidth_optimization;
+// REMOVED: Unused platform optimization modules
+// pub mod numa_topology;
+// pub mod cpu_cache_management;
+// pub mod memory_bandwidth_optimization;
 pub mod cpu_microarchitecture_detection;
 pub mod platform_config;
 

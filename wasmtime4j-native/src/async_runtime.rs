@@ -83,14 +83,40 @@ static ASYNC_RUNTIME: Lazy<ManuallyDrop<Arc<Runtime>>> = Lazy::new(|| {
                     Arc::new(runtime)
                 }
                 Err(e2) => {
-                    error!("Failed to create fallback async runtime ({}), using current thread runtime", e2);
+                    error!("Failed to create fallback async runtime ({}), trying current thread runtime", e2);
 
-                    // Last resort: current thread runtime
-                    let runtime = tokio::runtime::Builder::new_current_thread()
+                    // Last resort: current thread runtime with minimal configuration
+                    match tokio::runtime::Builder::new_current_thread()
+                        .enable_time() // Enable only timer support as minimal requirement
                         .build()
-                        .unwrap_or_else(|e3| panic!("Critical: Cannot create any async runtime - {}", e3));
-
-                    Arc::new(runtime)
+                    {
+                        Ok(runtime) => {
+                            warn!("Using minimal current-thread async runtime");
+                            Arc::new(runtime)
+                        }
+                        Err(e3) => {
+                            // Absolute last resort - try with no features enabled
+                            error!("Current thread runtime with time failed ({}), trying bare minimum", e3);
+                            match tokio::runtime::Builder::new_current_thread().build() {
+                                Ok(runtime) => {
+                                    error!("Using bare minimum current-thread runtime - functionality may be limited");
+                                    Arc::new(runtime)
+                                }
+                                Err(e4) => {
+                                    // If we truly cannot create any runtime, we still need to return something
+                                    // rather than panic. Log the critical error but attempt one more time.
+                                    error!("CRITICAL: All async runtime creation attempts failed: {}", e4);
+                                    error!("Attempting unsafe fallback - async operations may fail");
+                                    // This should never fail with absolutely no features, but if it does
+                                    // we've exhausted all options
+                                    tokio::runtime::Builder::new_current_thread()
+                                        .build()
+                                        .map(Arc::new)
+                                        .expect("Failed to create any Tokio runtime - cannot continue")
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -415,7 +441,8 @@ pub fn execute_async_function_call(context: AsyncFunctionCallContext) -> Wasmtim
                 // Create C string for error message
                 let message_cstring = match CString::new(error_msg) {
                     Ok(s) => s,
-                    Err(_) => CString::new("Error creating message").unwrap()
+                    Err(_) => CString::new("Error creating message")
+                        .unwrap_or_else(|_| CString::default())
                 };
 
                 // Invoke the callback
@@ -500,7 +527,8 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
                 if let Some(progress_cb) = context.progress_callback {
                     match context.jvm.attach_current_thread() {
                         Ok(_env) => {
-                            let msg = CString::new("Validating module bytes").unwrap();
+                            let msg = CString::new("Validating module bytes")
+                                .unwrap_or_else(|_| CString::default());
                             unsafe {
                                 progress_cb(context.user_data.as_ptr(), 10, msg.as_ptr());
                             }
@@ -542,7 +570,8 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
                 if let Some(progress_cb) = context.progress_callback {
                     match context.jvm.attach_current_thread() {
                         Ok(_env) => {
-                            let msg = CString::new("Engine configured, starting compilation").unwrap();
+                            let msg = CString::new("Engine configured, starting compilation")
+                                .unwrap_or_else(|_| CString::default());
                             unsafe {
                                 progress_cb(context.user_data.as_ptr(), 30, msg.as_ptr());
                             }
@@ -562,7 +591,8 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
                 if let Some(progress_cb) = context.progress_callback {
                     match context.jvm.attach_current_thread() {
                         Ok(_env) => {
-                            let msg = CString::new("Compilation complete, finalizing").unwrap();
+                            let msg = CString::new("Compilation complete, finalizing")
+                                .unwrap_or_else(|_| CString::default());
                             unsafe {
                                 progress_cb(context.user_data.as_ptr(), 80, msg.as_ptr());
                             }
@@ -578,7 +608,8 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
                         if let Some(progress_cb) = context.progress_callback {
                             match context.jvm.attach_current_thread() {
                                 Ok(_env) => {
-                                    let msg = CString::new("Module ready").unwrap();
+                                    let msg = CString::new("Module ready")
+                                        .unwrap_or_else(|_| CString::default());
                                     unsafe {
                                         progress_cb(context.user_data.as_ptr(), 100, msg.as_ptr());
                                     }
@@ -652,7 +683,8 @@ pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<
 
                 let message_cstring = match CString::new(error_msg) {
                     Ok(s) => s,
-                    Err(_) => CString::new("Error creating message").unwrap()
+                    Err(_) => CString::new("Error creating message")
+                        .unwrap_or_else(|_| CString::default())
                 };
 
                 // SAFETY: user_data pointer is passed through from C and remains valid

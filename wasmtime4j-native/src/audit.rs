@@ -639,13 +639,13 @@ impl AuditLogger {
 
     /// Get audit statistics
     pub fn get_statistics(&self) -> AuditStatistics {
-        let stats = self.stats.read().unwrap();
+        let stats = self.stats.read().unwrap_or_else(|e| e.into_inner());
         stats.clone()
     }
 
     /// Update statistics with new event
     fn update_statistics(&self, event: &AuditEvent) {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(|e| e.into_inner());
 
         stats.total_events += 1;
 

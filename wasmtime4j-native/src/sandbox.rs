@@ -392,7 +392,7 @@ impl SandboxManager {
 
         // Check concurrent instance limits
         if let Some(max_concurrent) = self.config.max_concurrent_modules {
-            let instances = self.instances.read().unwrap();
+            let instances = self.instances.read().unwrap_or_else(|e| e.into_inner());
             if instances.len() >= max_concurrent {
                 return Err(WasmtimeError::ResourceLimit {
                     message: "Maximum concurrent instances reached".to_string(),
@@ -423,13 +423,13 @@ impl SandboxManager {
 
         // Store the instance
         {
-            let mut instances = self.instances.write().unwrap();
+            let mut instances = self.instances.write().unwrap_or_else(|e| e.into_inner());
             instances.insert(instance_id.clone(), sandboxed_instance);
         }
 
         // Store the context
         {
-            let mut contexts = self.contexts.write().unwrap();
+            let mut contexts = self.contexts.write().unwrap_or_else(|e| e.into_inner());
             contexts.insert(instance_id.clone(), context);
         }
 
@@ -448,7 +448,7 @@ impl SandboxManager {
         instance_id: &str,
         capability: &Capability,
     ) -> WasmtimeResult<bool> {
-        let contexts = self.contexts.read().unwrap();
+        let contexts = self.contexts.read().unwrap_or_else(|e| e.into_inner());
         let context = contexts.get(instance_id)
             .ok_or_else(|| WasmtimeError::InvalidParameter {
                 message: format!("Unknown instance ID: {}", instance_id),
@@ -489,7 +489,7 @@ impl SandboxManager {
         instance_id: &str,
         usage_update: ResourceUsage,
     ) -> WasmtimeResult<()> {
-        let mut instances = self.instances.write().unwrap();
+        let mut instances = self.instances.write().unwrap_or_else(|e| e.into_inner());
         let instance = instances.get_mut(instance_id)
             .ok_or_else(|| WasmtimeError::InvalidParameter {
                 message: format!("Unknown instance ID: {}", instance_id),
@@ -552,12 +552,12 @@ impl SandboxManager {
     /// Remove an instance from the sandbox
     pub fn remove_instance(&mut self, instance_id: &str) -> WasmtimeResult<()> {
         {
-            let mut instances = self.instances.write().unwrap();
+            let mut instances = self.instances.write().unwrap_or_else(|e| e.into_inner());
             instances.remove(instance_id);
         }
 
         {
-            let mut contexts = self.contexts.write().unwrap();
+            let mut contexts = self.contexts.write().unwrap_or_else(|e| e.into_inner());
             contexts.remove(instance_id);
         }
 
@@ -596,7 +596,7 @@ impl SandboxManager {
 
         // Collect expired instance IDs
         let expired_ids: Vec<String> = {
-            let contexts = self.contexts.read().unwrap();
+            let contexts = self.contexts.read().unwrap_or_else(|e| e.into_inner());
             contexts.iter()
                 .filter(|(_, context)| context.is_expired())
                 .map(|(id, _)| id.clone())

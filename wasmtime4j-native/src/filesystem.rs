@@ -488,7 +488,7 @@ impl FileSystemManager {
 
         // Store handle
         {
-            let mut handles = self.file_handles.write().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
             handles.insert(handle_id, handle);
         }
 
@@ -505,7 +505,7 @@ impl FileSystemManager {
     /// Read from a file handle
     pub async fn read_file(&self, handle_id: u64, buffer: &mut [u8]) -> WasmtimeResult<usize> {
         let bytes_read = {
-            let mut handles = self.file_handles.write().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
             let handle = handles.get_mut(&handle_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("File handle {} not found", handle_id),
@@ -532,7 +532,7 @@ impl FileSystemManager {
 
         // Update handle statistics
         {
-            let mut handles = self.file_handles.write().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
             if let Some(handle) = handles.get_mut(&handle_id) {
                 handle.bytes_read += bytes_read as u64;
                 handle.last_accessed = Instant::now();
@@ -557,7 +557,7 @@ impl FileSystemManager {
         }
 
         let bytes_written = {
-            let mut handles = self.file_handles.write().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
             let handle = handles.get_mut(&handle_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("File handle {} not found", handle_id),
@@ -586,7 +586,7 @@ impl FileSystemManager {
 
         // Update handle statistics
         {
-            let mut handles = self.file_handles.write().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
             if let Some(handle) = handles.get_mut(&handle_id) {
                 handle.bytes_written += bytes_written as u64;
                 handle.last_accessed = Instant::now();
@@ -660,7 +660,7 @@ impl FileSystemManager {
 
         // Store handle
         {
-            let mut handles = self.directory_handles.write().unwrap();
+            let mut handles = self.directory_handles.write().unwrap_or_else(|e| e.into_inner());
             handles.insert(handle_id, handle);
         }
 
@@ -672,7 +672,7 @@ impl FileSystemManager {
         let mut entries = Vec::new();
 
         {
-            let mut handles = self.directory_handles.write().unwrap();
+            let mut handles = self.directory_handles.write().unwrap_or_else(|e| e.into_inner());
             let handle = handles.get_mut(&handle_id)
                 .ok_or_else(|| WasmtimeError::InvalidParameter {
                     message: format!("Directory handle {} not found", handle_id),
@@ -863,7 +863,7 @@ impl FileSystemManager {
     /// Close a file handle
     pub async fn close_file(&self, handle_id: u64) -> WasmtimeResult<()> {
         let handle = {
-            let mut handles = self.file_handles.write().unwrap();
+            let mut handles = self.file_handles.write().unwrap_or_else(|e| e.into_inner());
             handles.remove(&handle_id)
         };
 

@@ -1096,7 +1096,8 @@ pub extern "C" fn start_hot_swap(
 
         match manager.start_hot_swap(name, version, None) {
             Ok(operation_id) => {
-                let c_string = CString::new(operation_id).unwrap();
+                let c_string = CString::new(operation_id)
+                    .unwrap_or_else(|_| CString::new("invalid").unwrap());
                 *operation_id_out = c_string.into_raw();
                 0
             }

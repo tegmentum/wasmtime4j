@@ -104,7 +104,7 @@ impl StoreLimiter {
 
     /// Get current statistics
     pub fn stats(&self) -> ResourceLimiterStats {
-        self.stats.read().unwrap().clone()
+        self.stats.read().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
     /// Check if memory growth should be allowed
@@ -116,7 +116,7 @@ impl StoreLimiter {
     /// # Returns
     /// `true` if growth should be allowed, `false` otherwise
     pub fn allow_memory_grow(&self, current_pages: u64, requested_pages: u64) -> bool {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(|e| e.into_inner());
         stats.memory_grow_requests += 1;
 
         let new_size_pages = current_pages.saturating_add(requested_pages);
@@ -153,7 +153,7 @@ impl StoreLimiter {
     /// # Returns
     /// `true` if growth should be allowed, `false` otherwise
     pub fn allow_table_grow(&self, current_elements: u64, requested_elements: u64) -> bool {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(|e| e.into_inner());
         stats.table_grow_requests += 1;
 
         let new_size = current_elements.saturating_add(requested_elements);
@@ -173,7 +173,7 @@ impl StoreLimiter {
 
     /// Reset statistics
     pub fn reset_stats(&self) {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(|e| e.into_inner());
         *stats = ResourceLimiterStats::default();
     }
 }

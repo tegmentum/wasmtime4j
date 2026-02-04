@@ -746,8 +746,8 @@ mod tests {
     #[test]
     fn test_gc_type_registry_creation() {
         let registry = GcTypeRegistry::new();
-        assert!(registry.struct_types.read().unwrap().is_empty());
-        assert!(registry.array_types.read().unwrap().is_empty());
+        assert!(registry.struct_types.read().unwrap_or_else(|e| e.into_inner()).is_empty());
+        assert!(registry.array_types.read().unwrap_or_else(|e| e.into_inner()).is_empty());
     }
 
     #[test]

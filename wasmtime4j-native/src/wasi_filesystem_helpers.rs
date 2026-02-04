@@ -13,7 +13,7 @@ pub fn read_via_stream(
     descriptor_id: u64,
     offset: u64,
 ) -> WasmtimeResult<u64> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -37,7 +37,7 @@ pub fn write_via_stream(
     descriptor_id: u64,
     offset: u64,
 ) -> WasmtimeResult<u64> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -60,7 +60,7 @@ pub fn append_via_stream(
     context: &WasiPreview2Context,
     descriptor_id: u64,
 ) -> WasmtimeResult<u64> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -83,7 +83,7 @@ pub fn get_type(
     context: &WasiPreview2Context,
     descriptor_id: u64,
 ) -> WasmtimeResult<u32> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -109,7 +109,7 @@ pub fn get_flags(
     context: &WasiPreview2Context,
     descriptor_id: u64,
 ) -> WasmtimeResult<u32> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -125,7 +125,7 @@ pub fn set_size(
     descriptor_id: u64,
     size: u64,
 ) -> WasmtimeResult<()> {
-    let mut descriptors = context.descriptors.write().unwrap();
+    let mut descriptors = context.descriptors.write().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get_mut(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -151,7 +151,7 @@ pub fn sync_data(
     context: &WasiPreview2Context,
     descriptor_id: u64,
 ) -> WasmtimeResult<()> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -173,7 +173,7 @@ pub fn sync(
     context: &WasiPreview2Context,
     descriptor_id: u64,
 ) -> WasmtimeResult<()> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -198,7 +198,7 @@ pub fn open_at(
     flags: u32,
     _mode: u32,
 ) -> WasmtimeResult<u64> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let parent_descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Parent descriptor {} not found", descriptor_id),
@@ -230,7 +230,7 @@ pub fn open_at(
         status: DescriptorStatus::Open,
     };
 
-    let mut descriptors = context.descriptors.write().unwrap();
+    let mut descriptors = context.descriptors.write().unwrap_or_else(|e| e.into_inner());
     descriptors.insert(new_id, new_descriptor);
 
     Ok(new_id as u64)
@@ -242,7 +242,7 @@ pub fn create_directory_at(
     descriptor_id: u64,
     path: &str,
 ) -> WasmtimeResult<()> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let parent_descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Parent descriptor {} not found", descriptor_id),
@@ -264,7 +264,7 @@ pub fn read_directory(
     context: &WasiPreview2Context,
     descriptor_id: u64,
 ) -> WasmtimeResult<Vec<(String, u32)>> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -329,7 +329,7 @@ pub fn read_link_at(
     descriptor_id: u64,
     path: &str,
 ) -> WasmtimeResult<String> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -352,7 +352,7 @@ pub fn unlink_file_at(
     descriptor_id: u64,
     path: &str,
 ) -> WasmtimeResult<()> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -375,7 +375,7 @@ pub fn remove_directory_at(
     descriptor_id: u64,
     path: &str,
 ) -> WasmtimeResult<()> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -400,7 +400,7 @@ pub fn rename_at(
     new_descriptor_id: u64,
     new_path: &str,
 ) -> WasmtimeResult<()> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
 
     let old_descriptor = descriptors.get(&(old_descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -437,7 +437,7 @@ pub fn symlink_at(
     old_path: &str,
     new_path: &str,
 ) -> WasmtimeResult<()> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Descriptor {} not found", descriptor_id),
@@ -462,7 +462,7 @@ pub fn link_at(
     new_descriptor_id: u64,
     new_path: &str,
 ) -> WasmtimeResult<()> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
 
     let old_descriptor = descriptors.get(&(old_descriptor_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -498,7 +498,7 @@ pub fn is_same_object(
     descriptor_id_1: u64,
     descriptor_id_2: u64,
 ) -> WasmtimeResult<bool> {
-    let descriptors = context.descriptors.read().unwrap();
+    let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
 
     let descriptor1 = descriptors.get(&(descriptor_id_1 as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
@@ -521,7 +521,7 @@ pub fn close_descriptor(
     context: &WasiPreview2Context,
     descriptor_id: u64,
 ) -> WasmtimeResult<()> {
-    let mut descriptors = context.descriptors.write().unwrap();
+    let mut descriptors = context.descriptors.write().unwrap_or_else(|e| e.into_inner());
     if let Some(descriptor) = descriptors.get_mut(&(descriptor_id as u32)) {
         descriptor.status = DescriptorStatus::Closed;
     }
@@ -557,7 +557,7 @@ mod tests {
             metadata,
             status,
         };
-        ctx.descriptors.write().unwrap().insert(id, descriptor);
+        ctx.descriptors.write().unwrap_or_else(|e| e.into_inner()).insert(id, descriptor);
     }
 
     #[test]
@@ -642,7 +642,7 @@ mod tests {
         let result = set_size(&ctx, 40, 512);
         assert!(result.is_ok(), "set_size should succeed, got: {:?}", result.err());
         // Verify metadata was updated
-        let descriptors = ctx.descriptors.read().unwrap();
+        let descriptors = ctx.descriptors.read().unwrap_or_else(|e| e.into_inner());
         let desc = descriptors.get(&40).unwrap();
         let meta = desc.metadata.as_ref().unwrap();
         println!("Descriptor size after set_size: {}", meta.size);
@@ -664,7 +664,7 @@ mod tests {
             result.err(),
         );
         // Verify metadata is still None
-        let descriptors = ctx.descriptors.read().unwrap();
+        let descriptors = ctx.descriptors.read().unwrap_or_else(|e| e.into_inner());
         let desc = descriptors.get(&41).unwrap();
         println!("Descriptor metadata after set_size on None: {:?}", desc.metadata.is_none());
         assert!(desc.metadata.is_none(), "Metadata should remain None");
@@ -714,7 +714,7 @@ mod tests {
         let new_id = result.unwrap();
         println!("Opened new descriptor with id: {}", new_id);
         // Verify the new descriptor was created
-        let descriptors = ctx.descriptors.read().unwrap();
+        let descriptors = ctx.descriptors.read().unwrap_or_else(|e| e.into_inner());
         let new_desc = descriptors.get(&(new_id as u32));
         assert!(new_desc.is_some(), "New descriptor {} should exist", new_id);
         let new_desc = new_desc.unwrap();
@@ -813,7 +813,7 @@ mod tests {
         let result = close_descriptor(&ctx, 100);
         assert!(result.is_ok(), "close_descriptor should succeed, got: {:?}", result.err());
         // Verify status is now Closed
-        let descriptors = ctx.descriptors.read().unwrap();
+        let descriptors = ctx.descriptors.read().unwrap_or_else(|e| e.into_inner());
         let desc = descriptors.get(&100).unwrap();
         println!("Descriptor status after close: {:?}", desc.status);
         assert!(
@@ -847,7 +847,7 @@ mod tests {
         let stream_id = result.unwrap();
         println!("Created input stream with id: {}", stream_id);
         // Verify the stream was registered in the context
-        let streams = ctx.streams.read().unwrap();
+        let streams = ctx.streams.read().unwrap_or_else(|e| e.into_inner());
         let stream = streams.get(&(stream_id as u32));
         assert!(
             stream.is_some(),

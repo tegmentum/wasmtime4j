@@ -339,7 +339,7 @@ fn create_input_stream(
         resource_id: Some(_descriptor_id),
     };
 
-    let mut streams = context.streams.write().unwrap();
+    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
     streams.insert(stream_id, stream);
 
     Ok(stream_id as u64)
@@ -352,7 +352,7 @@ fn read_from_stream(
     _blocking: bool,
 ) -> WasmtimeResult<Vec<u8>> {
     
-    let mut streams = context.streams.write().unwrap();
+    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
     let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Stream {} not found", stream_id),
@@ -379,7 +379,7 @@ fn skip_in_stream(
     _blocking: bool,
 ) -> WasmtimeResult<u64> {
     
-    let mut streams = context.streams.write().unwrap();
+    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
     let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Stream {} not found", stream_id),
@@ -401,7 +401,7 @@ fn skip_in_stream(
 
 fn close_stream(context: &WasiContext, stream_id: u64) -> WasmtimeResult<()> {
     
-    let mut streams = context.streams.write().unwrap();
+    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
     if let Some(stream) = streams.get_mut(&(stream_id as u32)) {
         stream.status = WasiStreamStatusInfo::Closed;
         stream.buffer.clear();
@@ -889,7 +889,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
 
 fn check_write_capacity(context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
     
-    let streams = context.streams.read().unwrap();
+    let streams = context.streams.read().unwrap_or_else(|e| e.into_inner());
     let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Stream {} not found", stream_id),
@@ -914,7 +914,7 @@ fn write_to_stream(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     
-    let mut streams = context.streams.write().unwrap();
+    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
     let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Stream {} not found", stream_id),
@@ -939,7 +939,7 @@ fn flush_stream(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     
-    let streams = context.streams.read().unwrap();
+    let streams = context.streams.read().unwrap_or_else(|e| e.into_inner());
     let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Stream {} not found", stream_id),
@@ -964,7 +964,7 @@ fn write_zeroes_to_stream(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     
-    let mut streams = context.streams.write().unwrap();
+    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
     let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
         WasmtimeError::InvalidParameter {
             message: format!("Stream {} not found", stream_id),
@@ -991,7 +991,7 @@ fn splice_streams(
     _blocking: bool,
 ) -> WasmtimeResult<u64> {
     
-    let mut streams = context.streams.write().unwrap();
+    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
 
     // Get source stream data
     let source_stream = streams.get_mut(&(source_stream_id as u32)).ok_or_else(|| {
