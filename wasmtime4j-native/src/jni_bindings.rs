@@ -711,6 +711,9 @@ pub mod jni_instance {
     }
 
     /// Destroy a native instance with double-free protection
+    ///
+    /// Uses the consolidated `safe_destroy_no_fake_check` utility which provides
+    /// double-free protection and panic safety for JNI calls.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDestroyInstance(
         _env: JNIEnv,
@@ -718,40 +721,21 @@ pub mod jni_instance {
         instance_handle: jlong,
     ) {
         if instance_handle != 0 {
-            let ptr = instance_handle as *mut crate::instance::Instance;
-            let ptr_addr = ptr as usize;
-
-            // Check if pointer was already destroyed to prevent double-free
-            {
-                use crate::error::ffi_utils::DESTROYED_POINTERS;
-                let mut destroyed = DESTROYED_POINTERS.lock()
-                    .unwrap_or_else(|poisoned| {
-                        log::warn!("DESTROYED_POINTERS mutex was poisoned in JNI Instance destroy, recovering");
-                        poisoned.into_inner()
-                    });
-                if destroyed.contains(&ptr_addr) {
-                    log::warn!("Attempted double-free of JNI Instance at {:p} - ignoring", ptr);
-                    return;
-                }
-                destroyed.insert(ptr_addr);
-            }
-
+            use crate::ffi_common::resource_destruction::safe_destroy_no_fake_check;
+            use std::os::raw::c_void;
             unsafe {
-                // Drop the boxed instance with correct type
-                let _ = Box::from_raw(ptr);
-            }
-
-            // Remove from tracking after successful destruction
-            {
-                use crate::error::ffi_utils::DESTROYED_POINTERS;
-                if let Ok(mut destroyed) = DESTROYED_POINTERS.lock() {
-                    destroyed.remove(&ptr_addr);
-                }
+                let _ = safe_destroy_no_fake_check::<crate::instance::Instance>(
+                    instance_handle as *mut c_void,
+                    "JNI Instance",
+                );
             }
         }
     }
 
     /// Dispose of a native instance with double-free protection
+    ///
+    /// Uses the consolidated `safe_destroy_no_fake_check` utility which provides
+    /// double-free protection and panic safety for JNI calls.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDispose(
         _env: JNIEnv,
@@ -759,37 +743,15 @@ pub mod jni_instance {
         instance_handle: jlong,
     ) -> jboolean {
         if instance_handle != 0 {
-            let ptr = instance_handle as *mut crate::instance::Instance;
-            let ptr_addr = ptr as usize;
-
-            // Check if pointer was already destroyed to prevent double-free
-            {
-                use crate::error::ffi_utils::DESTROYED_POINTERS;
-                let mut destroyed = DESTROYED_POINTERS.lock()
-                    .unwrap_or_else(|poisoned| {
-                        log::warn!("DESTROYED_POINTERS mutex was poisoned in JNI Instance dispose, recovering");
-                        poisoned.into_inner()
-                    });
-                if destroyed.contains(&ptr_addr) {
-                    log::warn!("Attempted double-free of JNI Instance at {:p} - ignoring", ptr);
-                    return 0; // Already destroyed
-                }
-                destroyed.insert(ptr_addr);
-            }
-
-            unsafe {
-                // Drop the boxed instance with correct type
-                let _ = Box::from_raw(ptr);
-            }
-
-            // Remove from tracking after successful destruction
-            {
-                use crate::error::ffi_utils::DESTROYED_POINTERS;
-                if let Ok(mut destroyed) = DESTROYED_POINTERS.lock() {
-                    destroyed.remove(&ptr_addr);
-                }
-            }
-            1
+            use crate::ffi_common::resource_destruction::safe_destroy_no_fake_check;
+            use std::os::raw::c_void;
+            let destroyed = unsafe {
+                safe_destroy_no_fake_check::<crate::instance::Instance>(
+                    instance_handle as *mut c_void,
+                    "JNI Instance",
+                )
+            };
+            if destroyed { 1 } else { 0 }
         } else {
             0
         }

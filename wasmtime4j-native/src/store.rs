@@ -1014,64 +1014,12 @@ pub mod core {
     }
     
     /// Core function to destroy a store (safe cleanup)
+    ///
+    /// Uses the consolidated `safe_destroy` utility from `ffi_common::resource_destruction`
+    /// which provides double-free protection, fake pointer detection, and panic safety.
     pub unsafe fn destroy_store(store_ptr: *mut c_void) {
-        if store_ptr.is_null() {
-            return;
-        }
-
-        let ptr_addr = store_ptr as usize;
-        
-        // Detect and reject obvious test/fake pointers
-        if ptr_addr < 0x1000 || (ptr_addr & 0xFFFFFF0000000000) == 0x1234560000000000 {
-            log::debug!("Ignoring fake/test pointer {:p} in destroy_store", store_ptr);
-            return;
-        }
-
-        // Check if pointer was already destroyed
-        // Use unwrap_or_else to recover from poisoned mutex instead of panicking
-        {
-            use crate::error::ffi_utils::DESTROYED_POINTERS;
-            let mut destroyed = DESTROYED_POINTERS.lock()
-                .unwrap_or_else(|poisoned| {
-                    log::warn!("DESTROYED_POINTERS mutex was poisoned in Store destroy, recovering");
-                    poisoned.into_inner()
-                });
-            if destroyed.contains(&ptr_addr) {
-                log::warn!("Attempted double-free of Store resource at {:p} - ignoring", store_ptr);
-                return;
-            }
-            destroyed.insert(ptr_addr);
-        }
-
-        // Simple, correct cleanup - let Rust handle Arc dropping naturally
-        let result = std::panic::catch_unwind(|| {
-            let _boxed_store = Box::from_raw(store_ptr as *mut Store);
-            // Box and Arc will be dropped automatically here
-            log::debug!("Store at {:p} being destroyed", store_ptr);
-        });
-
-        match result {
-            Ok(_) => {
-                // Remove address from DESTROYED_POINTERS so that if the allocator
-                // reuses this address for a new store, it won't be falsely
-                // detected as a double-free.
-                {
-                    use crate::error::ffi_utils::DESTROYED_POINTERS;
-                    let mut destroyed = DESTROYED_POINTERS.lock()
-                        .unwrap_or_else(|poisoned| {
-                            log::warn!("DESTROYED_POINTERS mutex was poisoned during store cleanup, recovering");
-                            poisoned.into_inner()
-                        });
-                    destroyed.remove(&ptr_addr);
-                }
-                log::debug!("Store resource at {:p} destroyed successfully", store_ptr);
-            }
-            Err(e) => {
-                log::error!("Store resource at {:p} destruction panicked: {:?} - preventing JVM crash", store_ptr, e);
-                // Don't propagate panic to JVM
-                // Leave address in DESTROYED_POINTERS since destruction failed
-            }
-        }
+        use crate::ffi_common::resource_destruction::safe_destroy;
+        let _ = safe_destroy::<Store>(store_ptr, "Store");
     }
     
     /// Core function to execute with store context

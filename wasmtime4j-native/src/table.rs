@@ -1090,51 +1090,12 @@ pub mod core {
     }
 
     /// Core function to destroy a table (safe cleanup)
+    ///
+    /// Uses the consolidated `safe_destroy` utility from `ffi_common::resource_destruction`
+    /// which provides double-free protection, fake pointer detection, and panic safety.
     pub unsafe fn destroy_table(table_ptr: *mut c_void) {
-        if table_ptr.is_null() {
-            return;
-        }
-
-        let ptr_addr = table_ptr as usize;
-        
-        // Detect and reject obvious test/fake pointers
-        if ptr_addr < 0x1000 || (ptr_addr & 0xFFFFFF0000000000) == 0x1234560000000000 {
-            log::debug!("Ignoring fake/test pointer {:p} in destroy_table", table_ptr);
-            return;
-        }
-
-        // Check if pointer was already destroyed
-        // Use unwrap_or_else to recover from poisoned mutex instead of panicking
-        {
-            use crate::error::ffi_utils::DESTROYED_POINTERS;
-            let mut destroyed = DESTROYED_POINTERS.lock()
-                .unwrap_or_else(|poisoned| {
-                    log::warn!("DESTROYED_POINTERS mutex was poisoned in Table destroy, recovering");
-                    poisoned.into_inner()
-                });
-            if destroyed.contains(&ptr_addr) {
-                log::warn!("Attempted double-free of Table resource at {:p} - ignoring", table_ptr);
-                return;
-            }
-            destroyed.insert(ptr_addr);
-        }
-
-        // Simple, correct cleanup - let Rust handle Arc dropping naturally
-        let result = std::panic::catch_unwind(|| {
-            let _boxed_table = Box::from_raw(table_ptr as *mut Table);
-            // Box and Arc will be dropped automatically here
-            log::debug!("Table at {:p} being destroyed", table_ptr);
-        });
-
-        match result {
-            Ok(_) => {
-                log::debug!("Table resource at {:p} destroyed successfully", table_ptr);
-            }
-            Err(e) => {
-                log::error!("Table resource at {:p} destruction panicked: {:?} - preventing JVM crash", table_ptr, e);
-                // Don't propagate panic to JVM
-            }
-        }
+        use crate::ffi_common::resource_destruction::safe_destroy;
+        let _ = safe_destroy::<Table>(table_ptr, "Table");
     }
 
     /// Helper function to create TableElement from raw components

@@ -21,18 +21,18 @@
 //! and handle errors gracefully.
 
 #![allow(missing_docs)]
-#![allow(unused_imports)]
+#![allow(unused_imports)] // TODO: ~60 unused imports to clean up across codebase
 // TODO: Further audit dead code - some unused infrastructure remains
 // (adaptive scaling, work stealing, thread profiler, deadlock prevention - used in integration tests)
 #![allow(dead_code)]
-#![allow(unused_unsafe)]
-#![allow(unused_assignments)]
+#![allow(unused_unsafe)] // TODO: Audit unsafe blocks for necessity
+#![allow(unused_assignments)] // TODO: Audit unused assignments
 #![allow(private_bounds)]
 #![allow(elided_lifetimes_in_paths)]
-#![allow(unused_doc_comments)]
+#![allow(unused_doc_comments)] // TODO: Remove unused doc comments
 #![allow(unused_mut)] // JNI env parameters require mut for API calls
 #![allow(non_snake_case)] // JNI functions must follow Java naming conventions
-#![allow(unused_variables)]
+#![allow(unused_variables)] // TODO: Prefix with _ or remove
 #![allow(private_interfaces)]
 #![warn(clippy::all)]
 

@@ -1399,51 +1399,12 @@ pub mod core {
     }
     
     /// Core function to destroy an instance (safe cleanup)
+    ///
+    /// Uses the consolidated `safe_destroy` utility from `ffi_common::resource_destruction`
+    /// which provides double-free protection, fake pointer detection, and panic safety.
     pub unsafe fn destroy_instance(instance_ptr: *mut c_void) {
-        if instance_ptr.is_null() {
-            return;
-        }
-
-        let ptr_addr = instance_ptr as usize;
-        
-        // Detect and reject obvious test/fake pointers
-        if ptr_addr < 0x1000 || (ptr_addr & 0xFFFFFF0000000000) == 0x1234560000000000 {
-            log::debug!("Ignoring fake/test pointer {:p} in destroy_instance", instance_ptr);
-            return;
-        }
-
-        // Check if pointer was already destroyed
-        // Use unwrap_or_else to recover from poisoned mutex instead of panicking
-        {
-            use crate::error::ffi_utils::DESTROYED_POINTERS;
-            let mut destroyed = DESTROYED_POINTERS.lock()
-                .unwrap_or_else(|poisoned| {
-                    log::warn!("DESTROYED_POINTERS mutex was poisoned in Instance destroy, recovering");
-                    poisoned.into_inner()
-                });
-            if destroyed.contains(&ptr_addr) {
-                log::warn!("Attempted double-free of Instance resource at {:p} - ignoring", instance_ptr);
-                return;
-            }
-            destroyed.insert(ptr_addr);
-        }
-
-        // Simple, correct cleanup - let Rust handle Arc dropping naturally
-        let result = std::panic::catch_unwind(|| {
-            let _boxed_instance = Box::from_raw(instance_ptr as *mut Instance);
-            // Box and Arc will be dropped automatically here
-            log::debug!("Instance at {:p} being destroyed", instance_ptr);
-        });
-
-        match result {
-            Ok(_) => {
-                log::debug!("Instance resource at {:p} destroyed successfully", instance_ptr);
-            }
-            Err(e) => {
-                log::error!("Instance resource at {:p} destruction panicked: {:?} - preventing JVM crash", instance_ptr, e);
-                // Don't propagate panic to JVM
-            }
-        }
+        use crate::ffi_common::resource_destruction::safe_destroy;
+        let _ = safe_destroy::<Instance>(instance_ptr, "Instance");
     }
     
     /// Core function to check if instance has been disposed

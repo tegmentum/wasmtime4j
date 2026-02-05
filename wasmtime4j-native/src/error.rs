@@ -414,7 +414,14 @@ impl Clone for WasmtimeError {
             WasmtimeError::Compilation { message } => WasmtimeError::Compilation { message: message.clone() },
             WasmtimeError::Validation { message } => WasmtimeError::Validation { message: message.clone() },
             WasmtimeError::Module { message } => WasmtimeError::Module { message: message.clone() },
-            WasmtimeError::Runtime { message, backtrace: _ } => WasmtimeError::Runtime { message: message.clone(), backtrace: None },
+            // WasmBacktrace doesn't implement Clone, so we preserve backtrace info in the message
+            WasmtimeError::Runtime { message, backtrace } => {
+                let full_message = match backtrace {
+                    Some(bt) => format!("{}\nBacktrace: {:?}", message, bt),
+                    None => message.clone(),
+                };
+                WasmtimeError::Runtime { message: full_message, backtrace: None }
+            },
             WasmtimeError::EngineConfig { message } => WasmtimeError::EngineConfig { message: message.clone() },
             WasmtimeError::Store { message } => WasmtimeError::Store { message: message.clone() },
             WasmtimeError::Instance { message } => WasmtimeError::Instance { message: message.clone() },
@@ -452,9 +459,11 @@ impl Clone for WasmtimeError {
             WasmtimeError::UnsupportedFeature { message } => WasmtimeError::UnsupportedFeature { message: message.clone() },
             WasmtimeError::SystemError { message } => WasmtimeError::SystemError { message: message.clone() },
             WasmtimeError::CompilationError { message } => WasmtimeError::CompilationError { message: message.clone() },
-            // Handle the special Io variant with source field
-            WasmtimeError::Io { source } => WasmtimeError::InvalidParameter { message: format!("I/O error: {}", source) },
-            // Handle missing Clone cases for existing variants
+            // FIX: Clone Io properly - convert to IO variant preserving the error message
+            // (std::io::Error doesn't implement Clone, so we convert to the message-based IO variant)
+            WasmtimeError::Io { source } => WasmtimeError::IO {
+                message: format!("{} (kind: {:?})", source, source.kind())
+            },
             WasmtimeError::ImportExport { message } => WasmtimeError::ImportExport { message: message.clone() },
             WasmtimeError::Type { message } => WasmtimeError::Type { message: message.clone() },
             WasmtimeError::Resource { message } => WasmtimeError::Resource { message: message.clone() },
@@ -1677,81 +1686,25 @@ pub mod ffi_utils {
         Ok(std::slice::from_raw_parts(ptr, len))
     }
     
-    /// Thread-safe tracking of destroyed pointers to prevent double-free
-    /// Using usize addresses instead of raw pointers for thread safety
-    pub(crate) static DESTROYED_POINTERS: Lazy<Mutex<HashSet<usize>>> =
-        Lazy::new(|| Mutex::new(HashSet::new()));
+    // Re-export resource destruction utilities from ffi_common for backwards compatibility
+    pub use crate::ffi_common::resource_destruction::{
+        DESTROYED_POINTERS,
+        clear_destroyed_pointers,
+        safe_destroy,
+        safe_destroy_no_fake_check,
+        is_fake_pointer,
+    };
 
-    /// Clear the destroyed pointers registry.
+    /// Safely destroy a boxed resource from raw pointer with double-free protection.
     ///
-    /// This function clears the HashSet tracking destroyed pointers.
-    /// It should be called during test teardown to prevent unbounded memory growth
-    /// when running large test suites.
+    /// This is a backwards-compatible wrapper around `safe_destroy` that uses the
+    /// consolidated implementation in `ffi_common::resource_destruction`.
     ///
     /// # Safety
-    /// Calling this function while native resources are still in use could
-    /// result in the double-free protection being bypassed for those resources.
-    /// Only call this when all native resources have been properly destroyed.
-    pub fn clear_destroyed_pointers() -> usize {
-        // Use unwrap_or_else to recover from poisoned mutex
-        let mut destroyed = DESTROYED_POINTERS.lock()
-            .unwrap_or_else(|poisoned| {
-                log::warn!("DESTROYED_POINTERS mutex was poisoned, recovering");
-                poisoned.into_inner()
-            });
-        let count = destroyed.len();
-        destroyed.clear();
-        log::debug!("Cleared {} entries from destroyed pointers registry", count);
-        count
-    }
-
-    /// Safely destroy a boxed resource from raw pointer with double-free protection
+    /// The caller must ensure that `ptr` was originally created by `Box::into_raw`
+    /// for a value of type `T`.
     pub unsafe fn destroy_resource<T>(ptr: *mut c_void, name: &str) {
-        if ptr.is_null() {
-            return;
-        }
-
-        // Acquire lock and check if this pointer was already destroyed
-        // Use unwrap_or_else to recover from poisoned mutex instead of panicking
-        let ptr_addr = ptr as usize;
-        {
-            let mut destroyed = DESTROYED_POINTERS.lock()
-                .unwrap_or_else(|poisoned| {
-                    log::warn!("DESTROYED_POINTERS mutex was poisoned during destroy_resource, recovering");
-                    poisoned.into_inner()
-                });
-            if destroyed.contains(&ptr_addr) {
-                log::warn!("Attempted double-free of {} resource at {:p} - ignoring", name, ptr);
-                return;
-            }
-            // Mark this pointer as destroyed before releasing the lock
-            destroyed.insert(ptr_addr);
-        }
-
-        // Use panic-safe destruction to prevent JVM crashes
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let _ = Box::from_raw(ptr as *mut T);
-        }));
-
-        match result {
-            Ok(_) => {
-                // Remove address from DESTROYED_POINTERS so that if the allocator
-                // reuses this address for a new resource, it won't be falsely
-                // detected as a double-free.
-                let mut destroyed = DESTROYED_POINTERS.lock()
-                    .unwrap_or_else(|poisoned| {
-                        log::warn!("DESTROYED_POINTERS mutex was poisoned during cleanup, recovering");
-                        poisoned.into_inner()
-                    });
-                destroyed.remove(&ptr_addr);
-                log::debug!("{} at {:p} destroyed successfully", name, ptr);
-            }
-            Err(e) => {
-                log::error!("{} at {:p} destruction panicked: {:?} - preventing JVM crash", name, ptr, e);
-                // Don't propagate panic to JVM - just log and continue
-                // Leave address in DESTROYED_POINTERS since destruction failed
-            }
-        }
+        let _ = safe_destroy::<T>(ptr, name);
     }
 
     /// Comprehensive test cleanup function to reset global state between tests.
