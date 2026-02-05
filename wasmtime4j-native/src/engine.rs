@@ -604,7 +604,8 @@ impl ManagedEngine {
 
 impl Default for ManagedEngine {
     fn default() -> Self {
-        Self::new().expect("Failed to create default ManagedEngine")
+        // Use from_shared() which has fallback protection, avoiding panic
+        Self::from_shared()
     }
 }
 

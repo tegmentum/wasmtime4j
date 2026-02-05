@@ -1456,7 +1456,24 @@ pub mod core {
 
 impl Default for ComponentEngine {
     fn default() -> Self {
-        Self::new().expect("Failed to create default ComponentEngine")
+        // ComponentEngine::new() uses get_shared_component_wasmtime_engine() which
+        // has fallback protection, so this should always succeed. But handle
+        // the error gracefully just in case.
+        match Self::new() {
+            Ok(engine) => engine,
+            Err(e) => {
+                log::error!("Failed to create default ComponentEngine: {}. Creating minimal fallback.", e);
+                // Create a minimal engine using the fallback-protected shared engine
+                let engine = crate::engine::get_shared_component_wasmtime_engine();
+                let linker = wasmtime::component::Linker::new(&engine);
+                ComponentEngine {
+                    engine,
+                    linker,
+                    instances: std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+                    next_instance_id: std::sync::Arc::new(std::sync::Mutex::new(1)),
+                }
+            }
+        }
     }
 }
 

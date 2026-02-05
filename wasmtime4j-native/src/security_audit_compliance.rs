@@ -1602,7 +1602,7 @@ impl ComprehensiveAuditLogger {
             // Remove old events outside time window
             let cutoff = SystemTime::now() - Duration::from_secs(3600); // 1 hour window
             while let Some(front) = window.front() {
-                if front.base_entry.timestamp.timestamp() < cutoff.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64 {
+                if front.base_entry.timestamp.timestamp() < cutoff.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs() as i64 {
                     window.pop_front();
                 } else {
                     break;

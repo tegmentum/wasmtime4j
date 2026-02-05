@@ -250,8 +250,8 @@ impl SessionToken {
         let key = hmac::Key::new(hmac::HMAC_SHA256, secret);
         let token_data = format!("{}:{}:{}:{}",
             self.token_id, self.user_id,
-            self.issued_at.duration_since(UNIX_EPOCH).unwrap().as_secs(),
-            self.expires_at.duration_since(UNIX_EPOCH).unwrap().as_secs()
+            self.issued_at.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
+            self.expires_at.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
         );
 
         let computed_signature = hmac::sign(&key, token_data.as_bytes());
