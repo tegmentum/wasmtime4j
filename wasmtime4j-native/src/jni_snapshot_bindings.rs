@@ -122,8 +122,20 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
     let snapshot_type = if full_snapshot != 0 { 0 } else { 1 }; // 0=FULL, 1=INCREMENTAL
 
     // Prepare string parameters before the function call
-    let empty_name = env.new_string("").unwrap();
-    let empty_description = env.new_string("").unwrap();
+    let empty_name = match env.new_string("") {
+        Ok(s) => s,
+        Err(e) => {
+            log::error!("Failed to create JNI string: {}", e);
+            return create_error_result(&mut env, -1, 0, 0);
+        }
+    };
+    let empty_description = match env.new_string("") {
+        Ok(s) => s,
+        Err(e) => {
+            log::error!("Failed to create JNI string: {}", e);
+            return create_error_result(&mut env, -1, 0, 0);
+        }
+    };
 
     let result = create_advanced_snapshot_impl(
         &mut env,

@@ -837,7 +837,8 @@ impl SIMDOperations {
 
         self.validate_single_operand(a)?;
         let a_ints = a.as_i32s();
-        Ok(*a_ints.iter().min().unwrap())
+        // Safe: as_i32s() returns [i32; 4], always has 4 elements
+        Ok(a_ints.iter().min().copied().unwrap_or(0))
     }
 
     /// Vector reduction - find maximum element
@@ -850,7 +851,8 @@ impl SIMDOperations {
 
         self.validate_single_operand(a)?;
         let a_ints = a.as_i32s();
-        Ok(*a_ints.iter().max().unwrap())
+        // Safe: as_i32s() returns [i32; 4], always has 4 elements
+        Ok(a_ints.iter().max().copied().unwrap_or(0))
     }
 
     /// Advanced dot product operation
