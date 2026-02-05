@@ -1739,7 +1739,10 @@ impl PlatformMemoryAllocator {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let hash = hasher.finalize();
-        let hash_u64 = u64::from_le_bytes(hash[..8].try_into().unwrap());
+        // SHA256 hash is always 32 bytes, so this slice is always valid
+        let hash_u64 = u64::from_le_bytes(
+            hash[..8].try_into().expect("SHA256 hash is always at least 8 bytes")
+        );
 
         let mut dedup_map = self.deduplication_map.lock().unwrap_or_else(|e| e.into_inner());
 

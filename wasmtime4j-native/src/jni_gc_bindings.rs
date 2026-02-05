@@ -1903,7 +1903,10 @@ fn convert_jobject_to_gc_value(
         if length == 16 {
             let mut bytes = vec![0i8; 16];
             env.get_byte_array_region(&byte_array, 0, &mut bytes)?;
-            let unsigned_bytes: [u8; 16] = bytes.iter().map(|&b| b as u8).collect::<Vec<_>>().try_into().unwrap();
+            // Vec has exactly 16 elements due to the length check above
+            let unsigned_bytes: [u8; 16] = bytes.iter().map(|&b| b as u8).collect::<Vec<_>>()
+                .try_into()
+                .expect("Vec has exactly 16 elements from length check");
             return Ok(GcValue::V128(unsigned_bytes));
         }
     }

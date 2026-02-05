@@ -963,8 +963,20 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
         let result = tokio::time::timeout(
             Duration::from_millis(timeout),
             async {
-                // SAFETY: We're in a single async context with the original thread's pointers
-                // The caller is responsible for ensuring these remain valid for the duration
+                // Defensive validation: ensure addresses are non-zero before dereferencing.
+                // A zero address would indicate a programming error (null pointer passed).
+                if instance_addr == 0 || store_addr == 0 {
+                    error!("Null pointer detected in async function call: instance_addr={}, store_addr={}",
+                           instance_addr, store_addr);
+                    return Err(WasmtimeError::InvalidParameter {
+                        message: "Null pointer in async call".to_string(),
+                    });
+                }
+
+                // SAFETY: The caller has validated these pointers before this async block was spawned.
+                // The caller is contractually responsible for ensuring these pointers remain valid
+                // for the duration of this async operation. The defensive check above catches
+                // obvious programming errors (null pointers) but cannot detect use-after-free.
                 let instance = unsafe { &mut *(instance_addr as *mut Instance) };
                 let store = unsafe { &mut *(store_addr as *mut Store) };
 

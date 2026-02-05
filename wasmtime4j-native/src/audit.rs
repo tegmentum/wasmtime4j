@@ -118,7 +118,7 @@ impl AuditEvent {
     ) -> Self {
         let event_id = format!("{}-{}",
             chrono::Utc::now().format("%Y%m%d%H%M%S"),
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos()
         );
 
         Self {
@@ -209,7 +209,7 @@ impl AuditEvent {
     fn serialize_for_hash(&self) -> String {
         format!("{}:{}:{:?}:{:?}:{}:{}:{}:{}:{}:{}:{}",
             self.event_id,
-            self.timestamp.duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            self.timestamp.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
             self.event_type,
             self.severity,
             self.source,
@@ -611,7 +611,7 @@ impl AuditLogger {
 
         let report_id = format!("compliance-{}-{}",
             chrono::Utc::now().format("%Y%m%d%H%M%S"),
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos()
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos()
         );
 
         Ok(ComplianceReport {

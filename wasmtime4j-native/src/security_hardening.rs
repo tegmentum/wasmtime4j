@@ -1118,7 +1118,7 @@ impl AdvancedSandbox {
     /// Generate a unique domain ID
     fn generate_domain_id(&self) -> u32 {
         // Simple implementation - in production this would use a more robust method
-        (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos() % u32::MAX as u128) as u32
+        (SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos() % u32::MAX as u128) as u32
     }
 
     /// Get sandbox statistics

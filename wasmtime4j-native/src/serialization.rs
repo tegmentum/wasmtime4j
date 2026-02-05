@@ -329,7 +329,7 @@ impl ModuleSerializer {
         // For now, use a simple approach - in practice, this would hash the module bytes
         let mut hasher = Sha256::new();
         hasher.update(format!("{:p}", module as *const Module));
-        hasher.update(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos().to_string());
+        hasher.update(SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos().to_string());
         Ok(format!("{:x}", hasher.finalize()))
     }
 

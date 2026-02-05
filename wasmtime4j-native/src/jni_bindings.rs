@@ -10127,8 +10127,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             // Create SIMD operations instance with default config
             let simd_config = simd::SIMDConfig::default();
@@ -10191,8 +10191,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10233,8 +10233,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10272,9 +10272,9 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes.try_into().unwrap() };
-            let c_v128 = simd::V128 { data: c_bytes.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes.try_into().expect("length validated above") };
+            let c_v128 = simd::V128 { data: c_bytes.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10302,7 +10302,7 @@ pub mod jni_simd {
         match env.convert_byte_array(a) {
             Ok(a_bytes) => {
                 if a_bytes.len() == 16 {
-                    let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
+                    let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
 
                     let simd_config = simd::SIMDConfig::default();
                     match simd::SIMDOperations::new(simd_config) {
@@ -10360,8 +10360,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10421,8 +10421,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10482,8 +10482,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10543,8 +10543,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10604,8 +10604,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10655,7 +10655,7 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10715,8 +10715,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10776,8 +10776,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10837,8 +10837,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10908,9 +10908,9 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
-            let c_v128 = simd::V128 { data: c_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+            let c_v128 = simd::V128 { data: c_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -10960,7 +10960,7 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -11010,7 +11010,7 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -11060,7 +11060,7 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -11130,9 +11130,9 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
-            let indices_arr: [u8; 16] = indices_u8.try_into().unwrap();
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+            let indices_arr: [u8; 16] = indices_u8.try_into().expect("length validated above");
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -11192,8 +11192,8 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
-            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+            let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -11243,7 +11243,7 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -11293,7 +11293,7 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -11327,7 +11327,7 @@ pub mod jni_simd {
         match env.convert_byte_array(a) {
             Ok(a_bytes) => {
                 if a_bytes.len() == 16 && lane >= 0 && lane < 4 {
-                    let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
+                    let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
 
                     let simd_config = simd::SIMDConfig::default();
                     match simd::SIMDOperations::new(simd_config) {
@@ -11377,7 +11377,7 @@ pub mod jni_simd {
                 });
             }
 
-            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().unwrap() };
+            let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
 
             let simd_config = simd::SIMDConfig::default();
             let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -11468,7 +11468,7 @@ pub mod jni_simd {
         match env.convert_byte_array(a) {
             Ok(a_bytes) => {
                 if a_bytes.len() == 16 {
-                    let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
+                    let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
 
                     let simd_config = simd::SIMDConfig::default();
                     match simd::SIMDOperations::new(simd_config) {
@@ -11499,7 +11499,7 @@ pub mod jni_simd {
         match env.convert_byte_array(a) {
             Ok(a_bytes) => {
                 if a_bytes.len() == 16 {
-                    let a_v128 = simd::V128 { data: a_bytes.try_into().unwrap() };
+                    let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
 
                     let simd_config = simd::SIMDConfig::default();
                     match simd::SIMDOperations::new(simd_config) {

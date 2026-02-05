@@ -1647,7 +1647,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniWasiUdpS
                     let _ = env.throw_new("java/lang/IllegalArgumentException", "Buffer underflow");
                     return -1;
                 }
-                let octets: [u8; 4] = buffer[offset..offset + 4].try_into().unwrap();
+                // The bounds check above guarantees this slice is exactly 4 bytes
+                let octets: [u8; 4] = buffer[offset..offset + 4]
+                    .try_into()
+                    .expect("bounds check guarantees exactly 4 bytes");
                 offset += 4;
                 Some(IpSocketAddress {
                     ip: IpAddress::V4(octets),

@@ -1269,7 +1269,7 @@ mod tests {
 
         // Wait for producers to finish
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
 
         // Verify all items were enqueued
@@ -1292,7 +1292,7 @@ mod tests {
 
         // Wait for consumers to finish
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
 
         assert_eq!(consumed.load(Ordering::Relaxed), num_threads * items_per_thread);
@@ -1383,8 +1383,8 @@ mod tests {
             consumed
         });
 
-        producer.join().unwrap();
-        let consumed_count = consumer.join().unwrap();
+        producer.join().expect("thread should not panic");
+        let consumed_count = consumer.join().expect("thread should not panic");
 
         assert_eq!(consumed_count, num_items);
     }

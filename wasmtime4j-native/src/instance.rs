@@ -216,22 +216,34 @@ impl FfiWasmValue {
     }
 
     /// Convert to a WasmValue
+    ///
+    /// # Safety Note
+    /// The `try_into().expect()` calls below are safe because `self.value` is always
+    /// a `[u8; 16]` array, so slicing to 4 or 8 bytes always succeeds.
     pub fn to_wasm_value(&self) -> WasmValue {
         match self.tag {
             0 => { // I32
-                let v = i32::from_ne_bytes(self.value[..4].try_into().unwrap());
+                let v = i32::from_ne_bytes(
+                    self.value[..4].try_into().expect("value is [u8; 16], slice to 4 always valid")
+                );
                 WasmValue::I32(v)
             }
             1 => { // I64
-                let v = i64::from_ne_bytes(self.value[..8].try_into().unwrap());
+                let v = i64::from_ne_bytes(
+                    self.value[..8].try_into().expect("value is [u8; 16], slice to 8 always valid")
+                );
                 WasmValue::I64(v)
             }
             2 => { // F32
-                let v = f32::from_ne_bytes(self.value[..4].try_into().unwrap());
+                let v = f32::from_ne_bytes(
+                    self.value[..4].try_into().expect("value is [u8; 16], slice to 4 always valid")
+                );
                 WasmValue::F32(v)
             }
             3 => { // F64
-                let v = f64::from_ne_bytes(self.value[..8].try_into().unwrap());
+                let v = f64::from_ne_bytes(
+                    self.value[..8].try_into().expect("value is [u8; 16], slice to 8 always valid")
+                );
                 WasmValue::F64(v)
             }
             4 => { // V128
@@ -240,7 +252,9 @@ impl FfiWasmValue {
                 WasmValue::V128(bytes)
             }
             5 => { // FuncRef
-                let id = i64::from_ne_bytes(self.value[..8].try_into().unwrap());
+                let id = i64::from_ne_bytes(
+                    self.value[..8].try_into().expect("value is [u8; 16], slice to 8 always valid")
+                );
                 if id == 0 {
                     WasmValue::FuncRef(None)
                 } else {
@@ -248,7 +262,9 @@ impl FfiWasmValue {
                 }
             }
             6 => { // ExternRef
-                let id = i64::from_ne_bytes(self.value[..8].try_into().unwrap());
+                let id = i64::from_ne_bytes(
+                    self.value[..8].try_into().expect("value is [u8; 16], slice to 8 always valid")
+                );
                 if id == 0 {
                     WasmValue::ExternRef(None)
                 } else {

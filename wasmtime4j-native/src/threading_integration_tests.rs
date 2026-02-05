@@ -172,7 +172,7 @@ mod tests {
         barrier.wait(); // Wait for all threads to start and get assignments
 
         // Collect results
-        let results: Vec<u64> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+        let results: Vec<u64> = handles.into_iter().map(|h| h.join().expect("thread should not panic")).collect();
         assert_eq!(results.len(), num_threads);
 
         let assignments = thread_assignments.lock().unwrap();
@@ -425,10 +425,10 @@ mod tests {
 
         // Wait for all threads
         for handle in reader_handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
         for handle in writer_handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
 
         let rw_stats = data.get_statistics();
@@ -496,7 +496,7 @@ mod tests {
             .collect();
 
         for handle in sem_handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
 
         let sem_stats = semaphore.get_statistics();
@@ -627,7 +627,7 @@ mod tests {
 
         // Wait for all threads to complete
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
 
         // Generate performance report
@@ -747,7 +747,7 @@ mod tests {
 
         // Wait for all threads to complete
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
 
         // Clean up shared memories
@@ -901,9 +901,9 @@ mod tests {
 
         // Wait for all threads to complete
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
-        monitor_handle.join().unwrap();
+        monitor_handle.join().expect("thread should not panic");
 
         // Clean up resources
         for &resource_id in &resource_ids {

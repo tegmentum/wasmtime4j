@@ -393,6 +393,12 @@ pub unsafe extern "C" fn wasmtime4j_fuel_callback_create_custom(
         return 0;
     }
 
+    // SAFETY: The caller must guarantee that `callback_ptr` is a valid function pointer
+    // with the following signature: extern "C" fn(u64, u64, u64, u32, *mut u64) -> i32
+    // Parameters are: store_id, fuel_consumed, initial_fuel, exhaustion_count, out_additional_fuel
+    // Return value: 0 = Continue, 2 = Pause, other = Trap
+    // The function must use the C calling convention and remain valid for the lifetime
+    // of the fuel callback handler.
     type CallbackFn = extern "C" fn(u64, u64, u64, u32, *mut u64) -> i32;
     let callback_fn: CallbackFn = std::mem::transmute(callback_ptr);
 

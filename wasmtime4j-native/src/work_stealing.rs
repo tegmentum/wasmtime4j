@@ -802,7 +802,7 @@ impl WorkStealingScheduler {
         while !shutdown.load(Ordering::Acquire) {
             // Update worker state and activity
             context.last_activity.store(
-                std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64,
+                std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos() as u64,
                 Ordering::Release
             );
 

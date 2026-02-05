@@ -674,7 +674,7 @@ impl SessionManager {
         scopes: HashSet<String>,
     ) -> WasmtimeResult<SessionToken> {
         let token_id = format!("{}-{}", user_id,
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos());
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos());
 
         let issued_at = SystemTime::now();
         let expires_at = issued_at + self.default_expiration;
@@ -683,8 +683,8 @@ impl SessionManager {
         let key = hmac::Key::new(hmac::HMAC_SHA256, &self.hmac_secret);
         let token_data = format!("{}:{}:{}:{}",
             token_id, user_id,
-            issued_at.duration_since(UNIX_EPOCH).unwrap().as_secs(),
-            expires_at.duration_since(UNIX_EPOCH).unwrap().as_secs()
+            issued_at.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
+            expires_at.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
         );
         let signature = hmac::sign(&key, token_data.as_bytes());
         let signature_b64 = general_purpose::STANDARD.encode(signature.as_ref());

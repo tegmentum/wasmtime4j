@@ -1534,7 +1534,7 @@ mod tests {
         thread::sleep(Duration::from_millis(10));
         let _write_guard = lock.write_with_priority(ThreadPriority::Critical, Some(Duration::from_secs(1)));
 
-        handle.join().unwrap();
+        handle.join().expect("thread should not panic");
     }
 
     #[test]
@@ -1556,7 +1556,7 @@ mod tests {
         ready.store(true, Ordering::Release);
         condvar.notify_one();
 
-        handle.join().unwrap();
+        handle.join().expect("thread should not panic");
     }
 
     #[test]
@@ -1594,7 +1594,7 @@ mod tests {
         thread::sleep(Duration::from_millis(10));
         drop(_permit); // Release the permit
 
-        handle.join().unwrap();
+        handle.join().expect("thread should not panic");
     }
 
     #[test]

@@ -1222,7 +1222,11 @@ fn get_or_init_affinity_manager() -> WasmtimeResult<&'static Arc<ThreadAffinityM
     let _ = GLOBAL_AFFINITY_MANAGER.set(arc_manager.clone());
 
     // Return the initialized value (either ours or the other thread's)
-    Ok(GLOBAL_AFFINITY_MANAGER.get().expect("should be initialized"))
+    // This should always succeed after set(), but we handle the edge case defensively
+    GLOBAL_AFFINITY_MANAGER.get().ok_or_else(|| WasmtimeError::Internal {
+        message: "Affinity manager initialization race condition: OnceLock unexpectedly empty after set"
+            .to_string(),
+    })
 }
 
 /// Create a new thread affinity manager (Panama FFI)

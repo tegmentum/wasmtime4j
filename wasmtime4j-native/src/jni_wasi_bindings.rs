@@ -338,7 +338,8 @@ pub mod jni_wasi {
                 wasi::wasi_ctx_is_path_allowed(handle as *const c_void, path_cstr.as_ptr())
             };
 
-            Ok(result.try_into().unwrap())
+            // wasi_ctx_is_path_allowed returns 0 or 1, which always fits in jboolean (u8)
+            Ok(result.try_into().expect("boolean result always fits in u8"))
         })
     }
 
@@ -485,7 +486,8 @@ pub mod jni_wasi {
                 wasi::wasi_ctx_store_has_wasi(store_handle as *const c_void)
             };
 
-            Ok(result.try_into().unwrap())
+            // wasi_ctx_store_has_wasi returns 0 or 1, which always fits in jboolean (u8)
+            Ok(result.try_into().expect("boolean result always fits in u8"))
         })
     }
 

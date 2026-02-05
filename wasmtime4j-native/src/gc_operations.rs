@@ -1513,13 +1513,19 @@ impl WasmtimeGcOperations {
             },
             GcValue::V256(bytes) => {
                 // V256 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
-                let v128_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
+                // V256 is [u8; 32], so slicing first 16 bytes is always valid
+                let v128_bytes: [u8; 16] = bytes[0..16]
+                    .try_into()
+                    .expect("V256 is 32 bytes, slicing 16 always valid");
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
             },
             GcValue::V512(bytes) => {
                 // V512 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
-                let v128_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
+                // V512 is [u8; 64], so slicing first 16 bytes is always valid
+                let v128_bytes: [u8; 16] = bytes[0..16]
+                    .try_into()
+                    .expect("V512 is 64 bytes, slicing 16 always valid");
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
             },
@@ -1584,13 +1590,19 @@ impl WasmtimeGcOperations {
             },
             GcValue::V256(bytes) => {
                 // V256 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
-                let v128_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
+                // V256 is [u8; 32], so slicing first 16 bytes is always valid
+                let v128_bytes: [u8; 16] = bytes[0..16]
+                    .try_into()
+                    .expect("V256 is 32 bytes, slicing 16 always valid");
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
             },
             GcValue::V512(bytes) => {
                 // V512 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
-                let v128_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
+                // V512 is [u8; 64], so slicing first 16 bytes is always valid
+                let v128_bytes: [u8; 16] = bytes[0..16]
+                    .try_into()
+                    .expect("V512 is 64 bytes, slicing 16 always valid");
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
             },

@@ -2341,7 +2341,7 @@ mod tests {
 
         // Wait for all threads to complete
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().expect("thread should not panic");
         }
 
         let total_errors = error_count.load(Ordering::SeqCst);

@@ -402,7 +402,7 @@ impl SandboxManager {
 
         // Generate unique instance ID
         let instance_id = format!("{}_{}", module_id,
-            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos());
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos());
 
         // Create sandboxed instance (placeholder - would integrate with actual instance creation)
         let sandboxed_instance = SandboxedInstance {

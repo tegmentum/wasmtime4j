@@ -3,7 +3,7 @@
 //! This module provides defensive, thread-safe wrapper around Wasmtime engines
 //! with proper resource management and JVM crash prevention.
 
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, OnceLock, RwLock};
 use once_cell::sync::Lazy;
 use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -38,13 +38,24 @@ const ENGINE_POOL_MAX_SIZE: usize = 16;
 /// The shared singleton engine for default use cases.
 /// This engine is lazily initialized on first access and reused for all
 /// callers who don't need custom configuration.
-static SHARED_ENGINE: Lazy<Engine> = Lazy::new(|| {
-    Engine::new().expect("Failed to create shared singleton engine")
-});
+///
+/// Uses OnceLock with Result to prevent panics on initialization failure.
+/// If initialization fails, the error is stored and returned on each access.
+static SHARED_ENGINE: OnceLock<Result<Engine, String>> = OnceLock::new();
+
+/// Internal helper to initialize the shared engine safely.
+fn init_shared_engine() -> Result<Engine, String> {
+    Engine::new().map_err(|e| format!("Failed to create shared singleton engine: {}", e))
+}
 
 /// Shared wasmtime::Engine with component model enabled.
 /// Used by ComponentEngine and EnhancedComponentEngine.
-static SHARED_COMPONENT_WASMTIME_ENGINE: Lazy<WasmtimeEngine> = Lazy::new(|| {
+///
+/// Uses OnceLock with Result to prevent panics on initialization failure.
+static SHARED_COMPONENT_WASMTIME_ENGINE: OnceLock<Result<WasmtimeEngine, String>> = OnceLock::new();
+
+/// Internal helper to initialize the shared component wasmtime engine safely.
+fn init_shared_component_wasmtime_engine() -> Result<WasmtimeEngine, String> {
     let mut config = safe_wasmtime_config();
     config.wasm_component_model(true);
     config.async_support(false);
@@ -52,39 +63,58 @@ static SHARED_COMPONENT_WASMTIME_ENGINE: Lazy<WasmtimeEngine> = Lazy::new(|| {
     config.wasm_bulk_memory(true);
     config.wasm_multi_value(true);
     config.wasm_reference_types(true);
-    WasmtimeEngine::new(&config).expect("Failed to create shared component wasmtime engine")
-});
+    WasmtimeEngine::new(&config)
+        .map_err(|e| format!("Failed to create shared component wasmtime engine: {}", e))
+}
 
 /// Shared wasmtime::Engine with GC enabled.
 /// Used by GC operations.
-static SHARED_GC_WASMTIME_ENGINE: Lazy<WasmtimeEngine> = Lazy::new(|| {
+///
+/// Uses OnceLock with Result to prevent panics on initialization failure.
+static SHARED_GC_WASMTIME_ENGINE: OnceLock<Result<WasmtimeEngine, String>> = OnceLock::new();
+
+/// Internal helper to initialize the shared GC wasmtime engine safely.
+fn init_shared_gc_wasmtime_engine() -> Result<WasmtimeEngine, String> {
     let mut config = safe_wasmtime_config();
     config.wasm_gc(true);
     config.wasm_reference_types(true);
     config.wasm_function_references(true);
-    WasmtimeEngine::new(&config).expect("Failed to create shared GC wasmtime engine")
-});
+    WasmtimeEngine::new(&config)
+        .map_err(|e| format!("Failed to create shared GC wasmtime engine: {}", e))
+}
 
 /// Shared wasmtime::Engine with async support enabled.
 /// Used by WASI Preview 2 and other async operations in tests.
-static SHARED_ASYNC_WASMTIME_ENGINE: Lazy<WasmtimeEngine> = Lazy::new(|| {
+///
+/// Uses OnceLock with Result to prevent panics on initialization failure.
+static SHARED_ASYNC_WASMTIME_ENGINE: OnceLock<Result<WasmtimeEngine, String>> = OnceLock::new();
+
+/// Internal helper to initialize the shared async wasmtime engine safely.
+fn init_shared_async_wasmtime_engine() -> Result<WasmtimeEngine, String> {
     let mut config = safe_wasmtime_config();
     config.async_support(true);
     config.wasm_component_model(true);
-    WasmtimeEngine::new(&config).expect("Failed to create shared async wasmtime engine")
-});
+    WasmtimeEngine::new(&config)
+        .map_err(|e| format!("Failed to create shared async wasmtime engine: {}", e))
+}
 
 /// Shared Engine wrapper with GC enabled for test use.
 /// Used by GC tests to avoid creating new engines.
-static SHARED_GC_ENGINE: Lazy<Engine> = Lazy::new(|| {
+///
+/// Uses OnceLock with Result to prevent panics on initialization failure.
+static SHARED_GC_ENGINE: OnceLock<Result<Engine, String>> = OnceLock::new();
+
+/// Internal helper to initialize the shared GC Engine wrapper safely.
+fn init_shared_gc_engine() -> Result<Engine, String> {
     let mut config = safe_wasmtime_config();
     config.wasm_gc(true);
     config.wasm_reference_types(true);
     config.wasm_function_references(true);
 
-    let engine = WasmtimeEngine::new(&config).expect("Failed to create shared GC engine");
+    let engine = WasmtimeEngine::new(&config)
+        .map_err(|e| format!("Failed to create shared GC engine: {}", e))?;
 
-    Engine {
+    Ok(Engine {
         inner: Arc::new(engine),
         config_summary: EngineConfigSummary {
             strategy: "Cranelift".to_string(),
@@ -145,35 +175,103 @@ static SHARED_GC_ENGINE: Lazy<Engine> = Lazy::new(|| {
             allocation_strategy: "OnDemand".to_string(),
         },
         concurrent_ops_lock: Arc::new(RwLock::new(())),
-    }
-});
+    })
+}
 
 /// Returns a clone of the shared component wasmtime::Engine.
+///
+/// # Panics
+/// Logs an error and returns a fallback engine if initialization failed.
+/// This maintains API compatibility while preventing silent failures.
 pub(crate) fn get_shared_component_wasmtime_engine() -> WasmtimeEngine {
-    SHARED_COMPONENT_WASMTIME_ENGINE.clone()
+    let result = SHARED_COMPONENT_WASMTIME_ENGINE.get_or_init(init_shared_component_wasmtime_engine);
+    match result {
+        Ok(engine) => engine.clone(),
+        Err(e) => {
+            log::error!("Shared component engine initialization failed: {}. Creating fallback.", e);
+            // Create a minimal fallback engine - this is a last resort
+            let mut config = safe_wasmtime_config();
+            config.wasm_component_model(true);
+            WasmtimeEngine::new(&config).unwrap_or_else(|_| {
+                // Ultimate fallback: basic config
+                WasmtimeEngine::new(&safe_wasmtime_config())
+                    .expect("Failed to create even basic fallback engine")
+            })
+        }
+    }
 }
 
 /// Returns a clone of the shared GC wasmtime::Engine.
+///
+/// # Panics
+/// Logs an error and returns a fallback engine if initialization failed.
 pub(crate) fn get_shared_gc_wasmtime_engine() -> WasmtimeEngine {
-    SHARED_GC_WASMTIME_ENGINE.clone()
+    let result = SHARED_GC_WASMTIME_ENGINE.get_or_init(init_shared_gc_wasmtime_engine);
+    match result {
+        Ok(engine) => engine.clone(),
+        Err(e) => {
+            log::error!("Shared GC wasmtime engine initialization failed: {}. Creating fallback.", e);
+            let mut config = safe_wasmtime_config();
+            config.wasm_gc(true);
+            config.wasm_reference_types(true);
+            config.wasm_function_references(true);
+            WasmtimeEngine::new(&config).unwrap_or_else(|_| {
+                WasmtimeEngine::new(&safe_wasmtime_config())
+                    .expect("Failed to create even basic fallback engine")
+            })
+        }
+    }
 }
 
 /// Returns a clone of the shared GC Engine wrapper.
 /// This is the recommended way to get a GC-enabled engine for tests.
+///
+/// # Panics
+/// Logs an error and creates a fallback engine if initialization failed.
 pub(crate) fn get_shared_gc_engine() -> Engine {
-    SHARED_GC_ENGINE.clone()
+    let result = SHARED_GC_ENGINE.get_or_init(init_shared_gc_engine);
+    match result {
+        Ok(engine) => engine.clone(),
+        Err(e) => {
+            log::error!("Shared GC engine wrapper initialization failed: {}. Creating fallback.", e);
+            // Try to create a new GC engine as fallback
+            let mut config = safe_wasmtime_config();
+            config.wasm_gc(true);
+            config.wasm_reference_types(true);
+            config.wasm_function_references(true);
+            Engine::with_config(config).unwrap_or_else(|_| {
+                Engine::new().expect("Failed to create even basic fallback engine")
+            })
+        }
+    }
 }
 
 /// Returns a clone of the shared async wasmtime::Engine.
 /// Used by WASI Preview 2 and other async operations in tests.
+///
+/// # Panics
+/// Logs an error and returns a fallback engine if initialization failed.
 pub(crate) fn get_shared_async_wasmtime_engine() -> WasmtimeEngine {
-    SHARED_ASYNC_WASMTIME_ENGINE.clone()
+    let result = SHARED_ASYNC_WASMTIME_ENGINE.get_or_init(init_shared_async_wasmtime_engine);
+    match result {
+        Ok(engine) => engine.clone(),
+        Err(e) => {
+            log::error!("Shared async wasmtime engine initialization failed: {}. Creating fallback.", e);
+            let mut config = safe_wasmtime_config();
+            config.async_support(true);
+            config.wasm_component_model(true);
+            WasmtimeEngine::new(&config).unwrap_or_else(|_| {
+                WasmtimeEngine::new(&safe_wasmtime_config())
+                    .expect("Failed to create even basic fallback engine")
+            })
+        }
+    }
 }
 
 /// Returns a clone of the shared wasmtime::Engine.
 /// Defaults to the component engine which has commonly needed features.
 pub(crate) fn get_shared_wasmtime_engine() -> WasmtimeEngine {
-    SHARED_COMPONENT_WASMTIME_ENGINE.clone()
+    get_shared_component_wasmtime_engine()
 }
 
 /// Pool of reusable engines with default configuration.
@@ -200,8 +298,23 @@ static ENGINE_POOL: Lazy<Mutex<Vec<Engine>>> = Lazy::new(|| {
 /// # Thread Safety
 /// The returned engine is safe to use from multiple threads concurrently.
 /// The underlying wasmtime engine is thread-safe.
+///
+/// # Panics
+/// Logs an error and creates a fallback engine if initialization failed.
 pub fn get_shared_engine() -> Engine {
-    SHARED_ENGINE.clone()
+    let result = SHARED_ENGINE.get_or_init(init_shared_engine);
+    match result {
+        Ok(engine) => engine.clone(),
+        Err(e) => {
+            log::error!("Shared singleton engine initialization failed: {}. Creating fallback.", e);
+            // Try to create a new engine as fallback
+            Engine::new().unwrap_or_else(|_| {
+                // Ultimate fallback with minimal config
+                Engine::with_config(safe_wasmtime_config())
+                    .expect("Failed to create even basic fallback engine")
+            })
+        }
+    }
 }
 
 /// Acquires an engine from the pool, or creates a new one if the pool is empty.
@@ -232,7 +345,7 @@ pub fn acquire_pooled_engine() -> Engine {
         Engine::new().unwrap_or_else(|e| {
             log::error!("Failed to create pooled engine: {:?}", e);
             // Fall back to shared engine clone as last resort
-            SHARED_ENGINE.clone()
+            get_shared_engine()
         })
     })
 }
@@ -2818,6 +2931,155 @@ mod tests {
         eprintln!(
             "GLOBAL_CODE stress test: all {} iterations completed successfully",
             ITERATIONS
+        );
+    }
+
+    /// Test to reproduce the GLOBAL_CODE registry crash for wasmtime PR.
+    ///
+    /// This test demonstrates the wasmtime GLOBAL_CODE registry issue where rapid
+    /// creation and destruction of engines/modules can cause SIGABRT due to:
+    /// 1. Virtual address reuse by the OS for new mmap allocations
+    /// 2. Arc deferred deallocation leaving stale entries in the registry
+    /// 3. The `assert!(prev.is_none())` in `register_code()` aborting the process
+    ///
+    /// The issue manifests after approximately 350-400 engine+module creation cycles
+    /// when running in a single process without address reuse prevention.
+    ///
+    /// This test uses raw wasmtime APIs (not wasmtime4j wrappers) for direct
+    /// reproducibility in the wasmtime codebase.
+    ///
+    /// ## Expected behavior without fix
+    /// SIGABRT after ~350-400 iterations with error in wasmtime's registry.rs:
+    /// `assertion failed: prev.is_none()`
+    ///
+    /// ## Expected behavior with fix
+    /// All iterations complete successfully.
+    #[test]
+    fn test_global_code_registry_address_reuse_stress() {
+        use wasmtime::{Config, Engine as WasmtimeEngine, Module, Store};
+
+        // Number of iterations - set high enough to trigger address reuse
+        const ITERATIONS: usize = 600;
+
+        // Various WAT modules to exercise different code sizes and patterns
+        let wat_modules = [
+            // Minimal module
+            r#"(module (func (export "a") (result i32) i32.const 1))"#,
+            // Module with conditional
+            r#"(module
+                (func (export "cond") (param i32) (result i32)
+                    (local.get 0)
+                    (if (result i32)
+                        (then (i32.const 42))
+                        (else (i32.const 0)))))"#,
+            // Module with memory
+            r#"(module
+                (memory (export "mem") 1)
+                (func (export "load") (param i32) (result i32)
+                    (i32.load (local.get 0))))"#,
+            // Module with globals
+            r#"(module
+                (global $g (mut i32) (i32.const 0))
+                (func (export "inc") (result i32)
+                    (global.set $g (i32.add (global.get $g) (i32.const 1)))
+                    (global.get $g)))"#,
+        ];
+
+        eprintln!("Starting GLOBAL_CODE address reuse stress test ({} iterations)...", ITERATIONS);
+        eprintln!("This test would previously SIGABRT after ~350-400 iterations");
+
+        for i in 0..ITERATIONS {
+            // Create a fresh config and engine each iteration
+            // Using signals_based_traps(false) as required for JVM integration
+            let mut config = Config::new();
+            config.signals_based_traps(false);
+
+            let engine = match WasmtimeEngine::new(&config) {
+                Ok(e) => e,
+                Err(err) => panic!("Failed to create engine at iteration {}: {:?}", i, err),
+            };
+
+            // Cycle through different module sizes to vary memory allocation patterns
+            let wat = wat_modules[i % wat_modules.len()];
+
+            // Compile module - this calls register_code() internally
+            let module = match Module::new(&engine, wat) {
+                Ok(m) => m,
+                Err(err) => panic!("Failed to compile module at iteration {}: {:?}", i, err),
+            };
+
+            // Create a store and instantiate - exercises more code paths
+            let mut store = Store::new(&engine, ());
+            let _instance = match wasmtime::Instance::new(&mut store, &module, &[]) {
+                Ok(inst) => inst,
+                Err(err) => panic!("Failed to instantiate module at iteration {}: {:?}", i, err),
+            };
+
+            // Explicitly drop in reverse order to stress cleanup paths
+            // (instance dropped via _instance going out of scope)
+            drop(store);
+            drop(module);
+            drop(engine);
+
+            // Progress reporting
+            if (i + 1) % 100 == 0 {
+                eprintln!("  Completed {} iterations...", i + 1);
+            }
+        }
+
+        eprintln!("GLOBAL_CODE address reuse stress test PASSED: {} iterations completed", ITERATIONS);
+    }
+
+    /// Test concurrent engine/module creation to stress GLOBAL_CODE registry locking.
+    ///
+    /// This test exercises the thread-safety of the GLOBAL_CODE registry by
+    /// creating engines and modules from multiple threads simultaneously.
+    #[test]
+    fn test_global_code_registry_concurrent_stress() {
+        use std::sync::Arc;
+        use std::thread;
+        use wasmtime::{Config, Engine as WasmtimeEngine, Module, Store};
+
+        const THREADS: usize = 4;
+        const ITERATIONS_PER_THREAD: usize = 100;
+
+        eprintln!(
+            "Starting concurrent GLOBAL_CODE stress test ({} threads x {} iterations)...",
+            THREADS, ITERATIONS_PER_THREAD
+        );
+
+        let handles: Vec<_> = (0..THREADS)
+            .map(|thread_id| {
+                thread::spawn(move || {
+                    let wat = "(module (func (export \"f\") (result i32) i32.const 42))";
+
+                    for i in 0..ITERATIONS_PER_THREAD {
+                        let mut config = Config::new();
+                        config.signals_based_traps(false);
+
+                        let engine = WasmtimeEngine::new(&config)
+                            .expect(&format!("Thread {} failed to create engine at iteration {}", thread_id, i));
+
+                        let module = Module::new(&engine, wat)
+                            .expect(&format!("Thread {} failed to compile module at iteration {}", thread_id, i));
+
+                        let mut store = Store::new(&engine, ());
+                        let _instance = wasmtime::Instance::new(&mut store, &module, &[])
+                            .expect(&format!("Thread {} failed to instantiate at iteration {}", thread_id, i));
+                    }
+
+                    eprintln!("  Thread {} completed {} iterations", thread_id, ITERATIONS_PER_THREAD);
+                })
+            })
+            .collect();
+
+        for handle in handles {
+            handle.join().expect("Thread panicked during GLOBAL_CODE concurrent stress test");
+        }
+
+        eprintln!(
+            "Concurrent GLOBAL_CODE stress test PASSED: {} total iterations",
+            THREADS * ITERATIONS_PER_THREAD
         );
     }
 }
