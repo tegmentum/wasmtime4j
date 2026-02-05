@@ -15,7 +15,7 @@ use jni::objects::{JByteArray, JClass, JObject, JString, JValue, JValueOwned};
 use jni::sys::{jboolean, jint, jlong, jobject};
 use jni::objects::JObjectArray;
 
-use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
+use crate::gc::WasmGcRuntime;
 use crate::gc_types::{StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue};
 use crate::gc_heap::ObjectId;
 use crate::error::{WasmtimeError, WasmtimeResult};

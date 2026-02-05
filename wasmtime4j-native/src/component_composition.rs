@@ -15,15 +15,15 @@
 //! - **Conflict Resolution**: Intelligent handling of dependency conflicts and version constraints
 //! - **Performance Optimization**: Graph optimization for reduced latency and resource usage
 
-use std::collections::{HashMap, HashSet, BTreeMap, VecDeque};
-use std::sync::{Arc, RwLock, Mutex, Weak};
-use std::time::{Duration, Instant, SystemTime};
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, RwLock};
+use std::time::{Duration, SystemTime};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::component_core::{ComponentInstanceHandle, EnhancedComponentEngine};
-use crate::component_orchestration::{ComponentId, ComponentOrchestrator, ManagedComponent, SemanticVersion, VersionConstraint};
-use crate::component_resources::{ComponentResourceManager, ResourceHandle};
-use crate::wit_interfaces::{InterfaceNegotiationManager, NegotiableInterface, InterfaceCapabilities};
+// component_core imports removed - using local ComponentId
+use crate::component_orchestration::{ComponentId, SemanticVersion, VersionConstraint};
+// component_resources imports removed - not directly used
+// wit_interfaces imports removed - not directly used
 
 /// Advanced component composition manager
 pub struct ComponentCompositionManager {

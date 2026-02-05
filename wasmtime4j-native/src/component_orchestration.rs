@@ -18,21 +18,16 @@ use std::sync::{Arc, RwLock, Mutex, Condvar};
 use std::time::{Duration, Instant};
 use std::thread;
 
-use wasmtime::{
-    Engine, Store,
-    component::{Component, Instance, Linker, ResourceTable, ComponentType}
-};
+use wasmtime::component::Component;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::component_core::{
-    EnhancedComponentEngine, ComponentInstanceHandle, ComponentStoreData, ComponentMetrics
-};
-use crate::wit_interfaces::{WitInterfaceManager, WitInterface, ValidationResult};
+use crate::component_core::{EnhancedComponentEngine, ComponentInstanceHandle};
+use crate::wit_interfaces::WitInterfaceManager;
 
 /// Advanced dependency resolution system
 pub mod dependency_resolution {
     use super::*;
-    use std::collections::{BTreeMap, BTreeSet};
+    use std::collections::BTreeMap;
     use std::cmp::Ordering;
 
     /// Semantic version for component dependencies

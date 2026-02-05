@@ -13,7 +13,6 @@ use sha2::{Sha256, Digest};
 use flate2::{Compression, read::GzDecoder, write::GzEncoder};
 use wasmtime::{Engine, Module};
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::engine::Engine as WasmtimeJavaEngine;
 
 /// Maximum cache size in bytes (default: 1GB)
 const DEFAULT_MAX_CACHE_SIZE: usize = 1024 * 1024 * 1024;

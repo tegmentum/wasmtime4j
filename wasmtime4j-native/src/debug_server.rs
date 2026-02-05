@@ -1,10 +1,9 @@
 use wasmtime::*;
-use wasmtime_wasi::WasiCtx;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 /// Advanced debugging server for WebAssembly execution with instruction stepping,
 /// breakpoints, and memory inspection capabilities
@@ -621,7 +620,7 @@ pub enum DebugEvent {
 }
 
 // C FFI exports for JNI integration
-use std::os::raw::{c_char, c_int, c_long};
+use std::os::raw::{c_char, c_int};
 use std::ffi::{CStr, CString};
 
 #[no_mangle]

@@ -4,7 +4,6 @@
 //! from module bytecode, enabling table.init() operations. Uses a hybrid design where
 //! only passive element segments are cached (active segments are applied during instantiation).
 
-use wasmtime::Val;
 use std::sync::{Arc, Mutex};
 use crate::error::{WasmtimeError, WasmtimeResult};
 

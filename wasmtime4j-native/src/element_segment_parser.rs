@@ -4,7 +4,7 @@
 //! extracting passive segments for table.init() and memory.init() operations.
 
 use wasmparser::{Parser, Payload, ElementKind, ElementItems, DataKind};
-use crate::element_segment::{ElementSegment, ElementItem, ElementMode};
+use crate::element_segment::{ElementSegment, ElementItem};
 use crate::data_segment::DataSegment;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use wasmtime::ValType;

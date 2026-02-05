@@ -17,20 +17,17 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::fmt;
 
-use wasmtime::{
-    Engine, Store,
-    component::{
-        Component, Instance, Linker, Resource, ResourceTable,
-        types::{ComponentItem, ResourceType},
-        ComponentType,
-        Val, Type, Func, TypedFunc
-    }
+use wasmtime::component::{
+    Instance, ResourceTable,
+    types::ResourceType,
+    Val
 };
+use wasmtime::Store;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::component::{
     ComponentValueType, InterfaceDefinition, FunctionDefinition,
-    Parameter, TypeDefinition, ResourceDefinition, FieldType, CaseType
+    TypeDefinition, ResourceDefinition
 };
 use crate::component_orchestration::dependency_resolution::{SemanticVersion, VersionConstraint};
 
@@ -41,7 +38,6 @@ use interface_negotiation::SecurityLevel;
 pub mod interface_negotiation {
     use super::*;
     use std::collections::{BTreeMap, BTreeSet};
-    use std::cmp::Ordering;
 
     /// Interface negotiation manager for component-to-component communication
     pub struct InterfaceNegotiationManager {

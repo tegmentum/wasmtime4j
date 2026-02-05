@@ -5,12 +5,10 @@
 use crate::error::WasmtimeResult;
 use crate::store::Store as WasmStore;
 use crate::typed_func::TypedFunc as CustomTypedFunc;
-use jni::objects::{JClass, JObject, JValue};
-use jni::sys::{jboolean, jdouble, jfloat, jint, jlong, jobject};
+use jni::objects::{JClass, JObject};
+use jni::sys::{jdouble, jfloat, jint, jlong};
 use jni::JNIEnv;
-use std::os::raw::c_void;
-use std::sync::Arc;
-use wasmtime::{Func, WasmParams, WasmResults};
+use wasmtime::Func;
 
 /// Macro to validate and dereference pointers with error handling
 ///

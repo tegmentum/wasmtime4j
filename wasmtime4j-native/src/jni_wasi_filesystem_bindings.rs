@@ -3,11 +3,11 @@
 //! This module provides JNI functions for wasi:filesystem interfaces including
 //! descriptor-based file operations, directory management, and metadata access.
 
-use jni::objects::{JByteArray, JClass, JObject, JString};
-use jni::sys::{jboolean, jbyteArray, jint, jlong, jobjectArray, jstring};
+use jni::objects::{JClass, JObject, JString};
+use jni::sys::{jboolean, jint, jlong, jobjectArray, jstring};
 use jni::JNIEnv;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::error::jni_utils;
 use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_filesystem_helpers;
 

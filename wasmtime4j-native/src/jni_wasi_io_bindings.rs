@@ -8,7 +8,6 @@
 use jni::objects::{JByteArray, JClass, JObject};
 use jni::sys::{jboolean, jbyteArray, jint, jlong};
 use jni::JNIEnv;
-use std::sync::{Arc, Mutex};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};

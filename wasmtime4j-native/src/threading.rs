@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::collections::HashMap;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
-use wasmtime::{Engine, SharedMemory, MemoryType};
+use wasmtime::{Engine, MemoryType, SharedMemory};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread identifier type
@@ -665,7 +665,6 @@ pub fn get_global_thread_pool() -> &'static WasmThreadPool {
 //==============================================================================
 
 use std::os::raw::{c_char, c_int, c_void};
-use std::ffi::CStr;
 use crate::error::ffi_utils;
 
 /// Put an integer value into thread-local storage (Panama FFI)

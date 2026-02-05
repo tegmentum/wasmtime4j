@@ -19,11 +19,11 @@ use std::sync::{Arc, RwLock, Mutex};
 use std::fs::{File, OpenOptions};
 use std::io::{Write, BufWriter};
 use ring::{digest, signature, hmac};
-use ring::signature::{Ed25519KeyPair, KeyPair, UnparsedPublicKey, VerificationAlgorithm};
+use ring::signature::{Ed25519KeyPair, KeyPair, UnparsedPublicKey};
 use ring::rand::SystemRandom;
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
+// sha2::Digest removed - using ring::digest instead
 use chrono::{DateTime, Utc};
 use crate::error::{WasmtimeError, WasmtimeResult};
 

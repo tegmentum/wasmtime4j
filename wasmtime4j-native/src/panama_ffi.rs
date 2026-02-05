@@ -1158,7 +1158,7 @@ pub mod store {
     use super::*;
     use crate::error::ffi_utils;
     use crate::store::core;
-    use wasmtime::{ValType, FuncType, RefType, Func, Val};
+    use wasmtime::{ValType, FuncType, RefType};
     
     /// Create a new WebAssembly store with default configuration (Panama FFI version)
     #[no_mangle]
@@ -5298,7 +5298,6 @@ pub mod linker {
     use crate::hostfunc::{HostFunction, HostFunctionCallback};
     use crate::instance::{WasmValue, FfiWasmValue};
     use wasmtime::{ValType, FuncType, RefType};
-    use std::sync::Arc;
 
     /// Type for Panama callback function pointer
     ///
@@ -5846,7 +5845,6 @@ pub mod linker {
     ) -> c_int {
         use std::ffi::CStr;
         use crate::error::ffi_utils;
-        use wasmtime::AsContextMut;
 
         ffi_utils::ffi_try_code(|| {
             unsafe {

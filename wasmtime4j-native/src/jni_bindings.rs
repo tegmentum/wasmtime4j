@@ -1546,7 +1546,7 @@ pub mod jni_engine {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_function {
     use super::*;
-    use wasmtime::{Func, FuncType, Val, ValType};
+    use wasmtime::{Func, Val, ValType};
     use crate::error::{WasmtimeError, WasmtimeResult, jni_utils};
     use crate::ffi_common::memory_utils;
     use crate::store::Store;
@@ -4344,8 +4344,7 @@ pub mod jni_linker {
         jni_utils::jni_try_with_default(&mut env, 0, || {
             use std::os::raw::c_void;
             use wasmtime::{ValType, FuncType};
-            use crate::hostfunc::{HostFunction, HostFunctionCallback};
-            use crate::instance::WasmValue;
+            use crate::hostfunc::HostFunction;
             use std::io::Write;
 
             // Write to debug log file - use absolute path in user's home
@@ -5944,10 +5943,9 @@ pub mod jni_module_cache {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_component {
     use super::*;
-    use crate::component::{ComponentEngine, Component};
+    use crate::component::Component;
     use crate::error::jni_utils;
     use jni::sys::jobjectArray;
-    use std::sync::Arc;
     
 
     /// Create a new component engine
@@ -6373,8 +6371,6 @@ pub mod jni_component {
 pub mod jni_hostfunc {
     use super::*;
     use crate::error::jni_utils;
-    use crate::hostfunc::HostFunctionCallback;
-    use crate::instance::WasmValue;
     use crate::{WasmtimeError, WasmtimeResult};
     use wasmtime::{ValType, FuncType};
     use std::os::raw::c_void;
@@ -13180,12 +13176,10 @@ pub mod jni_serializer {
 /// JNI bindings for Debugger operations
 #[cfg(feature = "jni-bindings")]
 pub mod jni_debugger {
-    use super::*;
-    use crate::error::{jni_utils, WasmtimeError};
+    use crate::error::jni_utils;
     use jni::objects::{JClass, JObject};
     use jni::sys::{jboolean, jlong};
     use jni::JNIEnv;
-    use std::os::raw::c_void;
 
     /// Create a debugger for an engine
     #[no_mangle]
@@ -14860,7 +14854,7 @@ mod exception_handling_jni {
     use jni::objects::JClass;
     use jni::sys::{jboolean, jlong, jintArray, JNI_FALSE, JNI_TRUE};
     use jni::JNIEnv;
-    use wasmtime::{Tag, TagType, ValType, FuncType, AsContext, AsContextMut};
+    use wasmtime::{Tag, TagType, ValType, FuncType};
     use crate::store::Store;
     use crate::error::jni_utils;
 
@@ -14976,7 +14970,7 @@ mod exception_handling_jni {
         tag_handle: jlong,
         store_handle: jlong,
     ) -> jintArray {
-        use crate::error::{WasmtimeError, ErrorCode};
+        use crate::error::WasmtimeError;
 
         if tag_handle == 0 || store_handle == 0 {
             jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {

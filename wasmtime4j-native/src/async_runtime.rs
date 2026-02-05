@@ -23,15 +23,14 @@
 use std::ffi::{c_char, c_void, CStr, CString};
 use std::mem::ManuallyDrop;
 use std::os::raw::{c_int, c_uint, c_ulong};
+use std::ptr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use std::ptr;
 use tokio::runtime::{Runtime, Handle};
 use tokio::sync::oneshot;
 use once_cell::sync::Lazy;
 use log::{debug, error, info, warn};
 use jni::JavaVM;
-use jni::objects::GlobalRef;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::{Instance, WasmValue};

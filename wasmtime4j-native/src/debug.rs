@@ -1,18 +1,12 @@
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::ffi_common::*;
-use crate::jni_bindings::*;
-use crate::panama_ffi::*;
 
-use wasmtime::{Engine, Linker, Instance, Store, Module, Val, ValType, Trap};
-use wasmtime::component::Component;
-use wasmtime_wasi::WasiView;
+use wasmtime::{Engine, Instance, Module, Store};
 
 use std::collections::HashMap;
 use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::thread;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use once_cell::sync::Lazy;
 
 /// Result type alias for debug operations
@@ -970,7 +964,6 @@ pub fn clear_debug_sessions() -> usize {
 #[cfg(feature = "jni")]
 pub mod jni_debug_exports {
     use super::*;
-    use crate::jni_bindings::*;
     use jni::{JNIEnv, objects::JClass, sys::{jlong, jboolean, JNI_TRUE, JNI_FALSE}};
 
     #[no_mangle]
@@ -1013,7 +1006,6 @@ pub mod jni_debug_exports {
 #[cfg(feature = "panama-ffi")]
 pub mod panama_debug_exports {
     use super::*;
-    use crate::panama_ffi::*;
 
     #[no_mangle]
     pub extern "C" fn wasmtime4j_debug_create_session(

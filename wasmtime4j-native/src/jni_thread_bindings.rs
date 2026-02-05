@@ -5,11 +5,10 @@
 
 use crate::error::{WasmtimeError, WasmtimeResult, jni_utils};
 use crate::threading::{WasmThread, WasmThreadState};
-use jni::objects::{JByteArray, JClass, JObject};
+use jni::objects::{JByteArray, JClass};
 use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray};
 use jni::JNIEnv;
 use std::os::raw::c_void;
-use std::sync::Arc;
 
 /// Get a reference to a WasmThread from a native handle
 ///

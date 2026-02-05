@@ -4,10 +4,10 @@
 //! cryptographically-secure random byte generation and random u64 values.
 
 use jni::objects::JClass;
-use jni::sys::{jbyteArray, jlong, jlongArray};
+use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::error::jni_utils;
 use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_random_helpers;
 

@@ -18,8 +18,7 @@ use std::path::PathBuf;
 use std::env;
 use std::os::raw::{c_char, c_int, c_void, c_uint, c_ulong};
 
-#[cfg(unix)]
-use std::os::unix::process::{CommandExt, ExitStatusExt};
+// Unix-specific process extensions removed - not currently used
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 

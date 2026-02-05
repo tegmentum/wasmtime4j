@@ -7,7 +7,6 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::gc::WasmGcRuntime; // Import GC runtime support
 use crate::gc_types::GcValue; // Import GC value types
 use std::collections::HashMap;
-use std::ptr;
 use std::sync::{Arc, Mutex};
 use std::ffi::{CStr, CString};
 use std::fmt::Write;
@@ -516,10 +515,9 @@ impl UnwindContext {
 #[cfg(feature = "jni")]
 pub mod jni_bindings {
     use super::*;
-    use jni::objects::{JClass, JObject, JString, JList};
+    use jni::objects::{JClass, JObject, JString};
     use jni::sys::{jlong, jobject, jboolean};
     use jni::JNIEnv;
-    use std::sync::Arc;
 
     /// Creates a native exception handler
     #[no_mangle]

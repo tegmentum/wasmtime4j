@@ -5,9 +5,7 @@
 
 use std::ffi::CString;
 use std::os::raw::c_char;
-use std::collections::HashSet;
 use thiserror::Error;
-use once_cell::sync::Lazy;
 use wasmtime::{Trap, WasmBacktrace};
 
 /// Comprehensive error types for wasmtime4j operations
@@ -1863,8 +1861,7 @@ pub mod jni_utils {
     #[cfg(feature = "jni-bindings")]
     /// Throw JNI exception with proper error information
     pub fn throw_jni_exception(env: &mut jni::JNIEnv, error: &WasmtimeError) {
-        use jni::objects::{JObject, JValue};
-        use jni::signature::{Primitive, ReturnType};
+        use jni::objects::JValue;
 
         let class_name = error_to_exception_class(error);
         let message = error.to_string();

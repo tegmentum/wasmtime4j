@@ -13,7 +13,7 @@ use crate::store::Store;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::global::ReferenceType;
 use crate::instance::Instance;
-use crate::element_segment::{ElementSegmentManager, ElementItem};
+use crate::element_segment::ElementItem;
 
 /// Thread-safe wrapper around Wasmtime table with bounds checking
 pub struct Table {

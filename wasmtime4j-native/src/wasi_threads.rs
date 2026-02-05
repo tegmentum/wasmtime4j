@@ -14,14 +14,14 @@
 //! - Deadlock detection and prevention
 //! - Thread migration and load balancing
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock, Mutex, Condvar};
-use std::sync::atomic::{AtomicU64, AtomicUsize, AtomicBool, Ordering};
-use std::thread::{self, ThreadId, JoinHandle};
-use std::time::{Duration, Instant, SystemTime};
-use serde::{Deserialize, Serialize};
-use tokio::sync::{mpsc, oneshot, Semaphore};
-use anyhow::{Result as AnyhowResult, Context as AnyhowContext};
+use std::sync::atomic::{AtomicU64, AtomicUsize, AtomicBool};
+use std::thread::{ThreadId, JoinHandle};
+use std::time::{Duration, Instant};
+// serde Serialize/Deserialize removed - not currently used
+use tokio::sync::Semaphore;
+// anyhow Result/Context removed - using crate::error types instead
 use crossbeam::queue::{SegQueue, ArrayQueue};
 use parking_lot::{RwLock as ParkingRwLock, Mutex as ParkingMutex};
 

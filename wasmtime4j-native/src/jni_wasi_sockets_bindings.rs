@@ -3,11 +3,11 @@
 //! This module provides JNI functions for wasi:sockets interfaces including
 //! TCP sockets, UDP sockets, and network operations.
 
-use jni::objects::{JByteArray, JClass, JObject, JObjectArray};
-use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jlongArray, jshort};
+use jni::objects::{JByteArray, JClass, JObject};
+use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jlongArray};
 use jni::JNIEnv;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::error::jni_utils;
 use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_sockets_helpers::{self, IpAddress, IpSocketAddress};
 
