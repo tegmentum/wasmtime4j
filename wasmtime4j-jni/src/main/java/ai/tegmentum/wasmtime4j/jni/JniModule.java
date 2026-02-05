@@ -688,10 +688,10 @@ public class JniModule implements Module {
   public void close() {
     if (!closed) {
       closed = true;
-      // Note: Module destruction must be handled carefully to avoid JVM crashes.
-      // The native Module contains Arc references that need to be properly cleaned up.
-      // For now, we skip native destruction to prevent crashes - this is a known memory leak.
-      // TODO: Fix native module cleanup to properly handle Arc<WasmtimeModule> drop
+      // Native cleanup is now safe with the idempotent GLOBAL_CODE registry fix.
+      // The wasmtime fork at tegmentum/wasmtime (fix/global-code-registry-idempotent-v41)
+      // prevents SIGABRT when virtual addresses are reused before Arc is fully released.
+      nativeDestroyModule(nativeHandle);
     }
   }
 

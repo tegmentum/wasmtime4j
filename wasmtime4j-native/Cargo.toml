@@ -219,7 +219,9 @@ path = "src/bin/build-info.rs"
 required-features = []
 
 # Patch wasmtime to use our fork with idempotent GLOBAL_CODE registry fix
-# This prevents SIGABRT crashes in long-running JVM processes
+# This prevents SIGABRT crashes in long-running JVM processes due to
+# virtual address reuse before Arc references are fully released.
+# See: https://github.com/tegmentum/wasmtime/tree/fix/global-code-registry-idempotent-v41
 [patch.crates-io]
 wasmtime = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
 wasmtime-wasi = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
