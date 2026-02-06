@@ -221,21 +221,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
     context_handle: jlong,
     stream_id: jlong,
 ) {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", stream_id => "stream");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Close stream
     if let Err(e) = close_stream(context, stream_id as u64) {
@@ -309,21 +297,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     context_handle: jlong,
     stream_id: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", stream_id => "stream");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Check write capacity
     match check_write_capacity(context, stream_id as u64) {
@@ -350,21 +326,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     stream_id: jlong,
     contents: JByteArray,
 ) {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", stream_id => "stream");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Convert Java byte array to Rust Vec<u8>
     let data = match env.convert_byte_array(&contents) {
@@ -399,21 +363,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     stream_id: jlong,
     contents: JByteArray,
 ) {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", stream_id => "stream");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Convert Java byte array to Rust Vec<u8>
     let data = match env.convert_byte_array(&contents) {
@@ -447,21 +399,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     context_handle: jlong,
     stream_id: jlong,
 ) {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", stream_id => "stream");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Flush stream
     if let Err(e) = flush_stream(context, stream_id as u64, false) {
@@ -483,21 +423,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     context_handle: jlong,
     stream_id: jlong,
 ) {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", stream_id => "stream");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Blocking flush
     if let Err(e) = flush_stream(context, stream_id as u64, true) {
@@ -520,29 +448,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     stream_id: jlong,
     length: jlong,
 ) {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    if length < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Length cannot be negative",
-        );
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", stream_id => "stream");
+    jni_validate_non_negative!(env, length, "Length", ());
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Write zeroes
     if let Err(e) = write_zeroes_to_stream(context, stream_id as u64, length as u64, false) {
@@ -565,29 +474,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     stream_id: jlong,
     length: jlong,
 ) {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    if length < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Length cannot be negative",
-        );
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", stream_id => "stream");
+    jni_validate_non_negative!(env, length, "Length", ());
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Blocking write zeroes and flush
     if let Err(e) = write_zeroes_to_stream(context, stream_id as u64, length as u64, true) {
@@ -611,29 +501,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     source_stream_id: jlong,
     length: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 || source_stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    if length < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Length cannot be negative",
-        );
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", stream_id => "stream", source_stream_id => "source stream");
+    jni_validate_non_negative!(env, length, "Length", 0);
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Splice streams
     match splice_streams(context, stream_id as u64, source_stream_id as u64, length as u64, false) {
@@ -661,29 +532,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     source_stream_id: jlong,
     length: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 || source_stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    if length < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Length cannot be negative",
-        );
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", stream_id => "stream", source_stream_id => "source stream");
+    jni_validate_non_negative!(env, length, "Length", 0);
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Blocking splice
     match splice_streams(context, stream_id as u64, source_stream_id as u64, length as u64, true) {
@@ -709,21 +561,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     context_handle: jlong,
     stream_id: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", stream_id => "stream");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Create pollable for output stream
     match create_output_stream_pollable(context, stream_id as u64) {
@@ -749,21 +589,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     context_handle: jlong,
     stream_id: jlong,
 ) {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", stream_id => "stream");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Close stream
     if let Err(e) = close_stream(context, stream_id as u64) {
@@ -843,21 +671,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
     context_handle: jlong,
     pollable_id: jlong,
 ) {
-    // Validate parameters
-    if context_handle == 0 || pollable_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", pollable_id => "pollable");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Block on pollable
     if let Err(e) = block_on_pollable(context, pollable_id as u64) {
@@ -879,21 +695,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
     context_handle: jlong,
     pollable_id: jlong,
 ) -> jboolean {
-    // Validate parameters
-    if context_handle == 0 || pollable_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", pollable_id => "pollable");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Check if pollable is ready
     match check_pollable_ready(context, pollable_id as u64) {
@@ -919,21 +723,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
     context_handle: jlong,
     pollable_id: jlong,
 ) {
-    // Validate parameters
-    if context_handle == 0 || pollable_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, (), context_handle => "context", pollable_id => "pollable");
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", ());
 
     // Close pollable
     if let Err(e) = close_pollable(context, pollable_id as u64) {
