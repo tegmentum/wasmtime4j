@@ -253,6 +253,52 @@ pub enum WasiStreamStatusInfo {
     Error(String),
 }
 
+// ============================================================================
+// WasiStreamEntry trait implementation for WasiStreamInfo
+// ============================================================================
+
+impl crate::wasi_stream_ops::WasiStreamEntry for WasiStreamInfo {
+    fn is_closed(&self) -> bool {
+        matches!(self.status, WasiStreamStatusInfo::Closed)
+    }
+
+    fn set_closed(&mut self) {
+        self.status = WasiStreamStatusInfo::Closed;
+    }
+
+    fn buffer(&self) -> &Vec<u8> {
+        &self.buffer
+    }
+
+    fn buffer_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.buffer
+    }
+
+    fn clear_buffer(&mut self) {
+        self.buffer.clear();
+    }
+}
+
+// ============================================================================
+// WasiStreamContext trait implementation for WasiContext
+// ============================================================================
+
+impl crate::wasi_stream_ops::WasiStreamContext for WasiContext {
+    type StreamEntry = WasiStreamInfo;
+
+    fn streams_read(&self) -> crate::error::WasmtimeResult<std::sync::RwLockReadGuard<'_, HashMap<u32, Self::StreamEntry>>> {
+        self.streams.read().map_err(|_| crate::error::WasmtimeError::Wasi {
+            message: "Failed to lock streams".to_string(),
+        })
+    }
+
+    fn streams_write(&self) -> crate::error::WasmtimeResult<std::sync::RwLockWriteGuard<'_, HashMap<u32, Self::StreamEntry>>> {
+        self.streams.write().map_err(|_| crate::error::WasmtimeError::Wasi {
+            message: "Failed to lock streams".to_string(),
+        })
+    }
+}
+
 impl Default for WasiConfig {
     fn default() -> Self {
         Self {

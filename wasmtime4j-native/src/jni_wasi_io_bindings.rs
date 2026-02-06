@@ -11,6 +11,11 @@ use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};
+use crate::wasi_stream_ops::{
+    read_from_stream_generic, skip_in_stream_generic, close_stream_generic,
+    check_write_capacity_generic, write_to_stream_generic, flush_stream_generic,
+    write_zeroes_to_stream_generic, splice_streams_generic,
+};
 
 /// Create a WASI input stream
 ///
@@ -344,68 +349,32 @@ fn create_input_stream(
     Ok(stream_id as u64)
 }
 
+/// Read from stream using generic implementation
+#[inline]
 fn read_from_stream(
     context: &WasiContext,
     stream_id: u64,
     length: usize,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<Vec<u8>> {
-    
-    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // Read from buffer (MVP: just return what's in the buffer)
-    let read_len = length.min(stream.buffer.len());
-    let data = stream.buffer.drain(..read_len).collect();
-    Ok(data)
+    read_from_stream_generic(context, stream_id, length, blocking)
 }
 
+/// Skip bytes in stream using generic implementation
+#[inline]
 fn skip_in_stream(
     context: &WasiContext,
     stream_id: u64,
     length: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<u64> {
-    
-    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // Skip bytes in buffer
-    let skip_len = (length as usize).min(stream.buffer.len());
-    stream.buffer.drain(..skip_len);
-    Ok(skip_len as u64)
+    skip_in_stream_generic(context, stream_id, length, blocking)
 }
 
+/// Close stream using generic implementation
+#[inline]
 fn close_stream(context: &WasiContext, stream_id: u64) -> WasmtimeResult<()> {
-    
-    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    if let Some(stream) = streams.get_mut(&(stream_id as u32)) {
-        stream.status = WasiStreamStatusInfo::Closed;
-        stream.buffer.clear();
-    }
-    Ok(())
+    close_stream_generic(context, stream_id)
 }
 
 /// Check write capacity for WASI output stream (non-blocking)
@@ -884,149 +853,56 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     }
 }
 
-// Helper functions for output stream operations
+// Helper functions for output stream operations - using generic implementations
 
+/// Check write capacity using generic implementation
+#[inline]
 fn check_write_capacity(context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
-    
-    let streams = context.streams.read().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // MVP: return a fixed capacity (e.g., 64KB)
-    Ok(65536)
+    check_write_capacity_generic(context, stream_id)
 }
 
+/// Write to stream using generic implementation
+#[inline]
 fn write_to_stream(
     context: &WasiContext,
     stream_id: u64,
     data: &[u8],
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<()> {
-    
-    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // Write to buffer (MVP: just append to buffer)
-    stream.buffer.extend_from_slice(data);
-    Ok(())
+    write_to_stream_generic(context, stream_id, data, blocking)
 }
 
+/// Flush stream using generic implementation
+#[inline]
 fn flush_stream(
     context: &WasiContext,
     stream_id: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<()> {
-    
-    let streams = context.streams.read().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // MVP: flushing is a no-op since we're using in-memory buffers
-    Ok(())
+    flush_stream_generic(context, stream_id, blocking)
 }
 
+/// Write zeroes to stream using generic implementation
+#[inline]
 fn write_zeroes_to_stream(
     context: &WasiContext,
     stream_id: u64,
     length: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<()> {
-    
-    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // Write zeroes to buffer
-    stream.buffer.resize(stream.buffer.len() + length as usize, 0);
-    Ok(())
+    write_zeroes_to_stream_generic(context, stream_id, length, blocking)
 }
 
+/// Splice streams using generic implementation
+#[inline]
 fn splice_streams(
     context: &WasiContext,
     dest_stream_id: u64,
     source_stream_id: u64,
     length: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<u64> {
-    
-    let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-
-    // Get source stream data
-    let source_stream = streams.get_mut(&(source_stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Source stream {} not found", source_stream_id),
-        }
-    })?;
-
-    // Check if source stream is closed
-    if matches!(source_stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Source stream is closed".to_string(),
-        });
-    }
-
-    // Read from source buffer
-    let read_len = (length as usize).min(source_stream.buffer.len());
-    let data: Vec<u8> = source_stream.buffer.drain(..read_len).collect();
-
-    // Get destination stream
-    let dest_stream = streams.get_mut(&(dest_stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Destination stream {} not found", dest_stream_id),
-        }
-    })?;
-
-    // Check if destination stream is closed
-    if matches!(dest_stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Destination stream is closed".to_string(),
-        });
-    }
-
-    // Write to destination buffer
-    dest_stream.buffer.extend_from_slice(&data);
-    Ok(data.len() as u64)
+    splice_streams_generic(context, dest_stream_id, source_stream_id, length, blocking)
 }
 
 fn create_output_stream_pollable(_context: &WasiContext, _stream_id: u64) -> WasmtimeResult<u64> {

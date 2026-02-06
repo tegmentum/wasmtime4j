@@ -232,6 +232,9 @@ pub mod wasi_preview2;
 // Shared helper functions for WASI I/O operations (used by both JNI and Panama FFI)
 pub mod wasi_io_helpers;
 
+// Unified WASI stream operations trait (consolidates duplicated stream code)
+pub mod wasi_stream_ops;
+
 // Shared helper functions for WASI filesystem operations (used by both JNI and Panama FFI)
 pub mod wasi_filesystem_helpers;
 

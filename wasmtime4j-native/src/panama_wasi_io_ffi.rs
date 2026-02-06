@@ -4,172 +4,91 @@
 //! to access WASI I/O stream operations (wasi:io).
 //!
 //! All functions use C calling conventions and handle memory management appropriately.
+//!
+//! ## Phase 2 Consolidation
+//!
+//! Stream operations now use the unified `wasi_stream_ops` trait-based abstraction,
+//! eliminating code duplication between Panama FFI, JNI, and Preview 2 implementations.
 
 use std::os::raw::{c_long, c_void};
 use std::slice;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};
+use crate::error::WasmtimeResult;
+use crate::wasi::WasiContext;
+use crate::wasi_stream_ops::{
+    read_from_stream_generic, skip_in_stream_generic, close_stream_generic,
+    check_write_capacity_generic, write_to_stream_generic, flush_stream_generic,
+    write_zeroes_to_stream_generic, splice_streams_generic,
+};
 
 // ============================================================================
-// Internal helper functions that work with WasiContext (similar to JNI bindings)
+// Wrapper functions that delegate to generic implementations
 // ============================================================================
 
-/// Read data from a stream
+/// Read data from a stream (uses generic trait-based implementation)
+#[inline]
 fn read_from_stream(
     context: &WasiContext,
     stream_id: u64,
     length: usize,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<Vec<u8>> {
-    let mut streams = context.streams.write().map_err(|_| WasmtimeError::Wasi {
-        message: "Failed to lock streams".to_string(),
-    })?;
-
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // Read from buffer
-    let read_len = length.min(stream.buffer.len());
-    let data: Vec<u8> = stream.buffer.drain(..read_len).collect();
-    Ok(data)
+    read_from_stream_generic(context, stream_id, length, blocking)
 }
 
-/// Skip bytes in a stream
+/// Skip bytes in a stream (uses generic trait-based implementation)
+#[inline]
 fn skip_in_stream(
     context: &WasiContext,
     stream_id: u64,
     length: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<u64> {
-    let mut streams = context.streams.write().map_err(|_| WasmtimeError::Wasi {
-        message: "Failed to lock streams".to_string(),
-    })?;
-
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    // Check if stream is closed
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // Skip bytes in buffer
-    let skip_len = (length as usize).min(stream.buffer.len());
-    stream.buffer.drain(..skip_len);
-    Ok(skip_len as u64)
+    skip_in_stream_generic(context, stream_id, length, blocking)
 }
 
-/// Close a stream
+/// Close a stream (uses generic trait-based implementation)
+#[inline]
 fn close_stream(context: &WasiContext, stream_id: u64) -> WasmtimeResult<()> {
-    let mut streams = context.streams.write().map_err(|_| WasmtimeError::Wasi {
-        message: "Failed to lock streams".to_string(),
-    })?;
-
-    if let Some(stream) = streams.get_mut(&(stream_id as u32)) {
-        stream.status = WasiStreamStatusInfo::Closed;
-        stream.buffer.clear();
-    }
-    Ok(())
+    close_stream_generic(context, stream_id)
 }
 
-/// Check write capacity for an output stream
+/// Check write capacity for an output stream (uses generic trait-based implementation)
+#[inline]
 fn check_write_capacity(context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
-    let streams = context.streams.read().map_err(|_| WasmtimeError::Wasi {
-        message: "Failed to lock streams".to_string(),
-    })?;
-
-    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    Ok(65536)
+    check_write_capacity_generic(context, stream_id)
 }
 
-/// Write data to a stream
+/// Write data to a stream (uses generic trait-based implementation)
+#[inline]
 fn write_to_stream(
     context: &WasiContext,
     stream_id: u64,
     data: &[u8],
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<()> {
-    let mut streams = context.streams.write().map_err(|_| WasmtimeError::Wasi {
-        message: "Failed to lock streams".to_string(),
-    })?;
-
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    stream.buffer.extend_from_slice(data);
-    Ok(())
+    write_to_stream_generic(context, stream_id, data, blocking)
 }
 
-/// Flush a stream
-fn flush_stream(context: &WasiContext, stream_id: u64, _blocking: bool) -> WasmtimeResult<()> {
-    let streams = context.streams.read().map_err(|_| WasmtimeError::Wasi {
-        message: "Failed to lock streams".to_string(),
-    })?;
-
-    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
-
-    if matches!(stream.status, WasiStreamStatusInfo::Closed) {
-        return Err(WasmtimeError::Wasi {
-            message: "Stream is closed".to_string(),
-        });
-    }
-
-    // Flush is a no-op for in-memory streams
-    Ok(())
+/// Flush a stream (uses generic trait-based implementation)
+#[inline]
+fn flush_stream(context: &WasiContext, stream_id: u64, blocking: bool) -> WasmtimeResult<()> {
+    flush_stream_generic(context, stream_id, blocking)
 }
 
-/// Write zeroes to a stream
+/// Write zeroes to a stream (uses generic trait-based implementation)
+#[inline]
 fn write_zeroes_to_stream(
     context: &WasiContext,
     stream_id: u64,
     length: u64,
     blocking: bool,
 ) -> WasmtimeResult<()> {
-    let zeroes = vec![0u8; length as usize];
-    write_to_stream(context, stream_id, &zeroes, blocking)
+    write_zeroes_to_stream_generic(context, stream_id, length, blocking)
 }
 
-/// Splice data between streams
+/// Splice data between streams (uses generic trait-based implementation)
+#[inline]
 fn splice_streams(
     context: &WasiContext,
     dest_stream_id: u64,
@@ -177,41 +96,37 @@ fn splice_streams(
     length: u64,
     blocking: bool,
 ) -> WasmtimeResult<u64> {
-    // Read from source
-    let data = read_from_stream(context, source_stream_id, length as usize, blocking)?;
-    let bytes_read = data.len() as u64;
-
-    // Write to destination
-    write_to_stream(context, dest_stream_id, &data, blocking)?;
-
-    Ok(bytes_read)
+    splice_streams_generic(context, dest_stream_id, source_stream_id, length, blocking)
 }
 
 /// Create a pollable for a stream (stub - returns stream ID as pollable ID)
+#[inline]
 fn create_stream_pollable(_context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
     Ok(stream_id)
 }
 
 /// Check if a pollable is ready
 fn check_pollable_ready(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<bool> {
-    let streams = context.streams.read().map_err(|_| WasmtimeError::Wasi {
-        message: "Failed to lock streams".to_string(),
-    })?;
+    use crate::wasi_stream_ops::WasiStreamContext;
+    let streams = context.streams_read()?;
 
     // Treat pollable ID as stream ID
     if let Some(stream) = streams.get(&(pollable_id as u32)) {
-        Ok(!matches!(stream.status, WasiStreamStatusInfo::Closed))
+        use crate::wasi_stream_ops::WasiStreamEntry;
+        Ok(!stream.is_closed())
     } else {
         Ok(true) // Assume ready if not a stream
     }
 }
 
 /// Block on a pollable (stub - just returns immediately)
+#[inline]
 fn block_on_pollable(_context: &WasiContext, _pollable_id: u64, _timeout: Option<u64>) -> WasmtimeResult<()> {
     Ok(())
 }
 
 /// Close a pollable (no-op)
+#[inline]
 fn close_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
     Ok(())
 }

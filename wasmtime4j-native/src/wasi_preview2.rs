@@ -167,6 +167,60 @@ pub enum WasiStreamStatus {
     Error(String),
 }
 
+// ============================================================================
+// WasiStreamEntry trait implementation for WasiStream
+// ============================================================================
+
+impl crate::wasi_stream_ops::WasiStreamEntry for WasiStream {
+    fn is_closed(&self) -> bool {
+        matches!(self.status, WasiStreamStatus::Closed)
+    }
+
+    fn set_closed(&mut self) {
+        self.status = WasiStreamStatus::Closed;
+    }
+
+    fn buffer(&self) -> &Vec<u8> {
+        &self.buffer
+    }
+
+    fn buffer_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.buffer
+    }
+
+    fn clear_buffer(&mut self) {
+        self.buffer.clear();
+    }
+}
+
+// ============================================================================
+// WasiStreamContext trait implementation for WasiPreview2Context
+// ============================================================================
+
+impl crate::wasi_stream_ops::WasiStreamContext for WasiPreview2Context {
+    type StreamEntry = WasiStream;
+
+    fn streams_read(&self) -> crate::error::WasmtimeResult<std::sync::RwLockReadGuard<'_, std::collections::HashMap<u32, Self::StreamEntry>>> {
+        self.streams.read().map_err(|e| {
+            // Poisoned lock - recover the inner value
+            log::warn!("Streams RwLock poisoned, recovering: {:?}", e);
+            crate::error::WasmtimeError::Wasi {
+                message: "Failed to lock streams".to_string(),
+            }
+        })
+    }
+
+    fn streams_write(&self) -> crate::error::WasmtimeResult<std::sync::RwLockWriteGuard<'_, std::collections::HashMap<u32, Self::StreamEntry>>> {
+        self.streams.write().map_err(|e| {
+            // Poisoned lock - recover the inner value
+            log::warn!("Streams RwLock poisoned, recovering: {:?}", e);
+            crate::error::WasmtimeError::Wasi {
+                message: "Failed to lock streams".to_string(),
+            }
+        })
+    }
+}
+
 /// WASI filesystem descriptor
 pub struct WasiDescriptor {
     /// Descriptor ID
