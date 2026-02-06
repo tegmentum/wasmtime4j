@@ -567,11 +567,11 @@ pub mod jni_bindings {
     /// Registers a native exception handler
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExceptionHandlerImpl_registerNativeExceptionHandler(
-        env: JNIEnv,
+        _env: JNIEnv,
         _class: JClass,
-        handler_handle: jlong,
-        tag_handle: jlong,
-        handler_function: JObject,
+        _handler_handle: jlong,
+        _tag_handle: jlong,
+        _handler_function: JObject,
     ) {
         // Implementation for registering exception handlers
         // This would involve storing the Java callback and invoking it from native code
@@ -583,7 +583,7 @@ pub mod jni_bindings {
         mut env: JNIEnv,
         _class: JClass,
         handler_handle: jlong,
-        tag_handle: jlong,
+        _tag_handle: jlong,
     ) -> jobject {
         let _handler = unsafe { &*(handler_handle as *const ExceptionHandler) };
 
@@ -629,7 +629,7 @@ pub mod jni_bindings {
 
     /// Helper function to extract exception handling configuration from Java object
     fn extract_exception_config(env: &mut JNIEnv, config: JObject) -> WasmtimeResult<ExceptionHandlingConfig> {
-        let class = env.get_object_class(&config)?;
+        let _class = env.get_object_class(&config)?;
 
         let enable_nested = env.call_method(&config, "isNestedTryCatchEnabled", "()Z", &[])?
             .z().unwrap_or(false);
@@ -764,7 +764,7 @@ pub mod panama_bindings {
     #[no_mangle]
     pub extern "C" fn wasmtime4j_exception_capture_stack_trace(
         handler: *const ExceptionHandler,
-        tag_handle: u64,
+        _tag_handle: u64,
     ) -> *mut std::os::raw::c_char {
         if handler.is_null() {
             return std::ptr::null_mut();

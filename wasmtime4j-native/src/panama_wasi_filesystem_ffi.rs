@@ -297,7 +297,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_open_at(
     context_handle: *mut c_void,
     descriptor_handle: *mut c_void,
     path: *const c_char,
-    path_len: c_int,
+    _path_len: c_int,
     path_flags: c_int,
     open_flags: c_int,
     descriptor_flags: c_int,
@@ -348,7 +348,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_create_directory_at(
     context_handle: *mut c_void,
     descriptor_handle: *mut c_void,
     path: *const c_char,
-    path_len: c_int,
+    _path_len: c_int,
 ) -> c_int {
     if context_handle.is_null() || descriptor_handle.is_null() || path.is_null() {
         return -1;
@@ -485,7 +485,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_read_link_at(
     context_handle: *mut c_void,
     descriptor_handle: *mut c_void,
     path: *const c_char,
-    path_len: c_int,
+    _path_len: c_int,
     out_target: *mut *mut c_char,
     out_target_len: *mut c_int,
 ) -> c_int {
@@ -532,7 +532,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_unlink_file_at(
     context_handle: *mut c_void,
     descriptor_handle: *mut c_void,
     path: *const c_char,
-    path_len: c_int,
+    _path_len: c_int,
 ) -> c_int {
     if context_handle.is_null() || descriptor_handle.is_null() || path.is_null() {
         return -1;
@@ -571,7 +571,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_remove_directory_at(
     context_handle: *mut c_void,
     descriptor_handle: *mut c_void,
     path: *const c_char,
-    path_len: c_int,
+    _path_len: c_int,
 ) -> c_int {
     if context_handle.is_null() || descriptor_handle.is_null() || path.is_null() {
         return -1;

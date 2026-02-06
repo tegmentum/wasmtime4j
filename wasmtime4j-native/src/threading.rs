@@ -190,7 +190,7 @@ impl WasmThread {
     pub fn new(
         id: ThreadId,
         shared_memory: Arc<SharedMemory>,
-        engine: &Engine,
+        _engine: &Engine,
     ) -> WasmtimeResult<Self> {
         Ok(Self {
             id,
@@ -268,7 +268,7 @@ impl WasmThread {
     pub fn force_terminate(&mut self) -> WasmtimeResult<()> {
         self.request_termination();
 
-        if let Some(handle) = self.join_handle.take() {
+        if let Some(_handle) = self.join_handle.take() {
             // We cannot force kill a thread in Rust, so we just set the state
             self.set_state(WasmThreadState::Killed)?;
             // The thread should check termination_requested and exit gracefully
@@ -538,9 +538,9 @@ pub struct AtomicMemoryOperations;
 impl AtomicMemoryOperations {
     /// Perform atomic load operation
     pub fn atomic_load(
-        memory: &SharedMemory,
+        _memory: &SharedMemory,
         offset: u64,
-        size: u32,
+        _size: u32,
     ) -> WasmtimeResult<AtomicResult> {
         // Note: This is a simplified implementation
         // Real implementation would use wasmtime's atomic memory operations
@@ -555,10 +555,10 @@ impl AtomicMemoryOperations {
 
     /// Perform atomic store operation
     pub fn atomic_store(
-        memory: &SharedMemory,
+        _memory: &SharedMemory,
         offset: u64,
         value: u64,
-        size: u32,
+        _size: u32,
     ) -> WasmtimeResult<AtomicResult> {
         // Note: This is a simplified implementation
         // Real implementation would use wasmtime's atomic memory operations
@@ -573,11 +573,11 @@ impl AtomicMemoryOperations {
 
     /// Perform atomic read-modify-write operation
     pub fn atomic_rmw(
-        memory: &SharedMemory,
+        _memory: &SharedMemory,
         operation: AtomicOperation,
         offset: u64,
         value: u64,
-        size: u32,
+        _size: u32,
     ) -> WasmtimeResult<AtomicResult> {
         // Note: This is a simplified implementation
         // Real implementation would use wasmtime's atomic memory operations
@@ -592,11 +592,11 @@ impl AtomicMemoryOperations {
 
     /// Perform atomic compare-and-exchange operation
     pub fn atomic_compare_exchange(
-        memory: &SharedMemory,
+        _memory: &SharedMemory,
         offset: u64,
         expected: u64,
         desired: u64,
-        size: u32,
+        _size: u32,
     ) -> WasmtimeResult<AtomicResult> {
         // Note: This is a simplified implementation
         // Real implementation would use wasmtime's atomic memory operations
@@ -611,11 +611,11 @@ impl AtomicMemoryOperations {
 
     /// Perform atomic wait operation
     pub fn atomic_wait(
-        memory: &SharedMemory,
+        _memory: &SharedMemory,
         offset: u64,
         expected: u64,
-        timeout: Option<Duration>,
-        size: u32,
+        _timeout: Option<Duration>,
+        _size: u32,
     ) -> WasmtimeResult<AtomicResult> {
         // Note: This is a simplified implementation
         // Real implementation would use wasmtime's atomic wait/notify
@@ -630,7 +630,7 @@ impl AtomicMemoryOperations {
 
     /// Perform atomic notify operation
     pub fn atomic_notify(
-        memory: &SharedMemory,
+        _memory: &SharedMemory,
         offset: u64,
         count: u32,
     ) -> WasmtimeResult<AtomicResult> {

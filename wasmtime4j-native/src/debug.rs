@@ -627,13 +627,13 @@ impl DebugSession {
 
     // Native interface methods (these would be implemented for specific runtimes)
 
-    fn set_native_breakpoint(&self, breakpoint: &Breakpoint) -> Result<()> {
+    fn set_native_breakpoint(&self, _breakpoint: &Breakpoint) -> Result<()> {
         // Implementation depends on the underlying runtime
         // For Wasmtime, this would use debugging APIs
         Ok(())
     }
 
-    fn remove_native_breakpoint(&self, id: BreakpointId) -> Result<()> {
+    fn remove_native_breakpoint(&self, _id: BreakpointId) -> Result<()> {
         // Implementation depends on the underlying runtime
         Ok(())
     }
@@ -651,7 +651,7 @@ impl DebugSession {
         })
     }
 
-    fn perform_native_step(&self, step_type: StepType) -> Result<NativeExecutionResult> {
+    fn perform_native_step(&self, _step_type: StepType) -> Result<NativeExecutionResult> {
         // Implementation depends on the underlying runtime
         Ok(NativeExecutionResult {
             state_type: ExecutionStateType::PausedStep,
@@ -679,17 +679,17 @@ impl DebugSession {
         Ok(Vec::new())
     }
 
-    fn set_native_variable_value(&self, name: &str, value: &VariableValue) -> Result<()> {
+    fn set_native_variable_value(&self, _name: &str, _value: &VariableValue) -> Result<()> {
         // Implementation depends on the underlying runtime
         Ok(())
     }
 
-    fn read_native_memory(&self, address: u64, length: u32) -> Result<Vec<u8>> {
+    fn read_native_memory(&self, _address: u64, length: u32) -> Result<Vec<u8>> {
         // Implementation depends on the underlying runtime
         Ok(vec![0; length as usize])
     }
 
-    fn write_native_memory(&self, address: u64, data: &[u8]) -> Result<()> {
+    fn write_native_memory(&self, _address: u64, _data: &[u8]) -> Result<()> {
         // Implementation depends on the underlying runtime
         Ok(())
     }
@@ -709,13 +709,13 @@ impl DebugSession {
         })
     }
 
-    fn evaluate_native_expression(&self, expression: &str) -> Result<(VariableValue, String)> {
+    fn evaluate_native_expression(&self, _expression: &str) -> Result<(VariableValue, String)> {
         // Implementation depends on the underlying runtime
         // This would parse and evaluate the expression
         Err(WasmtimeError::Internal { message: "Expression evaluation not implemented".to_string() })
     }
 
-    fn set_native_profiling_enabled(&self, enabled: bool) -> Result<()> {
+    fn set_native_profiling_enabled(&self, _enabled: bool) -> Result<()> {
         // Implementation depends on the underlying runtime
         Ok(())
     }
@@ -813,7 +813,7 @@ impl DebugSession {
         }
     }
 
-    fn notify_breakpoint_removed(&self, breakpoint: &Breakpoint) {
+    fn notify_breakpoint_removed(&self, _breakpoint: &Breakpoint) {
         // Could add specific breakpoint removed notification
     }
 
@@ -831,7 +831,7 @@ impl DebugSession {
         }
     }
 
-    fn notify_memory_changed(&self, address: u64, size: usize) {
+    fn notify_memory_changed(&self, _address: u64, _size: usize) {
         // Could add memory change notification
     }
 }
@@ -1009,9 +1009,9 @@ pub mod panama_debug_exports {
 
     #[no_mangle]
     pub extern "C" fn wasmtime4j_debug_create_session(
-        engine_ptr: *mut Engine,
-        instance_ptr: *mut Instance,
-        module_ptr: *mut Module,
+        _engine_ptr: *mut Engine,
+        _instance_ptr: *mut Instance,
+        _module_ptr: *mut Module,
     ) -> u64 {
         // Implementation would create debug session from native objects
         // For now, return a placeholder

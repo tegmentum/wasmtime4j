@@ -950,7 +950,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply stack switching configuration to Wasmtime Config
-    fn apply_stack_switching_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_stack_switching_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Stack switching is not yet supported in Wasmtime, but we prepare for future support
         // This would enable the stack switching proposal when available
         log::info!("Stack switching configured: stack_size={}, max_stacks={}, strategy={:?}",
@@ -961,7 +961,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply call/cc configuration to Wasmtime Config
-    fn apply_call_cc_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_call_cc_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Call/CC is not yet supported in Wasmtime, but we prepare for future support
         log::info!("Call/CC configured: max_continuations={}, storage={:?}",
                   self.call_cc.storage_management.max_continuations,
@@ -970,7 +970,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply extended constant expressions configuration to Wasmtime Config
-    fn apply_extended_const_expressions_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_extended_const_expressions_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Extended constant expressions may be partially available in newer Wasmtime versions
         // This would be enabled using wasm_extended_const when available
         log::info!("Extended constant expressions configured: import_based={}, global_deps={}, folding={:?}",
@@ -981,7 +981,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply memory64 extended configuration to Wasmtime Config
-    fn apply_memory64_extended_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_memory64_extended_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Memory64 extended features prepare for future enhanced memory64 support
         log::info!("Memory64 extended configured: large_address_opt={}, cross_memory={}, virtual_mapping={}",
                   self.memory64_extended.large_address_optimizations,
@@ -991,7 +991,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply custom page sizes configuration to Wasmtime Config
-    fn apply_custom_page_sizes_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_custom_page_sizes_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Custom page sizes would be configured when the proposal is available
         log::info!("Custom page sizes configured: supported_sizes={:?}, strategy={:?}",
                   self.custom_page_sizes.supported_page_sizes,
@@ -1000,7 +1000,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply shared-everything threads configuration to Wasmtime Config
-    fn apply_shared_everything_threads_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_shared_everything_threads_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Shared-everything threads would enhance the threads proposal when available
         log::info!("Shared-everything threads configured: min_threads={}, max_threads={}",
                   self.shared_everything_threads.thread_pool.min_threads,
@@ -1009,7 +1009,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply type imports configuration to Wasmtime Config
-    fn apply_type_imports_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_type_imports_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Type imports would be enabled when the proposal is available
         log::info!("Type imports configured: validation={:?}, resolution={:?}",
                   self.type_imports.validation_strategy,
@@ -1018,7 +1018,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply string imports configuration to Wasmtime Config
-    fn apply_string_imports_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_string_imports_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // String imports would be configured when the proposal is available
         log::info!("String imports configured: encoding={:?}, interning={}, js_interop={}",
                   self.string_imports.encoding_format,
@@ -1028,7 +1028,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply resource types configuration to Wasmtime Config
-    fn apply_resource_types_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_resource_types_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Resource types would be enabled when the proposal is available
         log::info!("Resource types configured: auto_cleanup={}, ref_counting={}",
                   self.resource_types.lifetime_management.automatic_cleanup,
@@ -1037,7 +1037,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply interface types configuration to Wasmtime Config
-    fn apply_interface_types_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_interface_types_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Interface types would be enabled when the proposal is available
         log::info!("Interface types configured: validation={:?}, auto_adapters={}",
                   self.interface_types.validation_level,
@@ -1046,7 +1046,7 @@ impl ExperimentalFeaturesConfig {
     }
 
     /// Apply flexible vectors configuration to Wasmtime Config
-    fn apply_flexible_vectors_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    fn apply_flexible_vectors_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Flexible vectors would be enabled when the proposal is available
         log::info!("Flexible vectors configured: dynamic_sizing={}, auto_vectorization={}",
                   self.flexible_vectors.dynamic_sizing,

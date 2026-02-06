@@ -35,7 +35,7 @@ pub fn read_via_stream(
 pub fn write_via_stream(
     context: &WasiPreview2Context,
     descriptor_id: u64,
-    offset: u64,
+    _offset: u64,
 ) -> WasmtimeResult<u64> {
     let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
@@ -240,7 +240,7 @@ pub fn open_at(
 pub fn create_directory_at(
     context: &WasiPreview2Context,
     descriptor_id: u64,
-    path: &str,
+    _path: &str,
 ) -> WasmtimeResult<()> {
     let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let parent_descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
@@ -327,7 +327,7 @@ pub fn read_directory(
 pub fn read_link_at(
     context: &WasiPreview2Context,
     descriptor_id: u64,
-    path: &str,
+    _path: &str,
 ) -> WasmtimeResult<String> {
     let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
@@ -350,7 +350,7 @@ pub fn read_link_at(
 pub fn unlink_file_at(
     context: &WasiPreview2Context,
     descriptor_id: u64,
-    path: &str,
+    _path: &str,
 ) -> WasmtimeResult<()> {
     let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
@@ -373,7 +373,7 @@ pub fn unlink_file_at(
 pub fn remove_directory_at(
     context: &WasiPreview2Context,
     descriptor_id: u64,
-    path: &str,
+    _path: &str,
 ) -> WasmtimeResult<()> {
     let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
@@ -396,9 +396,9 @@ pub fn remove_directory_at(
 pub fn rename_at(
     context: &WasiPreview2Context,
     old_descriptor_id: u64,
-    old_path: &str,
+    _old_path: &str,
     new_descriptor_id: u64,
-    new_path: &str,
+    _new_path: &str,
 ) -> WasmtimeResult<()> {
     let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
 
@@ -434,8 +434,8 @@ pub fn rename_at(
 pub fn symlink_at(
     context: &WasiPreview2Context,
     descriptor_id: u64,
-    old_path: &str,
-    new_path: &str,
+    _old_path: &str,
+    _new_path: &str,
 ) -> WasmtimeResult<()> {
     let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
     let descriptor = descriptors.get(&(descriptor_id as u32)).ok_or_else(|| {
@@ -458,9 +458,9 @@ pub fn symlink_at(
 pub fn link_at(
     context: &WasiPreview2Context,
     old_descriptor_id: u64,
-    old_path: &str,
+    _old_path: &str,
     new_descriptor_id: u64,
-    new_path: &str,
+    _new_path: &str,
 ) -> WasmtimeResult<()> {
     let descriptors = context.descriptors.read().unwrap_or_else(|e| e.into_inner());
 

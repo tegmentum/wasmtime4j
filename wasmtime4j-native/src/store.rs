@@ -1049,7 +1049,7 @@ pub mod core {
     }
 
     /// Core function to increment epoch counter
-    pub fn increment_epoch(store: &Store) {
+    pub fn increment_epoch(_store: &Store) {
         // Note: Direct epoch incrementation requires mutable access to store
         // For now, this is a no-op implementation as epoch management is complex
         // Full implementation would require store internals modification
@@ -1057,7 +1057,7 @@ pub mod core {
     }
 
     /// Core function to set memory limit
-    pub fn set_memory_limit(store: &Store, limit: Option<u64>) -> WasmtimeResult<()> {
+    pub fn set_memory_limit(_store: &Store, limit: Option<u64>) -> WasmtimeResult<()> {
         // Note: Wasmtime stores don't support runtime memory limit changes
         // This validates the request but doesn't apply the limit
         log::debug!("Memory limit change requested: {:?} (validation only)", limit);
@@ -1075,7 +1075,7 @@ pub mod core {
     }
 
     /// Core function to set table element limit
-    pub fn set_table_element_limit(store: &Store, limit: Option<u64>) -> WasmtimeResult<()> {
+    pub fn set_table_element_limit(_store: &Store, limit: Option<u64>) -> WasmtimeResult<()> {
         // Note: Wasmtime stores don't support runtime table element limit changes
         // This validates the request but doesn't apply the limit
         log::debug!("Table element limit change requested: {:?} (validation only)", limit);
@@ -1093,7 +1093,7 @@ pub mod core {
     }
 
     /// Core function to set instance limit
-    pub fn set_instance_limit(store: &Store, limit: Option<u32>) -> WasmtimeResult<()> {
+    pub fn set_instance_limit(_store: &Store, limit: Option<u32>) -> WasmtimeResult<()> {
         // Note: Wasmtime stores don't support runtime instance limit changes
         // This validates the request but doesn't apply the limit
         log::debug!("Instance limit change requested: {:?} (validation only)", limit);

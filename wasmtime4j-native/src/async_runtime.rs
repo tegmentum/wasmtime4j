@@ -434,7 +434,7 @@ pub fn execute_async_function_call(context: AsyncFunctionCallContext) -> Wasmtim
 
         // Attach to JVM to invoke Java callback
         match context.jvm.attach_current_thread() {
-            Ok(mut env) => {
+            Ok(mut _env) => {
                 debug!("Attached to JVM for callback invocation in operation {}", operation_id);
 
                 // Create C string for error message
@@ -919,7 +919,7 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
     };
 
     // Get instance reference
-    let instance = match crate::instance::ffi_core::get_instance_mut(instance_ptr) {
+    let _instance = match crate::instance::ffi_core::get_instance_mut(instance_ptr) {
         Ok(inst) => inst,
         Err(e) => {
             error!("Failed to get instance: {}", e);
@@ -928,7 +928,7 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
     };
 
     // Get store reference
-    let store = match crate::store::core::get_store_mut(store_ptr) {
+    let _store = match crate::store::core::get_store_mut(store_ptr) {
         Ok(s) => s,
         Err(e) => {
             error!("Failed to get store: {}", e);
@@ -1031,10 +1031,10 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
 pub unsafe extern "C" fn wasmtime4j_module_compile_async(
     module_bytes: *const u8,
     module_len: c_uint,
-    timeout_ms: c_ulong,
-    callback: AsyncCallback,
-    progress_callback: ProgressCallback,
-    user_data: *mut c_void
+    _timeout_ms: c_ulong,
+    _callback: AsyncCallback,
+    _progress_callback: ProgressCallback,
+    _user_data: *mut c_void
 ) -> c_int {
     // Validate inputs
     if module_bytes.is_null() || module_len == 0 {
