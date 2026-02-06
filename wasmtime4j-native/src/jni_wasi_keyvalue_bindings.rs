@@ -7,19 +7,8 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jboolean, jbyteArray, jlong, jobject, JNI_FALSE, JNI_TRUE};
 use jni::JNIEnv;
 
+use crate::jni_get_ref;
 use crate::wasi_keyvalue_helpers::WasiKeyValueContext;
-
-// Helper function to get context from handle
-unsafe fn get_context<'a>(handle: jlong) -> Option<&'a WasiKeyValueContext> {
-    if handle == 0 {
-        return None;
-    }
-    let ptr = handle as *const WasiKeyValueContext;
-    if ptr.is_null() {
-        return None;
-    }
-    Some(&*ptr)
-}
 
 // =============================================================================
 // Context Management
@@ -69,17 +58,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     _class: JClass,
     handle: jlong,
 ) -> jlong {
-    let ctx = unsafe { get_context(handle) };
-    match ctx {
-        Some(c) => c.id() as jlong,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            0
-        }
-    }
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", 0);
+    ctx.id() as jlong
 }
 
 /// Checks if the context is valid
@@ -89,11 +69,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     _class: JClass,
     handle: jlong,
 ) -> jboolean {
-    let ctx = unsafe { get_context(handle) };
-    match ctx {
-        Some(c) => if c.is_valid() { JNI_TRUE } else { JNI_FALSE },
-        None => JNI_FALSE,
+    // Special case: validity check should not throw, just return false for invalid handles
+    if handle == 0 {
+        return JNI_FALSE;
     }
+    let ptr = handle as *const WasiKeyValueContext;
+    if ptr.is_null() {
+        return JNI_FALSE;
+    }
+    let ctx = unsafe { &*ptr };
+    if ctx.is_valid() { JNI_TRUE } else { JNI_FALSE }
 }
 
 // =============================================================================
@@ -110,17 +95,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     handle: jlong,
     key: JString<'local>,
 ) -> jbyteArray {
-    // Get the context
-    let ctx = match unsafe { get_context(handle) } {
-        Some(c) => c,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            return std::ptr::null_mut();
-        }
-    };
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", std::ptr::null_mut());
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -168,17 +143,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     key: JString,
     value: JByteArray,
 ) -> jboolean {
-    // Get the context
-    let ctx = match unsafe { get_context(handle) } {
-        Some(c) => c,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            return JNI_FALSE;
-        }
-    };
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", JNI_FALSE);
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -229,17 +194,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     handle: jlong,
     key: JString,
 ) -> jboolean {
-    // Get the context
-    let ctx = match unsafe { get_context(handle) } {
-        Some(c) => c,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            return JNI_FALSE;
-        }
-    };
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", JNI_FALSE);
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -274,17 +229,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     handle: jlong,
     key: JString,
 ) -> jboolean {
-    // Get the context
-    let ctx = match unsafe { get_context(handle) } {
-        Some(c) => c,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            return JNI_FALSE;
-        }
-    };
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", JNI_FALSE);
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -324,17 +269,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     key: JString,
     delta: jlong,
 ) -> jlong {
-    // Get the context
-    let ctx = match unsafe { get_context(handle) } {
-        Some(c) => c,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            return 0;
-        }
-    };
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", 0);
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -372,16 +307,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     _class: JClass,
     handle: jlong,
 ) -> jlong {
-    let ctx = match unsafe { get_context(handle) } {
-        Some(c) => c,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            return 0;
-        }
-    };
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", 0);
 
     match ctx.size() {
         Ok(size) => size as jlong,
@@ -402,16 +328,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     _class: JClass,
     handle: jlong,
 ) -> jboolean {
-    let ctx = match unsafe { get_context(handle) } {
-        Some(c) => c,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            return JNI_FALSE;
-        }
-    };
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", JNI_FALSE);
 
     match ctx.clear() {
         Ok(()) => JNI_TRUE,
@@ -432,16 +349,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
     _class: JClass<'local>,
     handle: jlong,
 ) -> jobject {
-    let ctx = match unsafe { get_context(handle) } {
-        Some(c) => c,
-        None => {
-            let _ = env.throw_new(
-                "java/lang/IllegalArgumentException",
-                "Invalid context handle",
-            );
-            return std::ptr::null_mut();
-        }
-    };
+    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", std::ptr::null_mut());
 
     match ctx.keys() {
         Ok(keys) => {
