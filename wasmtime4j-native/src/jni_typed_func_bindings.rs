@@ -3,6 +3,7 @@
 //! Provides Java Native Interface bindings for zero-cost typed function calls.
 
 use crate::error::WasmtimeResult;
+use crate::jni_validate_handle;
 use crate::store::Store as WasmStore;
 use crate::typed_func::TypedFunc as CustomTypedFunc;
 use jni::objects::{JClass, JObject};
@@ -55,11 +56,8 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
     func_ptr: jlong,
     signature: JObject,
 ) -> jlong {
-    // Validate func pointer
-    if func_ptr == 0 {
-        let _ = env.throw_new("java/lang/IllegalStateException", "Function pointer is null");
-        return 0;
-    }
+    // Validate func pointer using macro
+    jni_validate_handle!(env, func_ptr, "function", 0);
 
     // Validate we can dereference the func pointer
     let _func = unsafe { &*(func_ptr as *const Func) };
