@@ -633,7 +633,7 @@ pub mod dependency_resolution {
             &self,
             resolved_components: &BTreeMap<String, ComponentVersionInfo>,
             conflicts: &mut Vec<DependencyConflict>,
-            warnings: &mut Vec<String>,
+            _warnings: &mut Vec<String>,
         ) -> WasmtimeResult<()> {
             // Check interface compatibility between resolved components
             for (component_name, component_info) in resolved_components {
@@ -1219,7 +1219,7 @@ impl ComponentOrchestrator {
         let mut exports = Vec::new();
 
         // Process actual component imports
-        for (import_name, import_item) in component_type.imports(self.engine.engine()) {
+        for (import_name, _import_item) in component_type.imports(self.engine.engine()) {
             imports.push(crate::component::InterfaceDefinition {
                 name: import_name.to_string(),
                 namespace: None,
@@ -1231,7 +1231,7 @@ impl ComponentOrchestrator {
         }
 
         // Process actual component exports
-        for (export_name, export_item) in component_type.exports(self.engine.engine()) {
+        for (export_name, _export_item) in component_type.exports(self.engine.engine()) {
             exports.push(crate::component::InterfaceDefinition {
                 name: export_name.to_string(),
                 namespace: None,
@@ -1564,7 +1564,7 @@ impl ComponentOrchestrator {
                 .map_err(|_| WasmtimeError::Concurrency {
                     message: "Failed to acquire dependency graph read lock".to_string(),
                 })?;
-            let node = graph.get_component(component_id)?;
+            let _node = graph.get_component(component_id)?;
             // Create metadata from node configuration since Component no longer has metadata field
             crate::component::ComponentMetadata {
                 imports: Vec::new(), // Import info not stored in node

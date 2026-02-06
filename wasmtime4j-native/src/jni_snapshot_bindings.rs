@@ -292,7 +292,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiFilesystemSnaps
 fn create_advanced_snapshot_impl(
     env: &mut JNIEnv,
     _context_handle: jlong,
-    snapshot_handle: jlong,
+    _snapshot_handle: jlong,
     root_path: JString,
     snapshot_type: jint,
     base_snapshot_handle: jlong,
@@ -300,8 +300,8 @@ fn create_advanced_snapshot_impl(
     compression_level: jint,
     encryption_enabled: jboolean,
     encryption_key: JByteArray,
-    enable_deduplication: jboolean,
-    enable_integrity_checking: jboolean,
+    _enable_deduplication: jboolean,
+    _enable_integrity_checking: jboolean,
     name: JString,
     description: JString,
 ) -> WasmtimeResult<jobject> {
@@ -460,7 +460,7 @@ fn get_metrics_impl(env: &mut JNIEnv) -> WasmtimeResult<jobject> {
 
 fn optimize_storage_impl(env: &mut JNIEnv) -> WasmtimeResult<jobject> {
     // This would integrate with the deduplication engine optimization
-    let manager = FilesystemSnapshotManager::global();
+    let _manager = FilesystemSnapshotManager::global();
     let _runtime = get_runtime_handle();
 
     // Simulate optimization results for now

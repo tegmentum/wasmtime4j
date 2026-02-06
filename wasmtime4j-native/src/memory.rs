@@ -1540,7 +1540,7 @@ impl PlatformMemoryAllocator {
     }
 
     // Helper methods for internal use
-    fn try_pool_allocation(&self, size: usize, alignment: usize) -> Result<Option<NonNull<c_void>>> {
+    fn try_pool_allocation(&self, _size: usize, _alignment: usize) -> Result<Option<NonNull<c_void>>> {
         // Simplified pool allocation - would be more sophisticated in production
         Ok(None)
     }
@@ -3450,7 +3450,7 @@ pub extern "C" fn wasmtime4j_platform_memory_compress(
         return false;
     }
 
-    let allocator = unsafe { &*allocator };
+    let _allocator = unsafe { &*allocator };
     let input_data = unsafe { std::slice::from_raw_parts(data, data_len) };
 
     // Simple compression using flate2

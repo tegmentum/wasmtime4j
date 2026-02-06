@@ -983,7 +983,7 @@ impl ThreadAffinityManager {
     }
 
     /// Apply CPU affinity to thread
-    fn apply_cpu_affinity(&self, thread_id: thread::ThreadId, core_id: usize) -> WasmtimeResult<()> {
+    fn apply_cpu_affinity(&self, _thread_id: thread::ThreadId, _core_id: usize) -> WasmtimeResult<()> {
         // Platform-specific CPU affinity implementation
         #[cfg(target_os = "linux")]
         {
@@ -1532,7 +1532,7 @@ pub unsafe extern "C" fn thread_affinity_is_dynamic_adjustment_enabled(
 #[no_mangle]
 pub unsafe extern "C" fn thread_affinity_migrate_to_core(
     manager_ptr: *const c_void,
-    target_core: u32,
+    _target_core: u32,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         if manager_ptr.is_null() {

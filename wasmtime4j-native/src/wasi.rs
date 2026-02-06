@@ -2880,12 +2880,12 @@ use std::slice;
 #[no_mangle]
 pub unsafe extern "C" fn wasi_path_open(
     ctx_ptr: *mut c_void,
-    dir_fd: u32,
+    _dir_fd: u32,
     path: *const c_char,
     path_len: usize,
-    oflags: u32,
-    rights: u64,
-    fdflags: u32,
+    _oflags: u32,
+    _rights: u64,
+    _fdflags: u32,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let _ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
@@ -2897,7 +2897,7 @@ pub unsafe extern "C" fn wasi_path_open(
         }
 
         let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
-        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
+        let _path_str = std::str::from_utf8(path_bytes).map_err(|_| {
             WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in path".to_string(),
             }

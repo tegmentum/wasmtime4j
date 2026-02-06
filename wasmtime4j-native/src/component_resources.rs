@@ -734,7 +734,7 @@ impl ComponentResourceManager {
             }
 
             // Access the actual Wasmtime resource using proper resource management
-            let resource_ref = &*resource;
+            let _resource_ref = &*resource;
 
             // Use Wasmtime's resource table for actual resource access
             // Simplified resource access for current wasmtime API compatibility
@@ -820,7 +820,7 @@ impl ComponentResourceManager {
     pub fn release_resource(
         &self,
         handle: ResourceHandle,
-        component_id: &str,
+        _component_id: &str,
     ) -> WasmtimeResult<()> {
         let should_cleanup = {
             let mut registry = self.resource_registry.write()
@@ -925,7 +925,7 @@ impl ComponentResourceManager {
     // Private helper methods
 
     /// Check resource quotas before creation
-    fn check_quotas(&self, owner: &str, resource_type: &str) -> WasmtimeResult<()> {
+    fn check_quotas(&self, owner: &str, _resource_type: &str) -> WasmtimeResult<()> {
         let quota_manager = self.quota_manager.read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire quota manager read lock".to_string(),
@@ -1129,7 +1129,7 @@ impl ComponentResourceManager {
     /// Log resource access
     fn log_access(
         &self,
-        handle: ResourceHandle,
+        _handle: ResourceHandle,
         component_id: &str,
         access_type: AccessType,
         success: bool,

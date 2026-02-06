@@ -558,7 +558,7 @@ impl CpuMicroarchitectureDetector {
         })
     }
 
-    fn detect_vendor_model_info(vendor_name: &str, vendor_id: &str) -> WasmtimeResult<VendorModelInfo> {
+    fn detect_vendor_model_info(_vendor_name: &str, _vendor_id: &str) -> WasmtimeResult<VendorModelInfo> {
         let mut family = 0u32;
         let mut model = 0u32;
         let mut stepping = 0u32;
@@ -774,7 +774,7 @@ impl CpuMicroarchitectureDetector {
         }
     }
 
-    fn determine_generation(name: &str, vendor_info: &VendorInfo) -> WasmtimeResult<u32> {
+    fn determine_generation(name: &str, _vendor_info: &VendorInfo) -> WasmtimeResult<u32> {
         // Determine generation based on microarchitecture name
         match name {
             "Kaby Lake" => Ok(7),
@@ -941,7 +941,7 @@ impl CpuMicroarchitectureDetector {
         })
     }
 
-    fn detect_process_info(vendor_info: &VendorInfo, microarch: &MicroarchitectureDetails) -> WasmtimeResult<ProcessInfo> {
+    fn detect_process_info(_vendor_info: &VendorInfo, microarch: &MicroarchitectureDetails) -> WasmtimeResult<ProcessInfo> {
         let node_size = match microarch.name.as_str() {
             "Zen 4" => 5,
             "Zen 3" => 7,
@@ -994,7 +994,7 @@ impl CpuMicroarchitectureDetector {
         })
     }
 
-    fn detect_generation_info(vendor_info: &VendorInfo, microarch: &MicroarchitectureDetails) -> WasmtimeResult<GenerationInfo> {
+    fn detect_generation_info(_vendor_info: &VendorInfo, microarch: &MicroarchitectureDetails) -> WasmtimeResult<GenerationInfo> {
         Ok(GenerationInfo {
             generation_name: microarch.name.clone(),
             release_year: match microarch.name.as_str() {
@@ -1168,7 +1168,7 @@ impl CpuMicroarchitectureDetector {
         })
     }
 
-    fn detect_arm_features(vendor_info: &VendorInfo) -> WasmtimeResult<ArmFeatureSet> {
+    fn detect_arm_features(_vendor_info: &VendorInfo) -> WasmtimeResult<ArmFeatureSet> {
         let base_features = ArmBaseFeatures {
             thumb: true,
             jazelle: false,

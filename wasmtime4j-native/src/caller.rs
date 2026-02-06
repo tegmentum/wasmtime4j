@@ -66,7 +66,7 @@ pub enum CallerExportType {
 
 impl CallerContext {
     /// Create caller context from Wasmtime caller
-    pub fn from_wasmtime_caller<T>(caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Self>
+    pub fn from_wasmtime_caller<T>(_caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Self>
     where
         T: Send + 'static,
     {
@@ -135,7 +135,7 @@ impl CallerContext {
     }
 
     /// Get export value by name and type
-    pub fn get_export_value(&self, name: &str, _caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>) -> WasmtimeResult<Option<Extern>> {
+    pub fn get_export_value(&self, _name: &str, _caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>) -> WasmtimeResult<Option<Extern>> {
         // Note: Direct instance access not available in this Wasmtime version
         // Return None as placeholder - functionality would need to be implemented differently
         Ok(None)
@@ -412,7 +412,7 @@ impl CallerContext {
     /// Invoke a multi-value host function with proper type checking and caller context
     pub fn invoke_multi_value_function<F, T>(
         &mut self,
-        caller: &mut WasmtimeCaller<'_, T>,
+        _caller: &mut WasmtimeCaller<'_, T>,
         function: F,
         params: &[Val],
         expected_result_types: &[wasmtime::ValType],

@@ -416,7 +416,7 @@ impl SourceMapParser {
         // In production, this would involve VLQ decoding of the mappings string
 
         // Check cache first
-        let cache_key = format!("{}:{}", wasm_address.function_index, wasm_address.instruction_offset);
+        let _cache_key = format!("{}:{}", wasm_address.function_index, wasm_address.instruction_offset);
 
         if let Ok(cache) = self.mapping_cache.read() {
             if let Some(mappings) = cache.get(&source_map.mappings) {
@@ -501,7 +501,7 @@ impl SourceMapParser {
         let mut name_index = 0i32;
 
         // Split by semicolons (lines) and commas (segments)
-        for (line_index, line) in mappings.split(';').enumerate() {
+        for (_line_index, line) in mappings.split(';').enumerate() {
             generated_column = 0; // Reset column for each line
 
             for segment in line.split(',') {
@@ -614,7 +614,7 @@ impl SourceMapParser {
         &self,
         source_map: &SourceMap,
         mappings: &[MappingEntry],
-        wasm_address: WasmAddress,
+        _wasm_address: WasmAddress,
     ) -> Option<SourcePosition> {
         // Simplified mapping - in production would use binary search
         // and proper address resolution

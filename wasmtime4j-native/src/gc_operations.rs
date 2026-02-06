@@ -103,7 +103,7 @@ impl WasmtimeGcOperations {
     /// Create new GC operations manager with Wasmtime integration
     pub fn new(mut store: Store<()>) -> WasmtimeResult<Self> {
         // Enable GC features in Wasmtime store
-        let engine = store.engine().clone();
+        let _engine = store.engine().clone();
         let mut config = crate::engine::safe_wasmtime_config();
         config.wasm_gc(true);
         config.wasm_reference_types(true);
@@ -1490,7 +1490,7 @@ impl WasmtimeGcOperations {
                             let any_rooted = owned_any.to_rooted(scope);
                             Ok(any_rooted)
                         },
-                        GcObjectRef::ExnRef(owned_exn) => {
+                        GcObjectRef::ExnRef(_owned_exn) => {
                             // ExnRef cannot be converted to AnyRef directly
                             // Return an error for now
                             Err(crate::error::WasmtimeError::Runtime {
@@ -1633,7 +1633,7 @@ impl WasmtimeGcOperations {
                 Ok(GcValue::V128(bytes))
             },
             Val::AnyRef(any_ref) => {
-                if let Some(ref_val) = any_ref {
+                if let Some(_ref_val) = any_ref {
                     // Convert Wasmtime reference to our GC object
                     // In a real implementation, this would create proper object mapping
                     Ok(GcValue::Reference(None))

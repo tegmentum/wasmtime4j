@@ -72,7 +72,7 @@ fn parse_element_segment(
         }
         ElementKind::Active {
             table_index,
-            offset_expr,
+            offset_expr: _,
         } => {
             // Active segment - don't cache (hybrid design)
             // Could optionally parse for completeness, but not needed for table.init()
@@ -104,7 +104,7 @@ fn parse_element_items(items: ElementItems) -> WasmtimeResult<Vec<ElementItem>> 
                 result.push(ElementItem::FuncIndex(func_idx));
             }
         }
-        ElementItems::Expressions(ref_type, exprs) => {
+        ElementItems::Expressions(_ref_type, exprs) => {
             // Constant expressions (for externref, etc.)
             for expr in exprs {
                 let expr = expr.map_err(|e| WasmtimeError::Compilation {
@@ -135,7 +135,7 @@ fn parse_const_expr(
 
     use wasmparser::Operator;
     match op {
-        Operator::RefNull { hty } => {
+        Operator::RefNull { hty: _ } => {
             // Null reference
             Ok(ElementItem::NullFunc)
         }
@@ -273,7 +273,7 @@ fn parse_data_segment(
         }
         DataKind::Active {
             memory_index,
-            offset_expr,
+            offset_expr: _,
         } => {
             // Active segment - don't cache (hybrid design)
             log::debug!(

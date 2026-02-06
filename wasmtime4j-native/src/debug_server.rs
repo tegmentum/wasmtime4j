@@ -285,15 +285,15 @@ impl DebugServer {
 
     fn process_debug_event(event: DebugEvent) {
         match event {
-            DebugEvent::BreakpointHit { session_id, breakpoint_id, context } => {
+            DebugEvent::BreakpointHit { session_id, breakpoint_id, context: _ } => {
                 println!("Breakpoint {} hit in session {}", breakpoint_id, session_id);
                 // Handle breakpoint hit
             }
-            DebugEvent::StepCompleted { session_id, context } => {
+            DebugEvent::StepCompleted { session_id, context: _ } => {
                 println!("Step completed in session {}", session_id);
                 // Handle step completion
             }
-            DebugEvent::ExecutionPaused { session_id, context } => {
+            DebugEvent::ExecutionPaused { session_id, context: _ } => {
                 println!("Execution paused in session {}", session_id);
                 // Handle execution pause
             }
