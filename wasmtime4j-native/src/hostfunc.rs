@@ -803,7 +803,9 @@ mod tests {
 
     #[test]
     fn test_registry_operations() {
-        let (initial_count, _) = core::get_registry_stats().unwrap();
+        // Note: We don't compare absolute registry counts because other tests
+        // may be running in parallel and modifying the global registry.
+        // Instead, we verify the specific function's lifecycle.
 
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
@@ -818,25 +820,27 @@ mod tests {
         // Create host function using Store's method
         let callback = Box::new(TestCallback);
         let (host_func_id, _wasmtime_func) = store.create_host_function(
-            "test".to_string(),
+            "test_registry_ops".to_string(),
             func_type,
             callback
         ).expect("Failed to create host function");
 
-        // Check registry count increased
-        let (count_after_create, _) = core::get_registry_stats().unwrap();
-        assert_eq!(count_after_create, initial_count + 1);
+        // Verify function exists in registry and has correct name
+        let retrieved = core::get_host_function(host_func_id)
+            .expect("Function should exist after creation");
+        assert_eq!(retrieved.name(), "test_registry_ops");
 
-        // Retrieve from registry
-        let retrieved = core::get_host_function(host_func_id);
-        assert!(retrieved.is_ok());
+        // Remove from registry - retrieved keeps a reference so the drop doesn't
+        // happen while the registry lock is held (which would cause deadlock)
+        assert!(core::remove_host_function(host_func_id).is_ok(), "Remove should succeed");
 
-        // Remove from registry manually
-        assert!(core::remove_host_function(host_func_id).is_ok());
+        // Drop retrieved here - this triggers HostFunction::drop which also tries
+        // to remove from registry, but the function is already gone so it's a no-op
+        drop(retrieved);
 
-        // Check registry count decreased
-        let (final_count, _) = core::get_registry_stats().unwrap();
-        assert_eq!(final_count, initial_count);
+        // Verify function no longer exists in registry
+        let after_remove = core::get_host_function(host_func_id);
+        assert!(after_remove.is_err(), "Function should not exist after removal");
     }
 
     #[test]
