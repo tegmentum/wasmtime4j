@@ -504,7 +504,7 @@ impl CallerContext {
 
             let consumed = initial - remaining;
             if consumed > max_consumed {
-                return Err(WasmtimeError::ExecutionError {
+                return Err(WasmtimeError::Execution {
                     message: format!("Function consumed {} fuel, exceeded limit of {}", consumed, max_consumed),
                 });
             }

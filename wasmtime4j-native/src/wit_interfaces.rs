@@ -1287,7 +1287,7 @@ impl WitInterfaceManager {
         let validation_result = self.validate_interface(&wit_interface)?;
 
         if validation_result.status == ValidationStatus::Invalid {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: format!("Invalid interface '{}': {:?}", interface_name, validation_result.errors),
             });
         }
@@ -2099,7 +2099,7 @@ impl WitInterfaceManager {
     /// Validate method results against signature using Wasmtime type checking
     fn validate_method_results(&self, method: &WitMethod, results: &[Val]) -> WasmtimeResult<()> {
         if results.len() != method.return_types.len() {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: format!(
                     "Return value count mismatch: expected {}, got {}",
                     method.return_types.len(),
@@ -2111,7 +2111,7 @@ impl WitInterfaceManager {
         // Validate each result type against the expected WIT type
         for (i, (result, expected_type)) in results.iter().zip(method.return_types.iter()).enumerate() {
             if !self.validate_val_against_wit_type(result, expected_type)? {
-                return Err(WasmtimeError::ValidationError {
+                return Err(WasmtimeError::Validation {
                     message: format!(
                         "Return value {} type mismatch: expected {:?}, got incompatible type",
                         i, expected_type.name
@@ -2448,7 +2448,7 @@ impl WitInterfaceEvolutionManager {
 
         // Check for duplicate versions
         if versions.iter().any(|v| v.version == version.version) {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: format!("Version '{}' already exists for interface '{}'", version.version, interface_name),
             });
         }

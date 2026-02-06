@@ -209,7 +209,7 @@ impl ModuleSerializer {
 
         // Serialize the module
         let serialized_data = module.serialize()
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Failed to serialize module: {}", e) })?;
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Failed to serialize module: {}", e) })?;
 
         // Create metadata
         let metadata = self.create_metadata(&content_hash, &serialized_data)?;
@@ -257,7 +257,7 @@ impl ModuleSerializer {
 
         // Deserialize the module
         let module = unsafe { Module::deserialize(engine, &module_data) }
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Failed to deserialize module: {}", e) })?;
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Failed to deserialize module: {}", e) })?;
 
         // Update statistics
         let mut stats = self.stats.lock().unwrap_or_else(|e| e.into_inner());
@@ -271,7 +271,7 @@ impl ModuleSerializer {
     /// Deserialize module from file
     pub fn deserialize_from_file(&self, engine: &Engine, path: &Path) -> WasmtimeResult<Module> {
         let data = fs::read(path)
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Failed to read file: {}", e) })?;
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Failed to read file: {}", e) })?;
 
         self.deserialize_module(engine, &data)
     }
@@ -283,11 +283,11 @@ impl ModuleSerializer {
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)
-                .map_err(|e| WasmtimeError::SerializationError { message: format!("Failed to create directory: {}", e) })?;
+                .map_err(|e| WasmtimeError::Serialization { message: format!("Failed to create directory: {}", e) })?;
         }
 
         fs::write(path, data)
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Failed to write file: {}", e) })?;
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Failed to write file: {}", e) })?;
 
         Ok(())
     }
@@ -444,10 +444,10 @@ impl ModuleSerializer {
     fn compress_data(&self, data: &[u8]) -> WasmtimeResult<Vec<u8>> {
         let mut encoder = GzEncoder::new(Vec::new(), Compression::new(COMPRESSION_LEVEL));
         encoder.write_all(data)
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Compression failed: {}", e) })?;
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Compression failed: {}", e) })?;
 
         encoder.finish()
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Compression finalization failed: {}", e) })
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Compression finalization failed: {}", e) })
     }
 
     /// Decompress data using gzip
@@ -455,7 +455,7 @@ impl ModuleSerializer {
         let mut decoder = GzDecoder::new(data);
         let mut decompressed = Vec::new();
         decoder.read_to_end(&mut decompressed)
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Decompression failed: {}", e) })?;
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Decompression failed: {}", e) })?;
 
         Ok(decompressed)
     }
@@ -483,7 +483,7 @@ impl ModuleSerializer {
         // Check minimum size for serialized Wasmtime module
         const MIN_SERIALIZED_SIZE: usize = 16;
         if data.len() < MIN_SERIALIZED_SIZE {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: format!(
                     "Serialized module data too small: {} bytes (minimum: {} bytes)",
                     data.len(),
@@ -506,7 +506,7 @@ impl ModuleSerializer {
         // Verify data integrity with size checks
         const WASMTIME_HEADER_SIZE: usize = 32;
         if data.len() < WASMTIME_HEADER_SIZE {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: format!(
                     "Serialized module header too small: {} bytes (expected at least: {} bytes)",
                     data.len(),
@@ -520,7 +520,7 @@ impl ModuleSerializer {
         // 1. Size must be reasonable (not too small, not absurdly large)
         const MAX_REASONABLE_SIZE: usize = 1024 * 1024 * 1024; // 1GB max
         if data.len() > MAX_REASONABLE_SIZE {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: format!(
                     "Serialized module too large: {} bytes (maximum: {} bytes)",
                     data.len(),
@@ -560,10 +560,10 @@ impl ModuleSerializer {
     fn persist_to_disk(&self, cache_dir: &Path, hash: &str, data: &[u8]) -> WasmtimeResult<()> {
         let file_path = cache_dir.join(format!("{}.wasm", hash));
         fs::create_dir_all(cache_dir)
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Failed to create cache directory: {}", e) })?;
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Failed to create cache directory: {}", e) })?;
 
         fs::write(file_path, data)
-            .map_err(|e| WasmtimeError::SerializationError { message: format!("Failed to persist to disk: {}", e) })?;
+            .map_err(|e| WasmtimeError::Serialization { message: format!("Failed to persist to disk: {}", e) })?;
 
         Ok(())
     }
@@ -723,7 +723,7 @@ pub mod ffi_core {
         module_bytes: &[u8],
     ) -> WasmtimeResult<Vec<u8>> {
         let module = Module::new(engine, module_bytes)
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to create module: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to create module: {}", e), backtrace: None })?;
         serializer.serialize(engine, &module)
     }
 

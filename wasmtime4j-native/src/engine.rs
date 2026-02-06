@@ -1354,12 +1354,12 @@ pub mod core {
     /// This is useful for caching compiled modules to disk.
     pub fn precompile_module(engine: &Engine, wasm_bytes: &[u8]) -> WasmtimeResult<Vec<u8>> {
         if wasm_bytes.is_empty() {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: "WASM bytes cannot be empty".to_string(),
             });
         }
         engine.inner.precompile_module(wasm_bytes).map_err(|e| {
-            WasmtimeError::CompilationError {
+            WasmtimeError::Compilation {
                 message: format!("Failed to precompile module: {}", e),
             }
         })
@@ -1369,12 +1369,12 @@ pub mod core {
     #[cfg(feature = "component-model")]
     pub fn precompile_component(engine: &Engine, wasm_bytes: &[u8]) -> WasmtimeResult<Vec<u8>> {
         if wasm_bytes.is_empty() {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: "WASM bytes cannot be empty".to_string(),
             });
         }
         engine.inner.precompile_component(wasm_bytes).map_err(|e| {
-            WasmtimeError::CompilationError {
+            WasmtimeError::Compilation {
                 message: format!("Failed to precompile component: {}", e),
             }
         })

@@ -49,8 +49,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
         };
 
         let allocator = PlatformMemoryAllocator::new(config)
-            .map_err(|e| WasmtimeError::RuntimeError {
-                message: format!("Failed to create platform allocator: {}", e)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create platform allocator: {}", e),
+                backtrace: None
             })?;
         Ok(Box::new(allocator))
     }) as jlong
@@ -74,8 +75,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
         let alignment_opt = if alignment == 0 { None } else { Some(alignment as usize) };
 
         let ptr = allocator.allocate(size as usize, alignment_opt)
-            .map_err(|e| WasmtimeError::RuntimeError {
-                message: format!("Memory allocation failed: {}", e)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Memory allocation failed: {}", e),
+                backtrace: None
             })?;
         Ok(ptr.as_ptr() as jlong)
     })
@@ -104,8 +106,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
             .ok_or_else(|| WasmtimeError::InvalidParameter { message: "Null pointer provided".to_string() })?;
 
         allocator.deallocate(non_null_ptr)
-            .map_err(|e| WasmtimeError::RuntimeError {
-                message: format!("Memory deallocation failed: {}", e)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Memory deallocation failed: {}", e),
+                backtrace: None
             })?;
         Ok(1)
     })
@@ -128,7 +131,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
 
         // Create Java MemoryStats object
         let stats_class = env.find_class("ai/tegmentum/wasmtime4j/jni/memory/PlatformMemoryManager$MemoryStats")
-            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to find MemoryStats class".to_string() })?;
+            .map_err(|_| WasmtimeError::Runtime { message: "Failed to find MemoryStats class".to_string(), backtrace: None })?;
 
         let constructor_signature = "(JJJJJJDDJD)V";
         let stats_object = env.new_object(stats_class, constructor_signature, &[
@@ -143,7 +146,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
             (stats.deduplication_savings as jlong).into(),
             (stats.huge_pages_used as jlong).into(),
             stats.numa_hit_rate.into(),
-        ]).map_err(|_| WasmtimeError::RuntimeError { message: "Failed to create MemoryStats object".to_string() })?;
+        ]).map_err(|_| WasmtimeError::Runtime { message: "Failed to create MemoryStats object".to_string(), backtrace: None })?;
 
         Ok(stats_object)
     })() {
@@ -172,7 +175,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
 
         // Create Java PlatformInfo object
         let info_class = env.find_class("ai/tegmentum/wasmtime4j/jni/memory/PlatformMemoryManager$PlatformInfo")
-            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to find PlatformInfo class".to_string() })?;
+            .map_err(|_| WasmtimeError::Runtime { message: "Failed to find PlatformInfo class".to_string(), backtrace: None })?;
 
         let constructor_signature = "(JJJJIIIZZ)V";
         let info_object = env.new_object(info_class, constructor_signature, &[
@@ -185,7 +188,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
             (info.cache_line_size as jint).into(),
             (info.supports_huge_pages as i32).into(),
             (info.supports_numa as i32).into(),
-        ]).map_err(|_| WasmtimeError::RuntimeError { message: "Failed to create PlatformInfo object".to_string() })?;
+        ]).map_err(|_| WasmtimeError::Runtime { message: "Failed to create PlatformInfo object".to_string(), backtrace: None })?;
 
         Ok(unsafe { JObject::from_raw(info_object.into_raw()) })
     })
@@ -206,16 +209,17 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
         let allocator = unsafe { &*(handle as *const PlatformMemoryAllocator) };
 
         let leaks = allocator.detect_leaks()
-            .map_err(|e| WasmtimeError::RuntimeError {
-                message: format!("Leak detection failed: {}", e)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Leak detection failed: {}", e),
+                backtrace: None
             })?;
 
         // Create Java array of MemoryLeak objects
         let leak_class = env.find_class("ai/tegmentum/wasmtime4j/jni/memory/PlatformMemoryManager$MemoryLeak")
-            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to find MemoryLeak class".to_string() })?;
+            .map_err(|_| WasmtimeError::Runtime { message: "Failed to find MemoryLeak class".to_string(), backtrace: None })?;
 
         let leak_array = env.new_object_array(leaks.len() as i32, leak_class, JObject::null())
-            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to create leak array".to_string() })?;
+            .map_err(|_| WasmtimeError::Runtime { message: "Failed to create leak array".to_string(), backtrace: None })?;
 
         // Note: Full implementation would create individual MemoryLeak objects
         // This is a simplified version that returns empty array
@@ -267,23 +271,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
 
         // Convert Java byte array to Rust slice
         let data_len = env.get_array_length(&data)
-            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to get array length".to_string() })? as usize;
+            .map_err(|_| WasmtimeError::Runtime { message: "Failed to get array length".to_string(), backtrace: None })? as usize;
         let mut data_bytes = vec![0i8; data_len];
         env.get_byte_array_region(data, 0, &mut data_bytes)
-            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to read byte array".to_string() })?;
+            .map_err(|_| WasmtimeError::Runtime { message: "Failed to read byte array".to_string(), backtrace: None })?;
 
         let data_bytes_u8: Vec<u8> = data_bytes.iter().map(|&x| x as u8).collect();
         let compressed = allocator.compress_memory(&data_bytes_u8)
-            .map_err(|e| WasmtimeError::RuntimeError {
-                message: format!("Compression failed: {}", e)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Compression failed: {}", e),
+                backtrace: None
             })?;
 
         // Create Java byte array for compressed data
         let compressed_array = env.new_byte_array(compressed.len() as i32)
-            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to create compressed array".to_string() })?;
+            .map_err(|_| WasmtimeError::Runtime { message: "Failed to create compressed array".to_string(), backtrace: None })?;
         let compressed_i8: Vec<i8> = compressed.iter().map(|&x| x as i8).collect();
         env.set_byte_array_region(&compressed_array, 0, &compressed_i8)
-            .map_err(|_| WasmtimeError::RuntimeError { message: "Failed to set compressed array".to_string() })?;
+            .map_err(|_| WasmtimeError::Runtime { message: "Failed to set compressed array".to_string(), backtrace: None })?;
         Ok(unsafe { JObject::from_raw(compressed_array.into_raw()) })
     })
 }
@@ -315,8 +320,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_memory_PlatformMemoryMan
 
         let data_bytes_u8: Vec<u8> = data_bytes.iter().map(|&x| x as u8).collect();
         let ptr = allocator.deduplicate_memory(&data_bytes_u8)
-            .map_err(|e| WasmtimeError::RuntimeError {
-                message: format!("Deduplication failed: {}", e)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Deduplication failed: {}", e),
+                backtrace: None
             })?;
         Ok(ptr as jlong)
     })

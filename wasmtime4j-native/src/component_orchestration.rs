@@ -597,7 +597,7 @@ pub mod dependency_resolution {
             temp_visited: &mut HashSet<String>,
         ) -> WasmtimeResult<()> {
             if temp_visited.contains(node_name) {
-                return Err(WasmtimeError::ValidationError {
+                return Err(WasmtimeError::Validation {
                     message: format!("Circular dependency detected involving component '{}'.", node_name),
                 });
             }
@@ -1702,7 +1702,7 @@ impl ComponentGraph {
     pub fn add_dependency(&mut self, from: ComponentId, to: ComponentId) -> WasmtimeResult<()> {
         // Check for circular dependencies
         if self.would_create_cycle(&from, &to)? {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: format!("Adding dependency from '{}' to '{}' would create a cycle", from, to),
             });
         }
@@ -1800,7 +1800,7 @@ impl ComponentGraph {
         temp_visited: &mut HashSet<ComponentId>,
     ) -> WasmtimeResult<()> {
         if temp_visited.contains(component_id) {
-            return Err(WasmtimeError::ValidationError {
+            return Err(WasmtimeError::Validation {
                 message: format!("Circular dependency detected involving component '{}'", component_id),
             });
         }

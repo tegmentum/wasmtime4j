@@ -581,7 +581,7 @@ impl StreamingCompiler {
 
         // Actually compile the module
         let module = Module::from_binary(&self.engine, data).map_err(|e| {
-            WasmtimeError::CompilationError {
+            WasmtimeError::Compilation {
                 message: format!("Failed to compile WebAssembly module: {}", e),
             }
         })?;

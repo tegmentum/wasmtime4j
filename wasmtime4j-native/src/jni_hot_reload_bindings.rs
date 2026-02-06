@@ -164,8 +164,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHotReloadManager_nati
     let op_id: String = match env.get_string(&operation_id) {
         Ok(s) => s.into(),
         Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::RuntimeError {
-                message: format!("Failed to get operation ID: {}", e)
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Runtime {
+                message: format!("Failed to get operation ID: {}", e),
+                backtrace: None
             });
             return JObject::null().into_raw();
         }
@@ -182,25 +183,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHotReloadManager_nati
             Some(operation) => {
                 // Create a Java object representing the swap operation
                 let class = env.find_class("ai/tegmentum/wasmtime4j/jni/HotSwapStatus")
-                    .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to find class: {}", e) })?;
+                    .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to find class: {}", e), backtrace: None })?;
                 let obj = env.alloc_object(class)
-                    .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to alloc object: {}", e) })?;
+                    .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to alloc object: {}", e), backtrace: None })?;
 
                 // Set fields on the Java object
                 env.set_field(&obj, "operationId", "Ljava/lang/String;",
                     (&JObject::from(env.new_string(operation.operation_id)
-                        .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to create string: {}", e) })?)).into())
-                    .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+                        .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to create string: {}", e), backtrace: None })?)).into())
+                    .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
                 env.set_field(&obj, "componentName", "Ljava/lang/String;",
                     (&JObject::from(env.new_string(operation.component_name)
-                        .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to create string: {}", e) })?)).into())
-                    .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+                        .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to create string: {}", e), backtrace: None })?)).into())
+                    .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
                 env.set_field(&obj, "status", "I",
                     (operation.status as u8 as jint).into())
-                    .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+                    .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
                 env.set_field(&obj, "progress", "F",
                     (operation.progress as jfloat).into())
-                    .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+                    .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
 
                 Ok(unsafe { JObject::from_raw(obj.into_raw()) })
             }
@@ -338,33 +339,33 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHotReloadManager_nati
 
         // Create a Java object representing the metrics
         let obj = env.alloc_object(class)
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to alloc object: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to alloc object: {}", e), backtrace: None })?;
 
         // Set fields on the Java object
         env.set_field(&obj, "totalSwaps", "J",
             (metrics.total_swaps as jlong).into())
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
         env.set_field(&obj, "successfulSwaps", "J",
             (metrics.successful_swaps as jlong).into())
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
         env.set_field(&obj, "failedSwaps", "J",
             (metrics.failed_swaps as jlong).into())
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
         env.set_field(&obj, "rollbacks", "J",
             (metrics.rollbacks as jlong).into())
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
         env.set_field(&obj, "avgSwapTimeMs", "J",
             (metrics.avg_swap_time.as_millis() as jlong).into())
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
         env.set_field(&obj, "currentActiveSwaps", "I",
             (metrics.current_active_swaps as jint).into())
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
         env.set_field(&obj, "componentsLoaded", "J",
             (metrics.components_loaded as jlong).into())
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
         env.set_field(&obj, "cacheEfficiency", "F",
             (metrics.cache_efficiency as jfloat).into())
-            .map_err(|e| WasmtimeError::RuntimeError { message: format!("Failed to set field: {}", e) })?;
+            .map_err(|e| WasmtimeError::Runtime { message: format!("Failed to set field: {}", e), backtrace: None })?;
 
         Ok(obj.into_raw())
     })() {

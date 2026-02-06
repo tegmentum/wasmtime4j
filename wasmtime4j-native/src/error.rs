@@ -257,19 +257,8 @@ pub enum WasmtimeError {
         actual: String,
     },
 
-    /// Function execution errors
-    #[error("Execution error: {message}")]
-    ExecutionError {
-        /// Error message describing the execution error
-        message: String,
-    },
-
-    /// Serialization/deserialization errors
-    #[error("Serialization error: {message}")]
-    SerializationError {
-        /// Error message describing the serialization error
-        message: String,
-    },
+    // Note: ExecutionError was removed - use Execution instead
+    // Note: SerializationError was removed - use Serialization instead
 
     /// Invalid state errors
     #[error("Invalid state: {message}")]
@@ -285,19 +274,8 @@ pub enum WasmtimeError {
         message: String,
     },
 
-    /// Validation errors
-    #[error("Validation error: {message}")]
-    ValidationError {
-        /// Error message describing the validation error
-        message: String,
-    },
-
-    /// Runtime errors
-    #[error("Runtime error: {message}")]
-    RuntimeError {
-        /// Error message describing the runtime error
-        message: String,
-    },
+    // Note: ValidationError was removed - use Validation instead
+    // Note: RuntimeError was removed - use Runtime { message, backtrace: None } instead
 
     /// Invalid data errors
     #[error("Invalid data: {message}")]
@@ -383,12 +361,7 @@ pub enum WasmtimeError {
         message: String,
     },
 
-    /// Compilation errors (alternative naming)
-    #[error("Compilation error: {message}")]
-    CompilationError {
-        /// Error message describing the compilation error
-        message: String,
-    },
+    // Note: CompilationError was removed - use Compilation instead
 
     /// Deadlock detection error
     #[error("Operation would cause deadlock: {message}")]
@@ -439,11 +412,7 @@ impl Clone for WasmtimeError {
             WasmtimeError::Process { message } => WasmtimeError::Process { message: message.clone() },
             WasmtimeError::CallerContextError { message } => WasmtimeError::CallerContextError { message: message.clone() },
             WasmtimeError::TypeMismatch { expected, actual } => WasmtimeError::TypeMismatch { expected: expected.clone(), actual: actual.clone() },
-            WasmtimeError::ExecutionError { message } => WasmtimeError::ExecutionError { message: message.clone() },
-            WasmtimeError::SerializationError { message } => WasmtimeError::SerializationError { message: message.clone() },
             WasmtimeError::InvalidState { message } => WasmtimeError::InvalidState { message: message.clone() },
-            WasmtimeError::ValidationError { message } => WasmtimeError::ValidationError { message: message.clone() },
-            WasmtimeError::RuntimeError { message } => WasmtimeError::RuntimeError { message: message.clone() },
             WasmtimeError::InvalidData { message } => WasmtimeError::InvalidData { message: message.clone() },
             WasmtimeError::IO { message } => WasmtimeError::IO { message: message.clone() },
             WasmtimeError::Utf8Error { message } => WasmtimeError::Utf8Error { message: message.clone() },
@@ -456,7 +425,6 @@ impl Clone for WasmtimeError {
             WasmtimeError::QuotaExceeded { message } => WasmtimeError::QuotaExceeded { message: message.clone() },
             WasmtimeError::UnsupportedFeature { message } => WasmtimeError::UnsupportedFeature { message: message.clone() },
             WasmtimeError::SystemError { message } => WasmtimeError::SystemError { message: message.clone() },
-            WasmtimeError::CompilationError { message } => WasmtimeError::CompilationError { message: message.clone() },
             // FIX: Clone Io properly - convert to IO variant preserving the error message
             // (std::io::Error doesn't implement Clone, so we convert to the message-based IO variant)
             WasmtimeError::Io { source } => WasmtimeError::IO {
@@ -602,11 +570,7 @@ impl WasmtimeError {
             WasmtimeError::Process { .. } => ErrorCode::ProcessError,
             WasmtimeError::CallerContextError { .. } => ErrorCode::FunctionError,
             WasmtimeError::TypeMismatch { .. } => ErrorCode::TypeError,
-            WasmtimeError::ExecutionError { .. } => ErrorCode::FunctionError,
-            WasmtimeError::SerializationError { .. } => ErrorCode::InternalError,
             WasmtimeError::InvalidState { .. } => ErrorCode::InternalError,
-            WasmtimeError::ValidationError { .. } => ErrorCode::ValidationError,
-            WasmtimeError::RuntimeError { .. } => ErrorCode::RuntimeError,
             WasmtimeError::Table { .. } => ErrorCode::RuntimeError,
             WasmtimeError::Global { .. } => ErrorCode::RuntimeError,
             WasmtimeError::Linker { .. } => ErrorCode::ImportExportError,
@@ -622,7 +586,6 @@ impl WasmtimeError {
             WasmtimeError::QuotaExceeded { .. } => ErrorCode::ResourceError,
             WasmtimeError::UnsupportedFeature { .. } => ErrorCode::UnsupportedOperation,
             WasmtimeError::SystemError { .. } => ErrorCode::InternalError,
-            WasmtimeError::CompilationError { .. } => ErrorCode::CompilationError,
             WasmtimeError::WouldDeadlock { .. } => ErrorCode::ConcurrencyError,
             WasmtimeError::WastExecutionError(..) => ErrorCode::ValidationError,
             WasmtimeError::JniError(..) => ErrorCode::InternalError,
@@ -2090,11 +2053,7 @@ pub mod jni_utils {
             WasmtimeError::ExportNotFound { .. } => "ai/tegmentum/wasmtime4j/exception/LinkingException",
             WasmtimeError::Multiple { .. } => "ai/tegmentum/wasmtime4j/exception/WasmException",
             WasmtimeError::TypeMismatch { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
-            WasmtimeError::ExecutionError { .. } => "ai/tegmentum/wasmtime4j/exception/TrapException",
-            WasmtimeError::SerializationError { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
             WasmtimeError::InvalidState { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
-            WasmtimeError::ValidationError { .. } => "ai/tegmentum/wasmtime4j/exception/ValidationException",
-            WasmtimeError::RuntimeError { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
             _ => "ai/tegmentum/wasmtime4j/exception/WasmException",
         }
     }
@@ -2113,7 +2072,7 @@ pub mod jni_utils {
                 // LinkingException requires LinkingErrorType enum
                 throw_linking_exception(env, &message)
             }
-            WasmtimeError::Execution { .. } | WasmtimeError::ExecutionError { .. } => {
+            WasmtimeError::Execution { .. } => {
                 // TrapException requires TrapType enum
                 throw_trap_exception(env, &message)
             }
