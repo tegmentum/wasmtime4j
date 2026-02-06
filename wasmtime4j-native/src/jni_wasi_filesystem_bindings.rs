@@ -10,6 +10,7 @@ use jni::JNIEnv;
 use crate::error::jni_utils;
 use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_filesystem_helpers;
+use crate::{jni_validate_handle, jni_validate_handles, jni_validate_non_negative, jni_get_ref};
 
 /// Read from descriptor via stream
 ///
@@ -23,29 +24,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     descriptor_handle: jlong,
     offset: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    if offset < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Offset cannot be negative",
-        );
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", descriptor_handle => "descriptor");
+    jni_validate_non_negative!(env, offset, "Offset", 0);
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", 0);
 
     // Call helper function
     match wasi_filesystem_helpers::read_via_stream(context, descriptor_handle as u64, offset as u64) {
@@ -69,29 +51,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     descriptor_handle: jlong,
     offset: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    if offset < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Offset cannot be negative",
-        );
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", descriptor_handle => "descriptor");
+    jni_validate_non_negative!(env, offset, "Offset", 0);
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", 0);
 
     // Call helper function
     match wasi_filesystem_helpers::write_via_stream(context, descriptor_handle as u64, offset as u64) {
@@ -114,21 +77,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     context_handle: jlong,
     descriptor_handle: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", 0);
 
     // Call helper function
     match wasi_filesystem_helpers::append_via_stream(context, descriptor_handle as u64) {
@@ -151,21 +102,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     context_handle: jlong,
     descriptor_handle: jlong,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Call helper function
     match wasi_filesystem_helpers::get_type(context, descriptor_handle as u64) {
@@ -188,21 +127,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     context_handle: jlong,
     descriptor_handle: jlong,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Call helper function
     match wasi_filesystem_helpers::get_flags(context, descriptor_handle as u64) {
@@ -226,29 +153,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     descriptor_handle: jlong,
     size: jlong,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    if size < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Size cannot be negative",
-        );
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    jni_validate_non_negative!(env, size, "Size", -1);
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Call helper function
     match wasi_filesystem_helpers::set_size(context, descriptor_handle as u64, size as u64) {
@@ -271,21 +179,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     context_handle: jlong,
     descriptor_handle: jlong,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Call helper function
     match wasi_filesystem_helpers::sync_data(context, descriptor_handle as u64) {
@@ -308,21 +204,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     context_handle: jlong,
     descriptor_handle: jlong,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Call helper function
     match wasi_filesystem_helpers::sync(context, descriptor_handle as u64) {
@@ -349,21 +233,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     open_flags: jint,
     descriptor_flags: jint,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", 0);
 
     // Get path string
     let path_str: String = match env.get_string(&path) {
@@ -402,21 +274,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     descriptor_handle: jlong,
     path: JString,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Get path string
     let path_str: String = match env.get_string(&path) {
@@ -451,21 +311,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     context_handle: jlong,
     descriptor_handle: jlong,
 ) -> jobjectArray {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return JObject::null().into_raw();
-    }
+    let null_result = JObject::null().into_raw();
 
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, null_result, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", null_result);
 
     // Call helper function to get directory entries
     match wasi_filesystem_helpers::read_directory(context, descriptor_handle as u64) {
@@ -524,21 +374,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     descriptor_handle: jlong,
     path: JString,
 ) -> jstring {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return JObject::null().into_raw();
-    }
+    let null_result = JObject::null().into_raw();
 
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, null_result, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", null_result);
 
     // Get path string
     let path_str: String = match env.get_string(&path) {
@@ -548,7 +388,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
                 "java/lang/IllegalArgumentException",
                 format!("Invalid path string: {}", e),
             );
-            return JObject::null().into_raw();
+            return null_result;
         }
     };
 
@@ -558,12 +398,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
             Ok(jstr) => jstr.into_raw(),
             Err(e) => {
                 let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to create string: {}", e));
-                JObject::null().into_raw()
+                null_result
             }
         },
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
-            JObject::null().into_raw()
+            null_result
         }
     }
 }
@@ -580,21 +420,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     descriptor_handle: jlong,
     path: JString,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Get path string
     let path_str: String = match env.get_string(&path) {
@@ -630,21 +458,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     descriptor_handle: jlong,
     path: JString,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Get path string
     let path_str: String = match env.get_string(&path) {
@@ -682,21 +498,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     new_descriptor_handle: jlong,
     new_path: JString,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 || new_descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor", new_descriptor_handle => "new descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Get old path string
     let old_path_str: String = match env.get_string(&old_path) {
@@ -745,21 +549,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     old_path: JString,
     new_path: JString,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Get old path string
     let old_path_str: String = match env.get_string(&old_path) {
@@ -810,21 +602,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     new_descriptor_handle: jlong,
     new_path: JString,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 || new_descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor", new_descriptor_handle => "new descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Get old path string
     let old_path_str: String = match env.get_string(&old_path) {
@@ -873,21 +653,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     descriptor_handle: jlong,
     other_descriptor_handle: jlong,
 ) -> jboolean {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 || other_descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", descriptor_handle => "descriptor", other_descriptor_handle => "other descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", 0);
 
     // Call helper function
     match wasi_filesystem_helpers::is_same_object(context, descriptor_handle as u64, other_descriptor_handle as u64) {
@@ -910,21 +678,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     context_handle: jlong,
     descriptor_handle: jlong,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 || descriptor_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handles!(env, -1, context_handle => "context", descriptor_handle => "descriptor");
+    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", -1);
 
     // Call helper function
     match wasi_filesystem_helpers::close_descriptor(context, descriptor_handle as u64) {
