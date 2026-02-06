@@ -10,6 +10,7 @@ use jni::JNIEnv;
 use crate::error::jni_utils;
 use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_random_helpers;
+use crate::{jni_validate_handle, jni_validate_non_negative, jni_deref_ptr};
 
 /// Get cryptographically-secure random bytes
 ///
@@ -22,27 +23,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_random_JniWasiRando
     context_handle: jlong,
     len: jlong,
 ) -> jbyteArray {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return std::ptr::null_mut();
-    }
-
-    // Validate length
-    if len < 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Length cannot be negative");
-        return std::ptr::null_mut();
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return std::ptr::null_mut();
-        }
-        &*ptr
-    };
+    // Validate parameters using macros
+    jni_validate_handle!(env, context_handle, "context", std::ptr::null_mut());
+    jni_validate_non_negative!(env, len, "Length", std::ptr::null_mut());
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", std::ptr::null_mut());
 
     // Call helper function
     let bytes = match wasi_random_helpers::get_random_bytes(context, len as u64) {
@@ -91,21 +75,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_random_JniWasiRando
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", -1);
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", -1);
 
     // Call helper function
     match wasi_random_helpers::get_random_u64(context) {

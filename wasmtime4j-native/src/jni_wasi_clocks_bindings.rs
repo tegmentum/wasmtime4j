@@ -10,6 +10,7 @@ use jni::JNIEnv;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_clocks_helpers;
+use crate::{jni_validate_handle, jni_deref_ptr};
 
 /// Get the current monotonic clock instant in nanoseconds
 ///
@@ -21,21 +22,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiMonot
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", -1);
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", -1);
 
     // Call helper function
     match wasi_clocks_helpers::monotonic_now(context) {
@@ -60,21 +49,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiMonot
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", -1);
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", -1);
 
     // Call helper function
     match wasi_clocks_helpers::monotonic_resolution(context) {
@@ -102,21 +79,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiMonot
     context_handle: jlong,
     when: jlong,
 ) -> jlong {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", -1);
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", -1);
 
     // Call helper function
     match wasi_clocks_helpers::monotonic_subscribe_instant(context, when as u64) {
@@ -144,21 +109,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiMonot
     context_handle: jlong,
     duration: jlong,
 ) -> jlong {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", -1);
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", -1);
 
     // Call helper function
     match wasi_clocks_helpers::monotonic_subscribe_duration(context, duration as u64) {
@@ -185,21 +138,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiWallC
     _class: JClass,
     context_handle: jlong,
 ) -> jlongArray {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", JObject::null().into_raw());
 
     // Call helper function
     let datetime = match wasi_clocks_helpers::wall_clock_now(context) {
@@ -249,21 +190,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiWallC
     _class: JClass,
     context_handle: jlong,
 ) -> jlongArray {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", JObject::null().into_raw());
 
     // Call helper function
     let datetime = match wasi_clocks_helpers::wall_clock_resolution(context) {
@@ -315,21 +244,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiTimez
     seconds: jlong,
     nanoseconds: jint,
 ) -> JObject<'local> {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null();
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null();
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", JObject::null());
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", JObject::null());
 
     // Create DateTime
     let datetime = wasi_clocks_helpers::DateTime {
@@ -406,21 +323,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiTimez
     seconds: jlong,
     nanoseconds: jint,
 ) -> jint {
-    // Validate context handle
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return 0;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", 0);
+    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", 0);
 
     // Create DateTime
     let datetime = wasi_clocks_helpers::DateTime {

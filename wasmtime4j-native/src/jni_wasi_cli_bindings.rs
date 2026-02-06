@@ -11,6 +11,7 @@ use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};
+use crate::{jni_validate_handle, jni_deref_ptr};
 
 /// Minimum valid pointer value - pointers below this are almost certainly invalid
 /// as they fall within the first page which is never mapped on most systems.
@@ -28,21 +29,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     _class: JClass,
     context_handle: jlong,
 ) -> jobjectArray {
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", JObject::null().into_raw());
 
     // Get environment variables from context
     let env_map = match context.environment_rw.read() {
@@ -121,21 +110,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     context_handle: jlong,
     name: JString,
 ) -> jstring {
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", JObject::null().into_raw());
 
     // Get name string
     let name_str: String = match env.get_string(&name) {
@@ -189,21 +166,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     _class: JClass,
     context_handle: jlong,
 ) -> jobjectArray {
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", JObject::null().into_raw());
 
     // Get arguments from context
     let args = match context.arguments_rw.read() {
@@ -275,21 +240,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     _class: JClass,
     context_handle: jlong,
 ) -> jstring {
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return JObject::null().into_raw();
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", JObject::null().into_raw());
 
     // Get initial_cwd from context
     let cwd = match context.initial_cwd.read() {
@@ -331,14 +284,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", 0);
 
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle: null");
-        return 0;
-    }
-
-    // Validate pointer is in a reasonable range (not a small value that would indicate corruption)
+    // Additional validation: check pointer is in reasonable range (not corrupted)
     if (context_handle as u64) < MIN_VALID_POINTER {
         let _ = env.throw_new(
             "java/lang/IllegalArgumentException",
@@ -347,15 +296,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         return 0;
     }
 
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", 0);
 
     // Standard stdin handle ID
     const STDIN_HANDLE_ID: u32 = 1;
@@ -404,13 +345,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle: null");
-        return 0;
-    }
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", 0);
 
-    // Validate pointer is in a reasonable range (not a small value that would indicate corruption)
+    // Additional validation: check pointer is in reasonable range (not corrupted)
     if (context_handle as u64) < MIN_VALID_POINTER {
         let _ = env.throw_new(
             "java/lang/IllegalArgumentException",
@@ -419,15 +357,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         return 0;
     }
 
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", 0);
 
     // Standard stdout handle ID
     const STDOUT_HANDLE_ID: u32 = 2;
@@ -476,14 +406,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
     _class: JClass,
     context_handle: jlong,
 ) -> jlong {
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", 0);
 
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle: null");
-        return 0;
-    }
-
-    // Validate pointer is in a reasonable range (not a small value that would indicate corruption)
+    // Additional validation: check pointer is in reasonable range (not corrupted)
     if (context_handle as u64) < MIN_VALID_POINTER {
         let _ = env.throw_new(
             "java/lang/IllegalArgumentException",
@@ -492,15 +418,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiStdio_na
         return 0;
     }
 
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", 0);
 
     // Standard stderr handle ID
     const STDERR_HANDLE_ID: u32 = 3;
@@ -550,21 +468,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiExit_nat
     context_handle: jlong,
     status_code: jint,
 ) -> jint {
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid context handle");
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return -1;
-        }
-        &*ptr
-    };
+    // Validate and get context using macros
+    jni_validate_handle!(env, context_handle, "context", -1);
+    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", -1);
 
     // Store the exit code in the context
     match context.exit_code.write() {
