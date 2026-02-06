@@ -11,6 +11,7 @@ use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};
+use crate::{jni_validate_handle, jni_validate_handles, jni_validate_non_negative, jni_get_ref};
 use crate::wasi_stream_ops::{
     read_from_stream_generic, skip_in_stream_generic, close_stream_generic,
     check_write_capacity_generic, write_to_stream_generic, flush_stream_generic,
@@ -29,35 +30,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
     descriptor_id: jlong,
     offset: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Invalid context handle: null",
-        );
-        return 0;
-    }
-
-    if offset < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Offset cannot be negative",
-        );
-        return 0;
-    }
+    // Validate parameters using macros
+    jni_validate_handle!(env, context_handle, "context", 0);
+    jni_validate_non_negative!(env, offset, "Offset", 0);
 
     // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new(
-                "java/lang/NullPointerException",
-                "Context pointer is null",
-            );
-            return 0;
-        }
-        &*ptr
-    };
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Create input stream
     match create_input_stream(context, descriptor_id as u64, offset as u64) {
@@ -84,29 +62,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
     stream_id: jlong,
     length: jlong,
 ) -> jbyteArray {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return JObject::null().into_raw();
-    }
+    let null_result = JObject::null().into_raw();
 
-    if length < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Length cannot be negative",
-        );
-        return JObject::null().into_raw();
-    }
+    // Validate parameters using macros
+    jni_validate_handles!(env, null_result, context_handle => "context", stream_id => "stream");
+    jni_validate_non_negative!(env, length, "Length", null_result);
 
     // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", null_result);
 
     // Read from stream
     match read_from_stream(context, stream_id as u64, length as usize, false) {
@@ -119,7 +82,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
                         "java/lang/RuntimeException",
                         format!("Failed to create byte array: {}", e),
                     );
-                    JObject::null().into_raw()
+                    null_result
                 }
             }
         }
@@ -128,7 +91,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
                 "ai/tegmentum/wasmtime4j/exception/WasmException",
                 format!("Read failed: {}", e),
             );
-            JObject::null().into_raw()
+            null_result
         }
     }
 }
@@ -145,29 +108,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
     stream_id: jlong,
     length: jlong,
 ) -> jbyteArray {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return JObject::null().into_raw();
-    }
+    let null_result = JObject::null().into_raw();
 
-    if length < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Length cannot be negative",
-        );
-        return JObject::null().into_raw();
-    }
+    // Validate parameters using macros
+    jni_validate_handles!(env, null_result, context_handle => "context", stream_id => "stream");
+    jni_validate_non_negative!(env, length, "Length", null_result);
 
     // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return JObject::null().into_raw();
-        }
-        &*ptr
-    };
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", null_result);
 
     // Blocking read from stream
     match read_from_stream(context, stream_id as u64, length as usize, true) {
@@ -180,7 +128,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
                         "java/lang/RuntimeException",
                         format!("Failed to create byte array: {}", e),
                     );
-                    JObject::null().into_raw()
+                    null_result
                 }
             }
         }
@@ -189,7 +137,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
                 "ai/tegmentum/wasmtime4j/exception/WasmException",
                 format!("Blocking read failed: {}", e),
             );
-            JObject::null().into_raw()
+            null_result
         }
     }
 }
@@ -206,29 +154,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
     stream_id: jlong,
     length: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
-
-    if length < 0 {
-        let _ = env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Length cannot be negative",
-        );
-        return 0;
-    }
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", stream_id => "stream");
+    jni_validate_non_negative!(env, length, "Length", 0);
 
     // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Skip bytes
     match skip_in_stream(context, stream_id as u64, length as u64, false) {
@@ -254,21 +185,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
     context_handle: jlong,
     stream_id: jlong,
 ) -> jlong {
-    // Validate parameters
-    if context_handle == 0 || stream_id == 0 {
-        let _ = env.throw_new("java/lang/IllegalArgumentException", "Invalid handle");
-        return 0;
-    }
+    // Validate parameters using macros
+    jni_validate_handles!(env, 0, context_handle => "context", stream_id => "stream");
 
     // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiContext;
-        if ptr.is_null() {
-            let _ = env.throw_new("java/lang/NullPointerException", "Context pointer is null");
-            return 0;
-        }
-        &*ptr
-    };
+    let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Create pollable for input stream
     match create_input_stream_pollable(context, stream_id as u64) {

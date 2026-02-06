@@ -954,6 +954,247 @@ macro_rules! validate_handle {
     };
 }
 
+// ============================================================================
+// JNI Parameter Validation Macros
+// ============================================================================
+// These macros provide consistent parameter validation for JNI functions,
+// reducing code duplication and ensuring consistent error handling.
+
+/// Validates a JNI handle, throwing IllegalArgumentException if null/zero.
+/// Returns the specified default value on validation failure.
+///
+/// # Usage
+/// ```ignore
+/// jni_validate_handle!(env, context_handle, "context", 0);
+/// ```
+#[macro_export]
+#[cfg(feature = "jni-bindings")]
+macro_rules! jni_validate_handle {
+    ($env:expr, $handle:expr, $name:literal) => {
+        if $handle == 0 {
+            let _ = $env.throw_new(
+                "java/lang/IllegalArgumentException",
+                concat!("Invalid ", $name, " handle: null")
+            );
+            return Default::default();
+        }
+    };
+    ($env:expr, $handle:expr, $name:literal, $ret:expr) => {
+        if $handle == 0 {
+            let _ = $env.throw_new(
+                "java/lang/IllegalArgumentException",
+                concat!("Invalid ", $name, " handle: null")
+            );
+            return $ret;
+        }
+    };
+}
+
+/// Validates multiple JNI handles at once, throwing IllegalArgumentException if any are null/zero.
+///
+/// # Usage
+/// ```ignore
+/// jni_validate_handles!(env, 0, context_handle => "context", stream_id => "stream");
+/// ```
+#[macro_export]
+#[cfg(feature = "jni-bindings")]
+macro_rules! jni_validate_handles {
+    ($env:expr, $ret:expr, $($handle:expr => $name:literal),+ $(,)?) => {
+        $(
+            if $handle == 0 {
+                let _ = $env.throw_new(
+                    "java/lang/IllegalArgumentException",
+                    concat!("Invalid ", $name, " handle: null")
+                );
+                return $ret;
+            }
+        )+
+    };
+}
+
+/// Validates that a value is non-negative, throwing IllegalArgumentException if negative.
+///
+/// # Usage
+/// ```ignore
+/// jni_validate_non_negative!(env, offset, "Offset", 0);
+/// ```
+#[macro_export]
+#[cfg(feature = "jni-bindings")]
+macro_rules! jni_validate_non_negative {
+    ($env:expr, $value:expr, $name:literal) => {
+        if $value < 0 {
+            let _ = $env.throw_new(
+                "java/lang/IllegalArgumentException",
+                concat!($name, " cannot be negative")
+            );
+            return Default::default();
+        }
+    };
+    ($env:expr, $value:expr, $name:literal, $ret:expr) => {
+        if $value < 0 {
+            let _ = $env.throw_new(
+                "java/lang/IllegalArgumentException",
+                concat!($name, " cannot be negative")
+            );
+            return $ret;
+        }
+    };
+}
+
+/// Safely dereferences a JNI handle to a pointer, throwing NullPointerException if null.
+/// Returns the dereferenced value on success.
+///
+/// # Usage
+/// ```ignore
+/// let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", 0);
+/// ```
+///
+/// # Safety
+/// The handle must have been obtained from a valid pointer allocation.
+#[macro_export]
+#[cfg(feature = "jni-bindings")]
+macro_rules! jni_deref_ptr {
+    ($env:expr, $handle:expr, $type:ty, $name:literal) => {{
+        let ptr = $handle as *const $type;
+        if ptr.is_null() {
+            let _ = $env.throw_new(
+                "java/lang/NullPointerException",
+                concat!($name, " pointer is null")
+            );
+            return Default::default();
+        }
+        unsafe { &*ptr }
+    }};
+    ($env:expr, $handle:expr, $type:ty, $name:literal, $ret:expr) => {{
+        let ptr = $handle as *const $type;
+        if ptr.is_null() {
+            let _ = $env.throw_new(
+                "java/lang/NullPointerException",
+                concat!($name, " pointer is null")
+            );
+            return $ret;
+        }
+        unsafe { &*ptr }
+    }};
+    (mut $env:expr, $handle:expr, $type:ty, $name:literal) => {{
+        let ptr = $handle as *mut $type;
+        if ptr.is_null() {
+            let _ = $env.throw_new(
+                "java/lang/NullPointerException",
+                concat!($name, " pointer is null")
+            );
+            return Default::default();
+        }
+        unsafe { &mut *ptr }
+    }};
+    (mut $env:expr, $handle:expr, $type:ty, $name:literal, $ret:expr) => {{
+        let ptr = $handle as *mut $type;
+        if ptr.is_null() {
+            let _ = $env.throw_new(
+                "java/lang/NullPointerException",
+                concat!($name, " pointer is null")
+            );
+            return $ret;
+        }
+        unsafe { &mut *ptr }
+    }};
+}
+
+/// Validates a JNI handle and dereferences it in one step.
+/// Combines jni_validate_handle and jni_deref_ptr for convenience.
+///
+/// # Usage
+/// ```ignore
+/// let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
+/// ```
+///
+/// # Safety
+/// The handle must have been obtained from a valid pointer allocation.
+#[macro_export]
+#[cfg(feature = "jni-bindings")]
+macro_rules! jni_get_ref {
+    ($env:expr, $handle:expr, $type:ty, $name:literal) => {{
+        if $handle == 0 {
+            let _ = $env.throw_new(
+                "java/lang/IllegalArgumentException",
+                concat!("Invalid ", $name, " handle: null")
+            );
+            return Default::default();
+        }
+        let ptr = $handle as *const $type;
+        if ptr.is_null() {
+            let _ = $env.throw_new(
+                "java/lang/NullPointerException",
+                concat!(stringify!($type), " pointer is null")
+            );
+            return Default::default();
+        }
+        unsafe { &*ptr }
+    }};
+    ($env:expr, $handle:expr, $type:ty, $name:literal, $ret:expr) => {{
+        if $handle == 0 {
+            let _ = $env.throw_new(
+                "java/lang/IllegalArgumentException",
+                concat!("Invalid ", $name, " handle: null")
+            );
+            return $ret;
+        }
+        let ptr = $handle as *const $type;
+        if ptr.is_null() {
+            let _ = $env.throw_new(
+                "java/lang/NullPointerException",
+                concat!(stringify!($type), " pointer is null")
+            );
+            return $ret;
+        }
+        unsafe { &*ptr }
+    }};
+}
+
+/// Handles a Result by throwing a JNI exception on error and returning a default value.
+///
+/// # Usage
+/// ```ignore
+/// let value = jni_try!(env, some_operation(), 0);
+/// ```
+#[macro_export]
+#[cfg(feature = "jni-bindings")]
+macro_rules! jni_try {
+    ($env:expr, $result:expr) => {
+        match $result {
+            Ok(val) => val,
+            Err(e) => {
+                let _ = $env.throw_new(
+                    "ai/tegmentum/wasmtime4j/exception/WasmException",
+                    format!("{}", e)
+                );
+                return Default::default();
+            }
+        }
+    };
+    ($env:expr, $result:expr, $ret:expr) => {
+        match $result {
+            Ok(val) => val,
+            Err(e) => {
+                let _ = $env.throw_new(
+                    "ai/tegmentum/wasmtime4j/exception/WasmException",
+                    format!("{}", e)
+                );
+                return $ret;
+            }
+        }
+    };
+    ($env:expr, $result:expr, $exception_class:literal, $ret:expr) => {
+        match $result {
+            Ok(val) => val,
+            Err(e) => {
+                let _ = $env.throw_new($exception_class, format!("{}", e));
+                return $ret;
+            }
+        }
+    };
+}
+
 /// Shared FFI utilities for both JNI and Panama interfaces
 /// 
 /// This module provides common functionality that eliminates code duplication
