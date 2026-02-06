@@ -32,14 +32,14 @@
 #![allow(dead_code)]
 // #![allow(unused_unsafe)] // Phase 5: Auditing unnecessary unsafe blocks
 // #![allow(unused_assignments)] // Phase 5: Auditing unused assignments
-#![allow(private_bounds)]
-#![allow(elided_lifetimes_in_paths)]
+// #![allow(private_bounds)] // Phase 5: Checking private bounds
+// #![allow(elided_lifetimes_in_paths)] // Phase 5: Checking elided lifetimes
 // #![allow(unused_doc_comments)] // Phase 5: Auditing unused doc comments
 #![allow(unused_mut)] // JNI env parameters require mut for API calls
 #![allow(non_snake_case)] // JNI functions must follow Java naming conventions
 // Phase 5: Continuing to eliminate remaining unused_variables
 // #![allow(unused_variables)]
-#![allow(private_interfaces)]
+#![allow(private_interfaces)] // Keep: FFI functions expose private types in their signatures
 #![warn(clippy::all)]
 
 use std::os::raw::c_char;
