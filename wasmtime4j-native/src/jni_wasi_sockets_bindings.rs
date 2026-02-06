@@ -1998,7 +1998,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveA
 /// true if closed, false if open
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveAddressStream_nativeIsClosed(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     stream_handle: jlong,
@@ -2033,7 +2033,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveA
 /// * `stream_handle` - The stream handle to close
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_sockets_JniResolveAddressStream_nativeClose(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
     stream_handle: jlong,

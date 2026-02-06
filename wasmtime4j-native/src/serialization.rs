@@ -193,7 +193,7 @@ impl ModuleSerializer {
     }
 
     /// Serialize a WebAssembly module
-    pub fn serialize_module(&self, engine: &Engine, module: &Module) -> WasmtimeResult<Vec<u8>> {
+    pub fn serialize_module(&self, _engine: &Engine, module: &Module) -> WasmtimeResult<Vec<u8>> {
         let start_time = Instant::now();
 
         // Generate content hash

@@ -781,7 +781,7 @@ impl ErrorRecoverySystem {
             .clone();
 
         // Calculate derived metrics
-        let uptime = self.start_time.elapsed();
+        let _uptime = self.start_time.elapsed();
         stats.uptime_percentage = 99.9; // Simplified calculation
 
         if stats.automatic_recoveries_attempted > 0 {

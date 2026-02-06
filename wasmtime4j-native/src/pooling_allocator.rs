@@ -354,7 +354,7 @@ impl PoolingAllocator {
     }
 
     /// Reuses an existing instance from the pool
-    pub fn reuse_instance(&self, instance_id: u64) -> Result<(), String> {
+    pub fn reuse_instance(&self, _instance_id: u64) -> Result<(), String> {
         let alloc_start = Instant::now();
 
         // Reuse memory

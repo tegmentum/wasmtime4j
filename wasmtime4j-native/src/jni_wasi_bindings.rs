@@ -189,7 +189,7 @@ pub mod jni_wasi {
     /// Close a WASI context and free its resources (JNI version)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeClose(
-        env: JNIEnv,
+        _env: JNIEnv,
         _class: JClass,
         handle: jlong,
     ) {

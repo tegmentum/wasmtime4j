@@ -754,7 +754,7 @@ where
 
         let index = tail & (self.capacity - 1);
         let slot = &self.buffer[index];
-        let guard = &epoch::pin();
+        let _guard = &epoch::pin();
 
         // Write to the claimed slot. Use strong CAS because a spurious failure
         // would permanently waste the slot (the tail was already advanced).

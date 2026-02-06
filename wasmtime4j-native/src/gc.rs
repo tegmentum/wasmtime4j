@@ -1208,7 +1208,7 @@ impl WasmGcRuntime {
     }
 
     /// Register object for finalization monitoring (future GC proposal support)
-    pub fn register_finalization_callback(&self, object_id: ObjectId, _callback: Box<dyn Fn() + Send + Sync>) -> WasmtimeResult<()> {
+    pub fn register_finalization_callback(&self, _object_id: ObjectId, _callback: Box<dyn Fn() + Send + Sync>) -> WasmtimeResult<()> {
         // This is a placeholder for future WebAssembly GC finalization support
         // When the GC proposal includes finalization, this will integrate with Wasmtime's finalizers
         Ok(())

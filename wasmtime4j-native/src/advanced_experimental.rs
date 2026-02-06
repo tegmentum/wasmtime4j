@@ -324,7 +324,7 @@ impl AdvancedExperimentalFeatures {
     }
 
     /// Apply advanced features to Wasmtime Config
-    pub fn apply_to_config(&self, config: &mut Config) -> WasmtimeResult<()> {
+    pub fn apply_to_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
         // Apply profiling configuration
         if self.profiling_config.hardware_performance_counters {
             log::info!("Enabling hardware performance counters");

@@ -1378,7 +1378,7 @@ impl FlameGraphCollector {
     fn process_stack_trace(
         &self,
         root: &mut FlameGraphNode,
-        function_map: &mut std::collections::HashMap<String, FlameGraphNode>,
+        _function_map: &mut std::collections::HashMap<String, FlameGraphNode>,
         stack_trace: &[StackTraceEntry]
     ) -> Result<(), String> {
         if stack_trace.is_empty() {
@@ -1389,7 +1389,7 @@ impl FlameGraphCollector {
         let mut current_node = root;
 
         for (depth, entry) in stack_trace.iter().rev().enumerate() {
-            let function_key = format!("{}:{}:{}", entry.function_name, entry.file_name, entry.line_number);
+            let _function_key = format!("{}:{}:{}", entry.function_name, entry.file_name, entry.line_number);
             let is_leaf = depth == stack_trace.len() - 1;
 
             // Find or create child node

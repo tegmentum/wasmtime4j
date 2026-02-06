@@ -379,7 +379,7 @@ impl SandboxManager {
     /// Create a sandboxed instance with security context
     pub fn create_instance(
         &mut self,
-        store: &Store,
+        _store: &Store,
         module_id: String,
         context: SecurityContext,
     ) -> WasmtimeResult<String> {

@@ -1005,7 +1005,7 @@ pub unsafe extern "C" fn wasi_preview2_context_new(
         return std::ptr::null_mut();
     }
 
-    let config = WasiPreview2Config {
+    let _config = WasiPreview2Config {
         enable_networking: enable_networking != 0,
         enable_filesystem: enable_filesystem != 0,
         enable_process: enable_process != 0,

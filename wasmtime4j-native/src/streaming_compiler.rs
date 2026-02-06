@@ -428,7 +428,7 @@ impl StreamingCompiler {
     }
 
     /// Cancel streaming compilation
-    pub fn cancel(&self, may_interrupt: bool) -> bool {
+    pub fn cancel(&self, _may_interrupt: bool) -> bool {
         log::info!("Cancelling streaming compiler {}", self.compiler_id);
 
         // Set cancellation flag

@@ -655,7 +655,7 @@ pub mod core {
 
 /// Create an optimized caller context based on usage patterns
 fn create_optimized_caller_context<T>(
-    caller: &mut wasmtime::Caller<'_, T>,
+    _caller: &mut wasmtime::Caller<'_, T>,
     usage: CallerContextUsage,
 ) -> Result<(), anyhow::Error>
 where

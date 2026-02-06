@@ -433,7 +433,7 @@ impl Instance {
         _instance: &WasmtimeInstance,
         _ctx: &mut wasmtime::StoreContextMut<StoreData>,
         module: &Module,
-        import_count: usize,
+        _import_count: usize,
     ) -> WasmtimeResult<(InstanceMetadata, HashMap<String, ImportBinding>, HashMap<String, ExportBinding>)> {
         // Build export bindings map by querying wasmtime module directly
         // This works correctly for both compiled and deserialized modules

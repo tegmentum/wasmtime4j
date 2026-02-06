@@ -291,7 +291,7 @@ impl ModuleCache {
     }
 
     /// Stores a compiled module in the cache
-    fn store_module(&self, hash: &str, module: &Module, bytecode: &[u8], compilation_time: Duration) -> Result<(), String> {
+    fn store_module(&self, hash: &str, module: &Module, bytecode: &[u8], _compilation_time: Duration) -> Result<(), String> {
         let module_bytes = module.serialize()
             .map_err(|e| format!("Module serialization failed: {}", e))?;
 

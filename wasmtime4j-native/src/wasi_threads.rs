@@ -629,7 +629,7 @@ impl WasiThreadsContext {
             .write()
             .map_err(|_| WasmtimeError::from_string("Failed to acquire sync registry lock"))?;
 
-        let primitive = match primitive_type {
+        let _primitive = match primitive_type {
             SyncPrimitiveType::Mutex => {
                 sync_registry.create_mutex(name, config.mutex_config)?
             },
@@ -697,7 +697,7 @@ impl WasiThreadsContext {
             .lock()
             .map_err(|_| WasmtimeError::from_string("Failed to acquire metrics lock"))?;
 
-        let pool_manager = self.thread_pool_manager
+        let _pool_manager = self.thread_pool_manager
             .read()
             .map_err(|_| WasmtimeError::from_string("Failed to acquire pool manager lock"))?;
 

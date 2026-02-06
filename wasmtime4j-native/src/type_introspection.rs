@@ -311,7 +311,7 @@ impl ModuleTypeIntrospector {
     }
 
     /// Get function type by index
-    pub fn get_function_type(module: &Module, index: u32) -> WasmtimeResult<Option<FuncTypeInfo>> {
+    pub fn get_function_type(module: &Module, _index: u32) -> WasmtimeResult<Option<FuncTypeInfo>> {
         // Note: Wasmtime doesn't expose function types by index directly in the public API
         // We'll need to iterate through exports to find function types
         for export in module.exports() {

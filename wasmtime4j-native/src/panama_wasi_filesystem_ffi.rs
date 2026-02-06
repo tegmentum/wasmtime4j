@@ -613,10 +613,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_rename_at(
     context_handle: *mut c_void,
     old_descriptor_handle: *mut c_void,
     old_path: *const c_char,
-    old_path_len: c_int,
+    _old_path_len: c_int,
     new_descriptor_handle: *mut c_void,
     new_path: *const c_char,
-    new_path_len: c_int,
+    _new_path_len: c_int,
 ) -> c_int {
     if context_handle.is_null() || old_descriptor_handle.is_null() || old_path.is_null()
         || new_descriptor_handle.is_null() || new_path.is_null() {
@@ -664,9 +664,9 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_symlink_at(
     context_handle: *mut c_void,
     descriptor_handle: *mut c_void,
     old_path: *const c_char,
-    old_path_len: c_int,
+    _old_path_len: c_int,
     new_path: *const c_char,
-    new_path_len: c_int,
+    _new_path_len: c_int,
 ) -> c_int {
     if context_handle.is_null() || descriptor_handle.is_null() || old_path.is_null() || new_path.is_null() {
         return -1;
@@ -715,10 +715,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_link_at(
     old_descriptor_handle: *mut c_void,
     old_path_flags: c_int,
     old_path: *const c_char,
-    old_path_len: c_int,
+    _old_path_len: c_int,
     new_descriptor_handle: *mut c_void,
     new_path: *const c_char,
-    new_path_len: c_int,
+    _new_path_len: c_int,
 ) -> c_int {
     if context_handle.is_null() || old_descriptor_handle.is_null() || old_path.is_null()
         || new_descriptor_handle.is_null() || new_path.is_null() {

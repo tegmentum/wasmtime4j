@@ -241,8 +241,8 @@ impl MultiValueFunction {
     }
 
     /// Gets a registered host function
-    pub fn get_host_function(&self, name: &str) -> WasmtimeResult<Option<Box<dyn MultiValueHostFunction>>> {
-        let host_functions = self.host_functions.lock().map_err(|_| {
+    pub fn get_host_function(&self, _name: &str) -> WasmtimeResult<Option<Box<dyn MultiValueHostFunction>>> {
+        let _host_functions = self.host_functions.lock().map_err(|_| {
             WasmtimeError::Internal {
                 message: "Failed to acquire host functions lock".to_string()
             }

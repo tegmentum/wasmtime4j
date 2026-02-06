@@ -51,7 +51,7 @@ macro_rules! validate_and_deref {
 pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
     mut env: JNIEnv,
     _class: JClass,
-    store_ptr: jlong,
+    _store_ptr: jlong,
     func_ptr: jlong,
     signature: JObject,
 ) -> jlong {

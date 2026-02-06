@@ -579,7 +579,7 @@ impl EnhancedComponentEngine {
             ComponentItem::ComponentInstance(_) => {
                 // Component instance - extract its interface
             },
-            ComponentItem::Type(type_def) => {
+            ComponentItem::Type(_type_def) => {
                 let type_definition = TypeDefinition {
                     name: name.to_string(),
                     kind: ComponentTypeKind::Alias(ComponentValueType::Type(name.to_string())),

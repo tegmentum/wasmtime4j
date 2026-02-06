@@ -640,7 +640,7 @@ impl GcTypeConverter {
             },
             GcValue::Reference(obj_ref) => {
                 match obj_ref {
-                    Some(gc_object) => {
+                    Some(_gc_object) => {
                         // In a real implementation, this would convert our GC object
                         // to a Wasmtime AnyRef by looking up the corresponding
                         // Wasmtime GC object. For now, we return null as a placeholder.
@@ -689,7 +689,7 @@ impl GcTypeConverter {
             },
             Val::AnyRef(any_ref) => {
                 match any_ref {
-                    Some(wasmtime_ref) => {
+                    Some(_wasmtime_ref) => {
                         // In a real implementation, this would convert the Wasmtime
                         // GC reference back to our GC object representation
                         // This requires coordination with the gc_operations module

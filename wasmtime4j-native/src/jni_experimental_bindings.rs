@@ -24,7 +24,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
 ) -> jlong {
     crate::error::jni_utils::jni_try_with_default(&mut env, 0, || {
         // Create both experimental and advanced features
-        let exp_config = exp_core::create_experimental_features_config()?;
+        let _exp_config = exp_core::create_experimental_features_config()?;
         let adv_features = adv_core::create_advanced_features()?;
 
         // For simplicity, we'll return the advanced features pointer
@@ -125,7 +125,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
     handle: jlong,
     stack_size: jlong,
     max_stacks: jint,
-    strategy: jint,
+    _strategy: jint,
 ) {
     crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {
@@ -154,7 +154,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_experimental_JniExperime
     handle: jlong,
     max_continuations: jint,
     storage_strategy: jint,
-    compression_enabled: jint,
+    _compression_enabled: jint,
 ) {
     crate::error::jni_utils::jni_try_void(&mut env, || {
         if handle == 0 {

@@ -148,7 +148,7 @@ fn configure_stack_switching_impl(
     handle: *mut c_void,
     stack_size: u64,
     max_stacks: u32,
-    strategy: i32,
+    _strategy: i32,
 ) -> WasmtimeResult<()> {
     validate_ptr_not_null!(handle, "experimental_features_handle");
 

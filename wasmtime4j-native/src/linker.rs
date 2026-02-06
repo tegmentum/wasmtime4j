@@ -374,7 +374,7 @@ impl Linker {
         }
 
         debug_log("define_host_function: acquiring inner lock...");
-        let linker = self.inner.lock()
+        let _linker = self.inner.lock()
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to lock linker: {}", e),
                 backtrace: None
@@ -1326,7 +1326,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_new(engine_ptr: *const c_void) -> *mu
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_new_with_config(
     engine_ptr: *const c_void,
-    allow_unknown_exports: c_int,
+    _allow_unknown_exports: c_int,
     allow_shadowing: c_int,
 ) -> *mut c_void {
     match crate::engine::core::get_engine_ref(engine_ptr) {

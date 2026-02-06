@@ -1356,8 +1356,8 @@ pub unsafe extern "C" fn wasi_http_add_to_linker(
         }
 
         // Get the linker and store
-        let linker = ffi_utils::deref_ptr::<crate::linker::Linker>(linker_ptr, "linker")?;
-        let store = ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")?;
+        let _linker = ffi_utils::deref_ptr::<crate::linker::Linker>(linker_ptr, "linker")?;
+        let _store = ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")?;
 
         // Log the HTTP context association
         log::info!(

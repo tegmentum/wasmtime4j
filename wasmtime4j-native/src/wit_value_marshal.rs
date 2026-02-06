@@ -457,7 +457,7 @@ fn serialize_float32(value: f32) -> Vec<u8> {
 /// - 8 bytes: handle ID (u64, little-endian)
 ///
 /// The ResourceAny is stored in the registry and the handle ID is returned.
-fn serialize_resource(resource: &ResourceAny) -> Result<Vec<u8>, WasmtimeError> {
+fn serialize_resource(_resource: &ResourceAny) -> Result<Vec<u8>, WasmtimeError> {
     // ResourceAny doesn't implement Clone, so we need to handle ownership carefully.
     // For serialization, we cannot consume the resource since we only have a reference.
     // Instead, we need a different approach - store the resource's representation.

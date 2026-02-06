@@ -37,9 +37,8 @@
 #![allow(unused_doc_comments)] // TODO: Remove unused doc comments
 #![allow(unused_mut)] // JNI env parameters require mut for API calls
 #![allow(non_snake_case)] // JNI functions must follow Java naming conventions
-// Phase 5 Progress: Reduced unused_variables from 165 to 45 (73% reduction)
-// Remaining 45 warnings are in stub implementations awaiting Wasmtime feature support
-#![allow(unused_variables)]
+// Phase 5: Continuing to eliminate remaining unused_variables
+// #![allow(unused_variables)]
 #![allow(private_interfaces)]
 #![warn(clippy::all)]
 

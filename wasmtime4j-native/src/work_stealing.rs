@@ -1273,7 +1273,7 @@ impl PerformanceMonitor {
 }
 
 /// Set CPU affinity for the current thread
-fn set_cpu_affinity(cpu_core: usize) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn set_cpu_affinity(_cpu_core: usize) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     #[cfg(target_os = "linux")]
     {
         use libc::{cpu_set_t, CPU_SET, CPU_ZERO, sched_setaffinity};
@@ -1299,7 +1299,7 @@ fn set_cpu_affinity(cpu_core: usize) -> Result<(), Box<dyn std::error::Error + S
 }
 
 /// Set thread priority for the current thread
-fn set_thread_priority(priority: ThreadPriority) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn set_thread_priority(_priority: ThreadPriority) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     #[cfg(target_os = "linux")]
     {
         use libc::{setpriority, PRIO_PROCESS};

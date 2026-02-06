@@ -1276,7 +1276,7 @@ impl WitParser {
 
     /// Check for valid WIT keywords
     fn check_valid_keywords(&self, wit_text: &str) -> bool {
-        let valid_keywords = [
+        let _valid_keywords = [
             "interface", "type", "record", "variant", "enum", "flags",
             "resource", "func", "constructor", "method", "static",
             "use", "package", "world", "export", "import"
