@@ -76,7 +76,7 @@ pub struct StoreLimiter {
 /// Global counter for limiter IDs
 static LIMITER_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
-/// Registry for active resource limiters
+// Registry for active resource limiters
 lazy_static::lazy_static! {
     static ref LIMITER_REGISTRY: RwLock<HashMap<u64, Arc<StoreLimiter>>> = RwLock::new(HashMap::new());
 }

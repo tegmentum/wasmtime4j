@@ -494,6 +494,8 @@ impl SourceMapParser {
     /// Decode VLQ encoded mappings (simplified implementation)
     fn decode_vlq_mappings(&self, mappings: &str) -> WasmtimeResult<Vec<MappingEntry>> {
         let mut result = Vec::new();
+        // Initial value overwritten per-line but needed for Rust initialization
+        #[allow(unused_assignments)]
         let mut generated_column = 0u32;
         let mut source_index = 0i32;
         let mut original_line = 0i32;
@@ -1473,7 +1475,7 @@ mod tests {
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::ptr;
 
-/// Global source map integration instance
+// Global source map integration instance
 lazy_static::lazy_static! {
     static ref SOURCE_MAP_INTEGRATION: SourceMapIntegration = SourceMapIntegration::new();
     static ref SOURCEMAP_REGISTRY: RwLock<HashMap<u64, Arc<SourceMap>>> = RwLock::new(HashMap::new());

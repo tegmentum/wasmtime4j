@@ -30,11 +30,11 @@
 // TODO: Further audit dead code - some unused infrastructure remains
 // (adaptive scaling, work stealing, thread profiler, deadlock prevention - used in integration tests)
 #![allow(dead_code)]
-#![allow(unused_unsafe)] // TODO: Audit unsafe blocks for necessity
-#![allow(unused_assignments)] // TODO: Audit unused assignments
+// #![allow(unused_unsafe)] // Phase 5: Auditing unnecessary unsafe blocks
+// #![allow(unused_assignments)] // Phase 5: Auditing unused assignments
 #![allow(private_bounds)]
 #![allow(elided_lifetimes_in_paths)]
-#![allow(unused_doc_comments)] // TODO: Remove unused doc comments
+// #![allow(unused_doc_comments)] // Phase 5: Auditing unused doc comments
 #![allow(unused_mut)] // JNI env parameters require mut for API calls
 #![allow(non_snake_case)] // JNI functions must follow Java naming conventions
 // Phase 5: Continuing to eliminate remaining unused_variables

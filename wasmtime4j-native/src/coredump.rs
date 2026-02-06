@@ -63,7 +63,7 @@ impl StoredCoreDump {
 
 }
 
-/// Global registry for coredumps
+// Global registry for coredumps
 lazy_static::lazy_static! {
     static ref COREDUMP_REGISTRY: RwLock<HashMap<u64, Arc<StoredCoreDump>>> = RwLock::new(HashMap::new());
     static ref NEXT_COREDUMP_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);

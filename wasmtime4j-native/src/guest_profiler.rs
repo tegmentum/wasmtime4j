@@ -121,7 +121,7 @@ impl StoredProfiler {
     }
 }
 
-/// Global registry for profilers
+// Global registry for profilers
 lazy_static::lazy_static! {
     static ref PROFILER_REGISTRY: RwLock<HashMap<u64, Arc<RwLock<StoredProfiler>>>> = RwLock::new(HashMap::new());
     static ref NEXT_PROFILER_ID: AtomicU64 = AtomicU64::new(1);

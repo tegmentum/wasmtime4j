@@ -441,11 +441,10 @@ impl ProcessManager {
                 ProcessPriority::High => -10,
                 ProcessPriority::Realtime => -20,
             };
+            // SAFETY: setpriority is called in pre_exec context before exec replaces the process
             unsafe {
                 cmd.pre_exec(move || {
-                    unsafe {
-                        libc::setpriority(libc::PRIO_PROCESS, 0, priority_value);
-                    }
+                    libc::setpriority(libc::PRIO_PROCESS, 0, priority_value);
                     Ok(())
                 })
             };

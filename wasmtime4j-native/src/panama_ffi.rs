@@ -1587,13 +1587,11 @@ pub mod store {
                     );
 
                     if result_code != 0 {
-                        // Extract error message from buffer
-                        let error_message = unsafe {
-                            let len = error_message_buffer.iter()
-                                .position(|&b| b == 0)
-                                .unwrap_or(ERROR_BUFFER_SIZE);
-                            String::from_utf8_lossy(&error_message_buffer[..len]).to_string()
-                        };
+                        // Extract error message from buffer (safe operations on the stack buffer)
+                        let len = error_message_buffer.iter()
+                            .position(|&b| b == 0)
+                            .unwrap_or(ERROR_BUFFER_SIZE);
+                        let error_message = String::from_utf8_lossy(&error_message_buffer[..len]).to_string();
 
                         let final_message = if error_message.is_empty() {
                             format!("Panama host function callback failed with code: {}", result_code)
@@ -5357,13 +5355,11 @@ pub mod linker {
             );
 
             if result_code != 0 {
-                // Extract error message from buffer
-                let error_message = unsafe {
-                    let len = error_message_buffer.iter()
-                        .position(|&b| b == 0)
-                        .unwrap_or(ERROR_BUFFER_SIZE);
-                    String::from_utf8_lossy(&error_message_buffer[..len]).to_string()
-                };
+                // Extract error message from buffer (safe operations on the stack buffer)
+                let len = error_message_buffer.iter()
+                    .position(|&b| b == 0)
+                    .unwrap_or(ERROR_BUFFER_SIZE);
+                let error_message = String::from_utf8_lossy(&error_message_buffer[..len]).to_string();
 
                 let final_message = if error_message.is_empty() {
                     format!("Panama host function callback failed with code: {}", result_code)
