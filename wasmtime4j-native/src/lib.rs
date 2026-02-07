@@ -231,17 +231,8 @@ pub mod wasi_sockets_helpers;
 #[cfg(feature = "wasi-keyvalue")]
 pub mod wasi_keyvalue_helpers;
 
-// Real networking operations
-pub mod networking;
-
-// Enhanced filesystem operations
-pub mod filesystem;
-
 // Advanced filesystem snapshot operations with versioning and rollback
 pub mod filesystem_snapshots;
-
-// Full process integration
-pub mod process;
 
 // Type introspection system
 pub mod type_introspection;
@@ -362,33 +353,11 @@ pub use wasi_preview2::{
     WasiFuture, WasiFutureType, AsyncWasiOperation, AsyncWasiOperationType
 };
 
-// Re-export networking functionality
-pub use networking::{
-    NetworkManager, NetworkConfig, TcpConnection, UdpSocketWrapper,
-    TcpListenerWrapper, HttpConnection, ConnectionStatus, HttpVersion,
-    NetworkStats, HttpRequest, HttpResponse
-};
-
-// Re-export filesystem functionality
-pub use filesystem::{
-    FileSystemManager, FileSystemConfig, FileHandle, DirectoryHandle,
-    EnhancedFileMetadata, FileBasicMetadata, FileExtendedMetadata,
-    FileSecurityMetadata, FileType, DirectoryEntry, FileSystemStats
-};
-
 // Re-export filesystem snapshot functionality
 pub use filesystem_snapshots::{
     FilesystemSnapshotManager, SnapshotConfig, SnapshotOptions, RestoreOptions,
     ValidationOptions, Snapshot, SnapshotType, SnapshotMetadata, SnapshotEntry,
     SnapshotStatus, ValidationResult as SnapshotValidationResult, SnapshotMetrics, PerformanceMetrics
-};
-
-// Re-export process functionality
-pub use process::{
-    ProcessManager, ProcessConfig, ProcessHandle, ProcessStatus,
-    ProcessResourceUsage, ProcessStdioConfig, EnvironmentInheritance,
-    ProcessPriority, ProcessSignal, ProcessSpawnOptions, EnvironmentOperation,
-    ProcessStats
 };
 
 // Component model re-exports
