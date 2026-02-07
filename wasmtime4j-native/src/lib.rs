@@ -64,7 +64,6 @@ pub mod caller;
 pub mod serialization;
 pub mod value_serialization;  // WASM value serialization for thread execution
 pub mod threading;
-pub mod streaming_compiler;
 
 // Additional core functionality for comprehensive API coverage
 
@@ -168,11 +167,6 @@ pub mod wasi_nn;
 #[cfg(feature = "wasi-threads")]
 pub mod wasi_threads;
 
-// Advanced configuration modules for comprehensive optimization control
-// pub mod config_cranelift;
-// pub mod platform_config; // DISABLED: depends on platform_types
-pub mod engine_config;
-
 // Experimental WebAssembly features (committee-stage proposals)
 pub mod experimental_features;
 
@@ -206,9 +200,6 @@ pub mod wasi_sockets_helpers;
 // Shared helper functions for WASI keyvalue operations (used by both JNI and Panama FFI)
 #[cfg(feature = "wasi-keyvalue")]
 pub mod wasi_keyvalue_helpers;
-
-// Type introspection system
-pub mod type_introspection;
 
 // WIT value marshalling for Component Model
 pub mod wit_value_marshal;
