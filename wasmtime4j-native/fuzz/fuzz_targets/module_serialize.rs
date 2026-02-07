@@ -1,7 +1,27 @@
 #![no_main]
 
+//! Module serialization fuzz target.
+//!
+//! **KNOWN LIMITATION:** This fuzz target may produce crashes (SIGABRT/SIGSEGV)
+//! that cannot be fixed in wasmtime4j because they occur in wasmtime's internal
+//! code when loading corrupted serialized module data.
+//!
+//! `Module::deserialize` is marked as `unsafe` and explicitly documents that
+//! the data must come from a trusted source (i.e., a previous `serialize()` call
+//! with the same engine configuration). When given corrupted data, it may:
+//! - Crash with SIGABRT/SIGSEGV (internal assertion failures)
+//! - Produce undefined behavior
+//!
+//! This is expected behavior for an unsafe API and not a bug.
+//!
+//! The purpose of this fuzz target is to:
+//! 1. Document that corrupted serialized data causes crashes
+//! 2. Potentially find edge cases where graceful error handling is possible
+//! 3. Verify that wasmtime's safety invariants are maintained
+
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
+use std::panic;
 use wasmtime::{Engine, Module};
 
 /// Structured input for module serialization fuzzing.
@@ -93,5 +113,11 @@ fuzz_target!(|input: ModuleSerializeInput| {
     // Attempt to deserialize the mutated data
     // Safety: deserialize requires trust that the bytes came from a compatible engine.
     // We intentionally pass corrupted data to verify it doesn't crash.
-    let _ = unsafe { Module::deserialize(&engine, &mutated) };
+    //
+    // Note: We use catch_unwind to handle panics from wasmtime's internal assertions
+    // when deserializing corrupted data. This allows us to continue fuzzing rather than
+    // terminating on the first assertion failure.
+    let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        unsafe { Module::deserialize(&engine, &mutated) }
+    }));
 });

@@ -104,6 +104,14 @@ fn serialize_value(value: &Val, buffer: &mut Vec<u8>) -> WasmtimeResult<()> {
     Ok(())
 }
 
+/// Maximum number of values that can be deserialized to prevent OOM attacks.
+/// This is set to 1 million values which should be more than enough for any
+/// legitimate use case while preventing allocation of billions of elements.
+const MAX_DESERIALIZE_COUNT: usize = 1_000_000;
+
+/// Minimum bytes per value (type tag + smallest value = 1 + 1 for FuncRef/ExternRef)
+const MIN_BYTES_PER_VALUE: usize = 2;
+
 /// Deserialize bytes back into WASM values
 ///
 /// # Examples
@@ -122,6 +130,29 @@ pub fn deserialize_values(bytes: &[u8]) -> WasmtimeResult<Vec<Val>> {
 
     // Read count
     let count = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize;
+
+    // Validate count to prevent OOM attacks
+    if count > MAX_DESERIALIZE_COUNT {
+        return Err(WasmtimeError::Validation {
+            message: format!(
+                "Value count {} exceeds maximum allowed ({})",
+                count, MAX_DESERIALIZE_COUNT
+            ),
+        });
+    }
+
+    // Validate that the buffer could possibly contain this many values
+    let remaining_bytes = bytes.len().saturating_sub(4);
+    let min_required_bytes = count.saturating_mul(MIN_BYTES_PER_VALUE);
+    if remaining_bytes < min_required_bytes {
+        return Err(WasmtimeError::Validation {
+            message: format!(
+                "Buffer too small: claims {} values but only {} bytes remaining (need at least {})",
+                count, remaining_bytes, min_required_bytes
+            ),
+        });
+    }
+
     let mut offset = 4;
     let mut values = Vec::with_capacity(count);
 
