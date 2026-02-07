@@ -738,4 +738,81 @@ final class WitValueSerializerTest {
     assertNotNull(result, "Serialized result should not be null");
     assertTrue(result.length > 4, "Single element list should have count + element data");
   }
+
+
+  // ============== Option exact byte verification tests ==============
+
+  @Test
+  @DisplayName("Serialize option some - verify exact some byte value is 1")
+  void testSerializeOptionSomeExactByte() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType optionType =
+        ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createS32());
+    final WitOption value = WitOption.some(optionType, WitS32.of(42));
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    // First byte must be exactly 1 for some (not 0, not 2, not any other value)
+    assertEquals((byte) 1, result[0], "Some discriminator must be exactly byte value 1");
+  }
+
+  @Test
+  @DisplayName("Serialize option none - verify exact none byte value is 0")
+  void testSerializeOptionNoneExactByte() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType optionType =
+        ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createS32());
+    final WitOption value = WitOption.none(optionType);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    // First byte must be exactly 0 for none (not 1, not any other value)
+    assertEquals((byte) 0, result[0], "None discriminator must be exactly byte value 0");
+  }
+
+  // ============== List count verification ==============
+
+  @Test
+  @DisplayName("Serialize list - verify exact count in first 4 bytes")
+  void testSerializeListVerifyCount() throws WitValueException {
+    final WitList value = WitList.of(WitS32.of(1), WitS32.of(2), WitS32.of(3));
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals(3, buffer.getInt(), "List count in first 4 bytes must be exactly 3");
+  }
+
+  // ============== Variant payload presence flag tests ==============
+
+  @Test
+  @DisplayName("Serialize variant with payload - verify has_payload byte is 1")
+  void testSerializeVariantWithPayloadExactByte() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType variantType =
+        ai.tegmentum.wasmtime4j.WitType.variant("opt",
+            java.util.Map.of("some", java.util.Optional.of(ai.tegmentum.wasmtime4j.WitType.createS32())));
+    final WitVariant value = WitVariant.of(variantType, "some", WitS32.of(42));
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    // Format: [name_length: u32][name: UTF-8][has_payload: u8]...
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    final int nameLength = buffer.getInt();
+    buffer.position(4 + nameLength); // Skip past name
+    final byte hasPayload = buffer.get();
+    assertEquals((byte) 1, hasPayload, "has_payload byte must be exactly 1 when payload present");
+  }
+
+  @Test
+  @DisplayName("Serialize variant without payload - verify has_payload byte is 0")
+  void testSerializeVariantWithoutPayloadExactByte() throws WitValueException {
+    final ai.tegmentum.wasmtime4j.WitType variantType =
+        ai.tegmentum.wasmtime4j.WitType.variant("status",
+            java.util.Map.of("none", java.util.Optional.empty()));
+    final WitVariant value = WitVariant.of(variantType, "none", null);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    // Format: [name_length: u32][name: UTF-8][has_payload: u8]
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    final int nameLength = buffer.getInt();
+    buffer.position(4 + nameLength); // Skip past name
+    final byte hasPayload = buffer.get();
+    assertEquals((byte) 0, hasPayload, "has_payload byte must be exactly 0 when no payload");
+  }
 }
