@@ -595,6 +595,45 @@ impl Linker {
         Ok(())
     }
 
+    /// Enables WASI-NN (Neural Network) support for WebAssembly modules
+    ///
+    /// This allows WebAssembly modules to import wasi-nn functions for neural
+    /// network inference. Requires a backend like OpenVINO to be installed.
+    ///
+    /// # Errors
+    /// Returns WasmtimeError if WASI-NN cannot be enabled
+    #[cfg(feature = "wasi-nn")]
+    pub fn enable_wasi_nn(&mut self) -> WasmtimeResult<()> {
+        if self.metadata.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "Linker has been disposed".to_string(),
+                backtrace: None
+            });
+        }
+
+        let mut linker = self.inner.lock()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to lock linker: {}", e),
+                backtrace: None
+            })?;
+
+        // Add WASI-NN imports to the linker
+        wasmtime_wasi_nn::witx::add_to_linker(&mut *linker, |data: &mut StoreData| {
+            data.wasi_nn_ctx.as_mut().expect(
+                "Store does not have a WASI-NN context attached. \
+                 Call set_wasi_nn_context on the store before instantiating modules that require WASI-NN."
+            )
+        })
+        .map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to add WASI-NN to linker: {}", e),
+            backtrace: None,
+        })?;
+
+        log::debug!("WASI-NN imports successfully added to linker");
+
+        Ok(())
+    }
+
     /// Implements any function imports of the module that are not already defined
     /// with functions that trap when called.
     ///

@@ -13,6 +13,8 @@ use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
 use wasmtime_wasi_http::WasiHttpCtx;
 #[cfg(feature = "wasi-http")]
 use wasmtime::component::ResourceTable;
+#[cfg(feature = "wasi-nn")]
+use wasmtime_wasi_nn::witx::WasiNnCtx;
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
@@ -78,6 +80,9 @@ pub struct StoreData {
     /// Resource table for WASI HTTP (required by WasiHttpView trait)
     #[cfg(feature = "wasi-http")]
     pub resource_table: ResourceTable,
+    /// Optional WASI-NN context for neural network inference
+    #[cfg(feature = "wasi-nn")]
+    pub wasi_nn_ctx: Option<WasiNnCtx>,
 }
 
 impl std::fmt::Debug for StoreData {
@@ -95,6 +100,8 @@ impl std::fmt::Debug for StoreData {
         debug
             .field("wasi_http_ctx", &self.wasi_http_ctx.as_ref().map(|_| "<WasiHttpCtx>"))
             .field("resource_table", &"<ResourceTable>");
+        #[cfg(feature = "wasi-nn")]
+        debug.field("wasi_nn_ctx", &self.wasi_nn_ctx.as_ref().map(|_| "<WasiNnCtx>"));
         debug.finish()
     }
 }
@@ -113,6 +120,8 @@ impl Clone for StoreData {
             wasi_http_ctx: None, // WasiHttpCtx is store-specific
             #[cfg(feature = "wasi-http")]
             resource_table: ResourceTable::new(), // Fresh table for cloned store
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_ctx: None, // WasiNnCtx is store-specific
         }
     }
 }
@@ -563,6 +572,45 @@ impl Store {
         store.data().wasi_ctx.is_some()
     }
 
+    /// Set WASI-NN context for this store to enable neural network inference
+    ///
+    /// This creates a WasiNnCtx with the available backends and an empty registry.
+    /// WebAssembly modules can then use wasi-nn imports to load models and run inference.
+    #[cfg(feature = "wasi-nn")]
+    pub fn set_wasi_nn_context(&self) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock();
+
+        // Get available backends from wasmtime-wasi-nn
+        let backends = wasmtime_wasi_nn::backend::list();
+        let registry = wasmtime_wasi_nn::InMemoryRegistry::new();
+
+        // Create the WasiNnCtx
+        let wasi_nn_ctx = WasiNnCtx::new(backends, registry.into());
+
+        // Store in StoreData
+        let data = store.data_mut();
+        data.wasi_nn_ctx = Some(wasi_nn_ctx);
+
+        log::debug!("WASI-NN context set on store");
+        Ok(())
+    }
+
+    /// Check if this store has WASI-NN context
+    #[cfg(feature = "wasi-nn")]
+    pub fn has_wasi_nn_context(&self) -> bool {
+        let store = self.inner.lock();
+        store.data().wasi_nn_ctx.is_some()
+    }
+
+    /// Remove WASI-NN context from this store
+    #[cfg(feature = "wasi-nn")]
+    pub fn remove_wasi_nn_context(&self) -> WasmtimeResult<()> {
+        let mut store = self.inner.lock();
+        let data = store.data_mut();
+        data.wasi_nn_ctx = None;
+        Ok(())
+    }
+
     /// Get captured stdout data from WASI execution
     pub fn get_wasi_stdout(&self) -> WasmtimeResult<Option<Vec<u8>>> {
         let store = self.inner.lock();
@@ -687,6 +735,8 @@ impl StoreBuilder {
             wasi_http_ctx: None,
             #[cfg(feature = "wasi-http")]
             resource_table: ResourceTable::new(),
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_ctx: None,
         };
 
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
@@ -770,6 +820,8 @@ impl StoreBuilder {
             wasi_http_ctx: None,
             #[cfg(feature = "wasi-http")]
             resource_table: ResourceTable::new(),
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_ctx: None,
         };
 
         // CRITICAL: Use the wasmtime Engine from the Module's internal wasmtime::Module

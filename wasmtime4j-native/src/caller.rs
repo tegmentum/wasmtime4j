@@ -101,6 +101,8 @@ impl CallerContext {
                 wasi_http_ctx: None,
                 #[cfg(feature = "wasi-http")]
                 resource_table: wasmtime::component::ResourceTable::new(),
+                #[cfg(feature = "wasi-nn")]
+                wasi_nn_ctx: None,
             }),
             exports,
             fuel_consumed,
