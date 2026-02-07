@@ -98,86 +98,6 @@ fn init_shared_async_wasmtime_engine() -> Result<WasmtimeEngine, String> {
         .map_err(|e| format!("Failed to create shared async wasmtime engine: {}", e))
 }
 
-/// Shared Engine wrapper with GC enabled for test use.
-/// Used by GC tests to avoid creating new engines.
-///
-/// Uses OnceLock with Result to prevent panics on initialization failure.
-static SHARED_GC_ENGINE: OnceLock<Result<Engine, String>> = OnceLock::new();
-
-/// Internal helper to initialize the shared GC Engine wrapper safely.
-fn init_shared_gc_engine() -> Result<Engine, String> {
-    let mut config = safe_wasmtime_config();
-    config.wasm_gc(true);
-    config.wasm_reference_types(true);
-    config.wasm_function_references(true);
-
-    let engine = WasmtimeEngine::new(&config)
-        .map_err(|e| format!("Failed to create shared GC engine: {}", e))?;
-
-    Ok(Engine {
-        inner: Arc::new(engine),
-        config_summary: EngineConfigSummary {
-            strategy: "Cranelift".to_string(),
-            opt_level: "None".to_string(),
-            debug_info: false,
-            wasm_threads: false,
-            wasm_reference_types: true,
-            wasm_simd: false,
-            wasm_bulk_memory: false,
-            wasm_multi_value: false,
-            wasm_multi_memory: false,
-            wasm_tail_call: false,
-            wasm_relaxed_simd: false,
-            wasm_function_references: true,
-            wasm_gc: true,
-            wasm_exceptions: false,
-            wasm_memory64: false,
-            wasm_extended_const: false,
-            wasm_component_model: false,
-            wasm_custom_page_sizes: false,
-            wasm_wide_arithmetic: false,
-            wasm_stack_switching: false,
-            wasm_shared_everything_threads: false,
-            wasm_component_model_async: false,
-            wasm_component_model_async_builtins: false,
-            wasm_component_model_async_stackful: false,
-            wasm_component_model_error_context: false,
-            wasm_component_model_gc: false,
-            fuel_enabled: false,
-            max_memory_pages: None,
-            max_stack_size: None,
-            epoch_interruption: false,
-            max_instances: None,
-            async_support: false,
-            coredump_on_trap: false,
-            memory_reservation: None,
-            memory_guard_size: None,
-            memory_reservation_for_growth: None,
-            max_memory_size: None,
-            cranelift_debug_verifier: false,
-            cranelift_nan_canonicalization: false,
-            cranelift_pcc: false,
-            cranelift_regalloc_algorithm: "Backtracking".to_string(),
-            wmemcheck_enabled: false,
-            table_lazy_init: true,
-            gc_support: true,
-            collector: "Auto".to_string(),
-            memory_may_move: true,
-            guard_before_linear_memory: true,
-            memory_init_cow: true,
-            wasm_component_model_threading: false,
-            relaxed_simd_deterministic: false,
-            async_stack_zeroing: false,
-            async_stack_size: None,
-            parallel_compilation: true,
-            macos_use_mach_ports: true,
-            module_version_strategy: "WasmtimeVersion".to_string(),
-            allocation_strategy: "OnDemand".to_string(),
-        },
-        concurrent_ops_lock: Arc::new(RwLock::new(())),
-    })
-}
-
 /// Returns a clone of the shared component wasmtime::Engine.
 ///
 /// # Panics
@@ -218,29 +138,6 @@ pub(crate) fn get_shared_gc_wasmtime_engine() -> WasmtimeEngine {
             WasmtimeEngine::new(&config).unwrap_or_else(|_| {
                 WasmtimeEngine::new(&safe_wasmtime_config())
                     .expect("Failed to create even basic fallback engine")
-            })
-        }
-    }
-}
-
-/// Returns a clone of the shared GC Engine wrapper.
-/// This is the recommended way to get a GC-enabled engine for tests.
-///
-/// # Panics
-/// Logs an error and creates a fallback engine if initialization failed.
-pub(crate) fn get_shared_gc_engine() -> Engine {
-    let result = SHARED_GC_ENGINE.get_or_init(init_shared_gc_engine);
-    match result {
-        Ok(engine) => engine.clone(),
-        Err(e) => {
-            log::error!("Shared GC engine wrapper initialization failed: {}. Creating fallback.", e);
-            // Try to create a new GC engine as fallback
-            let mut config = safe_wasmtime_config();
-            config.wasm_gc(true);
-            config.wasm_reference_types(true);
-            config.wasm_function_references(true);
-            Engine::with_config(config).unwrap_or_else(|_| {
-                Engine::new().expect("Failed to create even basic fallback engine")
             })
         }
     }

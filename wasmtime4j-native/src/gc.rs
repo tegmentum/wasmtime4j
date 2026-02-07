@@ -26,7 +26,6 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::gc_types::*;
 use crate::gc_heap::*;
 use crate::gc_operations::*;
-use crate::simd::{V256, V512};
 
 /// Real WebAssembly GC reference using Wasmtime's native GC system
 #[derive(Clone)]

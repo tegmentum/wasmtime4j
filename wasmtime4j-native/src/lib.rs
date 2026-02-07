@@ -102,8 +102,6 @@ pub mod jni_wasi_cli_bindings;
 pub mod jni_wasi_clocks_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_random_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_wasi_sockets_bindings;
 #[cfg(all(feature = "jni-bindings", feature = "wasi-keyvalue"))]
 pub mod jni_wasi_keyvalue_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -112,8 +110,6 @@ pub mod jni_gc_bindings;
 pub mod jni_typed_func_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod platform_memory_jni;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_experimental_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wast_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -135,11 +131,7 @@ pub mod panama_wasi_clocks_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_random_ffi;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_wasi_sockets_ffi;
-#[cfg(feature = "panama-ffi")]
 pub mod panama_gc_ffi;
-#[cfg(feature = "panama-ffi")]
-pub mod panama_experimental_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_simd_ffi;
 #[cfg(all(feature = "panama-ffi", feature = "wasi-threads"))]
@@ -162,8 +154,6 @@ pub mod wasi_threads;
 // Experimental WebAssembly features (committee-stage proposals)
 pub mod experimental_features;
 
-// Advanced experimental features for cutting-edge capabilities
-pub mod advanced_experimental;
 
 // Async runtime for async WebAssembly operations
 pub mod async_runtime;
@@ -186,8 +176,6 @@ pub mod wasi_clocks_helpers;
 // Shared helper functions for WASI random operations (used by both JNI and Panama FFI)
 pub mod wasi_random_helpers;
 
-// Shared helper functions for WASI sockets operations (used by both JNI and Panama FFI)
-pub mod wasi_sockets_helpers;
 
 // Shared helper functions for WASI keyvalue operations (used by both JNI and Panama FFI)
 #[cfg(feature = "wasi-keyvalue")]
