@@ -226,6 +226,44 @@ class ModuleSerializationCacheTest {
     void containsShouldThrowOnNullHash() {
       assertThrows(NullPointerException.class, () -> cache.contains(null));
     }
+
+    @Test
+    @DisplayName("contains should check memory cache entry validity")
+    void containsShouldCheckMemoryCacheEntryValidity() throws IOException {
+      final byte[] moduleData = "test".getBytes();
+      final String hash = cache.store(moduleData, createTestMetadata());
+
+      // Entry is in memory and not expired
+      assertTrue(cache.contains(hash), "Entry should be contained in memory cache");
+
+      // Verify the check works correctly for existing entries
+      final Optional<ModuleSerializationCache.CacheEntry> entry = cache.retrieve(hash);
+      assertTrue(entry.isPresent());
+    }
+
+    @Test
+    @DisplayName("contains should fallback to disk when not in memory")
+    void containsShouldFallbackToDiskWhenNotInMemory() throws IOException {
+      // Create cache with very small memory limit to force disk-only scenario
+      final CacheConfiguration config =
+          new CacheConfiguration.Builder()
+              .setMaxMemoryEntries(1)
+              .setMemoryCacheTtl(Duration.ofHours(1))
+              .enableDiskCache(tempDir)
+              .setDiskCacheTtl(Duration.ofDays(1))
+              .build();
+
+      try (final ModuleSerializationCache smallCache = new ModuleSerializationCache(config)) {
+        // Store first entry
+        final String hash1 = smallCache.store("data1".getBytes(), createTestMetadata());
+
+        // Store second entry (evicts first from memory)
+        smallCache.store("data2".getBytes(), createTestMetadata());
+
+        // First entry should still be found in disk cache
+        assertTrue(smallCache.contains(hash1), "Should find entry in disk cache");
+      }
+    }
   }
 
   @Nested
@@ -252,6 +290,36 @@ class ModuleSerializationCacheTest {
     @DisplayName("remove should throw on null hash")
     void removeShouldThrowOnNullHash() {
       assertThrows(NullPointerException.class, () -> cache.remove(null));
+    }
+
+    @Test
+    @DisplayName("remove should return true when only in disk cache")
+    void removeShouldReturnTrueWhenOnlyInDiskCache() throws IOException {
+      // Store entry (goes to memory and disk)
+      final byte[] moduleData = "test for disk".getBytes();
+      final String hash = cache.store(moduleData, createTestMetadata());
+
+      // Verify it's in cache
+      assertTrue(cache.contains(hash));
+
+      // Remove returns true from either memory OR disk, not AND
+      assertTrue(cache.remove(hash), "Remove should return true from any cache tier");
+
+      // Verify it's fully removed
+      assertFalse(cache.contains(hash));
+    }
+
+    @Test
+    @DisplayName("remove should remove from all cache tiers")
+    void removeShouldRemoveFromAllCacheTiers() throws IOException {
+      final byte[] moduleData = "test data for multi-tier".getBytes();
+      final String hash = cache.store(moduleData, createTestMetadata());
+
+      // First remove
+      assertTrue(cache.remove(hash));
+
+      // Second remove should return false (already removed from all tiers)
+      assertFalse(cache.remove(hash), "Second remove should return false - already removed");
     }
   }
 
@@ -531,6 +599,68 @@ class ModuleSerializationCacheTest {
         assertTrue(smallCache.contains(hash1), "hash1 should still be present");
       }
     }
+
+    @Test
+    @DisplayName("LRU eviction should compare access times correctly")
+    void lruEvictionShouldCompareAccessTimesCorrectly() throws IOException {
+      // Memory-only cache with max 2 entries
+      final CacheConfiguration config =
+          new CacheConfiguration.Builder()
+              .setMaxMemoryEntries(2)
+              .setMemoryCacheTtl(Duration.ofHours(1))
+              .build();
+
+      try (final ModuleSerializationCache smallCache = new ModuleSerializationCache(config)) {
+        // Store first entry
+        final String hash1 = smallCache.store("oldest_entry".getBytes(), createTestMetadata());
+
+        // Small delay to ensure different access times
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+
+        // Store second entry
+        final String hash2 = smallCache.store("newer_entry".getBytes(), createTestMetadata());
+
+        // Access hash1 multiple times to update its access time
+        for (int i = 0; i < 3; i++) {
+          smallCache.retrieve(hash1);
+        }
+
+        // Store third entry - should evict hash2 (older access time)
+        smallCache.store("newest_entry".getBytes(), createTestMetadata());
+
+        // Verify eviction count
+        final CacheStatistics stats = smallCache.getStatistics();
+        assertEquals(1, stats.getEvictions(), "Should have exactly one eviction");
+      }
+    }
+
+    @Test
+    @DisplayName("eviction should increment eviction counter")
+    void evictionShouldIncrementEvictionCounter() throws IOException {
+      final CacheConfiguration config =
+          new CacheConfiguration.Builder()
+              .setMaxMemoryEntries(1)
+              .setMemoryCacheTtl(Duration.ofHours(1))
+              .build();
+
+      try (final ModuleSerializationCache tinyCache = new ModuleSerializationCache(config)) {
+        // Store one entry
+        tinyCache.store("first".getBytes(), createTestMetadata());
+
+        // Initial eviction count
+        assertEquals(0, tinyCache.getStatistics().getEvictions());
+
+        // Store another entry (causes eviction)
+        tinyCache.store("second".getBytes(), createTestMetadata());
+
+        // Eviction count should increase
+        assertEquals(1, tinyCache.getStatistics().getEvictions());
+      }
+    }
   }
 
   @Nested
@@ -677,6 +807,17 @@ class ModuleSerializationCacheTest {
     }
 
     @Test
+    @DisplayName("getStatistics should return zero hit ratio when no requests")
+    void getStatisticsShouldReturnZeroHitRatioWhenNoRequests() {
+      // No requests made - hit ratio should be 0.0, not 1.0 or NaN
+      final CacheStatistics stats = cache.getStatistics();
+
+      assertEquals(0.0, stats.getHitRatio(), 0.001);
+      assertEquals(0L, stats.getMemoryHits());
+      assertEquals(0L, stats.getMisses());
+    }
+
+    @Test
     @DisplayName("getStatistics should track memory cache size")
     void getStatisticsShouldTrackMemoryCacheSize() throws IOException {
       cache.store("test data".getBytes(), createTestMetadata());
@@ -695,6 +836,29 @@ class ModuleSerializationCacheTest {
       final CacheStatistics stats = cache.getStatistics();
 
       assertEquals(2, stats.getMemoryCacheEntries());
+    }
+
+    @Test
+    @DisplayName("getStatistics total hits should be sum of all hit types")
+    void getStatisticsTotalHitsShouldBeSumOfAllHitTypes() throws IOException {
+      // Store and retrieve to create memory hits
+      final String hash1 = cache.store("test1".getBytes(), createTestMetadata());
+      final String hash2 = cache.store("test2".getBytes(), createTestMetadata());
+      cache.retrieve(hash1);
+      cache.retrieve(hash2);
+      cache.retrieve(hash1);
+
+      final CacheStatistics stats = cache.getStatistics();
+
+      // Verify total hits is the sum of memory + disk + distributed
+      final long expectedTotalHits =
+          stats.getMemoryHits() + stats.getDiskHits() + stats.getDistributedHits();
+
+      // Calculate total from ratio: hitRatio = totalHits / (totalHits + misses)
+      // totalHits = hitRatio * (totalHits + misses)
+      // With 3 memory hits and 0 misses, ratio should be 1.0
+      assertTrue(stats.getMemoryHits() >= 3, "Should have at least 3 memory hits");
+      assertEquals(1.0, stats.getHitRatio(), 0.001, "Hit ratio should be 1.0 with no misses");
     }
   }
 

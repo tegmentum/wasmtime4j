@@ -587,6 +587,155 @@ class EncryptedDataTest {
       assertNotNull(serialized, "Serialized data should not be null");
       assertTrue(serialized.length > 0, "Serialized data should not be empty");
     }
+
+    @Test
+    @DisplayName("serialize should produce correctly sized byte array")
+    void serializeShouldProduceCorrectlySizedByteArray() {
+      final EncryptedData data =
+          new EncryptedData(SAMPLE_CIPHERTEXT, SAMPLE_IV_12, AES_GCM, SAMPLE_AUTH_TAG, "key-001");
+      final byte[] serialized = data.serialize();
+
+      // Calculate expected size:
+      // - 4 bytes version
+      // - 4 bytes + algorithm length
+      // - 4 bytes + iv length
+      // - 4 bytes + ciphertext length
+      // - 4 bytes + authTag length
+      // - 4 bytes + keyId length
+      // - 4 bytes + timestamp length
+      final byte[] algorithmBytes = AES_GCM.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final byte[] keyIdBytes = "key-001".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final byte[] timestampBytes =
+          data.getEncryptionTimestamp().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+      final int expectedSize =
+          4  // version
+              + 4
+              + algorithmBytes.length  // algorithm
+              + 4
+              + SAMPLE_IV_12.length  // iv
+              + 4
+              + SAMPLE_CIPHERTEXT.length  // ciphertext
+              + 4
+              + SAMPLE_AUTH_TAG.length  // authTag
+              + 4
+              + keyIdBytes.length  // keyId
+              + 4
+              + timestampBytes.length;  // timestamp
+
+      assertEquals(
+          expectedSize,
+          serialized.length,
+          "Serialized data size should match expected: version(4) + algorithm(4+"
+              + algorithmBytes.length
+              + ") + iv(4+"
+              + SAMPLE_IV_12.length
+              + ") + ciphertext(4+"
+              + SAMPLE_CIPHERTEXT.length
+              + ") + authTag(4+"
+              + SAMPLE_AUTH_TAG.length
+              + ") + keyId(4+"
+              + keyIdBytes.length
+              + ") + timestamp(4+"
+              + timestampBytes.length
+              + ") = "
+              + expectedSize);
+    }
+
+    @Test
+    @DisplayName("serialized data should have correct byte structure")
+    void serializedDataShouldHaveCorrectByteStructure() {
+      final EncryptedData data =
+          new EncryptedData(SAMPLE_CIPHERTEXT, SAMPLE_IV_12, AES_GCM, SAMPLE_AUTH_TAG, "test-key");
+      final byte[] serialized = data.serialize();
+
+      final java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(serialized);
+
+      // Version should be 1
+      assertEquals(1, buffer.getInt(), "Version should be 1");
+
+      // Algorithm length and content
+      final int algorithmLen = buffer.getInt();
+      final byte[] algorithmBytes = AES_GCM.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      assertEquals(
+          algorithmBytes.length, algorithmLen, "Algorithm length should match expected");
+
+      final byte[] readAlgorithm = new byte[algorithmLen];
+      buffer.get(readAlgorithm);
+      assertEquals(AES_GCM, new String(readAlgorithm, java.nio.charset.StandardCharsets.UTF_8));
+
+      // IV length and content
+      final int ivLen = buffer.getInt();
+      assertEquals(SAMPLE_IV_12.length, ivLen, "IV length should match expected");
+
+      final byte[] readIv = new byte[ivLen];
+      buffer.get(readIv);
+      assertArrayEquals(SAMPLE_IV_12, readIv, "IV content should match");
+
+      // Ciphertext length and content
+      final int ciphertextLen = buffer.getInt();
+      assertEquals(SAMPLE_CIPHERTEXT.length, ciphertextLen, "Ciphertext length should match");
+
+      final byte[] readCiphertext = new byte[ciphertextLen];
+      buffer.get(readCiphertext);
+      assertArrayEquals(SAMPLE_CIPHERTEXT, readCiphertext, "Ciphertext content should match");
+
+      // AuthTag length and content
+      final int authTagLen = buffer.getInt();
+      assertEquals(SAMPLE_AUTH_TAG.length, authTagLen, "AuthTag length should match");
+
+      final byte[] readAuthTag = new byte[authTagLen];
+      buffer.get(readAuthTag);
+      assertArrayEquals(SAMPLE_AUTH_TAG, readAuthTag, "AuthTag content should match");
+
+      // KeyId length and content
+      final int keyIdLen = buffer.getInt();
+      assertTrue(keyIdLen > 0, "KeyId length should be positive");
+
+      final byte[] readKeyId = new byte[keyIdLen];
+      buffer.get(readKeyId);
+      assertEquals("test-key", new String(readKeyId, java.nio.charset.StandardCharsets.UTF_8));
+
+      // Timestamp length
+      final int timestampLen = buffer.getInt();
+      assertTrue(timestampLen > 0, "Timestamp length should be positive");
+
+      // Should have consumed all bytes without BufferUnderflowException
+      final byte[] readTimestamp = new byte[timestampLen];
+      buffer.get(readTimestamp);
+
+      // Buffer should now be fully consumed
+      assertEquals(0, buffer.remaining(), "Buffer should be fully consumed");
+    }
+
+    @Test
+    @DisplayName("deserialize should handle boundary case of timestampLength zero")
+    void deserializeShouldHandleBoundaryTimestampLengthZero() {
+      // Create a custom serialized buffer with timestamp length of 0
+      final byte[] algorithmBytes = AES_GCM.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+      final int size =
+          4 + 4 + algorithmBytes.length + 4 + SAMPLE_IV_12.length + 4 + SAMPLE_CIPHERTEXT.length
+              + 4 + 0  // no authTag
+              + 4 + 0  // no keyId
+              + 4 + 0; // no timestamp
+
+      final java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(size);
+      buffer.putInt(1);  // version
+      buffer.putInt(algorithmBytes.length);
+      buffer.put(algorithmBytes);
+      buffer.putInt(SAMPLE_IV_12.length);
+      buffer.put(SAMPLE_IV_12);
+      buffer.putInt(SAMPLE_CIPHERTEXT.length);
+      buffer.put(SAMPLE_CIPHERTEXT);
+      buffer.putInt(0);  // no authTag
+      buffer.putInt(0);  // no keyId
+      buffer.putInt(0);  // no timestamp
+
+      final EncryptedData data = EncryptedData.deserialize(buffer.array());
+      assertNotNull(data);
+      assertArrayEquals(SAMPLE_CIPHERTEXT, data.getCiphertext());
+    }
   }
 
   @Nested

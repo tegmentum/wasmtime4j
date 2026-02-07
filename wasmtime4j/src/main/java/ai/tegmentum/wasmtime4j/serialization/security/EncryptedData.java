@@ -166,31 +166,19 @@ public final class EncryptedData {
         encryptionTimestamp.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
     final int totalSize =
-        4
-            + // version
-            4
-            + algorithmBytes.length
-            + algorithmBytes.length
-            + // algorithm
-            4
-            + iv.length
-            + iv.length
-            + // IV
-            4
-            + ciphertext.length
-            + ciphertext.length
-            + // ciphertext
-            4
-            + (authTag != null ? authTag.length : 0)
-            + (authTag != null ? authTag.length : 0)
-            + // auth tag
-            4
-            + keyIdBytes.length
-            + keyIdBytes.length
-            + // key ID
-            4
-            + timestampBytes.length
-            + timestampBytes.length; // timestamp
+        4  // version
+            + 4
+            + algorithmBytes.length  // algorithm
+            + 4
+            + iv.length  // IV
+            + 4
+            + ciphertext.length  // ciphertext
+            + 4
+            + (authTag != null ? authTag.length : 0)  // auth tag
+            + 4
+            + keyIdBytes.length  // key ID
+            + 4
+            + timestampBytes.length;  // timestamp
 
     final java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(totalSize);
 
