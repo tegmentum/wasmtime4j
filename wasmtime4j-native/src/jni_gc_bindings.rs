@@ -1957,7 +1957,7 @@ fn convert_gc_value_to_jobject(
 
             JObject::from(byte_array).into_raw()
         },
-        GcValue::Reference(_) | GcValue::Null => std::ptr::null_mut(),
+        GcValue::Reference | GcValue::Null => std::ptr::null_mut(),
         _ => std::ptr::null_mut(),
     }
 }

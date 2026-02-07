@@ -331,7 +331,7 @@ pub use gc::{
 
 pub use gc_types::{
     GcReferenceType, StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType as GcFieldType,
-    GcObject, GcValue, GcTypeRegistry, GcTypeConverter
+    GcValue, GcTypeRegistry
 };
 pub use gc_heap::{
     GcHeap, GcHeapConfig, GcHeapStats, ObjectId,

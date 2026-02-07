@@ -19,7 +19,7 @@
 
 use wasmtime::*;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Mutex, RwLock};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// WebAssembly GC reference type enumeration
@@ -111,25 +111,7 @@ pub enum FieldType {
     Reference(GcReferenceType),
 }
 
-/// GC object instance representation
-#[derive(Debug, Clone)]
-pub enum GcObject {
-    /// Struct instance with field values
-    Struct {
-        type_def: StructTypeDefinition,
-        fields: Vec<GcValue>,
-    },
-    /// Array instance with elements
-    Array {
-        type_def: ArrayTypeDefinition,
-        elements: Vec<GcValue>,
-        length: u32,
-    },
-    /// I31 immediate value (31-bit signed integer)
-    I31(i32),
-}
-
-/// GC value enumeration supporting all GC types including advanced SIMD from Task #307
+/// GC value enumeration supporting all GC types including advanced SIMD
 #[derive(Debug, Clone)]
 pub enum GcValue {
     /// 32-bit integer value
@@ -142,12 +124,12 @@ pub enum GcValue {
     F64(f64),
     /// 128-bit SIMD vector value (standard WebAssembly)
     V128([u8; 16]),
-    /// 256-bit SIMD vector value (advanced SIMD from Task #307)
+    /// 256-bit SIMD vector value (advanced SIMD)
     V256([u8; 32]),
-    /// 512-bit SIMD vector value (AVX-512 support from Task #307)
+    /// 512-bit SIMD vector value (AVX-512 support)
     V512([u8; 64]),
-    /// Reference to a GC object
-    Reference(Option<Arc<GcObject>>),
+    /// Reference (placeholder - actual GC refs handled by gc_operations)
+    Reference,
     /// Null reference
     Null,
 }
@@ -302,10 +284,7 @@ impl GcTypeRegistry {
             (GcValue::V512(_), FieldType::V512) => Ok(()),
             (GcValue::I32(i), FieldType::PackedI8) if *i >= -128 && *i <= 127 => Ok(()),
             (GcValue::I32(i), FieldType::PackedI16) if *i >= -32768 && *i <= 32767 => Ok(()),
-            (GcValue::Reference(_), FieldType::Reference(_)) => {
-                // Additional reference type validation would go here
-                Ok(())
-            },
+            (GcValue::Reference, FieldType::Reference(_)) => Ok(()),
             (GcValue::Null, FieldType::Reference(_)) => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
                 message: format!(
@@ -404,338 +383,6 @@ impl GcTypeRegistry {
 impl Default for GcTypeRegistry {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-/// Type conversion utilities for GC types with real Wasmtime integration
-pub struct GcTypeConverter;
-
-impl GcTypeConverter {
-    /// Convert a Wasmtime ValType to a FieldType with real GC type support
-    pub fn from_wasmtime_valtype(val_type: &ValType) -> WasmtimeResult<FieldType> {
-        match val_type {
-            ValType::I32 => Ok(FieldType::I32),
-            ValType::I64 => Ok(FieldType::I64),
-            ValType::F32 => Ok(FieldType::F32),
-            ValType::F64 => Ok(FieldType::F64),
-            ValType::V128 => Ok(FieldType::V128),
-            ValType::Ref(ref_type) => {
-                match ref_type.heap_type() {
-                    HeapType::Any | HeapType::Exn => Ok(FieldType::Reference(GcReferenceType::AnyRef)),
-                    HeapType::Eq => Ok(FieldType::Reference(GcReferenceType::EqRef)),
-                    HeapType::I31 => Ok(FieldType::Reference(GcReferenceType::I31Ref)),
-                    HeapType::Extern => Ok(FieldType::Reference(GcReferenceType::ExternRef)),
-                    HeapType::Func | HeapType::ConcreteFunc(_) => Ok(FieldType::Reference(GcReferenceType::FuncRef)),
-                    HeapType::Struct | HeapType::ConcreteStruct(_) => {
-                        // Create a placeholder struct definition for the Wasmtime struct type
-                        let struct_def = StructTypeDefinition {
-                            type_id: 0, // Will be properly assigned by type registry
-                            fields: vec![], // Empty fields as we don't have struct_type info
-                            name: None,
-                            supertype: None,
-                        };
-                        Ok(FieldType::Reference(GcReferenceType::StructRef(struct_def)))
-                    },
-                    HeapType::Array | HeapType::ConcreteArray(_) => {
-                        // Create a placeholder array definition for the Wasmtime array type
-                        let array_def = ArrayTypeDefinition {
-                            type_id: 0, // Will be properly assigned by type registry
-                            element_type: FieldType::I32, // Default element type
-                            mutable: true, // Default to mutable
-                            name: None,
-                        };
-                        Ok(FieldType::Reference(GcReferenceType::ArrayRef(Box::new(array_def))))
-                    },
-                    // Null reference types (bottom types)
-                    HeapType::None => Ok(FieldType::Reference(GcReferenceType::NullRef)),
-                    HeapType::NoFunc => Ok(FieldType::Reference(GcReferenceType::NullFuncRef)),
-                    HeapType::NoExtern => Ok(FieldType::Reference(GcReferenceType::NullExternRef)),
-                    _ => Err(WasmtimeError::InvalidParameter { message: format!(
-                        "Unsupported reference type: {:?}", ref_type
-                    )}),
-                }
-            },
-        }
-    }
-
-    /// Convert Wasmtime struct fields to our field definitions
-    fn convert_wasmtime_struct_fields(struct_type: &wasmtime::StructType) -> WasmtimeResult<Vec<FieldDefinition>> {
-        let mut fields = Vec::new();
-
-        for (index, field_type) in struct_type.fields().enumerate() {
-            let field_def = FieldDefinition {
-                name: None, // Wasmtime doesn't provide field names in type info
-                field_type: Self::convert_wasmtime_field_type(&field_type)?,
-                mutable: field_type.mutability() == wasmtime::Mutability::Var,
-                index: index as u32,
-            };
-            fields.push(field_def);
-        }
-
-        Ok(fields)
-    }
-
-    /// Convert Wasmtime FieldType to our FieldType
-    fn convert_wasmtime_field_type(field_type: &wasmtime::FieldType) -> WasmtimeResult<FieldType> {
-        // Get the storage type from the field
-        let storage_type = field_type.element_type();
-
-        // Convert based on the storage type
-        match storage_type {
-            wasmtime::StorageType::I8 => Ok(FieldType::PackedI8),
-            wasmtime::StorageType::I16 => Ok(FieldType::PackedI16),
-            wasmtime::StorageType::ValType(val_type) => {
-                match val_type {
-                    wasmtime::ValType::I32 => Ok(FieldType::I32),
-                    wasmtime::ValType::I64 => Ok(FieldType::I64),
-                    wasmtime::ValType::F32 => Ok(FieldType::F32),
-                    wasmtime::ValType::F64 => Ok(FieldType::F64),
-                    wasmtime::ValType::V128 => Ok(FieldType::V128),
-                    wasmtime::ValType::Ref(ref_type) => {
-                        // Convert reference type
-                        let gc_ref_type = match ref_type.heap_type() {
-                            wasmtime::HeapType::Any => GcReferenceType::AnyRef,
-                            wasmtime::HeapType::Eq => GcReferenceType::EqRef,
-                            wasmtime::HeapType::I31 => GcReferenceType::I31Ref,
-                            wasmtime::HeapType::Struct => {
-                                // Generic struct reference without specific type definition
-                                // Use a placeholder struct definition
-                                GcReferenceType::StructRef(StructTypeDefinition {
-                                    type_id: 0,  // Unknown/generic type
-                                    name: Some("unknown_struct".to_string()),
-                                    fields: vec![],
-                                    supertype: None,
-                                })
-                            },
-                            wasmtime::HeapType::Array => {
-                                // Generic array reference without specific element type
-                                // Use a placeholder array definition
-                                GcReferenceType::ArrayRef(Box::new(ArrayTypeDefinition {
-                                    type_id: 0,  // Unknown/generic type
-                                    name: Some("unknown_array".to_string()),
-                                    element_type: FieldType::I32,  // Default element type
-                                    mutable: true,
-                                }))
-                            },
-                            _ => {
-                                // Other heap types (None, Func, Extern, Exn, Cont, etc.)
-                                // Fall back to AnyRef
-                                GcReferenceType::AnyRef
-                            }
-                        };
-                        Ok(FieldType::Reference(gc_ref_type))
-                    }
-                }
-            }
-        }
-    }
-
-    /// Convert a FieldType to a Wasmtime ValType with real GC type support
-    pub fn to_wasmtime_valtype(field_type: &FieldType) -> WasmtimeResult<ValType> {
-        match field_type {
-            FieldType::I32 => Ok(ValType::I32),
-            FieldType::I64 => Ok(ValType::I64),
-            FieldType::F32 => Ok(ValType::F32),
-            FieldType::F64 => Ok(ValType::F64),
-            FieldType::V128 => Ok(ValType::V128),
-            FieldType::V256 | FieldType::V512 => {
-                // V256 and V512 SIMD types not yet supported in Wasmtime's public API
-                // Map to V128 for now as a fallback
-                Ok(ValType::V128)
-            },
-            FieldType::PackedI8 | FieldType::PackedI16 => Ok(ValType::I32), // Packed types stored as i32
-            FieldType::Reference(ref_type) => {
-                let heap_type = match ref_type {
-                    GcReferenceType::AnyRef => HeapType::Any,
-                    GcReferenceType::EqRef => HeapType::Eq,
-                    GcReferenceType::I31Ref => HeapType::I31,
-                    GcReferenceType::ExternRef => HeapType::Extern,
-                    GcReferenceType::FuncRef => HeapType::Func,
-                    GcReferenceType::NullRef => HeapType::None,
-                    GcReferenceType::NullFuncRef => HeapType::NoFunc,
-                    GcReferenceType::NullExternRef => HeapType::NoExtern,
-                    GcReferenceType::StructRef(_) => {
-                        // In a real implementation, we would convert our struct definition
-                        // to a Wasmtime StructType and create the appropriate HeapType
-                        // For now, we fall back to Struct but this should be improved
-                        HeapType::Struct
-                    },
-                    GcReferenceType::ArrayRef(_) => {
-                        // In a real implementation, we would convert our array definition
-                        // to a Wasmtime ArrayType and create the appropriate HeapType
-                        // For now, we fall back to Array but this should be improved
-                        HeapType::Array
-                    },
-                };
-                Ok(ValType::Ref(RefType::new(true, heap_type)))
-            },
-        }
-    }
-
-    /// Create a Wasmtime StructType from our struct definition
-    pub fn create_wasmtime_struct_type(
-        engine: &wasmtime::Engine,
-        struct_def: &StructTypeDefinition
-    ) -> WasmtimeResult<wasmtime::StructType> {
-        let mut wasmtime_fields = Vec::new();
-
-        for field in &struct_def.fields {
-            let mutability = if field.mutable { wasmtime::Mutability::Var } else { wasmtime::Mutability::Const };
-            let wasmtime_field = match &field.field_type {
-                FieldType::PackedI8 => wasmtime::FieldType::new(mutability, wasmtime::StorageType::I8),
-                FieldType::PackedI16 => wasmtime::FieldType::new(mutability, wasmtime::StorageType::I16),
-                _ => {
-                    // For regular value types, convert to ValType and create field
-                    let val_type = Self::to_wasmtime_valtype(&field.field_type)?;
-                    wasmtime::FieldType::new(mutability, wasmtime::StorageType::ValType(val_type))
-                },
-            };
-            wasmtime_fields.push(wasmtime_field);
-        }
-
-        wasmtime::StructType::new(engine, wasmtime_fields.into_iter())
-            .map_err(|e| WasmtimeError::InvalidParameter { message: format!("Failed to create Wasmtime struct type: {}", e) })
-    }
-
-    /// Create a Wasmtime ArrayType from our array definition
-    pub fn create_wasmtime_array_type(
-        engine: &wasmtime::Engine,
-        array_def: &ArrayTypeDefinition
-    ) -> WasmtimeResult<wasmtime::ArrayType> {
-        let mutability = if array_def.mutable { wasmtime::Mutability::Var } else { wasmtime::Mutability::Const };
-        let wasmtime_field = match &array_def.element_type {
-            FieldType::PackedI8 => wasmtime::FieldType::new(mutability, wasmtime::StorageType::I8),
-            FieldType::PackedI16 => wasmtime::FieldType::new(mutability, wasmtime::StorageType::I16),
-            _ => {
-                // For regular value types, convert to ValType and create field
-                let val_type = Self::to_wasmtime_valtype(&array_def.element_type)?;
-                wasmtime::FieldType::new(mutability, wasmtime::StorageType::ValType(val_type))
-            },
-        };
-
-        // Simplified for current wasmtime API compatibility
-        Ok(wasmtime::ArrayType::new(engine, wasmtime_field))
-    }
-
-    /// Convert a GcValue to a Wasmtime Val with real GC object support
-    pub fn to_wasmtime_val(gc_value: &GcValue) -> WasmtimeResult<Val> {
-        match gc_value {
-            GcValue::I32(i) => Ok(Val::I32(*i)),
-            GcValue::I64(i) => Ok(Val::I64(*i)),
-            GcValue::F32(f) => Ok(Val::F32(f.to_bits())),
-            GcValue::F64(f) => Ok(Val::F64(f.to_bits())),
-            GcValue::V128(bytes) => {
-                let value = u128::from_le_bytes(*bytes);
-                Ok(Val::V128(wasmtime::V128::from(value)))
-            },
-            GcValue::V256(_) => {
-                Err(WasmtimeError::UnsupportedFeature {
-                    message: "V256 SIMD types are not supported by wasmtime Val".to_string()
-                })
-            },
-            GcValue::V512(_) => {
-                Err(WasmtimeError::UnsupportedFeature {
-                    message: "V512 SIMD types are not supported by wasmtime Val".to_string()
-                })
-            },
-            GcValue::Reference(obj_ref) => {
-                match obj_ref {
-                    Some(_gc_object) => {
-                        // In a real implementation, this would convert our GC object
-                        // to a Wasmtime AnyRef by looking up the corresponding
-                        // Wasmtime GC object. For now, we return null as a placeholder.
-                        // This should be integrated with the gc_operations module.
-                        Ok(Val::null_any_ref())
-                    },
-                    None => Ok(Val::null_any_ref()),
-                }
-            },
-            GcValue::Null => Ok(Val::null_any_ref()),
-        }
-    }
-
-    /// Convert a GcValue to a Wasmtime Val with store context for real GC references
-    pub fn to_wasmtime_val_with_store(
-        gc_value: &GcValue,
-        _store: &mut wasmtime::Store<()>
-    ) -> WasmtimeResult<Val> {
-        match gc_value {
-            GcValue::Reference(obj_ref) => {
-                match obj_ref {
-                    Some(_gc_object) => {
-                        // In a real implementation, this would use the store to create
-                        // or look up the corresponding Wasmtime GC reference
-                        // This requires integration with the actual GC operations
-                        Ok(Val::null_any_ref())
-                    },
-                    None => Ok(Val::null_any_ref()),
-                }
-            },
-            _ => Self::to_wasmtime_val(gc_value),
-        }
-    }
-
-    /// Convert a Wasmtime Val to a GcValue with real GC object support
-    pub fn from_wasmtime_val(val: &Val) -> WasmtimeResult<GcValue> {
-        match val {
-            Val::I32(i) => Ok(GcValue::I32(*i)),
-            Val::I64(i) => Ok(GcValue::I64(*i)),
-            Val::F32(f) => Ok(GcValue::F32(f32::from_bits(*f))),
-            Val::F64(f) => Ok(GcValue::F64(f64::from_bits(*f))),
-            Val::V128(v) => {
-                // Convert V128 to bytes using wasmtime API
-                let bytes = v.as_u128().to_le_bytes();
-                Ok(GcValue::V128(bytes))
-            },
-            Val::AnyRef(any_ref) => {
-                match any_ref {
-                    Some(_wasmtime_ref) => {
-                        // In a real implementation, this would convert the Wasmtime
-                        // GC reference back to our GC object representation
-                        // This requires coordination with the gc_operations module
-                        Ok(GcValue::Reference(None)) // Placeholder
-                    },
-                    None => Ok(GcValue::Null),
-                }
-            },
-            Val::FuncRef(_) => {
-                // Function references are not part of the GC object model
-                Ok(GcValue::Null)
-            },
-            Val::ExternRef(_) => {
-                // External references are treated as opaque GC references
-                Ok(GcValue::Reference(None)) // Placeholder for external ref conversion
-            },
-            Val::ExnRef(_) => {
-                // Exception references are treated as opaque GC references
-                Ok(GcValue::Reference(None)) // Placeholder for exception ref conversion
-            },
-            Val::ContRef(_) => {
-                // Continuation references are treated as opaque GC references
-                Ok(GcValue::Reference(None)) // Placeholder for continuation ref conversion
-            },
-        }
-    }
-
-    /// Convert a Wasmtime Val to a GcValue with store context for real GC references
-    pub fn from_wasmtime_val_with_store(
-        val: &Val,
-        _store: &wasmtime::Store<()>
-    ) -> WasmtimeResult<GcValue> {
-        match val {
-            Val::AnyRef(any_ref) => {
-                match any_ref {
-                    Some(_wasmtime_ref) => {
-                        // In a real implementation, this would use the store context
-                        // to properly convert Wasmtime GC references to our GC objects
-                        // This requires integration with the actual GC operations
-                        Ok(GcValue::Reference(None)) // Placeholder
-                    },
-                    None => Ok(GcValue::Null),
-                }
-            },
-            _ => Self::from_wasmtime_val(val),
-        }
     }
 }
 

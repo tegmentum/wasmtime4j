@@ -23,7 +23,7 @@ use std::sync::Arc;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::gc_types::{
     StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType,
-    GcValue, GcReferenceType, GcObject
+    GcValue, GcReferenceType
 };
 use crate::gc_heap::ObjectId;
 
@@ -1529,16 +1529,9 @@ impl WasmtimeGcOperations {
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
             },
-            GcValue::Reference(obj_ref) => {
-                // Convert object reference to Wasmtime AnyRef
-                match obj_ref {
-                    Some(_obj) => {
-                        // In a real implementation, this would map the object to a Wasmtime reference
-                        // For now, return null reference as placeholder
-                        Ok(Val::null_any_ref())
-                    },
-                    None => Ok(Val::null_any_ref()),
-                }
+            GcValue::Reference => {
+                // Reference types are handled through gc_operations, return null as placeholder
+                Ok(Val::null_any_ref())
             },
             GcValue::Null => Ok(Val::null_any_ref()),
         }
@@ -1606,16 +1599,9 @@ impl WasmtimeGcOperations {
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
             },
-            GcValue::Reference(obj_ref) => {
-                // Convert object reference to Wasmtime AnyRef
-                match obj_ref {
-                    Some(_obj) => {
-                        // In a real implementation, this would map the object to a Wasmtime reference
-                        // For now, return null reference as placeholder
-                        Ok(Val::null_any_ref())
-                    },
-                    None => Ok(Val::null_any_ref()),
-                }
+            GcValue::Reference => {
+                // Reference types are handled through gc_operations, return null as placeholder
+                Ok(Val::null_any_ref())
             },
             GcValue::Null => Ok(Val::null_any_ref()),
         }
@@ -1636,7 +1622,7 @@ impl WasmtimeGcOperations {
                 if let Some(_ref_val) = any_ref {
                     // Convert Wasmtime reference to our GC object
                     // In a real implementation, this would create proper object mapping
-                    Ok(GcValue::Reference(None))
+                    Ok(GcValue::Reference)
                 } else {
                     Ok(GcValue::Null)
                 }
