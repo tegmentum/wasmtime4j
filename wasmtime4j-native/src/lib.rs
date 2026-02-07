@@ -70,9 +70,6 @@ pub mod streaming_compiler;
 
 // Advanced threading optimizations and work-stealing refinements
 pub mod work_stealing;
-pub mod thread_affinity;
-pub mod lockfree_structures;
-pub mod sync_primitives;
 
 // Platform optimization integration tests (NUMA, cache, memory bandwidth)
 // DISABLED: Requires platform optimization modules (398 type definitions needed)
@@ -261,8 +258,6 @@ pub mod component;
 #[cfg(feature = "component-model")]
 pub mod component_core;
 #[cfg(feature = "component-model")]
-pub mod wit_interfaces;
-#[cfg(feature = "component-model")]
 pub mod version_types;
 #[cfg(feature = "component-model")]
 pub mod component_resources;
@@ -327,18 +322,6 @@ pub use serialization::{
 pub use work_stealing::{
     WorkStealingScheduler, WorkStealingConfig, WorkStealingTask, TaskId, TaskPriority,
     CpuAffinityHint, MemoryLocalityHint, WorkStealingStatistics, LoadBalancer, PerformanceMonitor
-};
-pub use thread_affinity::{
-    ThreadAffinityManager, AffinityConfig, CoreAssignment, ThreadPriority,
-    PerformanceHint, CoreAssignmentStrategy, PerformanceCounters
-};
-pub use lockfree_structures::{
-    LockFreeQueue, LockFreeHashTable, WaitFreeRingBuffer, AtomicRefCounter,
-    HazardPointerManager, MemoryOrderingOptimizer, AtomicBatch
-};
-pub use sync_primitives::{
-    AdvancedRwLock, AdvancedCondvar, AdvancedSemaphore, AdvancedBarrier,
-    FairnessPolicy, ThreadPriority as SyncThreadPriority, MemoryOrderingOptimizer as SyncMemoryOptimizer
 };
 
 // Optional re-exports based on features
@@ -422,12 +405,6 @@ pub use component::{
 #[cfg(feature = "component-model")]
 pub use component_core::{
     EnhancedComponentEngine, ComponentInstanceHandle, ComponentMetrics
-};
-
-#[cfg(feature = "component-model")]
-pub use wit_interfaces::{
-    WitInterfaceManager, WitInterface, WitMethod, WitParameter, WitType,
-    WitTypeKind, PrimitiveType, CompositeType, ValidationResult, ValidationStatus
 };
 
 #[cfg(feature = "component-model")]
