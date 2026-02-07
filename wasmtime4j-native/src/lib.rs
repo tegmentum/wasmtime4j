@@ -72,10 +72,7 @@ pub mod streaming_compiler;
 pub mod work_stealing;
 pub mod thread_affinity;
 pub mod lockfree_structures;
-pub mod adaptive_scaling;
 pub mod sync_primitives;
-pub mod memory_coordination;
-pub mod deadlock_prevention;
 
 // Platform optimization integration tests (NUMA, cache, memory bandwidth)
 // DISABLED: Requires platform optimization modules (398 type definitions needed)
@@ -196,17 +193,8 @@ pub mod experimental_features;
 // Advanced experimental features for cutting-edge capabilities
 pub mod advanced_experimental;
 
-// Security module for enterprise features
-pub mod security;
-
 // Sandbox module for advanced isolation
 pub mod sandbox;
-
-// Access control module for authorization
-pub mod access_control;
-
-// Audit module for compliance and logging
-pub mod audit;
 
 // Production-ready enterprise features
 pub mod pooling_allocator;
@@ -249,15 +237,6 @@ pub mod wasi_keyvalue_helpers;
 // Real networking operations
 pub mod networking;
 
-// Platform-specific optimizations for maximum performance
-pub mod platform_types;
-// REMOVED: Unused platform optimization modules
-// pub mod numa_topology;
-// pub mod cpu_cache_management;
-// pub mod memory_bandwidth_optimization;
-pub mod cpu_microarchitecture_detection;
-pub mod platform_config;
-
 // Enhanced filesystem operations
 pub mod filesystem;
 
@@ -287,8 +266,6 @@ pub mod wit_interfaces;
 pub mod version_types;
 #[cfg(feature = "component-model")]
 pub mod component_resources;
-#[cfg(feature = "component-model")]
-pub mod component_composition;
 #[cfg(feature = "component-model")]
 pub mod resource_dynamic;
 
@@ -359,16 +336,9 @@ pub use lockfree_structures::{
     LockFreeQueue, LockFreeHashTable, WaitFreeRingBuffer, AtomicRefCounter,
     HazardPointerManager, MemoryOrderingOptimizer, AtomicBatch
 };
-pub use adaptive_scaling::{
-    AdaptiveScalingManager, ScalingConfig, WorkloadPredictor, ScalingDecision, ScalingAction
-};
 pub use sync_primitives::{
     AdvancedRwLock, AdvancedCondvar, AdvancedSemaphore, AdvancedBarrier,
     FairnessPolicy, ThreadPriority as SyncThreadPriority, MemoryOrderingOptimizer as SyncMemoryOptimizer
-};
-pub use memory_coordination::{
-    MemoryCoordinator, CoordinatorConfig, SharedMemoryManager, ThreadSafeAllocator,
-    AtomicOperationManager, MemoryBarrierManager, GcCoordinator, MemoryAccessTracker
 };
 
 // Optional re-exports based on features
@@ -467,15 +437,6 @@ pub use version_types::{ComponentId, SemanticVersion, VersionConstraint};
 pub use component_resources::{
     ComponentResourceManager, ManagedResource, ResourceHandle, ResourcePermissions,
     ResourceState, AccessType, ResourceQuotas, UsageTracking
-};
-
-#[cfg(feature = "component-model")]
-pub use component_composition::{
-    ComponentCompositionManager, ComponentDependencyGraph, GraphNode, GraphEdge,
-    CompositionEngine, DependencyInjectionContainer, DependencyGraphAnalyzer,
-    ComponentHierarchyManager, RuntimeComposer, CompositionOptimizer,
-    CompositionSpecification, CompositionResult, ComposedApplication,
-    GraphAnalysisResult, OptimizationGoals, OptimizationResults
 };
 
 // Re-export WebAssembly GC types for garbage collection support
