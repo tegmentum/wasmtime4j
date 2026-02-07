@@ -1568,6 +1568,47 @@ mod tests {
         let _instance = Instance::new(&mut store, &module, &[])
             .expect("Failed to instantiate module with configured store");
     }
+
+    #[cfg(feature = "wasi-nn")]
+    #[test]
+    fn test_wasi_nn_context_setup() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Initially no wasi-nn context
+        assert!(!store.has_wasi_nn_context(), "Store should not have wasi-nn context initially");
+
+        // Set wasi-nn context
+        store.set_wasi_nn_context().expect("Failed to set wasi-nn context");
+
+        // Now should have context
+        assert!(store.has_wasi_nn_context(), "Store should have wasi-nn context after setting");
+
+        // List available backends
+        let backends = wasmtime_wasi_nn::backend::list();
+        println!("Available wasi-nn backends count: {}", backends.len());
+
+        // At minimum, we should be able to create the context
+        // The actual backends depend on what's installed (OpenVINO, ONNX, etc.)
+    }
+
+    #[cfg(feature = "wasi-nn")]
+    #[test]
+    fn test_wasi_nn_linker_integration() {
+        use crate::linker::Linker;
+
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Set wasi-nn context first
+        store.set_wasi_nn_context().expect("Failed to set wasi-nn context");
+
+        // Create linker and enable wasi-nn
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+        linker.enable_wasi_nn().expect("Failed to enable wasi-nn on linker");
+
+        println!("WASI-NN successfully integrated with linker");
+    }
 }
 
 //
