@@ -49,27 +49,11 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSet
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
- * Method:    nativeGrow
- * Signature: (JILjava/lang/Object;)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGrow
-  (JNIEnv *, jclass, jlong, jint, jobject);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeTableGrow
  * Signature: (JJIJ)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrow
   (JNIEnv *, jclass, jlong, jlong, jint, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
- * Method:    nativeFill
- * Signature: (JIILjava/lang/Object;)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeFill
-  (JNIEnv *, jclass, jlong, jint, jint, jobject);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable

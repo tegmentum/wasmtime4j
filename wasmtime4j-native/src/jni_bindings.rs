@@ -2180,51 +2180,107 @@ pub mod jni_function {
         }
     }
     
-    /// Call a function with int parameters (JNI version) - PLACEHOLDER
+    /// Call a function with int parameters (JNI version)
+    ///
+    /// NOTE: This method requires Java API changes to pass store_handle.
+    /// Currently throws UnsupportedOperationException.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallInt(
         mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
-        params: jintArray,
+        _params: jintArray,
     ) -> jint {
-        // Placeholder implementation - return 0
+        // Validate function pointer
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+                message: "function_ptr cannot be null".to_string(),
+            });
+            return 0;
+        }
+
+        // This method cannot be implemented without store context
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
+            message: "callInt requires store context; use call(WasmValue...) instead".to_string(),
+        });
         0
     }
-    
-    /// Call a function with long parameters (JNI version) - PLACEHOLDER
+
+    /// Call a function with long parameters (JNI version)
+    ///
+    /// NOTE: This method requires Java API changes to pass store_handle.
+    /// Currently throws UnsupportedOperationException.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallLong(
         mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
-        params: jlongArray,
+        _params: jlongArray,
     ) -> jlong {
-        // Placeholder implementation - return 0
+        // Validate function pointer
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+                message: "function_ptr cannot be null".to_string(),
+            });
+            return 0;
+        }
+
+        // This method cannot be implemented without store context
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
+            message: "callLong requires store context; use call(WasmValue...) instead".to_string(),
+        });
         0
     }
-    
-    /// Call a function with float parameters (JNI version) - PLACEHOLDER
+
+    /// Call a function with float parameters (JNI version)
+    ///
+    /// NOTE: This method requires Java API changes to pass store_handle.
+    /// Currently throws UnsupportedOperationException.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallFloat(
         mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
-        params: jfloatArray,
+        _params: jfloatArray,
     ) -> f32 {
-        // Placeholder implementation - return 0.0
+        // Validate function pointer
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+                message: "function_ptr cannot be null".to_string(),
+            });
+            return 0.0;
+        }
+
+        // This method cannot be implemented without store context
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
+            message: "callFloat requires store context; use call(WasmValue...) instead".to_string(),
+        });
         0.0
     }
-    
-    /// Call a function with double parameters (JNI version) - PLACEHOLDER
+
+    /// Call a function with double parameters (JNI version)
+    ///
+    /// NOTE: This method requires Java API changes to pass store_handle.
+    /// Currently throws UnsupportedOperationException.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallDouble(
         mut env: JNIEnv,
         _class: JClass,
         function_ptr: jlong,
-        params: jdoubleArray,
+        _params: jdoubleArray,
     ) -> f64 {
-        // Placeholder implementation - return 0.0
+        // Validate function pointer
+        if function_ptr == 0 {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+                message: "function_ptr cannot be null".to_string(),
+            });
+            return 0.0;
+        }
+
+        // This method cannot be implemented without store context
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
+            message: "callDouble requires store context; use call(WasmValue...) instead".to_string(),
+        });
         0.0
     }
     
@@ -7510,99 +7566,8 @@ pub mod jni_table {
     }
 
 
-    /// Grow table (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGrow(
-        mut env: JNIEnv,
-        _class: JClass,
-        table_ptr: jlong,
-        delta: jint,
-        _init: jobject,
-    ) -> jint {
-        jni_utils::jni_try_default(&env, -1, || {
-            if table_ptr == 0 {
-                log::error!("JNI Table.nativeGrow: null table handle provided");
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: "Table handle cannot be null. Ensure table is properly initialized before growing table.".to_string(),
-                });
-            }
-
-            if table_ptr < 0x1000 || table_ptr == -1 {
-                log::error!("JNI Table.nativeGrow: invalid table handle 0x{:x}", table_ptr);
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Invalid table handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.", 
-                        table_ptr
-                    ),
-                });
-            }
-
-            if delta < 0 {
-                log::error!("JNI Table.nativeGrow: negative delta {} provided", delta);
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Delta must be non-negative, got: {}", delta),
-                });
-            }
-
-            // DEPRECATED: This legacy stub returns a hardcoded value.
-            // Use nativeTableGrow() which accepts store context for real implementation.
-            let previous_size = 5;
-            log::warn!("JNI Table.nativeGrow: deprecated stub called - use nativeTableGrow instead");
-            Ok(previous_size)
-        })
-    }
-
-    /// Fill table range (JNI version)
-    #[no_mangle]
-    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeFill(
-        mut env: JNIEnv,
-        _class: JClass,
-        table_ptr: jlong,
-        start: jint,
-        count: jint,
-        _value: jobject,
-    ) -> jboolean {
-        match jni_utils::jni_try_default(&env, false, || {
-            if table_ptr == 0 {
-                log::error!("JNI Table.nativeFill: null table handle provided");
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: "Table handle cannot be null. Ensure table is properly initialized before filling table.".to_string(),
-                });
-            }
-
-            if table_ptr < 0x1000 || table_ptr == -1 {
-                log::error!("JNI Table.nativeFill: invalid table handle 0x{:x}", table_ptr);
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Invalid table handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.", 
-                        table_ptr
-                    ),
-                });
-            }
-
-            if start < 0 {
-                log::error!("JNI Table.nativeFill: negative start index {} provided", start);
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Start index must be non-negative, got: {}", start),
-                });
-            }
-
-            if count < 0 {
-                log::error!("JNI Table.nativeFill: negative count {} provided", count);
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Count must be non-negative, got: {}", count),
-                });
-            }
-
-            // DEPRECATED: This legacy stub returns success without action.
-            // Use nativeTableFill() which accepts store context for real implementation.
-            log::warn!("JNI Table.nativeFill: deprecated stub called - use nativeTableFill instead");
-            Ok(true)
-        }) {
-            true => 1,
-            false => 0,
-        }
-    }
+    // Note: Deprecated nativeGrow and nativeFill stubs were removed.
+    // Use nativeTableGrow() and nativeTableFill() which accept store context.
 
     /// Get table metadata (JNI version)
     #[no_mangle]
@@ -11253,86 +11218,80 @@ pub mod jni_simd {
         }
     }
 
-    /// SIMD load from memory (stub - needs wasmtime Memory integration)
+    /// SIMD load from memory
+    ///
+    /// NOTE: Requires Java API change to add store_handle parameter.
+    /// Memory read operations need store context access.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdLoad(
         mut env: JNIEnv,
         _class: JClass,
-        runtime_handle: jlong,
-        memory_handle: jlong,
-        offset: jint,
+        _runtime_handle: jlong,
+        _memory_handle: jlong,
+        _offset: jint,
     ) -> jbyteArray {
-        // BLOCKED: Requires Java API change to add store_handle parameter
-        // The Memory read operation needs store context access
-        // For now, return a zero vector
-        match env.new_byte_array(16) {
-            Ok(byte_array) => {
-                let data = vec![0i8; 16];
-                if env.set_byte_array_region(&byte_array, 0, &data).is_ok() {
-                    byte_array.into_raw()
-                } else {
-                    std::ptr::null_mut()
-                }
-            },
-            Err(_) => std::ptr::null_mut(),
-        }
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
+            message: "SIMD load requires store context; Java API update needed".to_string(),
+        });
+        std::ptr::null_mut()
     }
 
-    /// SIMD load aligned from memory (stub - needs wasmtime Memory integration)
+    /// SIMD load aligned from memory
+    ///
+    /// NOTE: Requires Java API change to add store_handle parameter.
+    /// Memory read operations need store context access.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdLoadAligned(
         mut env: JNIEnv,
         _class: JClass,
-        runtime_handle: jlong,
-        memory_handle: jlong,
-        offset: jint,
-        alignment: jint,
+        _runtime_handle: jlong,
+        _memory_handle: jlong,
+        _offset: jint,
+        _alignment: jint,
     ) -> jbyteArray {
-        // BLOCKED: Requires Java API change to add store_handle parameter
-        // The Memory read operation needs store context access
-        // For now, return a zero vector
-        match env.new_byte_array(16) {
-            Ok(byte_array) => {
-                let data = vec![0i8; 16];
-                if env.set_byte_array_region(&byte_array, 0, &data).is_ok() {
-                    byte_array.into_raw()
-                } else {
-                    std::ptr::null_mut()
-                }
-            },
-            Err(_) => std::ptr::null_mut(),
-        }
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
+            message: "SIMD aligned load requires store context; Java API update needed".to_string(),
+        });
+        std::ptr::null_mut()
     }
 
-    /// SIMD store to memory (stub - needs wasmtime Memory integration)
+    /// SIMD store to memory
+    ///
+    /// NOTE: Requires Java API change to add store_handle parameter.
+    /// Memory write operations need store context access.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdStore(
         mut env: JNIEnv,
         _class: JClass,
-        runtime_handle: jlong,
-        memory_handle: jlong,
-        offset: jint,
-        vector: JByteArray,
+        _runtime_handle: jlong,
+        _memory_handle: jlong,
+        _offset: jint,
+        _vector: JByteArray,
     ) -> jboolean {
-        // BLOCKED: Requires Java API change to add store_handle parameter
-        // The Memory write operation needs store context access
-        0 // false - operation not yet implemented
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
+            message: "SIMD store requires store context; Java API update needed".to_string(),
+        });
+        0
     }
 
-    /// SIMD store aligned to memory (stub - needs wasmtime Memory integration)
+    /// SIMD store aligned to memory
+    ///
+    /// NOTE: Requires Java API change to add store_handle parameter.
+    /// Memory write operations need store context access.
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSimdStoreAligned(
         mut env: JNIEnv,
         _class: JClass,
-        runtime_handle: jlong,
-        memory_handle: jlong,
-        offset: jint,
-        vector: JByteArray,
-        alignment: jint,
+        _runtime_handle: jlong,
+        _memory_handle: jlong,
+        _offset: jint,
+        _vector: JByteArray,
+        _alignment: jint,
     ) -> jboolean {
-        // BLOCKED: Requires Java API change to add store_handle parameter
-        // The Memory write operation needs store context access
-        0 // false - operation not yet implemented
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
+            message: "SIMD aligned store requires store context; Java API update needed".to_string(),
+        });
+        0
     }
 
     /// SIMD popcount - count set bits in each byte of the vector
@@ -12950,14 +12909,19 @@ pub mod jni_serializer {
 }
 
 /// JNI bindings for Debugger operations
+///
+/// NOTE: Wasmtime does not provide a built-in debugger API. These stubs provide
+/// minimal implementations that allow the Java Debugger API to function without
+/// crashing. Full debugging support would require integration with external
+/// debugging tools (e.g., LLDB, GDB) or DWARF parsing libraries.
 #[cfg(feature = "jni-bindings")]
+#[allow(dead_code)] // Stubs kept for JNI compatibility
 pub mod jni_debugger {
-    use crate::error::jni_utils;
     use jni::objects::{JClass, JObject};
     use jni::sys::{jboolean, jlong};
     use jni::JNIEnv;
 
-    /// Create a debugger for an engine
+    /// Create a debugger for an engine (stub - returns engine handle as debugger handle)
     #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCreateDebugger(
         mut env: JNIEnv,

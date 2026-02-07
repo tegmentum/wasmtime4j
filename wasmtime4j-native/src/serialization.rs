@@ -751,15 +751,20 @@ pub mod core {
         ))
     }
 
-    /// Core function to deserialize module (legacy - returns bytes, kept for compatibility)
+    /// Core function to deserialize module (legacy - deprecated)
+    ///
+    /// NOTE: This function is deprecated. Use `deserialize_module_to_wrapper` instead
+    /// which returns a proper Module wrapper. This function now returns an error
+    /// as returning input bytes was incorrect behavior.
+    #[deprecated(note = "Use deserialize_module_to_wrapper instead")]
     pub fn deserialize_module(
-        serializer: &mut ModuleSerializer,
-        engine: &Engine,
-        serialized_bytes: &[u8],
+        _serializer: &mut ModuleSerializer,
+        _engine: &Engine,
+        _serialized_bytes: &[u8],
     ) -> WasmtimeResult<Vec<u8>> {
-        let _module = serializer.deserialize(engine, serialized_bytes)?;
-        // Legacy stub - callers should use deserialize_module_to_wrapper instead
-        Ok(serialized_bytes.to_vec())
+        Err(WasmtimeError::UnsupportedFeature {
+            message: "deserialize_module is deprecated; use deserialize_module_to_wrapper instead".to_string(),
+        })
     }
 
     /// Core function to get cache info

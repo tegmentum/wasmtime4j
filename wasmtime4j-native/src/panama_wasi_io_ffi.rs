@@ -13,7 +13,7 @@
 use std::os::raw::{c_long, c_void};
 use std::slice;
 
-use crate::error::WasmtimeResult;
+use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::WasiContext;
 use crate::wasi_stream_ops::{
     read_from_stream_generic, skip_in_stream_generic, close_stream_generic,
@@ -119,15 +119,39 @@ fn check_pollable_ready(context: &WasiContext, pollable_id: u64) -> WasmtimeResu
     }
 }
 
-/// Block on a pollable (stub - just returns immediately)
+/// Block on a pollable
+///
+/// NOTE: Blocking pollables require an async runtime which is not currently
+/// configured. This function logs a warning and returns success for non-blocking
+/// streams, but returns an error for blocking operations that would actually block.
 #[inline]
-fn block_on_pollable(_context: &WasiContext, _pollable_id: u64, _timeout: Option<u64>) -> WasmtimeResult<()> {
-    Ok(())
+fn block_on_pollable(context: &WasiContext, pollable_id: u64, timeout: Option<u64>) -> WasmtimeResult<()> {
+    // Check if the stream is already ready
+    match check_pollable_ready(context, pollable_id) {
+        Ok(true) => Ok(()), // Stream is ready, no blocking needed
+        Ok(false) => {
+            // Stream is not ready, we would need to block
+            log::warn!("block_on_pollable: stream {} not ready, async runtime not configured", pollable_id);
+            if timeout.is_some() {
+                // With a timeout, we can return immediately as if it timed out
+                Ok(())
+            } else {
+                // Without a timeout, this would block forever - return error
+                Err(WasmtimeError::UnsupportedFeature {
+                    message: "Blocking pollable requires async runtime configuration".to_string(),
+                })
+            }
+        }
+        Err(e) => Err(e),
+    }
 }
 
-/// Close a pollable (no-op)
+/// Close a pollable
+///
+/// Currently a no-op since pollables are just stream IDs.
 #[inline]
 fn close_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
+    // No cleanup needed - pollable IDs are just stream references
     Ok(())
 }
 

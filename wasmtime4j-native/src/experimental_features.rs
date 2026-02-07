@@ -358,33 +358,106 @@ impl Default for FlexibleVectorsConfig {
 impl ExperimentalFeaturesConfig {
     /// Apply experimental features to Wasmtime Config
     ///
-    /// NOTE: This is a placeholder for future Wasmtime experimental features.
-    /// Currently no experimental features from this config are applied as
-    /// they are not yet supported by Wasmtime. The config types are retained
-    /// for API compatibility and future use.
+    /// Returns an error if any experimental feature is enabled, as these features
+    /// are not yet supported by the current Wasmtime integration. The config types
+    /// are retained for API compatibility and future use.
     pub fn apply_to_config(&self, _config: &mut Config) -> WasmtimeResult<()> {
-        // Experimental features are not yet implemented in Wasmtime
-        // Config validation is performed but no actual configuration is applied
+        // Check if any experimental features are enabled and return error
+        if self.stack_switching.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "stack_switching is not yet implemented".to_string(),
+            });
+        }
+        if self.call_cc.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "call_cc is not yet implemented".to_string(),
+            });
+        }
+        if self.extended_const_expressions.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "extended_const_expressions is not yet implemented".to_string(),
+            });
+        }
+        if self.memory64_extended.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "memory64_extended is not yet implemented".to_string(),
+            });
+        }
+        if self.custom_page_sizes.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "custom_page_sizes is not yet implemented".to_string(),
+            });
+        }
+        if self.shared_everything_threads.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "shared_everything_threads is not yet implemented".to_string(),
+            });
+        }
+        if self.type_imports.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "type_imports is not yet implemented".to_string(),
+            });
+        }
+        if self.string_imports.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "string_imports is not yet implemented".to_string(),
+            });
+        }
+        if self.resource_types.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "resource_types is not yet implemented".to_string(),
+            });
+        }
+        if self.interface_types.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "interface_types is not yet implemented".to_string(),
+            });
+        }
+        if self.flexible_vectors.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "flexible_vectors is not yet implemented".to_string(),
+            });
+        }
         Ok(())
     }
 
-    /// Validate stack switching configuration (placeholder - always succeeds)
+    /// Validate stack switching configuration
     pub fn validate_stack_switching_config(&self) -> WasmtimeResult<()> {
+        if self.stack_switching.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "stack_switching is not yet implemented".to_string(),
+            });
+        }
         Ok(())
     }
 
-    /// Validate call/cc configuration (placeholder - always succeeds)
+    /// Validate call/cc configuration
     pub fn validate_call_cc_config(&self) -> WasmtimeResult<()> {
+        if self.call_cc.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "call_cc is not yet implemented".to_string(),
+            });
+        }
         Ok(())
     }
 
-    /// Validate custom page sizes configuration (placeholder - always succeeds)
+    /// Validate custom page sizes configuration
     pub fn validate_custom_page_sizes_config(&self) -> WasmtimeResult<()> {
+        if self.custom_page_sizes.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "custom_page_sizes is not yet implemented".to_string(),
+            });
+        }
         Ok(())
     }
 
-    /// Validate shared-everything threads configuration (placeholder - always succeeds)
+    /// Validate shared-everything threads configuration
     pub fn validate_shared_everything_threads_config(&self) -> WasmtimeResult<()> {
+        if self.shared_everything_threads.enabled {
+            return Err(WasmtimeError::UnsupportedFeature {
+                message: "shared_everything_threads is not yet implemented".to_string(),
+            });
+        }
         Ok(())
     }
 
@@ -669,11 +742,20 @@ mod tests {
     }
 
     #[test]
-    fn test_wasmtime_config_application() {
+    fn test_wasmtime_config_application_with_experimental_features_returns_error() {
         let config = ExperimentalFeaturesConfig::all_experimental_enabled();
         let mut wasmtime_config = crate::engine::safe_wasmtime_config();
 
-        // Should not error even if features aren't supported yet
+        // All experimental features are not yet implemented, so should error
+        assert!(config.apply_to_config(&mut wasmtime_config).is_err());
+    }
+
+    #[test]
+    fn test_wasmtime_config_application_with_default_config_succeeds() {
+        let config = ExperimentalFeaturesConfig::default();
+        let mut wasmtime_config = crate::engine::safe_wasmtime_config();
+
+        // Default config has no experimental features enabled, should succeed
         assert!(config.apply_to_config(&mut wasmtime_config).is_ok());
     }
 }

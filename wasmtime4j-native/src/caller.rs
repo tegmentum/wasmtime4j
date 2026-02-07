@@ -137,10 +137,8 @@ impl CallerContext {
     }
 
     /// Get export value by name and type
-    pub fn get_export_value(&self, _name: &str, _caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>) -> WasmtimeResult<Option<Extern>> {
-        // Note: Direct instance access not available in this Wasmtime version
-        // Return None as placeholder - functionality would need to be implemented differently
-        Ok(None)
+    pub fn get_export_value(&self, name: &str, caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>) -> WasmtimeResult<Option<Extern>> {
+        Ok(caller.get_export(name))
     }
 
     /// Get store data associated with this caller
@@ -224,14 +222,9 @@ impl CallerContext {
 
     /// Validate caller context integrity
     pub fn validate(&self) -> WasmtimeResult<()> {
-        // Basic validation
-        if self.exports.is_empty() {
-            return Err(WasmtimeError::CallerContextError { message:
-                "No exports available in caller context".to_string()
-            });
-        }
-
-        // Validate export consistency
+        // Validate cached export consistency (if any)
+        // Note: The exports list may be empty since get_export_value() now
+        // accesses the caller directly rather than using cached exports
         for export in &self.exports {
             if export.name.is_empty() {
                 return Err(WasmtimeError::CallerContextError { message:

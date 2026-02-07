@@ -471,15 +471,7 @@ public final class JniTable extends JniResource implements WasmTable {
   private static native boolean nativeSet(
       long tableHandle, long storeHandle, int index, Object value);
 
-  /**
-   * Grows a table by the specified number of elements.
-   *
-   * @param tableHandle the native table handle
-   * @param delta the number of elements to add
-   * @param init the initial value for new elements
-   * @return the previous size or -1 on failure
-   */
-  private static native int nativeGrow(long tableHandle, int delta, Object init);
+  // Note: Deprecated nativeGrow was removed - use nativeTableGrow instead
 
   /**
    * Grows a table by the specified number of elements (with store context).
@@ -493,16 +485,7 @@ public final class JniTable extends JniResource implements WasmTable {
   private static native long nativeTableGrow(
       long tableHandle, long storeHandle, int delta, long initValue);
 
-  /**
-   * Fills a range of a table with the specified value.
-   *
-   * @param tableHandle the native table handle
-   * @param start the starting index
-   * @param count the number of elements to fill
-   * @param value the value to fill with
-   * @return true on success, false on failure
-   */
-  private static native boolean nativeFill(long tableHandle, int start, int count, Object value);
+  // Note: Deprecated nativeFill was removed - use nativeTableFill instead
 
   /**
    * Fills a range of a table with the specified value (with store context).

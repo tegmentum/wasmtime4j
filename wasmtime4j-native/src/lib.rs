@@ -27,7 +27,7 @@
 
 #![allow(missing_docs)] // Large codebase - docs added incrementally
 #![allow(unused_imports)] // Reduced 62% (116→44); remaining are platform/test-specific
-#![allow(dead_code)] // Infrastructure used in integration tests
+// Note: dead_code warnings addressed file-by-file; removed blanket suppression
 #![allow(unused_mut)] // Required: JNI env parameters need mut for API calls
 #![allow(non_snake_case)] // Required: JNI functions follow Java naming conventions
 #![allow(private_interfaces)] // Required: FFI functions expose private types in signatures
