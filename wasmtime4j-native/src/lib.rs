@@ -345,8 +345,8 @@ pub use gc_types::{
     GcObject, GcValue, GcTypeRegistry, GcTypeConverter
 };
 pub use gc_heap::{
-    GcHeap, GcHeapConfig, GcHeapStats, GcObjectEntry, ObjectId, Generation,
-    GcCollectionResult, GcWeakReference
+    GcHeap, GcHeapConfig, GcHeapStats, ObjectId,
+    GcCollectionResult, GcWeakReference, CollectionTrigger
 };
 
 // Re-export shared FFI utilities for interface implementations

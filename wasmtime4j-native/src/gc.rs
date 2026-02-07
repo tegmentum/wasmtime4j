@@ -964,8 +964,13 @@ impl WasmGcRuntime {
     pub fn ref_as_non_null(&self, object_id: Option<ObjectId>) -> RefOperationResult {
         match object_id {
             Some(id) => {
-                match self.heap.get_object(id) {
-                    Ok(_) => RefOperationResult {
+                // Check if object exists in our gc_objects map
+                let exists = self.gc_objects.read()
+                    .map(|objects| objects.contains_key(&id))
+                    .unwrap_or(false);
+
+                if exists {
+                    RefOperationResult {
                         success: true,
                         cast_result: Some(id),
                         test_result: None,
@@ -973,16 +978,17 @@ impl WasmGcRuntime {
                         is_null: Some(false),
                         value: None,
                         error: None,
-                    },
-                    Err(e) => RefOperationResult {
+                    }
+                } else {
+                    RefOperationResult {
                         success: false,
                         cast_result: None,
                         test_result: None,
                         eq_result: None,
                         is_null: None,
-                value: None,
-                        error: Some(e.to_string()),
-                    },
+                        value: None,
+                        error: Some(format!("Object {} not found", id)),
+                    }
                 }
             },
             None => RefOperationResult {
@@ -1189,9 +1195,8 @@ impl WasmGcRuntime {
         }
         drop(gc_objects);
 
-        // Create weak reference using the heap (which has weak_references enabled by default)
-        // Note: The heap may not have this object, so we construct the weak reference directly
-        Ok(GcWeakReference::new(object_id, self.heap.clone()))
+        // Create weak reference using the heap
+        self.heap.create_weak_reference(object_id)
     }
 
     // === Advanced GC Features ===
