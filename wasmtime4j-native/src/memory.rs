@@ -3662,48 +3662,51 @@ mod tests {
 
     #[test]
     fn test_handle_registry_diagnostics() {
+        // Note: Handle registry is global and shared across parallel tests.
+        // We focus on verifying our handles work correctly rather than
+        // asserting exact counts which can race with other tests.
+
         let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
-        
-        // Get initial state
-        let (initial_handles, _initial_accesses) = core::get_memory_handle_diagnostics()
-            .expect("Failed to get initial diagnostics");
-        
+
         // Create some memory handles
         let memory1 = Memory::new(&mut store, 1).expect("Failed to create memory 1");
         let memory2 = Memory::new(&mut store, 1).expect("Failed to create memory 2");
-        
+
         let validated_ptr1 = core::create_validated_memory(memory1).expect("Failed to create validated memory 1");
         let validated_ptr2 = core::create_validated_memory(memory2).expect("Failed to create validated memory 2");
-        
-        // Check handle count increased (use >= because parallel tests may add handles concurrently)
-        let (current_handles, _current_accesses) = core::get_memory_handle_diagnostics()
-            .expect("Failed to get current diagnostics");
-        assert!(current_handles >= initial_handles + 2,
-            "Expected at least {} handles, got {}", initial_handles + 2, current_handles);
-        
-        // Access the memories to increase access counter
+
+        // Verify handles are valid and accessible
+        assert!(!validated_ptr1.is_null(), "validated_ptr1 should not be null");
+        assert!(!validated_ptr2.is_null(), "validated_ptr2 should not be null");
+
+        // Access the memories to verify they work
         unsafe {
-            let _mem1 = core::get_memory_ref(validated_ptr1 as *const std::os::raw::c_void);
-            let _mem2 = core::get_memory_ref(validated_ptr2 as *const std::os::raw::c_void);
+            let mem1 = core::get_memory_ref(validated_ptr1 as *const std::os::raw::c_void);
+            let mem2 = core::get_memory_ref(validated_ptr2 as *const std::os::raw::c_void);
+            assert!(mem1.is_ok(), "Should be able to access memory 1");
+            assert!(mem2.is_ok(), "Should be able to access memory 2");
         }
-        
-        let (_final_handles, final_accesses) = core::get_memory_handle_diagnostics()
-            .expect("Failed to get final diagnostics");
-        assert!(final_accesses >= 2); // At least 2 accesses
-        
-        // Cleanup
+
+        // Verify diagnostics function works (just check it returns valid data)
+        let (handle_count, access_count) = core::get_memory_handle_diagnostics()
+            .expect("Failed to get diagnostics");
+        assert!(handle_count >= 2, "Should have at least our 2 handles, got {}", handle_count);
+        assert!(access_count >= 2, "Should have at least our 2 accesses, got {}", access_count);
+
+        // Cleanup our handles
         unsafe {
             core::destroy_memory(validated_ptr1 as *mut std::os::raw::c_void);
             core::destroy_memory(validated_ptr2 as *mut std::os::raw::c_void);
         }
 
-        // Check handle count decreased after cleanup
-        // (parallel tests may add/remove handles concurrently, so use lenient check)
-        let (cleanup_handles, _cleanup_accesses) = core::get_memory_handle_diagnostics()
-            .expect("Failed to get cleanup diagnostics");
-        assert!(cleanup_handles < current_handles,
-            "Expected fewer handles after cleanup (was {}, now {})", current_handles, cleanup_handles);
+        // Verify our handles are no longer accessible after cleanup
+        unsafe {
+            let mem1_after = core::get_memory_ref(validated_ptr1 as *const std::os::raw::c_void);
+            let mem2_after = core::get_memory_ref(validated_ptr2 as *const std::os::raw::c_void);
+            assert!(mem1_after.is_err(), "Memory 1 should be destroyed");
+            assert!(mem2_after.is_err(), "Memory 2 should be destroyed");
+        }
     }
 
     #[test]
