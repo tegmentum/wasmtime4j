@@ -319,4 +319,157 @@ class WitTupleTest {
       assertEquals(3, tuple.size(), "Should create tuple with all elements");
     }
   }
+
+  @Nested
+  @DisplayName("Mutation Killing Tests")
+  class MutationKillingTests {
+
+    @Test
+    @DisplayName("isEmpty must return true for empty and false for non-empty")
+    void isEmptyMutationTest() {
+      // Empty tuple must return true for isEmpty()
+      final WitTuple emptyTuple = WitTuple.empty();
+      assertTrue(emptyTuple.isEmpty(), "isEmpty() on empty tuple must return exactly true");
+      assertFalse(!emptyTuple.isEmpty(), "isEmpty() result must be true, not false");
+
+      // Non-empty tuple must return false for isEmpty()
+      final WitTuple nonEmpty = WitTuple.of(WitS32.of(1));
+      assertFalse(nonEmpty.isEmpty(), "isEmpty() on non-empty tuple must return exactly false");
+      assertTrue(!nonEmpty.isEmpty(), "isEmpty() result must be false, not true");
+    }
+
+    @Test
+    @DisplayName("size must return exact count - 0, 1, and multiple")
+    void sizeMutationTest() {
+      // Empty tuple: size must be exactly 0
+      final WitTuple empty = WitTuple.empty();
+      assertEquals(0, empty.size(), "Empty tuple size must be exactly 0");
+      assertTrue(empty.size() == 0, "Empty tuple size == 0 must be true");
+      assertFalse(empty.size() != 0, "Empty tuple size != 0 must be false");
+
+      // One element: size must be exactly 1
+      final WitTuple one = WitTuple.of(WitS32.of(1));
+      assertEquals(1, one.size(), "One element size must be exactly 1");
+      assertTrue(one.size() == 1, "One element size == 1 must be true");
+      assertFalse(one.size() == 0, "One element size == 0 must be false");
+
+      // Three elements: size must be exactly 3
+      final WitTuple three = WitTuple.of(WitS32.of(1), WitS32.of(2), WitS32.of(3));
+      assertEquals(3, three.size(), "Three elements size must be exactly 3");
+      assertTrue(three.size() == 3, "Three elements size == 3 must be true");
+    }
+
+    @Test
+    @DisplayName("get must return correct element for each index")
+    void getIndexMutationTest() {
+      final WitTuple tuple = WitTuple.of(WitS32.of(42), WitS32.of(99), WitS32.of(7));
+
+      // Index 0 must return first element exactly
+      assertEquals(WitS32.of(42), tuple.get(0), "get(0) must return first element");
+      assertNotEquals(WitS32.of(99), tuple.get(0), "get(0) must not return second element");
+
+      // Index 1 must return second element exactly
+      assertEquals(WitS32.of(99), tuple.get(1), "get(1) must return second element");
+
+      // Index 2 must return third element exactly
+      assertEquals(WitS32.of(7), tuple.get(2), "get(2) must return third element");
+    }
+
+    @Test
+    @DisplayName("toJava must return list with correct values")
+    void toJavaMutationTest() {
+      final WitTuple tuple = WitTuple.of(WitS32.of(10), WitS32.of(20), WitS32.of(30));
+
+      final List<Object> javaList = tuple.toJava();
+      assertEquals(3, javaList.size(), "toJava list must have same size");
+      assertEquals(10, javaList.get(0), "toJava list[0] must be 10");
+      assertEquals(20, javaList.get(1), "toJava list[1] must be 20");
+      assertEquals(30, javaList.get(2), "toJava list[2] must be 30");
+    }
+
+    @Test
+    @DisplayName("builder must reject null element and type")
+    void builderValidationMutationTest() {
+      // Builder with null element must throw
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitTuple.builder().add(null),
+          "Builder.add(null) must throw IllegalArgumentException");
+
+      // Builder with null type must throw
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitTuple.builder().add(null, WitS32.of(1)),
+          "Builder.add(null type) must throw IllegalArgumentException");
+
+      // Builder with null element for explicit type must throw
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitTuple.builder().add(WitType.createS32(), null),
+          "Builder.add(type, null) must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("equals must handle edge cases correctly")
+    void equalsMutationTest() {
+      final WitTuple tuple = WitTuple.of(WitS32.of(1));
+
+      // Reflexive - same object
+      assertTrue(tuple.equals(tuple), "equals(self) must return true");
+
+      // Null comparison
+      assertFalse(tuple.equals(null), "equals(null) must return false");
+
+      // Different type
+      assertFalse(tuple.equals("tuple"), "equals(String) must return false");
+      assertFalse(tuple.equals(42), "equals(Integer) must return false");
+
+      // Empty vs non-empty
+      final WitTuple empty = WitTuple.empty();
+      assertFalse(tuple.equals(empty), "non-empty.equals(empty) must return false");
+      assertFalse(empty.equals(tuple), "empty.equals(non-empty) must return false");
+
+      // Different element count
+      final WitTuple two = WitTuple.of(WitS32.of(1), WitS32.of(2));
+      assertFalse(tuple.equals(two), "size-1.equals(size-2) must return false");
+    }
+
+    @Test
+    @DisplayName("getElementTypes must return types matching elements")
+    void getElementTypesMutationTest() {
+      final WitTuple tuple = WitTuple.of(WitS32.of(1), WitS64.of(2L));
+
+      final List<WitType> types = tuple.getElementTypes();
+      assertEquals(2, types.size(), "getElementTypes must have same count as elements");
+      assertEquals(tuple.get(0).getType(), types.get(0), "Type at 0 must match element type");
+      assertEquals(tuple.get(1).getType(), types.get(1), "Type at 1 must match element type");
+    }
+
+    @Test
+    @DisplayName("getTypeAt must return correct type for each index")
+    void getTypeAtMutationTest() {
+      final WitTuple tuple = WitTuple.of(WitS32.of(1), WitS64.of(2L), WitBool.TRUE);
+
+      assertEquals(WitType.createS32(), tuple.getTypeAt(0), "getTypeAt(0) must return S32 type");
+      assertEquals(WitType.createS64(), tuple.getTypeAt(1), "getTypeAt(1) must return S64 type");
+      assertEquals(WitType.createBool(), tuple.getTypeAt(2), "getTypeAt(2) must return Bool type");
+    }
+
+    @Test
+    @DisplayName("empty tuple from factory vs builder must produce equivalent results")
+    void emptyTupleMutationTest() {
+      // empty() factory method
+      final WitTuple empty1 = WitTuple.empty();
+      assertTrue(empty1.isEmpty(), "empty() tuple isEmpty must be true");
+      assertEquals(0, empty1.size(), "empty() tuple size must be 0");
+
+      // builder().build() with no elements
+      final WitTuple empty2 = WitTuple.builder().build();
+      assertTrue(empty2.isEmpty(), "builder().build() tuple isEmpty must be true");
+      assertEquals(0, empty2.size(), "builder().build() tuple size must be 0");
+
+      // Both should be equal
+      assertEquals(empty1, empty2, "Empty tuples from factory and builder must be equal");
+    }
+  }
 }

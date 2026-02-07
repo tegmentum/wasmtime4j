@@ -245,4 +245,142 @@ class WitVariantTest {
       assertNotNull(variant.getType(), "Should have WitType");
     }
   }
+
+  @Nested
+  @DisplayName("Mutation Killing Tests")
+  class MutationKillingTests {
+
+    @Test
+    @DisplayName("hasPayload must return true for payload and false for no payload")
+    void hasPayloadMutationTest() {
+      final WitType vt = createVariantType();
+
+      // Variant with payload must return true for hasPayload()
+      final WitVariant withPayload = WitVariant.of(vt, "success", WitS32.of(42));
+      assertTrue(withPayload.hasPayload(), "hasPayload() with payload must return exactly true");
+      assertFalse(!withPayload.hasPayload(), "hasPayload() result must be true, not false");
+
+      // Variant without payload must return false for hasPayload()
+      final WitVariant noPayload = WitVariant.of(vt, "pending");
+      assertFalse(noPayload.hasPayload(), "hasPayload() without payload must return exactly false");
+      assertTrue(!noPayload.hasPayload(), "hasPayload() result must be false, not true");
+    }
+
+    @Test
+    @DisplayName("getPayload must return correct Optional state")
+    void getPayloadMutationTest() {
+      final WitType vt = createVariantType();
+
+      // Variant with payload getPayload() must return present Optional
+      final WitVariant withPayload = WitVariant.of(vt, "success", WitS32.of(42));
+      assertTrue(withPayload.getPayload().isPresent(), "getPayload() with payload must be present");
+      assertEquals(
+          WitS32.of(42),
+          withPayload.getPayload().get(),
+          "getPayload() must contain correct value");
+
+      // Variant without payload getPayload() must return empty Optional
+      final WitVariant noPayload = WitVariant.of(vt, "pending");
+      assertFalse(noPayload.getPayload().isPresent(), "getPayload() without payload must be empty");
+      assertTrue(noPayload.getPayload().isEmpty(), "getPayload() must be empty for no-payload case");
+    }
+
+    @Test
+    @DisplayName("getCaseName must return exact case name")
+    void getCaseNameMutationTest() {
+      final WitType vt = createVariantType();
+
+      final WitVariant success = WitVariant.of(vt, "success", WitS32.of(1));
+      assertEquals("success", success.getCaseName(), "getCaseName() must return 'success'");
+      assertNotEquals("error", success.getCaseName(), "getCaseName() must not return other case");
+      assertNotEquals("pending", success.getCaseName(), "getCaseName() must not return other case");
+
+      final WitVariant pending = WitVariant.of(vt, "pending");
+      assertEquals("pending", pending.getCaseName(), "getCaseName() must return 'pending'");
+    }
+
+    @Test
+    @DisplayName("toJava must return map with correct structure")
+    void toJavaMutationTest() {
+      final WitType vt = createVariantType();
+
+      // Variant with payload
+      final WitVariant withPayload = WitVariant.of(vt, "success", WitS32.of(42));
+      final Object javaValue = withPayload.toJava();
+      assertTrue(javaValue instanceof Map, "toJava must return Map");
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> mapWithPayload = (Map<String, Object>) javaValue;
+      assertEquals("success", mapWithPayload.get("case"), "toJava case key must be 'success'");
+      assertEquals(42, mapWithPayload.get("payload"), "toJava payload key must be 42");
+
+      // Variant without payload
+      final WitVariant noPayload = WitVariant.of(vt, "pending");
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> mapNoPayload = (Map<String, Object>) noPayload.toJava();
+      assertEquals("pending", mapNoPayload.get("case"), "toJava case key must be 'pending'");
+      assertFalse(mapNoPayload.containsKey("payload"), "toJava must not have payload key");
+    }
+
+    @Test
+    @DisplayName("validation must reject invalid case names")
+    void validationInvalidCaseMutationTest() {
+      final WitType vt = createVariantType();
+
+      // Non-existent case must throw
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitVariant.of(vt, "unknown"),
+          "Unknown case name must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("validation must reject payload when case doesn't expect one")
+    void validationUnexpectedPayloadMutationTest() {
+      final WitType vt = createVariantType();
+
+      // pending case with payload must throw
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitVariant.of(vt, "pending", WitS32.of(1)),
+          "Payload for no-payload case must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("validation must reject type mismatch in payload")
+    void validationTypeMismatchMutationTest() {
+      final WitType vt = createVariantType();
+
+      // success expects S32, providing String must throw
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitVariant.of(vt, "success", WitString.of("wrong")),
+          "Wrong payload type must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("equals must handle edge cases correctly")
+    void equalsMutationTest() {
+      final WitType vt = createVariantType();
+      final WitVariant variant = WitVariant.of(vt, "success", WitS32.of(42));
+
+      // Reflexive - same object
+      assertTrue(variant.equals(variant), "equals(self) must return true");
+
+      // Null comparison
+      assertFalse(variant.equals(null), "equals(null) must return false");
+
+      // Different type
+      assertFalse(variant.equals("variant"), "equals(String) must return false");
+      assertFalse(variant.equals(42), "equals(Integer) must return false");
+
+      // Different case
+      final WitVariant pending = WitVariant.of(vt, "pending");
+      assertFalse(variant.equals(pending), "success.equals(pending) must return false");
+      assertFalse(pending.equals(variant), "pending.equals(success) must return false");
+
+      // Same case, different payload
+      final WitVariant different = WitVariant.of(vt, "success", WitS32.of(99));
+      assertFalse(variant.equals(different), "Different payload must not be equal");
+    }
+  }
 }
