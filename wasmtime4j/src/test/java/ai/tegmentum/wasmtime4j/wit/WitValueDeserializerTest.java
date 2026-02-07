@@ -1101,4 +1101,378 @@ final class WitValueDeserializerTest {
         0.001f,
         "Round-trip should preserve value");
   }
+
+  // ==================== List Deserialization Boundary Tests ====================
+
+  @Test
+  @DisplayName("Deserialize list with exactly 4 bytes (minimum for count) should work if count is 0")
+  void testDeserializeListExactlyMinimumBytesForCount() {
+    // 4 bytes for count, but count=0 is not allowed (can't infer type from empty list)
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0); // count = 0
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(11, data),
+            "Empty list should throw exception");
+
+    assertTrue(
+        exception.getMessage().contains("Cannot infer list element type"),
+        "Exception should mention empty list: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize list with 3 bytes (less than minimum) should fail")
+  void testDeserializeListLessThanMinimumBytes() {
+    final byte[] data = new byte[3]; // Less than 4 bytes needed for count
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(11, data),
+            "Should throw for insufficient bytes");
+
+    assertTrue(
+        exception.getMessage().contains("too short"),
+        "Exception should mention data too short: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize list with negative element count should fail")
+  void testDeserializeListNegativeElementCount() {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(-1); // negative count
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(11, data),
+            "Negative count should throw exception");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid element count"),
+        "Exception should mention invalid count: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize list with one element but truncated header should fail")
+  void testDeserializeListTruncatedElementHeader() {
+    // count=1, but only 7 bytes remaining (needs 8 for discriminator + length)
+    final ByteBuffer buffer = ByteBuffer.allocate(11).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // count = 1
+    buffer.putInt(1); // partial discriminator + something
+    buffer.put((byte) 0);
+    buffer.put((byte) 0);
+    buffer.put((byte) 0);
+    // Missing last byte of the element header
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(11, data),
+            "Should throw for truncated element header");
+
+    assertTrue(
+        exception.getMessage().contains("truncated"),
+        "Exception should mention truncation: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize list with exactly 8 bytes remaining for element header should work")
+  void testDeserializeListExactlyEnoughForElementHeader() throws WitValueException {
+    // count=1, discriminator=1 (bool), length=1, data=1 (true)
+    final ByteBuffer buffer = ByteBuffer.allocate(13).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // count = 1
+    buffer.putInt(1); // discriminator = bool
+    buffer.putInt(1); // length = 1
+    buffer.put((byte) 1); // bool true
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(11, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitList.class, result, "Result should be WitList");
+  }
+
+  @Test
+  @DisplayName("Deserialize list with negative element length should fail")
+  void testDeserializeListNegativeElementLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // count = 1
+    buffer.putInt(1); // discriminator = bool
+    buffer.putInt(-1); // negative length
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(11, data),
+            "Negative length should throw exception");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid element data length"),
+        "Exception should mention invalid length: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize list with element data truncated should fail")
+  void testDeserializeListElementDataTruncated() {
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // count = 1
+    buffer.putInt(1); // discriminator = bool
+    buffer.putInt(5); // length = 5 (but no data follows)
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(11, data),
+            "Truncated element data should throw exception");
+
+    assertTrue(
+        exception.getMessage().contains("truncated"),
+        "Exception should mention truncation: " + exception.getMessage());
+  }
+
+  // ==================== Own Deserialization Boundary Tests ====================
+
+  @Test
+  @DisplayName("Deserialize own with exactly 8 bytes (minimum) should work with empty type name")
+  void testDeserializeOwnExactlyMinimumBytes() throws WitValueException {
+    // type_length=0, index=42
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0); // type name length = 0
+    buffer.putInt(42); // index = 42
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(22, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitOwn.class, result, "Result should be WitOwn");
+    assertEquals(42, ((WitOwn) result).getIndex(), "Index should be 42");
+  }
+
+  @Test
+  @DisplayName("Deserialize own with 7 bytes (less than minimum) should fail")
+  void testDeserializeOwnLessThanMinimumBytes() {
+    final byte[] data = new byte[7]; // Less than 8 bytes needed
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(22, data),
+            "Should throw for insufficient bytes");
+
+    assertTrue(
+        exception.getMessage().contains("too short"),
+        "Exception should mention data too short: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize own with negative type name length should fail")
+  void testDeserializeOwnNegativeTypeNameLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(-1); // negative type name length
+    buffer.putInt(42); // index
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(22, data),
+            "Negative type name length should throw exception");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid resource type name length"),
+        "Exception should mention invalid length: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize own with truncated type name should fail")
+  void testDeserializeOwnTruncatedTypeName() {
+    // type_length=10, but only 3 bytes of type name + index available
+    final ByteBuffer buffer = ByteBuffer.allocate(11).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(10); // type name length = 10
+    buffer.put("abc".getBytes(StandardCharsets.UTF_8)); // only 3 bytes
+    buffer.putInt(42); // index (would overwrite if we had enough space)
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(22, data),
+            "Truncated type name should throw exception");
+
+    assertTrue(
+        exception.getMessage().contains("truncated"),
+        "Exception should mention truncation: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize own with valid type name and index")
+  void testDeserializeOwnWithTypeName() throws WitValueException {
+    final String typeName = "myresource";
+    final byte[] typeNameBytes = typeName.getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + typeNameBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(typeNameBytes.length);
+    buffer.put(typeNameBytes);
+    buffer.putInt(123);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(22, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitOwn.class, result, "Result should be WitOwn");
+    assertEquals(typeName, ((WitOwn) result).getResourceType(), "Type name should match");
+    assertEquals(123, ((WitOwn) result).getIndex(), "Index should be 123");
+  }
+
+  // ==================== Borrow Deserialization Boundary Tests ====================
+
+  @Test
+  @DisplayName("Deserialize borrow with exactly 8 bytes (minimum) should work with empty type name")
+  void testDeserializeBorrowExactlyMinimumBytes() throws WitValueException {
+    // type_length=0, index=99
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0); // type name length = 0
+    buffer.putInt(99); // index = 99
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(23, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitBorrow.class, result, "Result should be WitBorrow");
+    assertEquals(99, ((WitBorrow) result).getIndex(), "Index should be 99");
+  }
+
+  @Test
+  @DisplayName("Deserialize borrow with 7 bytes (less than minimum) should fail")
+  void testDeserializeBorrowLessThanMinimumBytes() {
+    final byte[] data = new byte[7]; // Less than 8 bytes needed
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(23, data),
+            "Should throw for insufficient bytes");
+
+    assertTrue(
+        exception.getMessage().contains("too short"),
+        "Exception should mention data too short: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize borrow with negative type name length should fail")
+  void testDeserializeBorrowNegativeTypeNameLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(-1); // negative type name length
+    buffer.putInt(42); // index
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(23, data),
+            "Negative type name length should throw exception");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid resource type name length"),
+        "Exception should mention invalid length: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize borrow with truncated type name should fail")
+  void testDeserializeBorrowTruncatedTypeName() {
+    // type_length=10, but only 3 bytes of type name + index available
+    final ByteBuffer buffer = ByteBuffer.allocate(11).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(10); // type name length = 10
+    buffer.put("abc".getBytes(StandardCharsets.UTF_8)); // only 3 bytes
+    buffer.putInt(42); // index
+    final byte[] data = buffer.array();
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(23, data),
+            "Truncated type name should throw exception");
+
+    assertTrue(
+        exception.getMessage().contains("truncated"),
+        "Exception should mention truncation: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize borrow with valid type name and index")
+  void testDeserializeBorrowWithTypeName() throws WitValueException {
+    final String typeName = "borrowed_res";
+    final byte[] typeNameBytes = typeName.getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + typeNameBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(typeNameBytes.length);
+    buffer.put(typeNameBytes);
+    buffer.putInt(456);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(23, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitBorrow.class, result, "Result should be WitBorrow");
+    assertEquals(typeName, ((WitBorrow) result).getResourceType(), "Type name should match");
+    assertEquals(456, ((WitBorrow) result).getIndex(), "Index should be 456");
+  }
+
+  // ==================== String Deserialization Boundary Tests ====================
+
+  @Test
+  @DisplayName("Deserialize string with exactly 4 bytes (minimum for length) with zero length")
+  void testDeserializeStringExactlyMinimumBytes() throws WitValueException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0); // length = 0 (empty string)
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(6, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitString.class, result, "Result should be WitString");
+    assertEquals("", ((WitString) result).getValue(), "Value should be empty string");
+  }
+
+  @Test
+  @DisplayName("Deserialize string with 3 bytes (less than minimum) should fail")
+  void testDeserializeStringLessThanMinimumBytes() {
+    final byte[] data = new byte[3]; // Less than 4 bytes needed for length
+
+    final WitValueException exception =
+        assertThrows(
+            WitValueException.class,
+            () -> WitValueDeserializer.deserialize(6, data),
+            "Should throw for insufficient bytes");
+
+    assertTrue(
+        exception.getMessage().contains("Invalid string data size"),
+        "Exception should mention invalid size: " + exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deserialize string with valid content")
+  void testDeserializeStringValidContent() throws WitValueException {
+    final String text = "Hello, WIT!";
+    final byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + textBytes.length).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(textBytes.length);
+    buffer.put(textBytes);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(6, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitString.class, result, "Result should be WitString");
+    assertEquals(text, ((WitString) result).getValue(), "String value should match");
+  }
 }
