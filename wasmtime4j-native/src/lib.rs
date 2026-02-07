@@ -74,13 +74,8 @@ pub mod thread_affinity;
 pub mod lockfree_structures;
 pub mod adaptive_scaling;
 pub mod sync_primitives;
-pub mod thread_profiler;
 pub mod memory_coordination;
 pub mod deadlock_prevention;
-
-// Comprehensive integration tests for threading optimizations
-#[cfg(test)]
-pub mod threading_integration_tests;
 
 // Platform optimization integration tests (NUMA, cache, memory bandwidth)
 // DISABLED: Requires platform optimization modules (398 type definitions needed)
@@ -289,7 +284,7 @@ pub mod component_core;
 #[cfg(feature = "component-model")]
 pub mod wit_interfaces;
 #[cfg(feature = "component-model")]
-pub mod component_orchestration;
+pub mod version_types;
 #[cfg(feature = "component-model")]
 pub mod component_resources;
 #[cfg(feature = "component-model")]
@@ -305,7 +300,6 @@ pub mod multi_value;
 // Development tooling modules for developer experience
 pub mod module_analyzer;
 pub mod hot_reload;
-pub mod debug_server;
 
 // Debugging support module
 pub mod debug;
@@ -371,10 +365,6 @@ pub use adaptive_scaling::{
 pub use sync_primitives::{
     AdvancedRwLock, AdvancedCondvar, AdvancedSemaphore, AdvancedBarrier,
     FairnessPolicy, ThreadPriority as SyncThreadPriority, MemoryOrderingOptimizer as SyncMemoryOptimizer
-};
-pub use thread_profiler::{
-    ThreadProfiler, ProfilerConfig, ThreadMonitor, FunctionExecutionTracker,
-    MemoryAccessAnalyzer, ContentionAnalyzer, PerformanceDashboard, PerformanceReport
 };
 pub use memory_coordination::{
     MemoryCoordinator, CoordinatorConfig, SharedMemoryManager, ThreadSafeAllocator,
@@ -471,11 +461,7 @@ pub use wit_interfaces::{
 };
 
 #[cfg(feature = "component-model")]
-pub use component_orchestration::{
-    ComponentOrchestrator, ComponentGraph, ComponentNode, ComponentConfiguration,
-    ManagedComponent, ComponentState, HealthStatus, ComponentChannel,
-    ComponentMessage, MessagePayload, LoadBalancingStrategy
-};
+pub use version_types::{ComponentId, SemanticVersion, VersionConstraint};
 
 #[cfg(feature = "component-model")]
 pub use component_resources::{

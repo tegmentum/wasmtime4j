@@ -21,7 +21,7 @@ use std::time::{Duration, SystemTime};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 // component_core imports removed - using local ComponentId
-use crate::component_orchestration::{ComponentId, SemanticVersion, VersionConstraint};
+use crate::version_types::{ComponentId, SemanticVersion, VersionConstraint};
 // component_resources imports removed - not directly used
 // wit_interfaces imports removed - not directly used
 

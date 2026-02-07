@@ -29,7 +29,7 @@ use crate::component::{
     ComponentValueType, InterfaceDefinition, FunctionDefinition,
     TypeDefinition, ResourceDefinition
 };
-use crate::component_orchestration::dependency_resolution::{SemanticVersion, VersionConstraint};
+use crate::version_types::{SemanticVersion, VersionConstraint};
 
 // Import SecurityLevel from interface_negotiation module for use in outer scope
 use interface_negotiation::SecurityLevel;
