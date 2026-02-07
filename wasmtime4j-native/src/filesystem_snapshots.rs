@@ -2413,7 +2413,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_full_snapshot_creation() {
-        let manager = FilesystemSnapshotManager::new();
+        // Create temp directory for snapshot storage
+        let storage_dir = TempDir::new().unwrap();
+        let config = SnapshotConfig {
+            storage_directory: storage_dir.path().to_path_buf(),
+            ..Default::default()
+        };
+        let manager = FilesystemSnapshotManager::with_config(config);
         let temp_dir = TempDir::new().unwrap();
         let root_path = temp_dir.path();
 
