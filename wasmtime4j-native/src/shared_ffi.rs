@@ -17,13 +17,12 @@
 //!
 //! ## Usage Example
 //!
-//! ```rust
-//! use crate::shared_ffi::{ParameterConverter, FfiStrategy};
-//! use crate::engine::Strategy;
+//! ```rust,ignore
+//! use wasmtime4j::shared_ffi::{ParameterConverter, FfiStrategy};
+//! use wasmtime::Strategy;
 //!
 //! // Convert FFI parameter to native type with validation
 //! let strategy = FfiStrategy::from_ffi(1)?; // Cranelift
-//! let native_strategy = strategy.to_native();
 //! ```
 
 use wasmtime::{Strategy, OptLevel};

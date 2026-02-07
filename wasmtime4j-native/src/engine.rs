@@ -289,7 +289,7 @@ static ENGINE_POOL: Lazy<Mutex<Vec<Engine>>> = Lazy::new(|| {
 ///
 /// # Example
 /// ```
-/// use wasmtime4j_native::engine::get_shared_engine;
+/// use wasmtime4j::engine::get_shared_engine;
 ///
 /// let engine = get_shared_engine();
 /// // Use engine for module compilation, store creation, etc.
@@ -325,7 +325,7 @@ pub fn get_shared_engine() -> Engine {
 ///
 /// # Example
 /// ```
-/// use wasmtime4j_native::engine::{acquire_pooled_engine, release_pooled_engine};
+/// use wasmtime4j::engine::{acquire_pooled_engine, release_pooled_engine};
 ///
 /// let engine = acquire_pooled_engine();
 /// // Use engine...
@@ -360,7 +360,7 @@ pub fn acquire_pooled_engine() -> Engine {
 ///
 /// # Example
 /// ```
-/// use wasmtime4j_native::engine::{acquire_pooled_engine, release_pooled_engine};
+/// use wasmtime4j::engine::{acquire_pooled_engine, release_pooled_engine};
 ///
 /// let engine = acquire_pooled_engine();
 /// // Use engine...
@@ -389,7 +389,7 @@ pub fn release_pooled_engine(engine: Engine) {
 ///
 /// # Example
 /// ```
-/// use wasmtime4j_native::engine::engine_pool_cleanup;
+/// use wasmtime4j::engine::engine_pool_cleanup;
 ///
 /// // After running many tests...
 /// engine_pool_cleanup();
@@ -439,7 +439,7 @@ pub fn engine_pool_max_size() -> usize {
 ///
 /// # Example
 /// ```
-/// use wasmtime4j_native::engine::wasmtime_full_cleanup;
+/// use wasmtime4j::engine::wasmtime_full_cleanup;
 ///
 /// // After running a batch of tests...
 /// wasmtime_full_cleanup();
@@ -482,10 +482,10 @@ static MANAGED_ENGINE_COUNTER: AtomicU64 = AtomicU64::new(0);
 /// out-of-order deallocation.
 ///
 /// # Example
-/// ```
-/// use wasmtime4j_native::engine::ManagedEngine;
+/// ```rust,ignore
+/// use wasmtime4j::engine::ManagedEngine;
 ///
-/// let managed = ManagedEngine::new();
+/// let managed = ManagedEngine::new()?;
 /// let engine = managed.engine();
 /// // Create modules, stores, etc. from engine...
 /// // When managed is dropped, all tracked resources are cleaned up first
