@@ -265,7 +265,7 @@ public class WasiEnvironTest extends DualRuntimeTest {
     // Special characters
     ctx.setEnv("WITH_SPACES", "hello world");
     ctx.setEnv("WITH_EQUALS", "key=value");
-    ctx.setEnv("WITH_UNICODE", "caf\u00e9");
+    ctx.setEnv("WITH_UNICODE", "café");
     LOGGER.info("[" + runtime + "] setEnv with special chars succeeded");
 
     // Args

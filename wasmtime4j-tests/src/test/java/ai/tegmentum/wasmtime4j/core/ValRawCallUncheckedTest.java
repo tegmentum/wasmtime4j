@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;

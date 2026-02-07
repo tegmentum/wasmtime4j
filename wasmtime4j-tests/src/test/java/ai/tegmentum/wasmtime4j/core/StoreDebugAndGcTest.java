@@ -18,11 +18,11 @@ package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import ai.tegmentum.wasmtime4j.DebugFrame;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmBacktrace;
-import ai.tegmentum.wasmtime4j.DebugFrame;
 import ai.tegmentum.wasmtime4j.debug.DebugHandler;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.List;
