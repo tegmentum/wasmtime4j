@@ -70,54 +70,14 @@ static ASYNC_RUNTIME: Lazy<ManuallyDrop<Arc<Runtime>>> = Lazy::new(|| {
             Arc::new(runtime)
         }
         Err(e) => {
-            warn!("Failed to create optimal async runtime ({}), trying fallback configuration", e);
+            warn!("Failed to create optimal async runtime ({}), trying current thread fallback", e);
 
-            // Fallback to simpler configuration
-            match tokio::runtime::Builder::new_multi_thread()
-                .worker_threads(2)
+            // Fallback to current thread runtime
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
                 .build()
-            {
-                Ok(runtime) => {
-                    warn!("Using fallback async runtime with reduced configuration");
-                    Arc::new(runtime)
-                }
-                Err(e2) => {
-                    error!("Failed to create fallback async runtime ({}), trying current thread runtime", e2);
-
-                    // Last resort: current thread runtime with minimal configuration
-                    match tokio::runtime::Builder::new_current_thread()
-                        .enable_time() // Enable only timer support as minimal requirement
-                        .build()
-                    {
-                        Ok(runtime) => {
-                            warn!("Using minimal current-thread async runtime");
-                            Arc::new(runtime)
-                        }
-                        Err(e3) => {
-                            // Absolute last resort - try with no features enabled
-                            error!("Current thread runtime with time failed ({}), trying bare minimum", e3);
-                            match tokio::runtime::Builder::new_current_thread().build() {
-                                Ok(runtime) => {
-                                    error!("Using bare minimum current-thread runtime - functionality may be limited");
-                                    Arc::new(runtime)
-                                }
-                                Err(e4) => {
-                                    // If we truly cannot create any runtime, we still need to return something
-                                    // rather than panic. Log the critical error but attempt one more time.
-                                    error!("CRITICAL: All async runtime creation attempts failed: {}", e4);
-                                    error!("Attempting unsafe fallback - async operations may fail");
-                                    // This should never fail with absolutely no features, but if it does
-                                    // we've exhausted all options
-                                    tokio::runtime::Builder::new_current_thread()
-                                        .build()
-                                        .map(Arc::new)
-                                        .expect("Failed to create any Tokio runtime - cannot continue")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                .map(Arc::new)
+                .expect("Failed to create any Tokio runtime - cannot continue")
         }
     };
 
@@ -919,7 +879,7 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
     };
 
     // Get instance reference
-    let _instance = match crate::instance::ffi_core::get_instance_mut(instance_ptr) {
+    let _instance = match crate::instance::core::get_instance_mut(instance_ptr) {
         Ok(inst) => inst,
         Err(e) => {
             error!("Failed to get instance: {}", e);
@@ -1007,48 +967,6 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
     });
 
     operation_id as c_int
-}
-
-/// Compile module asynchronously (C API)
-///
-/// # Arguments
-///
-/// * `module_bytes` - Pointer to module bytecode
-/// * `module_len` - Length of module bytecode
-/// * `timeout_ms` - Timeout in milliseconds
-/// * `callback` - Completion callback function
-/// * `progress_callback` - Progress callback function (optional)
-/// * `user_data` - User data for callbacks
-///
-/// # Returns
-///
-/// Operation ID on success, negative value on error
-///
-/// # Safety
-///
-/// This function validates all inputs and handles errors gracefully
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_module_compile_async(
-    module_bytes: *const u8,
-    module_len: c_uint,
-    _timeout_ms: c_ulong,
-    _callback: AsyncCallback,
-    _progress_callback: ProgressCallback,
-    _user_data: *mut c_void
-) -> c_int {
-    // Validate inputs
-    if module_bytes.is_null() || module_len == 0 {
-        error!("Invalid module bytes for async compilation");
-        return -1;
-    }
-
-    // Copy module bytes safely
-    let bytes = std::slice::from_raw_parts(module_bytes, module_len as usize).to_vec();
-
-    // Async module compilation is not yet implemented
-    // Return error to indicate the operation cannot be performed
-    warn!("Async module compilation not yet implemented ({} bytes requested)", bytes.len());
-    -1
 }
 
 #[cfg(test)]
@@ -1158,34 +1076,4 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_invalid_compilation_parameters() {
-        unsafe {
-            extern "C" fn dummy_callback(_user_data: *mut c_void, _status: c_int, _message: *const c_char) {}
-            extern "C" fn dummy_progress(_user_data: *mut c_void, _progress: c_uint, _message: *const c_char) {}
-
-            // Test null module bytes
-            let result = wasmtime4j_module_compile_async(
-                ptr::null(),
-                0,
-                1000,
-                dummy_callback,
-                dummy_progress,
-                ptr::null_mut()
-            );
-            assert_eq!(result, -1);
-
-            // Test zero length
-            let dummy_bytes = [0u8; 1];
-            let result = wasmtime4j_module_compile_async(
-                dummy_bytes.as_ptr(),
-                0,
-                1000,
-                dummy_callback,
-                dummy_progress,
-                ptr::null_mut()
-            );
-            assert_eq!(result, -1);
-        }
-    }
 }

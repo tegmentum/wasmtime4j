@@ -18,7 +18,7 @@ use crate::module::Module;
 use crate::instance::Instance;
 use crate::hostfunc::HostFunction;
 use crate::memory::Memory as WasmMemory;
-use crate::error::{WasmtimeError, WasmtimeResult, ffi_utils};
+use crate::error::{WasmtimeError, WasmtimeResult, ffi_utils, debug_log};
 
 /// Thread-safe wrapper around Wasmtime linker with comprehensive host binding support
 #[derive(Debug)]
@@ -346,23 +346,6 @@ impl Linker {
         function_type: FuncType,
         host_function: HostFunction,
     ) -> WasmtimeResult<()> {
-        use std::io::Write;
-        fn debug_log(msg: &str) {
-            let log_path = std::env::var("HOME")
-                .map(|h| format!("{}/wasmtime4j-debug.log", h))
-                .unwrap_or_else(|_| "/tmp/wasmtime4j-debug.log".to_string());
-            if let Ok(mut file) = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&log_path) {
-                let _ = writeln!(file, "[{}] {}", std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|d| d.as_secs())
-                    .unwrap_or(0), msg);
-                let _ = file.flush();
-            }
-        }
-
         debug_log(&format!("define_host_function: {}::{}", module_name, function_name));
 
         if self.metadata.disposed {
@@ -1223,7 +1206,7 @@ use std::ffi::CStr;
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
 /// Linker core functions for interface implementations
-pub mod ffi_core {
+pub mod core {
     use super::*;
     use std::os::raw::c_void;
     use crate::error::ffi_utils;
@@ -1347,7 +1330,7 @@ pub mod ffi_core {
 pub unsafe extern "C" fn wasmtime4j_linker_new(engine_ptr: *const c_void) -> *mut c_void {
     match crate::engine::core::get_engine_ref(engine_ptr) {
         Ok(engine) => {
-            match ffi_core::create_linker(engine) {
+            match core::create_linker(engine) {
                 Ok(linker) => Box::into_raw(linker) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
@@ -1376,7 +1359,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_new_with_config(
                 max_host_functions: Some(1000), // Reasonable default
                 validate_signatures: true, // Default to true for safety
             };
-            match ffi_core::create_linker_with_config(engine, config) {
+            match core::create_linker_with_config(engine, config) {
                 Ok(linker) => Box::into_raw(linker) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
@@ -1393,7 +1376,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_new_with_config(
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_destroy(linker_ptr: *mut c_void) {
     if !linker_ptr.is_null() {
-        ffi_core::destroy_linker(linker_ptr);
+        core::destroy_linker(linker_ptr);
     }
 }
 
@@ -1416,7 +1399,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
         return std::ptr::null_mut();
     }
 
-    let linker = match ffi_core::get_linker_mut(linker_ptr) {
+    let linker = match core::get_linker_mut(linker_ptr) {
         Ok(l) => l,
         Err(e) => {
             ffi_utils::set_last_error(e);
@@ -1440,7 +1423,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
         }
     };
 
-    match ffi_core::instantiate_module(linker, store, module) {
+    match core::instantiate_module(linker, store, module) {
         Ok(result) => {
             Box::into_raw(Box::new(result.instance)) as *mut c_void
         },
@@ -1458,8 +1441,8 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
 /// linker_ptr must be a valid pointer from wasmtime4j_linker_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_is_valid(linker_ptr: *const c_void) -> c_int {
-    match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => if ffi_core::is_valid(linker) { 1 } else { 0 },
+    match core::get_linker_ref(linker_ptr) {
+        Ok(linker) => if core::is_valid(linker) { 1 } else { 0 },
         Err(_) => FFI_ERROR,
     }
 }
@@ -1471,9 +1454,9 @@ pub unsafe extern "C" fn wasmtime4j_linker_is_valid(linker_ptr: *const c_void) -
 /// linker_ptr must be a valid pointer from wasmtime4j_linker_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_dispose(linker_ptr: *mut c_void) -> c_int {
-    match ffi_core::get_linker_mut(linker_ptr) {
+    match core::get_linker_mut(linker_ptr) {
         Ok(linker) => {
-            ffi_core::dispose_linker(linker);
+            core::dispose_linker(linker);
             FFI_SUCCESS
         },
         Err(_) => FFI_ERROR,
@@ -1487,8 +1470,8 @@ pub unsafe extern "C" fn wasmtime4j_linker_dispose(linker_ptr: *mut c_void) -> c
 /// linker_ptr must be a valid pointer from wasmtime4j_linker_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_host_function_count(linker_ptr: *const c_void) -> usize {
-    match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => ffi_core::host_function_count(linker),
+    match core::get_linker_ref(linker_ptr) {
+        Ok(linker) => core::host_function_count(linker),
         Err(_) => 0,
     }
 }
@@ -1500,8 +1483,8 @@ pub unsafe extern "C" fn wasmtime4j_linker_host_function_count(linker_ptr: *cons
 /// linker_ptr must be a valid pointer from wasmtime4j_linker_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_import_count(linker_ptr: *const c_void) -> usize {
-    match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => ffi_core::import_count(linker),
+    match core::get_linker_ref(linker_ptr) {
+        Ok(linker) => core::import_count(linker),
         Err(_) => 0,
     }
 }
@@ -1513,8 +1496,8 @@ pub unsafe extern "C" fn wasmtime4j_linker_import_count(linker_ptr: *const c_voi
 /// linker_ptr must be a valid pointer from wasmtime4j_linker_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_instantiation_count(linker_ptr: *const c_void) -> u64 {
-    match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => ffi_core::get_metadata(linker).instantiation_count,
+    match core::get_linker_ref(linker_ptr) {
+        Ok(linker) => core::get_metadata(linker).instantiation_count,
         Err(_) => 0,
     }
 }
@@ -1526,8 +1509,8 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiation_count(linker_ptr: *cons
 /// linker_ptr must be a valid pointer from wasmtime4j_linker_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_wasi_enabled(linker_ptr: *const c_void) -> c_int {
-    match ffi_core::get_linker_ref(linker_ptr) {
-        Ok(linker) => if ffi_core::get_metadata(linker).wasi_enabled { 1 } else { 0 },
+    match core::get_linker_ref(linker_ptr) {
+        Ok(linker) => if core::get_metadata(linker).wasi_enabled { 1 } else { 0 },
         Err(_) => FFI_ERROR,
     }
 }
@@ -1539,9 +1522,9 @@ pub unsafe extern "C" fn wasmtime4j_linker_wasi_enabled(linker_ptr: *const c_voi
 /// linker_ptr must be a valid pointer from wasmtime4j_linker_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_created_at_micros(linker_ptr: *const c_void) -> u64 {
-    match ffi_core::get_linker_ref(linker_ptr) {
+    match core::get_linker_ref(linker_ptr) {
         Ok(linker) => {
-            let metadata = ffi_core::get_metadata(linker);
+            let metadata = core::get_metadata(linker);
             metadata.created_at.elapsed()
                 .as_micros() as u64
         },
@@ -1564,13 +1547,13 @@ pub unsafe extern "C" fn wasmtime4j_linker_resolve_dependencies(
         return std::ptr::null_mut();
     }
 
-    match ffi_core::get_linker_ref(linker_ptr) {
+    match core::get_linker_ref(linker_ptr) {
         Ok(linker) => {
             // Convert module pointers to Module references
             let mut modules = Vec::new();
             for i in 0..module_count {
                 let module_ptr = *module_ptrs.add(i);
-                if let Ok(module) = crate::module::ffi_core::get_module_ref(module_ptr) {
+                if let Ok(module) = crate::module::core::get_module_ref(module_ptr) {
                     modules.push(module.clone());
                 }
             }
@@ -1604,13 +1587,13 @@ pub unsafe extern "C" fn wasmtime4j_linker_validate_imports(
         return std::ptr::null_mut();
     }
 
-    match ffi_core::get_linker_ref(linker_ptr) {
+    match core::get_linker_ref(linker_ptr) {
         Ok(linker) => {
             // Convert module pointers to Module references
             let mut modules = Vec::new();
             for i in 0..module_count {
                 let module_ptr = *module_ptrs.add(i);
-                if let Ok(module) = crate::module::ffi_core::get_module_ref(module_ptr) {
+                if let Ok(module) = crate::module::core::get_module_ref(module_ptr) {
                     modules.push(module.clone());
                 }
             }
@@ -1654,7 +1637,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_has_import(
         return FFI_ERROR;
     }
 
-    match ffi_core::get_linker_ref(linker_ptr) {
+    match core::get_linker_ref(linker_ptr) {
         Ok(linker) => {
             if let (Ok(mod_name), Ok(imp_name)) = (
                 CStr::from_ptr(module_name).to_str(),
@@ -1810,9 +1793,9 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate_pre(
 
     let start = Instant::now();
 
-    match ffi_core::get_linker_ref(linker_ptr) {
+    match core::get_linker_ref(linker_ptr) {
         Ok(linker) => {
-            match crate::module::ffi_core::get_module_ref(module_ptr) {
+            match crate::module::core::get_module_ref(module_ptr) {
                 Ok(module) => {
                     // Get the inner wasmtime linker and module
                     let inner_linker = linker.inner.lock().unwrap_or_else(|e| e.into_inner());
@@ -1853,7 +1836,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_pre_instantiate(
     }
 
     let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
-    match crate::store::ffi_core::get_store_mut(store_ptr) {
+    match crate::store::core::get_store_mut(store_ptr) {
         Ok(store) => {
             match wrapper.instantiate(store) {
                 Ok(instance) => Box::into_raw(Box::new(instance)) as *mut c_void,
@@ -2053,7 +2036,7 @@ mod tests {
             .expect("Failed to compile WAT module");
 
         println!("Instantiating module with linker...");
-        let result = ffi_core::instantiate_module(&mut linker, &mut store, &module);
+        let result = core::instantiate_module(&mut linker, &mut store, &module);
 
         match result {
             Ok(inst_result) => {

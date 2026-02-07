@@ -3320,7 +3320,7 @@ pub mod jni_store {
         store_ptr: jlong,
     ) -> JObject<'local> {
         let result = (|| -> Result<JObject<'local>, crate::error::WasmtimeError> {
-            let store_ref = unsafe { crate::store::ffi_core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let store_ref = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
             let store = store_ref.inner.lock();
             let backtrace = wasmtime::WasmBacktrace::capture(&*store);
             create_backtrace_object(&mut env, &backtrace, false)
@@ -3339,7 +3339,7 @@ pub mod jni_store {
         store_ptr: jlong,
     ) -> JObject<'local> {
         let result = (|| -> Result<JObject<'local>, crate::error::WasmtimeError> {
-            let store_ref = unsafe { crate::store::ffi_core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let store_ref = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
             let store = store_ref.inner.lock();
             let backtrace = wasmtime::WasmBacktrace::force_capture(&*store);
             create_backtrace_object(&mut env, &backtrace, true)
@@ -3359,7 +3359,7 @@ pub mod jni_store {
         store_ptr: jlong,
     ) {
         let result = (|| -> Result<(), crate::error::WasmtimeError> {
-            let store_ref = unsafe { crate::store::ffi_core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+            let store_ref = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
             let mut store = store_ref.inner.lock();
             // Wasmtime's gc() method takes Option<&GcHeapOutOfMemory<()>>
             // Passing None means we're not in an OOM recovery scenario
@@ -3530,7 +3530,7 @@ pub mod jni_store {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_linker {
     use super::*;
-    use crate::linker::ffi_core as linker_core;
+    use crate::linker::core as linker_core;
     use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
     use crate::hostfunc::HostFunctionCallback;
     use crate::instance::WasmValue;
@@ -4407,24 +4407,7 @@ pub mod jni_linker {
             use std::os::raw::c_void;
             use wasmtime::{ValType, FuncType};
             use crate::hostfunc::HostFunction;
-            use std::io::Write;
-
-            // Write to debug log file - use absolute path in user's home
-            fn debug_log(msg: &str) {
-                let log_path = std::env::var("HOME")
-                    .map(|h| format!("{}/wasmtime4j-debug.log", h))
-                    .unwrap_or_else(|_| "/tmp/wasmtime4j-debug.log".to_string());
-                if let Ok(mut file) = std::fs::OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open(&log_path) {
-                    let _ = writeln!(file, "[{}] {}", std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map(|d| d.as_secs())
-                        .unwrap_or(0), msg);
-                    let _ = file.flush();
-                }
-            }
+            use crate::error::debug_log;
 
             debug_log("nativeDefineHostFunction starting...");
 
@@ -4470,11 +4453,10 @@ pub mod jni_linker {
             };
 
             debug_log("Creating HostFunction...");
-            // Create host function with weak store reference (will be set during instantiation)
+            // Create host function
             let host_func = HostFunction::new(
                 format!("{}::{}", module_name_str, name_str),
                 func_type,
-                std::sync::Weak::new(), // Empty weak ref for now
                 Box::new(callback),
             )?;
             debug_log("HostFunction created");
@@ -9322,7 +9304,7 @@ pub mod jni_runtime {
             };
 
             // Create a new Linker with the engine and config
-            let linker = crate::linker::ffi_core::create_linker_with_config(&engine, config)?;
+            let linker = crate::linker::core::create_linker_with_config(&engine, config)?;
 
             log::debug!("Created Linker with config for runtime 0x{:x}", runtime_handle);
             Ok(linker)
@@ -12737,7 +12719,7 @@ pub mod jni_simd {
 #[cfg(feature = "jni-bindings")]
 pub mod jni_serializer {
     use super::*;
-    use crate::serialization::{SerializationConfig, ValidationLevel, ffi_core};
+    use crate::serialization::{SerializationConfig, ValidationLevel, core as serialization_core};
     use crate::error::{jni_utils, WasmtimeError};
     use std::os::raw::c_void;
     use std::time::Duration;
@@ -12749,7 +12731,7 @@ pub mod jni_serializer {
         _class: JClass,
     ) -> jlong {
         jni_utils::jni_try_ptr(&mut env, || {
-            Ok(ffi_core::create_serializer())
+            Ok(serialization_core::create_serializer())
         }) as jlong
     }
 
@@ -12774,7 +12756,7 @@ pub mod jni_serializer {
                 validation_level: ValidationLevel::Basic,
             };
 
-            Ok(ffi_core::create_serializer_with_config(config))
+            Ok(serialization_core::create_serializer_with_config(config))
         }) as jlong
     }
 
@@ -12812,10 +12794,10 @@ pub mod jni_serializer {
                 });
             }
 
-            let serializer = unsafe { ffi_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
+            let serializer = unsafe { serialization_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-            ffi_core::serialize_module(serializer, engine.inner(), &data)
+            serialization_core::serialize_module(serializer, engine.inner(), &data)
         })();
 
         match result {
@@ -12871,11 +12853,11 @@ pub mod jni_serializer {
                 });
             }
 
-            let serializer = unsafe { ffi_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
+            let serializer = unsafe { serialization_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
             let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
             // Use the new function that handles decompression and creates our wrapper Module
-            let module = ffi_core::deserialize_module_to_wrapper(serializer, engine, &data)?;
+            let module = serialization_core::deserialize_module_to_wrapper(serializer, engine, &data)?;
             // Return boxed module - jni_try_ptr handles Box::into_raw conversion
             Ok(Box::new(module))
         }) as jlong
@@ -12895,8 +12877,8 @@ pub mod jni_serializer {
                 });
             }
 
-            let serializer = unsafe { ffi_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
-            ffi_core::clear_cache(serializer);
+            let serializer = unsafe { serialization_core::get_serializer_mut(serializer_ptr as *mut c_void)? };
+            serialization_core::clear_cache(serializer);
             Ok(1)
         })
     }
@@ -12912,8 +12894,8 @@ pub mod jni_serializer {
             return 0;
         }
 
-        match unsafe { ffi_core::get_serializer_ref(serializer_ptr as *const c_void) } {
-            Ok(serializer) => ffi_core::get_cache_info(serializer).entry_count as jint,
+        match unsafe { serialization_core::get_serializer_ref(serializer_ptr as *const c_void) } {
+            Ok(serializer) => serialization_core::get_cache_info(serializer).entry_count as jint,
             Err(_) => 0,
         }
     }
@@ -12929,8 +12911,8 @@ pub mod jni_serializer {
             return 0;
         }
 
-        match unsafe { ffi_core::get_serializer_ref(serializer_ptr as *const c_void) } {
-            Ok(serializer) => ffi_core::get_cache_info(serializer).total_size as jlong,
+        match unsafe { serialization_core::get_serializer_ref(serializer_ptr as *const c_void) } {
+            Ok(serializer) => serialization_core::get_cache_info(serializer).total_size as jlong,
             Err(_) => 0,
         }
     }
@@ -12946,8 +12928,8 @@ pub mod jni_serializer {
             return 0.0;
         }
 
-        match unsafe { ffi_core::get_serializer_ref(serializer_ptr as *const c_void) } {
-            Ok(serializer) => ffi_core::get_cache_info(serializer).hit_rate as jdouble,
+        match unsafe { serialization_core::get_serializer_ref(serializer_ptr as *const c_void) } {
+            Ok(serializer) => serialization_core::get_cache_info(serializer).hit_rate as jdouble,
             Err(_) => 0.0,
         }
     }
@@ -12961,7 +12943,7 @@ pub mod jni_serializer {
     ) {
         if serializer_ptr != 0 {
             unsafe {
-                ffi_core::destroy_serializer(serializer_ptr as *mut c_void);
+                serialization_core::destroy_serializer(serializer_ptr as *mut c_void);
             }
         }
     }

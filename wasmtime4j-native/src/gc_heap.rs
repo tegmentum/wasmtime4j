@@ -126,9 +126,6 @@ struct WeakRefEntry {
 pub struct GcHeap {
     /// Heap configuration
     config: GcHeapConfig,
-    /// Type registry for type validation
-    #[allow(dead_code)]
-    type_registry: Arc<GcTypeRegistry>,
     /// Allocation statistics
     stats: Mutex<GcHeapStats>,
     /// Weak reference registry
@@ -139,10 +136,9 @@ pub struct GcHeap {
 
 impl GcHeap {
     /// Create a new GC heap manager
-    pub fn new(config: GcHeapConfig, type_registry: Arc<GcTypeRegistry>) -> Self {
+    pub fn new(config: GcHeapConfig, _type_registry: Arc<GcTypeRegistry>) -> Self {
         Self {
             config,
-            type_registry,
             stats: Mutex::new(GcHeapStats::default()),
             weak_refs: RwLock::new(HashMap::new()),
             collection_state: Mutex::new(CollectionState::default()),

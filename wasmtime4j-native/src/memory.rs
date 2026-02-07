@@ -613,7 +613,6 @@ impl Memory {
 
     /// Get reference to inner Wasmtime shared memory (internal use)
     /// Returns None if this is a regular memory variant.
-    #[allow(dead_code)]
     pub(crate) fn inner_shared(&self) -> Option<&WasmtimeSharedMemory> {
         match &self.inner {
             MemoryVariant::Regular(_) => None,
@@ -637,20 +636,6 @@ impl Memory {
     /// Get current memory size in bytes
     pub fn size_bytes(&self, store: &Store) -> WasmtimeResult<usize> {
         Ok((self.size_pages(store)? * 65536) as usize)
-    }
-
-    /// Get memory data size for bounds checking
-    #[allow(dead_code)]
-    fn get_data_size(&self, store: &Store) -> WasmtimeResult<usize> {
-        match &self.inner {
-            MemoryVariant::Regular(mem) => {
-                store.with_context_ro(|ctx| Ok(mem.data(ctx).len()))
-            }
-            MemoryVariant::Shared(mem) => {
-                // Shared memory data returns &[UnsafeCell<u8>]
-                Ok(mem.data().len())
-            }
-        }
     }
 
     /// Grow memory by the specified number of pages with validation
@@ -929,16 +914,6 @@ impl Memory {
         match &self.inner {
             MemoryVariant::Regular(mem) => Some(mem),
             MemoryVariant::Shared(_) => None,
-        }
-    }
-
-    /// Get Wasmtime shared memory handle for advanced operations
-    /// Returns None if this is a regular memory variant.
-    #[allow(dead_code)]
-    pub fn as_wasmtime_shared_memory(&self) -> Option<&WasmtimeSharedMemory> {
-        match &self.inner {
-            MemoryVariant::Regular(_) => None,
-            MemoryVariant::Shared(mem) => Some(mem),
         }
     }
 

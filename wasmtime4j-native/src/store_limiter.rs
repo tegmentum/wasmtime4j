@@ -120,20 +120,10 @@ impl StoreLimiter {
         stats.memory_grow_requests += 1;
 
         let new_size_pages = current_pages.saturating_add(requested_pages);
-        let _new_size_bytes = new_size_pages.saturating_mul(65536); // 64KB per page
 
         // Check page limit
         if let Some(max_pages) = self.config.max_memory_pages {
             if new_size_pages > max_pages {
-                stats.memory_grow_denials += 1;
-                return false;
-            }
-        }
-
-        // Check byte limit
-        if let Some(max_bytes) = self.config.max_memory_bytes {
-            let potential_total = stats.total_memory_bytes.saturating_add(requested_pages * 65536);
-            if potential_total > max_bytes {
                 stats.memory_grow_denials += 1;
                 return false;
             }

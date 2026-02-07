@@ -72,8 +72,6 @@ pub mod threading;
 // #[cfg(test)]
 // pub mod platform_optimization_integration_test;
 
-// Advanced execution control with fuel and epoch management
-pub mod execution_control;
 
 // Shared FFI architecture with trait-based conversions
 pub mod shared_ffi;
@@ -259,7 +257,7 @@ pub use async_runtime::{
 // Re-export WASI Preview 2 functionality
 pub use wasi_preview2::{
     WasiPreview2Context, WasiPreview2Config, WasiStream, WasiStreamType,
-    WasiFuture, WasiFutureType, AsyncWasiOperation, AsyncWasiOperationType
+    AsyncWasiOperation, AsyncWasiOperationType
 };
 
 // Component model re-exports

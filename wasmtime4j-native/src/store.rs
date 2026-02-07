@@ -511,10 +511,8 @@ impl Store {
         func_type: FuncType,
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
     ) -> WasmtimeResult<(u64, Func)> {
-        let store_weak = Arc::downgrade(&self.inner);
-
         // Create the host function wrapper
-        let host_function = HostFunction::new(name, func_type, store_weak, callback)?;
+        let host_function = HostFunction::new(name, func_type, callback)?;
         let host_function_id = host_function.id();
 
         // Create the Wasmtime Func
@@ -1618,95 +1616,6 @@ mod tests {
 use std::os::raw::{c_void, c_int};
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
-/// Store core functions for interface implementations
-pub mod ffi_core {
-    use super::*;
-    use std::os::raw::c_void;
-    use crate::error::ffi_utils;
-    use crate::validate_ptr_not_null;
-
-    /// Core function to create store with engine
-    pub fn create_store(engine: &Engine) -> WasmtimeResult<Box<Store>> {
-        Store::new(engine).map(Box::new)
-    }
-
-    /// Core function to create store with builder configuration
-    pub fn create_store_with_config(
-        engine: &Engine,
-        fuel_limit: Option<u64>,
-        memory_limit_bytes: Option<usize>,
-        execution_timeout: Option<Duration>,
-    ) -> WasmtimeResult<Box<Store>> {
-        let mut builder = Store::builder();
-
-        if let Some(fuel) = fuel_limit {
-            builder = builder.fuel_limit(fuel);
-        }
-
-        if let Some(memory) = memory_limit_bytes {
-            builder = builder.memory_limit(memory);
-        }
-
-        if let Some(timeout) = execution_timeout {
-            builder = builder.execution_timeout(timeout);
-        }
-
-        builder.build(engine).map(Box::new)
-    }
-
-    /// Core function to validate store pointer and get reference
-    pub unsafe fn get_store_ref(store_ptr: *const c_void) -> WasmtimeResult<&'static Store> {
-        validate_ptr_not_null!(store_ptr, "store");
-        Ok(&*(store_ptr as *const Store))
-    }
-
-    /// Core function to validate store pointer and get mutable reference
-    pub unsafe fn get_store_mut(store_ptr: *mut c_void) -> WasmtimeResult<&'static mut Store> {
-        validate_ptr_not_null!(store_ptr, "store");
-        Ok(&mut *(store_ptr as *mut Store))
-    }
-
-    /// Core function to destroy a store (safe cleanup)
-    pub unsafe fn destroy_store(store_ptr: *mut c_void) {
-        // Mark store as closed before destroying
-        if !store_ptr.is_null() {
-            let store = &*(store_ptr as *const Store);
-            store.metadata.is_closed.store(true, std::sync::atomic::Ordering::SeqCst);
-        }
-        ffi_utils::destroy_resource::<Store>(store_ptr, "Store");
-    }
-
-    /// Core function to validate store functionality
-    pub fn validate_store(store: &Store) -> WasmtimeResult<()> {
-        store.validate()
-    }
-
-    /// Core function to add fuel to store
-    pub fn add_fuel(store: &Store, fuel: u64) -> WasmtimeResult<()> {
-        store.add_fuel(fuel)
-    }
-
-    /// Core function to consume fuel from store
-    pub fn consume_fuel(store: &Store, fuel: u64) -> WasmtimeResult<u64> {
-        store.consume_fuel(fuel)
-    }
-
-    /// Core function to get fuel remaining
-    pub fn fuel_remaining(store: &Store) -> WasmtimeResult<Option<u64>> {
-        store.fuel_remaining()
-    }
-
-    /// Core function to get store metadata
-    pub fn get_metadata(store: &Store) -> &StoreMetadata {
-        store.metadata()
-    }
-
-    /// Core function to get execution stats
-    pub fn get_execution_stats(store: &Store) -> WasmtimeResult<ExecutionState> {
-        store.execution_stats()
-    }
-}
-
 /// Create a new store with engine
 ///
 /// # Safety
@@ -1717,7 +1626,7 @@ pub mod ffi_core {
 pub unsafe extern "C" fn wasmtime4j_store_new(engine_ptr: *const c_void) -> *mut c_void {
     match crate::engine::core::get_engine_ref(engine_ptr) {
         Ok(engine) => {
-            match ffi_core::create_store(engine) {
+            match core::create_store(engine) {
                 Ok(store) => Box::into_raw(store) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
@@ -1743,13 +1652,9 @@ pub unsafe extern "C" fn wasmtime4j_store_new_with_config(
         Ok(engine) => {
             let opt_fuel = if fuel_limit == 0 { None } else { Some(fuel_limit) };
             let opt_memory = if memory_limit_bytes == 0 { None } else { Some(memory_limit_bytes) };
-            let opt_timeout = if execution_timeout_seconds == 0 {
-                None
-            } else {
-                Some(Duration::from_secs(execution_timeout_seconds))
-            };
+            let opt_timeout = if execution_timeout_seconds == 0 { None } else { Some(execution_timeout_seconds) };
 
-            match ffi_core::create_store_with_config(engine, opt_fuel, opt_memory, opt_timeout) {
+            match core::create_store_with_config(engine, opt_fuel, opt_memory, opt_timeout, None, None, None) {
                 Ok(store) => Box::into_raw(store) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
@@ -1806,7 +1711,7 @@ pub unsafe extern "C" fn wasmtime4j_store_create(engine_ptr: *const c_void) -> *
 /// store_ptr must be a valid pointer from wasmtime4j_store_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_store_validate(store_ptr: *const c_void) -> c_int {
-    match ffi_core::get_store_ref(store_ptr) {
+    match core::get_store_ref(store_ptr) {
         Ok(store) => match core::validate_store(store) {
             Ok(_) => FFI_SUCCESS,
             Err(_) => FFI_ERROR,
@@ -1825,7 +1730,7 @@ pub unsafe extern "C" fn wasmtime4j_store_add_fuel(
     store_ptr: *const c_void,
     fuel: u64,
 ) -> c_int {
-    match ffi_core::get_store_ref(store_ptr) {
+    match core::get_store_ref(store_ptr) {
         Ok(store) => match core::add_fuel(store, fuel) {
             Ok(_) => FFI_SUCCESS,
             Err(_) => FFI_ERROR,
@@ -1845,7 +1750,7 @@ pub unsafe extern "C" fn wasmtime4j_store_consume_fuel(
     store_ptr: *const c_void,
     fuel: u64,
 ) -> u64 {
-    match ffi_core::get_store_ref(store_ptr) {
+    match core::get_store_ref(store_ptr) {
         Ok(store) => match core::consume_fuel(store, fuel) {
             Ok(consumed) => consumed,
             Err(_) => 0,
@@ -1862,12 +1767,8 @@ pub unsafe extern "C" fn wasmtime4j_store_consume_fuel(
 /// Returns fuel remaining, or 0 if not enabled or on error
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_store_fuel_remaining(store_ptr: *const c_void) -> u64 {
-    match ffi_core::get_store_ref(store_ptr) {
-        Ok(store) => match ffi_core::fuel_remaining(store) {
-            Ok(Some(fuel)) => fuel,
-            Ok(None) => 0, // Fuel not enabled
-            Err(_) => 0,
-        },
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => core::get_fuel_remaining(store).unwrap_or(0),
         Err(_) => 0,
     }
 }
@@ -1879,7 +1780,7 @@ pub unsafe extern "C" fn wasmtime4j_store_fuel_remaining(store_ptr: *const c_voi
 /// store_ptr must be a valid pointer from wasmtime4j_store_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_store_execution_count(store_ptr: *const c_void) -> u64 {
-    match ffi_core::get_store_ref(store_ptr) {
+    match core::get_store_ref(store_ptr) {
         Ok(store) => match core::get_execution_stats(store) {
             Ok(stats) => stats.execution_count,
             Err(_) => 0,
@@ -1895,7 +1796,7 @@ pub unsafe extern "C" fn wasmtime4j_store_execution_count(store_ptr: *const c_vo
 /// store_ptr must be a valid pointer from wasmtime4j_store_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_store_fuel_consumed(store_ptr: *const c_void) -> u64 {
-    match ffi_core::get_store_ref(store_ptr) {
+    match core::get_store_ref(store_ptr) {
         Ok(store) => match core::get_execution_stats(store) {
             Ok(stats) => stats.fuel_consumed,
             Err(_) => 0,
@@ -1911,7 +1812,7 @@ pub unsafe extern "C" fn wasmtime4j_store_fuel_consumed(store_ptr: *const c_void
 /// store_ptr must be a valid pointer from wasmtime4j_store_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_store_total_execution_time_micros(store_ptr: *const c_void) -> u64 {
-    match ffi_core::get_store_ref(store_ptr) {
+    match core::get_store_ref(store_ptr) {
         Ok(store) => match core::get_execution_stats(store) {
             Ok(stats) => stats.total_execution_time.as_micros() as u64,
             Err(_) => 0,
@@ -1943,7 +1844,7 @@ pub unsafe extern "C" fn wasmtime4j_store_set_wasi_context(
     }
 
     // Get the store from pointer
-    let store = match ffi_core::get_store_ref(store_ptr) {
+    let store = match core::get_store_ref(store_ptr) {
         Ok(s) => s,
         Err(_) => {
             return -2;
@@ -1979,7 +1880,7 @@ pub unsafe extern "C" fn wasmtime4j_store_has_wasi_context(store_ptr: *const c_v
         return -1;
     }
 
-    match ffi_core::get_store_ref(store_ptr) {
+    match core::get_store_ref(store_ptr) {
         Ok(store) => {
             if store.has_wasi_context() {
                 1

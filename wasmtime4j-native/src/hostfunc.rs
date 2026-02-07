@@ -5,13 +5,12 @@
 //! marshalling, type validation, and callback management with defensive programming
 //! practices throughout.
 
-use std::sync::{Arc, Weak, Mutex};
+use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use wasmtime::{Func, FuncType, Val, ValType, RefType};
 use crate::store::StoreData;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::WasmValue;
-use crate::interop::ReentrantLock;
 use crate::table::core::{get_function_reference, register_function_reference};
 
 /// Compare ValType values since they don't implement PartialEq
@@ -42,9 +41,6 @@ pub struct HostFunction {
     pub name: String,
     /// WebAssembly function type signature
     pub func_type: FuncType,
-    /// Weak reference to avoid circular dependency with store
-    #[allow(dead_code)]
-    store_weak: Weak<ReentrantLock<wasmtime::Store<StoreData>>>,
     /// Callback interface for language-specific implementations
     callback: Box<dyn HostFunctionCallback>,
     /// Optimization hints for caller context usage
@@ -113,7 +109,6 @@ impl Clone for HostFunction {
             id: self.id,
             name: self.name.clone(),
             func_type: self.func_type.clone(),
-            store_weak: self.store_weak.clone(),
             callback: self.callback.clone_callback(),
             caller_context_usage: self.caller_context_usage,
             requires_caller_context: self.requires_caller_context,
@@ -154,13 +149,11 @@ impl HostFunction {
     pub fn new(
         name: String,
         func_type: FuncType,
-        store_weak: Weak<ReentrantLock<wasmtime::Store<StoreData>>>,
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
     ) -> WasmtimeResult<Arc<Self>> {
         Self::new_with_optimization(
             name,
             func_type,
-            store_weak,
             callback,
             CallerContextUsage::Full, // Default to full usage for backward compatibility
             true, // Assume requires caller context by default
@@ -171,7 +164,6 @@ impl HostFunction {
     pub fn new_with_optimization(
         name: String,
         func_type: FuncType,
-        store_weak: Weak<ReentrantLock<wasmtime::Store<StoreData>>>,
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
         caller_context_usage: CallerContextUsage,
         requires_caller_context: bool,
@@ -182,7 +174,6 @@ impl HostFunction {
             id,
             name,
             func_type,
-            store_weak,
             callback,
             caller_context_usage,
             requires_caller_context,
@@ -419,15 +410,14 @@ impl HostFunctionBuilder {
     pub fn build(
         self,
         engine: &wasmtime::Engine,
-        store_weak: Weak<ReentrantLock<wasmtime::Store<StoreData>>>,
     ) -> WasmtimeResult<Arc<HostFunction>> {
         let callback = self.callback.ok_or_else(|| WasmtimeError::Validation {
             message: "Host function callback not set".to_string(),
         })?;
 
         let func_type = FuncType::new(engine, self.param_types, self.return_types);
-        
-        HostFunction::new(self.name, func_type, store_weak, callback)
+
+        HostFunction::new(self.name, func_type, callback)
     }
 }
 

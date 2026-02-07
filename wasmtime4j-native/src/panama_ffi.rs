@@ -1129,7 +1129,7 @@ pub mod instance {
                     })?
             };
 
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             // Get the raw wasmtime global from the instance
@@ -2557,7 +2557,7 @@ pub mod memory {
         name: *const c_char,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -2587,7 +2587,7 @@ pub mod memory {
         size_out: *mut c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -2632,7 +2632,7 @@ pub mod memory {
         size_out: *mut usize,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -2677,7 +2677,7 @@ pub mod memory {
         previous_pages_out: *mut c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -2720,7 +2720,7 @@ pub mod memory {
         buffer: *mut u8,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -2770,7 +2770,7 @@ pub mod memory {
         buffer: *const u8,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -2819,7 +2819,7 @@ pub mod memory {
         is_mutable_out: *mut i32,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -2879,7 +2879,7 @@ pub mod memory {
         name: *const c_char,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -2913,7 +2913,7 @@ pub mod memory {
         ref_id_out: *mut i64,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -3013,7 +3013,7 @@ pub mod memory {
         ref_id: i64,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let instance = unsafe { crate::instance::ffi_core::get_instance_ref(instance_ptr)? };
+            let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
             let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
             let name_str = unsafe {
@@ -5168,7 +5168,7 @@ pub mod caller {
 /// Panama FFI bindings for Linker operations
 pub mod linker {
     use super::*;
-    use crate::linker::ffi_core as linker_core;
+    use crate::linker::core as linker_core;
     use crate::error::ffi_utils;
     use crate::hostfunc::{HostFunction, HostFunctionCallback};
     use crate::instance::{WasmValue, FfiWasmValue};
@@ -5347,7 +5347,6 @@ pub mod linker {
             let host_func = HostFunction::new(
                 format!("{}::{}", module_name_str, name_str),
                 func_type,
-                std::sync::Weak::new(), // Empty weak ref for now
                 Box::new(callback),
             )?;
 

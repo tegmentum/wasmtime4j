@@ -80,8 +80,6 @@ pub struct WasiPreview2StoreData {
 pub struct WasiPreview2State {
     /// Active streams
     streams: HashMap<u32, WasiStream>,
-    /// Active futures
-    futures: HashMap<u32, WasiFuture>,
     /// Pollable resources
     pollables: HashMap<u32, WasiPollable>,
 }
@@ -279,31 +277,6 @@ pub struct DescriptorMetadata {
     pub accessed: u64,
     /// Creation time (nanoseconds since epoch)
     pub created: u64,
-}
-
-/// WASI future for async operations
-pub struct WasiFuture {
-    /// Future ID
-    id: u32,
-    /// Future type
-    future_type: WasiFutureType,
-    /// Completion status
-    status: WasiFutureStatus,
-    /// Result data
-    result: Option<Vec<u8>>,
-}
-
-/// WASI future types
-#[derive(Debug, Clone, PartialEq)]
-pub enum WasiFutureType {
-    /// Read operation future
-    Read,
-    /// Write operation future
-    Write,
-    /// Connect operation future
-    Connect,
-    /// Accept operation future
-    Accept,
 }
 
 /// WASI future status
@@ -595,7 +568,6 @@ impl WasiPreview2Context {
             resource_table,
             preview2_state: WasiPreview2State {
                 streams: HashMap::new(),
-                futures: HashMap::new(),
                 pollables: HashMap::new(),
             },
         };

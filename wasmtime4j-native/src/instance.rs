@@ -1112,40 +1112,6 @@ impl Instance {
         }
     }
     
-    // Helper methods for type conversion and validation
-    
-    /// Convert ExternType to ExportKind
-    #[allow(dead_code)]
-    fn extern_to_export_kind(extern_type: ExternType) -> WasmtimeResult<ExportKind> {
-        match extern_type {
-            ExternType::Func(func_type) => {
-                Ok(ExportKind::Function(Self::convert_func_type(&func_type)?))
-            }
-            ExternType::Global(global_type) => {
-                let val_type = Self::convert_val_type(global_type.content().clone())?;
-                let mutable = matches!(global_type.mutability(), wasmtime::Mutability::Var);
-                Ok(ExportKind::Global(val_type, mutable))
-            }
-            ExternType::Memory(memory_type) => {
-                Ok(ExportKind::Memory(
-                    memory_type.minimum(),
-                    memory_type.maximum(),
-                    memory_type.is_64(),
-                    memory_type.is_shared(),
-                ))
-            }
-            ExternType::Table(table_type) => {
-                let element_type = Self::convert_ref_type(table_type.element())?;
-                let min = table_type.minimum().try_into().unwrap_or(u32::MAX);
-                let max = table_type.maximum().map(|m| m.try_into().unwrap_or(u32::MAX));
-                Ok(ExportKind::Table(element_type, min, max))
-            }
-            ExternType::Tag(_) => Err(WasmtimeError::Type {
-                message: "Tag types are not supported".to_string(),
-            }),
-        }
-    }
-    
     /// Convert FuncType to FunctionSignature
     fn convert_func_type(func_type: &FuncType) -> WasmtimeResult<FunctionSignature> {
         let params = func_type.params()
@@ -1778,6 +1744,21 @@ pub mod core {
             }
         }
     }
+
+    /// Core function to get exports as a vector (for FFI use)
+    pub fn get_exports(instance: &Instance) -> Vec<ExportBinding> {
+        instance.exports_map.values().cloned().collect()
+    }
+
+    /// Core function to get instance metadata (alias for backwards compatibility)
+    pub fn get_metadata(instance: &Instance) -> &InstanceMetadata {
+        instance.metadata()
+    }
+
+    /// Core function to check if instance is disposed (alias for backwards compatibility)
+    pub fn is_disposed(instance: &Instance) -> bool {
+        instance.is_disposed()
+    }
 }
 
 #[cfg(test)]
@@ -1930,64 +1911,6 @@ use std::os::raw::{c_void, c_char, c_int};
 use std::ffi::CStr;
 use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
-/// Instance core functions for interface implementations
-pub mod ffi_core {
-    use super::*;
-    use std::os::raw::c_void;
-    use crate::error::ffi_utils;
-    use crate::validate_ptr_not_null;
-
-    /// Core function to create instance without imports
-    pub fn create_instance_without_imports(
-        store: &mut Store,
-        module: &Module,
-    ) -> WasmtimeResult<Box<Instance>> {
-        Instance::new_without_imports(store, module).map(Box::new)
-    }
-
-    /// Core function to validate instance pointer and get reference
-    pub unsafe fn get_instance_ref(instance_ptr: *const c_void) -> WasmtimeResult<&'static Instance> {
-        validate_ptr_not_null!(instance_ptr, "instance");
-        Ok(&*(instance_ptr as *const Instance))
-    }
-
-    /// Core function to validate instance pointer and get mutable reference
-    pub unsafe fn get_instance_mut(instance_ptr: *mut c_void) -> WasmtimeResult<&'static mut Instance> {
-        validate_ptr_not_null!(instance_ptr, "instance");
-        Ok(&mut *(instance_ptr as *mut Instance))
-    }
-
-    /// Core function to destroy an instance (safe cleanup)
-    pub unsafe fn destroy_instance(instance_ptr: *mut c_void) {
-        ffi_utils::destroy_resource::<Instance>(instance_ptr, "Instance");
-    }
-
-    /// Core function to get instance metadata
-    pub fn get_metadata(instance: &Instance) -> &InstanceMetadata {
-        instance.metadata()
-    }
-
-    /// Core function to check if instance has export
-    pub fn has_export(instance: &Instance, name: &str) -> bool {
-        instance.exports_map.contains_key(name)
-    }
-
-    /// Core function to get exports
-    pub fn get_exports(instance: &Instance) -> Vec<ExportBinding> {
-        instance.exports_map.values().cloned().collect()
-    }
-
-    /// Core function to dispose instance
-    pub fn dispose_instance(instance: &mut Instance) {
-        let _ = instance.dispose();
-    }
-
-    /// Core function to check if instance is disposed
-    pub fn is_disposed(instance: &Instance) -> bool {
-        instance.is_disposed()
-    }
-}
-
 /// Create a new instance without imports
 ///
 /// # Safety
@@ -2005,7 +1928,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_new_without_imports(
 
     match (crate::store::core::get_store_mut(store_ptr), crate::module::core::get_module_ref(module_ptr)) {
         (Ok(store), Ok(module)) => {
-            match ffi_core::create_instance_without_imports(store, module) {
+            match core::create_instance(store, module) {
                 Ok(instance) => Box::into_raw(instance) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
@@ -2049,7 +1972,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_has_export(
         return FFI_ERROR;
     }
 
-    match ffi_core::get_instance_ref(instance_ptr) {
+    match core::get_instance_ref(instance_ptr) {
         Ok(instance) => {
             match CStr::from_ptr(name).to_str() {
                 Ok(name_str) => {
@@ -2069,8 +1992,8 @@ pub unsafe extern "C" fn wasmtime4j_instance_has_export(
 /// instance_ptr must be a valid pointer from wasmtime4j_instance_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_export_count(instance_ptr: *const c_void) -> usize {
-    match ffi_core::get_instance_ref(instance_ptr) {
-        Ok(instance) => ffi_core::get_exports(instance).len(),
+    match core::get_instance_ref(instance_ptr) {
+        Ok(instance) => core::get_exports(instance).len(),
         Err(_) => 0,
     }
 }
@@ -2082,7 +2005,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_export_count(instance_ptr: *const c
 /// instance_ptr must be a valid pointer from wasmtime4j_instance_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_dispose(instance_ptr: *mut c_void) -> c_int {
-    match ffi_core::get_instance_mut(instance_ptr) {
+    match core::get_instance_mut(instance_ptr) {
         Ok(instance) => match core::dispose_instance(instance) {
             Ok(_) => FFI_SUCCESS,
             Err(_) => FFI_ERROR,
@@ -2098,8 +2021,8 @@ pub unsafe extern "C" fn wasmtime4j_instance_dispose(instance_ptr: *mut c_void) 
 /// instance_ptr must be a valid pointer from wasmtime4j_instance_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_is_disposed(instance_ptr: *const c_void) -> c_int {
-    match ffi_core::get_instance_ref(instance_ptr) {
-        Ok(instance) => if ffi_core::is_disposed(instance) { 1 } else { 0 },
+    match core::get_instance_ref(instance_ptr) {
+        Ok(instance) => if core::is_disposed(instance) { 1 } else { 0 },
         Err(_) => FFI_ERROR,
     }
 }
@@ -2180,9 +2103,9 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_i32_function_no_params(
 /// instance_ptr must be a valid pointer from wasmtime4j_instance_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_created_at_micros(instance_ptr: *const c_void) -> u64 {
-    match ffi_core::get_instance_ref(instance_ptr) {
+    match core::get_instance_ref(instance_ptr) {
         Ok(instance) => {
-            let metadata = ffi_core::get_metadata(instance);
+            let metadata = core::get_metadata(instance);
             metadata.created_at.elapsed()
                 .as_micros() as u64
         },
@@ -2197,8 +2120,8 @@ pub unsafe extern "C" fn wasmtime4j_instance_created_at_micros(instance_ptr: *co
 /// instance_ptr must be a valid pointer from wasmtime4j_instance_new
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_instance_metadata_export_count(instance_ptr: *const c_void) -> usize {
-    match ffi_core::get_instance_ref(instance_ptr) {
-        Ok(instance) => ffi_core::get_metadata(instance).export_count,
+    match core::get_instance_ref(instance_ptr) {
+        Ok(instance) => core::get_metadata(instance).export_count,
         Err(_) => 0,
     }
 }
@@ -2225,7 +2148,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
         return -1;
     }
 
-    let instance_result = ffi_core::get_instance_mut(instance_ptr);
+    let instance_result = core::get_instance_mut(instance_ptr);
     let store_result = crate::store::core::get_store_mut(store_ptr);
     let name_result = CStr::from_ptr(function_name).to_str();
 
@@ -2398,7 +2321,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function_async(
     }
 
     match (
-        ffi_core::get_instance_mut(instance_ptr),
+        core::get_instance_mut(instance_ptr),
         crate::store::core::get_store_mut(store_ptr),
         CStr::from_ptr(function_name).to_str()
     ) {
@@ -2596,7 +2519,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_memory_by_name(
         Err(_) => return std::ptr::null_mut(),
     };
 
-    match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
+    match (core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
         (Ok(instance), Ok(store)) => {
             // First try to get regular memory
             match core::get_exported_memory(instance, store, name_str) {
@@ -2667,7 +2590,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_table_by_name(
     };
     log::debug!("wasmtime4j_instance_get_table_by_name: looking for table '{}'", name_str);
 
-    match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
+    match (core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
         (Ok(instance), Ok(store)) => {
             match core::get_exported_table(instance, store, name_str) {
                 Ok(Some(wasmtime_table)) => {
@@ -2718,7 +2641,7 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_global_by_name(
         Err(_) => return std::ptr::null_mut(),
     };
 
-    match (ffi_core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
+    match (core::get_instance_ref(instance_ptr), crate::store::core::get_store_mut(store_ptr)) {
         (Ok(instance), Ok(store)) => {
             match core::get_exported_global(instance, store, name_str) {
                 Ok(Some(global)) => Box::into_raw(Box::new(global)) as *mut c_void,
