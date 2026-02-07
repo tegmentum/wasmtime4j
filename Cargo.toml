@@ -79,20 +79,20 @@ pkg-config = "0.3"
 # Dev dependencies
 tempfile = "3.8"
 
-# Patch wasmtime to use our fork with idempotent GLOBAL_CODE registry fix
-# This prevents SIGABRT crashes in long-running JVM processes due to
-# virtual address reuse before Arc references are fully released.
-# See: https://github.com/tegmentum/wasmtime/tree/fix/global-code-registry-idempotent-v41
+# Patch wasmtime to use our fork with critical fixes for JVM integration:
+# 1. Idempotent GLOBAL_CODE registry - prevents SIGABRT crashes due to virtual address reuse
+# 2. Skip async cleanup when disabled - prevents panic during Store drop
+# See: https://github.com/tegmentum/wasmtime/tree/fix/wasmtime4j-patches-v41.0.3
 [patch.crates-io]
-wasmtime = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-http = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-nn = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-threads = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-keyvalue = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-config = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasi-common = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wast = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasmtime = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
+wasmtime-wasi = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
+wasmtime-wasi-http = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
+wasmtime-wasi-nn = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
+wasmtime-wasi-threads = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
+wasmtime-wasi-keyvalue = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
+wasmtime-wasi-config = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
+wasi-common = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
+wasmtime-wast = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
 
 [profile.release]
 # Optimize for size and speed in release builds
