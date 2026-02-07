@@ -225,19 +225,8 @@ pub mod component_resources;
 #[cfg(feature = "component-model")]
 pub mod resource_dynamic;
 
-// Experimental modules for cutting-edge WebAssembly proposals
-pub mod exceptions;
+// SIMD support
 pub mod simd;
-pub mod multi_value;
-
-// Development tooling modules for developer experience
-pub mod module_analyzer;
-
-// Debugging support module
-pub mod debug;
-
-// WebAssembly Coredump support
-pub mod coredump;
 
 // Store resource limiter APIs
 pub mod store_limiter;
