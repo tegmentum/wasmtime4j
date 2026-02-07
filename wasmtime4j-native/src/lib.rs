@@ -68,9 +68,6 @@ pub mod streaming_compiler;
 
 // Additional core functionality for comprehensive API coverage
 
-// Advanced threading optimizations and work-stealing refinements
-pub mod work_stealing;
-
 // Platform optimization integration tests (NUMA, cache, memory bandwidth)
 // DISABLED: Requires platform optimization modules (398 type definitions needed)
 // #[cfg(test)]
@@ -113,10 +110,6 @@ pub mod jni_wasi_keyvalue_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_gc_bindings;
 #[cfg(feature = "jni-bindings")]
-pub mod jni_snapshot_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_hot_reload_bindings;
-#[cfg(feature = "jni-bindings")]
 pub mod jni_typed_func_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod platform_memory_jni;
@@ -132,8 +125,6 @@ pub mod jni_wasi_nn_bindings;
 pub mod jni_wasi_threads_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_component_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_pool_bindings;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_ffi;
 #[cfg(feature = "panama-ffi")]
@@ -150,8 +141,6 @@ pub mod panama_wasi_random_ffi;
 pub mod panama_wasi_sockets_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_gc_ffi;
-#[cfg(feature = "panama-ffi")]
-pub mod panama_hot_reload_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_experimental_ffi;
 #[cfg(feature = "panama-ffi")]
@@ -190,21 +179,8 @@ pub mod experimental_features;
 // Advanced experimental features for cutting-edge capabilities
 pub mod advanced_experimental;
 
-// Sandbox module for advanced isolation
-pub mod sandbox;
-
-// Production-ready enterprise features
-pub mod pooling_allocator;
-pub mod module_cache;
-pub mod profiler;
-pub mod resource_manager;
-pub mod error_recovery;
-
 // Async runtime for async WebAssembly operations
 pub mod async_runtime;
-
-// Real async operations implementation
-pub mod async_ops;
 
 // Enhanced WASI Preview 2 implementation
 pub mod wasi_preview2;
@@ -231,17 +207,11 @@ pub mod wasi_sockets_helpers;
 #[cfg(feature = "wasi-keyvalue")]
 pub mod wasi_keyvalue_helpers;
 
-// Advanced filesystem snapshot operations with versioning and rollback
-pub mod filesystem_snapshots;
-
 // Type introspection system
 pub mod type_introspection;
 
 // WIT value marshalling for Component Model
 pub mod wit_value_marshal;
-
-// Source map integration for debugging
-pub mod sourcemap;
 
 // Component model support for WASI Preview 2
 #[cfg(feature = "component-model")]
@@ -262,7 +232,6 @@ pub mod multi_value;
 
 // Development tooling modules for developer experience
 pub mod module_analyzer;
-pub mod hot_reload;
 
 // Debugging support module
 pub mod debug;
@@ -309,12 +278,6 @@ pub use serialization::{
     ModuleSerializer, SerializationConfig, ModuleSizeInfo, SerializationStats, CacheInfo, ValidationLevel
 };
 
-// Re-export advanced threading functionality
-pub use work_stealing::{
-    WorkStealingScheduler, WorkStealingConfig, WorkStealingTask, TaskId, TaskPriority,
-    CpuAffinityHint, MemoryLocalityHint, WorkStealingStatistics, LoadBalancer, PerformanceMonitor
-};
-
 // Optional re-exports based on features
 #[cfg(feature = "wasi")]
 pub use wasi::{
@@ -341,23 +304,10 @@ pub use async_runtime::{
     wait_for_operation
 };
 
-// Re-export async operations functionality
-pub use async_ops::{
-    AsyncOperationsManager, AsyncFileIOOperation, AsyncFileIOType,
-    AsyncNetworkConnection, AsyncTimer, AsyncTimerType, AsyncOperationResult
-};
-
 // Re-export WASI Preview 2 functionality
 pub use wasi_preview2::{
     WasiPreview2Context, WasiPreview2Config, WasiStream, WasiStreamType,
     WasiFuture, WasiFutureType, AsyncWasiOperation, AsyncWasiOperationType
-};
-
-// Re-export filesystem snapshot functionality
-pub use filesystem_snapshots::{
-    FilesystemSnapshotManager, SnapshotConfig, SnapshotOptions, RestoreOptions,
-    ValidationOptions, Snapshot, SnapshotType, SnapshotMetadata, SnapshotEntry,
-    SnapshotStatus, ValidationResult as SnapshotValidationResult, SnapshotMetrics, PerformanceMetrics
 };
 
 // Component model re-exports
@@ -390,12 +340,6 @@ pub use gc::{
     WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult, WasmtimeGcRef
 };
 
-// Re-export source map integration functionality
-pub use sourcemap::{
-    SourceMapIntegration, SourceMapParser, DwarfParser, SymbolResolver, StackTraceMapper,
-    SourceFileCache, ValidationEngine, SourcePosition, WasmAddress, FunctionSymbol,
-    VariableSymbol, SourceMappedFrame, SourceMap, DwarfInfo, ValidationResult as SourceMapValidationResult
-};
 pub use gc_types::{
     GcReferenceType, StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType as GcFieldType,
     GcObject, GcValue, GcTypeRegistry, GcTypeConverter
@@ -413,33 +357,6 @@ pub use shared_ffi::{
     BooleanReturnConverter, IntegerReturnConverter, PointerReturnConverter,
     convert_wasm_features, validate_wasm_features,
     validation, error_mapping
-};
-
-// Re-export enterprise features for production use
-pub use pooling_allocator::{
-    PoolingAllocator, PoolingAllocatorConfig, PoolStatistics
-};
-pub use module_cache::{
-    ModuleCache, ModuleCacheConfig, CacheStatistics, CacheEntryMetadata
-};
-pub use profiler::{
-    PerformanceProfiler, ProfilerConfig as ProfilerConfiguration, FunctionProfile, RealTimeMetrics,
-    CompilationMetrics, PerformanceDashboard as ProfilerDashboard, RegressionDetection, RegressionSeverity
-};
-pub use resource_manager::{
-    ResourceManager as ProductionResourceManager, ResourceQuota, ResourceUsage, ResourceViolation,
-    ResourceViolationType, ResourceAction, ResourceManagerStatistics
-};
-pub use error_recovery::{
-    ErrorRecoverySystem, ErrorCategory, ErrorSeverity, ErrorEvent,
-    RecoveryAction, RetryStrategy, RecoveryStatistics, ChaosConfig
-};
-
-// Re-export hot-reload functionality
-pub use hot_reload::{
-    HotReloadManager, HotReloadConfig, SwapStrategy, LoadRequest, LoadPriority, ValidationConfig,
-    ComponentVersion, SwapOperation, SwapStatus, TrafficStats, RollbackPlan, RollbackTrigger,
-    HealthCheckResult, ComponentStateSnapshot, HotReloadMetrics, BackgroundComponentLoader
 };
 
 /// Library version information
