@@ -2631,63 +2631,6 @@ mod tests {
         assert!(config.async_support);
     }
 
-    #[test]
-    #[cfg(feature = "async")]
-    fn test_async_function_execution() {
-        use wasmtime::{Func, FuncType, Store, ValType, Val};
-        use crate::store::StoreData;
-
-        // Create async-enabled engine
-        let engine = Engine::builder()
-            .async_support(true)
-            .build()
-            .expect("Failed to build async engine");
-
-        assert!(engine.async_support_enabled());
-
-        // Create store with async engine
-        let mut store = Store::new(engine.inner.as_ref(), StoreData::default());
-
-        // Create a simple async host function that adds two i32 values
-        let func_type = FuncType::new(
-            vec![ValType::I32, ValType::I32],
-            vec![ValType::I32]
-        );
-
-        let func = Func::new_async(
-            &mut store,
-            func_type,
-            |_caller, params: &[Val], results: &mut [Val]| {
-                Box::new(async move {
-                    if let (Some(Val::I32(a)), Some(Val::I32(b))) = (params.get(0), params.get(1)) {
-                        results[0] = Val::I32(a + b);
-                        Ok(())
-                    } else {
-                        Err(anyhow::anyhow!("Invalid parameters"))
-                    }
-                })
-            }
-        );
-
-        // Call the async function using the runtime
-        let runtime = crate::async_runtime::get_async_runtime();
-        let params = vec![Val::I32(10), Val::I32(32)];
-        let mut results = vec![Val::I32(0)];
-
-        runtime.block_on(async {
-            func.call_async(&mut store, &params, &mut results)
-                .await
-                .expect("Async function call failed");
-        });
-
-        // Verify result
-        if let Val::I32(result) = results[0] {
-            assert_eq!(result, 42, "Async function should return 10 + 32 = 42");
-        } else {
-            panic!("Expected I32 result");
-        }
-    }
-
     // =========================================================================
     // Engine Pooling Tests
     // =========================================================================

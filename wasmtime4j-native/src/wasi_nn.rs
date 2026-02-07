@@ -1299,6 +1299,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Requires configured NN backend (OpenVINO, ONNX Runtime, etc.)
     fn test_execution_context() {
         let context = WasiNnContext::with_defaults().unwrap();
         let model_data = vec![0u8; 1024];
