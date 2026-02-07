@@ -136,6 +136,8 @@ pub mod panama_simd_ffi;
 pub mod panama_wasi_threads_ffi;
 #[cfg(all(feature = "panama-ffi", feature = "wasi-keyvalue"))]
 pub mod panama_wasi_keyvalue_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_exception_ffi;
 
 // Advanced modules - will be implemented in later tasks
 #[cfg(feature = "wasi")]
@@ -313,7 +315,7 @@ pub use shared_ffi::{
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Wasmtime version this library is built against
-pub const WASMTIME_VERSION: &str = "41.0.1";
+pub const WASMTIME_VERSION: &str = "41.0.3";
 
 /// Initialize the native library
 ///

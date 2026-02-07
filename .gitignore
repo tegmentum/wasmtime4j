@@ -88,3 +88,4 @@ benchmark-results/
 monitoring/
 profiling-results/
 tests/logs/
+.flattened-pom.xml
