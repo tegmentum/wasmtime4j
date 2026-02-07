@@ -294,4 +294,139 @@ class WitListTest {
       assertEquals(3, list.size(), "Should create list with all elements");
     }
   }
+
+  @Nested
+  @DisplayName("Mutation Killing Tests")
+  class MutationKillingTests {
+
+    @Test
+    @DisplayName("isEmpty must return true for empty and false for non-empty")
+    void isEmptyMutationTest() {
+      // Empty list must return true for isEmpty()
+      final WitList emptyList = WitList.empty(WitType.createS32());
+      assertTrue(emptyList.isEmpty(), "isEmpty() on empty list must return exactly true");
+      assertFalse(!emptyList.isEmpty(), "isEmpty() result must be true, not false");
+
+      // Non-empty list must return false for isEmpty()
+      final WitList nonEmpty = WitList.of(WitS32.of(1));
+      assertFalse(nonEmpty.isEmpty(), "isEmpty() on non-empty list must return exactly false");
+      assertTrue(!nonEmpty.isEmpty(), "isEmpty() result must be false, not true");
+    }
+
+    @Test
+    @DisplayName("size must return exact count - 0, 1, and multiple")
+    void sizeMutationTest() {
+      // Empty list: size must be exactly 0
+      final WitList empty = WitList.empty(WitType.createS32());
+      assertEquals(0, empty.size(), "Empty list size must be exactly 0");
+      assertTrue(empty.size() == 0, "Empty list size == 0 must be true");
+      assertFalse(empty.size() != 0, "Empty list size != 0 must be false");
+
+      // One element: size must be exactly 1
+      final WitList one = WitList.of(WitS32.of(1));
+      assertEquals(1, one.size(), "One element size must be exactly 1");
+      assertTrue(one.size() == 1, "One element size == 1 must be true");
+      assertFalse(one.size() == 0, "One element size == 0 must be false");
+
+      // Three elements: size must be exactly 3
+      final WitList three = WitList.of(WitS32.of(1), WitS32.of(2), WitS32.of(3));
+      assertEquals(3, three.size(), "Three elements size must be exactly 3");
+      assertTrue(three.size() == 3, "Three elements size == 3 must be true");
+    }
+
+    @Test
+    @DisplayName("builder must reject null element type")
+    void builderNullTypeMutationTest() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitList.builder(null),
+          "Builder with null element type must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("builder must reject null element and type mismatch")
+    void builderValidationMutationTest() {
+      // Builder with null element must throw
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitList.builder(WitType.createS32()).add(null),
+          "Builder.add(null) must throw IllegalArgumentException");
+
+      // Builder with type mismatch must throw
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitList.builder(WitType.createS32()).add(WitU64.of(1L)),
+          "Builder.add(wrong type) must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("toJava must return list with correct values")
+    void toJavaMutationTest() {
+      final WitList list = WitList.of(WitS32.of(10), WitS32.of(20), WitS32.of(30));
+
+      final List<Object> javaList = list.toJava();
+      assertEquals(3, javaList.size(), "toJava list must have same size");
+      assertEquals(10, javaList.get(0), "toJava list[0] must be 10");
+      assertEquals(20, javaList.get(1), "toJava list[1] must be 20");
+      assertEquals(30, javaList.get(2), "toJava list[2] must be 30");
+    }
+
+    @Test
+    @DisplayName("get must return correct element for index 0")
+    void getIndexZeroMutationTest() {
+      final WitList list = WitList.of(WitS32.of(42), WitS32.of(99));
+
+      // Index 0 must return first element exactly
+      assertEquals(WitS32.of(42), list.get(0), "get(0) must return first element");
+      assertNotEquals(WitS32.of(99), list.get(0), "get(0) must not return second element");
+
+      // Index 1 must return second element exactly
+      assertEquals(WitS32.of(99), list.get(1), "get(1) must return second element");
+      assertNotEquals(WitS32.of(42), list.get(1), "get(1) must not return first element");
+    }
+
+    @Test
+    @DisplayName("equals must handle edge cases correctly")
+    void equalsMutationTest() {
+      final WitList list = WitList.of(WitS32.of(1));
+
+      // Reflexive - same object
+      assertTrue(list.equals(list), "equals(self) must return true");
+
+      // Null comparison
+      assertFalse(list.equals(null), "equals(null) must return false");
+
+      // Different type
+      assertFalse(list.equals("list"), "equals(String) must return false");
+      assertFalse(list.equals(42), "equals(Integer) must return false");
+
+      // Empty vs non-empty
+      final WitList empty = WitList.empty(WitType.createS32());
+      assertFalse(list.equals(empty), "non-empty.equals(empty) must return false");
+      assertFalse(empty.equals(list), "empty.equals(non-empty) must return false");
+
+      // Different element count
+      final WitList two = WitList.of(WitS32.of(1), WitS32.of(2));
+      assertFalse(list.equals(two), "size-1.equals(size-2) must return false");
+    }
+
+    @Test
+    @DisplayName("empty list factory vs builder must produce equivalent results")
+    void emptyListMutationTest() {
+      final WitType s32Type = WitType.createS32();
+
+      // empty() factory method
+      final WitList empty1 = WitList.empty(s32Type);
+      assertTrue(empty1.isEmpty(), "empty() list isEmpty must be true");
+      assertEquals(0, empty1.size(), "empty() list size must be 0");
+
+      // builder().build() with no elements
+      final WitList empty2 = WitList.builder(s32Type).build();
+      assertTrue(empty2.isEmpty(), "builder().build() list isEmpty must be true");
+      assertEquals(0, empty2.size(), "builder().build() list size must be 0");
+
+      // Both should be equal
+      assertEquals(empty1, empty2, "Empty lists from factory and builder must be equal");
+    }
+  }
 }

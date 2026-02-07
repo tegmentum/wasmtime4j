@@ -332,4 +332,137 @@ class WitOptionTest {
       assertNotNull(opt.getType(), "Should have WitType");
     }
   }
+
+  @Nested
+  @DisplayName("Mutation Killing Tests")
+  class MutationKillingTests {
+
+    @Test
+    @DisplayName("isSome must return true for some and false for none - exact boolean values")
+    void isSomeMutationTest() {
+      final WitType ot = createOptionS32Type();
+
+      // Some option isSome() must return exactly true
+      final WitOption some = WitOption.some(ot, WitS32.of(42));
+      assertTrue(some.isSome(), "isSome() on some option must return exactly true");
+      assertFalse(!some.isSome(), "isSome() result must be true, not false");
+
+      // None option isSome() must return exactly false
+      final WitOption none = WitOption.none(ot);
+      assertFalse(none.isSome(), "isSome() on none option must return exactly false");
+      assertTrue(!none.isSome(), "isSome() result must be false, not true");
+    }
+
+    @Test
+    @DisplayName("isNone must return true for none and false for some - exact boolean values")
+    void isNoneMutationTest() {
+      final WitType ot = createOptionS32Type();
+
+      // None option isNone() must return exactly true
+      final WitOption none = WitOption.none(ot);
+      assertTrue(none.isNone(), "isNone() on none option must return exactly true");
+      assertFalse(!none.isNone(), "isNone() result must be true, not false");
+
+      // Some option isNone() must return exactly false
+      final WitOption some = WitOption.some(ot, WitS32.of(42));
+      assertFalse(some.isNone(), "isNone() on some option must return exactly false");
+      assertTrue(!some.isNone(), "isNone() result must be false, not true");
+    }
+
+    @Test
+    @DisplayName("isSome and isNone must be logical inverses")
+    void isSomeIsNoneInverseMutationTest() {
+      final WitType ot = createOptionS32Type();
+
+      final WitOption some = WitOption.some(ot, WitS32.of(42));
+      assertTrue(some.isSome() && !some.isNone(), "some: isSome=true AND isNone=false");
+      assertFalse(some.isSome() == some.isNone(), "isSome and isNone must be inverses for some");
+
+      final WitOption none = WitOption.none(ot);
+      assertTrue(!none.isSome() && none.isNone(), "none: isSome=false AND isNone=true");
+      assertFalse(none.isSome() == none.isNone(), "isSome and isNone must be inverses for none");
+    }
+
+    @Test
+    @DisplayName("getValue must return Optional with correct presence")
+    void getValueMutationTest() {
+      final WitType ot = createOptionS32Type();
+
+      // Some option getValue() must return present Optional
+      final WitOption some = WitOption.some(ot, WitS32.of(42));
+      assertTrue(some.getValue().isPresent(), "getValue() on some must be present");
+      assertEquals(WitS32.of(42), some.getValue().get(), "getValue() must contain correct value");
+
+      // None option getValue() must return empty Optional
+      final WitOption none = WitOption.none(ot);
+      assertFalse(none.getValue().isPresent(), "getValue() on none must not be present");
+      assertTrue(none.getValue().isEmpty(), "getValue() on none must be empty");
+    }
+
+    @Test
+    @DisplayName("toJava must return Optional with correct structure")
+    void toJavaMutationTest() {
+      final WitType ot = createOptionS32Type();
+
+      // Some option toJava() must return present Optional with value
+      final WitOption some = WitOption.some(ot, WitS32.of(42));
+      final Optional<Object> someJava = some.toJava();
+      assertTrue(someJava.isPresent(), "toJava() on some must return present Optional");
+      assertEquals(42, someJava.get(), "toJava() value must be unwrapped to Java type");
+
+      // None option toJava() must return empty Optional
+      final WitOption none = WitOption.none(ot);
+      final Optional<Object> noneJava = none.toJava();
+      assertFalse(noneJava.isPresent(), "toJava() on none must return empty Optional");
+      assertTrue(noneJava.isEmpty(), "toJava() on none must be empty");
+    }
+
+    @Test
+    @DisplayName("type mismatch in some must be rejected")
+    void typeMismatchMutationTest() {
+      // Option expects S32 but we provide U64
+      final WitType optS32Type = WitType.option(WitType.createS32());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitOption.some(optS32Type, WitU64.of(100L)),
+          "Type mismatch in some must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("equals must handle edge cases correctly")
+    void equalsMutationTest() {
+      final WitType ot = createOptionS32Type();
+      final WitOption some = WitOption.some(ot, WitS32.of(42));
+
+      // Reflexive - same object
+      assertTrue(some.equals(some), "equals(self) must return true");
+
+      // Null comparison
+      assertFalse(some.equals(null), "equals(null) must return false");
+
+      // Different type
+      assertFalse(some.equals("option"), "equals(String) must return false");
+      assertFalse(some.equals(42), "equals(Integer) must return false");
+
+      // Some vs none
+      final WitOption none = WitOption.none(ot);
+      assertFalse(some.equals(none), "some.equals(none) must return false");
+      assertFalse(none.equals(some), "none.equals(some) must return false");
+
+      // Different some values
+      final WitOption some2 = WitOption.some(ot, WitS32.of(99));
+      assertFalse(some.equals(some2), "some(42).equals(some(99)) must return false");
+    }
+
+    @Test
+    @DisplayName("of with null Optional should create none")
+    void ofWithNullOptionalMutationTest() {
+      final WitType ot = createOptionS32Type();
+
+      // of() with null Optional should create none (null handled as empty)
+      final WitOption opt = WitOption.of(ot, null);
+      assertTrue(opt.isNone(), "of(null) should create none option");
+      assertFalse(opt.isSome(), "of(null) should not create some option");
+    }
+  }
 }

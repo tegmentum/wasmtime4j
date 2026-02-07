@@ -238,4 +238,105 @@ class WitCharTest {
           str.contains("0041") || str.contains("U+"), "toString should contain hex codepoint");
     }
   }
+
+  @Nested
+  @DisplayName("Boundary Mutation Killing Tests")
+  class BoundaryMutationKillingTests {
+
+    // Constants matching WitChar's internal values
+    private static final int MIN_CODEPOINT = 0x0000;
+    private static final int MAX_CODEPOINT = 0x10FFFF;
+    private static final int SURROGATE_MIN = 0xD800;
+    private static final int SURROGATE_MAX = 0xDFFF;
+
+    @Test
+    @DisplayName("MIN_CODEPOINT boundary - exactly MIN must be accepted, MIN-1 must be rejected")
+    void minCodepointBoundaryMutationTest() throws WitRangeException {
+      // If mutation changes < to <=, MIN_CODEPOINT would be rejected when it should be accepted
+      final WitChar atMin = WitChar.of(MIN_CODEPOINT);
+      assertEquals(
+          MIN_CODEPOINT,
+          atMin.getCodepoint(),
+          "Codepoint exactly at MIN_CODEPOINT (0) must be accepted");
+
+      // Verify MIN-1 is rejected (tests the < condition)
+      assertThrows(
+          WitRangeException.class,
+          () -> WitChar.of(MIN_CODEPOINT - 1),
+          "Codepoint at MIN_CODEPOINT-1 (-1) must be rejected");
+    }
+
+    @Test
+    @DisplayName("MAX_CODEPOINT boundary - exactly MAX must be accepted, MAX+1 must be rejected")
+    void maxCodepointBoundaryMutationTest() throws WitRangeException {
+      // If mutation changes > to >=, MAX_CODEPOINT would be rejected when it should be accepted
+      final WitChar atMax = WitChar.of(MAX_CODEPOINT);
+      assertEquals(
+          MAX_CODEPOINT,
+          atMax.getCodepoint(),
+          "Codepoint exactly at MAX_CODEPOINT (0x10FFFF) must be accepted");
+
+      // Verify MAX+1 is rejected (tests the > condition)
+      assertThrows(
+          WitRangeException.class,
+          () -> WitChar.of(MAX_CODEPOINT + 1),
+          "Codepoint at MAX_CODEPOINT+1 (0x110000) must be rejected");
+    }
+
+    @Test
+    @DisplayName("SURROGATE_MIN boundary - exactly MIN must be rejected, MIN-1 must be accepted")
+    void surrogateMinBoundaryMutationTest() throws WitRangeException {
+      // If mutation changes >= to >, SURROGATE_MIN would be accepted when it should be rejected
+      assertThrows(
+          WitRangeException.class,
+          () -> WitChar.of(SURROGATE_MIN),
+          "Codepoint exactly at SURROGATE_MIN (0xD800) must be rejected");
+
+      // Verify SURROGATE_MIN-1 is accepted (tests the >= condition boundary)
+      final WitChar beforeSurrogate = WitChar.of(SURROGATE_MIN - 1);
+      assertEquals(
+          SURROGATE_MIN - 1,
+          beforeSurrogate.getCodepoint(),
+          "Codepoint at SURROGATE_MIN-1 (0xD7FF) must be accepted");
+    }
+
+    @Test
+    @DisplayName("SURROGATE_MAX boundary - exactly MAX must be rejected, MAX+1 must be accepted")
+    void surrogateMaxBoundaryMutationTest() throws WitRangeException {
+      // If mutation changes <= to <, SURROGATE_MAX would be accepted when it should be rejected
+      assertThrows(
+          WitRangeException.class,
+          () -> WitChar.of(SURROGATE_MAX),
+          "Codepoint exactly at SURROGATE_MAX (0xDFFF) must be rejected");
+
+      // Verify SURROGATE_MAX+1 is accepted (tests the <= condition boundary)
+      final WitChar afterSurrogate = WitChar.of(SURROGATE_MAX + 1);
+      assertEquals(
+          SURROGATE_MAX + 1,
+          afterSurrogate.getCodepoint(),
+          "Codepoint at SURROGATE_MAX+1 (0xE000) must be accepted");
+    }
+
+    @Test
+    @DisplayName("Combined boundary test - all four boundary conditions in single test")
+    void allBoundaryConditionsCombinedTest() throws WitRangeException {
+      // This test explicitly verifies both sides of each boundary for mutation killing
+      // MIN boundary: 0 accepted, -1 rejected
+      assertEquals(0, WitChar.of(0).getCodepoint(), "0 must be accepted");
+      assertThrows(WitRangeException.class, () -> WitChar.of(-1), "-1 must be rejected");
+
+      // MAX boundary: 0x10FFFF accepted, 0x110000 rejected
+      assertEquals(0x10FFFF, WitChar.of(0x10FFFF).getCodepoint(), "0x10FFFF must be accepted");
+      assertThrows(
+          WitRangeException.class, () -> WitChar.of(0x110000), "0x110000 must be rejected");
+
+      // SURROGATE_MIN boundary: 0xD800 rejected, 0xD7FF accepted
+      assertThrows(WitRangeException.class, () -> WitChar.of(0xD800), "0xD800 must be rejected");
+      assertEquals(0xD7FF, WitChar.of(0xD7FF).getCodepoint(), "0xD7FF must be accepted");
+
+      // SURROGATE_MAX boundary: 0xDFFF rejected, 0xE000 accepted
+      assertThrows(WitRangeException.class, () -> WitChar.of(0xDFFF), "0xDFFF must be rejected");
+      assertEquals(0xE000, WitChar.of(0xE000).getCodepoint(), "0xE000 must be accepted");
+    }
+  }
 }
