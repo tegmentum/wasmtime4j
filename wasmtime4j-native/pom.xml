@@ -8,7 +8,7 @@
     <parent>
         <groupId>ai.tegmentum</groupId>
         <artifactId>wasmtime4j-parent</artifactId>
-        <version>41.0.1-1.0.0</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>wasmtime4j-native</artifactId>
@@ -138,6 +138,25 @@
                     <workingDirectory>${project.basedir}</workingDirectory>
                 </configuration>
                 <executions>
+                    <!-- Sync wasmtime version from properties file to Cargo.toml -->
+                    <execution>
+                        <id>sync-wasmtime-version</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>bash</executable>
+                            <arguments>
+                                <argument>${project.basedir}/../scripts/sync-wasmtime-version.sh</argument>
+                            </arguments>
+                            <skip>${native.compile.skip}</skip>
+                            <successCodes>
+                                <successCode>0</successCode>
+                            </successCodes>
+                        </configuration>
+                    </execution>
+
                     <!-- Enhanced toolchain validation -->
                     <execution>
                         <id>validate-build-environment</id>

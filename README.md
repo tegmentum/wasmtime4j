@@ -13,7 +13,7 @@ Wasmtime4j provides unified Java bindings for the [Wasmtime](https://wasmtime.de
 - **Unified API**: Single interface across different runtime implementations
 - **Cross-Platform Support**: Linux, Windows, macOS (x86_64 and ARM64)
 - **Production Ready**: Comprehensive error handling, resource management, and defensive programming
-- **Latest Wasmtime**: Built against Wasmtime 41.0.1 for cutting-edge WebAssembly support
+- **Latest Wasmtime**: Built against Wasmtime 41.0.3 for cutting-edge WebAssembly support
 
 ## Quick Start
 
@@ -31,14 +31,14 @@ Add Wasmtime4j to your Maven project:
 <dependency>
     <groupId>ai.tegmentum</groupId>
     <artifactId>wasmtime4j</artifactId>
-    <version>41.0.1-1.0.0</version>
+    <version>41.0.3-1.0.0</version>
 </dependency>
 ```
 
 Or for Gradle:
 
 ```gradle
-implementation 'ai.tegmentum:wasmtime4j:41.0.1-1.0.0'
+implementation 'ai.tegmentum:wasmtime4j:41.0.3-1.0.0'
 ```
 
 ### Basic Usage

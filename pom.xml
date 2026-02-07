@@ -7,7 +7,7 @@
 
     <groupId>ai.tegmentum</groupId>
     <artifactId>wasmtime4j-parent</artifactId>
-    <version>41.0.1-1.0.0</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <name>Wasmtime4j Parent</name>
@@ -15,6 +15,11 @@
     <url>https://github.com/tegmentum/wasmtime4j</url>
 
     <properties>
+        <!-- CI-friendly version properties (single source of truth) -->
+        <!-- Full version: ${wasmtime.version}-${wasmtime4j.version} -->
+        <wasmtime4j.version>1.0.0</wasmtime4j.version>
+        <revision>${wasmtime.version}-${wasmtime4j.version}</revision>
+
         <!-- Java version properties -->
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
@@ -69,7 +74,7 @@
         <findsecbugs.version>1.12.0</findsecbugs.version>
         <pmd.plugin.version>3.25.0</pmd.plugin.version>
         <pmd.version>7.6.0</pmd.version>
-        <jacoco.plugin.version>0.8.12</jacoco.plugin.version>
+        <jacoco.plugin.version>0.8.14</jacoco.plugin.version>
         <pitest.plugin.version>1.22.0</pitest.plugin.version>
         <pitest.junit5.version>1.2.1</pitest.junit5.version>
 
@@ -78,7 +83,7 @@
 
         <!-- Native build properties -->
         <native.library.name>wasmtime4j</native.library.name>
-        <wasmtime.version>41.0.1</wasmtime.version>
+        <wasmtime.version>41.0.3</wasmtime.version>
         <rust.version>1.90.0</rust.version>
         <cargo.version>1.90.0</cargo.version>
         
@@ -802,6 +807,33 @@
                         </environmentVariables>
                     </configuration>
                 </plugin>
+
+                <!-- Flatten plugin for CI-friendly versions -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>1.6.0</version>
+                    <configuration>
+                        <updatePomFile>true</updatePomFile>
+                        <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>flatten</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>flatten</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>flatten.clean</id>
+                            <phase>clean</phase>
+                            <goals>
+                                <goal>clean</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -836,6 +868,12 @@
             <plugin>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- Flatten plugin for CI-friendly versions -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

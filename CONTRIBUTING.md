@@ -286,6 +286,68 @@ cargo build --release --target x86_64-pc-windows-gnu
 cargo build --release --target aarch64-apple-darwin
 ```
 
+### Upgrading Wasmtime Version
+
+The project uses a centralized version management system. All version definitions are derived from a single source of truth.
+
+#### Version Architecture
+
+- **Source of Truth**: `wasmtime-version.properties`
+- **Maven**: Uses CI-friendly versions with `${revision}` = `${wasmtime.version}-${wasmtime4j.version}`
+- **Cargo**: Uses workspace dependencies defined in root `Cargo.toml`
+
+#### To Upgrade Wasmtime
+
+1. **Update the properties file** (`wasmtime-version.properties`):
+   ```properties
+   wasmtime.version=41.0.4
+   wasmtime4j.version=1.0.0
+   wasmtime.fork.branch=fix/global-code-registry-idempotent-v41
+   ```
+
+2. **Run the sync script** to propagate changes:
+   ```bash
+   ./scripts/sync-wasmtime-version.sh
+   ```
+
+3. **Verify consistency**:
+   ```bash
+   ./scripts/check-version-consistency.sh
+   ```
+
+4. **Update Cargo.lock**:
+   ```bash
+   cargo update
+   ```
+
+5. **Update the fork branch** (if needed):
+   - If the SIGABRT fix is not yet in the new Wasmtime version, rebase the tegmentum/wasmtime fork
+   - Update `wasmtime.fork.branch` in the properties file
+   - Re-run the sync script
+
+6. **Build and test**:
+   ```bash
+   cargo build --release
+   cargo test
+   ./mvnw clean test -q
+   ```
+
+#### Files Affected by Version Changes
+
+The sync script updates the following files:
+- `Cargo.toml` (workspace) - wasmtime dependency versions
+- `wasmtime4j-native/Cargo.toml` - package version
+- `wasmtime4j-native/src/lib.rs` - `WASMTIME_VERSION` constant
+- `pom.xml` - `wasmtime.version` and `wasmtime4j.version` properties
+
+Child pom.xml files use `${revision}` and don't need manual updates.
+
+#### Version Format
+
+- **Wasmtime version**: Follows upstream Wasmtime releases (e.g., `41.0.3`)
+- **Wasmtime4j version**: Our binding version (e.g., `1.0.0`)
+- **Full version**: `${wasmtime.version}-${wasmtime4j.version}` (e.g., `41.0.3-1.0.0`)
+
 ## Community
 
 ### Communication Channels

@@ -1,0 +1,107 @@
+[workspace]
+members = ["wasmtime4j-native"]
+resolver = "2"
+
+# Centralized dependency versions for all workspace members
+# Update wasmtime version here - it propagates to all crates
+[workspace.dependencies]
+# Wasmtime WebAssembly runtime - single source of truth for version
+wasmtime = { version = "41.0.3", features = ["component-model", "component-model-async", "async", "coredump", "gc"] }
+wasmtime-wasi = { version = "41.0.3" }
+wasmtime-wasi-http = { version = "41.0.3" }
+wasmtime-wasi-nn = { version = "41.0.3" }
+wasmtime-wasi-threads = { version = "41.0.3" }
+wasmtime-wasi-keyvalue = { version = "41.0.3" }
+wasmtime-wasi-config = { version = "41.0.3" }
+wasi-common = { version = "41.0.3" }
+wasmtime-wast = { version = "41.0.3", features = ["component-model", "component-model-async"] }
+
+# WebAssembly text format parser
+wat = "1.0"
+wast = "243.0.0"
+wasmparser = "0.243"
+
+# JNI support for Java 8-22 compatibility
+jni = "0.21.1"
+
+# Async runtime for WASI and other async operations
+tokio = { version = "1.35", features = ["full"] }
+futures = "0.3"
+
+# Serialization support for complex data structures
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Date/time and unique identifiers
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# File system operations
+filetime = "0.2"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+log = "0.4"
+env_logger = "0.10"
+
+# Memory management utilities
+once_cell = "1.19"
+lazy_static = "1.4"
+
+# Thread pools and parallel execution
+num_cpus = "1.16"
+
+# Cross-thread communication
+crossbeam = "0.8"
+
+# Advanced threading and lock-free data structures
+parking_lot = "0.12"
+
+# Encoding and compression
+base64 = "0.22"
+flate2 = "1.0"
+sha2 = "0.10"
+rand = "0.8"
+
+# Unix-specific
+libc = "0.2"
+
+# Windows-specific
+winapi = { version = "0.3", features = ["sysinfoapi", "memoryapi", "processenv", "winnt", "handleapi"] }
+
+# Build dependencies
+cc = "1.0"
+pkg-config = "0.3"
+
+# Dev dependencies
+tempfile = "3.8"
+
+# Patch wasmtime to use our fork with idempotent GLOBAL_CODE registry fix
+# This prevents SIGABRT crashes in long-running JVM processes due to
+# virtual address reuse before Arc references are fully released.
+# See: https://github.com/tegmentum/wasmtime/tree/fix/global-code-registry-idempotent-v41
+[patch.crates-io]
+wasmtime = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasmtime-wasi = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasmtime-wasi-http = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasmtime-wasi-nn = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasmtime-wasi-threads = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasmtime-wasi-keyvalue = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasmtime-wasi-config = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasi-common = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+wasmtime-wast = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+
+[profile.release]
+# Optimize for size and speed in release builds
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "unwind"  # Required for catch_unwind to work in JNI
+
+[profile.dev]
+# Fast compilation for development
+opt-level = 0
+debug = true

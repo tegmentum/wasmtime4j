@@ -1,6 +1,6 @@
 [package]
 name = "wasmtime4j-native"
-version = "41.0.1-1.0.0"
+version = "41.0.3-1.0.0"
 edition = "2021"
 description = "Native Rust library providing unified Wasmtime bindings for both JNI and Panama FFI"
 license = "Apache-2.0"
@@ -13,83 +13,83 @@ name = "wasmtime4j"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-# Wasmtime WebAssembly runtime
-wasmtime = { version = "41.0.1", features = ["component-model", "component-model-async", "async", "coredump", "gc"] }
-wasmtime-wasi = { version = "41.0.1", optional = true }
-wasmtime-wasi-http = { version = "41.0.1", optional = true }
-wasmtime-wasi-nn = { version = "41.0.1", optional = true }
-wasmtime-wasi-threads = { version = "41.0.1", optional = true }
-wasmtime-wasi-keyvalue = { version = "41.0.1", optional = true }
-wasmtime-wasi-config = { version = "41.0.1", optional = true }
-wasi-common = { version = "41.0.1", optional = true }
-wasmtime-wast = { version = "41.0.1", features = ["component-model", "component-model-async"] }
+# Wasmtime WebAssembly runtime - versions managed in workspace root
+wasmtime.workspace = true
+wasmtime-wasi = { workspace = true, optional = true }
+wasmtime-wasi-http = { workspace = true, optional = true }
+wasmtime-wasi-nn = { workspace = true, optional = true }
+wasmtime-wasi-threads = { workspace = true, optional = true }
+wasmtime-wasi-keyvalue = { workspace = true, optional = true }
+wasmtime-wasi-config = { workspace = true, optional = true }
+wasi-common = { workspace = true, optional = true }
+wasmtime-wast.workspace = true
 
 # WebAssembly text format parser
-wat = "1.0"
-wast = "243.0.0"
-wasmparser = "0.243"
+wat.workspace = true
+wast.workspace = true
+wasmparser.workspace = true
 
 # JNI support for Java 8-22 compatibility
-jni = { version = "0.21.1", optional = true }
+jni = { workspace = true, optional = true }
 
 # Async runtime for WASI and other async operations
-tokio = { version = "1.35", features = ["full"] }
-futures = "0.3"
+tokio.workspace = true
+futures.workspace = true
 
 # Serialization support for complex data structures
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde.workspace = true
+serde_json.workspace = true
 
 # Date/time and unique identifiers
-chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono.workspace = true
+uuid.workspace = true
 
 # File system operations
-filetime = "0.2"
+filetime.workspace = true
 
 # Error handling
-anyhow = "1.0"
-thiserror = "1.0"
+anyhow.workspace = true
+thiserror.workspace = true
 
 # Logging
-log = "0.4"
-env_logger = "0.10"
+log.workspace = true
+env_logger.workspace = true
 
 # Memory management utilities
-once_cell = "1.19"
-lazy_static = "1.4"
+once_cell.workspace = true
+lazy_static.workspace = true
 
 # Thread pools and parallel execution
-num_cpus = "1.16"
+num_cpus.workspace = true
 
 # Cross-thread communication
-crossbeam = "0.8"
+crossbeam.workspace = true
 
 # Advanced threading and lock-free data structures
-parking_lot = "0.12"
+parking_lot.workspace = true
 
 # Encoding and compression
-base64 = "0.22"
-flate2 = "1.0"
-sha2 = "0.10"
-rand = "0.8"
+base64.workspace = true
+flate2.workspace = true
+sha2.workspace = true
+rand.workspace = true
 
 # Unix-specific dependencies for process operations
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+libc.workspace = true
 
 # Windows-specific dependencies for advanced memory management
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["sysinfoapi", "memoryapi", "processenv", "winnt", "handleapi"] }
+winapi.workspace = true
 
 [build-dependencies]
 # Build script dependencies for cross-compilation
-cc = "1.0"
-pkg-config = "0.3"
+cc.workspace = true
+pkg-config.workspace = true
 
 [dev-dependencies]
 # Testing dependencies
-tempfile = "3.8"
+tempfile.workspace = true
 
 [features]
 default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "wasi-keyvalue", "wasi-threads"]
@@ -135,17 +135,7 @@ profiling = ["wasmtime/profiling"]
 # Note: This adds overhead and is primarily for debugging
 wmemcheck = ["wasmtime/wmemcheck"]
 
-[profile.release]
-# Optimize for size and speed in release builds
-opt-level = 3
-lto = true
-codegen-units = 1
-panic = "unwind"  # Required for catch_unwind to work in JNI
-
-[profile.dev]
-# Fast compilation for development
-opt-level = 0
-debug = true
+# Profile settings are defined in workspace root Cargo.toml
 
 # Platform-specific configurations
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -163,17 +153,4 @@ name = "build-info"
 path = "src/bin/build-info.rs"
 required-features = []
 
-# Patch wasmtime to use our fork with idempotent GLOBAL_CODE registry fix
-# This prevents SIGABRT crashes in long-running JVM processes due to
-# virtual address reuse before Arc references are fully released.
-# See: https://github.com/tegmentum/wasmtime/tree/fix/global-code-registry-idempotent-v41
-[patch.crates-io]
-wasmtime = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-http = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-nn = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-threads = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-keyvalue = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wasi-config = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasi-common = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
-wasmtime-wast = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/global-code-registry-idempotent-v41" }
+# Note: [patch.crates-io] is defined in workspace root Cargo.toml

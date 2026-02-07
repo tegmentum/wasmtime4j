@@ -39,7 +39,7 @@ Do not initlize a new git repo in the root working directory.
 
 Share as much code between wasmtime4j-panama and wasmtime4j-jni
 
-implement the latest version of wasmtime (41.0.1)
+implement the latest version of wasmtime (see wasmtime-version.properties for current version)
 
 Use conventianl commits format when writing commit mesages https://conventionalcommits.org/en/v1.0.0
 
@@ -119,6 +119,36 @@ wasmtime4j/
 - **Code Consolidation**: All native Rust code consolidated in `wasmtime4j-native` to eliminate duplication and ensure consistency
 - **Error Handling**: Comprehensive native error mapping internally, broader category exceptions (CompilationException, RuntimeException, ValidationException) in public API
 - **Testing Strategy**: Unit tests are based on combination of official WebAssembly tests, Wasmtime tests, and custom Java-specific tests
+
+## Version Management
+
+The project uses centralized version management with a single source of truth.
+
+**Source of Truth:** `wasmtime-version.properties`
+```properties
+wasmtime.version=41.0.3      # Upstream Wasmtime version
+wasmtime4j.version=1.0.0     # Our bindings version
+wasmtime.fork.branch=...     # Fork branch for SIGABRT fix
+```
+
+**Maven:** Uses CI-friendly versions
+- Parent pom.xml: `<version>${revision}</version>`
+- `${revision}` = `${wasmtime.version}-${wasmtime4j.version}`
+- Child poms use `${revision}` for parent reference
+- `flatten-maven-plugin` resolves versions at build time
+
+**Cargo:** Uses workspace dependencies
+- Root `Cargo.toml` defines all wasmtime dependencies once
+- Member crates use `wasmtime.workspace = true`
+
+**To Upgrade Wasmtime:**
+1. Edit `wasmtime-version.properties`
+2. Run `./scripts/sync-wasmtime-version.sh`
+3. Verify with `./scripts/check-version-consistency.sh`
+4. Run `cargo update` to update Cargo.lock
+5. Build and test
+
+See CONTRIBUTING.md for detailed upgrade instructions.
 
 ## Testing Framework and Strategy
 
