@@ -17,6 +17,8 @@
 package ai.tegmentum.wasmtime4j.wit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -253,6 +255,202 @@ class WitResultTest {
       final WitResult result = WitResult.err(rt);
       final String str = result.toString();
       assertTrue(str.contains("err"), "err result toString should contain 'err'");
+    }
+  }
+
+  @Nested
+  @DisplayName("isOk/isErr Mutation Tests")
+  class IsOkIsErrMutationTests {
+
+    @Test
+    @DisplayName("ok result isOk must return true not false")
+    void okResultIsOkMustReturnTrue() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.ok(rt);
+      // This kills mutation: isOk() returning !isOk or false
+      assertTrue(result.isOk(), "ok result isOk() must return exactly true");
+      assertFalse(result.isErr(), "ok result isErr() must return exactly false");
+    }
+
+    @Test
+    @DisplayName("err result isOk must return false not true")
+    void errResultIsOkMustReturnFalse() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.err(rt);
+      // This kills mutation: isOk() returning isOk or true
+      assertFalse(result.isOk(), "err result isOk() must return exactly false");
+      assertTrue(result.isErr(), "err result isErr() must return exactly true");
+    }
+
+    @Test
+    @DisplayName("isErr must be inverse of isOk for ok result")
+    void isErrMustBeInverseOfIsOkForOkResult() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.ok(rt);
+      // This kills mutation: isErr() returning isOk instead of !isOk
+      assertEquals(!result.isOk(), result.isErr(),
+          "isErr() must be exactly the inverse of isOk()");
+    }
+
+    @Test
+    @DisplayName("isErr must be inverse of isOk for err result")
+    void isErrMustBeInverseOfIsOkForErrResult() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.err(rt);
+      // This kills mutation: isErr() returning isOk instead of !isOk
+      assertEquals(!result.isOk(), result.isErr(),
+          "isErr() must be exactly the inverse of isOk()");
+    }
+  }
+
+  @Nested
+  @DisplayName("getOk/getErr Return Value Mutation Tests")
+  class GetOkGetErrMutationTests {
+
+    @Test
+    @DisplayName("ok result without payload getOk returns empty")
+    void okResultWithoutPayloadGetOkReturnsEmpty() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.ok(rt);
+
+      // For no-payload ok, getOk returns the empty value (which is empty)
+      assertFalse(result.getOk().isPresent(),
+          "ok result without payload getOk() returns empty optional");
+    }
+
+    @Test
+    @DisplayName("ok result getErr must return empty")
+    void okResultGetErrMustReturnEmpty() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.ok(rt);
+
+      // This kills mutation: getErr returning value when isOk is true
+      assertFalse(result.getErr().isPresent(), "ok result getErr() must return empty Optional");
+    }
+
+    @Test
+    @DisplayName("err result without payload getErr returns empty")
+    void errResultWithoutPayloadGetErrReturnsEmpty() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.err(rt);
+
+      // For no-payload err, getErr returns the empty value (which is empty)
+      assertFalse(result.getErr().isPresent(),
+          "err result without payload getErr() returns empty optional");
+    }
+
+    @Test
+    @DisplayName("err result getOk must return empty")
+    void errResultGetOkMustReturnEmpty() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.err(rt);
+
+      // This kills mutation: getOk returning value when isOk is false
+      assertFalse(result.getOk().isPresent(), "err result getOk() must return empty Optional");
+    }
+
+    @Test
+    @DisplayName("ok and err results have different getOk behavior")
+    void okAndErrResultsHaveDifferentGetOkBehavior() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+
+      final WitResult okResult = WitResult.ok(rt);
+      final WitResult errResult = WitResult.err(rt);
+
+      // The isOk flag determines which accessor returns the value
+      // For ok: getOk() should return the value, getErr() should be empty
+      // For err: getErr() should return the value, getOk() should be empty
+      // Since both have no payload, both return empty - but isOk flag differs
+      assertTrue(okResult.isOk(), "ok result must have isOk=true");
+      assertFalse(errResult.isOk(), "err result must have isOk=false");
+    }
+  }
+
+  @Nested
+  @DisplayName("getValue Mutation Tests")
+  class GetValueMutationTests {
+
+    @Test
+    @DisplayName("ok result without payload getValue must return empty")
+    void okResultWithoutPayloadGetValueMustReturnEmpty() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.ok(rt);
+
+      assertFalse(result.getValue().isPresent(),
+          "ok result without payload getValue() should be empty");
+    }
+
+    @Test
+    @DisplayName("err result without payload getValue must return empty")
+    void errResultWithoutPayloadGetValueMustReturnEmpty() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.err(rt);
+
+      assertFalse(result.getValue().isPresent(),
+          "err result without payload getValue() should be empty");
+    }
+
+    @Test
+    @DisplayName("getValue returns same result for both ok and err without payload")
+    void getValueReturnsSameResultForBothWithoutPayload() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult okResult = WitResult.ok(rt);
+      final WitResult errResult = WitResult.err(rt);
+
+      // Both should return empty, but the isOk flag must differ
+      assertEquals(okResult.getValue(), errResult.getValue(),
+          "Both should have empty getValue when no payload");
+      assertNotEquals(okResult.isOk(), errResult.isOk(),
+          "But isOk flag must be different");
+    }
+  }
+
+  @Nested
+  @DisplayName("Equality Mutation Tests")
+  class EqualityMutationTests {
+
+    @Test
+    @DisplayName("ok and err with same empty payload must not be equal")
+    void okAndErrWithSameEmptyPayloadMustNotBeEqual() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult okResult = WitResult.ok(rt);
+      final WitResult errResult = WitResult.err(rt);
+
+      // This kills mutation: equals ignoring isOk field
+      assertNotEquals(okResult, errResult,
+          "ok and err results must not be equal even with same empty payload");
+    }
+
+    @Test
+    @DisplayName("two ok results must be equal")
+    void twoOkResultsMustBeEqual() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult ok1 = WitResult.ok(rt);
+      final WitResult ok2 = WitResult.ok(rt);
+
+      assertEquals(ok1, ok2, "Two ok results with same type must be equal");
+    }
+
+    @Test
+    @DisplayName("two err results must be equal")
+    void twoErrResultsMustBeEqual() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult err1 = WitResult.err(rt);
+      final WitResult err2 = WitResult.err(rt);
+
+      assertEquals(err1, err2, "Two err results with same type must be equal");
+    }
+
+    @Test
+    @DisplayName("equals must use isOk in comparison")
+    void equalsMustUseIsOkInComparison() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult ok = WitResult.ok(rt);
+      final WitResult err = WitResult.err(rt);
+
+      // Both have empty value, so only isOk differentiates them
+      assertNotEquals(ok, err, "isOk field must be part of equals comparison");
+      assertNotEquals(err, ok, "isOk field must be part of equals comparison (symmetric)");
     }
   }
 }
