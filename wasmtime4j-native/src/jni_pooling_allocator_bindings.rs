@@ -12,14 +12,23 @@ use std::sync::RwLock;
 use std::time::Instant;
 use wasmtime::{InstanceAllocationStrategy, PoolingAllocationConfig};
 
+/// Instance state for tracking
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum InstanceState {
+    /// Instance is currently in use
+    Active,
+    /// Instance has been released and is available for reuse
+    Released,
+}
+
 /// Wrapper around wasmtime's pooling allocator configuration with instance tracking
 pub struct JniPoolingAllocatorWrapper {
     /// The wasmtime pooling allocation config
     config: PoolingAllocationConfig,
     /// Whether the allocator is closed
     closed: AtomicBool,
-    /// Custom instance tracking - maps instance ID to allocation time
-    instances: RwLock<HashMap<u64, Instant>>,
+    /// Custom instance tracking - maps instance ID to (allocation time, state)
+    instances: RwLock<HashMap<u64, (Instant, InstanceState)>>,
     /// Next instance ID
     next_instance_id: AtomicU64,
     /// Statistics
@@ -136,10 +145,10 @@ impl JniPoolingAllocatorWrapper {
         let start = Instant::now();
         let instance_id = self.next_instance_id.fetch_add(1, Ordering::Relaxed);
 
-        // Track the instance
+        // Track the instance as active
         {
             let mut instances = self.instances.write().map_err(|e| e.to_string())?;
-            instances.insert(instance_id, Instant::now());
+            instances.insert(instance_id, (Instant::now(), InstanceState::Active));
         }
 
         // Update statistics
@@ -161,17 +170,23 @@ impl JniPoolingAllocatorWrapper {
         Ok(instance_id)
     }
 
-    /// Reuse an existing instance slot
+    /// Reuse an existing instance slot that was previously released
     pub fn reuse_instance(&self, instance_id: u64) -> Result<bool, String> {
         if self.closed.load(Ordering::Acquire) {
             return Err("Allocator is closed".to_string());
         }
 
-        let instances = self.instances.read().map_err(|e| e.to_string())?;
-        if !instances.contains_key(&instance_id) {
-            return Ok(false);
+        // Check if instance exists and is in Released state
+        {
+            let mut instances = self.instances.write().map_err(|e| e.to_string())?;
+            match instances.get_mut(&instance_id) {
+                Some((_, state)) if *state == InstanceState::Released => {
+                    // Mark as active again
+                    *state = InstanceState::Active;
+                }
+                _ => return Ok(false),
+            }
         }
-        drop(instances);
 
         // Update statistics for reuse
         {
@@ -180,6 +195,10 @@ impl JniPoolingAllocatorWrapper {
             stats.memory_pools_reused += 1;
             stats.stack_pools_reused += 1;
             stats.table_pools_reused += 1;
+            stats.current_memory_usage += self.max_memory_per_instance as u64;
+            if stats.current_memory_usage > stats.peak_memory_usage {
+                stats.peak_memory_usage = stats.current_memory_usage;
+            }
         }
 
         Ok(true)
@@ -191,11 +210,16 @@ impl JniPoolingAllocatorWrapper {
             return Err("Allocator is closed".to_string());
         }
 
-        let mut instances = self.instances.write().map_err(|e| e.to_string())?;
-        if instances.remove(&instance_id).is_none() {
-            return Ok(false);
+        // Check if instance exists and is Active, then mark as Released
+        {
+            let mut instances = self.instances.write().map_err(|e| e.to_string())?;
+            match instances.get_mut(&instance_id) {
+                Some((_, state)) if *state == InstanceState::Active => {
+                    *state = InstanceState::Released;
+                }
+                _ => return Ok(false),
+            }
         }
-        drop(instances);
 
         // Update statistics
         {
@@ -271,15 +295,17 @@ impl JniPoolingAllocatorWrapper {
             return Err("Allocator is closed".to_string());
         }
 
-        // Clean up any stale instance tracking
+        // Count active instances for memory usage
         let instances = self.instances.read().map_err(|e| e.to_string())?;
-        let current_count = instances.len();
+        let active_count = instances.values()
+            .filter(|(_, state)| *state == InstanceState::Active)
+            .count();
         drop(instances);
 
-        // Update memory usage estimate
+        // Update memory usage estimate based on active instances
         {
             let mut stats = self.stats.write().map_err(|e| e.to_string())?;
-            stats.current_memory_usage = (current_count as u64) * (self.max_memory_per_instance as u64);
+            stats.current_memory_usage = (active_count as u64) * (self.max_memory_per_instance as u64);
         }
 
         Ok(())
@@ -553,7 +579,15 @@ mod tests {
         // Allocate an instance
         let id = wrapper.allocate_instance().unwrap();
 
-        // Reuse the instance
+        // Cannot reuse an active instance - must release first
+        let reused_active = wrapper.reuse_instance(id).unwrap();
+        assert!(!reused_active);
+
+        // Release the instance
+        let released = wrapper.release_instance(id).unwrap();
+        assert!(released);
+
+        // Now reuse the released instance
         let reused = wrapper.reuse_instance(id).unwrap();
         assert!(reused);
 
