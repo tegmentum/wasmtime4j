@@ -116,6 +116,12 @@ pub mod jni_wit_value_bindings;
 pub mod jni_wasi_threads_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_component_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_module_cache_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_profiler_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_exception_handler_bindings;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_ffi;
 #[cfg(feature = "panama-ffi")]
