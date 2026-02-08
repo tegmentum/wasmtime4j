@@ -1,9 +1,10 @@
 //! Integration test modules for wasmtime4j-native.
 //!
 //! This module organizes integration tests by feature area:
-//! - ffi_boundary_tests: FFI safety and boundary condition tests
-//! - gc_tests: Garbage collection reference type tests
-//! - threading_tests: Threading and concurrency tests
-//! - security_tests: Security hardening tests
+//! - ffi_boundary_tests: FFI safety and boundary condition tests (Rust API level)
+//! - panama_ffi_tests: Panama FFI layer tests (direct C FFI boundary)
+//! - ffi_lifecycle_tests: Cross-cutting lifecycle and error handling tests
 
 pub mod ffi_boundary_tests;
+pub mod ffi_lifecycle_tests;
+pub mod panama_ffi_tests;

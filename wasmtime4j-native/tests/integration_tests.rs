@@ -8,3 +8,5 @@ mod integration;
 
 // Re-export test modules so cargo test can discover them
 pub use integration::ffi_boundary_tests;
+pub use integration::ffi_lifecycle_tests;
+pub use integration::panama_ffi_tests;
