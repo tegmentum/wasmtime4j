@@ -342,8 +342,10 @@ pub extern "C" fn wasmtime4j_gc_collect_garbage(
 
     match result {
         Ok(stats) => {
-            unsafe {
-                *stats_ptr = stats;
+            if !stats_ptr.is_null() {
+                unsafe {
+                    *stats_ptr = stats;
+                }
             }
             FFI_SUCCESS
         },
@@ -361,8 +363,10 @@ pub extern "C" fn wasmtime4j_gc_get_stats(
 
     match result {
         Ok(stats) => {
-            unsafe {
-                *stats_ptr = stats;
+            if !stats_ptr.is_null() {
+                unsafe {
+                    *stats_ptr = stats;
+                }
             }
             FFI_SUCCESS
         },

@@ -3083,21 +3083,21 @@ pub mod memory {
         value_out: *mut u32,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
-            
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+            let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
+
             if value_out.is_null() {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "Value output pointer cannot be null".to_string(),
                 });
             }
-            
+
             let value: u32 = memory.read_typed(store, offset, MemoryDataType::U32Le)?;
-            
+
             unsafe {
                 *value_out = value;
             }
-            
+
             Ok(())
         })
     }
@@ -3111,11 +3111,11 @@ pub mod memory {
         value: u32,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
-            
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
             memory.write_typed(store, offset, value, MemoryDataType::U32Le)?;
-            
+
             Ok(())
         })
     }
@@ -3971,14 +3971,10 @@ pub mod table {
         len: c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
-            // Get memory type information from the store
-            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
-            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
-
-            crate::memory::core::memory_copy(&memory, store, dest_offset as usize, src_offset as usize, len as usize)?;
+            crate::memory::core::memory_copy(memory, store, dest_offset as usize, src_offset as usize, len as usize)?;
             Ok(())
         })
     }
@@ -3993,14 +3989,10 @@ pub mod table {
         len: c_uint,
     ) -> c_int {
         ffi_utils::ffi_try_code(|| {
-            let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
-            let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+            let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+            let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
-            // Get memory type information from the store
-            let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
-            let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
-
-            crate::memory::core::memory_fill(&memory, store, offset as usize, value, len as usize)?;
+            crate::memory::core::memory_fill(memory, store, offset as usize, value, len as usize)?;
             Ok(())
         })
     }
