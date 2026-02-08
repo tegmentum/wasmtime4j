@@ -1952,4 +1952,825 @@ mod tests {
         assert!(validate_slice_bounds(slice, 1, 3, "test_slice").is_ok());
         assert!(validate_slice_bounds(slice, 3, 5, "test_slice").is_err());
     }
+
+    #[test]
+    fn test_strategy_boundary_values() {
+        // Test boundary values for strategy conversion
+        assert!(FfiStrategy::from_ffi(-1).is_err(), "Negative values should fail");
+        assert!(FfiStrategy::from_ffi(i32::MAX).is_err(), "Max i32 should fail");
+        assert!(FfiStrategy::from_ffi(i32::MIN).is_err(), "Min i32 should fail");
+    }
+
+    #[test]
+    fn test_opt_level_boundary_values() {
+        // Test boundary values for opt level conversion
+        assert!(FfiOptLevel::from_ffi(-1).is_err(), "Negative values should fail");
+        assert!(FfiOptLevel::from_ffi(3).is_err(), "Value 3 should fail (only 0-2 valid)");
+        assert!(FfiOptLevel::from_ffi(i32::MAX).is_err(), "Max i32 should fail");
+    }
+
+    #[test]
+    fn test_wasm_feature_all_values() {
+        // Test all valid WasmFeature values (0-22)
+        for i in 0..=22 {
+            let result = FfiWasmFeature::from_ffi(i);
+            assert!(result.is_ok(), "Feature {} should be valid", i);
+        }
+    }
+
+    #[test]
+    fn test_wasm_feature_invalid_values() {
+        // Test invalid feature values (valid range is 0-22)
+        for invalid in [23, 100, -1, i32::MAX, i32::MIN] {
+            assert!(FfiWasmFeature::from_ffi(invalid).is_err(),
+                "Feature {} should be invalid", invalid);
+        }
+    }
+
+    #[test]
+    fn test_convert_wasm_features_empty() {
+        let features: Vec<i32> = vec![];
+        let result = convert_wasm_features(&features);
+        assert!(result.is_ok(), "Empty features should succeed");
+        assert_eq!(result.unwrap().len(), 0, "Should return empty vec");
+    }
+
+    #[test]
+    fn test_convert_wasm_features_duplicates() {
+        // Converting duplicates should work (validation doesn't filter)
+        let features = vec![0, 0, 0, 1, 1];
+        let result = convert_wasm_features(&features);
+        assert!(result.is_ok(), "Duplicate features should succeed");
+        assert_eq!(result.unwrap().len(), 5, "Should convert all including duplicates");
+    }
+
+    #[test]
+    fn test_convert_wasm_features_all_valid() {
+        let features: Vec<i32> = (0..=11).collect();
+        let result = convert_wasm_features(&features);
+        assert!(result.is_ok(), "All valid features should succeed");
+        assert_eq!(result.unwrap().len(), 12, "Should convert all 12 features");
+    }
+
+    #[test]
+    fn test_validate_wasm_features_empty() {
+        let features: &[i32] = &[];
+        assert!(validate_wasm_features(features).is_ok(), "Empty features should validate");
+    }
+
+    #[test]
+    fn test_null_pointer_validation_with_message() {
+        use validation::*;
+
+        let null_ptr = std::ptr::null::<i32>();
+        let result = validate_not_null(null_ptr, "my_important_pointer");
+        assert!(result.is_err());
+
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("my_important_pointer"),
+            "Error message should contain parameter name");
+    }
+
+    #[test]
+    fn test_array_bounds_edge_cases() {
+        use validation::*;
+
+        // Note: validate_array_bounds checks: index >= array_len
+
+        // Exact boundary - index at array_len fails (10 >= 10 is true)
+        assert!(validate_array_bounds(10, 10, "arr").is_err(), "Exact boundary should fail");
+
+        // Valid last element access (9 >= 10 is false)
+        assert!(validate_array_bounds(10, 9, "arr").is_ok(), "Last element should succeed");
+
+        // Off by one
+        assert!(validate_array_bounds(10, 11, "arr").is_err(), "Off by one should fail");
+
+        // Zero length array - any index fails (0 >= 0 is true)
+        assert!(validate_array_bounds(0, 0, "arr").is_err(), "Zero length array fails any index");
+
+        // Zero index with items (0 >= 5 is false)
+        assert!(validate_array_bounds(5, 0, "arr").is_ok(), "Zero index should succeed");
+    }
+
+    #[test]
+    fn test_slice_bounds_empty_slice() {
+        use validation::*;
+
+        let empty_slice: &[i32] = &[];
+
+        // Note: validate_slice_bounds checks: start >= slice.len() || start + len > slice.len()
+        // For empty slice (len=0): start=0 >= 0 is true, so it returns error
+        assert!(validate_slice_bounds(empty_slice, 0, 0, "empty").is_err(), "Empty slice fails bounds check");
+
+        // Any non-zero range should also fail
+        assert!(validate_slice_bounds(empty_slice, 0, 1, "empty").is_err());
+    }
+
+    #[test]
+    fn test_slice_bounds_single_element() {
+        use validation::*;
+
+        let single = &[42];
+
+        assert!(validate_slice_bounds(single, 0, 1, "single").is_ok(), "Full range should succeed");
+        assert!(validate_slice_bounds(single, 0, 0, "single").is_ok(), "Empty range should succeed");
+        // start=1 >= len=1 is true, so this fails
+        assert!(validate_slice_bounds(single, 1, 0, "single").is_err(), "End position fails bounds check");
+        assert!(validate_slice_bounds(single, 0, 2, "single").is_err(), "Beyond end should fail");
+    }
+
+    #[test]
+    fn test_boolean_return_converter_false_result() {
+        let (code, value) = BooleanReturnConverter::to_ffi_result(Ok(false));
+        assert_eq!(code, FFI_SUCCESS, "Success should return success code even for false");
+        assert_eq!(value, false, "Should preserve false value");
+    }
+
+    #[test]
+    fn test_pointer_return_converter_null() {
+        let result: WasmtimeResult<Box<bool>> = Err(WasmtimeError::InvalidParameter {
+            message: "test".to_string()
+        });
+        let ptr = BooleanReturnConverter::to_ffi_ptr(result);
+        assert!(ptr.is_null(), "Error should return null pointer");
+    }
+
+    #[test]
+    fn test_ffi_constants() {
+        assert_eq!(FFI_SUCCESS, 0, "FFI_SUCCESS should be 0");
+        assert_eq!(FFI_ERROR, -1, "FFI_ERROR should be -1");
+        assert_ne!(FFI_SUCCESS, FFI_ERROR, "Success and error codes should differ");
+    }
+
+    // =========================================================================
+    // FfiStrategy Native Conversion Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_ffi_strategy_to_native() {
+        assert_eq!(FfiStrategy::Auto.to_native(), Strategy::Auto);
+        assert_eq!(FfiStrategy::Cranelift.to_native(), Strategy::Cranelift);
+    }
+
+    #[test]
+    fn test_ffi_strategy_from_native() {
+        assert_eq!(FfiStrategy::from_native(Strategy::Auto), FfiStrategy::Auto);
+        assert_eq!(FfiStrategy::from_native(Strategy::Cranelift), FfiStrategy::Cranelift);
+    }
+
+    #[test]
+    fn test_ffi_strategy_roundtrip() {
+        for strategy in [Strategy::Auto, Strategy::Cranelift] {
+            let ffi = FfiStrategy::from_native(strategy.clone());
+            let native = ffi.to_native();
+            assert_eq!(native, strategy);
+        }
+    }
+
+    #[test]
+    fn test_ffi_strategy_repr_values() {
+        assert_eq!(FfiStrategy::Auto as i32, 0);
+        assert_eq!(FfiStrategy::Cranelift as i32, 1);
+    }
+
+    #[test]
+    fn test_ffi_strategy_clone_and_copy() {
+        let strategy = FfiStrategy::Cranelift;
+        let cloned = strategy.clone();
+        let copied = strategy;
+        assert_eq!(strategy, cloned);
+        assert_eq!(strategy, copied);
+    }
+
+    // =========================================================================
+    // FfiOptLevel Native Conversion Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_ffi_opt_level_to_native() {
+        assert_eq!(FfiOptLevel::None.to_native(), OptLevel::None);
+        assert_eq!(FfiOptLevel::Speed.to_native(), OptLevel::Speed);
+        assert_eq!(FfiOptLevel::SpeedAndSize.to_native(), OptLevel::SpeedAndSize);
+    }
+
+    #[test]
+    fn test_ffi_opt_level_from_native() {
+        assert_eq!(FfiOptLevel::from_native(OptLevel::None), FfiOptLevel::None);
+        assert_eq!(FfiOptLevel::from_native(OptLevel::Speed), FfiOptLevel::Speed);
+        assert_eq!(FfiOptLevel::from_native(OptLevel::SpeedAndSize), FfiOptLevel::SpeedAndSize);
+    }
+
+    #[test]
+    fn test_ffi_opt_level_roundtrip() {
+        for opt_level in [OptLevel::None, OptLevel::Speed, OptLevel::SpeedAndSize] {
+            let ffi = FfiOptLevel::from_native(opt_level.clone());
+            let native = ffi.to_native();
+            assert_eq!(native, opt_level);
+        }
+    }
+
+    #[test]
+    fn test_ffi_opt_level_repr_values() {
+        assert_eq!(FfiOptLevel::None as i32, 0);
+        assert_eq!(FfiOptLevel::Speed as i32, 1);
+        assert_eq!(FfiOptLevel::SpeedAndSize as i32, 2);
+    }
+
+    #[test]
+    fn test_ffi_opt_level_clone_and_copy() {
+        let opt_level = FfiOptLevel::Speed;
+        let cloned = opt_level.clone();
+        let copied = opt_level;
+        assert_eq!(opt_level, cloned);
+        assert_eq!(opt_level, copied);
+    }
+
+    // =========================================================================
+    // FfiWasmFeature Native Conversion Tests (8 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_ffi_wasm_feature_to_native_basic() {
+        assert_eq!(FfiWasmFeature::Threads.to_native(), WasmFeature::Threads);
+        assert_eq!(FfiWasmFeature::Simd.to_native(), WasmFeature::Simd);
+        assert_eq!(FfiWasmFeature::BulkMemory.to_native(), WasmFeature::BulkMemory);
+        assert_eq!(FfiWasmFeature::MultiValue.to_native(), WasmFeature::MultiValue);
+    }
+
+    #[test]
+    fn test_ffi_wasm_feature_to_native_advanced() {
+        assert_eq!(FfiWasmFeature::Gc.to_native(), WasmFeature::Gc);
+        assert_eq!(FfiWasmFeature::Exceptions.to_native(), WasmFeature::Exceptions);
+        assert_eq!(FfiWasmFeature::TailCall.to_native(), WasmFeature::TailCall);
+        assert_eq!(FfiWasmFeature::Memory64.to_native(), WasmFeature::Memory64);
+    }
+
+    #[test]
+    fn test_ffi_wasm_feature_from_native_basic() {
+        assert_eq!(FfiWasmFeature::from_native(WasmFeature::Threads), FfiWasmFeature::Threads);
+        assert_eq!(FfiWasmFeature::from_native(WasmFeature::Simd), FfiWasmFeature::Simd);
+        assert_eq!(FfiWasmFeature::from_native(WasmFeature::ReferenceTypes), FfiWasmFeature::ReferenceTypes);
+    }
+
+    #[test]
+    fn test_ffi_wasm_feature_from_native_component_model() {
+        assert_eq!(FfiWasmFeature::from_native(WasmFeature::ComponentModel), FfiWasmFeature::ComponentModel);
+        assert_eq!(FfiWasmFeature::from_native(WasmFeature::ComponentModelAsync), FfiWasmFeature::ComponentModelAsync);
+        assert_eq!(FfiWasmFeature::from_native(WasmFeature::ComponentModelGc), FfiWasmFeature::ComponentModelGc);
+    }
+
+    #[test]
+    fn test_ffi_wasm_feature_roundtrip_all() {
+        let features = [
+            WasmFeature::Threads,
+            WasmFeature::ReferenceTypes,
+            WasmFeature::Simd,
+            WasmFeature::BulkMemory,
+            WasmFeature::MultiValue,
+            WasmFeature::MultiMemory,
+            WasmFeature::TailCall,
+            WasmFeature::RelaxedSimd,
+            WasmFeature::FunctionReferences,
+            WasmFeature::Gc,
+            WasmFeature::Exceptions,
+            WasmFeature::Memory64,
+            WasmFeature::ExtendedConst,
+            WasmFeature::ComponentModel,
+            WasmFeature::CustomPageSizes,
+            WasmFeature::WideArithmetic,
+            WasmFeature::StackSwitching,
+            WasmFeature::SharedEverythingThreads,
+            WasmFeature::ComponentModelAsync,
+            WasmFeature::ComponentModelAsyncBuiltins,
+            WasmFeature::ComponentModelAsyncStackful,
+            WasmFeature::ComponentModelErrorContext,
+            WasmFeature::ComponentModelGc,
+        ];
+
+        for feature in features {
+            let ffi = FfiWasmFeature::from_native(feature);
+            let native = ffi.to_native();
+            assert_eq!(native, feature, "Roundtrip failed for {:?}", feature);
+        }
+    }
+
+    #[test]
+    fn test_ffi_wasm_feature_repr_values_complete() {
+        assert_eq!(FfiWasmFeature::Threads as i32, 0);
+        assert_eq!(FfiWasmFeature::ComponentModelGc as i32, 22);
+    }
+
+    #[test]
+    fn test_ffi_wasm_feature_clone_and_copy() {
+        let feature = FfiWasmFeature::Gc;
+        let cloned = feature.clone();
+        let copied = feature;
+        assert_eq!(feature, cloned);
+        assert_eq!(feature, copied);
+    }
+
+    #[test]
+    fn test_ffi_wasm_feature_debug_format() {
+        let feature = FfiWasmFeature::Simd;
+        let debug_str = format!("{:?}", feature);
+        assert!(debug_str.contains("Simd"));
+    }
+
+    // =========================================================================
+    // Integer Return Converter Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_integer_return_converter_success() {
+        let result: WasmtimeResult<i32> = Ok(42);
+        let (code, value) = IntegerReturnConverter::to_ffi_result(result);
+        assert_eq!(code, FFI_SUCCESS);
+        assert_eq!(value, 42);
+    }
+
+    #[test]
+    fn test_integer_return_converter_error() {
+        let result: WasmtimeResult<i32> = Err(WasmtimeError::InvalidParameter {
+            message: "test".to_string()
+        });
+        let (code, value) = IntegerReturnConverter::to_ffi_result(result);
+        assert_eq!(code, FFI_ERROR);
+        assert_eq!(value, -1);
+    }
+
+    #[test]
+    fn test_integer_return_converter_ffi_code_success() {
+        let result: WasmtimeResult<()> = Ok(());
+        let code = IntegerReturnConverter::to_ffi_code(result);
+        assert_eq!(code, FFI_SUCCESS);
+    }
+
+    #[test]
+    fn test_integer_return_converter_ffi_code_error() {
+        let result: WasmtimeResult<()> = Err(WasmtimeError::Internal {
+            message: "test".to_string()
+        });
+        let code = IntegerReturnConverter::to_ffi_code(result);
+        assert_eq!(code, FFI_ERROR);
+    }
+
+    #[test]
+    fn test_integer_return_converter_zero_value() {
+        let result: WasmtimeResult<i32> = Ok(0);
+        let (code, value) = IntegerReturnConverter::to_ffi_result(result);
+        assert_eq!(code, FFI_SUCCESS);
+        assert_eq!(value, 0);
+    }
+
+    // =========================================================================
+    // Pointer Return Converter Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_pointer_return_converter_success_ptr() {
+        let boxed = Box::new(42i32);
+        let result: WasmtimeResult<Box<i32>> = Ok(boxed);
+        let ptr = PointerReturnConverter::to_ffi_ptr(result);
+        assert!(!ptr.is_null());
+
+        // Clean up
+        unsafe { let _ = Box::from_raw(ptr as *mut i32); }
+    }
+
+    #[test]
+    fn test_pointer_return_converter_error_ptr() {
+        let result: WasmtimeResult<Box<i32>> = Err(WasmtimeError::InvalidParameter {
+            message: "test".to_string()
+        });
+        let ptr = PointerReturnConverter::to_ffi_ptr(result);
+        assert!(ptr.is_null());
+    }
+
+    #[test]
+    fn test_pointer_return_converter_ffi_result_success() {
+        let result: WasmtimeResult<i32> = Ok(100);
+        let (code, value) = PointerReturnConverter::to_ffi_result(result);
+        assert_eq!(code, FFI_SUCCESS);
+        assert_eq!(value, 100);
+    }
+
+    #[test]
+    fn test_pointer_return_converter_ffi_result_error() {
+        let result: WasmtimeResult<i32> = Err(WasmtimeError::Internal {
+            message: "test".to_string()
+        });
+        let (code, value) = PointerReturnConverter::to_ffi_result(result);
+        assert_eq!(code, FFI_ERROR);
+        assert_eq!(value, 0); // Default value
+    }
+
+    #[test]
+    fn test_pointer_return_converter_ffi_code() {
+        let success: WasmtimeResult<()> = Ok(());
+        let error: WasmtimeResult<()> = Err(WasmtimeError::Internal {
+            message: "test".to_string()
+        });
+
+        assert_eq!(<PointerReturnConverter as ReturnValueConverter<i32>>::to_ffi_code(success), FFI_SUCCESS);
+        assert_eq!(<PointerReturnConverter as ReturnValueConverter<i32>>::to_ffi_code(error), FFI_ERROR);
+    }
+
+    // =========================================================================
+    // Validation Module Extended Tests (10 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_validate_not_null_with_different_types() {
+        use validation::*;
+
+        let int_ptr: *const i32 = &42;
+        let float_ptr: *const f64 = &3.14;
+        let byte_ptr: *const u8 = &0u8;
+
+        assert!(validate_not_null(int_ptr, "int").is_ok());
+        assert!(validate_not_null(byte_ptr, "byte").is_ok());
+        assert!(validate_not_null(float_ptr, "float").is_ok());
+    }
+
+    #[test]
+    fn test_validate_not_null_different_error_messages() {
+        use validation::*;
+
+        let null_ptr: *const i32 = std::ptr::null();
+
+        let err1 = validate_not_null(null_ptr, "engine_ptr").unwrap_err();
+        let err2 = validate_not_null(null_ptr, "store_handle").unwrap_err();
+
+        assert!(err1.to_string().contains("engine_ptr"));
+        assert!(err2.to_string().contains("store_handle"));
+    }
+
+    #[test]
+    fn test_validate_array_bounds_multiple_accesses() {
+        use validation::*;
+
+        let array_len = 100;
+
+        // First element
+        assert!(validate_array_bounds(array_len, 0, "arr").is_ok());
+        // Middle element
+        assert!(validate_array_bounds(array_len, 50, "arr").is_ok());
+        // Last element
+        assert!(validate_array_bounds(array_len, 99, "arr").is_ok());
+        // One past end
+        assert!(validate_array_bounds(array_len, 100, "arr").is_err());
+    }
+
+    #[test]
+    fn test_validate_array_bounds_large_array() {
+        use validation::*;
+
+        let large_len = usize::MAX / 2;
+        assert!(validate_array_bounds(large_len, 0, "large").is_ok());
+        assert!(validate_array_bounds(large_len, large_len - 1, "large").is_ok());
+        assert!(validate_array_bounds(large_len, large_len, "large").is_err());
+    }
+
+    #[test]
+    fn test_validate_slice_bounds_normal_ranges() {
+        use validation::*;
+
+        let slice = &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+        // Valid ranges
+        assert!(validate_slice_bounds(slice, 0, 5, "s").is_ok());
+        assert!(validate_slice_bounds(slice, 5, 5, "s").is_ok());
+        assert!(validate_slice_bounds(slice, 0, 10, "s").is_ok());
+        assert!(validate_slice_bounds(slice, 9, 1, "s").is_ok());
+    }
+
+    #[test]
+    fn test_validate_slice_bounds_invalid_ranges() {
+        use validation::*;
+
+        let slice = &[1, 2, 3, 4, 5];
+
+        // Start beyond end
+        assert!(validate_slice_bounds(slice, 5, 0, "s").is_err());
+        // Length beyond slice
+        assert!(validate_slice_bounds(slice, 3, 5, "s").is_err());
+        // Start + len overflow
+        assert!(validate_slice_bounds(slice, 4, 10, "s").is_err());
+    }
+
+    #[test]
+    fn test_validate_slice_bounds_zero_length_read() {
+        use validation::*;
+
+        let slice = &[1, 2, 3, 4, 5];
+
+        // Zero-length reads should succeed within bounds
+        assert!(validate_slice_bounds(slice, 0, 0, "s").is_ok());
+        assert!(validate_slice_bounds(slice, 3, 0, "s").is_ok());
+        assert!(validate_slice_bounds(slice, 4, 0, "s").is_ok());
+    }
+
+    #[test]
+    fn test_validate_slice_bounds_error_message_content() {
+        use validation::*;
+
+        let slice = &[1, 2, 3];
+        let result = validate_slice_bounds(slice, 2, 5, "my_data");
+
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("my_data"));
+        assert!(err_msg.contains("start=2"));
+        assert!(err_msg.contains("len=5"));
+        assert!(err_msg.contains("slice_len=3"));
+    }
+
+    // =========================================================================
+    // Error Mapping Module Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_error_mapping_compilation_error() {
+        use error_mapping::*;
+
+        let error = WasmtimeError::Compilation {
+            message: "test".to_string()
+        };
+        assert_eq!(map_error_to_code(&error), FFI_ERROR);
+    }
+
+    #[test]
+    fn test_error_mapping_validation_error() {
+        use error_mapping::*;
+
+        let error = WasmtimeError::Validation {
+            message: "test".to_string()
+        };
+        assert_eq!(map_error_to_code(&error), FFI_ERROR);
+    }
+
+    #[test]
+    fn test_error_mapping_runtime_error() {
+        use error_mapping::*;
+
+        let error = WasmtimeError::Runtime {
+            message: "test".to_string(),
+            backtrace: None,
+        };
+        assert_eq!(map_error_to_code(&error), FFI_ERROR);
+    }
+
+    #[test]
+    fn test_should_propagate_all_errors() {
+        use error_mapping::*;
+
+        let errors = [
+            WasmtimeError::Compilation { message: "test".to_string() },
+            WasmtimeError::Validation { message: "test".to_string() },
+            WasmtimeError::Runtime { message: "test".to_string(), backtrace: None },
+            WasmtimeError::InvalidParameter { message: "test".to_string() },
+            WasmtimeError::Internal { message: "test".to_string() },
+        ];
+
+        for error in &errors {
+            assert!(should_propagate_error(error), "All errors should propagate");
+        }
+    }
+
+    #[test]
+    fn test_error_mapping_consistency() {
+        use error_mapping::*;
+
+        // All different error types should map to FFI_ERROR
+        let error_types = [
+            WasmtimeError::Store { message: "test".to_string() },
+            WasmtimeError::Instance { message: "test".to_string() },
+            WasmtimeError::Memory { message: "test".to_string() },
+            WasmtimeError::Table { message: "test".to_string() },
+            WasmtimeError::Global { message: "test".to_string() },
+        ];
+
+        for error in &error_types {
+            assert_eq!(map_error_to_code(error), FFI_ERROR);
+        }
+    }
+
+    // =========================================================================
+    // FfiGlobalValue Conversion Tests (7 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_ffi_global_value_i32_conversion() {
+        use global::FfiGlobalValue;
+        use crate::global::GlobalValue;
+
+        let ffi_val = FfiGlobalValue {
+            value_type: 0,
+            i32_value: 42,
+            i64_value: 0,
+            f32_value: 0.0,
+            f64_value: 0.0,
+            v128_value: 0,
+        };
+
+        let native = ffi_val.to_native().expect("Conversion should succeed");
+        match native {
+            GlobalValue::I32(v) => assert_eq!(v, 42),
+            _ => panic!("Expected I32 value"),
+        }
+    }
+
+    #[test]
+    fn test_ffi_global_value_i64_conversion() {
+        use global::FfiGlobalValue;
+        use crate::global::GlobalValue;
+
+        let ffi_val = FfiGlobalValue {
+            value_type: 1,
+            i32_value: 0,
+            i64_value: 123456789,
+            f32_value: 0.0,
+            f64_value: 0.0,
+            v128_value: 0,
+        };
+
+        let native = ffi_val.to_native().expect("Conversion should succeed");
+        match native {
+            GlobalValue::I64(v) => assert_eq!(v, 123456789),
+            _ => panic!("Expected I64 value"),
+        }
+    }
+
+    #[test]
+    fn test_ffi_global_value_f32_conversion() {
+        use global::FfiGlobalValue;
+        use crate::global::GlobalValue;
+
+        let ffi_val = FfiGlobalValue {
+            value_type: 2,
+            i32_value: 0,
+            i64_value: 0,
+            f32_value: 3.14,
+            f64_value: 0.0,
+            v128_value: 0,
+        };
+
+        let native = ffi_val.to_native().expect("Conversion should succeed");
+        match native {
+            GlobalValue::F32(v) => assert!((v - 3.14).abs() < 0.01),
+            _ => panic!("Expected F32 value"),
+        }
+    }
+
+    #[test]
+    fn test_ffi_global_value_f64_conversion() {
+        use global::FfiGlobalValue;
+        use crate::global::GlobalValue;
+
+        let ffi_val = FfiGlobalValue {
+            value_type: 3,
+            i32_value: 0,
+            i64_value: 0,
+            f32_value: 0.0,
+            f64_value: 2.718281828,
+            v128_value: 0,
+        };
+
+        let native = ffi_val.to_native().expect("Conversion should succeed");
+        match native {
+            GlobalValue::F64(v) => assert!((v - 2.718281828).abs() < 0.000001),
+            _ => panic!("Expected F64 value"),
+        }
+    }
+
+    #[test]
+    fn test_ffi_global_value_from_native_roundtrip() {
+        use global::FfiGlobalValue;
+        use crate::global::GlobalValue;
+
+        let original = GlobalValue::I32(99);
+        let ffi = FfiGlobalValue::from_native(&original);
+        let restored = ffi.to_native().expect("Conversion should succeed");
+
+        match (original, restored) {
+            (GlobalValue::I32(a), GlobalValue::I32(b)) => assert_eq!(a, b),
+            _ => panic!("Roundtrip failed"),
+        }
+    }
+
+    #[test]
+    fn test_ffi_global_value_invalid_type() {
+        use global::FfiGlobalValue;
+
+        let ffi_val = FfiGlobalValue {
+            value_type: 99, // Invalid type
+            i32_value: 0,
+            i64_value: 0,
+            f32_value: 0.0,
+            f64_value: 0.0,
+            v128_value: 0,
+        };
+
+        assert!(ffi_val.to_native().is_err());
+    }
+
+    #[test]
+    fn test_ffi_global_value_reference_types() {
+        use global::FfiGlobalValue;
+        use crate::global::GlobalValue;
+
+        // FuncRef
+        let funcref = FfiGlobalValue {
+            value_type: 5,
+            i32_value: 0,
+            i64_value: 0,
+            f32_value: 0.0,
+            f64_value: 0.0,
+            v128_value: 0,
+        };
+        let native = funcref.to_native().expect("FuncRef conversion should succeed");
+        assert!(matches!(native, GlobalValue::FuncRef(None)));
+
+        // ExternRef
+        let externref = FfiGlobalValue {
+            value_type: 6,
+            i32_value: 0,
+            i64_value: 0,
+            f32_value: 0.0,
+            f64_value: 0.0,
+            v128_value: 0,
+        };
+        let native = externref.to_native().expect("ExternRef conversion should succeed");
+        assert!(matches!(native, GlobalValue::ExternRef(None)));
+    }
+
+    // =========================================================================
+    // FfiTableElement Conversion Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_ffi_table_element_funcref() {
+        use table::FfiTableElement;
+        use crate::table::TableElement;
+
+        let ffi_elem = FfiTableElement {
+            element_type: 0,
+            ptr_value: std::ptr::null_mut(),
+        };
+
+        let native = ffi_elem.to_native().expect("Conversion should succeed");
+        assert!(matches!(native, TableElement::FuncRef(None)));
+    }
+
+    #[test]
+    fn test_ffi_table_element_externref() {
+        use table::FfiTableElement;
+        use crate::table::TableElement;
+
+        let ffi_elem = FfiTableElement {
+            element_type: 1,
+            ptr_value: std::ptr::null_mut(),
+        };
+
+        let native = ffi_elem.to_native().expect("Conversion should succeed");
+        assert!(matches!(native, TableElement::ExternRef(None)));
+    }
+
+    #[test]
+    fn test_ffi_table_element_anyref() {
+        use table::FfiTableElement;
+        use crate::table::TableElement;
+
+        let ffi_elem = FfiTableElement {
+            element_type: 2,
+            ptr_value: std::ptr::null_mut(),
+        };
+
+        let native = ffi_elem.to_native().expect("Conversion should succeed");
+        assert!(matches!(native, TableElement::AnyRef(None)));
+    }
+
+    #[test]
+    fn test_ffi_table_element_invalid_type() {
+        use table::FfiTableElement;
+
+        let ffi_elem = FfiTableElement {
+            element_type: 99,
+            ptr_value: std::ptr::null_mut(),
+        };
+
+        assert!(ffi_elem.to_native().is_err());
+    }
+
+    #[test]
+    fn test_ffi_table_element_from_native_roundtrip() {
+        use table::FfiTableElement;
+        use crate::table::TableElement;
+
+        let original = TableElement::FuncRef(None);
+        let ffi = FfiTableElement::from_native(&original);
+        let restored = ffi.to_native().expect("Conversion should succeed");
+
+        assert!(matches!(restored, TableElement::FuncRef(None)));
+    }
 }

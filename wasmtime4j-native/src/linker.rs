@@ -2050,4 +2050,308 @@ mod tests {
         }
         println!("Done!");
     }
+
+    // === Phase 1: Additional Linker Tests ===
+
+    #[test]
+    fn test_linker_is_valid() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        assert!(linker.is_valid(), "New linker should be valid");
+    }
+
+    #[test]
+    fn test_linker_with_config() {
+        let engine = shared_engine();
+        let config = LinkerConfig {
+            enable_wasi: true,
+            allow_shadowing: true,
+            max_host_functions: Some(100),
+            validate_signatures: true,
+        };
+        let linker = Linker::with_config(&engine, config).expect("Failed to create linker");
+
+        assert!(linker.is_valid(), "Linker with config should be valid");
+    }
+
+    #[test]
+    fn test_host_functions_list_empty() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        let host_funcs = linker.host_functions();
+        assert!(host_funcs.is_empty(), "New linker should have no host functions");
+    }
+
+    #[test]
+    fn test_imports_list_empty() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        let imports = linker.imports();
+        assert!(imports.is_empty(), "New linker should have no imports");
+    }
+
+    #[test]
+    fn test_set_allow_shadowing() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        // Just test that it doesn't fail - we can't access internal state directly
+        let result = linker.set_allow_shadowing(true);
+        assert!(result.is_ok(), "set_allow_shadowing(true) should succeed");
+
+        let result = linker.set_allow_shadowing(false);
+        assert!(result.is_ok(), "set_allow_shadowing(false) should succeed");
+    }
+
+    #[test]
+    fn test_set_allow_unknown_exports() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        let result = linker.set_allow_unknown_exports(true);
+        assert!(result.is_ok(), "set_allow_unknown_exports(true) should succeed");
+
+        let result = linker.set_allow_unknown_exports(false);
+        assert!(result.is_ok(), "set_allow_unknown_exports(false) should succeed");
+    }
+
+    #[test]
+    fn test_dispose_linker() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        assert!(linker.is_valid(), "Linker should be valid before dispose");
+
+        linker.dispose();
+
+        assert!(!linker.is_valid(), "Linker should be invalid after dispose");
+    }
+
+    #[test]
+    fn test_metadata_accessors() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        let metadata = linker.metadata();
+        assert!(!metadata.wasi_enabled, "WASI should not be enabled by default");
+        assert!(!metadata.disposed, "Linker should not be disposed");
+        assert_eq!(metadata.host_function_count, 0, "Should have 0 host functions");
+        assert_eq!(metadata.import_count, 0, "Should have 0 imports");
+    }
+
+    #[test]
+    fn test_has_import() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        // New linker should not have any imports
+        assert!(!linker.has_import("env", "nonexistent"),
+            "Should not have nonexistent import");
+    }
+
+    #[test]
+    fn test_define_unknown_imports_as_traps() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        // Create a module with an import
+        let wat = r#"
+            (module
+              (import "env" "external_func" (func (result i32)))
+              (func (export "test") (result i32)
+                call 0))
+        "#;
+        let module = crate::module::Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        let result = linker.define_unknown_imports_as_traps(&module);
+        assert!(result.is_ok(), "Should define unknown imports as traps");
+    }
+
+    #[test]
+    fn test_wasi_enabled_flag() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        assert!(!linker.metadata().wasi_enabled, "WASI should not be enabled by default");
+    }
+
+    #[test]
+    fn test_core_create_linker() {
+        let engine = shared_engine();
+        let linker = core::create_linker(&engine).expect("Failed to create linker via core");
+
+        assert!(linker.is_valid(), "Linker created via core should be valid");
+    }
+
+    #[test]
+    fn test_core_create_linker_with_config() {
+        let engine = shared_engine();
+        let config = LinkerConfig {
+            enable_wasi: false,
+            allow_shadowing: true,
+            max_host_functions: Some(100),
+            validate_signatures: true,
+        };
+        let linker = core::create_linker_with_config(&engine, config)
+            .expect("Failed to create linker with config via core");
+
+        assert!(linker.is_valid(), "Linker created via core should be valid");
+    }
+
+    #[test]
+    fn test_core_get_metadata() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        let metadata = core::get_metadata(&linker);
+        assert!(!metadata.wasi_enabled, "WASI should not be enabled");
+    }
+
+    #[test]
+    fn test_core_is_valid() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        assert!(core::is_valid(&linker), "Linker should be valid via core");
+    }
+
+    #[test]
+    fn test_core_dispose_linker() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        assert!(core::is_valid(&linker), "Linker should be valid before dispose");
+
+        core::dispose_linker(&mut linker);
+
+        assert!(!core::is_valid(&linker), "Linker should be invalid after dispose");
+    }
+
+    #[test]
+    fn test_core_host_function_count() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        assert_eq!(core::host_function_count(&linker), 0, "Should start with 0 host functions");
+    }
+
+    #[test]
+    fn test_core_import_count() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        assert_eq!(core::import_count(&linker), 0, "Should start with 0 imports");
+    }
+
+    #[test]
+    fn test_instantiate_simple_module() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+        let mut store = crate::store::Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = crate::module::Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        let result = core::instantiate_module(&mut linker, &mut store, &module);
+        assert!(result.is_ok(), "Should instantiate simple module");
+
+        let inst_result = result.unwrap();
+        assert_eq!(inst_result.resolved_imports, 0, "Should resolve 0 imports");
+    }
+
+    #[test]
+    fn test_instantiate_module_with_memory() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+        let mut store = crate::store::Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (memory (export \"mem\") 1)
+                     (func (export \"get_size\") (result i32)
+                       memory.size))";
+        let module = crate::module::Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        let result = core::instantiate_module(&mut linker, &mut store, &module);
+        assert!(result.is_ok(), "Should instantiate module with memory");
+    }
+
+    #[test]
+    fn test_linker_wasi_context() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        assert!(linker.get_wasi_context().is_none(), "Should not have WASI context initially");
+
+        // Create a simple WASI context
+        let wasi_ctx = crate::wasi::WasiContext::new()
+            .expect("Failed to create WASI context");
+
+        linker.set_wasi_context(wasi_ctx);
+
+        assert!(linker.get_wasi_context().is_some(), "Should have WASI context after set");
+    }
+
+    #[test]
+    fn test_validate_imports_empty_module() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        let wat = "(module)";
+        let module = crate::module::Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        let issues = linker.validate_imports(&[module]).expect("Failed to validate imports");
+        assert!(issues.is_empty(), "Empty module should have no import issues");
+    }
+
+    #[test]
+    fn test_resolve_dependencies_single_module() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        let wat = "(module)";
+        let module = crate::module::Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        let modules = [module];
+        let graph = linker.resolve_dependencies(&modules)
+            .expect("Failed to resolve dependencies");
+
+        // DependencyGraph for a single module should have one node
+        assert_eq!(graph.nodes.len(), 1, "Should have 1 node");
+        assert!(graph.circular_chains.is_empty(), "Should have no circular chains");
+    }
+
+    #[test]
+    fn test_dependency_graph_structure() {
+        let engine = shared_engine();
+        let linker = Linker::new(&engine).expect("Failed to create linker");
+
+        let wat = "(module)";
+        let module = crate::module::Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        let modules = [module];
+        let graph = linker.resolve_dependencies(&modules)
+            .expect("Failed to resolve dependencies");
+
+        // Check that the graph is validated
+        assert!(graph.validated, "Graph should be validated");
+    }
+
+    #[test]
+    fn test_linker_after_wasi_enable() {
+        let engine = shared_engine();
+        let mut linker = Linker::new(&engine).expect("Failed to create linker");
+
+        linker.enable_wasi().expect("Failed to enable WASI");
+
+        assert!(linker.metadata().wasi_enabled, "WASI should be enabled");
+    }
 }

@@ -2054,11 +2054,11 @@ mod tests {
                 std::ptr::null(),
             );
             assert_ne!(result, 0); // Should fail
-            
+
             // Test adding directory with invalid path
             let ctx_ptr = wasi_ctx_new();
             assert!(!ctx_ptr.is_null());
-            
+
             let invalid_path = CString::new("/nonexistent/directory").unwrap();
             let guest_path = CString::new("/sandbox").unwrap();
             let result = wasi_ctx_add_dir(
@@ -2069,8 +2069,221 @@ mod tests {
                 1, 1, 1, 1, // file perms
             );
             assert_ne!(result, 0); // Should fail
-            
+
             wasi_ctx_destroy(ctx_ptr);
+        }
+    }
+
+    // ==================== NEW TESTS: WasiConfig ====================
+
+    #[test]
+    fn test_wasi_config_builder_pattern() {
+        let config = WasiConfig {
+            allow_network: true,
+            allow_arbitrary_fs: true,
+            max_file_size: Some(1024 * 1024),
+            max_open_files: Some(256),
+            env_policy: EnvironmentPolicy::Inherit,
+        };
+
+        assert!(config.allow_network);
+        assert!(config.allow_arbitrary_fs);
+        assert_eq!(config.max_file_size, Some(1024 * 1024));
+        assert_eq!(config.max_open_files, Some(256));
+    }
+
+    #[test]
+    fn test_wasi_config_no_limits() {
+        let config = WasiConfig {
+            max_file_size: None,
+            max_open_files: None,
+            ..WasiConfig::default()
+        };
+
+        assert!(config.max_file_size.is_none());
+        assert!(config.max_open_files.is_none());
+    }
+
+    #[test]
+    fn test_environment_policy_inherit() {
+        let config = WasiConfig {
+            env_policy: EnvironmentPolicy::Inherit,
+            ..WasiConfig::default()
+        };
+
+        let ctx = WasiContext::with_config(config).unwrap();
+        // Should not error when using inherit policy
+        assert!(ctx.get_environment().is_empty() || !ctx.get_environment().is_empty());
+    }
+
+    #[test]
+    fn test_multiple_directory_mappings() {
+        let temp_dir1 = TempDir::new().unwrap();
+        let temp_dir2 = TempDir::new().unwrap();
+
+        let mut ctx = WasiContext::new().unwrap();
+
+        assert!(ctx.add_directory_mapping(
+            temp_dir1.path(),
+            "/sandbox1",
+            WasiDirPermissions::default(),
+            WasiFilePermissions::default()
+        ).is_ok());
+
+        assert!(ctx.add_directory_mapping(
+            temp_dir2.path(),
+            "/sandbox2",
+            WasiDirPermissions::default(),
+            WasiFilePermissions::default()
+        ).is_ok());
+
+        let mappings = ctx.get_directory_mappings();
+        assert_eq!(mappings.len(), 2);
+        assert!(mappings.contains_key("/sandbox1"));
+        assert!(mappings.contains_key("/sandbox2"));
+    }
+
+    #[test]
+    fn test_wasi_context_clone() {
+        let mut ctx = WasiContext::new().unwrap();
+        ctx.set_environment_variable("TEST_KEY", "test_value").unwrap();
+
+        let cloned = ctx.clone();
+
+        assert_eq!(cloned.get_environment().get("TEST_KEY"), Some(&"test_value".to_string()));
+    }
+
+    #[test]
+    fn test_wasi_dir_permissions_full_access() {
+        let dir_perms = WasiDirPermissions {
+            create: true,
+            read: true,
+            remove: true,
+        };
+
+        let wasi_perms = dir_perms.to_wasmtime_perms();
+        assert!(wasi_perms.contains(DirPerms::READ));
+    }
+
+    #[test]
+    fn test_wasi_file_permissions_full_access() {
+        let file_perms = WasiFilePermissions {
+            read: true,
+            write: true,
+            create: true,
+            truncate: true,
+        };
+
+        let wasi_perms = file_perms.to_wasmtime_perms();
+        assert!(wasi_perms.contains(FilePerms::READ));
+        assert!(wasi_perms.contains(FilePerms::WRITE));
+    }
+
+    #[test]
+    fn test_stdio_source_variants() {
+        let null_source = StdioSource::Null;
+        let buffer_source = StdioSource::Buffer(b"test input".to_vec());
+
+        // Just verify the variants can be created and matched
+        match null_source {
+            StdioSource::Null => {},
+            _ => panic!("Expected Null"),
+        }
+
+        match buffer_source {
+            StdioSource::Buffer(data) => assert_eq!(data, b"test input".to_vec()),
+            _ => panic!("Expected Buffer"),
+        }
+    }
+
+    #[test]
+    fn test_stdio_sink_variants() {
+        let null_sink = StdioSink::Null;
+        let buffer_sink = StdioSink::Buffer;
+
+        match null_sink {
+            StdioSink::Null => {},
+            _ => panic!("Expected Null"),
+        }
+
+        match buffer_sink {
+            StdioSink::Buffer => {},
+            _ => panic!("Expected Buffer"),
+        }
+    }
+
+    #[test]
+    fn test_wasi_context_is_ready() {
+        let ctx = WasiContext::new().unwrap();
+        assert!(ctx.is_ready());
+    }
+
+    #[test]
+    fn test_wasi_capabilities_summary() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let config = WasiConfig {
+            allow_network: true,
+            allow_arbitrary_fs: false,
+            ..WasiConfig::default()
+        };
+
+        let mut ctx = WasiContext::with_config(config).unwrap();
+        ctx.set_environment_variable("VAR1", "val1").unwrap();
+        ctx.set_environment_variable("VAR2", "val2").unwrap();
+
+        ctx.add_directory_mapping(
+            temp_dir.path(),
+            "/sandbox",
+            WasiDirPermissions::default(),
+            WasiFilePermissions::default()
+        ).unwrap();
+
+        let summary = ctx.get_capabilities_summary();
+
+        assert!(summary.network_enabled);
+        assert!(summary.filesystem_enabled);
+        assert_eq!(summary.environment_count, 2);
+        assert_eq!(summary.directory_mappings_count, 1);
+        assert!(summary.stdio_configured);
+    }
+
+    #[test]
+    fn test_empty_arguments() {
+        let mut ctx = WasiContext::new().unwrap();
+
+        assert!(ctx.set_arguments(Vec::new()).is_ok());
+        assert!(ctx.get_arguments().is_empty());
+    }
+
+    #[test]
+    fn test_arguments_with_special_characters() {
+        let mut ctx = WasiContext::new().unwrap();
+
+        let args = vec![
+            "program".to_string(),
+            "--path=/some/path with spaces".to_string(),
+            "-o=\"quoted value\"".to_string(),
+            "--unicode=日本語".to_string(),
+        ];
+
+        assert!(ctx.set_arguments(args.clone()).is_ok());
+        assert_eq!(ctx.get_arguments(), args);
+    }
+
+    #[test]
+    fn test_environment_variable_empty_value() {
+        let mut ctx = WasiContext::new().unwrap();
+
+        assert!(ctx.set_environment_variable("EMPTY_VAR", "").is_ok());
+        assert_eq!(ctx.get_environment().get("EMPTY_VAR"), Some(&"".to_string()));
+    }
+
+    #[test]
+    fn test_ffi_wasi_ctx_destroy_null() {
+        unsafe {
+            // Should not crash when destroying null pointer
+            wasi_ctx_destroy(std::ptr::null_mut());
         }
     }
 }

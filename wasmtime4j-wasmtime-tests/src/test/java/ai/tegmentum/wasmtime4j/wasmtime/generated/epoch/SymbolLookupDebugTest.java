@@ -60,9 +60,14 @@ public class SymbolLookupDebugTest {
 
       // Also check the JAR library
       System.out.println("\nJAR library epoch symbols:");
+      String version = "41.0.3-1.0.0";
       String jarPath =
           System.getProperty("user.home")
-              + "/.m2/repository/ai/tegmentum/wasmtime4j-native/1.0.0/wasmtime4j-native-1.0.0.jar";
+              + "/.m2/repository/ai/tegmentum/wasmtime4j-native/"
+              + version
+              + "/wasmtime4j-native-"
+              + version
+              + ".jar";
       System.out.println("JAR path: " + jarPath);
       java.util.jar.JarFile jar = new java.util.jar.JarFile(jarPath);
       var entry = jar.getEntry("natives/darwin-aarch64/libwasmtime4j.dylib");

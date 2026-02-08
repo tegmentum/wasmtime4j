@@ -2196,4 +2196,255 @@ mod tests {
         let result = simd.load_aligned(&memory, &mut store, 0, 16);
         // We don't assert success because memory might be too small
     }
+
+    // ==================== NEW TESTS: Platform Capabilities ====================
+
+    #[test]
+    fn test_platform_capabilities_detection() {
+        let caps = PlatformCapabilities::detect();
+
+        // All platforms should have non-negative max vector width
+        assert!(caps.max_vector_width >= 0);
+
+        // Verify we can detect at least basic capabilities
+        // The actual values depend on the platform
+        #[cfg(target_arch = "x86_64")]
+        {
+            // x86_64 should always have at least SSE2 (128-bit vectors)
+            assert!(caps.max_vector_width >= 128 || caps.max_vector_width == 0);
+        }
+    }
+
+    #[test]
+    fn test_simd_config_with_relaxed_mode() {
+        let config = SIMDConfig {
+            enable_relaxed_operations: true,
+            ..SIMDConfig::default()
+        };
+
+        assert!(config.enable_relaxed_operations);
+        assert!(config.enable_platform_optimizations); // Default is true
+    }
+
+    #[test]
+    fn test_simd_operations_with_relaxed_mode() {
+        let config = SIMDConfig {
+            enable_relaxed_operations: true,
+            ..SIMDConfig::default()
+        };
+        let simd = SIMDOperations::new(config).unwrap();
+
+        // Basic operations should still work in relaxed mode
+        let a = V128::from_i32s(1, 2, 3, 4);
+        let b = V128::from_i32s(5, 6, 7, 8);
+        let result = simd.add(&a, &b).unwrap();
+        assert_eq!(result.as_i32s(), [6, 8, 10, 12]);
+    }
+
+    #[test]
+    fn test_simd_operations_without_platform_optimizations() {
+        let config = SIMDConfig {
+            enable_platform_optimizations: false,
+            ..SIMDConfig::default()
+        };
+        let simd = SIMDOperations::new(config).unwrap();
+
+        // Operations should fall back to non-optimized path
+        let a = V128::from_i32s(10, 20, 30, 40);
+        let b = V128::from_i32s(1, 2, 3, 4);
+        let result = simd.subtract(&a, &b).unwrap();
+        assert_eq!(result.as_i32s(), [9, 18, 27, 36]);
+    }
+
+    #[test]
+    fn test_v128_from_bytes() {
+        let bytes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+        let vec = V128::from_bytes(bytes);
+        assert_eq!(vec.data, bytes);
+    }
+
+    #[test]
+    fn test_v128_as_u8s() {
+        let vec = V128::from_i32s(0x03020100, 0x07060504, 0x0B0A0908, 0x0F0E0D0C);
+        let bytes = vec.as_u8s();
+        assert_eq!(bytes[0], 0x00);
+        assert_eq!(bytes[4], 0x04);
+        assert_eq!(bytes[8], 0x08);
+        assert_eq!(bytes[12], 0x0C);
+    }
+
+    #[test]
+    fn test_v128_splat_operations_via_simd() {
+        let config = SIMDConfig::default();
+        let simd = SIMDOperations::new(config).unwrap();
+
+        let int_splat = simd.splat_i32(42).unwrap();
+        let ints = int_splat.as_i32s();
+        assert_eq!(ints, [42, 42, 42, 42]);
+
+        let float_splat = simd.splat_f32(3.14).unwrap();
+        let floats = float_splat.as_f32s();
+        for f in floats.iter() {
+            assert!((f - 3.14).abs() < 0.0001);
+        }
+    }
+
+    #[test]
+    fn test_v128_from_f64s() {
+        let vec = V128::from_f64s(1.5, 2.5);
+        let doubles = vec.as_f64s();
+        assert!((doubles[0] - 1.5).abs() < 0.0001);
+        assert!((doubles[1] - 2.5).abs() < 0.0001);
+    }
+
+    #[test]
+    fn test_v128_equality() {
+        let a = V128::from_i32s(1, 2, 3, 4);
+        let b = V128::from_i32s(1, 2, 3, 4);
+        let c = V128::from_i32s(1, 2, 3, 5);
+
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+    }
+
+    #[test]
+    fn test_v128_clone() {
+        let original = V128::from_i32s(10, 20, 30, 40);
+        let cloned = original.clone();
+
+        assert_eq!(original, cloned);
+        assert_eq!(original.as_i32s(), cloned.as_i32s());
+    }
+
+    #[test]
+    fn test_simd_debug_mode() {
+        let config = SIMDConfig {
+            debug_mode: true,
+            ..SIMDConfig::default()
+        };
+        let simd = SIMDOperations::new(config).unwrap();
+
+        // Verify debug mode is set
+        assert!(simd.config.debug_mode);
+    }
+
+    #[test]
+    fn test_vector_max_vector_width_zero() {
+        let config = SIMDConfig {
+            max_vector_width: 0,
+            ..SIMDConfig::default()
+        };
+        let simd = SIMDOperations::new(config).unwrap();
+
+        // Operations should still work with scalar fallback
+        let a = V128::from_i32s(1, 2, 3, 4);
+        let b = V128::from_i32s(1, 1, 1, 1);
+        let result = simd.add(&a, &b).unwrap();
+        assert_eq!(result.as_i32s(), [2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_shuffle_with_second_vector_indices() {
+        let config = SIMDConfig::default();
+        let simd = SIMDOperations::new(config).unwrap();
+
+        let a = V128::from_i32s(0x01010101, 0x02020202, 0x03030303, 0x04040404);
+        let b = V128::from_i32s(0x11111111, 0x12121212, 0x13131313, 0x14141414);
+
+        // Mix bytes from both vectors
+        // Indices 0-15 come from vector a, 16-31 from vector b
+        let indices = [16, 17, 18, 19, 0, 1, 2, 3, 20, 21, 22, 23, 4, 5, 6, 7];
+        let result = simd.shuffle(&a, &b, &indices).unwrap();
+
+        // First 4 bytes should come from b's first int, next 4 from a's first int, etc.
+        let result_bytes = result.as_u8s();
+        assert_eq!(result_bytes[0..4], [0x11, 0x11, 0x11, 0x11]);
+        assert_eq!(result_bytes[4..8], [0x01, 0x01, 0x01, 0x01]);
+    }
+
+    #[test]
+    fn test_v128_from_i16s() {
+        let values: [i16; 8] = [1, 2, 3, 4, 5, 6, 7, 8];
+        let vec = V128::from_i16s(values);
+        let result = vec.as_i16s();
+        assert_eq!(result, values);
+    }
+
+    #[test]
+    fn test_v128_as_i16s() {
+        let vec = V128::from_i16s([100, 200, 300, 400, 500, 600, 700, 800]);
+        let shorts = vec.as_i16s();
+        assert_eq!(shorts[0], 100);
+        assert_eq!(shorts[7], 800);
+    }
+
+    #[test]
+    fn test_scheduling_strategy_variants() {
+        assert_eq!(SchedulingStrategy::InOrder, SchedulingStrategy::InOrder);
+        assert_ne!(SchedulingStrategy::InOrder, SchedulingStrategy::OutOfOrder);
+        assert_ne!(SchedulingStrategy::Pipelined, SchedulingStrategy::Adaptive);
+    }
+
+    #[test]
+    fn test_alignment_requirement_variants() {
+        assert_eq!(AlignmentRequirement::None, AlignmentRequirement::None);
+        assert_ne!(AlignmentRequirement::None, AlignmentRequirement::Align16);
+        assert_ne!(AlignmentRequirement::Align16, AlignmentRequirement::CacheLine);
+    }
+
+    #[test]
+    fn test_simd_config_scheduling_and_alignment() {
+        let config = SIMDConfig {
+            scheduling_strategy: SchedulingStrategy::OutOfOrder,
+            alignment_requirement: AlignmentRequirement::CacheLine,
+            ..SIMDConfig::default()
+        };
+
+        assert_eq!(config.scheduling_strategy, SchedulingStrategy::OutOfOrder);
+        assert_eq!(config.alignment_requirement, AlignmentRequirement::CacheLine);
+    }
+
+    #[test]
+    fn test_simd_config_fma_and_gather_scatter() {
+        let config = SIMDConfig {
+            enable_fma_operations: true,
+            enable_gather_scatter: true,
+            ..SIMDConfig::default()
+        };
+
+        assert!(config.enable_fma_operations);
+        assert!(config.enable_gather_scatter);
+    }
+
+    #[test]
+    fn test_simd_config_prefetching_and_fusion() {
+        let config = SIMDConfig {
+            enable_prefetching: false,
+            enable_instruction_fusion: false,
+            ..SIMDConfig::default()
+        };
+
+        assert!(!config.enable_prefetching);
+        assert!(!config.enable_instruction_fusion);
+    }
+
+    #[test]
+    fn test_simd_config_pipeline_depth() {
+        let config = SIMDConfig {
+            max_pipeline_depth: 8,
+            ..SIMDConfig::default()
+        };
+
+        assert_eq!(config.max_pipeline_depth, 8);
+    }
+
+    #[test]
+    fn test_platform_capabilities_crypto_extensions() {
+        let caps = PlatformCapabilities::detect();
+
+        // These are platform-dependent, just verify they can be queried
+        let _ = caps.has_aes_ni;
+        let _ = caps.has_aes_arm;
+        let _ = caps.has_sha_arm;
+    }
 }

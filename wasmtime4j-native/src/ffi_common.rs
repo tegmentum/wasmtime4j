@@ -830,6 +830,130 @@ mod tests {
         // Clean up
         clear_destroyed_pointers();
     }
+
+    // Additional edge case tests
+
+    #[test]
+    fn test_safe_memory_copy_zero_length() {
+        let src = vec![1u8, 2, 3, 4, 5];
+        let mut dest = vec![0u8; 5];
+
+        // Note: safe_memory_copy takes (dest, src, len, dest_size, src_size, name)
+        let result = safe_memory_copy(
+            dest.as_mut_ptr(),
+            src.as_ptr(),
+            0,  // zero length copy
+            dest.len(),
+            src.len(),
+            "test_copy"
+        );
+
+        assert!(result.is_ok(), "Zero length copy should succeed");
+        // Destination should be unchanged
+        assert!(dest.iter().all(|&x| x == 0), "Destination should be unchanged");
+    }
+
+    #[test]
+    fn test_safe_array_access_boundary() {
+        let array = vec![10i32, 20, 30, 40, 50];
+
+        // Access at exact boundary (last element)
+        let result = safe_array_access(array.as_ptr(), 4, array.len(), "test_array");
+        assert!(result.is_ok(), "Should access last element");
+        assert_eq!(*result.unwrap(), 50);
+    }
+
+    #[test]
+    fn test_safe_byte_slice_single_byte() {
+        let data = vec![42u8];
+
+        let result = safe_byte_slice(data.as_ptr(), 1, "test_slice");
+        assert!(result.is_ok(), "Should create slice from single byte");
+        let slice = result.unwrap();
+        assert_eq!(slice.len(), 1);
+        assert_eq!(slice[0], 42);
+    }
+
+    #[test]
+    fn test_int_to_optional_u32_boundary() {
+        // Test boundary values
+        assert!(convert_int_to_optional_u32(0).is_some(), "0 should convert");
+        assert_eq!(convert_int_to_optional_u32(0).unwrap(), 0);
+
+        assert!(convert_int_to_optional_u32(-1).is_none(), "-1 should not convert");
+
+        assert!(convert_int_to_optional_u32(i32::MAX).is_some(), "MAX should convert");
+        assert_eq!(convert_int_to_optional_u32(i32::MAX).unwrap(), i32::MAX as u32);
+    }
+
+    #[test]
+    fn test_int_to_optional_usize_boundary() {
+        // Test boundary values
+        assert!(convert_int_to_optional_usize(0).is_some(), "0 should convert");
+        assert_eq!(convert_int_to_optional_usize(0).unwrap(), 0);
+
+        assert!(convert_int_to_optional_usize(-1).is_none(), "-1 should not convert");
+    }
+
+    #[test]
+    fn test_int_to_bool_edge_cases() {
+        // Standard cases
+        assert!(!convert_int_to_bool(0), "0 should be false");
+        assert!(convert_int_to_bool(1), "1 should be true");
+
+        // Edge cases - any non-zero should be true
+        assert!(convert_int_to_bool(-1), "-1 should be true");
+        assert!(convert_int_to_bool(i32::MAX), "MAX should be true");
+        assert!(convert_int_to_bool(i32::MIN), "MIN should be true");
+        assert!(convert_int_to_bool(100), "100 should be true");
+    }
+
+    #[test]
+    fn test_safe_box_roundtrip() {
+        let original_value = 42i32;
+        let boxed = Box::new(original_value);
+
+        let ptr = box_into_raw_safe(boxed);
+        assert!(!ptr.is_null(), "Pointer should not be null");
+
+        // Recover the box
+        let recovered = safe_box_from_raw::<i32>(ptr, "test_box");
+        assert!(recovered.is_ok(), "Should recover the box");
+        assert_eq!(*recovered.unwrap(), original_value);
+    }
+
+    #[test]
+    fn test_safe_deref_alignment() {
+        // Test with properly aligned data
+        let values: Vec<i64> = vec![1, 2, 3, 4];
+        let ptr = values.as_ptr();
+
+        // Should succeed with proper alignment
+        let result = safe_deref(ptr, "test_ptr");
+        assert!(result.is_ok(), "Should dereference aligned pointer");
+        assert_eq!(*result.unwrap(), 1);
+    }
+
+    #[test]
+    fn test_multiple_safe_destroy_tracking() {
+        clear_destroyed_pointers();
+
+        // Create and destroy multiple pointers
+        let ptrs: Vec<*mut std::os::raw::c_void> = (0..5)
+            .map(|i| {
+                let boxed = Box::new(format!("string_{}", i));
+                Box::into_raw(boxed) as *mut std::os::raw::c_void
+            })
+            .collect();
+
+        // Destroy all
+        for (i, ptr) in ptrs.into_iter().enumerate() {
+            let result = unsafe { safe_destroy::<String>(ptr, &format!("ptr_{}", i)) };
+            assert!(result, "Destruction {} should succeed", i);
+        }
+
+        clear_destroyed_pointers();
+    }
 }
 
 /// Error handling utilities for consistent error reporting

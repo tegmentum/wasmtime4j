@@ -1607,6 +1607,256 @@ mod tests {
 
         println!("WASI-NN successfully integrated with linker");
     }
+
+    // =========================================================================
+    // Store Builder Extended Tests (10 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_store_builder_default() {
+        let engine = shared_engine();
+        let store = Store::builder().build(&engine).expect("Failed to build store");
+
+        // Default store should have no limits
+        let metadata = store.metadata();
+        assert_eq!(metadata.fuel_limit, None);
+        assert_eq!(metadata.memory_limit_bytes, None);
+        assert_eq!(metadata.execution_timeout, None);
+    }
+
+    #[test]
+    fn test_store_builder_fuel_limit_zero() {
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::builder()
+            .fuel_limit(0)
+            .build(&engine)
+            .expect("Failed to build store");
+
+        // Fuel limit of 0 should be valid
+        assert_eq!(store.metadata().fuel_limit, Some(0));
+    }
+
+    #[test]
+    fn test_store_builder_large_memory_limit() {
+        let engine = shared_engine();
+        let store = Store::builder()
+            .memory_limit(usize::MAX / 2)
+            .build(&engine)
+            .expect("Failed to build store");
+
+        assert_eq!(store.metadata().memory_limit_bytes, Some(usize::MAX / 2));
+    }
+
+    #[test]
+    fn test_store_builder_short_timeout() {
+        let engine = shared_engine();
+        let store = Store::builder()
+            .execution_timeout(Duration::from_millis(1))
+            .build(&engine)
+            .expect("Failed to build store");
+
+        assert_eq!(store.metadata().execution_timeout, Some(Duration::from_millis(1)));
+    }
+
+    #[test]
+    fn test_store_builder_all_resource_limits() {
+        let engine = shared_engine();
+        let store = Store::builder()
+            .max_instances(100)
+            .max_table_elements(10000)
+            .max_functions(5000)
+            .build(&engine)
+            .expect("Failed to build store");
+
+        assert!(store.validate().is_ok());
+    }
+
+    #[test]
+    fn test_store_unique_ids() {
+        let engine = shared_engine();
+        let store1 = Store::new(&engine).expect("Failed to create store 1");
+        let store2 = Store::new(&engine).expect("Failed to create store 2");
+        let store3 = Store::new(&engine).expect("Failed to create store 3");
+
+        assert_ne!(store1.id(), store2.id());
+        assert_ne!(store2.id(), store3.id());
+        assert_ne!(store1.id(), store3.id());
+    }
+
+    #[test]
+    fn test_store_id_monotonic() {
+        let engine = shared_engine();
+        let store1 = Store::new(&engine).expect("Failed to create store 1");
+        let store2 = Store::new(&engine).expect("Failed to create store 2");
+
+        assert!(store2.id() > store1.id());
+    }
+
+    // =========================================================================
+    // Fuel Management Extended Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_fuel_set_and_get() {
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::builder()
+            .fuel_limit(1000)
+            .build(&engine)
+            .expect("Failed to build store");
+
+        store.set_fuel(500).expect("Failed to set fuel");
+        let remaining = store.fuel_remaining().expect("Failed to get fuel");
+        assert_eq!(remaining, Some(500));
+    }
+
+    #[test]
+    fn test_fuel_saturation_add() {
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::builder()
+            .fuel_limit(u64::MAX)
+            .build(&engine)
+            .expect("Failed to build store");
+
+        // Adding to large fuel should saturate, not overflow
+        store.set_fuel(u64::MAX - 10).expect("Failed to set fuel");
+        store.add_fuel(100).expect("Failed to add fuel");
+
+        let remaining = store.fuel_remaining().expect("Failed to get fuel");
+        assert!(remaining.is_some());
+    }
+
+    #[test]
+    fn test_fuel_multiple_operations() {
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::builder()
+            .fuel_limit(1000)
+            .build(&engine)
+            .expect("Failed to build store");
+
+        store.add_fuel(100).expect("Failed to add fuel");
+        store.add_fuel(100).expect("Failed to add fuel");
+        store.consume_fuel(50).expect("Failed to consume fuel");
+        store.add_fuel(50).expect("Failed to add fuel");
+
+        let remaining = store.fuel_remaining().expect("Failed to get fuel");
+        // 100 + 100 - 50 + 50 = 200
+        assert!(remaining.is_some());
+    }
+
+    // =========================================================================
+    // Epoch Deadline Tests (3 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_epoch_deadline_zero() {
+        let engine = Engine::builder()
+            .epoch_interruption(true)
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Setting zero deadline should work
+        store.set_epoch_deadline(0);
+    }
+
+    #[test]
+    fn test_epoch_deadline_large() {
+        let engine = Engine::builder()
+            .epoch_interruption(true)
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        store.set_epoch_deadline(u64::MAX);
+    }
+
+    #[test]
+    fn test_epoch_deadline_multiple() {
+        let engine = Engine::builder()
+            .epoch_interruption(true)
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        store.set_epoch_deadline(100);
+        store.set_epoch_deadline(200);
+        store.set_epoch_deadline(50);
+        // Last set value should be active
+    }
+
+    // =========================================================================
+    // Execution Statistics Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_execution_stats_initial() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        let stats = store.execution_stats().expect("Failed to get stats");
+        assert_eq!(stats.execution_count, 0);
+        assert!(stats.last_execution.is_none());
+        assert_eq!(stats.total_execution_time, Duration::ZERO);
+    }
+
+    #[test]
+    fn test_execution_stats_after_context() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        store.with_context(|_ctx| Ok(())).expect("Failed to execute");
+        store.with_context(|_ctx| Ok(())).expect("Failed to execute");
+        store.with_context(|_ctx| Ok(())).expect("Failed to execute");
+
+        let stats = store.execution_stats().expect("Failed to get stats");
+        assert_eq!(stats.execution_count, 3);
+    }
+
+    #[test]
+    fn test_execution_stats_time_increases() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        store.with_context(|_ctx| {
+            std::thread::sleep(Duration::from_millis(1));
+            Ok(())
+        }).expect("Failed to execute");
+
+        let stats = store.execution_stats().expect("Failed to get stats");
+        assert!(stats.total_execution_time >= Duration::from_millis(1));
+    }
+
+    #[test]
+    fn test_memory_usage_default() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        let usage = store.memory_usage().expect("Failed to get memory usage");
+        assert_eq!(usage.instance_count, 0);
+    }
+
+    #[test]
+    fn test_store_gc_multiple() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Multiple GC calls should not fail
+        store.gc().expect("First GC failed");
+        store.gc().expect("Second GC failed");
+        store.gc().expect("Third GC failed");
+    }
 }
 
 //

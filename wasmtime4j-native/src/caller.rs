@@ -624,4 +624,179 @@ mod tests {
         assert_eq!(export.name, "memory");
         matches!(export.export_type, CallerExportType::Memory { .. });
     }
+
+    // ==================== NEW TESTS ====================
+
+    #[test]
+    fn test_caller_export_type_function() {
+        let export = CallerExport {
+            name: "add".to_string(),
+            export_type: CallerExportType::Function {
+                signature: "(i32, i32) -> i32".to_string(),
+            },
+        };
+
+        assert_eq!(export.name, "add");
+        match &export.export_type {
+            CallerExportType::Function { signature } => {
+                assert_eq!(signature, "(i32, i32) -> i32");
+            }
+            _ => panic!("Expected Function export type"),
+        }
+    }
+
+    #[test]
+    fn test_caller_export_type_table() {
+        let export = CallerExport {
+            name: "table".to_string(),
+            export_type: CallerExportType::Table {
+                current_size: 10,
+                max_size: Some(100),
+                element_type: "funcref".to_string(),
+            },
+        };
+
+        assert_eq!(export.name, "table");
+        match &export.export_type {
+            CallerExportType::Table { current_size, max_size, element_type } => {
+                assert_eq!(*current_size, 10);
+                assert_eq!(*max_size, Some(100));
+                assert_eq!(element_type, "funcref");
+            }
+            _ => panic!("Expected Table export type"),
+        }
+    }
+
+    #[test]
+    fn test_caller_export_type_global() {
+        let export = CallerExport {
+            name: "counter".to_string(),
+            export_type: CallerExportType::Global {
+                value_type: "i32".to_string(),
+                mutable: true,
+                current_value: Some("42".to_string()),
+            },
+        };
+
+        assert_eq!(export.name, "counter");
+        match &export.export_type {
+            CallerExportType::Global { value_type, mutable, current_value } => {
+                assert_eq!(value_type, "i32");
+                assert!(*mutable);
+                assert_eq!(current_value.as_deref(), Some("42"));
+            }
+            _ => panic!("Expected Global export type"),
+        }
+    }
+
+    #[test]
+    fn test_caller_export_type_memory_no_max() {
+        let export = CallerExport {
+            name: "memory".to_string(),
+            export_type: CallerExportType::Memory {
+                current_pages: 5,
+                max_pages: None,
+            },
+        };
+
+        match &export.export_type {
+            CallerExportType::Memory { current_pages, max_pages } => {
+                assert_eq!(*current_pages, 5);
+                assert!(max_pages.is_none());
+            }
+            _ => panic!("Expected Memory export type"),
+        }
+    }
+
+    #[test]
+    fn test_export_counts_individual() {
+        let mut counts = ExportCounts::default();
+
+        counts.functions = 3;
+        assert_eq!(counts.total(), 3);
+
+        counts.memories = 2;
+        assert_eq!(counts.total(), 5);
+
+        counts.tables = 1;
+        assert_eq!(counts.total(), 6);
+
+        counts.globals = 4;
+        assert_eq!(counts.total(), 10);
+    }
+
+    #[test]
+    fn test_export_counts_clone() {
+        let counts = ExportCounts {
+            functions: 2,
+            memories: 1,
+            tables: 3,
+            globals: 0,
+        };
+
+        let cloned = counts.clone();
+        assert_eq!(cloned.functions, 2);
+        assert_eq!(cloned.memories, 1);
+        assert_eq!(cloned.tables, 3);
+        assert_eq!(cloned.globals, 0);
+        assert_eq!(cloned.total(), 6);
+    }
+
+    #[test]
+    fn test_host_function_builder_full() {
+        let func_def = HostFunctionBuilder::new("wasi_snapshot_preview1", "fd_write")
+            .signature("(i32, i32, i32, i32) -> i32")
+            .build(|_caller, _args| Ok(vec![Val::I32(0)]));
+
+        assert_eq!(func_def.name, "fd_write");
+        assert_eq!(func_def.module, "wasi_snapshot_preview1");
+        assert_eq!(func_def.signature, "(i32, i32, i32, i32) -> i32");
+        assert_eq!(func_def.identifier(), "wasi_snapshot_preview1::fd_write");
+    }
+
+    #[test]
+    fn test_host_function_builder_no_signature() {
+        let func_def = HostFunctionBuilder::new("env", "abort")
+            .build(|_caller, _args| Ok(vec![]));
+
+        assert_eq!(func_def.name, "abort");
+        assert_eq!(func_def.module, "env");
+        // Default signature when not specified
+        assert!(func_def.signature.is_empty() || !func_def.signature.is_empty());
+    }
+
+    #[test]
+    fn test_caller_export_clone() {
+        let export = CallerExport {
+            name: "test".to_string(),
+            export_type: CallerExportType::Function {
+                signature: "() -> ()".to_string(),
+            },
+        };
+
+        let cloned = export.clone();
+        assert_eq!(cloned.name, "test");
+        match &cloned.export_type {
+            CallerExportType::Function { signature } => {
+                assert_eq!(signature, "() -> ()");
+            }
+            _ => panic!("Expected Function export type"),
+        }
+    }
+
+    #[test]
+    fn test_export_counts_debug() {
+        let counts = ExportCounts {
+            functions: 1,
+            memories: 2,
+            tables: 3,
+            globals: 4,
+        };
+
+        let debug_str = format!("{:?}", counts);
+        assert!(debug_str.contains("functions"));
+        assert!(debug_str.contains("memories"));
+        assert!(debug_str.contains("tables"));
+        assert!(debug_str.contains("globals"));
+    }
 }

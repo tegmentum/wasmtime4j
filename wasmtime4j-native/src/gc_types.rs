@@ -526,4 +526,238 @@ mod tests {
 
         assert!(registry.register_struct_type(struct_def).is_err());
     }
+
+    #[test]
+    fn test_gc_value_type_checking() {
+        // Test GcValue type checking
+        let i32_val = GcValue::I32(42);
+        let i64_val = GcValue::I64(1234567890123);
+        let f32_val = GcValue::F32(3.14);
+        let f64_val = GcValue::F64(2.718281828);
+        let null_val = GcValue::Null;
+
+        // Verify type discrimination works correctly
+        match i32_val {
+            GcValue::I32(v) => assert_eq!(v, 42),
+            _ => panic!("Expected I32"),
+        }
+        match i64_val {
+            GcValue::I64(v) => assert_eq!(v, 1234567890123),
+            _ => panic!("Expected I64"),
+        }
+        match f32_val {
+            GcValue::F32(v) => assert!((v - 3.14).abs() < 0.001),
+            _ => panic!("Expected F32"),
+        }
+        match f64_val {
+            GcValue::F64(v) => assert!((v - 2.718281828).abs() < 0.000001),
+            _ => panic!("Expected F64"),
+        }
+        match null_val {
+            GcValue::Null => (),
+            _ => panic!("Expected Null"),
+        }
+    }
+
+    #[test]
+    fn test_field_type_all_variants() {
+        // Test that all FieldType variants can be created
+        let types = vec![
+            FieldType::I32,
+            FieldType::I64,
+            FieldType::F32,
+            FieldType::F64,
+            FieldType::V128,
+            FieldType::V256,
+            FieldType::V512,
+            FieldType::PackedI8,
+            FieldType::PackedI16,
+            FieldType::Reference(GcReferenceType::AnyRef),
+            FieldType::Reference(GcReferenceType::EqRef),
+            FieldType::Reference(GcReferenceType::I31Ref),
+            FieldType::Reference(GcReferenceType::FuncRef),
+            FieldType::Reference(GcReferenceType::ExternRef),
+        ];
+
+        for field_type in types {
+            let field_def = FieldDefinition {
+                name: Some("test".to_string()),
+                field_type: field_type.clone(),
+                mutable: true,
+                index: 0,
+            };
+            assert_eq!(field_def.field_type, field_type);
+        }
+    }
+
+    #[test]
+    fn test_gc_reference_type_equality() {
+        // Test GcReferenceType equality
+        assert_eq!(GcReferenceType::AnyRef, GcReferenceType::AnyRef);
+        assert_eq!(GcReferenceType::EqRef, GcReferenceType::EqRef);
+        assert_eq!(GcReferenceType::I31Ref, GcReferenceType::I31Ref);
+        assert_ne!(GcReferenceType::AnyRef, GcReferenceType::EqRef);
+        assert_ne!(GcReferenceType::I31Ref, GcReferenceType::AnyRef);
+    }
+
+    #[test]
+    fn test_struct_type_definition_with_supertype() {
+        let base_struct = Box::new(StructTypeDefinition {
+            type_id: 1,
+            fields: vec![
+                FieldDefinition {
+                    name: Some("x".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: true,
+                    index: 0,
+                },
+            ],
+            name: Some("Base".to_string()),
+            supertype: None,
+        });
+
+        let derived_struct = StructTypeDefinition {
+            type_id: 2,
+            fields: vec![
+                FieldDefinition {
+                    name: Some("x".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: true,
+                    index: 0,
+                },
+                FieldDefinition {
+                    name: Some("y".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: true,
+                    index: 1,
+                },
+            ],
+            name: Some("Derived".to_string()),
+            supertype: Some(base_struct),
+        };
+
+        assert!(derived_struct.supertype.is_some());
+        assert_eq!(derived_struct.supertype.unwrap().type_id, 1);
+    }
+
+    #[test]
+    fn test_array_type_definition_clone() {
+        let array_def = ArrayTypeDefinition {
+            type_id: 42,
+            element_type: FieldType::I64,
+            mutable: false,
+            name: Some("LongArray".to_string()),
+        };
+
+        let cloned = array_def.clone();
+        assert_eq!(array_def.type_id, cloned.type_id);
+        assert_eq!(array_def.element_type, cloned.element_type);
+        assert_eq!(array_def.mutable, cloned.mutable);
+        assert_eq!(array_def.name, cloned.name);
+    }
+
+    #[test]
+    fn test_field_definition_without_name() {
+        // Anonymous fields (using index only)
+        let field = FieldDefinition {
+            name: None,
+            field_type: FieldType::I32,
+            mutable: true,
+            index: 5,
+        };
+
+        assert!(field.name.is_none());
+        assert_eq!(field.index, 5);
+    }
+
+    #[test]
+    fn test_struct_type_with_many_fields() {
+        let fields: Vec<FieldDefinition> = (0..100)
+            .map(|i| FieldDefinition {
+                name: Some(format!("field_{}", i)),
+                field_type: FieldType::I32,
+                mutable: true,
+                index: i as u32,
+            })
+            .collect();
+
+        let struct_def = StructTypeDefinition {
+            type_id: 1,
+            fields: fields.clone(),
+            name: Some("LargeStruct".to_string()),
+            supertype: None,
+        };
+
+        assert_eq!(struct_def.fields.len(), 100);
+    }
+
+    #[test]
+    fn test_gc_value_pattern_matching() {
+        // Test GcValue pattern matching since it doesn't implement PartialEq
+        let val1 = GcValue::I32(42);
+        let val2 = GcValue::I32(42);
+        let val3 = GcValue::I32(43);
+        let val4 = GcValue::I64(42);
+
+        // Check values using pattern matching
+        match (&val1, &val2) {
+            (GcValue::I32(a), GcValue::I32(b)) => assert_eq!(a, b),
+            _ => panic!("Expected matching I32 values"),
+        }
+
+        match (&val1, &val3) {
+            (GcValue::I32(a), GcValue::I32(b)) => assert_ne!(a, b),
+            _ => panic!("Expected I32 values"),
+        }
+
+        // Check different types
+        let same_type = matches!((&val1, &val4), (GcValue::I32(_), GcValue::I32(_)));
+        assert!(!same_type, "I32 and I64 should not match");
+    }
+
+    #[test]
+    fn test_array_type_with_reference_element() {
+        let array_def = ArrayTypeDefinition {
+            type_id: 1,
+            element_type: FieldType::Reference(GcReferenceType::AnyRef),
+            mutable: true,
+            name: Some("RefArray".to_string()),
+        };
+
+        assert_eq!(array_def.element_type, FieldType::Reference(GcReferenceType::AnyRef));
+    }
+
+    #[test]
+    fn test_struct_type_immutable_field() {
+        let struct_def = StructTypeDefinition {
+            type_id: 1,
+            fields: vec![
+                FieldDefinition {
+                    name: Some("constant".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: false,
+                    index: 0,
+                },
+            ],
+            name: Some("ImmutableFieldStruct".to_string()),
+            supertype: None,
+        };
+
+        assert!(!struct_def.fields[0].mutable);
+    }
+
+    #[test]
+    fn test_gc_reference_type_hash() {
+        use std::collections::HashSet;
+
+        let mut set = HashSet::new();
+        set.insert(GcReferenceType::AnyRef);
+        set.insert(GcReferenceType::EqRef);
+        set.insert(GcReferenceType::I31Ref);
+
+        assert!(set.contains(&GcReferenceType::AnyRef));
+        assert!(set.contains(&GcReferenceType::EqRef));
+        assert!(set.contains(&GcReferenceType::I31Ref));
+        assert!(!set.contains(&GcReferenceType::FuncRef));
+    }
 }

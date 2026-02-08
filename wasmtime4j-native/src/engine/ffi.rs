@@ -1,0 +1,716 @@
+//! Native C exports for JNI and Panama FFI consumption
+//!
+//! This module provides FFI-safe C functions for engine management.
+
+use std::os::raw::{c_int, c_void};
+
+use wasmtime::{OptLevel, Strategy};
+
+use super::pool::{
+    acquire_pooled_engine, engine_pool_cleanup, engine_pool_max_size, engine_pool_size,
+    get_shared_engine, release_pooled_engine, wasmtime_full_cleanup, ManagedEngine,
+};
+use super::{core, Engine, WasmFeature};
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
+
+/// Create a new engine with default configuration
+///
+/// # Safety
+///
+/// Returns pointer to engine that must be freed with wasmtime4j_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_new() -> *mut c_void {
+    match core::create_engine() {
+        Ok(engine) => Box::into_raw(engine) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Alias for wasmtime4j_engine_new (Panama FFI compatibility)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_create() -> *mut c_void {
+    wasmtime4j_engine_new()
+}
+
+/// Create a new engine with custom configuration
+///
+/// # Safety
+///
+/// Returns pointer to engine that must be freed with wasmtime4j_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_new_with_config(
+    debug_info: c_int,
+    wasm_threads: c_int,
+    wasm_simd: c_int,
+    wasm_reference_types: c_int,
+    wasm_bulk_memory: c_int,
+    wasm_multi_value: c_int,
+    fuel_enabled: c_int,
+    max_memory_pages: u32,
+    max_stack_size: usize,
+    epoch_interruption: c_int,
+    max_instances: u32,
+) -> *mut c_void {
+    let opt_max_memory_pages = if max_memory_pages == 0 {
+        None
+    } else {
+        Some(max_memory_pages)
+    };
+    let opt_max_stack_size = if max_stack_size == 0 {
+        None
+    } else {
+        Some(max_stack_size)
+    };
+    let opt_max_instances = if max_instances == 0 {
+        None
+    } else {
+        Some(max_instances)
+    };
+
+    match core::create_engine_with_config(
+        Some(Strategy::Cranelift),
+        Some(OptLevel::Speed),
+        debug_info != 0,
+        wasm_threads != 0,
+        wasm_simd != 0,
+        wasm_reference_types != 0,
+        wasm_bulk_memory != 0,
+        wasm_multi_value != 0,
+        fuel_enabled != 0,
+        opt_max_memory_pages,
+        opt_max_stack_size,
+        epoch_interruption != 0,
+        opt_max_instances,
+        false, // async_support - TODO: add parameter
+    ) {
+        Ok(engine) => Box::into_raw(engine) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Destroy engine and free resources
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_destroy(engine_ptr: *mut c_void) {
+    if !engine_ptr.is_null() {
+        core::destroy_engine(engine_ptr);
+    }
+}
+
+/// Validate engine is still functional
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_validate(engine_ptr: *const c_void) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => match core::validate_engine(engine) {
+            Ok(_) => FFI_SUCCESS,
+            Err(_) => FFI_ERROR,
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Check if engine supports specific WebAssembly feature
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_supports_feature(
+    engine_ptr: *const c_void,
+    feature: c_int,
+) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            let wasm_feature = match feature {
+                0 => WasmFeature::Threads,
+                1 => WasmFeature::ReferenceTypes,
+                2 => WasmFeature::Simd,
+                3 => WasmFeature::BulkMemory,
+                4 => WasmFeature::MultiValue,
+                _ => return FFI_ERROR,
+            };
+            if core::check_feature_support(engine, wasm_feature) {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get memory limit in pages (64KB per page)
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_memory_limit_pages(engine_ptr: *const c_void) -> u32 {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => core::get_memory_limit(engine).unwrap_or(0),
+        Err(_) => 0,
+    }
+}
+
+/// Get stack size limit in bytes
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_stack_size_limit(engine_ptr: *const c_void) -> usize {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => core::get_stack_limit(engine).unwrap_or(0),
+        Err(_) => 0,
+    }
+}
+
+/// Check if fuel consumption is enabled
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_fuel_enabled(engine_ptr: *const c_void) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            if core::is_fuel_enabled(engine) {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Check if epoch-based interruption is enabled
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_epoch_interruption_enabled(
+    engine_ptr: *const c_void,
+) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            if core::is_epoch_interruption_enabled(engine) {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get maximum instances limit
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_max_instances(engine_ptr: *const c_void) -> u32 {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => core::get_max_instances(engine).unwrap_or(0),
+        Err(_) => 0,
+    }
+}
+
+/// Get engine reference count for debugging
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_reference_count(engine_ptr: *const c_void) -> usize {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => core::get_reference_count(engine),
+        Err(_) => 0,
+    }
+}
+
+/// Check if coredump generation on trap is enabled
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_coredump_on_trap_enabled(
+    engine_ptr: *const c_void,
+) -> c_int {
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            if core::is_coredump_on_trap_enabled(engine) {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Precompile a WebAssembly module for AOT (ahead-of-time) usage
+///
+/// Takes raw WebAssembly bytes and compiles them to a serialized form that can
+/// be loaded later via Module::deserialize without needing to recompile.
+///
+/// # Safety
+///
+/// - engine_ptr must be a valid pointer from wasmtime4j_engine_new
+/// - wasm_bytes must be a valid pointer to a byte array of length wasm_len
+/// - out_data must be a valid pointer to receive the output byte array pointer
+/// - out_len must be a valid pointer to receive the output byte array length
+///
+/// Returns 0 on success, non-zero on failure.
+/// The caller is responsible for freeing the output data with wasmtime4j_free_bytes.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_precompile_module(
+    engine_ptr: *const c_void,
+    wasm_bytes: *const u8,
+    wasm_len: usize,
+    out_data: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    if engine_ptr.is_null() || wasm_bytes.is_null() || out_data.is_null() || out_len.is_null() {
+        return FFI_ERROR;
+    }
+
+    match core::get_engine_ref(engine_ptr) {
+        Ok(engine) => {
+            let bytes = std::slice::from_raw_parts(wasm_bytes, wasm_len);
+            match core::precompile_module(engine, bytes) {
+                Ok(precompiled) => {
+                    let len = precompiled.len();
+                    let data = Box::into_raw(precompiled.into_boxed_slice()) as *mut u8;
+                    *out_data = data;
+                    *out_len = len;
+                    0 // Success
+                }
+                Err(_) => FFI_ERROR,
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Create a new engine with extended configuration including memory settings
+///
+/// This extends wasmtime4j_engine_new_with_config with additional memory configuration options.
+///
+/// # Safety
+///
+/// This function is unsafe because it's called from FFI
+///
+/// Returns pointer to engine that must be freed with wasmtime4j_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_new_with_memory_config(
+    debug_info: c_int,
+    wasm_threads: c_int,
+    wasm_simd: c_int,
+    wasm_reference_types: c_int,
+    wasm_bulk_memory: c_int,
+    wasm_multi_value: c_int,
+    fuel_enabled: c_int,
+    max_memory_pages: u32,
+    max_stack_size: usize,
+    epoch_interruption: c_int,
+    max_instances: u32,
+    memory_reservation: u64,
+    memory_guard_size: u64,
+    memory_reservation_for_growth: u64,
+) -> *mut c_void {
+    let mut builder = Engine::builder()
+        .strategy(Strategy::Cranelift)
+        .opt_level(OptLevel::Speed)
+        .debug_info(debug_info != 0)
+        .wasm_threads(wasm_threads != 0)
+        .wasm_simd(wasm_simd != 0)
+        .wasm_reference_types(wasm_reference_types != 0)
+        .wasm_bulk_memory(wasm_bulk_memory != 0)
+        .wasm_multi_value(wasm_multi_value != 0)
+        .fuel_enabled(fuel_enabled != 0)
+        .epoch_interruption(epoch_interruption != 0);
+
+    if max_memory_pages > 0 {
+        builder = builder.max_memory_pages(max_memory_pages);
+    }
+    if max_stack_size > 0 {
+        builder = builder.max_stack_size(max_stack_size);
+    }
+    if max_instances > 0 {
+        builder = builder.max_instances(max_instances);
+    }
+    if memory_reservation > 0 {
+        builder = builder.memory_reservation(memory_reservation);
+    }
+    if memory_guard_size > 0 {
+        builder = builder.memory_guard_size(memory_guard_size);
+    }
+    if memory_reservation_for_growth > 0 {
+        builder = builder.memory_reservation_for_growth(memory_reservation_for_growth);
+    }
+
+    match builder.build() {
+        Ok(engine) => Box::into_raw(Box::new(engine)) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Get the configured memory reservation size for an engine
+///
+/// Returns the memory reservation size in bytes, or 0 if not configured or on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_memory_reservation(engine_ptr: *const c_void) -> u64 {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    engine.config_summary().memory_reservation.unwrap_or(0)
+}
+
+/// Get the configured memory guard size for an engine
+///
+/// Returns the memory guard size in bytes, or 0 if not configured or on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_memory_guard_size(engine_ptr: *const c_void) -> u64 {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    engine.config_summary().memory_guard_size.unwrap_or(0)
+}
+
+/// Get the configured memory reservation for growth for an engine
+///
+/// Returns the memory reservation for growth in bytes, or 0 if not configured or on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_memory_reservation_for_growth(
+    engine_ptr: *const c_void,
+) -> u64 {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    engine
+        .config_summary()
+        .memory_reservation_for_growth
+        .unwrap_or(0)
+}
+
+/// Get the configured max memory size for an engine
+///
+/// Returns the max memory size in bytes, or 0 if not configured or on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_max_memory_size(engine_ptr: *const c_void) -> usize {
+    if engine_ptr.is_null() {
+        return 0;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    engine.config_summary().max_memory_size.unwrap_or(0)
+}
+
+/// Check if wmemcheck (WebAssembly memory checker) is enabled for an engine
+///
+/// wmemcheck is a memory debugging tool similar to Valgrind's memcheck that
+/// detects memory errors in WebAssembly programs at runtime. It can detect:
+/// - Use of uninitialized memory
+/// - Use-after-free (for tables)
+/// - Double-free errors (for tables)
+///
+/// Returns 1 if wmemcheck is enabled, 0 if disabled or not supported, -1 on error.
+///
+/// **Note**: wmemcheck adds significant runtime overhead and is only available
+/// when the `wmemcheck` Cargo feature is enabled during compilation.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_wmemcheck_enabled(engine_ptr: *const c_void) -> c_int {
+    if engine_ptr.is_null() {
+        return FFI_ERROR;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    if engine.config_summary().wmemcheck_enabled {
+        1
+    } else {
+        0
+    }
+}
+
+/// Check if wmemcheck feature is available in this build
+///
+/// Returns 1 if the wmemcheck feature was compiled in, 0 otherwise.
+/// This allows Java code to check if wmemcheck can be enabled before
+/// attempting to create an engine with wmemcheck enabled.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wmemcheck_available() -> c_int {
+    #[cfg(feature = "wmemcheck")]
+    {
+        1
+    }
+    #[cfg(not(feature = "wmemcheck"))]
+    {
+        0
+    }
+}
+
+/// Check if table lazy initialization is enabled for an engine
+///
+/// Table lazy initialization is a performance optimization that defers table
+/// initialization until entries are actually used. This results in:
+/// - Faster instantiation (tables don't need to be fully populated upfront)
+/// - Slightly slower indirect calls (first access may need to initialize the entry)
+///
+/// Returns 1 if table lazy initialization is enabled, 0 if disabled, -1 on error.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_table_lazy_init_enabled(
+    engine_ptr: *const c_void,
+) -> c_int {
+    if engine_ptr.is_null() {
+        return FFI_ERROR;
+    }
+    let engine = &*(engine_ptr as *const Engine);
+    if engine.config_summary().table_lazy_init {
+        1
+    } else {
+        0
+    }
+}
+
+// =============================================================================
+// Engine Pooling and Cleanup FFI Exports
+// =============================================================================
+
+/// Get the shared singleton engine.
+///
+/// Returns a pointer to the shared engine that is reused across all calls.
+/// This is the recommended way to get an engine for most use cases, as it
+/// avoids creating new engines which can trigger wasmtime's GLOBAL_CODE
+/// registry issues.
+///
+/// The returned engine is managed by the library and should NOT be freed
+/// with wasmtime4j_engine_destroy. It remains valid for the lifetime of
+/// the process.
+///
+/// # Safety
+///
+/// The returned pointer is valid for the lifetime of the process.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_get_shared() -> *const c_void {
+    let engine = get_shared_engine();
+    // Leak the engine to get a stable pointer
+    // This is intentional - the shared engine lives forever
+    Box::into_raw(Box::new(engine)) as *const c_void
+}
+
+/// Acquire an engine from the pool.
+///
+/// Returns an engine from the pool if available, or creates a new one.
+/// The returned engine should be released with wasmtime4j_engine_release_pooled
+/// when no longer needed, NOT with wasmtime4j_engine_destroy.
+///
+/// # Safety
+///
+/// Returns pointer to engine that must be released with wasmtime4j_engine_release_pooled
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_acquire_pooled() -> *mut c_void {
+    let engine = acquire_pooled_engine();
+    Box::into_raw(Box::new(engine)) as *mut c_void
+}
+
+/// Release an engine back to the pool.
+///
+/// Returns the engine to the pool for reuse by other callers.
+/// If the pool is full, the engine is dropped.
+///
+/// # Safety
+///
+/// engine_ptr must be a valid pointer from wasmtime4j_engine_acquire_pooled
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_release_pooled(engine_ptr: *mut c_void) {
+    if engine_ptr.is_null() {
+        return;
+    }
+    let engine = Box::from_raw(engine_ptr as *mut Engine);
+    release_pooled_engine(*engine);
+}
+
+/// Get the current number of engines in the pool.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_pool_size() -> usize {
+    engine_pool_size()
+}
+
+/// Get the maximum capacity of the engine pool.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_pool_max_size() -> usize {
+    engine_pool_max_size()
+}
+
+/// Clear the engine pool, dropping all pooled engines.
+///
+/// This can be called to force cleanup of pooled engines.
+/// Note: This does NOT affect the shared singleton engine.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_engine_pool_cleanup() {
+    engine_pool_cleanup();
+}
+
+/// Perform a full wasmtime cleanup.
+///
+/// This function:
+/// 1. Clears the engine pool
+/// 2. Yields to allow pending deallocations
+/// 3. Sleeps briefly to allow OS to reclaim memory
+///
+/// Call this periodically during long-running processes or after running
+/// many operations to help mitigate wasmtime's GLOBAL_CODE registry issues.
+///
+/// Note: This does NOT affect the shared singleton engine.
+///
+/// # Safety
+///
+/// This function is always safe to call.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_full_cleanup() {
+    wasmtime_full_cleanup();
+}
+
+/// Create a new managed engine.
+///
+/// A managed engine tracks resources and ensures proper cleanup order.
+/// When the managed engine is destroyed, all tracked resources are
+/// cleaned up first.
+///
+/// # Safety
+///
+/// Returns pointer that must be freed with wasmtime4j_managed_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_new() -> *mut c_void {
+    match ManagedEngine::new() {
+        Ok(managed) => Box::into_raw(Box::new(managed)) as *mut c_void,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Create a managed engine from the shared singleton.
+///
+/// # Safety
+///
+/// Returns pointer that must be freed with wasmtime4j_managed_engine_destroy
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_from_shared() -> *mut c_void {
+    let managed = ManagedEngine::from_shared();
+    Box::into_raw(Box::new(managed)) as *mut c_void
+}
+
+/// Get the underlying engine from a managed engine.
+///
+/// The returned engine pointer is valid as long as the managed engine
+/// is not destroyed. Do NOT free it with wasmtime4j_engine_destroy.
+///
+/// # Safety
+///
+/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_get(managed_ptr: *const c_void) -> *const c_void {
+    if managed_ptr.is_null() {
+        return std::ptr::null();
+    }
+    let managed = &*(managed_ptr as *const ManagedEngine);
+    // Return a pointer to a clone of the engine
+    Box::into_raw(Box::new(managed.engine_clone())) as *const c_void
+}
+
+/// Get the resource count of a managed engine.
+///
+/// # Safety
+///
+/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_resource_count(
+    managed_ptr: *const c_void,
+) -> usize {
+    if managed_ptr.is_null() {
+        return 0;
+    }
+    let managed = &*(managed_ptr as *const ManagedEngine);
+    managed.resource_count()
+}
+
+/// Clear all tracked resources from a managed engine.
+///
+/// # Safety
+///
+/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_clear_resources(managed_ptr: *mut c_void) {
+    if managed_ptr.is_null() {
+        return;
+    }
+    let managed = &*(managed_ptr as *const ManagedEngine);
+    managed.clear_resources();
+}
+
+/// Destroy a managed engine.
+///
+/// This will first clear all tracked resources, then drop the engine.
+///
+/// # Safety
+///
+/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_managed_engine_destroy(managed_ptr: *mut c_void) {
+    if managed_ptr.is_null() {
+        return;
+    }
+    let _ = Box::from_raw(managed_ptr as *mut ManagedEngine);
+    // Managed engine's Drop implementation handles cleanup
+}

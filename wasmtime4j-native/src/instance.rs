@@ -1901,6 +1901,512 @@ mod tests {
         assert!(core::extract_i64_value(&i32_val).is_err());
         assert!(core::extract_f32_value(&i64_val).is_err());
     }
+
+    // === Phase 1: Additional Instance Tests ===
+
+    #[test]
+    fn test_instance_with_memory_export() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (memory (export \"mem\") 1 4)
+                     (func (export \"get_mem_size\") (result i32)
+                       memory.size))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        // Should have 2 exports: mem and get_mem_size
+        assert_eq!(instance.metadata().export_count, 2, "Should have 2 exports");
+
+        let mem_export = instance.get_export_info("mem");
+        assert!(mem_export.is_some(), "Should have memory export");
+    }
+
+    #[test]
+    fn test_instance_with_global_export() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (global (export \"answer\") i32 (i32.const 42))
+                     (func (export \"get_answer\") (result i32)
+                       global.get 0))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        assert_eq!(instance.metadata().export_count, 2, "Should have 2 exports");
+
+        let global_export = instance.get_export_info("answer");
+        assert!(global_export.is_some(), "Should have global export");
+    }
+
+    #[test]
+    fn test_instance_with_table_export() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (table (export \"tbl\") 1 funcref))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        assert_eq!(instance.metadata().export_count, 1, "Should have 1 export");
+
+        let table_export = instance.get_export_info("tbl");
+        assert!(table_export.is_some(), "Should have table export");
+    }
+
+    #[test]
+    fn test_get_func_nonexistent() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"add\") (param i32 i32) (result i32)
+                     local.get 0 local.get 1 i32.add))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let nonexistent = instance.get_export_info("nonexistent");
+        assert!(nonexistent.is_none(), "Should not find nonexistent export");
+    }
+
+    #[test]
+    fn test_metadata_accessors() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (func (export \"f1\") (result i32) i32.const 1)
+                     (func (export \"f2\") (result i32) i32.const 2)
+                     (func (export \"f3\") (result i32) i32.const 3))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let metadata = instance.metadata();
+        assert_eq!(metadata.export_count, 3, "Should have 3 exports");
+        assert_eq!(metadata.import_count, 0, "Should have 0 imports");
+        assert!(!metadata.disposed, "Should not be disposed");
+        assert_eq!(metadata.state, InstanceState::Created, "State should be Created");
+    }
+
+    #[test]
+    fn test_validate_instance() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let validation = instance.validate();
+        assert!(validation.is_ok(), "Instance validation should succeed");
+    }
+
+    #[test]
+    fn test_is_disposed_after_disposal() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        assert!(!instance.is_disposed(), "Should not be disposed initially");
+
+        instance.dispose().expect("Failed to dispose");
+
+        assert!(instance.is_disposed(), "Should be disposed after dispose()");
+    }
+
+    #[test]
+    fn test_call_after_dispose_fails() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        instance.dispose().expect("Failed to dispose");
+
+        let result = instance.call_export_function(&mut store, "test", &[]);
+        assert!(result.is_err(), "Should fail to call after disposal");
+    }
+
+    #[test]
+    fn test_all_exports_multiple() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (func (export \"add\") (param i32 i32) (result i32)
+                       local.get 0 local.get 1 i32.add)
+                     (func (export \"sub\") (param i32 i32) (result i32)
+                       local.get 0 local.get 1 i32.sub)
+                     (memory (export \"mem\") 1)
+                     (global (export \"val\") i32 (i32.const 100)))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let exports = instance.exports(&mut store).expect("Failed to get exports");
+        assert_eq!(exports.len(), 4, "Should have 4 exports");
+
+        assert!(exports.contains(&"add".to_string()), "Should have 'add' export");
+        assert!(exports.contains(&"sub".to_string()), "Should have 'sub' export");
+        assert!(exports.contains(&"mem".to_string()), "Should have 'mem' export");
+        assert!(exports.contains(&"val".to_string()), "Should have 'val' export");
+    }
+
+    #[test]
+    fn test_call_function_with_multiple_results() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (func (export \"multi\") (result i32 i64)
+                       i32.const 42
+                       i64.const 100))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let result = instance.call_export_function(&mut store, "multi", &[])
+            .expect("Failed to call function");
+
+        assert_eq!(result.values.len(), 2, "Should have 2 return values");
+        assert_eq!(result.values[0], WasmValue::I32(42), "First result should be 42");
+        assert_eq!(result.values[1], WasmValue::I64(100), "Second result should be 100");
+    }
+
+    #[test]
+    fn test_call_function_with_f32_params() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (func (export \"addf32\") (param f32 f32) (result f32)
+                       local.get 0 local.get 1 f32.add))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let params = vec![WasmValue::F32(2.5), WasmValue::F32(3.5)];
+        let result = instance.call_export_function(&mut store, "addf32", &params)
+            .expect("Failed to call function");
+
+        match &result.values[0] {
+            WasmValue::F32(v) => {
+                assert!((v - 6.0).abs() < 0.001, "Result should be ~6.0");
+            }
+            _ => panic!("Expected F32 result"),
+        }
+    }
+
+    #[test]
+    fn test_call_function_with_f64_params() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (func (export \"mulf64\") (param f64 f64) (result f64)
+                       local.get 0 local.get 1 f64.mul))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let params = vec![WasmValue::F64(2.5), WasmValue::F64(4.0)];
+        let result = instance.call_export_function(&mut store, "mulf64", &params)
+            .expect("Failed to call function");
+
+        match &result.values[0] {
+            WasmValue::F64(v) => {
+                assert!((v - 10.0).abs() < 0.001, "Result should be ~10.0");
+            }
+            _ => panic!("Expected F64 result"),
+        }
+    }
+
+    #[test]
+    fn test_call_function_with_i64_params() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (func (export \"add64\") (param i64 i64) (result i64)
+                       local.get 0 local.get 1 i64.add))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let params = vec![WasmValue::I64(1000000000000), WasmValue::I64(2000000000000)];
+        let result = instance.call_export_function(&mut store, "add64", &params)
+            .expect("Failed to call function");
+
+        match &result.values[0] {
+            WasmValue::I64(v) => {
+                assert_eq!(*v, 3000000000000, "Result should be 3000000000000");
+            }
+            _ => panic!("Expected I64 result"),
+        }
+    }
+
+    #[test]
+    fn test_ffi_wasm_value_roundtrip() {
+        // Test I32 roundtrip
+        let i32_val = WasmValue::I32(-12345);
+        let ffi_val = FfiWasmValue::from_wasm_value(&i32_val);
+        let back = ffi_val.to_wasm_value();
+        assert_eq!(i32_val, back, "I32 roundtrip should preserve value");
+
+        // Test I64 roundtrip
+        let i64_val = WasmValue::I64(-9876543210);
+        let ffi_val = FfiWasmValue::from_wasm_value(&i64_val);
+        let back = ffi_val.to_wasm_value();
+        assert_eq!(i64_val, back, "I64 roundtrip should preserve value");
+
+        // Test F32 roundtrip
+        let f32_val = WasmValue::F32(3.14159);
+        let ffi_val = FfiWasmValue::from_wasm_value(&f32_val);
+        let back = ffi_val.to_wasm_value();
+        match (f32_val, back) {
+            (WasmValue::F32(a), WasmValue::F32(b)) => {
+                assert!((a - b).abs() < 0.00001, "F32 roundtrip should preserve value");
+            }
+            _ => panic!("Type mismatch"),
+        }
+
+        // Test F64 roundtrip
+        let f64_val = WasmValue::F64(2.718281828);
+        let ffi_val = FfiWasmValue::from_wasm_value(&f64_val);
+        let back = ffi_val.to_wasm_value();
+        match (f64_val, back) {
+            (WasmValue::F64(a), WasmValue::F64(b)) => {
+                assert!((a - b).abs() < 0.0000001, "F64 roundtrip should preserve value");
+            }
+            _ => panic!("Type mismatch"),
+        }
+
+        // Test V128 roundtrip
+        let v128_val = WasmValue::V128([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+        let ffi_val = FfiWasmValue::from_wasm_value(&v128_val);
+        let back = ffi_val.to_wasm_value();
+        assert_eq!(v128_val, back, "V128 roundtrip should preserve value");
+
+        // Test FuncRef roundtrip
+        let funcref_val = WasmValue::FuncRef(Some(42));
+        let ffi_val = FfiWasmValue::from_wasm_value(&funcref_val);
+        let back = ffi_val.to_wasm_value();
+        assert_eq!(funcref_val, back, "FuncRef roundtrip should preserve value");
+
+        // Test ExternRef roundtrip
+        let externref_val = WasmValue::ExternRef(Some(99));
+        let ffi_val = FfiWasmValue::from_wasm_value(&externref_val);
+        let back = ffi_val.to_wasm_value();
+        assert_eq!(externref_val, back, "ExternRef roundtrip should preserve value");
+    }
+
+    #[test]
+    fn test_ffi_wasm_value_null_refs() {
+        // Test null FuncRef
+        let null_funcref = WasmValue::FuncRef(None);
+        let ffi_val = FfiWasmValue::from_wasm_value(&null_funcref);
+        let back = ffi_val.to_wasm_value();
+        // The roundtrip converts None to 0 and back
+        match back {
+            WasmValue::FuncRef(None) => { /* OK */ }
+            _ => panic!("Null FuncRef should roundtrip correctly"),
+        }
+
+        // Test null ExternRef
+        let null_externref = WasmValue::ExternRef(None);
+        let ffi_val = FfiWasmValue::from_wasm_value(&null_externref);
+        let back = ffi_val.to_wasm_value();
+        match back {
+            WasmValue::ExternRef(None) => { /* OK */ }
+            _ => panic!("Null ExternRef should roundtrip correctly"),
+        }
+    }
+
+    #[test]
+    fn test_extract_value_type_errors() {
+        let i32_val = WasmValue::I32(42);
+        let i64_val = WasmValue::I64(100);
+        let f32_val = WasmValue::F32(1.0);
+        let f64_val = WasmValue::F64(2.0);
+
+        // All cross-type extractions should fail
+        assert!(core::extract_i64_value(&i32_val).is_err(), "i64 from i32 should fail");
+        assert!(core::extract_f32_value(&i32_val).is_err(), "f32 from i32 should fail");
+        assert!(core::extract_f64_value(&i32_val).is_err(), "f64 from i32 should fail");
+
+        assert!(core::extract_i32_value(&i64_val).is_err(), "i32 from i64 should fail");
+        assert!(core::extract_f32_value(&i64_val).is_err(), "f32 from i64 should fail");
+        assert!(core::extract_f64_value(&i64_val).is_err(), "f64 from i64 should fail");
+
+        assert!(core::extract_i32_value(&f32_val).is_err(), "i32 from f32 should fail");
+        assert!(core::extract_i64_value(&f32_val).is_err(), "i64 from f32 should fail");
+        assert!(core::extract_f64_value(&f32_val).is_err(), "f64 from f32 should fail");
+
+        assert!(core::extract_i32_value(&f64_val).is_err(), "i32 from f64 should fail");
+        assert!(core::extract_i64_value(&f64_val).is_err(), "i64 from f64 should fail");
+        assert!(core::extract_f32_value(&f64_val).is_err(), "f32 from f64 should fail");
+    }
+
+    #[test]
+    fn test_instance_state_lifecycle() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        assert_eq!(instance.metadata().state, InstanceState::Created,
+            "Initial state should be Created");
+    }
+
+    #[test]
+    fn test_empty_module_instance() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module)";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        assert_eq!(instance.metadata().export_count, 0, "Empty module should have no exports");
+        assert_eq!(instance.metadata().import_count, 0, "Empty module should have no imports");
+    }
+
+    #[test]
+    fn test_instance_created_thread_id() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        assert_eq!(instance.metadata().creator_thread_id, std::thread::current().id(),
+            "Creator thread ID should match current thread");
+    }
+
+    #[test]
+    fn test_core_create_and_destroy_instance() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = core::create_instance(&mut store, &module)
+            .expect("Failed to create instance via core");
+
+        assert!(!instance.is_disposed(), "Instance should not be disposed");
+
+        // Get raw pointer for destruction
+        let ptr = Box::into_raw(instance) as *mut std::ffi::c_void;
+
+        unsafe {
+            core::destroy_instance(ptr);
+        }
+        // After destruction, the memory is freed - we don't access it
+    }
+
+    #[test]
+    fn test_core_has_export() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"myFunc\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        assert!(core::has_export(&instance, "myFunc"), "Should have 'myFunc' export");
+        assert!(!core::has_export(&instance, "noSuchFunc"), "Should not have 'noSuchFunc' export");
+    }
+
+    #[test]
+    fn test_core_get_exports() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module
+                     (func (export \"f1\") (result i32) i32.const 1)
+                     (func (export \"f2\") (result i32) i32.const 2))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let exports = core::get_exports(&instance);
+        assert_eq!(exports.len(), 2, "Should have 2 exports");
+    }
+
+    #[test]
+    fn test_core_get_metadata() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        let metadata = core::get_metadata(&instance);
+        assert_eq!(metadata.export_count, 1, "Should have 1 export");
+        assert!(!metadata.disposed, "Should not be disposed");
+    }
+
+    #[test]
+    fn test_core_dispose_instance() {
+        let engine = Engine::new().expect("Failed to create engine");
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
+
+        let mut instance = Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        assert!(!core::is_disposed(&instance), "Should not be disposed initially");
+
+        core::dispose_instance(&mut instance).expect("Failed to dispose");
+
+        assert!(core::is_disposed(&instance), "Should be disposed after core::dispose_instance");
+    }
 }
 
 //

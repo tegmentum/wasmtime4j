@@ -83,9 +83,9 @@ pub mod ffi_common;
 #[cfg(test)]
 pub mod test_runtime_completion;
 
-// Interface modules - will be implemented in later streams
+// Interface modules
 #[cfg(feature = "jni-bindings")]
-pub mod jni_bindings;
+pub mod jni;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_thread_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -123,7 +123,7 @@ pub mod jni_profiler_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_pooling_allocator_bindings;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_ffi;
+pub mod panama;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_io_ffi;
 #[cfg(feature = "panama-ffi")]

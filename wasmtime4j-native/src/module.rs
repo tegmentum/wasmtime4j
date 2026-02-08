@@ -987,21 +987,239 @@ mod tests {
     #[test]
     fn test_function_exports() {
         let engine = shared_engine();
-        let wat = "(module 
-                     (func (export \"add\") (param i32 i32) (result i32) 
+        let wat = "(module
+                     (func (export \"add\") (param i32 i32) (result i32)
                        local.get 0 local.get 1 i32.add)
                      (memory (export \"mem\") 1))";
-        
+
         let module = Module::compile_wat(&engine, wat)
             .expect("Failed to compile module");
 
         let func_exports = module.function_exports();
         assert_eq!(func_exports.len(), 1);
         assert_eq!(func_exports[0].name, "add");
-        
+
         let mem_exports = module.memory_exports();
         assert_eq!(mem_exports.len(), 1);
         assert_eq!(mem_exports[0].name, "mem");
+    }
+
+    // ==================== NEW TESTS ====================
+
+    #[test]
+    fn test_module_value_type_variants() {
+        // Test that all variants can be created and compared
+        let types = [
+            ModuleValueType::I32,
+            ModuleValueType::I64,
+            ModuleValueType::F32,
+            ModuleValueType::F64,
+            ModuleValueType::V128,
+            ModuleValueType::ExternRef,
+            ModuleValueType::FuncRef,
+            ModuleValueType::AnyRef,
+            ModuleValueType::EqRef,
+            ModuleValueType::I31Ref,
+            ModuleValueType::StructRef,
+            ModuleValueType::ArrayRef,
+            ModuleValueType::NullRef,
+            ModuleValueType::NullFuncRef,
+            ModuleValueType::NullExternRef,
+        ];
+
+        // Verify all are distinct
+        for (i, t1) in types.iter().enumerate() {
+            for (j, t2) in types.iter().enumerate() {
+                if i == j {
+                    assert_eq!(t1, t2);
+                } else {
+                    assert_ne!(t1, t2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_module_value_type_clone_copy() {
+        let original = ModuleValueType::I32;
+        let cloned = original.clone();
+        let copied = original;
+
+        assert_eq!(original, cloned);
+        assert_eq!(original, copied);
+    }
+
+    #[test]
+    fn test_import_kind_variants() {
+        let func_import = ImportKind::Function(FunctionSignature {
+            params: vec![ModuleValueType::I32],
+            returns: vec![ModuleValueType::I32],
+        });
+        let global_import = ImportKind::Global(ModuleValueType::I64, true);
+        let memory_import = ImportKind::Memory(1, Some(10), false, false);
+        let table_import = ImportKind::Table(ModuleValueType::FuncRef, 1, Some(100));
+
+        // Verify Debug works
+        assert!(!format!("{:?}", func_import).is_empty());
+        assert!(!format!("{:?}", global_import).is_empty());
+        assert!(!format!("{:?}", memory_import).is_empty());
+        assert!(!format!("{:?}", table_import).is_empty());
+    }
+
+    #[test]
+    fn test_export_kind_variants() {
+        let func_export = ExportKind::Function(FunctionSignature {
+            params: vec![ModuleValueType::I32, ModuleValueType::I32],
+            returns: vec![ModuleValueType::I64],
+        });
+        let global_export = ExportKind::Global(ModuleValueType::F32, false);
+        let memory_export = ExportKind::Memory(1, None, false, false);
+        let table_export = ExportKind::Table(ModuleValueType::FuncRef, 10, None);
+
+        // Verify Clone works
+        let cloned = func_export.clone();
+        assert!(!format!("{:?}", cloned).is_empty());
+        assert!(!format!("{:?}", global_export).is_empty());
+        assert!(!format!("{:?}", memory_export).is_empty());
+        assert!(!format!("{:?}", table_export).is_empty());
+    }
+
+    #[test]
+    fn test_function_signature_creation() {
+        let sig = FunctionSignature {
+            params: vec![ModuleValueType::I32, ModuleValueType::I64],
+            returns: vec![ModuleValueType::F64],
+        };
+
+        assert_eq!(sig.params.len(), 2);
+        assert_eq!(sig.returns.len(), 1);
+        assert_eq!(sig.params[0], ModuleValueType::I32);
+        assert_eq!(sig.returns[0], ModuleValueType::F64);
+    }
+
+    #[test]
+    fn test_module_metadata_empty() {
+        let metadata = ModuleMetadata::empty();
+
+        assert!(metadata.name.is_none());
+        assert_eq!(metadata.size_bytes, 0);
+        assert!(metadata.imports.is_empty());
+        assert!(metadata.exports.is_empty());
+        assert!(metadata.functions.is_empty());
+        assert!(metadata.globals.is_empty());
+        assert!(metadata.memories.is_empty());
+        assert!(metadata.tables.is_empty());
+        assert!(metadata.custom_sections.is_empty());
+    }
+
+    #[test]
+    fn test_validate_bytes_empty() {
+        let result = Module::validate_bytes(&[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty"));
+    }
+
+    #[test]
+    fn test_validate_bytes_too_short() {
+        let result = Module::validate_bytes(&[0x00, 0x61, 0x73, 0x6D]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("too short"));
+    }
+
+    #[test]
+    fn test_compile_wat_empty() {
+        let engine = shared_engine();
+        let result = Module::compile_wat(&engine, "");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty"));
+    }
+
+    #[test]
+    fn test_module_with_global() {
+        let engine = shared_engine();
+        let wat = "(module
+                     (global (export \"counter\") (mut i32) (i32.const 0))
+                     (global (export \"constant\") i64 (i64.const 42)))";
+
+        let module = Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        let metadata = module.metadata();
+        assert_eq!(metadata.exports.len(), 2);
+
+        // Check for global exports
+        let global_exports: Vec<_> = metadata.exports.iter()
+            .filter(|e| matches!(e.export_type, ExportKind::Global(_, _)))
+            .collect();
+        assert_eq!(global_exports.len(), 2);
+    }
+
+    #[test]
+    fn test_module_with_table() {
+        let engine = shared_engine();
+        let wat = "(module
+                     (table (export \"table\") 10 funcref))";
+
+        let module = Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        let metadata = module.metadata();
+        assert_eq!(metadata.exports.len(), 1);
+
+        // Verify it's a table export
+        match &metadata.exports[0].export_type {
+            ExportKind::Table(elem_type, initial, max) => {
+                assert_eq!(*elem_type, ModuleValueType::FuncRef);
+                assert_eq!(*initial, 10);
+                assert!(max.is_none());
+            }
+            _ => panic!("Expected table export"),
+        }
+    }
+
+    #[test]
+    fn test_module_get_export() {
+        let engine = shared_engine();
+        let wat = "(module
+                     (func (export \"test\") (result i32) i32.const 42)
+                     (memory (export \"mem\") 1))";
+
+        let module = Module::compile_wat(&engine, wat)
+            .expect("Failed to compile module");
+
+        assert!(module.get_export("test").is_some());
+        assert!(module.get_export("mem").is_some());
+        assert!(module.get_export("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_import_info_creation() {
+        let import = ImportInfo {
+            module: "env".to_string(),
+            name: "print".to_string(),
+            import_type: ImportKind::Function(FunctionSignature {
+                params: vec![ModuleValueType::I32],
+                returns: vec![],
+            }),
+        };
+
+        assert_eq!(import.module, "env");
+        assert_eq!(import.name, "print");
+        assert!(matches!(import.import_type, ImportKind::Function(_)));
+    }
+
+    #[test]
+    fn test_export_info_creation() {
+        let export = ExportInfo {
+            name: "main".to_string(),
+            export_type: ExportKind::Function(FunctionSignature {
+                params: vec![],
+                returns: vec![ModuleValueType::I32],
+            }),
+        };
+
+        assert_eq!(export.name, "main");
+        assert!(matches!(export.export_type, ExportKind::Function(_)));
     }
 }
 

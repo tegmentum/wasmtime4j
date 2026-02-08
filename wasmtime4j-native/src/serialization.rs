@@ -673,6 +673,146 @@ mod tests {
         assert_eq!(cache_info.hit_rate, 0.75);
         assert!(cache_info.oldest_entry.is_some());
     }
+
+    // ==================== NEW TESTS ====================
+
+    #[test]
+    fn test_validation_level_variants() {
+        assert_eq!(ValidationLevel::None, ValidationLevel::None);
+        assert_eq!(ValidationLevel::Basic, ValidationLevel::Basic);
+        assert_eq!(ValidationLevel::Strict, ValidationLevel::Strict);
+
+        assert_ne!(ValidationLevel::None, ValidationLevel::Basic);
+        assert_ne!(ValidationLevel::Basic, ValidationLevel::Strict);
+        assert_ne!(ValidationLevel::None, ValidationLevel::Strict);
+    }
+
+    #[test]
+    fn test_serialization_config_custom() {
+        let config = SerializationConfig {
+            max_cache_size: 500 * 1024 * 1024, // 500MB
+            max_cache_age: Duration::from_secs(3600), // 1 hour
+            enable_compression: true,
+            compression_level: 9,
+            max_entry_age: Duration::from_secs(7200),
+            cache_directory: Some(std::path::PathBuf::from("/tmp/cache")),
+            enable_cross_process: true,
+            validation_level: ValidationLevel::Strict,
+        };
+
+        assert_eq!(config.max_cache_size, 500 * 1024 * 1024);
+        assert!(config.enable_compression);
+        assert_eq!(config.compression_level, 9);
+        assert!(config.enable_cross_process);
+        assert_eq!(config.validation_level, ValidationLevel::Strict);
+        assert!(config.cache_directory.is_some());
+    }
+
+    #[test]
+    fn test_serialization_stats_default() {
+        let stats = SerializationStats::default();
+
+        assert_eq!(stats.serializations, 0);
+        assert_eq!(stats.deserializations, 0);
+        assert_eq!(stats.cache_hits, 0);
+        assert_eq!(stats.cache_misses, 0);
+        assert_eq!(stats.bytes_serialized, 0);
+        assert_eq!(stats.bytes_deserialized, 0);
+        assert_eq!(stats.evicted_entries, 0);
+    }
+
+    #[test]
+    fn test_serialization_stats_clone() {
+        let stats = SerializationStats {
+            serializations: 10,
+            deserializations: 5,
+            cache_hits: 8,
+            cache_misses: 2,
+            bytes_serialized: 1000,
+            bytes_deserialized: 500,
+            serialization_time: Duration::from_millis(100),
+            deserialization_time: Duration::from_millis(50),
+            evicted_entries: 3,
+        };
+
+        let cloned = stats.clone();
+        assert_eq!(cloned.serializations, 10);
+        assert_eq!(cloned.cache_hits, 8);
+        assert_eq!(cloned.bytes_serialized, 1000);
+        assert_eq!(cloned.evicted_entries, 3);
+    }
+
+    #[test]
+    fn test_module_size_info_compression_ratio() {
+        let size_info = ModuleSizeInfo {
+            original_size: 10000,
+            serialized_size: 8000,
+            compressed_size: 2000,
+            compression_ratio: 0.2, // 2000/10000
+        };
+
+        assert_eq!(size_info.original_size, 10000);
+        assert_eq!(size_info.serialized_size, 8000);
+        assert_eq!(size_info.compressed_size, 2000);
+        assert!((size_info.compression_ratio - 0.2).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_module_serializer_new() {
+        let serializer = ModuleSerializer::new();
+        let stats = serializer.get_statistics();
+
+        assert_eq!(stats.serializations, 0);
+        assert_eq!(stats.deserializations, 0);
+    }
+
+    #[test]
+    fn test_module_serializer_with_config() {
+        let config = SerializationConfig {
+            max_cache_size: 100 * 1024 * 1024,
+            enable_compression: true,
+            ..SerializationConfig::default()
+        };
+
+        let serializer = ModuleSerializer::with_config(config);
+        let cache_info = serializer.get_cache_info();
+
+        assert_eq!(cache_info.entry_count, 0);
+        assert_eq!(cache_info.max_size, 100 * 1024 * 1024);
+    }
+
+    #[test]
+    fn test_module_serializer_clear_cache() {
+        let serializer = ModuleSerializer::new();
+
+        // Clear empty cache should succeed
+        assert!(serializer.clear_cache().is_ok());
+
+        let cache_info = serializer.get_cache_info();
+        assert_eq!(cache_info.entry_count, 0);
+        assert_eq!(cache_info.total_size, 0);
+    }
+
+    #[test]
+    fn test_cache_info_no_oldest_entry() {
+        let cache_info = CacheInfo {
+            entry_count: 0,
+            total_size: 0,
+            max_size: 1024,
+            hit_rate: 0.0,
+            oldest_entry: None,
+        };
+
+        assert_eq!(cache_info.entry_count, 0);
+        assert!(cache_info.oldest_entry.is_none());
+        assert_eq!(cache_info.hit_rate, 0.0);
+    }
+
+    #[test]
+    fn test_serialization_config_no_cache_directory() {
+        let config = SerializationConfig::default();
+        assert!(config.cache_directory.is_none());
+    }
 }
 
 //

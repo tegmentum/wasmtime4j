@@ -343,4 +343,104 @@ mod tests {
         );
         assert_eq!(key3, "(i32,i64,f32) -> (i64,f64)");
     }
+
+    // ==================== NEW TESTS ====================
+
+    #[test]
+    fn test_typed_func_registry_default() {
+        let registry = TypedFuncRegistry::default();
+        assert_eq!(registry.signature_count().unwrap(), 0);
+    }
+
+    #[test]
+    fn test_typed_func_registry_multiple_signatures() {
+        let registry = TypedFuncRegistry::new();
+
+        // Register different signatures
+        let id1 = registry.register_signature(&[ValType::I32], &[ValType::I32]).unwrap();
+        let id2 = registry.register_signature(&[ValType::I64], &[ValType::I64]).unwrap();
+        let id3 = registry.register_signature(&[ValType::F32], &[ValType::F32]).unwrap();
+        let id4 = registry.register_signature(&[ValType::F64], &[ValType::F64]).unwrap();
+
+        assert_eq!(registry.signature_count().unwrap(), 4);
+
+        // IDs should be sequential
+        assert_eq!(id1, 0);
+        assert_eq!(id2, 1);
+        assert_eq!(id3, 2);
+        assert_eq!(id4, 3);
+    }
+
+    #[test]
+    fn test_typed_func_registry_void_signature() {
+        let registry = TypedFuncRegistry::new();
+
+        let id = registry.register_signature(&[], &[]).unwrap();
+        assert_eq!(id, 0);
+
+        // Registering the same void signature should return same ID
+        let id2 = registry.register_signature(&[], &[]).unwrap();
+        assert_eq!(id, id2);
+    }
+
+    #[test]
+    fn test_typed_func_registry_complex_signature() {
+        let registry = TypedFuncRegistry::new();
+
+        // Complex signature with multiple params and results
+        let id = registry.register_signature(
+            &[ValType::I32, ValType::I64, ValType::F32, ValType::F64],
+            &[ValType::I32, ValType::I64],
+        ).unwrap();
+
+        assert_eq!(id, 0);
+        assert_eq!(registry.signature_count().unwrap(), 1);
+    }
+
+    #[test]
+    fn test_signature_key_single_param() {
+        let key = TypedFuncRegistry::signature_key(&[ValType::I32], &[]);
+        assert_eq!(key, "(i32) -> ()");
+    }
+
+    #[test]
+    fn test_signature_key_single_result() {
+        let key = TypedFuncRegistry::signature_key(&[], &[ValType::I64]);
+        assert_eq!(key, "() -> (i64)");
+    }
+
+    #[test]
+    fn test_signature_key_multiple_results() {
+        let key = TypedFuncRegistry::signature_key(
+            &[ValType::I32],
+            &[ValType::I32, ValType::I64, ValType::F32],
+        );
+        assert_eq!(key, "(i32) -> (i32,i64,f32)");
+    }
+
+    #[test]
+    fn test_signature_key_float_types() {
+        let key = TypedFuncRegistry::signature_key(
+            &[ValType::F32, ValType::F64],
+            &[ValType::F32, ValType::F64],
+        );
+        assert_eq!(key, "(f32,f64) -> (f32,f64)");
+    }
+
+    #[test]
+    fn test_typed_func_registry_duplicate_registration_is_idempotent() {
+        let registry = TypedFuncRegistry::new();
+
+        // Register a signature multiple times
+        let id1 = registry.register_signature(&[ValType::I32], &[ValType::I32]).unwrap();
+        let id2 = registry.register_signature(&[ValType::I32], &[ValType::I32]).unwrap();
+        let id3 = registry.register_signature(&[ValType::I32], &[ValType::I32]).unwrap();
+
+        // All should return the same ID
+        assert_eq!(id1, id2);
+        assert_eq!(id2, id3);
+
+        // Count should still be 1
+        assert_eq!(registry.signature_count().unwrap(), 1);
+    }
 }

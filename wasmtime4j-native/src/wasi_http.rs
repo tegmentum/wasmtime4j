@@ -1548,4 +1548,502 @@ mod tests {
         ctx.invalidate();
         assert!(!ctx.is_valid());
     }
+
+    // =========================================================================
+    // Builder Method Tests (15 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_builder_allow_hosts_batch() {
+        let config = WasiHttpConfig::builder()
+            .allow_hosts(vec!["api.example.com", "www.example.com", "cdn.example.com"])
+            .build();
+
+        assert_eq!(config.allowed_hosts().len(), 3);
+        assert!(config.allowed_hosts().contains("api.example.com"));
+        assert!(config.allowed_hosts().contains("www.example.com"));
+        assert!(config.allowed_hosts().contains("cdn.example.com"));
+    }
+
+    #[test]
+    fn test_builder_block_hosts_batch() {
+        let config = WasiHttpConfig::builder()
+            .allow_all_hosts()
+            .block_hosts(vec!["internal.local", "secret.local"])
+            .build();
+
+        assert_eq!(config.blocked_hosts().len(), 2);
+        assert!(config.blocked_hosts().contains("internal.local"));
+        assert!(config.blocked_hosts().contains("secret.local"));
+    }
+
+    #[test]
+    fn test_builder_max_connections() {
+        let config = WasiHttpConfig::builder()
+            .with_max_connections(100)
+            .with_max_connections_per_host(10)
+            .build();
+
+        assert_eq!(config.max_connections(), Some(100));
+        assert_eq!(config.max_connections_per_host(), Some(10));
+    }
+
+    #[test]
+    fn test_builder_request_body_size_zero() {
+        let config = WasiHttpConfig::builder()
+            .with_max_request_body_size(0)
+            .build();
+
+        assert_eq!(config.max_request_body_size(), Some(0));
+    }
+
+    #[test]
+    fn test_builder_response_body_size_large() {
+        let config = WasiHttpConfig::builder()
+            .with_max_response_body_size(u64::MAX)
+            .build();
+
+        assert_eq!(config.max_response_body_size(), Some(u64::MAX));
+    }
+
+    #[test]
+    fn test_builder_require_https() {
+        let config = WasiHttpConfig::builder()
+            .require_https(true)
+            .build();
+
+        assert!(config.is_https_required());
+    }
+
+    #[test]
+    fn test_builder_disable_certificate_validation() {
+        let config = WasiHttpConfig::builder()
+            .with_certificate_validation(false)
+            .build();
+
+        assert!(!config.is_certificate_validation_enabled());
+    }
+
+    #[test]
+    fn test_builder_disable_http2() {
+        let config = WasiHttpConfig::builder()
+            .with_http2(false)
+            .build();
+
+        assert!(!config.is_http2_enabled());
+    }
+
+    #[test]
+    fn test_builder_disable_connection_pooling() {
+        let config = WasiHttpConfig::builder()
+            .with_connection_pooling(false)
+            .build();
+
+        assert!(!config.is_connection_pooling_enabled());
+    }
+
+    #[test]
+    fn test_builder_disable_redirects() {
+        let config = WasiHttpConfig::builder()
+            .follow_redirects(false)
+            .build();
+
+        assert!(!config.is_follow_redirects());
+    }
+
+    #[test]
+    fn test_builder_max_redirects() {
+        let config = WasiHttpConfig::builder()
+            .with_max_redirects(5)
+            .build();
+
+        assert_eq!(config.max_redirects(), Some(5));
+    }
+
+    #[test]
+    fn test_builder_user_agent() {
+        let config = WasiHttpConfig::builder()
+            .with_user_agent("wasmtime4j/1.0")
+            .build();
+
+        assert_eq!(config.user_agent(), Some("wasmtime4j/1.0"));
+    }
+
+    #[test]
+    fn test_builder_allow_methods() {
+        let config = WasiHttpConfig::builder()
+            .allow_methods(vec!["GET", "POST", "PUT"])
+            .build();
+
+        // Methods are stored internally
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_builder_chain_all_options() {
+        let config = WasiHttpConfig::builder()
+            .allow_host("api.example.com")
+            .with_connect_timeout(Duration::from_secs(30))
+            .with_read_timeout(Duration::from_secs(60))
+            .with_write_timeout(Duration::from_secs(45))
+            .with_max_connections(50)
+            .with_max_request_body_size(1024 * 1024)
+            .with_max_response_body_size(10 * 1024 * 1024)
+            .require_https(true)
+            .with_certificate_validation(true)
+            .with_http2(true)
+            .with_connection_pooling(true)
+            .follow_redirects(true)
+            .with_max_redirects(3)
+            .with_user_agent("test-agent")
+            .build();
+
+        assert!(config.validate().is_ok());
+        assert!(config.is_https_required());
+        assert!(config.is_http2_enabled());
+    }
+
+    #[test]
+    fn test_builder_duplicate_hosts() {
+        let config = WasiHttpConfig::builder()
+            .allow_host("api.example.com")
+            .allow_host("api.example.com")
+            .allow_host("api.example.com")
+            .build();
+
+        // HashSet deduplicates
+        assert_eq!(config.allowed_hosts().len(), 1);
+    }
+
+    // =========================================================================
+    // Config Accessors Tests (10 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_config_allowed_hosts_accessor() {
+        let config = WasiHttpConfig::builder()
+            .allow_host("test.com")
+            .build();
+
+        let hosts = config.allowed_hosts();
+        assert!(hosts.contains("test.com"));
+    }
+
+    #[test]
+    fn test_config_blocked_hosts_accessor() {
+        let config = WasiHttpConfig::builder()
+            .allow_all_hosts()
+            .block_host("blocked.com")
+            .build();
+
+        let hosts = config.blocked_hosts();
+        assert!(hosts.contains("blocked.com"));
+    }
+
+    #[test]
+    fn test_config_is_allow_all_hosts() {
+        let restricted = WasiHttpConfig::builder().build();
+        let unrestricted = WasiHttpConfig::builder().allow_all_hosts().build();
+
+        assert!(!restricted.is_allow_all_hosts());
+        assert!(unrestricted.is_allow_all_hosts());
+    }
+
+    #[test]
+    fn test_config_timeout_accessors() {
+        let config = WasiHttpConfig::builder()
+            .with_connect_timeout(Duration::from_secs(10))
+            .with_read_timeout(Duration::from_secs(20))
+            .with_write_timeout(Duration::from_secs(15))
+            .build();
+
+        assert_eq!(config.connect_timeout(), Some(Duration::from_secs(10)));
+        assert_eq!(config.read_timeout(), Some(Duration::from_secs(20)));
+        assert_eq!(config.write_timeout(), Some(Duration::from_secs(15)));
+    }
+
+    #[test]
+    fn test_config_default_timeouts() {
+        let config = WasiHttpConfig::builder().build();
+
+        assert_eq!(config.connect_timeout(), None);
+        assert_eq!(config.read_timeout(), None);
+        assert_eq!(config.write_timeout(), None);
+    }
+
+    #[test]
+    fn test_config_size_limit_accessors() {
+        let config = WasiHttpConfig::builder()
+            .with_max_request_body_size(1000)
+            .with_max_response_body_size(2000)
+            .build();
+
+        assert_eq!(config.max_request_body_size(), Some(1000));
+        assert_eq!(config.max_response_body_size(), Some(2000));
+    }
+
+    #[test]
+    fn test_config_default_size_limits() {
+        let config = WasiHttpConfig::builder().build();
+
+        assert_eq!(config.max_request_body_size(), None);
+        assert_eq!(config.max_response_body_size(), None);
+    }
+
+    #[test]
+    fn test_config_default_user_agent() {
+        let config = WasiHttpConfig::builder().build();
+        assert_eq!(config.user_agent(), None);
+    }
+
+    #[test]
+    fn test_config_default_max_redirects() {
+        let config = WasiHttpConfig::builder().build();
+        assert_eq!(config.max_redirects(), Some(10)); // Default is 10
+    }
+
+    #[test]
+    fn test_config_default_flags() {
+        let config = WasiHttpConfig::builder().build();
+
+        assert!(config.is_certificate_validation_enabled());
+        assert!(config.is_http2_enabled());
+        assert!(config.is_connection_pooling_enabled());
+        assert!(config.is_follow_redirects());
+        assert!(!config.is_https_required());
+        assert!(!config.is_allow_all_hosts());
+    }
+
+    // =========================================================================
+    // Host Validation Logic Tests (10 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_host_allowed_multiple_exact() {
+        let config = WasiHttpConfig::builder()
+            .allow_host("api.example.com")
+            .allow_host("cdn.example.com")
+            .allow_host("auth.example.com")
+            .build();
+
+        let ctx = WasiHttpContext::new(config).expect("Failed to create context");
+
+        assert!(ctx.is_host_allowed("api.example.com"));
+        assert!(ctx.is_host_allowed("cdn.example.com"));
+        assert!(ctx.is_host_allowed("auth.example.com"));
+        assert!(!ctx.is_host_allowed("unknown.example.com"));
+    }
+
+    #[test]
+    fn test_host_allowed_wildcard_subdomain() {
+        let config = WasiHttpConfig::builder()
+            .allow_host("*.example.com")
+            .build();
+
+        let ctx = WasiHttpContext::new(config).expect("Failed to create context");
+
+        assert!(ctx.is_host_allowed("api.example.com"));
+        assert!(ctx.is_host_allowed("www.example.com"));
+        assert!(ctx.is_host_allowed("deep.sub.example.com"));
+        // Base domain should also match
+        assert!(ctx.is_host_allowed("example.com"));
+    }
+
+    #[test]
+    fn test_host_blocked_takes_precedence() {
+        let config = WasiHttpConfig::builder()
+            .allow_all_hosts()
+            .block_host("secret.example.com")
+            .block_host("internal.example.com")
+            .build();
+
+        let ctx = WasiHttpContext::new(config).expect("Failed to create context");
+
+        assert!(ctx.is_host_allowed("public.example.com"));
+        assert!(!ctx.is_host_allowed("secret.example.com"));
+        assert!(!ctx.is_host_allowed("internal.example.com"));
+    }
+
+    #[test]
+    fn test_host_allowed_all_hosts() {
+        let config = WasiHttpConfig::builder()
+            .allow_all_hosts()
+            .build();
+
+        let ctx = WasiHttpContext::new(config).expect("Failed to create context");
+
+        assert!(ctx.is_host_allowed("any.domain.com"));
+        assert!(ctx.is_host_allowed("localhost"));
+        assert!(ctx.is_host_allowed("192.168.1.1"));
+    }
+
+    #[test]
+    fn test_host_allowed_empty_blocklist() {
+        let config = WasiHttpConfig::builder()
+            .allow_host("allowed.com")
+            .build();
+
+        let ctx = WasiHttpContext::new(config).expect("Failed to create context");
+
+        assert!(ctx.is_host_allowed("allowed.com"));
+        assert!(!ctx.is_host_allowed("other.com"));
+    }
+
+    #[test]
+    fn test_host_allowed_case_sensitivity() {
+        let config = WasiHttpConfig::builder()
+            .allow_host("API.Example.COM")
+            .build();
+
+        // Host matching should be case-sensitive by default in this implementation
+        // Verify the stored host before moving config
+        assert!(config.allowed_hosts().contains("API.Example.COM"));
+
+        let _ctx = WasiHttpContext::new(config).expect("Failed to create context");
+    }
+
+    #[test]
+    fn test_host_blocked_wildcard() {
+        let config = WasiHttpConfig::builder()
+            .allow_all_hosts()
+            .block_host("*.internal.com")
+            .build();
+
+        // Check blocked hosts before moving config
+        assert!(config.blocked_hosts().contains("*.internal.com"));
+
+        let ctx = WasiHttpContext::new(config).expect("Failed to create context");
+
+        assert!(ctx.is_host_allowed("public.com"));
+    }
+
+    #[test]
+    fn test_no_hosts_allowed_by_default() {
+        let config = WasiHttpConfig::builder().build();
+
+        let ctx = WasiHttpContext::new(config).expect("Failed to create context");
+
+        assert!(!ctx.is_host_allowed("any.com"));
+        assert!(!ctx.is_host_allowed("localhost"));
+    }
+
+    // =========================================================================
+    // Stats Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_stats_bytes_tracking() {
+        let ctx = WasiHttpContext::with_default_config().expect("Failed to create context");
+
+        ctx.stats().add_bytes_sent(500);
+        ctx.stats().add_bytes_sent(500);
+        ctx.stats().add_bytes_received(1000);
+        ctx.stats().add_bytes_received(500);
+
+        assert_eq!(ctx.stats().bytes_sent(), 1000);
+        assert_eq!(ctx.stats().bytes_received(), 1500);
+    }
+
+    #[test]
+    fn test_stats_active_requests() {
+        let ctx = WasiHttpContext::with_default_config().expect("Failed to create context");
+
+        ctx.stats().inc_active();
+        ctx.stats().inc_active();
+        ctx.stats().inc_active();
+        assert_eq!(ctx.stats().active_requests(), 3);
+
+        ctx.stats().dec_active();
+        assert_eq!(ctx.stats().active_requests(), 2);
+    }
+
+    #[test]
+    fn test_stats_duration_tracking() {
+        let ctx = WasiHttpContext::with_default_config().expect("Failed to create context");
+
+        ctx.stats().record_duration(100);
+        ctx.stats().record_duration(200);
+        ctx.stats().record_duration(50);
+
+        assert_eq!(ctx.stats().min_duration_ms(), 50);
+        assert_eq!(ctx.stats().max_duration_ms(), 200);
+    }
+
+    #[test]
+    fn test_stats_error_counters() {
+        let ctx = WasiHttpContext::with_default_config().expect("Failed to create context");
+
+        ctx.stats().inc_connection_timeout();
+        ctx.stats().inc_connection_timeout();
+        ctx.stats().inc_read_timeout();
+        ctx.stats().inc_blocked();
+        ctx.stats().inc_body_size_violation();
+
+        assert_eq!(ctx.stats().connection_timeouts(), 2);
+        assert_eq!(ctx.stats().read_timeouts(), 1);
+        assert_eq!(ctx.stats().blocked_requests(), 1);
+        assert_eq!(ctx.stats().body_size_violations(), 1);
+    }
+
+    #[test]
+    fn test_stats_avg_duration() {
+        let ctx = WasiHttpContext::with_default_config().expect("Failed to create context");
+
+        // Record some durations
+        ctx.stats().inc_total_requests();
+        ctx.stats().record_duration(100);
+        ctx.stats().inc_total_requests();
+        ctx.stats().record_duration(200);
+
+        // Average of 100 and 200 = 150
+        assert_eq!(ctx.stats().avg_duration_ms(), 150);
+    }
+
+    // =========================================================================
+    // Validation Tests (5 tests)
+    // =========================================================================
+
+    #[test]
+    fn test_config_validation_zero_connect_timeout() {
+        let config = WasiHttpConfig::builder()
+            .with_connect_timeout(Duration::ZERO)
+            .build();
+
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_validation_zero_read_timeout() {
+        let config = WasiHttpConfig::builder()
+            .with_read_timeout(Duration::ZERO)
+            .build();
+
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_validation_zero_write_timeout() {
+        let config = WasiHttpConfig::builder()
+            .with_write_timeout(Duration::ZERO)
+            .build();
+
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_config_validation_valid_timeouts() {
+        let config = WasiHttpConfig::builder()
+            .with_connect_timeout(Duration::from_secs(1))
+            .with_read_timeout(Duration::from_secs(1))
+            .with_write_timeout(Duration::from_secs(1))
+            .build();
+
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_config_default_validation() {
+        let config = WasiHttpConfig::default();
+        assert!(config.validate().is_ok());
+    }
 }

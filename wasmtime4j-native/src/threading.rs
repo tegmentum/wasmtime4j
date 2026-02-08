@@ -949,4 +949,201 @@ mod tests {
         assert!(thread.is_termination_requested());
     }
 
+    // ==================== NEW TESTS ====================
+
+    #[test]
+    fn test_wasm_thread_state_variants() {
+        // Test that all state variants are distinct
+        let states = [
+            WasmThreadState::New,
+            WasmThreadState::Running,
+            WasmThreadState::Waiting,
+            WasmThreadState::TimedWaiting,
+            WasmThreadState::Blocked,
+            WasmThreadState::Suspended,
+            WasmThreadState::Terminated,
+            WasmThreadState::Error,
+            WasmThreadState::Killed,
+        ];
+
+        for (i, s1) in states.iter().enumerate() {
+            for (j, s2) in states.iter().enumerate() {
+                if i == j {
+                    assert_eq!(s1, s2);
+                } else {
+                    assert_ne!(s1, s2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_wasm_thread_state_copy() {
+        let state = WasmThreadState::Running;
+        let copied = state;
+        assert_eq!(state, copied);
+    }
+
+    #[test]
+    fn test_thread_local_value_int() {
+        let value = ThreadLocalValue::Int(42);
+        match value {
+            ThreadLocalValue::Int(v) => assert_eq!(v, 42),
+            _ => panic!("Expected Int variant"),
+        }
+    }
+
+    #[test]
+    fn test_thread_local_value_long() {
+        let value = ThreadLocalValue::Long(9223372036854775807);
+        match value {
+            ThreadLocalValue::Long(v) => assert_eq!(v, i64::MAX),
+            _ => panic!("Expected Long variant"),
+        }
+    }
+
+    #[test]
+    fn test_thread_local_value_float() {
+        let value = ThreadLocalValue::Float(3.14);
+        match value {
+            ThreadLocalValue::Float(v) => assert!((v - 3.14).abs() < 0.001),
+            _ => panic!("Expected Float variant"),
+        }
+    }
+
+    #[test]
+    fn test_thread_local_value_double() {
+        let value = ThreadLocalValue::Double(2.718281828);
+        match value {
+            ThreadLocalValue::Double(v) => assert!((v - 2.718281828).abs() < 0.0001),
+            _ => panic!("Expected Double variant"),
+        }
+    }
+
+    #[test]
+    fn test_thread_local_value_bytes() {
+        let data = vec![0x01, 0x02, 0x03, 0x04];
+        let value = ThreadLocalValue::Bytes(data.clone());
+        match value {
+            ThreadLocalValue::Bytes(v) => assert_eq!(v, data),
+            _ => panic!("Expected Bytes variant"),
+        }
+    }
+
+    #[test]
+    fn test_thread_local_value_string() {
+        let value = ThreadLocalValue::String("test string".to_string());
+        match value {
+            ThreadLocalValue::String(v) => assert_eq!(v, "test string"),
+            _ => panic!("Expected String variant"),
+        }
+    }
+
+    #[test]
+    fn test_thread_local_value_clone() {
+        let original = ThreadLocalValue::Bytes(vec![1, 2, 3]);
+        let cloned = original.clone();
+        match (original, cloned) {
+            (ThreadLocalValue::Bytes(a), ThreadLocalValue::Bytes(b)) => assert_eq!(a, b),
+            _ => panic!("Expected Bytes variants"),
+        }
+    }
+
+    #[test]
+    fn test_wasm_thread_statistics_default() {
+        let stats = WasmThreadStatistics::default();
+
+        assert_eq!(stats.functions_executed, 0);
+        assert_eq!(stats.total_execution_time, 0);
+        assert_eq!(stats.atomic_operations, 0);
+        assert_eq!(stats.memory_accesses, 0);
+        assert_eq!(stats.wait_notify_operations, 0);
+        assert_eq!(stats.peak_memory_usage, 0);
+        assert!(stats.last_activity.is_none());
+    }
+
+    #[test]
+    fn test_atomic_operation_variants() {
+        let operations = [
+            AtomicOperation::Load,
+            AtomicOperation::Store,
+            AtomicOperation::Add,
+            AtomicOperation::Sub,
+            AtomicOperation::And,
+            AtomicOperation::Or,
+            AtomicOperation::Xor,
+            AtomicOperation::Exchange,
+            AtomicOperation::CompareExchange,
+            AtomicOperation::Wait,
+            AtomicOperation::Notify,
+        ];
+
+        // Test all are distinct
+        for (i, op1) in operations.iter().enumerate() {
+            for (j, op2) in operations.iter().enumerate() {
+                if i == j {
+                    assert_eq!(op1, op2);
+                } else {
+                    assert_ne!(op1, op2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_atomic_result_creation() {
+        let result = AtomicResult {
+            operation: AtomicOperation::Add,
+            offset: 100,
+            previous_value: Some(42),
+            new_value: 52,
+            threads_notified: None,
+        };
+
+        assert_eq!(result.operation, AtomicOperation::Add);
+        assert_eq!(result.offset, 100);
+        assert_eq!(result.previous_value, Some(42));
+        assert_eq!(result.new_value, 52);
+        assert!(result.threads_notified.is_none());
+    }
+
+    #[test]
+    fn test_atomic_result_notify() {
+        let result = AtomicResult {
+            operation: AtomicOperation::Notify,
+            offset: 0,
+            previous_value: None,
+            new_value: 0,
+            threads_notified: Some(5),
+        };
+
+        assert_eq!(result.operation, AtomicOperation::Notify);
+        assert_eq!(result.threads_notified, Some(5));
+    }
+
+    #[test]
+    fn test_thread_is_alive_states() {
+        let engine = threads_engine();
+        let shared_memory = create_test_shared_memory(&engine);
+
+        let thread = WasmThread::new(1, shared_memory, &engine)
+            .expect("Failed to create thread");
+
+        // New thread should be alive
+        assert!(thread.is_alive());
+        assert_eq!(thread.get_state(), WasmThreadState::New);
+    }
+
+    #[test]
+    fn test_thread_get_shared_memory() {
+        let engine = threads_engine();
+        let shared_memory = create_test_shared_memory(&engine);
+        let original_ptr = Arc::as_ptr(&shared_memory);
+
+        let thread = WasmThread::new(1, shared_memory, &engine)
+            .expect("Failed to create thread");
+
+        let retrieved = thread.get_shared_memory();
+        assert_eq!(Arc::as_ptr(&retrieved), original_ptr);
+    }
 }

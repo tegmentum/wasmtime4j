@@ -1882,4 +1882,364 @@ mod tests {
             assert_eq!(val, (-10i32) & 0x7FFFFFFF);
         }
     }
+
+    #[test]
+    fn test_struct_type_registration_with_multiple_fields() {
+        let mut ops = create_test_operations().unwrap();
+
+        let struct_def = StructTypeDefinition {
+            type_id: 1,
+            fields: vec![
+                FieldDefinition {
+                    name: Some("x".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: true,
+                    index: 0,
+                },
+                FieldDefinition {
+                    name: Some("y".to_string()),
+                    field_type: FieldType::I64,
+                    mutable: true,
+                    index: 1,
+                },
+                FieldDefinition {
+                    name: Some("z".to_string()),
+                    field_type: FieldType::F32,
+                    mutable: false,
+                    index: 2,
+                },
+            ],
+            name: Some("Point3D".to_string()),
+            supertype: None,
+        };
+
+        let result = ops.register_struct_type(&struct_def);
+        assert!(result.is_ok(), "Should register struct with multiple fields");
+    }
+
+    #[test]
+    fn test_array_type_with_different_element_types() {
+        let mut ops = create_test_operations().unwrap();
+
+        // Test i64 array
+        let i64_array_def = ArrayTypeDefinition {
+            type_id: 1,
+            element_type: FieldType::I64,
+            mutable: true,
+            name: Some("LongArray".to_string()),
+        };
+        assert!(ops.register_array_type(&i64_array_def).is_ok());
+
+        // Test f32 array
+        let f32_array_def = ArrayTypeDefinition {
+            type_id: 2,
+            element_type: FieldType::F32,
+            mutable: true,
+            name: Some("FloatArray".to_string()),
+        };
+        assert!(ops.register_array_type(&f32_array_def).is_ok());
+
+        // Test f64 array
+        let f64_array_def = ArrayTypeDefinition {
+            type_id: 3,
+            element_type: FieldType::F64,
+            mutable: false,
+            name: Some("DoubleArray".to_string()),
+        };
+        assert!(ops.register_array_type(&f64_array_def).is_ok());
+    }
+
+    #[test]
+    fn test_i31_boundary_values() {
+        let mut ops = create_test_operations().unwrap();
+
+        // Test maximum i31 value (2^30 - 1 = 1073741823)
+        let max_result = ops.i31_new(1073741823, 1);
+        assert!(max_result.success, "Should handle maximum i31 value");
+
+        // Test minimum i31 value (-2^30 = -1073741824)
+        let min_result = ops.i31_new(-1073741824, 2);
+        assert!(min_result.success, "Should handle minimum i31 value");
+
+        // Test zero
+        let zero_result = ops.i31_new(0, 3);
+        assert!(zero_result.success, "Should handle zero");
+    }
+
+    #[test]
+    fn test_ref_eq_different_objects() {
+        let mut ops = create_test_operations().unwrap();
+
+        // Create two different I31 references
+        let result1 = ops.i31_new(42, 1);
+        let result2 = ops.i31_new(99, 2);
+
+        assert!(result1.success);
+        assert!(result2.success);
+
+        // Different objects should not be equal
+        let eq_result = ops.ref_eq(1, 2);
+        assert!(eq_result.success);
+        assert_eq!(eq_result.eq_result, Some(false), "Different objects should not be equal");
+    }
+
+    #[test]
+    fn test_array_new_with_zero_length() {
+        let mut ops = create_test_operations().unwrap();
+
+        let array_def = ArrayTypeDefinition {
+            type_id: 1,
+            element_type: FieldType::I32,
+            mutable: true,
+            name: Some("IntArray".to_string()),
+        };
+
+        ops.register_array_type(&array_def).unwrap();
+
+        // Create array with zero elements
+        let elements: Vec<GcValue> = vec![];
+        let result = ops.array_new(&array_def, &elements, 1);
+        // Empty arrays may or may not be supported depending on implementation
+        // Just verify the result is valid (success or error is acceptable)
+        assert!(result.success || result.error.is_some());
+    }
+
+    #[test]
+    fn test_array_get_out_of_bounds() {
+        let mut ops = create_test_operations().unwrap();
+
+        let array_def = ArrayTypeDefinition {
+            type_id: 1,
+            element_type: FieldType::I32,
+            mutable: true,
+            name: Some("IntArray".to_string()),
+        };
+
+        ops.register_array_type(&array_def).unwrap();
+
+        // Create array with 3 elements
+        let elements = vec![GcValue::I32(1), GcValue::I32(2), GcValue::I32(3)];
+        let result = ops.array_new(&array_def, &elements, 1);
+        assert!(result.success);
+
+        // Try to get element at invalid index
+        let get_result = ops.array_get(1, 100);
+        assert!(!get_result.success, "Should fail for out of bounds access");
+    }
+
+    #[test]
+    fn test_struct_new_and_get() {
+        let mut ops = create_test_operations().unwrap();
+
+        let struct_def = StructTypeDefinition {
+            type_id: 1,
+            fields: vec![
+                FieldDefinition {
+                    name: Some("value".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: true,
+                    index: 0,
+                },
+            ],
+            name: Some("SimpleStruct".to_string()),
+            supertype: None,
+        };
+
+        ops.register_struct_type(&struct_def).unwrap();
+
+        // Create struct
+        let values = vec![GcValue::I32(42)];
+        let create_result = ops.struct_new(&struct_def, &values, 1);
+        assert!(create_result.success, "Should create struct");
+
+        // Get field value
+        let get_result = ops.struct_get(1, 0);
+        assert!(get_result.success, "Should get field value");
+        // Check value using pattern matching since GcValue doesn't implement PartialEq
+        if let Some(GcValue::I32(v)) = get_result.value {
+            assert_eq!(v, 42, "Field should have value 42");
+        } else {
+            panic!("Expected I32 value");
+        }
+    }
+
+    #[test]
+    fn test_struct_set() {
+        let mut ops = create_test_operations().unwrap();
+
+        let struct_def = StructTypeDefinition {
+            type_id: 1,
+            fields: vec![
+                FieldDefinition {
+                    name: Some("value".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: true,
+                    index: 0,
+                },
+            ],
+            name: Some("MutableStruct".to_string()),
+            supertype: None,
+        };
+
+        ops.register_struct_type(&struct_def).unwrap();
+
+        // Create struct with initial value
+        let values = vec![GcValue::I32(10)];
+        let create_result = ops.struct_new(&struct_def, &values, 1);
+        assert!(create_result.success, "Should create struct");
+
+        // Set field to new value
+        let set_result = ops.struct_set(1, 0, &GcValue::I32(99));
+        assert!(set_result.success, "Should set field value");
+
+        // Verify new value
+        let get_result = ops.struct_get(1, 0);
+        assert!(get_result.success);
+        if let Some(GcValue::I32(v)) = get_result.value {
+            assert_eq!(v, 99, "Field should have new value 99");
+        } else {
+            panic!("Expected I32 value");
+        }
+    }
+
+    #[test]
+    fn test_struct_with_default_values() {
+        let mut ops = create_test_operations().unwrap();
+
+        let struct_def = StructTypeDefinition {
+            type_id: 1,
+            fields: vec![
+                FieldDefinition {
+                    name: Some("x".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: true,
+                    index: 0,
+                },
+                FieldDefinition {
+                    name: Some("y".to_string()),
+                    field_type: FieldType::I32,
+                    mutable: true,
+                    index: 1,
+                },
+            ],
+            name: Some("Point".to_string()),
+            supertype: None,
+        };
+
+        ops.register_struct_type(&struct_def).unwrap();
+
+        // Create struct with zero values (simulating defaults)
+        let values = vec![GcValue::I32(0), GcValue::I32(0)];
+        let result = ops.struct_new(&struct_def, &values, 1);
+        assert!(result.success, "Should create struct with default values");
+
+        // Default i32 should be 0
+        let get_result = ops.struct_get(1, 0);
+        assert!(get_result.success);
+        if let Some(GcValue::I32(v)) = get_result.value {
+            assert_eq!(v, 0, "Field should have value 0");
+        } else {
+            panic!("Expected I32 value");
+        }
+    }
+
+    #[test]
+    fn test_ref_test_with_i31() {
+        let mut ops = create_test_operations().unwrap();
+
+        // Create I31 reference
+        let result = ops.i31_new(42, 1);
+        assert!(result.success);
+
+        // Test that it is an I31Ref
+        let is_i31 = ops.ref_test(1, &GcReferenceType::I31Ref);
+        assert!(is_i31.success);
+        assert_eq!(is_i31.test_result, Some(true), "Should be I31Ref");
+    }
+
+    #[test]
+    fn test_array_len() {
+        let mut ops = create_test_operations().unwrap();
+
+        let array_def = ArrayTypeDefinition {
+            type_id: 1,
+            element_type: FieldType::I32,
+            mutable: true,
+            name: Some("IntArray".to_string()),
+        };
+
+        ops.register_array_type(&array_def).unwrap();
+
+        // Create array with different sizes
+        for size in [0, 1, 5, 10, 100] {
+            let elements: Vec<GcValue> = (0..size).map(|i| GcValue::I32(i as i32)).collect();
+            let result = ops.array_new(&array_def, &elements, (size + 1) as ObjectId);
+
+            if size > 0 {
+                assert!(result.success, "Should create array of size {}", size);
+
+                let len_result = ops.array_len((size + 1) as ObjectId);
+                assert!(len_result.success);
+                assert_eq!(len_result.length, Some(size as u32), "Array length should be {}", size);
+            }
+        }
+    }
+
+    #[test]
+    fn test_array_set() {
+        let mut ops = create_test_operations().unwrap();
+
+        let array_def = ArrayTypeDefinition {
+            type_id: 1,
+            element_type: FieldType::I32,
+            mutable: true,
+            name: Some("IntArray".to_string()),
+        };
+
+        ops.register_array_type(&array_def).unwrap();
+
+        // Create array
+        let elements = vec![GcValue::I32(0), GcValue::I32(0), GcValue::I32(0)];
+        let create_result = ops.array_new(&array_def, &elements, 1);
+        assert!(create_result.success, "Should create array");
+
+        // Set element
+        let set_result = ops.array_set(1, 1, &GcValue::I32(42));
+        assert!(set_result.success, "Should set array element");
+
+        // Verify
+        let get_result = ops.array_get(1, 1);
+        assert!(get_result.success);
+        if let Some(GcValue::I32(v)) = get_result.value {
+            assert_eq!(v, 42, "Element should be 42");
+        } else {
+            panic!("Expected I32 value");
+        }
+    }
+
+    #[test]
+    fn test_invalid_object_id() {
+        let mut ops = create_test_operations().unwrap();
+
+        // Try to get from non-existent object
+        let get_result = ops.struct_get(999, 0);
+        assert!(!get_result.success, "Should fail for non-existent object");
+
+        // Try to get array length from non-existent object
+        let len_result = ops.array_len(999);
+        assert!(!len_result.success, "Should fail for non-existent object");
+    }
+
+    #[test]
+    fn test_ref_cast() {
+        let mut ops = create_test_operations().unwrap();
+
+        // Create I31 reference
+        let result = ops.i31_new(42, 1);
+        assert!(result.success);
+
+        // Cast to AnyRef (should succeed as I31 is subtype of any)
+        let cast_result = ops.ref_cast(1, &GcReferenceType::AnyRef);
+        assert!(cast_result.success, "Cast to AnyRef should succeed");
+    }
 }
