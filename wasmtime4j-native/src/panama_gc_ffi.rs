@@ -8,11 +8,14 @@
 //! All FFI functions implement defensive programming patterns and are designed for
 //! high performance with minimal overhead. Memory management is handled safely
 //! through Panama's memory segments.
+//!
+//! All FFI functions are wrapped with catch_unwind to prevent panics from crashing the JVM.
 
 use crate::gc::{WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult};
 use crate::error::{WasmtimeResult, WasmtimeError};
 use crate::gc_types::{FieldType, FieldDefinition, StructTypeDefinition, ArrayTypeDefinition, GcValue, GcReferenceType};
 use crate::gc_heap::ObjectId;
+use crate::{ffi_boundary_i32, ffi_boundary_ptr, ffi_boundary_result};
 
 const FFI_SUCCESS: i32 = 0;
 const FFI_ERROR: i32 = 1;
@@ -20,34 +23,27 @@ const FFI_ERROR: i32 = 1;
 /// Panama FFI function for creating a GC runtime
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_create_runtime(engine_handle: i64) -> i64 {
-    // DEBUG: Write to file to prove this function is being called
-    use std::io::Write;
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/gc_debug.txt") {
-        let _ = writeln!(f, "[FFI_CREATE_RUNTIME] engine_handle={}", engine_handle);
-    }
-    let runtime_result = create_gc_runtime_internal(engine_handle);
-
-    match runtime_result {
-        Ok(runtime) => {
-            let runtime_ptr = Box::into_raw(Box::new(runtime));
-            runtime_ptr as i64
-        },
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0i64, {
+        let runtime = create_gc_runtime_internal(engine_handle)?;
+        let runtime_ptr = Box::into_raw(Box::new(runtime));
+        Ok(runtime_ptr as i64)
+    })
 }
 
 /// Panama FFI function for destroying a GC runtime
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_destroy_runtime(runtime_handle: i64) -> i32 {
-    if runtime_handle == 0 {
-        return FFI_ERROR;
-    }
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Ok(FFI_ERROR);
+        }
 
-    unsafe {
-        let _ = Box::from_raw(runtime_handle as *mut WasmGcRuntime);
-    }
+        unsafe {
+            let _ = Box::from_raw(runtime_handle as *mut WasmGcRuntime);
+        }
 
-    FFI_SUCCESS
+        Ok(FFI_SUCCESS)
+    })
 }
 
 /// Panama FFI function for registering a struct type
@@ -62,21 +58,19 @@ pub extern "C" fn wasmtime4j_gc_register_struct_type(
     field_types: *const i32,
     field_mutabilities: *const u8,
 ) -> i32 {
-    let result = register_struct_type_internal(
-        runtime_handle,
-        name_ptr,
-        name_len,
-        field_count,
-        field_names_ptr,
-        field_name_lens,
-        field_types,
-        field_mutabilities,
-    );
-
-    match result {
-        Ok(type_id) => type_id as i32,
-        Err(_) => -1,
-    }
+    ffi_boundary_result!(-1i32, {
+        let type_id = register_struct_type_internal(
+            runtime_handle,
+            name_ptr,
+            name_len,
+            field_count,
+            field_names_ptr,
+            field_name_lens,
+            field_types,
+            field_mutabilities,
+        )?;
+        Ok(type_id as i32)
+    })
 }
 
 /// Panama FFI function for registering an array type
