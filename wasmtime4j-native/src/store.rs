@@ -204,6 +204,25 @@ impl Store {
         self.id
     }
 
+    /// Check if the store has been closed.
+    ///
+    /// Returns an error if the store is closed, preventing use-after-close bugs.
+    /// This should be called at the start of any method that accesses self.inner.
+    #[inline]
+    fn check_not_closed(&self) -> WasmtimeResult<()> {
+        if self.metadata.is_closed.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(WasmtimeError::Store {
+                message: format!("Store {} has been closed and cannot be used", self.id),
+            });
+        }
+        Ok(())
+    }
+
+    /// Check if this store has been closed
+    pub fn is_closed(&self) -> bool {
+        self.metadata.is_closed.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
     /// Get a reference to the engine used by this store
     ///
     /// This is needed for creating FuncTypes in FFI bindings
@@ -224,8 +243,23 @@ impl Store {
     /// CRITICAL: This method is essential for avoiding WASM execution traps.
     /// The ReentrantLock allows Wasmtime to access the Store multiple times
     /// during function execution on the same thread.
+    ///
+    /// # Panics
+    /// Panics if the store has been closed, to prevent use-after-free crashes.
     pub fn lock_store(&self) -> crate::interop::ReentrantLockGuard<'_, WasmtimeStore<StoreData>> {
+        if self.metadata.is_closed.load(std::sync::atomic::Ordering::SeqCst) {
+            panic!("Store {} has been closed and cannot be used", self.id);
+        }
         self.inner.lock()
+    }
+
+    /// Try to get direct mutable access to the underlying Store
+    ///
+    /// Returns an error if the store has been closed.
+    /// Use this method when you need to handle the closed case gracefully.
+    pub fn try_lock_store(&self) -> WasmtimeResult<crate::interop::ReentrantLockGuard<'_, WasmtimeStore<StoreData>>> {
+        self.check_not_closed()?;
+        Ok(self.inner.lock())
     }
 
     /// Execute function with store context
@@ -233,10 +267,14 @@ impl Store {
     /// NOTE: This method creates temporary context lifetimes and should NOT be
     /// used for WASM function calls in JNI/Panama environments. Use `lock_store()`
     /// instead for direct Store access.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn with_context<T, F>(&self, func: F) -> WasmtimeResult<T>
     where
         F: FnOnce(&mut StoreContextMut<StoreData>) -> WasmtimeResult<T>,
     {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         let start_time = Instant::now();
@@ -264,10 +302,14 @@ impl Store {
     }
 
     /// Execute function with read-only store context
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn with_context_ro<T, F>(&self, func: F) -> WasmtimeResult<T>
     where
         F: FnOnce(&StoreContext<StoreData>) -> WasmtimeResult<T>,
     {
+        self.check_not_closed()?;
         let store = self.inner.lock();
         func(&store.as_context())
     }
@@ -278,7 +320,11 @@ impl Store {
     }
 
     /// Add fuel to the store for execution limiting
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn add_fuel(&self, fuel: u64) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         // Get current fuel and add to it
@@ -294,7 +340,11 @@ impl Store {
     }
 
     /// Set fuel to a specific amount (replaces current fuel)
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn set_fuel(&self, fuel: u64) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         store.set_fuel(fuel).map_err(|e| WasmtimeError::Runtime {
@@ -306,14 +356,22 @@ impl Store {
     }
 
     /// Get remaining fuel
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn fuel_remaining(&self) -> WasmtimeResult<Option<u64>> {
+        self.check_not_closed()?;
         let store = self.inner.lock();
 
         Ok(Some(store.get_fuel().unwrap_or(0)))
     }
 
     /// Consume fuel from the store
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn consume_fuel(&self, fuel: u64) -> WasmtimeResult<u64> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         let current_fuel = store.get_fuel().unwrap_or(0);
@@ -333,13 +391,24 @@ impl Store {
     }
 
     /// Set epoch deadline for interruption
+    ///
+    /// # Panics
+    /// This method will silently fail if the store has been closed.
+    /// Use `set_epoch_deadline_checked` for explicit error handling.
     pub fn set_epoch_deadline(&self, ticks: u64) {
+        if self.check_not_closed().is_err() {
+            return;
+        }
         let mut store = self.inner.lock();
         store.set_epoch_deadline(ticks);
     }
 
     /// Get execution statistics
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn execution_stats(&self) -> WasmtimeResult<ExecutionState> {
+        self.check_not_closed()?;
         let store = self.inner.lock();
 
         Ok(store.data().execution_state.clone())
@@ -348,11 +417,7 @@ impl Store {
     /// Validate store is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
         // Check if store has been closed
-        if self.metadata.is_closed.load(std::sync::atomic::Ordering::SeqCst) {
-            return Err(WasmtimeError::Store {
-                message: format!("Store {} has been closed and cannot be used", self.id),
-            });
-        }
+        self.check_not_closed()?;
 
         // Check if store can be locked (not corrupted)
         if let Some(_guard) = self.inner.try_lock() {
@@ -365,7 +430,11 @@ impl Store {
     }
 
     /// Force garbage collection in the store
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn gc(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         store.gc(None); // Pass None for manual GC trigger
@@ -373,14 +442,24 @@ impl Store {
     }
 
     /// Check if there is a pending exception in the store
+    ///
+    /// Returns false if the store has been closed.
     pub fn has_pending_exception(&self) -> bool {
+        if self.check_not_closed().is_err() {
+            return false;
+        }
         let store = self.inner.lock();
         store.has_pending_exception()
     }
 
     /// Take and remove the pending exception from the store, if any.
     /// Returns the exception as an OwnedRooted handle that can be stored across FFI boundaries.
+    ///
+    /// Returns None if the store has been closed.
     pub fn take_pending_exception(&self) -> Option<wasmtime::OwnedRooted<wasmtime::ExnRef>> {
+        if self.check_not_closed().is_err() {
+            return None;
+        }
         let mut store = self.inner.lock();
         store.take_pending_exception().and_then(|exn| {
             let mut scope = wasmtime::RootScope::new(&mut *store);
@@ -396,7 +475,11 @@ impl Store {
     ///
     /// # Arguments
     /// * `interval` - The fuel interval at which to yield, or None to disable
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn fuel_async_yield_interval(&self, interval: Option<u64>) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
         store.fuel_async_yield_interval(interval).map_err(|e| WasmtimeError::Runtime {
             message: format!("Failed to set fuel async yield interval: {}", e),
@@ -411,7 +494,11 @@ impl Store {
     ///
     /// # Arguments
     /// * `delta` - The number of ticks to add to the deadline after yielding
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn epoch_deadline_async_yield_and_update(&self, delta: u64) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
         store.epoch_deadline_async_yield_and_update(delta);
         Ok(())
@@ -421,7 +508,11 @@ impl Store {
     ///
     /// When the epoch counter exceeds the deadline set via `set_epoch_deadline`,
     /// WebAssembly execution will trap with an error.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn epoch_deadline_trap(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
         store.epoch_deadline_trap();
         Ok(())
@@ -434,7 +525,11 @@ impl Store {
     ///
     /// Note: This simple version configures trap behavior.
     /// Use `epoch_deadline_callback_with_fn` for full callback support.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn epoch_deadline_callback(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
         store.epoch_deadline_trap();
         Ok(())
@@ -454,11 +549,15 @@ impl Store {
     ///
     /// # Safety
     /// The callback function must be valid for the lifetime of the Store.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn epoch_deadline_callback_with_fn(
         &self,
         callback_fn: extern "C" fn(callback_id: i64, epoch: u64) -> i64,
         callback_id: i64,
     ) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         log::debug!(
@@ -492,7 +591,11 @@ impl Store {
     }
 
     /// Get memory usage statistics
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn memory_usage(&self) -> WasmtimeResult<MemoryUsage> {
+        self.check_not_closed()?;
         let store = self.inner.lock();
 
         // Note: Wasmtime doesn't provide direct memory usage stats
@@ -505,12 +608,16 @@ impl Store {
     }
 
     /// Create a host function that can be imported by WebAssembly modules
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn create_host_function(
         &self,
         name: String,
         func_type: FuncType,
         callback: Box<dyn HostFunctionCallback + Send + Sync>,
     ) -> WasmtimeResult<(u64, Func)> {
+        self.check_not_closed()?;
         // Create the host function wrapper
         let host_function = HostFunction::new(name, func_type, callback)?;
         let host_function_id = host_function.id();
@@ -544,11 +651,15 @@ impl Store {
     }
 
     /// Set WASI context for this store by building a fresh WasiP1Ctx from configuration
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn set_wasi_context(
         &self,
         wasi_context: &crate::wasi::WasiContext,
         fd_manager: crate::wasi::WasiFileDescriptorManager,
     ) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         // Build a fresh WasiP1Ctx from the configuration
@@ -565,7 +676,12 @@ impl Store {
     }
 
     /// Check if this store has WASI context
+    ///
+    /// Returns false if the store has been closed.
     pub fn has_wasi_context(&self) -> bool {
+        if self.check_not_closed().is_err() {
+            return false;
+        }
         let store = self.inner.lock();
         store.data().wasi_ctx.is_some()
     }
@@ -574,8 +690,12 @@ impl Store {
     ///
     /// This creates a WasiNnCtx with the available backends and an empty registry.
     /// WebAssembly modules can then use wasi-nn imports to load models and run inference.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     #[cfg(feature = "wasi-nn")]
     pub fn set_wasi_nn_context(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         // Get available backends from wasmtime-wasi-nn
@@ -594,15 +714,24 @@ impl Store {
     }
 
     /// Check if this store has WASI-NN context
+    ///
+    /// Returns false if the store has been closed.
     #[cfg(feature = "wasi-nn")]
     pub fn has_wasi_nn_context(&self) -> bool {
+        if self.check_not_closed().is_err() {
+            return false;
+        }
         let store = self.inner.lock();
         store.data().wasi_nn_ctx.is_some()
     }
 
     /// Remove WASI-NN context from this store
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     #[cfg(feature = "wasi-nn")]
     pub fn remove_wasi_nn_context(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
         let data = store.data_mut();
         data.wasi_nn_ctx = None;
@@ -610,7 +739,11 @@ impl Store {
     }
 
     /// Get captured stdout data from WASI execution
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn get_wasi_stdout(&self) -> WasmtimeResult<Option<Vec<u8>>> {
+        self.check_not_closed()?;
         let store = self.inner.lock();
         if let Some(pipe) = &store.data().wasi_stdout_pipe {
             let contents = pipe.contents();
@@ -621,7 +754,11 @@ impl Store {
     }
 
     /// Get captured stderr data from WASI execution
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn get_wasi_stderr(&self) -> WasmtimeResult<Option<Vec<u8>>> {
+        self.check_not_closed()?;
         let store = self.inner.lock();
         if let Some(pipe) = &store.data().wasi_stderr_pipe {
             let contents = pipe.contents();
@@ -632,7 +769,11 @@ impl Store {
     }
 
     /// Remove WASI context from this store
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
     pub fn remove_wasi_context(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
         let mut store = self.inner.lock();
 
         let data = store.data_mut();
