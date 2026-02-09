@@ -1264,7 +1264,7 @@ pub mod core {
 
         // CRITICAL: Instantiate host functions BEFORE trying to link the module
         {
-            let mut store_guard = store.lock_store();
+            let mut store_guard = store.try_lock_store()?;
             linker.instantiate_host_functions(&mut *store_guard)?;
         }
 
@@ -1274,7 +1274,7 @@ pub mod core {
         })?;
 
         // Get the wasmtime store and call instantiate
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         let wasmtime_instance = linker_guard
             .instantiate(&mut *store_guard, module.inner())
             .map_err(|e| WasmtimeError::Instance {
@@ -1721,7 +1721,7 @@ impl InstancePreWrapper {
         let start = Instant::now();
 
         // Get the wasmtime store and call instantiate
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         let result = self.inner.instantiate(&mut *store_guard);
         drop(store_guard);
 

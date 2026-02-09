@@ -287,7 +287,7 @@ pub extern "C" fn wasmtime4j_panama_linker_define_unknown_imports_as_traps(
             // Flush pending host functions to wasmtime linker before defining traps
             let store = crate::store::core::get_store_mut(store_ptr)?;
             {
-                let mut store_lock = store.lock_store();
+                let mut store_lock = store.try_lock_store()?;
                 linker.instantiate_host_functions(&mut *store_lock)?;
             }
 
@@ -331,7 +331,7 @@ pub extern "C" fn wasmtime4j_panama_linker_define_unknown_imports_as_default_val
 
             // Flush pending host functions to wasmtime linker before defining defaults
             {
-                let mut store_lock = store.lock_store();
+                let mut store_lock = store.try_lock_store()?;
                 linker.instantiate_host_functions(&mut *store_lock)?;
             }
 
@@ -339,7 +339,7 @@ pub extern "C" fn wasmtime4j_panama_linker_define_unknown_imports_as_default_val
             let module = crate::module::core::get_module_ref(module_ptr)?;
 
             // Lock store and call the method
-            let mut store_lock = store.lock_store();
+            let mut store_lock = store.try_lock_store()?;
             linker.define_unknown_imports_as_default_values(&mut *store_lock, module)?;
 
             Ok(())
@@ -446,7 +446,7 @@ pub extern "C" fn wasmtime4j_panama_linker_define_global(
                 })?;
 
             // Lock store and define global
-            let mut store_lock = store.lock_store();
+            let mut store_lock = store.try_lock_store()?;
             linker_lock.define(
                 &mut (*store_lock).as_context_mut(),
                 module_name_str,
@@ -500,7 +500,7 @@ pub extern "C" fn wasmtime4j_panama_linker_define_table(
                 })?;
 
             // Lock store and define table
-            let mut store_lock = store.lock_store();
+            let mut store_lock = store.try_lock_store()?;
             linker_lock.define(
                 &mut (*store_lock).as_context_mut(),
                 module_name_str,

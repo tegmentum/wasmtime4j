@@ -480,7 +480,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstanti
 
         // Instantiate the module using the linker
         // First, instantiate any registered host functions
-        let mut store_lock = store.lock_store();
+        let mut store_lock = store.try_lock_store()?;
         linker.instantiate_host_functions(&mut *store_lock)?;
 
         // Then use wasmtime::Linker::instantiate
@@ -543,7 +543,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstanti
 
         // Instantiate the module using the linker with a name
         // First, instantiate any registered host functions
-        let mut store_lock = store.lock_store();
+        let mut store_lock = store.try_lock_store()?;
         linker.instantiate_host_functions(&mut *store_lock)?;
 
         // Then use wasmtime::Linker::instantiate to create instance
@@ -705,7 +705,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineGl
             })?;
 
         // Use lock_store() and AsContextMut for mutable context
-        let mut store_lock = store.lock_store();
+        let mut store_lock = store.try_lock_store()?;
         use wasmtime::AsContextMut;
         linker_lock
             .define(&mut (*store_lock).as_context_mut(), &module_name_str, &name_str, wasmtime::Extern::Global(*wasmtime_global_lock))
@@ -979,7 +979,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUn
         // calling define_unknown_imports_as_traps, so wasmtime knows which
         // imports are already satisfied and only traps truly unknown ones.
         {
-            let mut store_lock = store.lock_store();
+            let mut store_lock = store.try_lock_store()?;
             linker.instantiate_host_functions(&mut *store_lock)?;
         }
 
@@ -1014,7 +1014,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUn
 
         // Flush pending host functions before defining defaults
         {
-            let mut store_lock = store.lock_store();
+            let mut store_lock = store.try_lock_store()?;
             linker.instantiate_host_functions(&mut *store_lock)?;
         }
 
@@ -1022,7 +1022,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUn
         let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
 
         // Lock store and call the method
-        let mut store_lock = store.lock_store();
+        let mut store_lock = store.try_lock_store()?;
         linker.define_unknown_imports_as_default_values(&mut *store_lock, module)?;
 
         Ok(1) // JNI_TRUE

@@ -364,7 +364,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
         // Lock the store for reentrant access
-        let mut store_lock = store.lock_store();
+        let mut store_lock = store.try_lock_store()?;
 
         // Get function type for parameter conversion
         let func_type = func.ty(&*store_lock);
@@ -445,7 +445,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAs
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
         // Lock the store for reentrant access
-        let mut store_lock = store.lock_store();
+        let mut store_lock = store.try_lock_store()?;
 
         // Get function type for parameter conversion
         let func_type = func.ty(&*store_lock);
@@ -526,7 +526,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMu
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
         // Lock the store for reentrant access
-        let mut store_lock = store.lock_store();
+        let mut store_lock = store.try_lock_store()?;
 
         // Get function type for parameter conversion
         let func_type = func.ty(&*store_lock);

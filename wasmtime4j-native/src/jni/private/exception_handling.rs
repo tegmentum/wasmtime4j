@@ -110,7 +110,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     let tag_type = TagType::new(func_type);
 
     // Lock the store and create the Tag
-    let mut store_guard = store.lock_store();
+    let mut store_guard = match store.try_lock_store() {
+        Ok(guard) => guard,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return 0;
+        }
+    };
     match Tag::new(&mut *store_guard, &tag_type) {
         Ok(tag) => Box::into_raw(Box::new(tag)) as jlong,
         Err(e) => {
@@ -148,7 +154,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeGetParamTyp
     let store = unsafe { &*(store_handle as *const Store) };
 
     // Lock the store and get the tag type
-    let store_guard = store.lock_store();
+    let store_guard = match store.try_lock_store() {
+        Ok(guard) => guard,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
+        }
+    };
     let tag_type = tag.ty(&*store_guard);
 
     // TagType has ty() which returns &FuncType, and FuncType has params()
@@ -220,7 +232,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeEquals(
         let store = unsafe { &*(store_handle as *const Store) };
 
         // Lock the store and compare tags
-        let store_guard = store.lock_store();
+        let store_guard = store.try_lock_store()?;
         Ok(Tag::eq(tag1, tag2, &*store_guard))
     });
 

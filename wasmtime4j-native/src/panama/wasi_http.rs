@@ -587,7 +587,10 @@ pub extern "C" fn wasmtime4j_panama_tag_create(
     let tag_type = TagType::new(func_type);
 
     // Lock the store and create the Tag
-    let mut store_guard = store.lock_store();
+    let mut store_guard = match store.try_lock_store() {
+        Ok(guard) => guard,
+        Err(_) => return std::ptr::null_mut(),
+    };
     match Tag::new(&mut *store_guard, &tag_type) {
         Ok(tag) => Box::into_raw(Box::new(tag)) as *mut c_void,
         Err(_) => std::ptr::null_mut(),
@@ -619,7 +622,13 @@ pub extern "C" fn wasmtime4j_panama_tag_get_param_types(
 
     let tag = unsafe { &*(tag_ptr as *const Tag) };
     let store = unsafe { &*(store_ptr as *const crate::store::Store) };
-    let store_guard = store.lock_store();
+    let store_guard = match store.try_lock_store() {
+        Ok(guard) => guard,
+        Err(_) => {
+            unsafe { *out_count = 0; }
+            return std::ptr::null_mut();
+        }
+    };
 
     let tag_type = tag.ty(&*store_guard);
     let func_type = tag_type.ty();
@@ -676,7 +685,13 @@ pub extern "C" fn wasmtime4j_panama_tag_get_return_types(
 
     let tag = unsafe { &*(tag_ptr as *const Tag) };
     let store = unsafe { &*(store_ptr as *const crate::store::Store) };
-    let store_guard = store.lock_store();
+    let store_guard = match store.try_lock_store() {
+        Ok(guard) => guard,
+        Err(_) => {
+            unsafe { *out_count = 0; }
+            return std::ptr::null_mut();
+        }
+    };
 
     let tag_type = tag.ty(&*store_guard);
     let func_type = tag_type.ty();
@@ -741,7 +756,10 @@ pub extern "C" fn wasmtime4j_panama_tag_equals(
     let tag1 = unsafe { &*(tag1_ptr as *const Tag) };
     let tag2 = unsafe { &*(tag2_ptr as *const Tag) };
     let store = unsafe { &*(store_ptr as *const crate::store::Store) };
-    let store_guard = store.lock_store();
+    let store_guard = match store.try_lock_store() {
+        Ok(guard) => guard,
+        Err(_) => return 0, // Return false if store is closed
+    };
 
     // Compare tags by checking if they have the same type
     let ty1 = tag1.ty(&*store_guard);
@@ -811,7 +829,10 @@ pub extern "C" fn wasmtime4j_panama_exnref_get_tag(
 
     let owned_exnref = unsafe { &*(exnref_ptr as *const OwnedRooted<ExnRef>) };
     let store = unsafe { &*(store_ptr as *const crate::store::Store) };
-    let mut store_guard = store.lock_store();
+    let mut store_guard = match store.try_lock_store() {
+        Ok(guard) => guard,
+        Err(_) => return std::ptr::null_mut(),
+    };
 
     // Create a root scope and get the tag
     let mut scope = RootScope::new(&mut *store_guard);

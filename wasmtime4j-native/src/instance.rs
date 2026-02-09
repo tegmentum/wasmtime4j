@@ -311,7 +311,7 @@ impl Instance {
         
         // Create instance with defensive error handling
         // CRITICAL: Use direct Store access with ReentrantMutex for reentrant access
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
 
         // CRITICAL FIX for cross-Engine instantiation error:
         // Wasmtime validates Module/Store compatibility using Arc::ptr_eq() on the Engine Arc.
@@ -401,7 +401,7 @@ impl Instance {
         module: &Module,
     ) -> WasmtimeResult<Self> {
         // Build metadata using the module info
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         use wasmtime::AsContextMut;
         let (metadata, imports_map, exports_map) = Self::build_instance_data(
             &wasmtime_instance,
@@ -694,7 +694,7 @@ impl Instance {
 
         // CRITICAL: Use direct Store access with ReentrantMutex
         // This allows same-thread reentrant access needed by Wasmtime during function execution
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
 
         let export = instance.get_export(&mut *store_guard, name)
             .ok_or_else(|| WasmtimeError::ImportExport {
@@ -901,7 +901,7 @@ impl Instance {
     pub fn get_func(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Func>> {
         let instance = self.inner.lock();
 
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         let export = instance.get_export(&mut *store_guard, name);
         match export {
             Some(Extern::Func(func)) => Ok(Some(func)),
@@ -913,7 +913,7 @@ impl Instance {
     pub fn get_global(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Global>> {
         let instance = self.inner.lock();
 
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         let export = instance.get_export(&mut *store_guard, name);
         match export {
             Some(Extern::Global(global)) => Ok(Some(global)),
@@ -925,7 +925,7 @@ impl Instance {
     pub fn get_memory(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Memory>> {
         let instance = self.inner.lock();
 
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         let export = instance.get_export(&mut *store_guard, name);
         match export {
             Some(Extern::Memory(memory)) => Ok(Some(memory)),
@@ -945,7 +945,7 @@ impl Instance {
     ) -> WasmtimeResult<Option<SharedMemory>> {
         let instance = self.inner.lock();
 
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         let export = instance.get_export(&mut *store_guard, name);
         match export {
             Some(Extern::SharedMemory(shared_memory)) => Ok(Some(shared_memory)),
@@ -957,7 +957,7 @@ impl Instance {
     pub fn get_table(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Table>> {
         let instance = self.inner.lock();
 
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         let export = instance.get_export(&mut *store_guard, name);
         match export {
             Some(Extern::Table(table)) => Ok(Some(table)),
@@ -979,7 +979,7 @@ impl Instance {
     pub fn exports(&self, store: &mut Store) -> WasmtimeResult<Vec<String>> {
         let instance = self.inner.lock();
 
-        let mut store_guard = store.lock_store();
+        let mut store_guard = store.try_lock_store()?;
         let exports = instance.exports(&mut *store_guard)
             .map(|export| export.name().to_string())
             .collect();
@@ -2905,7 +2905,10 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function_async(
             }).collect();
 
             // Get function type to determine result count
-            let mut store_lock = store.lock_store();
+            let mut store_lock = match store.try_lock_store() {
+                Ok(guard) => guard,
+                Err(_) => return -1, // Store closed or unavailable
+            };
             let func_type = func.ty(&mut *store_lock);
             let result_count = func_type.results().len();
             let mut results = vec![Val::I32(0); result_count];

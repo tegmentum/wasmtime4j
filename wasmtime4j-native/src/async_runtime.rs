@@ -325,7 +325,7 @@ pub fn execute_async_function_call(context: AsyncFunctionCallContext) -> Wasmtim
                     .collect::<Result<Vec<_>, _>>()?;
 
                 // Lock the inner store for function operations
-                let mut inner_store = store_guard.lock_store();
+                let mut inner_store = store_guard.try_lock_store()?;
 
                 // Get function type to determine result count
                 let func_type = func.ty(&mut *inner_store);
