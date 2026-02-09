@@ -4,6 +4,7 @@
 //! with proper resource management and JVM crash prevention.
 
 use std::sync::{Arc, RwLock};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use wasmtime::{Config, Engine as WasmtimeEngine, Strategy};
 
@@ -55,6 +56,10 @@ pub struct Engine {
     /// Uses RwLock to allow multiple readers (e.g., epoch increments) while
     /// serializing write operations (compilation, store creation).
     concurrent_ops_lock: Arc<RwLock<()>>,
+    /// Flag indicating whether this engine has been closed.
+    /// Shared across all clones via Arc to ensure consistent state.
+    /// Uses SeqCst ordering for visibility across threads.
+    is_closed: Arc<AtomicBool>,
 }
 
 impl std::fmt::Debug for Engine {
@@ -63,6 +68,7 @@ impl std::fmt::Debug for Engine {
             .field("inner", &self.inner)
             .field("config_summary", &self.config_summary)
             .field("concurrent_ops_lock", &"<RwLock>")
+            .field("is_closed", &self.is_closed.load(Ordering::SeqCst))
             .finish()
     }
 }
@@ -95,6 +101,7 @@ impl Engine {
             inner: Arc::new(engine),
             config_summary: summary,
             concurrent_ops_lock: Arc::new(RwLock::new(())),
+            is_closed: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -105,7 +112,25 @@ impl Engine {
     ///
     /// # Returns
     /// A RAII guard that releases the lock when dropped.
+    ///
+    /// # Errors
+    /// Returns an error if the engine has been closed.
+    pub fn try_acquire_compile_lock(&self) -> WasmtimeResult<std::sync::RwLockWriteGuard<'_, ()>> {
+        self.check_not_closed()?;
+        Ok(self.concurrent_ops_lock.write().unwrap_or_else(|e| {
+            log::warn!("concurrent_ops_lock was poisoned, recovering");
+            e.into_inner()
+        }))
+    }
+
+    /// Acquire a write lock for concurrent operations that need serialization.
+    ///
+    /// # Panics
+    /// Panics if the engine has been closed. Use `try_acquire_compile_lock()` for fallible access.
     pub fn acquire_compile_lock(&self) -> std::sync::RwLockWriteGuard<'_, ()> {
+        if self.is_closed.load(Ordering::SeqCst) {
+            panic!("Engine has been closed and cannot be used");
+        }
         self.concurrent_ops_lock.write().unwrap_or_else(|e| {
             log::warn!("concurrent_ops_lock was poisoned, recovering");
             e.into_inner()
@@ -118,21 +143,76 @@ impl Engine {
     ///
     /// # Returns
     /// A RAII guard that releases the lock when dropped.
+    ///
+    /// # Errors
+    /// Returns an error if the engine has been closed.
+    pub fn try_acquire_read_lock(&self) -> WasmtimeResult<std::sync::RwLockReadGuard<'_, ()>> {
+        self.check_not_closed()?;
+        Ok(self.concurrent_ops_lock.read().unwrap_or_else(|e| {
+            log::warn!("concurrent_ops_lock was poisoned, recovering");
+            e.into_inner()
+        }))
+    }
+
+    /// Acquire a read lock for concurrent operations that can run in parallel.
+    ///
+    /// # Panics
+    /// Panics if the engine has been closed. Use `try_acquire_read_lock()` for fallible access.
     pub fn acquire_read_lock(&self) -> std::sync::RwLockReadGuard<'_, ()> {
+        if self.is_closed.load(Ordering::SeqCst) {
+            panic!("Engine has been closed and cannot be used");
+        }
         self.concurrent_ops_lock.read().unwrap_or_else(|e| {
             log::warn!("concurrent_ops_lock was poisoned, recovering");
             e.into_inner()
         })
     }
 
+    /// Check if the engine has been closed
+    #[inline]
+    pub fn is_closed(&self) -> bool {
+        self.is_closed.load(Ordering::SeqCst)
+    }
+
+    /// Mark this engine as closed.
+    /// After calling this, all operations on the engine will fail with an error.
+    pub fn mark_closed(&self) {
+        self.is_closed.store(true, Ordering::SeqCst);
+    }
+
+    /// Check that the engine is not closed, returning an error if it is.
+    #[inline]
+    fn check_not_closed(&self) -> WasmtimeResult<()> {
+        if self.is_closed.load(Ordering::SeqCst) {
+            return Err(WasmtimeError::EngineConfig {
+                message: "Engine has been closed and cannot be used".to_string(),
+            });
+        }
+        Ok(())
+    }
+
     /// Get reference to inner Wasmtime engine (internal use)
     ///
     /// This explicitly dereferences the Arc to get a reference to the WasmtimeEngine.
+    ///
+    /// # Panics
+    /// Panics if the engine has been closed. Use `try_inner()` for fallible access.
     pub(crate) fn inner(&self) -> &WasmtimeEngine {
+        if self.is_closed.load(Ordering::SeqCst) {
+            panic!("Engine has been closed and cannot be used");
+        }
         // Explicitly dereference Arc to get &WasmtimeEngine
         // This is equivalent to &*self.inner due to Deref coercion,
         // but being explicit prevents any potential optimization issues
         std::ops::Deref::deref(&self.inner)
+    }
+
+    /// Get reference to inner Wasmtime engine with error handling.
+    ///
+    /// Returns an error if the engine has been closed.
+    pub(crate) fn try_inner(&self) -> WasmtimeResult<&WasmtimeEngine> {
+        self.check_not_closed()?;
+        Ok(std::ops::Deref::deref(&self.inner))
     }
 
     /// Get a clone of the inner Arc (for ownership transfer to component linkers)
@@ -187,6 +267,9 @@ impl Engine {
 
     /// Validate engine is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
+        // Check if engine has been closed
+        self.check_not_closed()?;
+
         // Perform minimal validation to ensure engine is still usable
         // This is a defensive programming measure
         if Arc::strong_count(&self.inner) == 0 {
@@ -412,6 +495,7 @@ impl Default for Engine {
                             allocation_strategy: "OnDemand".to_string(),
                         },
                         concurrent_ops_lock: Arc::new(RwLock::new(())),
+                        is_closed: Arc::new(AtomicBool::new(false)),
                     },
                     Err(_) => {
                         // Last resort: create engine with safe wasmtime config
@@ -485,6 +569,7 @@ impl Default for Engine {
                                 allocation_strategy: "OnDemand".to_string(),
                             },
                             concurrent_ops_lock: Arc::new(RwLock::new(())),
+                            is_closed: Arc::new(AtomicBool::new(false)),
                         }
                     }
                 }

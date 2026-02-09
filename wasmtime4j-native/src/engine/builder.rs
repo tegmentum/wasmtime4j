@@ -4,6 +4,7 @@
 //! for creating and configuring Wasmtime engines with various options.
 
 use std::sync::{Arc, RwLock};
+use std::sync::atomic::AtomicBool;
 
 use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
 
@@ -1193,6 +1194,7 @@ impl EngineBuilder {
             inner: Arc::new(engine),
             config_summary: summary,
             concurrent_ops_lock: Arc::new(RwLock::new(())),
+            is_closed: Arc::new(AtomicBool::new(false)),
         })
     }
 }

@@ -240,10 +240,24 @@ pub fn get_config_summary(engine: &Engine) -> &EngineConfigSummary {
 
 /// Core function to destroy an engine (safe cleanup)
 ///
+/// This function marks the engine as closed before destroying it, ensuring
+/// that any other threads using the engine will get a clean error rather
+/// than a use-after-free crash.
+///
 /// # Safety
 ///
 /// The caller must ensure engine_ptr is a valid pointer to an Engine.
 pub unsafe fn destroy_engine(engine_ptr: *mut c_void) {
+    if engine_ptr.is_null() {
+        return;
+    }
+
+    // Mark the engine as closed before destroying it
+    // This ensures other threads will see the closed state
+    let engine = &*(engine_ptr as *const Engine);
+    engine.mark_closed();
+
+    // Now safe to destroy
     ffi_utils::destroy_resource::<Engine>(engine_ptr, "Engine");
 }
 

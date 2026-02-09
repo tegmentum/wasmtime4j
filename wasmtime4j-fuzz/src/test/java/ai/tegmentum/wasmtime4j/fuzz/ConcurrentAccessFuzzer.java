@@ -261,7 +261,7 @@ public class ConcurrentAccessFuzzer {
    *
    * @param data fuzzed data provider
    */
-  @Disabled("Race condition tests cause JVM crash - pending FFI panic handling fix")
+  @Disabled("Race condition tests require operation-level locking - is_closed flag alone has race window")
   @FuzzTest
   public void fuzzEngineCloseRace(final FuzzedDataProvider data) {
     final int threadCount = data.consumeInt(2, 6);
@@ -342,7 +342,7 @@ public class ConcurrentAccessFuzzer {
    *
    * @param data fuzzed data provider
    */
-  @Disabled("Race condition tests cause JVM crash - pending FFI panic handling fix")
+  @Disabled("Race condition tests require operation-level locking - is_closed flag alone has race window")
   @FuzzTest
   public void fuzzStoreCloseRace(final FuzzedDataProvider data) {
     final int callCount = data.consumeInt(1, 10);
