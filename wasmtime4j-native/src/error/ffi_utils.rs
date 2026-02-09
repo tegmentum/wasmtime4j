@@ -883,3 +883,222 @@ pub fn string_to_c_char(s: String) -> WasmtimeResult<*mut c_char> {
         }),
     }
 }
+
+// ============================================================================
+// FFI Panic Boundary Macros
+// ============================================================================
+// These macros wrap FFI function bodies with catch_unwind to prevent panics
+// from crossing the FFI boundary and crashing the JVM.
+
+/// Wrap an FFI function body that returns i32 (error code).
+/// Panics are caught and converted to error code -5 (RuntimeError).
+///
+/// # Example
+/// ```ignore
+/// #[no_mangle]
+/// pub extern "C" fn my_ffi_function(arg: i32) -> i32 {
+///     ffi_boundary_i32!({
+///         // function body here
+///         if arg < 0 {
+///             return Err(WasmtimeError::invalid_parameter("arg must be positive"));
+///         }
+///         Ok(0) // success
+///     })
+/// }
+/// ```
+#[macro_export]
+macro_rules! ffi_boundary_i32 {
+    ($body:expr) => {{
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| $body));
+        match result {
+            Ok(Ok(code)) => code,
+            Ok(Err(error)) => {
+                $crate::error::ffi_utils::set_last_error(error);
+                $crate::error::ErrorCode::RuntimeError as i32
+            }
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                log::error!("Native panic in FFI call: {}", panic_msg);
+                let error = $crate::error::WasmtimeError::from_string(
+                    format!("Native panic: {}", panic_msg)
+                );
+                $crate::error::ffi_utils::set_last_error(error);
+                $crate::error::ErrorCode::RuntimeError as i32
+            }
+        }
+    }};
+}
+
+/// Wrap an FFI function body that returns isize.
+/// Panics are caught and converted to -1.
+#[macro_export]
+macro_rules! ffi_boundary_isize {
+    ($body:expr) => {{
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| $body));
+        match result {
+            Ok(value) => value,
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                log::error!("Native panic in FFI call: {}", panic_msg);
+                let error = $crate::error::WasmtimeError::from_string(
+                    format!("Native panic: {}", panic_msg)
+                );
+                $crate::error::ffi_utils::set_last_error(error);
+                -1isize
+            }
+        }
+    }};
+}
+
+/// Wrap an FFI function body that returns a raw pointer (*mut c_void or similar).
+/// Panics are caught and converted to null pointer.
+///
+/// # Example
+/// ```ignore
+/// #[no_mangle]
+/// pub extern "C" fn create_something() -> *mut c_void {
+///     ffi_boundary_ptr!({
+///         let obj = Box::new(MyObject::new());
+///         Box::into_raw(obj) as *mut c_void
+///     })
+/// }
+/// ```
+#[macro_export]
+macro_rules! ffi_boundary_ptr {
+    ($body:expr) => {{
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| $body));
+        match result {
+            Ok(ptr) => ptr,
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                log::error!("Native panic in FFI call: {}", panic_msg);
+                let error = $crate::error::WasmtimeError::from_string(
+                    format!("Native panic: {}", panic_msg)
+                );
+                $crate::error::ffi_utils::set_last_error(error);
+                std::ptr::null_mut()
+            }
+        }
+    }};
+}
+
+/// Wrap an FFI function body that returns void (no return value).
+/// Panics are caught and logged but don't propagate.
+#[macro_export]
+macro_rules! ffi_boundary_void {
+    ($body:expr) => {{
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| $body));
+        if let Err(panic_info) = result {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            log::error!("Native panic in FFI call: {}", panic_msg);
+            let error = $crate::error::WasmtimeError::from_string(
+                format!("Native panic: {}", panic_msg)
+            );
+            $crate::error::ffi_utils::set_last_error(error);
+        }
+    }};
+}
+
+/// Wrap an FFI function body that returns bool/jboolean.
+/// Panics are caught and converted to false.
+#[macro_export]
+macro_rules! ffi_boundary_bool {
+    ($body:expr) => {{
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| $body));
+        match result {
+            Ok(value) => value,
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                log::error!("Native panic in FFI call: {}", panic_msg);
+                let error = $crate::error::WasmtimeError::from_string(
+                    format!("Native panic: {}", panic_msg)
+                );
+                $crate::error::ffi_utils::set_last_error(error);
+                false
+            }
+        }
+    }};
+}
+
+/// Wrap an FFI function body that returns a Result<T, WasmtimeError>.
+/// Converts to default value on error or panic, and stores error in last_error.
+///
+/// # Example
+/// ```ignore
+/// #[no_mangle]
+/// pub extern "C" fn get_value(handle: *mut c_void) -> i64 {
+///     ffi_boundary_result!(0i64, {
+///         let obj = unsafe { &*(handle as *const MyObject) };
+///         Ok(obj.get_value())
+///     })
+/// }
+/// ```
+#[macro_export]
+macro_rules! ffi_boundary_result {
+    ($default:expr, $body:expr) => {{
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| $body));
+        match result {
+            Ok(Ok(value)) => {
+                $crate::error::ffi_utils::clear_last_error();
+                value
+            }
+            Ok(Err(error)) => {
+                $crate::error::ffi_utils::set_last_error(error);
+                $default
+            }
+            Err(panic_info) => {
+                let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic occurred in native code".to_string()
+                };
+                log::error!("Native panic in FFI call: {}", panic_msg);
+                let error = $crate::error::WasmtimeError::from_string(
+                    format!("Native panic: {}", panic_msg)
+                );
+                $crate::error::ffi_utils::set_last_error(error);
+                $default
+            }
+        }
+    }};
+}
+
+// Re-export macros at module level for easier access
+pub use crate::ffi_boundary_i32;
+pub use crate::ffi_boundary_isize;
+pub use crate::ffi_boundary_ptr;
+pub use crate::ffi_boundary_void;
+pub use crate::ffi_boundary_bool;
+pub use crate::ffi_boundary_result;
