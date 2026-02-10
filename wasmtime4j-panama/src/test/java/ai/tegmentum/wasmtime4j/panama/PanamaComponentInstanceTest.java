@@ -158,7 +158,7 @@ class PanamaComponentInstanceTest {
     void shouldHaveConstructorWith4Parameters() throws NoSuchMethodException {
       Constructor<?> constructor =
           PanamaComponentInstance.class.getDeclaredConstructor(
-              MemorySegment.class, long.class, PanamaComponent.class, PanamaStore.class);
+              MemorySegment.class, long.class, PanamaComponentImpl.class, PanamaStore.class);
       assertNotNull(constructor, "4-param constructor should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
@@ -173,7 +173,7 @@ class PanamaComponentInstanceTest {
     void shouldHaveConstructorWith3Parameters() throws NoSuchMethodException {
       Constructor<?> constructor =
           PanamaComponentInstance.class.getDeclaredConstructor(
-              MemorySegment.class, PanamaComponent.class, PanamaStore.class);
+              MemorySegment.class, PanamaComponentImpl.class, PanamaStore.class);
       assertNotNull(constructor, "3-param constructor should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
