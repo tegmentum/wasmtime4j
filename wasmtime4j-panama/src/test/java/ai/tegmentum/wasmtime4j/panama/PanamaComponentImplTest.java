@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentCompatibility;
 import ai.tegmentum.wasmtime4j.ComponentDependencyGraph;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
@@ -29,7 +30,6 @@ import ai.tegmentum.wasmtime4j.ComponentMetadata;
 import ai.tegmentum.wasmtime4j.ComponentMetrics;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
