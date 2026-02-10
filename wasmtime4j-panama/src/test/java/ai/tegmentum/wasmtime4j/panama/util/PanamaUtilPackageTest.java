@@ -51,7 +51,6 @@ import org.junit.jupiter.api.Test;
  *   <li>PanamaTypeConverter - WebAssembly type conversion
  *   <li>PanamaExceptionMapper - Exception mapping for FFI operations
  *   <li>PanamaBatchProcessor - Batch processing optimizations
- *   <li>ComplexPanamaTypeConverter - Complex type marshaling
  *   <li>PanamaConcurrencyManager - Concurrency management
  *   <li>BacktraceDeserializer - Backtrace deserialization
  * </ul>
@@ -660,65 +659,6 @@ class PanamaUtilPackageTest {
   }
 
   @Nested
-  @DisplayName("ComplexPanamaTypeConverter Tests")
-  class ComplexPanamaTypeConverterTests {
-
-    private static final String CLASS_NAME = UTIL_PACKAGE + ".ComplexPanamaTypeConverter";
-
-    @Test
-    @DisplayName("Should be a final class")
-    void shouldBeFinalClass() throws Exception {
-      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
-      LOGGER.info("Testing ComplexPanamaTypeConverter class structure");
-
-      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
-      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
-    }
-
-    @Test
-    @DisplayName("Should have complex object conversion methods")
-    void shouldHaveComplexObjectConversionMethods() throws Exception {
-      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
-
-      assertMethodExists(clazz, "convertComplexObjectToPanamaMemory", Object.class);
-      assertMethodExists(clazz, "convertPanamaMemoryToComplexObject");
-      assertMethodExists(clazz, "marshalMultiDimensionalArrayToPanama", Object.class);
-      assertMethodExists(clazz, "unmarshalMultiDimensionalArrayFromPanama");
-      assertMethodExists(clazz, "marshalCollectionToPanama", Object.class);
-      assertMethodExists(clazz, "unmarshalCollectionFromPanama");
-
-      LOGGER.info("All expected complex object conversion methods exist");
-    }
-
-    @Test
-    @DisplayName("Should have parameter layout methods")
-    void shouldHaveParameterLayoutMethods() throws Exception {
-      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
-
-      assertMethodExists(clazz, "createOptimizedParameterLayout");
-      assertMethodExists(clazz, "extractFromOptimizedParameterLayout");
-      assertMethodExists(clazz, "validatePanamaMarshalableObject", Object.class);
-
-      LOGGER.info("All expected parameter layout methods exist");
-    }
-
-    @Test
-    @DisplayName("Should have nested helper classes")
-    void shouldHaveNestedHelperClasses() throws Exception {
-      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
-
-      final Class<?>[] nestedClasses = clazz.getDeclaredClasses();
-      final Set<String> nestedNames = new HashSet<>();
-      for (final Class<?> nested : nestedClasses) {
-        nestedNames.add(nested.getSimpleName());
-      }
-
-      assertTrue(nestedNames.size() >= 3, "Should have at least 3 nested classes");
-      LOGGER.info("Found nested classes: " + nestedNames);
-    }
-  }
-
-  @Nested
   @DisplayName("PanamaConcurrencyManager Tests")
   class PanamaConcurrencyManagerTests {
 
@@ -859,7 +799,6 @@ class PanamaUtilPackageTest {
       "PanamaTypeConverter",
       "PanamaExceptionMapper",
       "PanamaBatchProcessor",
-      "ComplexPanamaTypeConverter",
       "PanamaConcurrencyManager",
       "BacktraceDeserializer"
     };

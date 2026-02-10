@@ -61,7 +61,6 @@ public final class EngineConfig {
   // GC configuration
   private boolean wasmGc = false;
   private boolean gcSupport = false;
-  private Collector collector = Collector.AUTO;
 
   // Memory configuration (0 = use platform default)
   private long memoryReservation = 0;
@@ -93,8 +92,6 @@ public final class EngineConfig {
   private ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails backtraceDetails =
       ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails.ENABLE;
 
-  // Custom async stack creator
-  private ai.tegmentum.wasmtime4j.async.StackCreator stackCreator = null;
 
   // Experimental features configuration
   // Note: ExperimentalFeatureConfig moved to advanced package
@@ -712,33 +709,6 @@ public final class EngineConfig {
     return backtraceDetails;
   }
 
-  // ===== Custom Stack Creator =====
-
-  /**
-   * Sets a custom stack creator for async execution.
-   *
-   * <p>This allows customization of how async stacks are allocated, enabling custom memory
-   * management, stack pooling, and guard page configuration.
-   *
-   * @param creator the stack creator, or null to use the default
-   * @return this configuration for method chaining
-   * @since 1.1.0
-   */
-  public EngineConfig stackCreator(final ai.tegmentum.wasmtime4j.async.StackCreator creator) {
-    this.stackCreator = creator;
-    return this;
-  }
-
-  /**
-   * Gets the custom stack creator.
-   *
-   * @return the stack creator, or null if using the default
-   * @since 1.1.0
-   */
-  public ai.tegmentum.wasmtime4j.async.StackCreator getStackCreator() {
-    return stackCreator;
-  }
-
   /**
    * Creates a new configuration with default settings optimized for speed.
    *
@@ -924,25 +894,6 @@ public final class EngineConfig {
   }
 
   /**
-   * Selects the garbage collector implementation to use.
-   *
-   * <p>Different collectors have different trade-offs between latency, throughput, and memory
-   * usage. See {@link Collector} for available options and their characteristics.
-   *
-   * @param collector the collector strategy to use
-   * @return this configuration for method chaining
-   * @throws IllegalArgumentException if collector is null
-   * @since 1.0.0
-   */
-  public EngineConfig collector(final Collector collector) {
-    if (collector == null) {
-      throw new IllegalArgumentException("Collector cannot be null");
-    }
-    this.collector = collector;
-    return this;
-  }
-
-  /**
    * Returns whether the WebAssembly GC proposal is enabled.
    *
    * @return true if GC proposal is enabled
@@ -960,16 +911,6 @@ public final class EngineConfig {
    */
   public boolean isGcSupport() {
     return gcSupport;
-  }
-
-  /**
-   * Returns the configured garbage collector.
-   *
-   * @return the collector
-   * @since 1.0.0
-   */
-  public Collector getCollector() {
-    return collector;
   }
 
   // Memory configuration methods
