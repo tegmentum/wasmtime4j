@@ -27,7 +27,6 @@ import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentLifecycleState;
 import ai.tegmentum.wasmtime4j.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.ComponentMetrics;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
@@ -301,14 +300,6 @@ class PanamaComponentImplTest {
           "Should return PanamaComponentEngine");
     }
 
-    @Test
-    @DisplayName("should have getMetrics method")
-    void shouldHaveGetMetricsMethod() throws NoSuchMethodException {
-      final Method method = PanamaComponentImpl.class.getMethod("getMetrics");
-      assertNotNull(method, "getMetrics method should exist");
-      assertEquals(
-          ComponentMetrics.class, method.getReturnType(), "Should return ComponentMetrics");
-    }
   }
 
   @Nested

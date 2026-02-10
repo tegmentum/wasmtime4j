@@ -7,7 +7,6 @@ import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentLifecycleState;
 import ai.tegmentum.wasmtime4j.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.ComponentMetrics;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
@@ -285,15 +284,6 @@ final class PanamaComponentImpl implements Component {
     final ComponentValidationResult.ValidationContext context =
         new ComponentValidationResult.ValidationContext(componentId, getVersion());
     return ComponentValidationResult.success(context);
-  }
-
-  /**
-   * Gets component metrics.
-   *
-   * @return component metrics
-   */
-  public ComponentMetrics getMetrics() {
-    return new PanamaComponentMetrics(componentId, engine.getNativeHandle());
   }
 
   @Override

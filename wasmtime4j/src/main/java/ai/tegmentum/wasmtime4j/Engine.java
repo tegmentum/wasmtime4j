@@ -238,19 +238,6 @@ public interface Engine extends Closeable {
   boolean isCoredumpOnTrapEnabled();
 
   /**
-   * Captures current engine statistics.
-   *
-   * <p>Returns a snapshot of engine statistics including compilation metrics, memory usage, and
-   * cache performance. This method is implemented by the underlying runtime (JNI or Panama).
-   *
-   * @return engine statistics snapshot
-   * @since 1.0.0
-   */
-  default ai.tegmentum.wasmtime4j.performance.EngineStatistics captureStatistics() {
-    return ai.tegmentum.wasmtime4j.performance.EngineStatistics.capture(this);
-  }
-
-  /**
    * Checks if the Pulley interpreter is being used.
    *
    * <p>Pulley is Wasmtime's portable, optimizing interpreter that can be used instead of or

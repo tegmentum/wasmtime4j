@@ -7,14 +7,11 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.performance.EngineStatistics;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -520,97 +517,6 @@ class PanamaEngineTest {
     }
   }
 
-  // ==================== Statistics Tests ====================
-
-  @Nested
-  @DisplayName("Statistics Tests")
-  class StatisticsTests {
-
-    @Test
-    @DisplayName("captureStatistics should return non-null")
-    void shouldCaptureStatistics() throws Exception {
-      final PanamaEngine engine = createEngine();
-      final EngineStatistics stats = engine.captureStatistics();
-      assertNotNull(stats, "Statistics should not be null");
-    }
-
-    @Test
-    @DisplayName("Statistics should have zero values for new engine (no profiler)")
-    void shouldHaveZeroValuesForNewEngine() throws Exception {
-      final PanamaEngine engine = createEngine();
-      final EngineStatistics stats = engine.captureStatistics();
-
-      assertEquals(0, stats.getModulesCompiled(), "Modules compiled should be 0");
-      assertEquals(
-          Duration.ZERO, stats.getTotalCompilationTime(), "Total compilation time should be zero");
-      assertEquals(
-          Duration.ZERO,
-          stats.getAverageCompilationTime(),
-          "Average compilation time should be zero");
-      assertEquals(0, stats.getBytesCompiled(), "Bytes compiled should be 0");
-      assertEquals(0.0, stats.getCompilationThroughput(), "Compilation throughput should be 0.0");
-      assertEquals(0, stats.getFunctionsExecuted(), "Functions executed should be 0");
-      assertEquals(
-          Duration.ZERO, stats.getTotalExecutionTime(), "Total execution time should be zero");
-      assertEquals(0, stats.getInstructionsExecuted(), "Instructions executed should be 0");
-      assertEquals(0.0, stats.getExecutionThroughput(), "Execution throughput should be 0.0");
-      assertEquals(0, stats.getPeakMemoryUsage(), "Peak memory usage should be 0");
-      assertEquals(0, stats.getCurrentMemoryUsage(), "Current memory usage should be 0");
-      assertEquals(0, stats.getTotalAllocations(), "Total allocations should be 0");
-      assertEquals(0, stats.getTotalDeallocations(), "Total deallocations should be 0");
-      assertEquals(0, stats.getCacheHits(), "Cache hits should be 0");
-      assertEquals(0, stats.getCacheMisses(), "Cache misses should be 0");
-      assertEquals(0.0, stats.getCacheHitRatio(), "Cache hit ratio should be 0.0");
-      assertEquals(0, stats.getJitCompilations(), "JIT compilations should be 0");
-      assertEquals(
-          Duration.ZERO, stats.getJitCompilationTime(), "JIT compilation time should be zero");
-      assertEquals(0, stats.getJitCodeSize(), "JIT code size should be 0");
-    }
-
-    @Test
-    @DisplayName("Statistics getCaptureTime should be recent")
-    void shouldHaveRecentCaptureTime() throws Exception {
-      final PanamaEngine engine = createEngine();
-      final Instant before = Instant.now();
-      final EngineStatistics stats = engine.captureStatistics();
-      final Instant after = Instant.now();
-
-      assertNotNull(stats.getCaptureTime(), "Capture time should not be null");
-      assertFalse(stats.getCaptureTime().isBefore(before), "Capture time should be >= before");
-      assertFalse(stats.getCaptureTime().isAfter(after), "Capture time should be <= after");
-    }
-
-    @Test
-    @DisplayName("Statistics getUptime should be non-negative")
-    void shouldHaveNonNegativeUptime() throws Exception {
-      final PanamaEngine engine = createEngine();
-      final EngineStatistics stats = engine.captureStatistics();
-
-      assertNotNull(stats.getUptime(), "Uptime should not be null");
-      assertFalse(stats.getUptime().isNegative(), "Uptime should be non-negative");
-      LOGGER.info("Engine uptime: " + stats.getUptime());
-    }
-
-    @Test
-    @DisplayName("Statistics getExtendedStatistics should return empty map")
-    void shouldReturnEmptyExtendedStats() throws Exception {
-      final PanamaEngine engine = createEngine();
-      final EngineStatistics stats = engine.captureStatistics();
-
-      assertNotNull(stats.getExtendedStatistics(), "Extended stats should not be null");
-      assertTrue(stats.getExtendedStatistics().isEmpty(), "Extended stats should be empty");
-    }
-
-    @Test
-    @DisplayName("Statistics reset should not throw")
-    void shouldResetWithoutError() throws Exception {
-      final PanamaEngine engine = createEngine();
-      final EngineStatistics stats = engine.captureStatistics();
-
-      assertDoesNotThrow(stats::reset, "reset() should not throw");
-    }
-  }
-
   // ==================== Identity Tests ====================
 
   @Nested
@@ -642,13 +548,6 @@ class PanamaEngineTest {
           engine.getNativeEngine(),
           engine.getEnginePointer(),
           "getEnginePointer and getNativeEngine should return same pointer");
-    }
-
-    @Test
-    @DisplayName("getProfilerHandle should return null (profiler disabled)")
-    void shouldReturnNullProfilerHandle() throws Exception {
-      final PanamaEngine engine = createEngine();
-      assertNull(engine.getProfilerHandle(), "Profiler handle should be null by default");
     }
 
     @Test
@@ -742,32 +641,6 @@ class PanamaEngineTest {
     }
   }
 
-  // ==================== Record Compilation Tests ====================
-
-  @Nested
-  @DisplayName("Record Compilation Tests")
-  class RecordCompilationTests {
-
-    @Test
-    @DisplayName("recordCompilation should not throw (profiler is null)")
-    void shouldRecordCompilationWithoutError() throws Exception {
-      final PanamaEngine engine = createEngine();
-      // Profiler is null, so this should be a no-op
-      assertDoesNotThrow(
-          () -> engine.recordCompilation(1024, 50000, false, true),
-          "recordCompilation should not throw when profiler is null");
-    }
-
-    @Test
-    @DisplayName("recordCompilation with cached flag should not throw")
-    void shouldRecordCachedCompilation() throws Exception {
-      final PanamaEngine engine = createEngine();
-      assertDoesNotThrow(
-          () -> engine.recordCompilation(512, 10000, true, false),
-          "recordCompilation with cached flag should not throw");
-    }
-  }
-
   // ==================== Validate Component Tests ====================
 
   @Nested
@@ -848,17 +721,6 @@ class PanamaEngineTest {
           IllegalStateException.class,
           engine::getStackSizeLimit,
           "getStackSizeLimit on closed engine should throw");
-    }
-
-    @Test
-    @DisplayName("captureStatistics on closed engine should throw")
-    void shouldThrowOnCaptureStatsAfterClose() throws Exception {
-      final PanamaEngine engine = new PanamaEngine();
-      engine.close();
-      assertThrows(
-          IllegalStateException.class,
-          engine::captureStatistics,
-          "captureStatistics on closed engine should throw");
     }
 
     @Test
