@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.ComponentEngine;
 import ai.tegmentum.wasmtime4j.ComponentLinker;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
@@ -256,8 +256,8 @@ class ComponentParityTest {
         final ComponentEngine jniCompEngine = (ComponentEngine) jniEngine;
         final ComponentEngine panamaCompEngine = (ComponentEngine) panamaEngine;
 
-        final ComponentSimple jniComponent = jniCompEngine.compileComponent(componentBytes);
-        final ComponentSimple panamaComponent = panamaCompEngine.compileComponent(componentBytes);
+        final Component jniComponent = jniCompEngine.compileComponent(componentBytes);
+        final Component panamaComponent = panamaCompEngine.compileComponent(componentBytes);
 
         assertThat(jniComponent).isNotNull();
         assertThat(panamaComponent).isNotNull();
@@ -286,8 +286,8 @@ class ComponentParityTest {
         final ComponentEngine jniCompEngine = (ComponentEngine) jniEngine;
         final ComponentEngine panamaCompEngine = (ComponentEngine) panamaEngine;
 
-        final ComponentSimple jniComponent = jniCompEngine.compileComponent(componentBytes);
-        final ComponentSimple panamaComponent = panamaCompEngine.compileComponent(componentBytes);
+        final Component jniComponent = jniCompEngine.compileComponent(componentBytes);
+        final Component panamaComponent = panamaCompEngine.compileComponent(componentBytes);
 
         final long jniSize = jniComponent.getSize();
         final long panamaSize = panamaComponent.getSize();
@@ -320,8 +320,8 @@ class ComponentParityTest {
         final ComponentEngine jniCompEngine = (ComponentEngine) jniEngine;
         final ComponentEngine panamaCompEngine = (ComponentEngine) panamaEngine;
 
-        final ComponentSimple jniComponent = jniCompEngine.compileComponent(componentBytes);
-        final ComponentSimple panamaComponent = panamaCompEngine.compileComponent(componentBytes);
+        final Component jniComponent = jniCompEngine.compileComponent(componentBytes);
+        final Component panamaComponent = panamaCompEngine.compileComponent(componentBytes);
 
         final var jniExports = jniComponent.getExportedInterfaces();
         final var panamaExports = panamaComponent.getExportedInterfaces();
@@ -349,8 +349,8 @@ class ComponentParityTest {
         final ComponentEngine jniCompEngine = (ComponentEngine) jniEngine;
         final ComponentEngine panamaCompEngine = (ComponentEngine) panamaEngine;
 
-        final ComponentSimple jniComponent = jniCompEngine.compileComponent(componentBytes);
-        final ComponentSimple panamaComponent = panamaCompEngine.compileComponent(componentBytes);
+        final Component jniComponent = jniCompEngine.compileComponent(componentBytes);
+        final Component panamaComponent = panamaCompEngine.compileComponent(componentBytes);
 
         final var jniImports = jniComponent.getImportedInterfaces();
         final var panamaImports = panamaComponent.getImportedInterfaces();

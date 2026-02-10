@@ -30,8 +30,8 @@ import java.util.List;
 public final class ComponentLinkInfo {
 
   private final String linkId;
-  private final List<ComponentSimple> sourceComponents;
-  private final ComponentSimple linkedComponent;
+  private final List<Component> sourceComponents;
+  private final Component linkedComponent;
   private final boolean active;
 
   /**
@@ -44,8 +44,8 @@ public final class ComponentLinkInfo {
    */
   public ComponentLinkInfo(
       final String linkId,
-      final List<ComponentSimple> sourceComponents,
-      final ComponentSimple linkedComponent,
+      final List<Component> sourceComponents,
+      final Component linkedComponent,
       final boolean active) {
     this.linkId = linkId != null ? linkId : "unknown";
     this.sourceComponents = Collections.unmodifiableList(sourceComponents);
@@ -67,7 +67,7 @@ public final class ComponentLinkInfo {
    *
    * @return unmodifiable list of source components
    */
-  public List<ComponentSimple> getSourceComponents() {
+  public List<Component> getSourceComponents() {
     return sourceComponents;
   }
 
@@ -76,7 +76,7 @@ public final class ComponentLinkInfo {
    *
    * @return the linked component
    */
-  public ComponentSimple getLinkedComponent() {
+  public Component getLinkedComponent() {
     return linkedComponent;
   }
 

@@ -793,7 +793,7 @@ class CoreRootPackageTest {
     @DisplayName("should have instantiate method")
     void shouldHaveInstantiateMethod() throws NoSuchMethodException {
       Method method =
-          ComponentLinker.class.getMethod("instantiate", Store.class, ComponentSimple.class);
+          ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
       assertNotNull(method, "instantiate method should exist");
       assertEquals(
           ComponentInstance.class,
@@ -915,7 +915,7 @@ class CoreRootPackageTest {
       Method method =
           ComponentResourceSharingManager.class.getMethod(
               "allocateResources",
-              ComponentSimple.class,
+              Component.class,
               String.class,
               ComponentResourceSharingManager.ResourceAllocationRequest.class);
       assertNotNull(method, "allocateResources method should exist");
@@ -1127,8 +1127,8 @@ class CoreRootPackageTest {
       Method method =
           WitInterfaceLinker.class.getMethod(
               "validateInterfaceCompatibility",
-              ComponentSimple.class,
-              ComponentSimple.class,
+              Component.class,
+              Component.class,
               String.class);
       assertNotNull(method, "validateInterfaceCompatibility method should exist");
     }
@@ -1138,7 +1138,7 @@ class CoreRootPackageTest {
     void shouldHaveBindInterfaceMethod() throws NoSuchMethodException {
       Method method =
           WitInterfaceLinker.class.getMethod(
-              "bindInterface", ComponentSimple.class, ComponentSimple.class, String.class);
+              "bindInterface", Component.class, Component.class, String.class);
       assertNotNull(method, "bindInterface method should exist");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
     }

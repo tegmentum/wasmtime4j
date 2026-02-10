@@ -4,7 +4,7 @@ import ai.tegmentum.wasmtime4j.ComponentEngine;
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.EngineConfig;
@@ -59,7 +59,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
   private final ComponentEngineConfig config;
   private final MemorySegment enhancedEngineHandle;
   private final Arena arena;
-  private final ConcurrentMap<String, PanamaComponentSimple> loadedComponents;
+  private final ConcurrentMap<String, PanamaComponentImpl> loadedComponents;
   private final AtomicLong componentIdCounter;
   private final WasmRuntime runtime;
   private volatile boolean closed = false;
@@ -112,7 +112,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
-  public ComponentSimple compileComponent(final byte[] wasmBytes) throws WasmException {
+  public Component compileComponent(final byte[] wasmBytes) throws WasmException {
     Objects.requireNonNull(wasmBytes, "wasmBytes cannot be null");
     ensureNotClosed();
 
@@ -134,39 +134,39 @@ public final class PanamaComponentEngine implements ComponentEngine {
       }
 
       final String componentId = generateComponentId();
-      final PanamaComponentSimple component =
-          new PanamaComponentSimple(componentHandle, componentId, this);
+      final PanamaComponentImpl component =
+          new PanamaComponentImpl(componentHandle, componentId, this);
       loadedComponents.put(componentId, component);
       return component;
     }
   }
 
   @Override
-  public ComponentSimple compileComponent(final byte[] wasmBytes, final String name)
+  public Component compileComponent(final byte[] wasmBytes, final String name)
       throws WasmException {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("name cannot be null or empty");
     }
-    final ComponentSimple component = compileComponent(wasmBytes);
+    final Component component = compileComponent(wasmBytes);
     // Component name is tracked in metadata
     return component;
   }
 
   @Override
-  public ComponentInstance createInstance(final ComponentSimple component, final Store store)
+  public ComponentInstance createInstance(final Component component, final Store store)
       throws WasmException {
     Objects.requireNonNull(component, "component cannot be null");
     Objects.requireNonNull(store, "store cannot be null");
     ensureNotClosed();
 
-    if (!(component instanceof PanamaComponentSimple)) {
+    if (!(component instanceof PanamaComponentImpl)) {
       throw new IllegalArgumentException("Component must be Panama implementation");
     }
     if (!(store instanceof PanamaStore)) {
       throw new IllegalArgumentException("Store must be Panama implementation");
     }
 
-    final PanamaComponentSimple panamaComponent = (PanamaComponentSimple) component;
+    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
     final PanamaStore panamaStore = (PanamaStore) store;
 
     // Allocate memory for the output instance ID
@@ -196,7 +196,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public ComponentInstance createInstance(
-      final ComponentSimple component, final Store store, final List<ComponentSimple> imports)
+      final Component component, final Store store, final List<Component> imports)
       throws WasmException {
     Objects.requireNonNull(component, "component cannot be null");
     Objects.requireNonNull(store, "store cannot be null");
@@ -207,23 +207,23 @@ public final class PanamaComponentEngine implements ComponentEngine {
       return createInstance(component, store);
     }
 
-    if (!(component instanceof PanamaComponentSimple)) {
+    if (!(component instanceof PanamaComponentImpl)) {
       throw new IllegalArgumentException("Component must be Panama implementation");
     }
     if (!(store instanceof PanamaStore)) {
       throw new IllegalArgumentException("Store must be Panama implementation");
     }
 
-    final PanamaComponentSimple panamaComponent = (PanamaComponentSimple) component;
+    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
 
     // Validate that all imports are Panama implementations and check their exports
     final Set<String> availableExports = new HashSet<>();
-    for (final ComponentSimple importComponent : imports) {
-      if (!(importComponent instanceof PanamaComponentSimple)) {
+    for (final Component importComponent : imports) {
+      if (!(importComponent instanceof PanamaComponentImpl)) {
         throw new IllegalArgumentException("All import components must be Panama implementation");
       }
 
-      final PanamaComponentSimple panamaImport = (PanamaComponentSimple) importComponent;
+      final PanamaComponentImpl panamaImport = (PanamaComponentImpl) importComponent;
       if (!panamaImport.isValid()) {
         throw new WasmException("Import component is not valid: " + panamaImport.getId());
       }
@@ -251,15 +251,15 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
-  public ComponentValidationResult validateComponent(final ComponentSimple component) {
+  public ComponentValidationResult validateComponent(final Component component) {
     Objects.requireNonNull(component, "component cannot be null");
     ensureNotClosed();
 
-    if (!(component instanceof PanamaComponentSimple)) {
+    if (!(component instanceof PanamaComponentImpl)) {
       throw new IllegalArgumentException("Component must be Panama implementation");
     }
 
-    final PanamaComponentSimple panamaComponent = (PanamaComponentSimple) component;
+    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
     final ComponentVersion version = panamaComponent.getVersion();
     final ComponentValidationResult.ValidationContext context =
         new ComponentValidationResult.ValidationContext(
@@ -283,7 +283,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
-  public ComponentSimple linkComponents(final List<ComponentSimple> components)
+  public Component linkComponents(final List<Component> components)
       throws WasmException {
     Objects.requireNonNull(components, "components cannot be null");
     if (components.isEmpty()) {
@@ -292,8 +292,8 @@ public final class PanamaComponentEngine implements ComponentEngine {
     ensureNotClosed();
 
     // Validate all components are Panama implementations
-    for (final ComponentSimple comp : components) {
-      if (!(comp instanceof PanamaComponentSimple)) {
+    for (final Component comp : components) {
+      if (!(comp instanceof PanamaComponentImpl)) {
         throw new IllegalArgumentException("All components must be Panama implementation");
       }
     }
@@ -321,7 +321,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public WitCompatibilityResult checkCompatibility(
-      final ComponentSimple source, final ComponentSimple target) {
+      final Component source, final Component target) {
     Objects.requireNonNull(source, "source cannot be null");
     Objects.requireNonNull(target, "target cannot be null");
     ensureNotClosed();
@@ -381,7 +381,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
     closed = true;
 
     // Close all loaded components
-    for (final PanamaComponentSimple component : loadedComponents.values()) {
+    for (final PanamaComponentImpl component : loadedComponents.values()) {
       try {
         component.close();
       } catch (final Exception e) {

@@ -1,0 +1,3 @@
+# cargo-mutants configuration
+# Integration tests are now fixed and included
+# additional_cargo_args = ["--lib"]

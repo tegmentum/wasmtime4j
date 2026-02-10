@@ -23,11 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.ComponentFunc;
 import ai.tegmentum.wasmtime4j.ComponentFunction;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentTypeDescriptor;
 import ai.tegmentum.wasmtime4j.ComponentTypedFunc;
 import ai.tegmentum.wasmtime4j.ComponentVal;

@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentRegistryStatistics;
 import ai.tegmentum.wasmtime4j.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -44,9 +44,9 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
 
   private final PanamaComponentEngine engine;
   private final PanamaExceptionMapper exceptionMapper;
-  private final ConcurrentMap<String, ComponentSimple> componentsById;
-  private final ConcurrentMap<String, ComponentSimple> componentsByName;
-  private final ConcurrentMap<ComponentVersion, Set<ComponentSimple>> componentsByVersion;
+  private final ConcurrentMap<String, Component> componentsById;
+  private final ConcurrentMap<String, Component> componentsByName;
+  private final ConcurrentMap<ComponentVersion, Set<Component>> componentsByVersion;
   private final AtomicLong registrationCounter;
 
   /**
@@ -68,7 +68,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public void register(final ComponentSimple component) throws WasmException {
+  public void register(final Component component) throws WasmException {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
@@ -122,7 +122,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public void register(final String name, final ComponentSimple component) throws WasmException {
+  public void register(final String name, final Component component) throws WasmException {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Name cannot be null or empty");
     }
@@ -163,7 +163,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
       throw new IllegalArgumentException("Component ID cannot be null or empty");
     }
 
-    final ComponentSimple component = componentsById.get(componentId);
+    final Component component = componentsById.get(componentId);
     if (component == null) {
       throw new WasmException("Component with ID '" + componentId + "' is not registered");
     }
@@ -180,7 +180,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
 
       // Remove from version index
       final ComponentVersion version = component.getVersion();
-      final Set<ComponentSimple> versionSet = componentsByVersion.get(version);
+      final Set<Component> versionSet = componentsByVersion.get(version);
       if (versionSet != null) {
         versionSet.remove(component);
         if (versionSet.isEmpty()) {
@@ -196,7 +196,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public Optional<ComponentSimple> findById(final String componentId) {
+  public Optional<Component> findById(final String componentId) {
     if (componentId == null || componentId.trim().isEmpty()) {
       throw new IllegalArgumentException("Component ID cannot be null or empty");
     }
@@ -204,7 +204,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public Optional<ComponentSimple> findByName(final String name) {
+  public Optional<Component> findByName(final String name) {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Name cannot be null or empty");
     }
@@ -212,16 +212,16 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public List<ComponentSimple> findByVersion(final ComponentVersion version) {
+  public List<Component> findByVersion(final ComponentVersion version) {
     if (version == null) {
       throw new IllegalArgumentException("Version cannot be null");
     }
-    final Set<ComponentSimple> components = componentsByVersion.get(version);
+    final Set<Component> components = componentsByVersion.get(version);
     return components != null ? new ArrayList<>(components) : new ArrayList<>();
   }
 
   @Override
-  public Set<ComponentSimple> getAllComponents() {
+  public Set<Component> getAllComponents() {
     return new HashSet<>(componentsById.values());
   }
 
@@ -244,18 +244,18 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public Set<ComponentSimple> resolveDependencies(final ComponentSimple component)
+  public Set<Component> resolveDependencies(final Component component)
       throws WasmException {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
 
     try {
-      final Set<ComponentSimple> dependencies = new HashSet<>();
+      final Set<Component> dependencies = new HashSet<>();
       final Set<String> requiredInterfaces = component.getImportedInterfaces();
 
       // Use native dependency resolution for better performance
-      final Set<ComponentSimple> nativeDeps = resolveDependenciesNative(component);
+      final Set<Component> nativeDeps = resolveDependenciesNative(component);
       if (!nativeDeps.isEmpty()) {
         dependencies.addAll(nativeDeps);
       } else {
@@ -278,7 +278,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public ComponentValidationResult validateDependencies(final ComponentSimple component)
+  public ComponentValidationResult validateDependencies(final Component component)
       throws WasmException {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
@@ -289,11 +289,11 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
       final List<ComponentValidationResult.ValidationWarning> warnings = new ArrayList<>();
 
       final Set<String> requiredInterfaces = component.getImportedInterfaces();
-      final Set<ComponentSimple> dependencies = resolveDependencies(component);
+      final Set<Component> dependencies = resolveDependencies(component);
 
       // Check if all required interfaces are satisfied
       final Set<String> providedInterfaces = new HashSet<>();
-      for (final ComponentSimple dependency : dependencies) {
+      for (final Component dependency : dependencies) {
         providedInterfaces.addAll(dependency.getExportedInterfaces());
       }
 
@@ -310,7 +310,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
       }
 
       // Check for version compatibility using native validation
-      for (final ComponentSimple dependency : dependencies) {
+      for (final Component dependency : dependencies) {
         final var compatibility = checkCompatibilityNative(component, dependency);
         if (!compatibility.isCompatible()) {
           warnings.add(
@@ -347,14 +347,14 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public List<ComponentSimple> search(final ComponentSearchCriteria criteria) throws WasmException {
+  public List<Component> search(final ComponentSearchCriteria criteria) throws WasmException {
     if (criteria == null) {
       throw new IllegalArgumentException("Criteria cannot be null");
     }
 
     try {
       // Use native search for better performance if available
-      final List<ComponentSimple> nativeResults = searchComponentsNative(criteria);
+      final List<Component> nativeResults = searchComponentsNative(criteria);
       if (!nativeResults.isEmpty()) {
         return nativeResults;
       }
@@ -406,7 +406,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
    * @param component the component to validate
    * @return validation result
    */
-  private ComponentValidationResult validateComponentForRegistry(final ComponentSimple component) {
+  private ComponentValidationResult validateComponentForRegistry(final Component component) {
     try {
       // Use engine's validation with additional registry-specific checks
       final ComponentValidationResult engineResult = engine.validateComponent(component);
@@ -434,13 +434,13 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
    *
    * @param component the component to rollback
    */
-  private void rollbackRegistration(final ComponentSimple component) {
+  private void rollbackRegistration(final Component component) {
     try {
       final String componentId = component.getId();
       componentsById.remove(componentId);
 
       final ComponentVersion version = component.getVersion();
-      final Set<ComponentSimple> versionSet = componentsByVersion.get(version);
+      final Set<Component> versionSet = componentsByVersion.get(version);
       if (versionSet != null) {
         versionSet.remove(component);
         if (versionSet.isEmpty()) {
@@ -459,11 +459,11 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
    * @param requiredInterfaces required interfaces
    * @return resolved dependencies
    */
-  private Set<ComponentSimple> resolveDependenciesJava(
-      final ComponentSimple component, final Set<String> requiredInterfaces) throws WasmException {
-    final Set<ComponentSimple> dependencies = new HashSet<>();
+  private Set<Component> resolveDependenciesJava(
+      final Component component, final Set<String> requiredInterfaces) throws WasmException {
+    final Set<Component> dependencies = new HashSet<>();
 
-    for (final ComponentSimple candidate : componentsById.values()) {
+    for (final Component candidate : componentsById.values()) {
       if (candidate.equals(component)) {
         continue; // Skip self
       }
@@ -488,7 +488,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
    * @return true if the component matches the criteria
    */
   private boolean matchesCriteria(
-      final ComponentSimple component, final ComponentSearchCriteria criteria) {
+      final Component component, final ComponentSearchCriteria criteria) {
     try {
       // Check name pattern
       if (criteria.getNamePattern().isPresent()) {
@@ -532,7 +532,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
    * @param component the component
    * @return the component name, or null if not registered by name
    */
-  private String getComponentName(final ComponentSimple component) {
+  private String getComponentName(final Component component) {
     return componentsByName.entrySet().stream()
         .filter(entry -> entry.getValue().equals(component))
         .map(java.util.Map.Entry::getKey)
@@ -542,39 +542,39 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
 
   // Native method placeholders - these would be implemented with Panama FFI calls
 
-  private void registerComponentNative(final ComponentSimple component) throws Exception {
+  private void registerComponentNative(final Component component) throws Exception {
     // Panama FFI call to register component in native registry
   }
 
-  private void unregisterComponentNative(final ComponentSimple component) throws Exception {
+  private void unregisterComponentNative(final Component component) throws Exception {
     // Panama FFI call to unregister component from native registry
   }
 
-  private Set<ComponentSimple> resolveDependenciesNative(final ComponentSimple component)
+  private Set<Component> resolveDependenciesNative(final Component component)
       throws Exception {
     // Panama FFI call to native dependency resolution
     return new HashSet<>(); // Placeholder
   }
 
   private boolean hasCircularDependencyNative(
-      final ComponentSimple component, final Set<ComponentSimple> dependencies) throws Exception {
+      final Component component, final Set<Component> dependencies) throws Exception {
     // Panama FFI call to native circular dependency detection
     return false; // Placeholder
   }
 
   private ai.tegmentum.wasmtime4j.ComponentCompatibility checkCompatibilityNative(
-      final ComponentSimple source, final ComponentSimple target) throws Exception {
+      final Component source, final Component target) throws Exception {
     // Panama FFI call to native compatibility checking
     return source.checkCompatibility(target); // Placeholder
   }
 
   private boolean validateDependenciesNative(
-      final ComponentSimple component, final Set<ComponentSimple> dependencies) throws Exception {
+      final Component component, final Set<Component> dependencies) throws Exception {
     // Panama FFI call to native dependency validation
     return true; // Placeholder
   }
 
-  private List<ComponentSimple> searchComponentsNative(final ComponentSearchCriteria criteria)
+  private List<Component> searchComponentsNative(final ComponentSearchCriteria criteria)
       throws Exception {
     // Panama FFI call to native component search
     return new ArrayList<>(); // Placeholder

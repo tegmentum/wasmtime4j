@@ -8,12 +8,12 @@ use std::os::raw::c_void;
 use std::ptr;
 
 // Import the Panama FFI functions
-use wasmtime4j::panama_ffi::engine;
-use wasmtime4j::panama_ffi::instance;
-use wasmtime4j::panama_ffi::memory;
-use wasmtime4j::panama_ffi::module;
-use wasmtime4j::panama_ffi::store;
-use wasmtime4j::panama_ffi::table;
+use wasmtime4j::panama::engine;
+use wasmtime4j::panama::instance;
+use wasmtime4j::panama::memory;
+use wasmtime4j::panama::module;
+use wasmtime4j::panama::store;
+use wasmtime4j::panama::table;
 
 // Import GC FFI functions
 use wasmtime4j::panama_gc_ffi;

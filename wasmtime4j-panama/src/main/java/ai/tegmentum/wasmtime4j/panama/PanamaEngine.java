@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.Engine;
@@ -517,7 +517,7 @@ public final class PanamaEngine implements Engine {
    * @param component the component to validate
    * @return the validation result
    */
-  public ComponentValidationResult validateComponent(final ComponentSimple component) {
+  public ComponentValidationResult validateComponent(final Component component) {
     // TODO: Implement actual component validation
     final ComponentValidationResult.ValidationContext context =
         new ComponentValidationResult.ValidationContext("unknown", new ComponentVersion(1, 0, 0));

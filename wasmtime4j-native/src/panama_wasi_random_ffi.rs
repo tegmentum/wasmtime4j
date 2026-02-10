@@ -4,12 +4,14 @@
 //! to access WASI Preview 2 random operations (wasi:random).
 //!
 //! All functions use C calling conventions and handle memory management appropriately.
+//! All FFI functions are wrapped with catch_unwind to prevent panics from crashing the JVM.
 
 use std::os::raw::{c_int, c_longlong, c_uchar, c_void};
 use std::ptr;
 
 use crate::wasi_random_helpers;
 use crate::wasi_preview2::WasiPreview2Context;
+use crate::{ffi_boundary_i32, ffi_boundary_void};
 
 /// Get cryptographically-secure random bytes
 ///
@@ -31,46 +33,45 @@ pub extern "C" fn wasmtime4j_panama_wasi_random_get_bytes(
     out_bytes: *mut *mut c_uchar,
     out_bytes_len: *mut c_longlong,
 ) -> c_int {
-    if context_handle.is_null() || out_bytes.is_null() || out_bytes_len.is_null() {
-        return -1;
-    }
-
-    if len < 0 {
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            return -1;
+    ffi_boundary_i32!({
+        if context_handle.is_null() || out_bytes.is_null() || out_bytes_len.is_null() {
+            return Ok(-1);
         }
-        &*ptr
-    };
 
-    // Call helper function
-    let bytes = match wasi_random_helpers::get_random_bytes(context, len as u64) {
-        Ok(b) => b,
-        Err(_) => return -1,
-    };
-
-    // Allocate buffer and copy bytes
-    let bytes_len = bytes.len();
-    let buffer = unsafe {
-        let ptr = libc::malloc(bytes_len) as *mut c_uchar;
-        if ptr.is_null() {
-            return -1;
+        if len < 0 {
+            return Ok(-1);
         }
-        ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, bytes_len);
-        ptr
-    };
 
-    unsafe {
-        *out_bytes = buffer;
-        *out_bytes_len = bytes_len as c_longlong;
-    }
+        let context = unsafe {
+            let ptr = context_handle as *const WasiPreview2Context;
+            if ptr.is_null() {
+                return Ok(-1);
+            }
+            &*ptr
+        };
 
-    0
+        let bytes = match wasi_random_helpers::get_random_bytes(context, len as u64) {
+            Ok(b) => b,
+            Err(_) => return Ok(-1),
+        };
+
+        let bytes_len = bytes.len();
+        let buffer = unsafe {
+            let ptr = libc::malloc(bytes_len) as *mut c_uchar;
+            if ptr.is_null() {
+                return Ok(-1);
+            }
+            ptr::copy_nonoverlapping(bytes.as_ptr(), ptr, bytes_len);
+            ptr
+        };
+
+        unsafe {
+            *out_bytes = buffer;
+            *out_bytes_len = bytes_len as c_longlong;
+        }
+
+        Ok(0)
+    })
 }
 
 /// Get a cryptographically-secure random u64 value
@@ -86,29 +87,29 @@ pub extern "C" fn wasmtime4j_panama_wasi_random_get_u64(
     context_handle: *mut c_void,
     out_value: *mut c_longlong,
 ) -> c_int {
-    if context_handle.is_null() || out_value.is_null() {
-        return -1;
-    }
-
-    // Get context from handle
-    let context = unsafe {
-        let ptr = context_handle as *const WasiPreview2Context;
-        if ptr.is_null() {
-            return -1;
+    ffi_boundary_i32!({
+        if context_handle.is_null() || out_value.is_null() {
+            return Ok(-1);
         }
-        &*ptr
-    };
 
-    // Call helper function
-    match wasi_random_helpers::get_random_u64(context) {
-        Ok(value) => {
-            unsafe {
-                *out_value = value as c_longlong;
+        let context = unsafe {
+            let ptr = context_handle as *const WasiPreview2Context;
+            if ptr.is_null() {
+                return Ok(-1);
             }
-            0
+            &*ptr
+        };
+
+        match wasi_random_helpers::get_random_u64(context) {
+            Ok(value) => {
+                unsafe {
+                    *out_value = value as c_longlong;
+                }
+                Ok(0)
+            }
+            Err(_) => Ok(-1),
         }
-        Err(_) => -1,
-    }
+    })
 }
 
 /// Free a buffer allocated by wasi random functions
@@ -121,9 +122,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_random_get_u64(
 /// Double-freeing or freeing invalid pointers will cause undefined behavior.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_wasi_random_free_buffer(buffer: *mut c_uchar) {
-    if !buffer.is_null() {
-        unsafe {
-            libc::free(buffer as *mut c_void);
+    ffi_boundary_void!({
+        if !buffer.is_null() {
+            unsafe {
+                libc::free(buffer as *mut c_void);
+            }
         }
-    }
+    })
 }

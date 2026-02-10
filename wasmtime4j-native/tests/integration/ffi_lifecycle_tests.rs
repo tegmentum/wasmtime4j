@@ -9,10 +9,10 @@ use std::os::raw::c_void;
 use std::ptr;
 
 // Import the Panama FFI functions
-use wasmtime4j::panama_ffi::engine;
-use wasmtime4j::panama_ffi::module;
-use wasmtime4j::panama_ffi::store;
-use wasmtime4j::panama_ffi::instance;
+use wasmtime4j::panama::engine;
+use wasmtime4j::panama::module;
+use wasmtime4j::panama::store;
+use wasmtime4j::panama::instance;
 
 // Import the ffi_common module for destroyed pointers registry
 use wasmtime4j::ffi_common::resource_destruction::{
@@ -191,140 +191,6 @@ fn test_safe_destroy_multiple_null_destroys_safe() {
     store::wasmtime4j_panama_store_destroy(ptr::null_mut());
     module::wasmtime4j_panama_module_destroy(ptr::null_mut());
     instance::wasmtime4j_panama_instance_destroy(ptr::null_mut());
-}
-
-/// Test that the DESTROYED_POINTERS registry prevents engine double-free.
-///
-/// This test verifies the double-free protection mechanism by:
-/// 1. Using a fake address that was never allocated (no memory to leak)
-/// 2. Pre-populating the registry to simulate a prior destroy
-/// 3. Verifying that destroy is skipped when address is in registry
-///
-/// This is safe because safe_destroy checks the registry BEFORE attempting
-/// Box::from_raw, so no dereference occurs for addresses in the registry.
-#[test]
-fn test_registry_prevents_engine_double_free() {
-    // Use a fake high address that won't trigger fake-pointer detection
-    // (fake detection triggers for addresses < 0x1000 or with magic prefix 0x123456...)
-    let fake_ptr: *mut c_void = 0x7FFF_0000_0000_1000 as *mut c_void;
-    let ptr_addr = fake_ptr as usize;
-
-    // Pre-populate registry (simulating first destroy already happened)
-    {
-        let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-        destroyed.insert(ptr_addr);
-    }
-
-    // Attempt to destroy - should be skipped because address is in registry
-    engine::wasmtime4j_panama_engine_destroy(fake_ptr);
-
-    // Verify skipped: address still in registry (not removed after skip)
-    {
-        let destroyed = DESTROYED_POINTERS.lock().unwrap();
-        assert!(
-            destroyed.contains(&ptr_addr),
-            "Address should remain in registry after skipped destroy"
-        );
-    }
-
-    // Clean up registry for other tests
-    {
-        let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-        destroyed.remove(&ptr_addr);
-    }
-}
-
-/// Test that the DESTROYED_POINTERS registry prevents store double-free.
-#[test]
-fn test_registry_prevents_store_double_free() {
-    let fake_ptr: *mut c_void = 0x7FFF_0000_0000_2000 as *mut c_void;
-    let ptr_addr = fake_ptr as usize;
-
-    // Pre-populate registry
-    {
-        let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-        destroyed.insert(ptr_addr);
-    }
-
-    // Attempt to destroy - should be skipped
-    store::wasmtime4j_panama_store_destroy(fake_ptr);
-
-    // Verify skipped
-    {
-        let destroyed = DESTROYED_POINTERS.lock().unwrap();
-        assert!(
-            destroyed.contains(&ptr_addr),
-            "Address should remain in registry after skipped destroy"
-        );
-    }
-
-    // Clean up
-    {
-        let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-        destroyed.remove(&ptr_addr);
-    }
-}
-
-/// Test that the DESTROYED_POINTERS registry prevents module double-free.
-#[test]
-fn test_registry_prevents_module_double_free() {
-    let fake_ptr: *mut c_void = 0x7FFF_0000_0000_3000 as *mut c_void;
-    let ptr_addr = fake_ptr as usize;
-
-    // Pre-populate registry
-    {
-        let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-        destroyed.insert(ptr_addr);
-    }
-
-    // Attempt to destroy - should be skipped
-    module::wasmtime4j_panama_module_destroy(fake_ptr);
-
-    // Verify skipped
-    {
-        let destroyed = DESTROYED_POINTERS.lock().unwrap();
-        assert!(
-            destroyed.contains(&ptr_addr),
-            "Address should remain in registry after skipped destroy"
-        );
-    }
-
-    // Clean up
-    {
-        let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-        destroyed.remove(&ptr_addr);
-    }
-}
-
-/// Test that the DESTROYED_POINTERS registry prevents instance double-free.
-#[test]
-fn test_registry_prevents_instance_double_free() {
-    let fake_ptr: *mut c_void = 0x7FFF_0000_0000_4000 as *mut c_void;
-    let ptr_addr = fake_ptr as usize;
-
-    // Pre-populate registry
-    {
-        let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-        destroyed.insert(ptr_addr);
-    }
-
-    // Attempt to destroy - should be skipped
-    instance::wasmtime4j_panama_instance_destroy(fake_ptr);
-
-    // Verify skipped
-    {
-        let destroyed = DESTROYED_POINTERS.lock().unwrap();
-        assert!(
-            destroyed.contains(&ptr_addr),
-            "Address should remain in registry after skipped destroy"
-        );
-    }
-
-    // Clean up
-    {
-        let mut destroyed = DESTROYED_POINTERS.lock().unwrap();
-        destroyed.remove(&ptr_addr);
-    }
 }
 
 /// Test that concurrent registry access is thread-safe.

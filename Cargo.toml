@@ -1,5 +1,6 @@
 [workspace]
 members = ["wasmtime4j-native"]
+exclude = ["wasmtime4j-native/fuzz"]
 resolver = "2"
 
 # Centralized dependency versions for all workspace members

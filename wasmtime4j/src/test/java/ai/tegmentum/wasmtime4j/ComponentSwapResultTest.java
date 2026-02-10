@@ -220,8 +220,8 @@ class ComponentSwapResultTest {
       final Method method =
           ComponentSwapResult.class.getMethod(
               "success",
-              ComponentSimple.class,
-              ComponentSimple.class,
+              Component.class,
+              Component.class,
               Instant.class,
               Instant.class);
       assertNotNull(method, "success method should exist");
@@ -236,8 +236,8 @@ class ComponentSwapResultTest {
       final Method method =
           ComponentSwapResult.class.getMethod(
               "failure",
-              ComponentSimple.class,
-              ComponentSimple.class,
+              Component.class,
+              Component.class,
               Instant.class,
               Instant.class,
               Exception.class);
@@ -266,7 +266,7 @@ class ComponentSwapResultTest {
     void shouldHaveGetOldComponentMethod() throws NoSuchMethodException {
       final Method method = ComponentSwapResult.class.getMethod("getOldComponent");
       assertNotNull(method, "getOldComponent method should exist");
-      assertEquals(ComponentSimple.class, method.getReturnType(), "Should return ComponentSimple");
+      assertEquals(Component.class, method.getReturnType(), "Should return Component");
     }
 
     @Test
@@ -274,7 +274,7 @@ class ComponentSwapResultTest {
     void shouldHaveGetNewComponentMethod() throws NoSuchMethodException {
       final Method method = ComponentSwapResult.class.getMethod("getNewComponent");
       assertNotNull(method, "getNewComponent method should exist");
-      assertEquals(ComponentSimple.class, method.getReturnType(), "Should return ComponentSimple");
+      assertEquals(Component.class, method.getReturnType(), "Should return Component");
     }
 
     @Test

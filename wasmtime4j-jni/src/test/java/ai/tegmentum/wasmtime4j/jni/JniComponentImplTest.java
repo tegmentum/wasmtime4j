@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentAuditLog;
 import ai.tegmentum.wasmtime4j.ComponentBackup;
 import ai.tegmentum.wasmtime4j.ComponentBackupConfig;
@@ -58,7 +57,8 @@ class JniComponentImplTest {
     @DisplayName("should implement Component interface")
     void shouldImplementComponentInterface() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
-      assertThat(Component.class.isAssignableFrom(clazz))
+      Class<?> componentSimpleClass = Class.forName("ai.tegmentum.wasmtime4j.Component");
+      assertThat(componentSimpleClass.isAssignableFrom(clazz))
           .as("JniComponentImpl should implement Component")
           .isTrue();
     }
@@ -340,7 +340,8 @@ class JniComponentImplTest {
     void shouldHaveHotSwapMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Class<?> strategyClass = Class.forName("ai.tegmentum.wasmtime4j.HotSwapStrategy");
-      Method method = clazz.getMethod("hotSwap", Component.class, strategyClass);
+      Class<?> componentSimpleClass = Class.forName("ai.tegmentum.wasmtime4j.Component");
+      Method method = clazz.getMethod("hotSwap", componentSimpleClass, strategyClass);
 
       assertThat(method.getReturnType()).isEqualTo(CompletableFuture.class);
     }
@@ -349,7 +350,7 @@ class JniComponentImplTest {
     @DisplayName("should have checkCompatibility method")
     void shouldHaveCheckCompatibilityMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
-      Class<?> simpleClass = Class.forName("ai.tegmentum.wasmtime4j.ComponentSimple");
+      Class<?> simpleClass = Class.forName("ai.tegmentum.wasmtime4j.Component");
       Method method = clazz.getMethod("checkCompatibility", simpleClass);
 
       assertThat(method.getReturnType().getName())
@@ -374,7 +375,7 @@ class JniComponentImplTest {
     @DisplayName("should have checkWitCompatibility method")
     void shouldHaveCheckWitCompatibilityMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
-      Class<?> simpleClass = Class.forName("ai.tegmentum.wasmtime4j.ComponentSimple");
+      Class<?> simpleClass = Class.forName("ai.tegmentum.wasmtime4j.Component");
       Method method = clazz.getMethod("checkWitCompatibility", simpleClass);
 
       assertThat(method.getReturnType().getName())

@@ -232,120 +232,6 @@ public class PanamaPerformancePackageTest {
   }
 
   @Nested
-  @DisplayName("PanamaOptimizationEngine Tests")
-  class PanamaOptimizationEngineTests {
-
-    @Test
-    @DisplayName("Should be a final class with singleton pattern")
-    void shouldBeSingleton() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "PanamaOptimizationEngine");
-      assertTrue(
-          Modifier.isFinal(clazz.getModifiers()), "PanamaOptimizationEngine should be final");
-
-      boolean hasGetInstance = false;
-      for (final Method method : clazz.getDeclaredMethods()) {
-        if ("getInstance".equals(method.getName()) && Modifier.isStatic(method.getModifiers())) {
-          hasGetInstance = true;
-          break;
-        }
-      }
-      assertTrue(hasGetInstance, "Should have static getInstance method for singleton");
-    }
-
-    @Test
-    @DisplayName("Should have ZeroCopyOperation and BulkOperation interfaces")
-    void shouldHaveFunctionalInterfaces() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "PanamaOptimizationEngine");
-      boolean hasZeroCopy = false;
-      boolean hasBulk = false;
-      for (final Class<?> inner : clazz.getDeclaredClasses()) {
-        if ("ZeroCopyOperation".equals(inner.getSimpleName()) && inner.isInterface()) {
-          hasZeroCopy = true;
-        }
-        if ("BulkOperation".equals(inner.getSimpleName()) && inner.isInterface()) {
-          hasBulk = true;
-        }
-      }
-      assertTrue(hasZeroCopy, "Should have ZeroCopyOperation interface");
-      assertTrue(hasBulk, "Should have BulkOperation interface");
-    }
-
-    @Test
-    @DisplayName("Should have method handle optimization methods")
-    void shouldHaveMethodHandleMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "PanamaOptimizationEngine");
-      boolean hasGetOptimizedMethodHandle = false;
-      boolean hasExecuteOptimized = false;
-      for (final Method method : clazz.getDeclaredMethods()) {
-        if ("getOptimizedMethodHandle".equals(method.getName())) {
-          hasGetOptimizedMethodHandle = true;
-        }
-        if ("executeOptimized".equals(method.getName())) {
-          hasExecuteOptimized = true;
-        }
-      }
-      assertTrue(hasGetOptimizedMethodHandle, "Should have getOptimizedMethodHandle method");
-      assertTrue(hasExecuteOptimized, "Should have executeOptimized method");
-    }
-
-    @Test
-    @DisplayName("Should have memory allocation methods")
-    void shouldHaveMemoryAllocationMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "PanamaOptimizationEngine");
-      boolean hasAllocateOptimized = false;
-      boolean hasExecuteZeroCopy = false;
-      boolean hasExecuteBulk = false;
-      boolean hasOptimizedCopy = false;
-      for (final Method method : clazz.getDeclaredMethods()) {
-        if ("allocateOptimized".equals(method.getName())) {
-          hasAllocateOptimized = true;
-        }
-        if ("executeZeroCopy".equals(method.getName())) {
-          hasExecuteZeroCopy = true;
-        }
-        if ("executeBulk".equals(method.getName())) {
-          hasExecuteBulk = true;
-        }
-        if ("optimizedCopy".equals(method.getName())) {
-          hasOptimizedCopy = true;
-        }
-      }
-      assertTrue(hasAllocateOptimized, "Should have allocateOptimized method");
-      assertTrue(hasExecuteZeroCopy, "Should have executeZeroCopy method");
-      assertTrue(hasExecuteBulk, "Should have executeBulk method");
-      assertTrue(hasOptimizedCopy, "Should have optimizedCopy method");
-    }
-
-    @Test
-    @DisplayName("Should have optimization control methods")
-    void shouldHaveControlMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "PanamaOptimizationEngine");
-      boolean hasSetOptimizationEnabled = false;
-      boolean hasIsOptimizationEnabled = false;
-      boolean hasReset = false;
-      boolean hasShutdown = false;
-      for (final Method method : clazz.getDeclaredMethods()) {
-        if ("setOptimizationEnabled".equals(method.getName())) {
-          hasSetOptimizationEnabled = true;
-        }
-        if ("isOptimizationEnabled".equals(method.getName())) {
-          hasIsOptimizationEnabled = true;
-        }
-        if ("reset".equals(method.getName())) {
-          hasReset = true;
-        }
-        if ("shutdown".equals(method.getName())) {
-          hasShutdown = true;
-        }
-      }
-      assertTrue(hasSetOptimizationEnabled, "Should have setOptimizationEnabled method");
-      assertTrue(hasIsOptimizationEnabled, "Should have isOptimizationEnabled method");
-      assertTrue(hasReset, "Should have reset method");
-      assertTrue(hasShutdown, "Should have shutdown method");
-    }
-  }
-
-  @Nested
   @DisplayName("PanamaPerformanceMonitor Tests")
   class PanamaPerformanceMonitorTests {
 
@@ -577,7 +463,6 @@ public class PanamaPerformancePackageTest {
       final String[] expectedClasses = {
         "PanaNativeObjectPool",
         "AdvancedArenaManager",
-        "PanamaOptimizationEngine",
         "PanamaPerformanceMonitor",
         "CompilationCache"
       };
@@ -599,7 +484,6 @@ public class PanamaPerformancePackageTest {
       final String[] performanceClasses = {
         "PanaNativeObjectPool",
         "AdvancedArenaManager",
-        "PanamaOptimizationEngine",
         "PanamaPerformanceMonitor",
         "CompilationCache"
       };
@@ -641,7 +525,7 @@ public class PanamaPerformancePackageTest {
     @Test
     @DisplayName("Singletons should use thread-safe initialization")
     void singletonsShouldBeThreadSafe() throws ClassNotFoundException {
-      final String[] singletonClasses = {"AdvancedArenaManager", "PanamaOptimizationEngine"};
+      final String[] singletonClasses = {"AdvancedArenaManager"};
 
       for (final String className : singletonClasses) {
         final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + className);

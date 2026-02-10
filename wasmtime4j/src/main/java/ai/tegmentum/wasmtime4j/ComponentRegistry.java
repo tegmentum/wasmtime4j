@@ -22,7 +22,7 @@ public interface ComponentRegistry {
    * @throws WasmException if registration fails
    * @throws IllegalArgumentException if component is null
    */
-  void register(ComponentSimple component) throws WasmException;
+  void register(Component component) throws WasmException;
 
   /**
    * Registers a component with a specific name.
@@ -32,7 +32,7 @@ public interface ComponentRegistry {
    * @throws WasmException if registration fails
    * @throws IllegalArgumentException if name or component is null
    */
-  void register(String name, ComponentSimple component) throws WasmException;
+  void register(String name, Component component) throws WasmException;
 
   /**
    * Unregisters a component from this registry.
@@ -48,7 +48,7 @@ public interface ComponentRegistry {
    * @param componentId the component ID to search for
    * @return the component if found, empty otherwise
    */
-  Optional<ComponentSimple> findById(String componentId);
+  Optional<Component> findById(String componentId);
 
   /**
    * Finds a component by name.
@@ -56,7 +56,7 @@ public interface ComponentRegistry {
    * @param name the component name to search for
    * @return the component if found, empty otherwise
    */
-  Optional<ComponentSimple> findByName(String name);
+  Optional<Component> findByName(String name);
 
   /**
    * Finds components by version.
@@ -64,14 +64,14 @@ public interface ComponentRegistry {
    * @param version the component version to search for
    * @return list of components with the specified version
    */
-  List<ComponentSimple> findByVersion(ComponentVersion version);
+  List<Component> findByVersion(ComponentVersion version);
 
   /**
    * Gets all registered components.
    *
    * @return set of all registered components
    */
-  Set<ComponentSimple> getAllComponents();
+  Set<Component> getAllComponents();
 
   /**
    * Gets all component IDs.
@@ -102,7 +102,7 @@ public interface ComponentRegistry {
    * @return set of resolved dependency components
    * @throws WasmException if dependency resolution fails
    */
-  Set<ComponentSimple> resolveDependencies(ComponentSimple component) throws WasmException;
+  Set<Component> resolveDependencies(Component component) throws WasmException;
 
   /**
    * Validates that all component dependencies are satisfied.
@@ -111,7 +111,7 @@ public interface ComponentRegistry {
    * @return validation result
    * @throws WasmException if validation fails
    */
-  ComponentValidationResult validateDependencies(ComponentSimple component) throws WasmException;
+  ComponentValidationResult validateDependencies(Component component) throws WasmException;
 
   /**
    * Searches for components matching the given criteria.
@@ -120,7 +120,7 @@ public interface ComponentRegistry {
    * @return list of matching components
    * @throws WasmException if search fails
    */
-  List<ComponentSimple> search(ComponentSearchCriteria criteria) throws WasmException;
+  List<Component> search(ComponentSearchCriteria criteria) throws WasmException;
 
   /**
    * Clears all registered components.

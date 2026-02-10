@@ -256,7 +256,7 @@ class ComponentLinkerInterfaceTest {
     @DisplayName("should have linkComponent method")
     void shouldHaveLinkComponentMethod() throws NoSuchMethodException {
       Method method =
-          ComponentLinker.class.getMethod("linkComponent", Store.class, ComponentSimple.class);
+          ComponentLinker.class.getMethod("linkComponent", Store.class, Component.class);
       assertNotNull(method, "linkComponent method should exist");
       assertEquals(
           ComponentInstance.class,
@@ -265,16 +265,16 @@ class ComponentLinkerInterfaceTest {
       assertEquals(2, method.getParameterCount(), "linkComponent should have 2 parameters");
       assertEquals(Store.class, method.getParameterTypes()[0], "First parameter should be Store");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getParameterTypes()[1],
-          "Second parameter should be ComponentSimple");
+          "Second parameter should be Component");
     }
 
     @Test
     @DisplayName("linkComponent should throw WasmException")
     void linkComponentShouldThrowWasmException() throws NoSuchMethodException {
       Method method =
-          ComponentLinker.class.getMethod("linkComponent", Store.class, ComponentSimple.class);
+          ComponentLinker.class.getMethod("linkComponent", Store.class, Component.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(1, exceptionTypes.length, "Should declare one exception");
       assertEquals(WasmException.class, exceptionTypes[0], "Should throw WasmException");
@@ -293,7 +293,7 @@ class ComponentLinkerInterfaceTest {
     @DisplayName("should have instantiate method")
     void shouldHaveInstantiateMethod() throws NoSuchMethodException {
       Method method =
-          ComponentLinker.class.getMethod("instantiate", Store.class, ComponentSimple.class);
+          ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
       assertNotNull(method, "instantiate method should exist");
       assertEquals(
           ComponentInstance.class,
@@ -302,16 +302,16 @@ class ComponentLinkerInterfaceTest {
       assertEquals(2, method.getParameterCount(), "instantiate should have 2 parameters");
       assertEquals(Store.class, method.getParameterTypes()[0], "First parameter should be Store");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getParameterTypes()[1],
-          "Second parameter should be ComponentSimple");
+          "Second parameter should be Component");
     }
 
     @Test
     @DisplayName("instantiate should throw WasmException")
     void instantiateShouldThrowWasmException() throws NoSuchMethodException {
       Method method =
-          ComponentLinker.class.getMethod("instantiate", Store.class, ComponentSimple.class);
+          ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(1, exceptionTypes.length, "Should declare one exception");
       assertEquals(WasmException.class, exceptionTypes[0], "Should throw WasmException");
@@ -468,7 +468,7 @@ class ComponentLinkerInterfaceTest {
     @Test
     @DisplayName("should have validateImports method")
     void shouldHaveValidateImportsMethod() throws NoSuchMethodException {
-      Method method = ComponentLinker.class.getMethod("validateImports", ComponentSimple.class);
+      Method method = ComponentLinker.class.getMethod("validateImports", Component.class);
       assertNotNull(method, "validateImports method should exist");
       assertEquals(
           ComponentImportValidation.class,
@@ -476,15 +476,15 @@ class ComponentLinkerInterfaceTest {
           "Return type should be ComponentImportValidation");
       assertEquals(1, method.getParameterCount(), "validateImports should have 1 parameter");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getParameterTypes()[0],
-          "Parameter should be ComponentSimple");
+          "Parameter should be Component");
     }
 
     @Test
     @DisplayName("validateImports should not throw checked exceptions")
     void validateImportsShouldNotThrowCheckedExceptions() throws NoSuchMethodException {
-      Method method = ComponentLinker.class.getMethod("validateImports", ComponentSimple.class);
+      Method method = ComponentLinker.class.getMethod("validateImports", Component.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(
           0, exceptionTypes.length, "validateImports should not declare checked exceptions");
@@ -640,7 +640,7 @@ class ComponentLinkerInterfaceTest {
     @DisplayName("instantiate should return ComponentInstance")
     void instantiateShouldReturnComponentInstance() throws NoSuchMethodException {
       Method method =
-          ComponentLinker.class.getMethod("instantiate", Store.class, ComponentSimple.class);
+          ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
       assertEquals(
           ComponentInstance.class,
           method.getReturnType(),
@@ -651,7 +651,7 @@ class ComponentLinkerInterfaceTest {
     @DisplayName("linkComponent should return ComponentInstance")
     void linkComponentShouldReturnComponentInstance() throws NoSuchMethodException {
       Method method =
-          ComponentLinker.class.getMethod("linkComponent", Store.class, ComponentSimple.class);
+          ComponentLinker.class.getMethod("linkComponent", Store.class, Component.class);
       assertEquals(
           ComponentInstance.class,
           method.getReturnType(),

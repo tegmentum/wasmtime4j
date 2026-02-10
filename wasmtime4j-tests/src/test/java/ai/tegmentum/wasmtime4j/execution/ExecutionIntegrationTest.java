@@ -381,16 +381,6 @@ public class ExecutionIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should verify ControllerStatistics class exists")
-    void shouldVerifyControllerStatisticsClassExists() {
-      LOGGER.info("Testing ControllerStatistics class existence");
-
-      assertNotNull(ControllerStatistics.class, "ControllerStatistics should exist");
-
-      LOGGER.info("ControllerStatistics class verified");
-    }
-
-    @Test
     @DisplayName("Should verify FuelCallbackStats class exists")
     void shouldVerifyFuelCallbackStatsClassExists() {
       LOGGER.info("Testing FuelCallbackStats class existence");

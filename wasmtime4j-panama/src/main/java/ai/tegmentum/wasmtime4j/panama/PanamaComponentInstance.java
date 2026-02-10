@@ -5,7 +5,7 @@ import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
@@ -45,7 +45,7 @@ final class PanamaComponentInstance implements ComponentInstance {
 
   private final MemorySegment enhancedEngineHandle;
   private final long instanceId;
-  private final PanamaComponentSimple component;
+  private final PanamaComponentImpl component;
   private final PanamaStore store;
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -60,7 +60,7 @@ final class PanamaComponentInstance implements ComponentInstance {
   PanamaComponentInstance(
       final MemorySegment enhancedEngineHandle,
       final long instanceId,
-      final PanamaComponentSimple component,
+      final PanamaComponentImpl component,
       final PanamaStore store) {
     this.enhancedEngineHandle = enhancedEngineHandle;
     this.instanceId = instanceId;
@@ -80,7 +80,7 @@ final class PanamaComponentInstance implements ComponentInstance {
    */
   PanamaComponentInstance(
       final MemorySegment nativeInstancePtr,
-      final PanamaComponentSimple component,
+      final PanamaComponentImpl component,
       final PanamaStore store) {
     // Use the native instance pointer address as the instance ID
     this.enhancedEngineHandle = nativeInstancePtr;
@@ -95,7 +95,7 @@ final class PanamaComponentInstance implements ComponentInstance {
   }
 
   @Override
-  public ComponentSimple getComponent() {
+  public Component getComponent() {
     return component;
   }
 

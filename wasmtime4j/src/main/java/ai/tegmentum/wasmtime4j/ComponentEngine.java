@@ -29,7 +29,7 @@ public interface ComponentEngine extends Engine {
    * @throws WasmException if compilation fails due to invalid bytecode or engine issues
    * @throws IllegalArgumentException if componentBytes is null
    */
-  ComponentSimple compileComponent(byte[] componentBytes) throws WasmException;
+  Component compileComponent(byte[] componentBytes) throws WasmException;
 
   /**
    * Compiles WebAssembly component bytecode with a specific name.
@@ -40,7 +40,7 @@ public interface ComponentEngine extends Engine {
    * @throws WasmException if compilation fails
    * @throws IllegalArgumentException if componentBytes is null or name is null/empty
    */
-  ComponentSimple compileComponent(byte[] componentBytes, String name) throws WasmException;
+  Component compileComponent(byte[] componentBytes, String name) throws WasmException;
 
   /**
    * Links multiple components together.
@@ -53,7 +53,7 @@ public interface ComponentEngine extends Engine {
    * @throws WasmException if linking fails due to incompatible interfaces
    * @throws IllegalArgumentException if components is null or empty
    */
-  ComponentSimple linkComponents(List<ComponentSimple> components) throws WasmException;
+  Component linkComponents(List<Component> components) throws WasmException;
 
   /**
    * Validates component compatibility.
@@ -66,7 +66,7 @@ public interface ComponentEngine extends Engine {
    * @return a compatibility result with detailed information
    * @throws IllegalArgumentException if source or target is null
    */
-  WitCompatibilityResult checkCompatibility(ComponentSimple source, ComponentSimple target);
+  WitCompatibilityResult checkCompatibility(Component source, Component target);
 
   /**
    * Gets the component registry associated with this engine.
@@ -89,7 +89,7 @@ public interface ComponentEngine extends Engine {
    * @throws WasmException if instance creation fails
    * @throws IllegalArgumentException if component or store is null
    */
-  ComponentInstance createInstance(ComponentSimple component, Store store) throws WasmException;
+  ComponentInstance createInstance(Component component, Store store) throws WasmException;
 
   /**
    * Creates a component instance with import linking.
@@ -102,7 +102,7 @@ public interface ComponentEngine extends Engine {
    * @throws IllegalArgumentException if any parameter is null
    */
   ComponentInstance createInstance(
-      ComponentSimple component, Store store, List<ComponentSimple> imports) throws WasmException;
+      Component component, Store store, List<Component> imports) throws WasmException;
 
   /**
    * Validates a component without creating an instance.
@@ -114,7 +114,7 @@ public interface ComponentEngine extends Engine {
    * @return validation result with any issues found
    * @throws IllegalArgumentException if component is null
    */
-  ComponentValidationResult validateComponent(ComponentSimple component);
+  ComponentValidationResult validateComponent(Component component);
 
   /**
    * Gets information about WIT (WebAssembly Interface Types) support.

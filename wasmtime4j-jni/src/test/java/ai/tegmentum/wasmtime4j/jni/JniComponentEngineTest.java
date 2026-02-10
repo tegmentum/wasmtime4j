@@ -656,8 +656,8 @@ class JniComponentEngineTest {
                   m ->
                       m.getName().equals("checkCompatibility")
                           && m.getParameterCount() == 2
-                          && m.getParameterTypes()[0].getSimpleName().equals("ComponentSimple")
-                          && m.getParameterTypes()[1].getSimpleName().equals("ComponentSimple"));
+                          && m.getParameterTypes()[0].getSimpleName().equals("Component")
+                          && m.getParameterTypes()[1].getSimpleName().equals("Component"));
       assertTrue(hasMethod, "Should have checkCompatibility method");
     }
   }
@@ -704,9 +704,9 @@ class JniComponentEngineTest {
                   m ->
                       m.getName().equals("createInstance")
                           && m.getParameterCount() == 2
-                          && m.getParameterTypes()[0].getSimpleName().equals("ComponentSimple")
+                          && m.getParameterTypes()[0].getSimpleName().equals("Component")
                           && m.getParameterTypes()[1].getSimpleName().equals("Store"));
-      assertTrue(hasMethod, "Should have createInstance(ComponentSimple, Store) method");
+      assertTrue(hasMethod, "Should have createInstance(Component, Store) method");
     }
 
     @Test
@@ -718,10 +718,10 @@ class JniComponentEngineTest {
                   m ->
                       m.getName().equals("createInstance")
                           && m.getParameterCount() == 3
-                          && m.getParameterTypes()[0].getSimpleName().equals("ComponentSimple")
+                          && m.getParameterTypes()[0].getSimpleName().equals("Component")
                           && m.getParameterTypes()[1].getSimpleName().equals("Store")
                           && m.getParameterTypes()[2] == List.class);
-      assertTrue(hasMethod, "Should have createInstance(ComponentSimple, Store, List) method");
+      assertTrue(hasMethod, "Should have createInstance(Component, Store, List) method");
     }
 
     @Test
@@ -751,7 +751,7 @@ class JniComponentEngineTest {
                   m ->
                       m.getName().equals("validateComponent")
                           && m.getParameterCount() == 1
-                          && m.getParameterTypes()[0].getSimpleName().equals("ComponentSimple"));
+                          && m.getParameterTypes()[0].getSimpleName().equals("Component"));
       assertTrue(hasMethod, "Should have validateComponent method");
     }
 

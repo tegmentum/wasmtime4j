@@ -528,43 +528,6 @@ class PerformancePackageTest {
   }
 
   @Nested
-  @DisplayName("GcImpactMetrics Tests")
-  class GcImpactMetricsTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(GcImpactMetrics.class.getModifiers()),
-          "GcImpactMetrics should be final");
-    }
-
-    @Test
-    @DisplayName("should have getTotalGcCollections method")
-    void shouldHaveGetTotalGcCollectionsMethod() throws NoSuchMethodException {
-      final Method method = GcImpactMetrics.class.getMethod("getTotalGcCollections");
-      assertNotNull(method, "getTotalGcCollections method should exist");
-      assertEquals(long.class, method.getReturnType(), "Should return long");
-    }
-
-    @Test
-    @DisplayName("should have getTotalGcTime method")
-    void shouldHaveGetTotalGcTimeMethod() throws NoSuchMethodException {
-      final Method method = GcImpactMetrics.class.getMethod("getTotalGcTime");
-      assertNotNull(method, "getTotalGcTime method should exist");
-      assertEquals(Duration.class, method.getReturnType(), "Should return Duration");
-    }
-
-    @Test
-    @DisplayName("should have getGcOverheadPercentage method")
-    void shouldHaveGetGcOverheadPercentageMethod() throws NoSuchMethodException {
-      final Method method = GcImpactMetrics.class.getMethod("getGcOverheadPercentage");
-      assertNotNull(method, "getGcOverheadPercentage method should exist");
-      assertEquals(double.class, method.getReturnType(), "Should return double");
-    }
-  }
-
-  @Nested
   @DisplayName("FunctionStatistics Tests")
   class FunctionStatisticsTests {
 

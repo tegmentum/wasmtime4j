@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentEngine;
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.ComponentEngineDebugInfo;
@@ -20,7 +19,7 @@ import ai.tegmentum.wasmtime4j.ComponentMetadata;
 import ai.tegmentum.wasmtime4j.ComponentOrchestrationConfig;
 import ai.tegmentum.wasmtime4j.ComponentOrchestrator;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.EngineConfig;
@@ -72,7 +71,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   private final String engineId;
   private final ComponentEngineConfig config;
   private final JniComponent.JniComponentEngine nativeEngine;
-  private final ConcurrentMap<String, ComponentSimple> loadedComponents;
+  private final ConcurrentMap<String, Component> loadedComponents;
   private final AtomicLong componentIdCounter;
   private final WasmRuntime runtime;
   private ComponentRegistry registry;
@@ -294,7 +293,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public ComponentSimple compileComponent(final byte[] componentBytes) throws WasmException {
+  public Component compileComponent(final byte[] componentBytes) throws WasmException {
     JniValidation.requireNonEmpty(componentBytes, "componentBytes");
     ensureNotClosed();
 
@@ -302,7 +301,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       final JniComponent.JniComponentHandle componentHandle =
           nativeEngine.loadComponentFromBytes(componentBytes);
       final String componentId = generateComponentId();
-      final ComponentSimple component = new JniComponentImpl(componentHandle, this);
+      final Component component = new JniComponentImpl(componentHandle, this);
       loadedComponents.put(componentId, component);
       return component;
     } catch (final Exception e) {
@@ -311,7 +310,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public ComponentSimple compileComponent(final byte[] componentBytes, final String name)
+  public Component compileComponent(final byte[] componentBytes, final String name)
       throws WasmException {
     JniValidation.requireNonEmpty(componentBytes, "componentBytes");
     JniValidation.requireNonEmpty(name, "name");
@@ -320,7 +319,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     try {
       final JniComponent.JniComponentHandle componentHandle =
           nativeEngine.loadComponentFromBytes(componentBytes);
-      final ComponentSimple component = new JniComponentImpl(componentHandle, this);
+      final Component component = new JniComponentImpl(componentHandle, this);
       loadedComponents.put(name, component);
       return component;
     } catch (final Exception e) {
@@ -414,7 +413,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public ComponentSimple linkComponents(final List<ComponentSimple> components)
+  public Component linkComponents(final List<Component> components)
       throws WasmException {
     JniValidation.requireNonNull(components, "components");
     if (components.isEmpty()) {
@@ -445,7 +444,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   public WitCompatibilityResult checkCompatibility(
-      final ComponentSimple source, final ComponentSimple target) {
+      final Component source, final Component target) {
     JniValidation.requireNonNull(source, "source");
     JniValidation.requireNonNull(target, "target");
 
@@ -494,7 +493,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public ComponentInstance createInstance(final ComponentSimple component, final Store store)
+  public ComponentInstance createInstance(final Component component, final Store store)
       throws WasmException {
     JniValidation.requireNonNull(component, "component");
     JniValidation.requireNonNull(store, "store");
@@ -510,7 +509,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   public ComponentInstance createInstance(
-      final ComponentSimple component, final Store store, final List<ComponentSimple> imports)
+      final Component component, final Store store, final List<Component> imports)
       throws WasmException {
     JniValidation.requireNonNull(component, "component");
     JniValidation.requireNonNull(store, "store");
@@ -522,7 +521,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       final Set<String> componentImports = component.getImportedInterfaces();
       final Set<String> providedInterfaces = new HashSet<>();
 
-      for (final ComponentSimple importComponent : imports) {
+      for (final Component importComponent : imports) {
         providedInterfaces.addAll(importComponent.getExportedInterfaces());
       }
 
@@ -546,7 +545,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public ComponentValidationResult validateComponent(final ComponentSimple component) {
+  public ComponentValidationResult validateComponent(final Component component) {
     JniValidation.requireNonNull(component, "component");
 
     try {

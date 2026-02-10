@@ -37,7 +37,6 @@ import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentLifecycleManager;
 import ai.tegmentum.wasmtime4j.ComponentLinkInfo;
 import ai.tegmentum.wasmtime4j.ComponentLinkingConfig;
-import ai.tegmentum.wasmtime4j.ComponentLinkingStatistics;
 import ai.tegmentum.wasmtime4j.ComponentLoadConditions;
 import ai.tegmentum.wasmtime4j.ComponentLoadConfig;
 import ai.tegmentum.wasmtime4j.ComponentMetrics;
@@ -795,20 +794,6 @@ public class ComponentModelIntegrationTest {
       LOGGER.info("ComponentRegistryStatistics class verified");
     }
 
-    @Test
-    @DisplayName("Should verify ComponentLinkingStatistics is a class")
-    void shouldVerifyComponentLinkingStatisticsIsClass() {
-      LOGGER.info("Testing ComponentLinkingStatistics class");
-
-      assertFalse(
-          ComponentLinkingStatistics.class.isInterface(),
-          "ComponentLinkingStatistics should be a class");
-      assertFalse(
-          ComponentLinkingStatistics.class.isEnum(),
-          "ComponentLinkingStatistics should not be an enum");
-
-      LOGGER.info("ComponentLinkingStatistics class verified");
-    }
   }
 
   @Nested

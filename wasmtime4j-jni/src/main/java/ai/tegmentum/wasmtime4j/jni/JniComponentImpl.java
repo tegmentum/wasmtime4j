@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentAuditLog;
 import ai.tegmentum.wasmtime4j.ComponentBackup;
 import ai.tegmentum.wasmtime4j.ComponentBackupConfig;
@@ -20,7 +19,7 @@ import ai.tegmentum.wasmtime4j.ComponentResourceLimits;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentRestoreOptions;
 import ai.tegmentum.wasmtime4j.ComponentSecurityPolicy;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentStateTransitionConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
@@ -226,7 +225,7 @@ public final class JniComponentImpl implements Component {
    * @throws WasmException if resolution fails
    */
   @Override
-  public Set<ComponentSimple> resolveDependencies(final ComponentRegistry registry)
+  public Set<Component> resolveDependencies(final ComponentRegistry registry)
       throws WasmException {
     JniValidation.requireNonNull(registry, "registry");
     ensureValid();
@@ -242,11 +241,9 @@ public final class JniComponentImpl implements Component {
    * @return future that completes when hot-swap is done
    * @throws WasmException if hot-swap fails
    */
-  @SuppressFBWarnings(
-      value = "SIO_SUPERFLUOUS_INSTANCEOF",
-      justification = "Component is an interface with multiple implementations, check is needed")
   public CompletableFuture<Void> hotSwap(
-      final Component newComponent, final HotSwapStrategy migrationStrategy) throws WasmException {
+      final Component newComponent, final HotSwapStrategy migrationStrategy)
+      throws WasmException {
     JniValidation.requireNonNull(newComponent, "newComponent");
     JniValidation.requireNonNull(migrationStrategy, "migrationStrategy");
     ensureValid();
@@ -262,12 +259,9 @@ public final class JniComponentImpl implements Component {
                     + migrationStrategy.getName());
 
             // Validate compatibility before swap
-            if (newComponent instanceof ComponentSimple) {
-              final ComponentCompatibility compatibility =
-                  checkCompatibility((ComponentSimple) newComponent);
-              if (!compatibility.isCompatible()) {
-                throw new RuntimeException("Components are not compatible: " + compatibility);
-              }
+            final ComponentCompatibility compatibility = checkCompatibility(newComponent);
+            if (!compatibility.isCompatible()) {
+              throw new RuntimeException("Components are not compatible: " + compatibility);
             }
 
             // In a real implementation, this would:
@@ -305,7 +299,7 @@ public final class JniComponentImpl implements Component {
    * @throws WasmException if check fails
    */
   @Override
-  public ComponentCompatibility checkCompatibility(final ComponentSimple other)
+  public ComponentCompatibility checkCompatibility(final Component other)
       throws WasmException {
     JniValidation.requireNonNull(other, "other");
     ensureValid();
@@ -336,7 +330,7 @@ public final class JniComponentImpl implements Component {
   }
 
   @Override
-  public WitCompatibilityResult checkWitCompatibility(final ComponentSimple other)
+  public WitCompatibilityResult checkWitCompatibility(final Component other)
       throws WasmException {
     JniValidation.requireNonNull(other, "other");
     ensureValid();

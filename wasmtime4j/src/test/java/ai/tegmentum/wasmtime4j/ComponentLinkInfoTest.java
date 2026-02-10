@@ -58,11 +58,11 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("should create instance with all parameters")
     void shouldCreateInstanceWithAllParameters() {
-      final ComponentSimple linkedComponent = createMockComponentSimple("linked-comp", true);
-      final List<ComponentSimple> sourceComponents =
+      final Component linkedComponent = createMockComponent("linked-comp", true);
+      final List<Component> sourceComponents =
           List.of(
-              createMockComponentSimple("source1", true),
-              createMockComponentSimple("source2", true));
+              createMockComponent("source1", true),
+              createMockComponent("source2", true));
 
       final var linkInfo =
           new ComponentLinkInfo("link-123", sourceComponents, linkedComponent, true);
@@ -75,7 +75,7 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("should handle null link ID")
     void shouldHandleNullLinkId() {
-      final List<ComponentSimple> sourceComponents = List.of();
+      final List<Component> sourceComponents = List.of();
       final var linkInfo = new ComponentLinkInfo(null, sourceComponents, null, false);
 
       assertEquals("unknown", linkInfo.getLinkId(), "Null link ID should default to 'unknown'");
@@ -97,11 +97,11 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("getSourceComponents should return unmodifiable list")
     void getSourceComponentsShouldReturnUnmodifiableList() {
-      final List<ComponentSimple> sourceComponents =
-          List.of(createMockComponentSimple("source", true));
+      final List<Component> sourceComponents =
+          List.of(createMockComponent("source", true));
       final var linkInfo = new ComponentLinkInfo("link", sourceComponents, null, false);
 
-      final List<ComponentSimple> result = linkInfo.getSourceComponents();
+      final List<Component> result = linkInfo.getSourceComponents();
       assertNotNull(result, "Should return list");
       assertEquals(1, result.size(), "Should have 1 source component");
     }
@@ -109,7 +109,7 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("getLinkedComponent should return correct value")
     void getLinkedComponentShouldReturnCorrectValue() {
-      final ComponentSimple linkedComponent = createMockComponentSimple("linked", true);
+      final Component linkedComponent = createMockComponent("linked", true);
       final var linkInfo = new ComponentLinkInfo("link", List.of(), linkedComponent, true);
 
       assertEquals(
@@ -119,11 +119,11 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("getSourceComponentCount should return correct count")
     void getSourceComponentCountShouldReturnCorrectCount() {
-      final List<ComponentSimple> sourceComponents =
+      final List<Component> sourceComponents =
           List.of(
-              createMockComponentSimple("s1", true),
-              createMockComponentSimple("s2", true),
-              createMockComponentSimple("s3", true));
+              createMockComponent("s1", true),
+              createMockComponent("s2", true),
+              createMockComponent("s3", true));
       final var linkInfo = new ComponentLinkInfo("link", sourceComponents, null, false);
 
       assertEquals(3, linkInfo.getSourceComponentCount(), "Should return 3");
@@ -137,7 +137,7 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("should return true when active and linked component is valid")
     void shouldReturnTrueWhenActiveAndLinkedComponentIsValid() {
-      final ComponentSimple linkedComponent = createMockComponentSimple("linked", true);
+      final Component linkedComponent = createMockComponent("linked", true);
       final var linkInfo = new ComponentLinkInfo("link", List.of(), linkedComponent, true);
 
       assertTrue(linkInfo.isActive(), "Should be active");
@@ -146,7 +146,7 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("should return false when not active")
     void shouldReturnFalseWhenNotActive() {
-      final ComponentSimple linkedComponent = createMockComponentSimple("linked", true);
+      final Component linkedComponent = createMockComponent("linked", true);
       final var linkInfo = new ComponentLinkInfo("link", List.of(), linkedComponent, false);
 
       assertFalse(linkInfo.isActive(), "Should not be active when active flag is false");
@@ -163,7 +163,7 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("should return false when linked component is not valid")
     void shouldReturnFalseWhenLinkedComponentIsNotValid() {
-      final ComponentSimple linkedComponent = createMockComponentSimple("linked", false);
+      final Component linkedComponent = createMockComponent("linked", false);
       final var linkInfo = new ComponentLinkInfo("link", List.of(), linkedComponent, true);
 
       assertFalse(linkInfo.isActive(), "Should not be active when linked component is not valid");
@@ -186,13 +186,13 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("should handle many source components")
     void shouldHandleManySourceComponents() {
-      final List<ComponentSimple> sourceComponents =
+      final List<Component> sourceComponents =
           List.of(
-              createMockComponentSimple("s1", true),
-              createMockComponentSimple("s2", true),
-              createMockComponentSimple("s3", true),
-              createMockComponentSimple("s4", true),
-              createMockComponentSimple("s5", true));
+              createMockComponent("s1", true),
+              createMockComponent("s2", true),
+              createMockComponent("s3", true),
+              createMockComponent("s4", true),
+              createMockComponent("s5", true));
       final var linkInfo = new ComponentLinkInfo("link", sourceComponents, null, false);
 
       assertEquals(5, linkInfo.getSourceComponentCount(), "Should have 5 source components");
@@ -206,7 +206,7 @@ class ComponentLinkInfoTest {
     @Test
     @DisplayName("toString should return formatted string")
     void toStringShouldReturnFormattedString() {
-      final List<ComponentSimple> sourceComponents = List.of(createMockComponentSimple("s1", true));
+      final List<Component> sourceComponents = List.of(createMockComponent("s1", true));
       final var linkInfo = new ComponentLinkInfo("my-link", sourceComponents, null, true);
 
       final String result = linkInfo.toString();
@@ -218,14 +218,14 @@ class ComponentLinkInfoTest {
   }
 
   /**
-   * Creates a mock ComponentSimple for testing.
+   * Creates a mock Component for testing.
    *
    * @param id the component ID
    * @param valid whether the component is valid
-   * @return a mock ComponentSimple
+   * @return a mock Component
    */
-  private ComponentSimple createMockComponentSimple(final String id, final boolean valid) {
-    return new ComponentSimple() {
+  private Component createMockComponent(final String id, final boolean valid) {
+    return new Component() {
       @Override
       public String getId() {
         return id;
@@ -292,12 +292,12 @@ class ComponentLinkInfoTest {
       }
 
       @Override
-      public java.util.Set<ComponentSimple> resolveDependencies(final ComponentRegistry registry) {
+      public java.util.Set<Component> resolveDependencies(final ComponentRegistry registry) {
         return java.util.Set.of();
       }
 
       @Override
-      public ComponentCompatibility checkCompatibility(final ComponentSimple other) {
+      public ComponentCompatibility checkCompatibility(final Component other) {
         return null;
       }
 
@@ -307,7 +307,7 @@ class ComponentLinkInfoTest {
       }
 
       @Override
-      public WitCompatibilityResult checkWitCompatibility(final ComponentSimple other) {
+      public WitCompatibilityResult checkWitCompatibility(final Component other) {
         return null;
       }
 

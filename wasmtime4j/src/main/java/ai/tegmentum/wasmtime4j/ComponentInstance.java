@@ -52,7 +52,7 @@ public interface ComponentInstance extends AutoCloseable {
    *
    * @return the parent component
    */
-  ComponentSimple getComponent();
+  Component getComponent();
 
   /**
    * Gets the current state of this component instance.

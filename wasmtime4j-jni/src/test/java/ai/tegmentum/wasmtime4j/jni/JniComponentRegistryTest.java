@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentRegistryStatistics;
 import ai.tegmentum.wasmtime4j.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
 import java.lang.reflect.Constructor;
@@ -97,18 +97,18 @@ class JniComponentRegistryTest {
   class MethodSignatureTests {
 
     @Test
-    @DisplayName("register(ComponentSimple) method should exist")
+    @DisplayName("register(Component) method should exist")
     void registerMethodShouldExist() throws NoSuchMethodException {
-      Method method = JniComponentRegistry.class.getMethod("register", ComponentSimple.class);
+      Method method = JniComponentRegistry.class.getMethod("register", Component.class);
       assertNotNull(method, "register method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("register(String, ComponentSimple) method should exist")
+    @DisplayName("register(String, Component) method should exist")
     void registerWithNameMethodShouldExist() throws NoSuchMethodException {
       Method method =
-          JniComponentRegistry.class.getMethod("register", String.class, ComponentSimple.class);
+          JniComponentRegistry.class.getMethod("register", String.class, Component.class);
       assertNotNull(method, "register with name method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
@@ -181,7 +181,7 @@ class JniComponentRegistryTest {
     @DisplayName("resolveDependencies method should exist and return Set")
     void resolveDependenciesMethodShouldExist() throws NoSuchMethodException {
       Method method =
-          JniComponentRegistry.class.getMethod("resolveDependencies", ComponentSimple.class);
+          JniComponentRegistry.class.getMethod("resolveDependencies", Component.class);
       assertNotNull(method, "resolveDependencies method should exist");
       assertEquals(Set.class, method.getReturnType(), "Should return Set");
     }
@@ -190,7 +190,7 @@ class JniComponentRegistryTest {
     @DisplayName("validateDependencies method should exist and return ComponentValidationResult")
     void validateDependenciesMethodShouldExist() throws NoSuchMethodException {
       Method method =
-          JniComponentRegistry.class.getMethod("validateDependencies", ComponentSimple.class);
+          JniComponentRegistry.class.getMethod("validateDependencies", Component.class);
       assertNotNull(method, "validateDependencies method should exist");
       assertEquals(
           ComponentValidationResult.class,
@@ -301,7 +301,7 @@ class JniComponentRegistryTest {
     void shouldHaveRollbackRegistrationMethod() throws NoSuchMethodException {
       Method method =
           JniComponentRegistry.class.getDeclaredMethod(
-              "rollbackRegistration", ComponentSimple.class);
+              "rollbackRegistration", Component.class);
       assertNotNull(method, "rollbackRegistration method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -312,7 +312,7 @@ class JniComponentRegistryTest {
     void shouldHaveHasCircularDependencyMethod() throws NoSuchMethodException {
       Method method =
           JniComponentRegistry.class.getDeclaredMethod(
-              "hasCircularDependency", ComponentSimple.class, Set.class);
+              "hasCircularDependency", Component.class, Set.class);
       assertNotNull(method, "hasCircularDependency method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
@@ -323,7 +323,7 @@ class JniComponentRegistryTest {
     void shouldHaveHasCircularDependencyDfsMethod() throws NoSuchMethodException {
       Method method =
           JniComponentRegistry.class.getDeclaredMethod(
-              "hasCircularDependencyDFS", ComponentSimple.class, Set.class, Set.class, Set.class);
+              "hasCircularDependencyDFS", Component.class, Set.class, Set.class, Set.class);
       assertNotNull(method, "hasCircularDependencyDFS method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
@@ -334,7 +334,7 @@ class JniComponentRegistryTest {
     void shouldHaveMatchesCriteriaMethod() throws NoSuchMethodException {
       Method method =
           JniComponentRegistry.class.getDeclaredMethod(
-              "matchesCriteria", ComponentSimple.class, ComponentSearchCriteria.class);
+              "matchesCriteria", Component.class, ComponentSearchCriteria.class);
       assertNotNull(method, "matchesCriteria method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
@@ -344,7 +344,7 @@ class JniComponentRegistryTest {
     @DisplayName("Should have getComponentName private method")
     void shouldHaveGetComponentNameMethod() throws NoSuchMethodException {
       Method method =
-          JniComponentRegistry.class.getDeclaredMethod("getComponentName", ComponentSimple.class);
+          JniComponentRegistry.class.getDeclaredMethod("getComponentName", Component.class);
       assertNotNull(method, "getComponentName method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
       assertEquals(String.class, method.getReturnType(), "Should return String");

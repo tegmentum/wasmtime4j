@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
 import java.io.ByteArrayOutputStream;

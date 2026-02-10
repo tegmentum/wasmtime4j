@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentRegistryStatistics;
 import ai.tegmentum.wasmtime4j.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
 import java.lang.reflect.Method;
@@ -72,19 +72,19 @@ class PanamaComponentRegistryTest {
   class RegistrationMethodTests {
 
     @Test
-    @DisplayName("should have register method with ComponentSimple")
+    @DisplayName("should have register method with Component")
     void shouldHaveRegisterMethodWithComponent() throws NoSuchMethodException {
       final Method method =
-          PanamaComponentRegistry.class.getMethod("register", ComponentSimple.class);
+          PanamaComponentRegistry.class.getMethod("register", Component.class);
       assertNotNull(method, "register method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
     @Test
-    @DisplayName("should have register method with name and ComponentSimple")
+    @DisplayName("should have register method with name and Component")
     void shouldHaveRegisterMethodWithNameAndComponent() throws NoSuchMethodException {
       final Method method =
-          PanamaComponentRegistry.class.getMethod("register", String.class, ComponentSimple.class);
+          PanamaComponentRegistry.class.getMethod("register", String.class, Component.class);
       assertNotNull(method, "register method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
@@ -168,7 +168,7 @@ class PanamaComponentRegistryTest {
     @DisplayName("should have resolveDependencies method")
     void shouldHaveResolveDependenciesMethod() throws NoSuchMethodException {
       final Method method =
-          PanamaComponentRegistry.class.getMethod("resolveDependencies", ComponentSimple.class);
+          PanamaComponentRegistry.class.getMethod("resolveDependencies", Component.class);
       assertNotNull(method, "resolveDependencies method should exist");
       assertEquals(Set.class, method.getReturnType(), "Should return Set");
     }
@@ -177,7 +177,7 @@ class PanamaComponentRegistryTest {
     @DisplayName("should have validateDependencies method")
     void shouldHaveValidateDependenciesMethod() throws NoSuchMethodException {
       final Method method =
-          PanamaComponentRegistry.class.getMethod("validateDependencies", ComponentSimple.class);
+          PanamaComponentRegistry.class.getMethod("validateDependencies", Component.class);
       assertNotNull(method, "validateDependencies method should exist");
       assertEquals(
           ComponentValidationResult.class,

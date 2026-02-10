@@ -165,7 +165,7 @@ public interface ComponentLinker<T> extends Closeable {
    * @throws WasmException if linking fails
    * @throws IllegalArgumentException if any parameter is null
    */
-  ComponentInstance linkComponent(Store store, ComponentSimple component) throws WasmException;
+  ComponentInstance linkComponent(Store store, Component component) throws WasmException;
 
   /**
    * Instantiates a WebAssembly component using this linker to resolve imports.
@@ -179,7 +179,7 @@ public interface ComponentLinker<T> extends Closeable {
    * @throws WasmException if instantiation fails or imports cannot be satisfied
    * @throws IllegalArgumentException if store or component is null
    */
-  ComponentInstance instantiate(Store store, ComponentSimple component) throws WasmException;
+  ComponentInstance instantiate(Store store, Component component) throws WasmException;
 
   /**
    * Enables WASI Preview 2 support for components instantiated through this linker.
@@ -259,7 +259,7 @@ public interface ComponentLinker<T> extends Closeable {
    * @return validation result with detailed information about any missing imports
    * @throws IllegalArgumentException if component is null
    */
-  ComponentImportValidation validateImports(ComponentSimple component);
+  ComponentImportValidation validateImports(Component component);
 
   /**
    * Creates an alias from one interface to another.

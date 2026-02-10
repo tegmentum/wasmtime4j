@@ -24,7 +24,7 @@ import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -123,7 +123,7 @@ class PanamaComponentInstanceTest {
       Field field = PanamaComponentInstance.class.getDeclaredField("component");
       assertNotNull(field, "component field should exist");
       assertEquals(
-          PanamaComponentSimple.class, field.getType(), "Should be PanamaComponentSimple type");
+          PanamaComponentImpl.class, field.getType(), "Should be PanamaComponentImpl type");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "Should be private");
       assertTrue(Modifier.isFinal(field.getModifiers()), "Should be final");
     }
@@ -158,7 +158,7 @@ class PanamaComponentInstanceTest {
     void shouldHaveConstructorWith4Parameters() throws NoSuchMethodException {
       Constructor<?> constructor =
           PanamaComponentInstance.class.getDeclaredConstructor(
-              MemorySegment.class, long.class, PanamaComponentSimple.class, PanamaStore.class);
+              MemorySegment.class, long.class, PanamaComponent.class, PanamaStore.class);
       assertNotNull(constructor, "4-param constructor should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
@@ -173,7 +173,7 @@ class PanamaComponentInstanceTest {
     void shouldHaveConstructorWith3Parameters() throws NoSuchMethodException {
       Constructor<?> constructor =
           PanamaComponentInstance.class.getDeclaredConstructor(
-              MemorySegment.class, PanamaComponentSimple.class, PanamaStore.class);
+              MemorySegment.class, PanamaComponent.class, PanamaStore.class);
       assertNotNull(constructor, "3-param constructor should exist");
       int modifiers = constructor.getModifiers();
       assertTrue(
@@ -205,11 +205,11 @@ class PanamaComponentInstanceTest {
     }
 
     @Test
-    @DisplayName("getComponent should exist and return ComponentSimple")
+    @DisplayName("getComponent should exist and return Component")
     void getComponentShouldExist() throws NoSuchMethodException {
       Method method = PanamaComponentInstance.class.getMethod("getComponent");
       assertNotNull(method, "getComponent method should exist");
-      assertEquals(ComponentSimple.class, method.getReturnType(), "Should return ComponentSimple");
+      assertEquals(Component.class, method.getReturnType(), "Should return Component");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
 

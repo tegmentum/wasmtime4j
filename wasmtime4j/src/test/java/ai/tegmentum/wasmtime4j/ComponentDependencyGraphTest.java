@@ -362,12 +362,12 @@ class ComponentDependencyGraphTest {
     }
 
     @Override
-    public java.util.Set<ComponentSimple> resolveDependencies(final ComponentRegistry registry) {
+    public java.util.Set<Component> resolveDependencies(final ComponentRegistry registry) {
       return java.util.Collections.emptySet();
     }
 
     @Override
-    public ComponentCompatibility checkCompatibility(final ComponentSimple other) {
+    public ComponentCompatibility checkCompatibility(final Component other) {
       return null;
     }
 
@@ -377,7 +377,7 @@ class ComponentDependencyGraphTest {
     }
 
     @Override
-    public WitCompatibilityResult checkWitCompatibility(final ComponentSimple other) {
+    public WitCompatibilityResult checkWitCompatibility(final Component other) {
       return null;
     }
 

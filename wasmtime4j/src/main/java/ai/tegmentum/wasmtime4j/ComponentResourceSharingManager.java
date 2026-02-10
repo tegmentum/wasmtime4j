@@ -97,7 +97,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @throws WasmException if allocation fails
    */
   CompletableFuture<ResourceAllocation> allocateResources(
-      ComponentSimple component, String poolName, ResourceAllocationRequest allocationRequest)
+      Component component, String poolName, ResourceAllocationRequest allocationRequest)
       throws WasmException;
 
   /**
@@ -118,7 +118,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @throws WasmException if isolation setup fails
    */
   ResourceIsolationContext setupResourceIsolation(
-      ComponentSimple component, ResourceIsolationConfig isolationConfig) throws WasmException;
+      Component component, ResourceIsolationConfig isolationConfig) throws WasmException;
 
   /**
    * Removes resource isolation for a component.
@@ -126,7 +126,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @param component the component to remove isolation from
    * @throws WasmException if isolation removal fails
    */
-  void removeResourceIsolation(ComponentSimple component) throws WasmException;
+  void removeResourceIsolation(Component component) throws WasmException;
 
   /**
    * Sets resource quotas for a component.
@@ -135,7 +135,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @param quotas the resource quotas to apply
    * @throws WasmException if quota setting fails
    */
-  void setResourceQuotas(ComponentSimple component, ResourceQuotas quotas) throws WasmException;
+  void setResourceQuotas(Component component, ResourceQuotas quotas) throws WasmException;
 
   /**
    * Gets the current resource quotas for a component.
@@ -143,7 +143,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @param component the component to check
    * @return the component's resource quotas
    */
-  Optional<ResourceQuotas> getResourceQuotas(ComponentSimple component);
+  Optional<ResourceQuotas> getResourceQuotas(Component component);
 
   /**
    * Updates resource quotas for a component.
@@ -152,7 +152,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @param quotaUpdates the quota updates to apply
    * @throws WasmException if quota update fails
    */
-  void updateResourceQuotas(ComponentSimple component, ResourceQuotaUpdates quotaUpdates)
+  void updateResourceQuotas(Component component, ResourceQuotaUpdates quotaUpdates)
       throws WasmException;
 
   /**
@@ -161,7 +161,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @param component the component to check
    * @return the component's current resource usage
    */
-  ResourceUsage getResourceUsage(ComponentSimple component);
+  ResourceUsage getResourceUsage(Component component);
 
   /**
    * Sets up cross-component resource communication.
@@ -173,8 +173,8 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @throws WasmException if communication setup fails
    */
   ResourceCommunicationChannel setupResourceCommunication(
-      ComponentSimple sourceComponent,
-      ComponentSimple targetComponent,
+      Component sourceComponent,
+      Component targetComponent,
       ResourceCommunicationConfig communicationConfig)
       throws WasmException;
 
@@ -195,7 +195,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @throws WasmException if monitoring setup fails
    */
   ResourceMonitor startResourceMonitoring(
-      ComponentSimple component, ResourceMonitoringConfig monitoringConfig) throws WasmException;
+      Component component, ResourceMonitoringConfig monitoringConfig) throws WasmException;
 
   /**
    * Stops resource monitoring for a component.
@@ -224,7 +224,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @throws WasmException if snapshot creation fails
    */
   ResourceSnapshot createResourceSnapshot(
-      ComponentSimple component, ResourceSnapshotConfig snapshotConfig) throws WasmException;
+      Component component, ResourceSnapshotConfig snapshotConfig) throws WasmException;
 
   /**
    * Restores resources from a snapshot.
@@ -235,7 +235,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
    * @throws WasmException if restoration fails
    */
   CompletableFuture<Void> restoreResourceSnapshot(
-      ComponentSimple component, ResourceSnapshot snapshot) throws WasmException;
+      Component component, ResourceSnapshot snapshot) throws WasmException;
 
   /**
    * Gets all active resource pools.
@@ -303,7 +303,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
   interface ResourceAllocation {
     String getAllocationId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     String getPoolName();
 
@@ -326,7 +326,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
   interface ResourceIsolationContext {
     String getContextId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     ResourceIsolationLevel getIsolationLevel();
 
@@ -367,7 +367,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
 
   /** Resource usage information for a component. */
   interface ResourceUsage {
-    ComponentSimple getComponent();
+    Component getComponent();
 
     Instant getMeasurementTime();
 
@@ -403,9 +403,9 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
   interface ResourceCommunicationChannel {
     String getChannelId();
 
-    ComponentSimple getSourceComponent();
+    Component getSourceComponent();
 
-    ComponentSimple getTargetComponent();
+    Component getTargetComponent();
 
     ResourceCommunicationType getType();
 
@@ -422,7 +422,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
   interface ResourceMonitor {
     String getMonitorId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     ResourceMonitoringConfig getConfiguration();
 
@@ -466,7 +466,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
   interface ResourceSnapshot {
     String getSnapshotId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     Instant getCreationTime();
 
@@ -526,15 +526,15 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
     void onResourceDeallocated(ResourceAllocation allocation);
 
     void onResourceThresholdExceeded(
-        ComponentSimple component, ResourceType resourceType, long currentUsage, long threshold);
+        Component component, ResourceType resourceType, long currentUsage, long threshold);
 
-    void onResourceQuotaExceeded(ComponentSimple component, QuotaViolation violation);
+    void onResourceQuotaExceeded(Component component, QuotaViolation violation);
 
     void onResourcePoolCreated(ResourcePool pool);
 
     void onResourcePoolDestroyed(String poolName);
 
-    void onResourceIsolationSetup(ComponentSimple component, ResourceIsolationContext context);
+    void onResourceIsolationSetup(Component component, ResourceIsolationContext context);
 
     void onResourceCommunicationEstablished(ResourceCommunicationChannel channel);
   }
@@ -753,7 +753,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
 
     Instant getCreationTime();
 
-    ComponentSimple getSourceComponent();
+    Component getSourceComponent();
 
     Map<String, Object> getProperties();
 
@@ -779,7 +779,7 @@ public interface ComponentResourceSharingManager extends AutoCloseable {
 
   /** Statistics for resource monitoring activity. */
   interface ResourceMonitoringStatistics {
-    ComponentSimple getComponent();
+    Component getComponent();
 
     Duration getMonitoringDuration();
 

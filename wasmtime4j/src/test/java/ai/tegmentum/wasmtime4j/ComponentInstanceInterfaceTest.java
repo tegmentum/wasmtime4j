@@ -98,7 +98,7 @@ class ComponentInstanceInterfaceTest {
       Method method = ComponentInstance.class.getMethod("getComponent");
       assertNotNull(method, "getComponent method should exist");
       assertEquals(
-          ComponentSimple.class, method.getReturnType(), "Return type should be ComponentSimple");
+          Component.class, method.getReturnType(), "Return type should be Component");
       assertEquals(0, method.getParameterCount(), "getComponent should have no parameters");
     }
 
@@ -482,13 +482,13 @@ class ComponentInstanceInterfaceTest {
     }
 
     @Test
-    @DisplayName("getComponent should return ComponentSimple type")
-    void getComponentShouldReturnComponentSimple() throws NoSuchMethodException {
+    @DisplayName("getComponent should return Component type")
+    void getComponentShouldReturnComponent() throws NoSuchMethodException {
       Method method = ComponentInstance.class.getMethod("getComponent");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getReturnType(),
-          "getComponent should return ComponentSimple");
+          "getComponent should return Component");
     }
 
     @Test

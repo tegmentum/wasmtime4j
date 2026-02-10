@@ -4,6 +4,7 @@
 //! to access WASI-Threads functionality for spawning WebAssembly threads.
 //!
 //! All functions use C calling conventions and handle memory management appropriately.
+//! All FFI functions are wrapped with catch_unwind to prevent panics from crashing the JVM.
 //!
 //! Note: WASI-Threads requires WASI Preview 1 and is not compatible with WASI 0.2.
 //! A trap or WASI exit in one thread will exit the entire process.
@@ -12,6 +13,7 @@ use std::os::raw::{c_int, c_void};
 use std::ptr;
 
 use crate::wasi_threads::WasiThreadsContext;
+use crate::{ffi_boundary_i32, ffi_boundary_ptr, ffi_boundary_void};
 
 /// Check if WASI-Threads is supported in this build
 ///
@@ -19,15 +21,16 @@ use crate::wasi_threads::WasiThreadsContext;
 /// 1 if supported, 0 if not supported
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_wasi_threads_is_supported() -> c_int {
-    // WASI-Threads support is available if the feature is compiled in
-    #[cfg(feature = "wasi-threads")]
-    {
-        1
-    }
-    #[cfg(not(feature = "wasi-threads"))]
-    {
-        0
-    }
+    ffi_boundary_i32!({
+        #[cfg(feature = "wasi-threads")]
+        {
+            Ok(1)
+        }
+        #[cfg(not(feature = "wasi-threads"))]
+        {
+            Ok(0)
+        }
+    })
 }
 
 /// Create a new WASI-Threads context
@@ -48,18 +51,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_threads_context_create(
     linker_handle: *mut c_void,
     store_handle: *mut c_void,
 ) -> *mut c_void {
-    if module_handle.is_null() || linker_handle.is_null() || store_handle.is_null() {
-        return ptr::null_mut();
-    }
-
-    // Create a new WasiThreadsContext
-    match WasiThreadsContext::new() {
-        Ok(context) => {
-            let boxed = Box::new(context);
-            Box::into_raw(boxed) as *mut c_void
+    ffi_boundary_ptr!({
+        if module_handle.is_null() || linker_handle.is_null() || store_handle.is_null() {
+            return ptr::null_mut();
         }
-        Err(_) => ptr::null_mut(),
-    }
+
+        match WasiThreadsContext::new() {
+            Ok(context) => {
+                let boxed = Box::new(context);
+                Box::into_raw(boxed) as *mut c_void
+            }
+            Err(_) => ptr::null_mut(),
+        }
+    })
 }
 
 /// Close and free a WASI-Threads context
@@ -72,11 +76,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_threads_context_create(
 /// and must not be used after this call.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_wasi_threads_context_close(context_handle: *mut c_void) {
-    if !context_handle.is_null() {
-        unsafe {
-            let _ = Box::from_raw(context_handle as *mut WasiThreadsContext);
+    ffi_boundary_void!({
+        if !context_handle.is_null() {
+            unsafe {
+                let _ = Box::from_raw(context_handle as *mut WasiThreadsContext);
+            }
         }
-    }
+    })
 }
 
 /// Spawn a new thread using WASI-Threads
@@ -92,22 +98,24 @@ pub extern "C" fn wasmtime4j_panama_wasi_threads_spawn(
     context_handle: *mut c_void,
     thread_start_arg: c_int,
 ) -> c_int {
-    if context_handle.is_null() {
-        return -1;
-    }
-
-    let context = unsafe {
-        let ptr = context_handle as *mut WasiThreadsContext;
-        if ptr.is_null() {
-            return -1;
+    ffi_boundary_i32!({
+        if context_handle.is_null() {
+            return Ok(-1);
         }
-        &mut *ptr
-    };
 
-    match context.spawn_thread(thread_start_arg as u32) {
-        Ok(thread_id) => thread_id as c_int,
-        Err(_) => -1,
-    }
+        let context = unsafe {
+            let ptr = context_handle as *mut WasiThreadsContext;
+            if ptr.is_null() {
+                return Ok(-1);
+            }
+            &mut *ptr
+        };
+
+        match context.spawn_thread(thread_start_arg as u32) {
+            Ok(thread_id) => Ok(thread_id as c_int),
+            Err(_) => Ok(-1),
+        }
+    })
 }
 
 /// Add WASI-Threads thread-spawn function to linker
@@ -125,12 +133,14 @@ pub extern "C" fn wasmtime4j_panama_wasi_threads_add_to_linker(
     store_handle: *mut c_void,
     module_handle: *mut c_void,
 ) -> c_int {
-    if linker_handle.is_null() || store_handle.is_null() || module_handle.is_null() {
-        return -1;
-    }
+    ffi_boundary_i32!({
+        if linker_handle.is_null() || store_handle.is_null() || module_handle.is_null() {
+            return Ok(-1);
+        }
 
-    // This would require access to the actual Linker, Store, and Module types
-    // For now, return success as the actual implementation would depend on
-    // how the wasmtime-wasi-threads crate is integrated
-    0
+        // This would require access to the actual Linker, Store, and Module types
+        // For now, return success as the actual implementation would depend on
+        // how the wasmtime-wasi-threads crate is integrated
+        Ok(0)
+    })
 }

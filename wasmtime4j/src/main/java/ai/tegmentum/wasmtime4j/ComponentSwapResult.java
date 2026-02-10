@@ -34,8 +34,8 @@ import java.util.Optional;
 public final class ComponentSwapResult {
 
   private final SwapStatus status;
-  private final ComponentSimple oldComponent;
-  private final ComponentSimple newComponent;
+  private final Component oldComponent;
+  private final Component newComponent;
   private final Instant startTime;
   private final Instant endTime;
   private final Duration totalTime;
@@ -44,7 +44,7 @@ public final class ComponentSwapResult {
   private final Map<String, Object> metrics;
   private final StatePreservationResult statePreservation;
   private final boolean rollbackPerformed;
-  private final Optional<ComponentSimple> rollbackComponent;
+  private final Optional<Component> rollbackComponent;
 
   private ComponentSwapResult(Builder builder) {
     this.status = builder.status;
@@ -75,7 +75,7 @@ public final class ComponentSwapResult {
    *
    * @return the old component
    */
-  public ComponentSimple getOldComponent() {
+  public Component getOldComponent() {
     return oldComponent;
   }
 
@@ -84,7 +84,7 @@ public final class ComponentSwapResult {
    *
    * @return the new component
    */
-  public ComponentSimple getNewComponent() {
+  public Component getNewComponent() {
     return newComponent;
   }
 
@@ -165,7 +165,7 @@ public final class ComponentSwapResult {
    *
    * @return the rollback component, if rollback occurred
    */
-  public Optional<ComponentSimple> getRollbackComponent() {
+  public Optional<Component> getRollbackComponent() {
     return rollbackComponent;
   }
 
@@ -231,8 +231,8 @@ public final class ComponentSwapResult {
    * @return successful swap result
    */
   public static ComponentSwapResult success(
-      ComponentSimple oldComponent,
-      ComponentSimple newComponent,
+      Component oldComponent,
+      Component newComponent,
       Instant startTime,
       Instant endTime) {
     return builder()
@@ -256,8 +256,8 @@ public final class ComponentSwapResult {
    * @return failed swap result
    */
   public static ComponentSwapResult failure(
-      ComponentSimple oldComponent,
-      ComponentSimple newComponent,
+      Component oldComponent,
+      Component newComponent,
       Instant startTime,
       Instant endTime,
       Exception error) {
@@ -275,8 +275,8 @@ public final class ComponentSwapResult {
   /** Builder for ComponentSwapResult. */
   public static final class Builder {
     private SwapStatus status;
-    private ComponentSimple oldComponent;
-    private ComponentSimple newComponent;
+    private Component oldComponent;
+    private Component newComponent;
     private Instant startTime;
     private Instant endTime;
     private List<String> warnings = List.of();
@@ -284,7 +284,7 @@ public final class ComponentSwapResult {
     private Map<String, Object> metrics = Map.of();
     private StatePreservationResult statePreservation = StatePreservationResult.success();
     private boolean rollbackPerformed = false;
-    private Optional<ComponentSimple> rollbackComponent = Optional.empty();
+    private Optional<Component> rollbackComponent = Optional.empty();
 
     private Builder() {}
 
@@ -293,12 +293,12 @@ public final class ComponentSwapResult {
       return this;
     }
 
-    public Builder oldComponent(ComponentSimple oldComponent) {
+    public Builder oldComponent(Component oldComponent) {
       this.oldComponent = oldComponent;
       return this;
     }
 
-    public Builder newComponent(ComponentSimple newComponent) {
+    public Builder newComponent(Component newComponent) {
       this.newComponent = newComponent;
       return this;
     }
@@ -338,7 +338,7 @@ public final class ComponentSwapResult {
       return this;
     }
 
-    public Builder rollbackComponent(ComponentSimple rollbackComponent) {
+    public Builder rollbackComponent(Component rollbackComponent) {
       this.rollbackComponent = Optional.of(rollbackComponent);
       return this;
     }

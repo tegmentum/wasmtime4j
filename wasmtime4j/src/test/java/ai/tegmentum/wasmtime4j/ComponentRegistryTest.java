@@ -60,8 +60,8 @@ class ComponentRegistryTest {
     @Test
     @DisplayName("should have register method with component parameter")
     void shouldHaveRegisterMethodWithComponent() throws NoSuchMethodException {
-      final Method method = ComponentRegistry.class.getMethod("register", ComponentSimple.class);
-      assertNotNull(method, "register(ComponentSimple) method should exist");
+      final Method method = ComponentRegistry.class.getMethod("register", Component.class);
+      assertNotNull(method, "register(Component) method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
@@ -69,8 +69,8 @@ class ComponentRegistryTest {
     @DisplayName("should have register method with name and component parameters")
     void shouldHaveRegisterMethodWithNameAndComponent() throws NoSuchMethodException {
       final Method method =
-          ComponentRegistry.class.getMethod("register", String.class, ComponentSimple.class);
-      assertNotNull(method, "register(String, ComponentSimple) method should exist");
+          ComponentRegistry.class.getMethod("register", String.class, Component.class);
+      assertNotNull(method, "register(String, Component) method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
 
@@ -143,7 +143,7 @@ class ComponentRegistryTest {
     @DisplayName("should have resolveDependencies method")
     void shouldHaveResolveDependenciesMethod() throws NoSuchMethodException {
       final Method method =
-          ComponentRegistry.class.getMethod("resolveDependencies", ComponentSimple.class);
+          ComponentRegistry.class.getMethod("resolveDependencies", Component.class);
       assertNotNull(method, "resolveDependencies method should exist");
       assertEquals(Set.class, method.getReturnType(), "Should return Set");
     }
@@ -152,7 +152,7 @@ class ComponentRegistryTest {
     @DisplayName("should have validateDependencies method")
     void shouldHaveValidateDependenciesMethod() throws NoSuchMethodException {
       final Method method =
-          ComponentRegistry.class.getMethod("validateDependencies", ComponentSimple.class);
+          ComponentRegistry.class.getMethod("validateDependencies", Component.class);
       assertNotNull(method, "validateDependencies method should exist");
       assertEquals(
           ComponentValidationResult.class,
@@ -196,7 +196,7 @@ class ComponentRegistryTest {
     @Test
     @DisplayName("register method should declare WasmException")
     void registerMethodShouldDeclareWasmException() throws NoSuchMethodException {
-      final Method method = ComponentRegistry.class.getMethod("register", ComponentSimple.class);
+      final Method method = ComponentRegistry.class.getMethod("register", Component.class);
       final Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertTrue(
           containsException(exceptionTypes, WasmException.class),
@@ -217,7 +217,7 @@ class ComponentRegistryTest {
     @DisplayName("resolveDependencies method should declare WasmException")
     void resolveDependenciesMethodShouldDeclareWasmException() throws NoSuchMethodException {
       final Method method =
-          ComponentRegistry.class.getMethod("resolveDependencies", ComponentSimple.class);
+          ComponentRegistry.class.getMethod("resolveDependencies", Component.class);
       final Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertTrue(
           containsException(exceptionTypes, WasmException.class),
@@ -228,7 +228,7 @@ class ComponentRegistryTest {
     @DisplayName("validateDependencies method should declare WasmException")
     void validateDependenciesMethodShouldDeclareWasmException() throws NoSuchMethodException {
       final Method method =
-          ComponentRegistry.class.getMethod("validateDependencies", ComponentSimple.class);
+          ComponentRegistry.class.getMethod("validateDependencies", Component.class);
       final Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertTrue(
           containsException(exceptionTypes, WasmException.class),
@@ -290,7 +290,7 @@ class ComponentRegistryTest {
     void shouldSupportFindByIdReturningEmpty() {
       final ComponentRegistry registry = createEmptyRegistry();
 
-      final Optional<ComponentSimple> result = registry.findById("nonexistent");
+      final Optional<Component> result = registry.findById("nonexistent");
       assertTrue(result.isEmpty(), "Should return empty for nonexistent component");
     }
 
@@ -299,7 +299,7 @@ class ComponentRegistryTest {
     void shouldSupportFindByNameReturningEmpty() {
       final ComponentRegistry registry = createEmptyRegistry();
 
-      final Optional<ComponentSimple> result = registry.findByName("nonexistent");
+      final Optional<Component> result = registry.findByName("nonexistent");
       assertTrue(result.isEmpty(), "Should return empty for nonexistent component");
     }
 
@@ -330,12 +330,12 @@ class ComponentRegistryTest {
   private ComponentRegistry createEmptyRegistry() {
     return new ComponentRegistry() {
       @Override
-      public void register(final ComponentSimple component) throws WasmException {
+      public void register(final Component component) throws WasmException {
         // Empty implementation
       }
 
       @Override
-      public void register(final String name, final ComponentSimple component)
+      public void register(final String name, final Component component)
           throws WasmException {
         // Empty implementation
       }
@@ -346,22 +346,22 @@ class ComponentRegistryTest {
       }
 
       @Override
-      public Optional<ComponentSimple> findById(final String componentId) {
+      public Optional<Component> findById(final String componentId) {
         return Optional.empty();
       }
 
       @Override
-      public Optional<ComponentSimple> findByName(final String name) {
+      public Optional<Component> findByName(final String name) {
         return Optional.empty();
       }
 
       @Override
-      public List<ComponentSimple> findByVersion(final ComponentVersion version) {
+      public List<Component> findByVersion(final ComponentVersion version) {
         return List.of();
       }
 
       @Override
-      public Set<ComponentSimple> getAllComponents() {
+      public Set<Component> getAllComponents() {
         return Set.of();
       }
 
@@ -381,20 +381,20 @@ class ComponentRegistryTest {
       }
 
       @Override
-      public Set<ComponentSimple> resolveDependencies(final ComponentSimple component)
+      public Set<Component> resolveDependencies(final Component component)
           throws WasmException {
         return Set.of();
       }
 
       @Override
-      public ComponentValidationResult validateDependencies(final ComponentSimple component)
+      public ComponentValidationResult validateDependencies(final Component component)
           throws WasmException {
         return ComponentValidationResult.success(
             new ComponentValidationResult.ValidationContext("test-component", null));
       }
 
       @Override
-      public List<ComponentSimple> search(final ComponentSearchCriteria criteria)
+      public List<Component> search(final ComponentSearchCriteria criteria)
           throws WasmException {
         return List.of();
       }

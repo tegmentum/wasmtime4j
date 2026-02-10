@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentRegistryStatistics;
 import ai.tegmentum.wasmtime4j.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -58,9 +58,9 @@ public final class JniComponentRegistry implements ComponentRegistry {
   private static final Logger LOGGER = Logger.getLogger(JniComponentRegistry.class.getName());
 
   private final JniComponentEngine engine;
-  private final ConcurrentMap<String, ComponentSimple> componentsById;
-  private final ConcurrentMap<String, ComponentSimple> componentsByName;
-  private final ConcurrentMap<ComponentVersion, Set<ComponentSimple>> componentsByVersion;
+  private final ConcurrentMap<String, Component> componentsById;
+  private final ConcurrentMap<String, Component> componentsByName;
+  private final ConcurrentMap<ComponentVersion, Set<Component>> componentsByVersion;
   private final AtomicLong registrationCounter;
 
   /**
@@ -81,7 +81,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public void register(final ComponentSimple component) throws WasmException {
+  public void register(final Component component) throws WasmException {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
@@ -131,7 +131,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public void register(final String name, final ComponentSimple component) throws WasmException {
+  public void register(final String name, final Component component) throws WasmException {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Name cannot be null or empty");
     }
@@ -172,7 +172,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
       throw new IllegalArgumentException("Component ID cannot be null or empty");
     }
 
-    final ComponentSimple component = componentsById.get(componentId);
+    final Component component = componentsById.get(componentId);
     if (component == null) {
       throw new WasmException("Component with ID '" + componentId + "' is not registered");
     }
@@ -186,7 +186,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
 
       // Remove from version index
       final ComponentVersion version = component.getVersion();
-      final Set<ComponentSimple> versionSet = componentsByVersion.get(version);
+      final Set<Component> versionSet = componentsByVersion.get(version);
       if (versionSet != null) {
         versionSet.remove(component);
         if (versionSet.isEmpty()) {
@@ -202,7 +202,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public Optional<ComponentSimple> findById(final String componentId) {
+  public Optional<Component> findById(final String componentId) {
     if (componentId == null || componentId.trim().isEmpty()) {
       throw new IllegalArgumentException("Component ID cannot be null or empty");
     }
@@ -210,7 +210,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public Optional<ComponentSimple> findByName(final String name) {
+  public Optional<Component> findByName(final String name) {
     if (name == null || name.trim().isEmpty()) {
       throw new IllegalArgumentException("Name cannot be null or empty");
     }
@@ -218,16 +218,16 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public List<ComponentSimple> findByVersion(final ComponentVersion version) {
+  public List<Component> findByVersion(final ComponentVersion version) {
     if (version == null) {
       throw new IllegalArgumentException("Version cannot be null");
     }
-    final Set<ComponentSimple> components = componentsByVersion.get(version);
+    final Set<Component> components = componentsByVersion.get(version);
     return components != null ? new ArrayList<>(components) : new ArrayList<>();
   }
 
   @Override
-  public Set<ComponentSimple> getAllComponents() {
+  public Set<Component> getAllComponents() {
     return new HashSet<>(componentsById.values());
   }
 
@@ -250,18 +250,18 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public Set<ComponentSimple> resolveDependencies(final ComponentSimple component)
+  public Set<Component> resolveDependencies(final Component component)
       throws WasmException {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
 
     try {
-      final Set<ComponentSimple> dependencies = new HashSet<>();
+      final Set<Component> dependencies = new HashSet<>();
       final Set<String> requiredInterfaces = component.getImportedInterfaces();
 
       // Resolve dependencies by matching imported/exported interfaces
-      for (final ComponentSimple candidate : componentsById.values()) {
+      for (final Component candidate : componentsById.values()) {
         if (candidate.equals(component)) {
           continue; // Skip self
         }
@@ -290,7 +290,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public ComponentValidationResult validateDependencies(final ComponentSimple component)
+  public ComponentValidationResult validateDependencies(final Component component)
       throws WasmException {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
@@ -301,11 +301,11 @@ public final class JniComponentRegistry implements ComponentRegistry {
       final List<ComponentValidationResult.ValidationWarning> warnings = new ArrayList<>();
 
       final Set<String> requiredInterfaces = component.getImportedInterfaces();
-      final Set<ComponentSimple> dependencies = resolveDependencies(component);
+      final Set<Component> dependencies = resolveDependencies(component);
 
       // Check if all required interfaces are satisfied
       final Set<String> providedInterfaces = new HashSet<>();
-      for (final ComponentSimple dependency : dependencies) {
+      for (final Component dependency : dependencies) {
         providedInterfaces.addAll(dependency.getExportedInterfaces());
       }
 
@@ -322,7 +322,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
       }
 
       // Check for version compatibility
-      for (final ComponentSimple dependency : dependencies) {
+      for (final Component dependency : dependencies) {
         final ai.tegmentum.wasmtime4j.ComponentCompatibility compatibility =
             component.checkCompatibility(dependency);
         if (!compatibility.isCompatible()) {
@@ -350,7 +350,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public List<ComponentSimple> search(final ComponentSearchCriteria criteria) throws WasmException {
+  public List<Component> search(final ComponentSearchCriteria criteria) throws WasmException {
     if (criteria == null) {
       throw new IllegalArgumentException("Criteria cannot be null");
     }
@@ -395,13 +395,13 @@ public final class JniComponentRegistry implements ComponentRegistry {
    *
    * @param component the component to rollback
    */
-  private void rollbackRegistration(final ComponentSimple component) {
+  private void rollbackRegistration(final Component component) {
     try {
       final String componentId = component.getId();
       componentsById.remove(componentId);
 
       final ComponentVersion version = component.getVersion();
-      final Set<ComponentSimple> versionSet = componentsByVersion.get(version);
+      final Set<Component> versionSet = componentsByVersion.get(version);
       if (versionSet != null) {
         versionSet.remove(component);
         if (versionSet.isEmpty()) {
@@ -421,9 +421,9 @@ public final class JniComponentRegistry implements ComponentRegistry {
    * @return true if circular dependency detected
    */
   private boolean hasCircularDependency(
-      final ComponentSimple component, final Set<ComponentSimple> dependencies) {
-    final Set<ComponentSimple> visited = new HashSet<>();
-    final Set<ComponentSimple> recursionStack = new HashSet<>();
+      final Component component, final Set<Component> dependencies) {
+    final Set<Component> visited = new HashSet<>();
+    final Set<Component> recursionStack = new HashSet<>();
 
     return hasCircularDependencyDFS(component, dependencies, visited, recursionStack);
   }
@@ -438,23 +438,23 @@ public final class JniComponentRegistry implements ComponentRegistry {
    * @return true if cycle detected
    */
   private boolean hasCircularDependencyDFS(
-      final ComponentSimple current,
-      final Set<ComponentSimple> allDependencies,
-      final Set<ComponentSimple> visited,
-      final Set<ComponentSimple> recursionStack) {
+      final Component current,
+      final Set<Component> allDependencies,
+      final Set<Component> visited,
+      final Set<Component> recursionStack) {
 
     visited.add(current);
     recursionStack.add(current);
 
     // Check dependencies of current component
-    for (final ComponentSimple dep : allDependencies) {
+    for (final Component dep : allDependencies) {
       if (recursionStack.contains(dep)) {
         return true; // Cycle detected
       }
 
       if (!visited.contains(dep)) {
         try {
-          final Set<ComponentSimple> depDependencies = resolveDependencies(dep);
+          final Set<Component> depDependencies = resolveDependencies(dep);
           if (hasCircularDependencyDFS(dep, depDependencies, visited, recursionStack)) {
             return true;
           }
@@ -477,7 +477,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
    * @return true if the component matches the criteria
    */
   private boolean matchesCriteria(
-      final ComponentSimple component, final ComponentSearchCriteria criteria) {
+      final Component component, final ComponentSearchCriteria criteria) {
     try {
       // Check name pattern
       if (criteria.getNamePattern().isPresent()) {
@@ -521,7 +521,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
    * @param component the component
    * @return the component name, or null if not registered by name
    */
-  private String getComponentName(final ComponentSimple component) {
+  private String getComponentName(final Component component) {
     return componentsByName.entrySet().stream()
         .filter(entry -> entry.getValue().equals(component))
         .map(java.util.Map.Entry::getKey)

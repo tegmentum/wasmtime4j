@@ -62,7 +62,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
    * @return debug session handle
    * @throws WasmException if debugging start fails
    */
-  DebugSession startDebugging(ComponentSimple component, ComponentDebugConfig debugConfig)
+  DebugSession startDebugging(Component component, ComponentDebugConfig debugConfig)
       throws WasmException;
 
   /**
@@ -107,7 +107,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
    * @return execution tracer
    * @throws WasmException if tracing setup fails
    */
-  ExecutionTracer setupExecutionTracing(ComponentSimple component, TraceConfig traceConfig)
+  ExecutionTracer setupExecutionTracing(Component component, TraceConfig traceConfig)
       throws WasmException;
 
   /**
@@ -119,7 +119,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
    * @throws WasmException if profiling setup fails
    */
   PerformanceProfiler setupPerformanceProfiling(
-      ComponentSimple component, ProfileConfig profileConfig) throws WasmException;
+      Component component, ProfileConfig profileConfig) throws WasmException;
 
   /**
    * Monitors interface calls for a component.
@@ -130,7 +130,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
    * @throws WasmException if monitoring setup fails
    */
   InterfaceCallMonitor setupInterfaceMonitoring(
-      ComponentSimple component, InterfaceMonitorConfig monitorConfig) throws WasmException;
+      Component component, InterfaceMonitorConfig monitorConfig) throws WasmException;
 
   /**
    * Inspects the current state of a component.
@@ -141,7 +141,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
    * @throws WasmException if inspection fails
    */
   ComponentStateInspection inspectComponentState(
-      ComponentSimple component, StateInspectionConfig inspectionConfig) throws WasmException;
+      Component component, StateInspectionConfig inspectionConfig) throws WasmException;
 
   /**
    * Analyzes component performance and provides optimization suggestions.
@@ -152,7 +152,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
    * @throws WasmException if analysis fails
    */
   PerformanceAnalysisResult analyzePerformance(
-      ComponentSimple component, PerformanceAnalysisConfig analysisConfig) throws WasmException;
+      Component component, PerformanceAnalysisConfig analysisConfig) throws WasmException;
 
   /**
    * Sets up component lifecycle event monitoring.
@@ -163,7 +163,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
    * @throws WasmException if lifecycle monitoring setup fails
    */
   ComponentLifecycleMonitor setupLifecycleMonitoring(
-      ComponentSimple component, LifecycleMonitorConfig lifecycleConfig) throws WasmException;
+      Component component, LifecycleMonitorConfig lifecycleConfig) throws WasmException;
 
   /**
    * Creates a memory dump of a component's state.
@@ -173,7 +173,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
    * @return memory dump result
    * @throws WasmException if memory dump fails
    */
-  MemoryDump createMemoryDump(ComponentSimple component, MemoryDumpConfig dumpConfig)
+  MemoryDump createMemoryDump(Component component, MemoryDumpConfig dumpConfig)
       throws WasmException;
 
   /**
@@ -225,7 +225,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
   interface DebugSession {
     String getSessionId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     DebugSessionState getState();
 
@@ -268,7 +268,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
   interface ExecutionTracer {
     String getTracerId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     TraceConfig getConfiguration();
 
@@ -297,7 +297,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
   interface PerformanceProfiler {
     String getProfilerId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     ProfileConfig getConfiguration();
 
@@ -324,7 +324,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
   interface InterfaceCallMonitor {
     String getMonitorId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     InterfaceMonitorConfig getConfiguration();
 
@@ -349,7 +349,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
   interface ComponentLifecycleMonitor {
     String getMonitorId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     LifecycleMonitorConfig getConfiguration();
 
@@ -370,7 +370,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
 
   /** Component state inspection result. */
   interface ComponentStateInspection {
-    ComponentSimple getComponent();
+    Component getComponent();
 
     Instant getInspectionTime();
 
@@ -389,7 +389,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
 
   /** Performance analysis result with optimization suggestions. */
   interface PerformanceAnalysisResult {
-    ComponentSimple getComponent();
+    Component getComponent();
 
     Instant getAnalysisTime();
 
@@ -408,7 +408,7 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
   interface MemoryDump {
     String getDumpId();
 
-    ComponentSimple getComponent();
+    Component getComponent();
 
     Instant getCreationTime();
 
@@ -467,9 +467,9 @@ public interface ComponentDebuggingSystem extends AutoCloseable {
 
     void onComponentResumed(DebugSession session);
 
-    void onPerformanceIssueDetected(ComponentSimple component, PerformanceIssue issue);
+    void onPerformanceIssueDetected(Component component, PerformanceIssue issue);
 
-    void onMemoryLeakDetected(ComponentSimple component, MemoryLeak leak);
+    void onMemoryLeakDetected(Component component, MemoryLeak leak);
   }
 
   // Enums and supporting types

@@ -22,7 +22,7 @@ import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentLinker;
 import ai.tegmentum.wasmtime4j.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiPreview2Config;
@@ -288,7 +288,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
-  public ComponentInstance linkComponent(final Store store, final ComponentSimple component)
+  public ComponentInstance linkComponent(final Store store, final Component component)
       throws WasmException {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
@@ -305,7 +305,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
-  public ComponentInstance instantiate(final Store store, final ComponentSimple component)
+  public ComponentInstance instantiate(final Store store, final Component component)
       throws WasmException {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
@@ -440,7 +440,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
-  public ComponentImportValidation validateImports(final ComponentSimple component) {
+  public ComponentImportValidation validateImports(final Component component) {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }

@@ -384,7 +384,7 @@ class JniComponentLinkerTest {
     void testLinkComponentNullStore() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> linker.linkComponent(null, new MockComponentSimple()));
+          () -> linker.linkComponent(null, new MockComponent()));
     }
 
     @Test
@@ -404,7 +404,7 @@ class JniComponentLinkerTest {
     void testInstantiateNullStore() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> linker.instantiate(null, new MockComponentSimple()));
+          () -> linker.instantiate(null, new MockComponent()));
     }
 
     @Test
@@ -428,7 +428,7 @@ class JniComponentLinkerTest {
     @Test
     @DisplayName("Should return valid result for mock component")
     void testValidateImportsMockComponent() {
-      final ComponentImportValidation result = linker.validateImports(new MockComponentSimple());
+      final ComponentImportValidation result = linker.validateImports(new MockComponent());
       assertTrue(result.isValid());
     }
   }
@@ -469,8 +469,8 @@ class JniComponentLinkerTest {
     }
   }
 
-  /** Mock ComponentSimple for testing parameter validation. */
-  private static class MockComponentSimple implements ai.tegmentum.wasmtime4j.ComponentSimple {
+  /** Mock Component for testing parameter validation. */
+  private static class MockComponent implements ai.tegmentum.wasmtime4j.Component {
 
     @Override
     public String getId() {
@@ -528,14 +528,14 @@ class JniComponentLinkerTest {
     }
 
     @Override
-    public Set<ai.tegmentum.wasmtime4j.ComponentSimple> resolveDependencies(
+    public Set<ai.tegmentum.wasmtime4j.Component> resolveDependencies(
         final ComponentRegistry registry) {
       return Collections.emptySet();
     }
 
     @Override
     public ComponentCompatibility checkCompatibility(
-        final ai.tegmentum.wasmtime4j.ComponentSimple other) {
+        final ai.tegmentum.wasmtime4j.Component other) {
       return null;
     }
 
@@ -546,7 +546,7 @@ class JniComponentLinkerTest {
 
     @Override
     public WitCompatibilityResult checkWitCompatibility(
-        final ai.tegmentum.wasmtime4j.ComponentSimple other) {
+        final ai.tegmentum.wasmtime4j.Component other) {
       return null;
     }
 

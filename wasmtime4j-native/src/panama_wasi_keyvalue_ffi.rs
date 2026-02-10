@@ -5,13 +5,13 @@
 //!
 //! All functions use C calling conventions and handle memory management appropriately.
 
-use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_longlong, c_uchar, c_void};
 use std::ptr;
 use std::slice;
 
 use crate::wasi_keyvalue_helpers::WasiKeyValueContext;
+use crate::{ffi_boundary_i32, ffi_boundary_ptr, ffi_boundary_result, ffi_boundary_void};
 
 // =============================================================================
 // Helper Functions
@@ -51,10 +51,12 @@ unsafe fn get_context_mut<'a>(context_handle: *mut c_void) -> Option<&'a mut Was
 /// Pointer to the context on success, null on failure
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_create() -> *mut c_void {
-    match WasiKeyValueContext::new() {
-        Ok(ctx) => Box::into_raw(Box::new(ctx)) as *mut c_void,
-        Err(_) => ptr::null_mut(),
-    }
+    ffi_boundary_ptr!({
+        match WasiKeyValueContext::new() {
+            Ok(ctx) => Box::into_raw(Box::new(ctx)) as *mut c_void,
+            Err(_) => ptr::null_mut(),
+        }
+    })
 }
 
 /// Destroys a WASI keyvalue context
@@ -62,12 +64,16 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_create() -> *mut c_voi
 /// # Safety
 /// The context_handle must be a valid pointer returned by context_create
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_destroy(
+pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_destroy(
     context_handle: *mut c_void,
 ) {
-    if !context_handle.is_null() {
-        let _ = Box::from_raw(context_handle as *mut WasiKeyValueContext);
-    }
+    ffi_boundary_void!({
+        if !context_handle.is_null() {
+            unsafe {
+                let _ = Box::from_raw(context_handle as *mut WasiKeyValueContext);
+            }
+        }
+    })
 }
 
 /// Gets the context ID
@@ -78,11 +84,13 @@ pub unsafe extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_destroy(
 pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_id(
     context_handle: *mut c_void,
 ) -> c_longlong {
-    let context = unsafe { get_context(context_handle) };
-    match context {
-        Some(ctx) => ctx.id() as c_longlong,
-        None => 0,
-    }
+    ffi_boundary_result!(0i64, {
+        let context = unsafe { get_context(context_handle) };
+        match context {
+            Some(ctx) => Ok(ctx.id() as c_longlong),
+            None => Ok(0),
+        }
+    })
 }
 
 /// Checks if the context is valid
@@ -93,11 +101,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_id(
 pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_is_valid(
     context_handle: *mut c_void,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    match context {
-        Some(ctx) => if ctx.is_valid() { 1 } else { 0 },
-        None => 0,
-    }
+    ffi_boundary_i32!({
+        let context = unsafe { get_context(context_handle) };
+        match context {
+            Some(ctx) => Ok(if ctx.is_valid() { 1 } else { 0 }),
+            None => Ok(0),
+        }
+    })
 }
 
 // =============================================================================
@@ -121,41 +131,43 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_get(
     out_value: *mut *mut c_uchar,
     out_value_len: *mut c_longlong,
 ) -> c_int {
-    if context_handle.is_null() || key.is_null() || out_value.is_null() || out_value_len.is_null() {
-        return -1;
-    }
-
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let key_str = unsafe {
-        match CStr::from_ptr(key).to_str() {
-            Ok(s) => s,
-            Err(_) => return -1,
+    ffi_boundary_i32!({
+        if context_handle.is_null() || key.is_null() || out_value.is_null() || out_value_len.is_null() {
+            return Ok(-1);
         }
-    };
 
-    match context.unwrap().get(key_str) {
-        Ok(Some(value)) => {
-            let len = value.len();
-            let ptr = Box::into_raw(value.into_boxed_slice()) as *mut c_uchar;
-            unsafe {
-                *out_value = ptr;
-                *out_value_len = len as c_longlong;
+        let context = unsafe { get_context(context_handle) };
+        if context.is_none() {
+            return Ok(-1);
+        }
+
+        let key_str = unsafe {
+            match CStr::from_ptr(key).to_str() {
+                Ok(s) => s,
+                Err(_) => return Ok(-1),
             }
-            0
-        }
-        Ok(None) => {
-            unsafe {
-                *out_value = ptr::null_mut();
-                *out_value_len = 0;
+        };
+
+        match context.unwrap().get(key_str) {
+            Ok(Some(value)) => {
+                let len = value.len();
+                let ptr = Box::into_raw(value.into_boxed_slice()) as *mut c_uchar;
+                unsafe {
+                    *out_value = ptr;
+                    *out_value_len = len as c_longlong;
+                }
+                Ok(0)
             }
-            1 // Not found
+            Ok(None) => {
+                unsafe {
+                    *out_value = ptr::null_mut();
+                    *out_value_len = 0;
+                }
+                Ok(1) // Not found
+            }
+            Err(_) => Ok(-1),
         }
-        Err(_) => -1,
-    }
+    })
 }
 
 /// Sets a value for a key
@@ -175,35 +187,37 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_set(
     value: *const c_uchar,
     value_len: c_longlong,
 ) -> c_int {
-    if context_handle.is_null() || key.is_null() {
-        return -1;
-    }
-    if value.is_null() && value_len > 0 {
-        return -1;
-    }
-
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let key_str = unsafe {
-        match CStr::from_ptr(key).to_str() {
-            Ok(s) => s,
-            Err(_) => return -1,
+    ffi_boundary_i32!({
+        if context_handle.is_null() || key.is_null() {
+            return Ok(-1);
         }
-    };
+        if value.is_null() && value_len > 0 {
+            return Ok(-1);
+        }
 
-    let value_vec = if value_len > 0 && !value.is_null() {
-        unsafe { slice::from_raw_parts(value, value_len as usize).to_vec() }
-    } else {
-        Vec::new()
-    };
+        let context = unsafe { get_context(context_handle) };
+        if context.is_none() {
+            return Ok(-1);
+        }
 
-    match context.unwrap().set(key_str, value_vec) {
-        Ok(()) => 0,
-        Err(_) => -1,
-    }
+        let key_str = unsafe {
+            match CStr::from_ptr(key).to_str() {
+                Ok(s) => s,
+                Err(_) => return Ok(-1),
+            }
+        };
+
+        let value_vec = if value_len > 0 && !value.is_null() {
+            unsafe { slice::from_raw_parts(value, value_len as usize).to_vec() }
+        } else {
+            Vec::new()
+        };
+
+        match context.unwrap().set(key_str, value_vec) {
+            Ok(()) => Ok(0),
+            Err(_) => Ok(-1),
+        }
+    })
 }
 
 /// Deletes a key
@@ -219,27 +233,29 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_delete(
     context_handle: *mut c_void,
     key: *const c_char,
 ) -> c_int {
-    if context_handle.is_null() || key.is_null() {
-        return -1;
-    }
-
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let key_str = unsafe {
-        match CStr::from_ptr(key).to_str() {
-            Ok(s) => s,
-            Err(_) => return -1,
+    ffi_boundary_i32!({
+        if context_handle.is_null() || key.is_null() {
+            return Ok(-1);
         }
-    };
 
-    match context.unwrap().delete(key_str) {
-        Ok(true) => 1,
-        Ok(false) => 0,
-        Err(_) => -1,
-    }
+        let context = unsafe { get_context(context_handle) };
+        if context.is_none() {
+            return Ok(-1);
+        }
+
+        let key_str = unsafe {
+            match CStr::from_ptr(key).to_str() {
+                Ok(s) => s,
+                Err(_) => return Ok(-1),
+            }
+        };
+
+        match context.unwrap().delete(key_str) {
+            Ok(true) => Ok(1),
+            Ok(false) => Ok(0),
+            Err(_) => Ok(-1),
+        }
+    })
 }
 
 /// Checks if a key exists
@@ -255,27 +271,29 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_exists(
     context_handle: *mut c_void,
     key: *const c_char,
 ) -> c_int {
-    if context_handle.is_null() || key.is_null() {
-        return -1;
-    }
-
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let key_str = unsafe {
-        match CStr::from_ptr(key).to_str() {
-            Ok(s) => s,
-            Err(_) => return -1,
+    ffi_boundary_i32!({
+        if context_handle.is_null() || key.is_null() {
+            return Ok(-1);
         }
-    };
 
-    match context.unwrap().exists(key_str) {
-        Ok(true) => 1,
-        Ok(false) => 0,
-        Err(_) => -1,
-    }
+        let context = unsafe { get_context(context_handle) };
+        if context.is_none() {
+            return Ok(-1);
+        }
+
+        let key_str = unsafe {
+            match CStr::from_ptr(key).to_str() {
+                Ok(s) => s,
+                Err(_) => return Ok(-1),
+            }
+        };
+
+        match context.unwrap().exists(key_str) {
+            Ok(true) => Ok(1),
+            Ok(false) => Ok(0),
+            Err(_) => Ok(-1),
+        }
+    })
 }
 
 // =============================================================================
@@ -299,29 +317,31 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_increment(
     delta: c_longlong,
     out_value: *mut c_longlong,
 ) -> c_int {
-    if context_handle.is_null() || key.is_null() || out_value.is_null() {
-        return -1;
-    }
-
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    let key_str = unsafe {
-        match CStr::from_ptr(key).to_str() {
-            Ok(s) => s,
-            Err(_) => return -1,
+    ffi_boundary_i32!({
+        if context_handle.is_null() || key.is_null() || out_value.is_null() {
+            return Ok(-1);
         }
-    };
 
-    match context.unwrap().increment(key_str, delta) {
-        Ok(new_value) => {
-            unsafe { *out_value = new_value; }
-            0
+        let context = unsafe { get_context(context_handle) };
+        if context.is_none() {
+            return Ok(-1);
         }
-        Err(_) => -1,
-    }
+
+        let key_str = unsafe {
+            match CStr::from_ptr(key).to_str() {
+                Ok(s) => s,
+                Err(_) => return Ok(-1),
+            }
+        };
+
+        match context.unwrap().increment(key_str, delta) {
+            Ok(new_value) => {
+                unsafe { *out_value = new_value; }
+                Ok(0)
+            }
+            Err(_) => Ok(-1),
+        }
+    })
 }
 
 // =============================================================================
@@ -336,14 +356,16 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_increment(
 pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_size(
     context_handle: *mut c_void,
 ) -> c_longlong {
-    let context = unsafe { get_context(context_handle) };
-    match context {
-        Some(ctx) => match ctx.size() {
-            Ok(size) => size as c_longlong,
-            Err(_) => -1,
-        },
-        None => -1,
-    }
+    ffi_boundary_result!(-1i64, {
+        let context = unsafe { get_context(context_handle) };
+        match context {
+            Some(ctx) => match ctx.size() {
+                Ok(size) => Ok(size as c_longlong),
+                Err(_) => Ok(-1),
+            },
+            None => Ok(-1),
+        }
+    })
 }
 
 /// Clears all entries from the store
@@ -354,14 +376,16 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_size(
 pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_clear(
     context_handle: *mut c_void,
 ) -> c_int {
-    let context = unsafe { get_context(context_handle) };
-    match context {
-        Some(ctx) => match ctx.clear() {
-            Ok(()) => 0,
-            Err(_) => -1,
-        },
-        None => -1,
-    }
+    ffi_boundary_i32!({
+        let context = unsafe { get_context(context_handle) };
+        match context {
+            Some(ctx) => match ctx.clear() {
+                Ok(()) => Ok(0),
+                Err(_) => Ok(-1),
+            },
+            None => Ok(-1),
+        }
+    })
 }
 
 // =============================================================================
@@ -381,28 +405,30 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_keys(
     context_handle: *mut c_void,
     out_json: *mut *mut c_char,
 ) -> c_int {
-    if context_handle.is_null() || out_json.is_null() {
-        return -1;
-    }
-
-    let context = unsafe { get_context(context_handle) };
-    if context.is_none() {
-        return -1;
-    }
-
-    match context.unwrap().keys() {
-        Ok(keys) => {
-            let json = serde_json::to_string(&keys).unwrap_or_else(|_| "[]".to_string());
-            match CString::new(json) {
-                Ok(cstr) => {
-                    unsafe { *out_json = cstr.into_raw(); }
-                    0
-                }
-                Err(_) => -1,
-            }
+    ffi_boundary_i32!({
+        if context_handle.is_null() || out_json.is_null() {
+            return Ok(-1);
         }
-        Err(_) => -1,
-    }
+
+        let context = unsafe { get_context(context_handle) };
+        if context.is_none() {
+            return Ok(-1);
+        }
+
+        match context.unwrap().keys() {
+            Ok(keys) => {
+                let json = serde_json::to_string(&keys).unwrap_or_else(|_| "[]".to_string());
+                match CString::new(json) {
+                    Ok(cstr) => {
+                        unsafe { *out_json = cstr.into_raw(); }
+                        Ok(0)
+                    }
+                    Err(_) => Ok(-1),
+                }
+            }
+            Err(_) => Ok(-1),
+        }
+    })
 }
 
 // =============================================================================
@@ -414,13 +440,17 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_keys(
 /// # Safety
 /// The pointer must have been allocated by a keyvalue function
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_bytes(
+pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_bytes(
     ptr: *mut c_uchar,
     len: c_longlong,
 ) {
-    if !ptr.is_null() && len > 0 {
-        let _ = Vec::from_raw_parts(ptr, len as usize, len as usize);
-    }
+    ffi_boundary_void!({
+        if !ptr.is_null() && len > 0 {
+            unsafe {
+                let _ = Vec::from_raw_parts(ptr, len as usize, len as usize);
+            }
+        }
+    })
 }
 
 /// Frees a C string allocated by keyvalue functions
@@ -428,12 +458,16 @@ pub unsafe extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_bytes(
 /// # Safety
 /// The pointer must have been allocated by a keyvalue function
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_string(
+pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_string(
     ptr: *mut c_char,
 ) {
-    if !ptr.is_null() {
-        let _ = CString::from_raw(ptr);
-    }
+    ffi_boundary_void!({
+        if !ptr.is_null() {
+            unsafe {
+                let _ = CString::from_raw(ptr);
+            }
+        }
+    })
 }
 
 // =============================================================================
@@ -446,7 +480,9 @@ pub unsafe extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_string(
 /// 1 if available, 0 if not available
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_is_available() -> c_int {
-    1
+    ffi_boundary_i32!({
+        Ok(1)
+    })
 }
 
 #[cfg(test)]

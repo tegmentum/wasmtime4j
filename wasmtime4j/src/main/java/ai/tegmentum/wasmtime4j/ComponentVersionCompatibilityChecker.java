@@ -88,7 +88,7 @@ public interface ComponentVersionCompatibilityChecker {
    * @throws WasmException if analysis fails
    * @throws IllegalArgumentException if components is null or empty
    */
-  ComponentCompatibilityMatrix createCompatibilityMatrix(Set<ComponentSimple> components)
+  ComponentCompatibilityMatrix createCompatibilityMatrix(Set<Component> components)
       throws WasmException;
 
   /**

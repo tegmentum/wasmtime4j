@@ -88,7 +88,7 @@ class ComponentEngineTest {
       Method method = ComponentEngine.class.getMethod("compileComponent", byte[].class);
       assertNotNull(method, "compileComponent(byte[]) method should exist");
       assertEquals(
-          ComponentSimple.class, method.getReturnType(), "Return type should be ComponentSimple");
+          Component.class, method.getReturnType(), "Return type should be Component");
       assertEquals(1, method.getParameterCount(), "compileComponent should have 1 parameter");
       assertEquals(byte[].class, method.getParameterTypes()[0], "Parameter should be byte[]");
     }
@@ -109,7 +109,7 @@ class ComponentEngineTest {
           ComponentEngine.class.getMethod("compileComponent", byte[].class, String.class);
       assertNotNull(method, "compileComponent(byte[], String) method should exist");
       assertEquals(
-          ComponentSimple.class, method.getReturnType(), "Return type should be ComponentSimple");
+          Component.class, method.getReturnType(), "Return type should be Component");
       assertEquals(2, method.getParameterCount(), "compileComponent should have 2 parameters");
       assertEquals(byte[].class, method.getParameterTypes()[0], "First parameter should be byte[]");
       assertEquals(
@@ -141,12 +141,12 @@ class ComponentEngineTest {
       Method method = ComponentEngine.class.getMethod("linkComponents", List.class);
       assertNotNull(method, "linkComponents method should exist");
       assertEquals(
-          ComponentSimple.class, method.getReturnType(), "Return type should be ComponentSimple");
+          Component.class, method.getReturnType(), "Return type should be Component");
       assertEquals(1, method.getParameterCount(), "linkComponents should have 1 parameter");
     }
 
     @Test
-    @DisplayName("linkComponents should accept List<ComponentSimple> parameter")
+    @DisplayName("linkComponents should accept List<Component> parameter")
     void linkComponentsShouldAcceptComponentList() throws NoSuchMethodException {
       Method method = ComponentEngine.class.getMethod("linkComponents", List.class);
       Type[] genericParameterTypes = method.getGenericParameterTypes();
@@ -158,7 +158,7 @@ class ComponentEngineTest {
         Type[] typeArgs = paramType.getActualTypeArguments();
         assertEquals(1, typeArgs.length, "List should have one type argument");
         assertEquals(
-            ComponentSimple.class, typeArgs[0], "List type argument should be ComponentSimple");
+            Component.class, typeArgs[0], "List type argument should be Component");
       }
     }
 
@@ -185,7 +185,7 @@ class ComponentEngineTest {
     void shouldHaveCheckCompatibilityMethod() throws NoSuchMethodException {
       Method method =
           ComponentEngine.class.getMethod(
-              "checkCompatibility", ComponentSimple.class, ComponentSimple.class);
+              "checkCompatibility", Component.class, Component.class);
       assertNotNull(method, "checkCompatibility method should exist");
       assertEquals(
           WitCompatibilityResult.class,
@@ -193,13 +193,13 @@ class ComponentEngineTest {
           "Return type should be WitCompatibilityResult");
       assertEquals(2, method.getParameterCount(), "checkCompatibility should have 2 parameters");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getParameterTypes()[0],
-          "First parameter should be ComponentSimple");
+          "First parameter should be Component");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getParameterTypes()[1],
-          "Second parameter should be ComponentSimple");
+          "Second parameter should be Component");
     }
 
     @Test
@@ -207,7 +207,7 @@ class ComponentEngineTest {
     void checkCompatibilityShouldNotThrowCheckedExceptions() throws NoSuchMethodException {
       Method method =
           ComponentEngine.class.getMethod(
-              "checkCompatibility", ComponentSimple.class, ComponentSimple.class);
+              "checkCompatibility", Component.class, Component.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(
           0, exceptionTypes.length, "checkCompatibility should not declare checked exceptions");
@@ -273,59 +273,59 @@ class ComponentEngineTest {
   class InstanceCreationTests {
 
     @Test
-    @DisplayName("should have createInstance(ComponentSimple, Store) method")
+    @DisplayName("should have createInstance(Component, Store) method")
     void shouldHaveCreateInstanceMethod() throws NoSuchMethodException {
       Method method =
-          ComponentEngine.class.getMethod("createInstance", ComponentSimple.class, Store.class);
-      assertNotNull(method, "createInstance(ComponentSimple, Store) method should exist");
+          ComponentEngine.class.getMethod("createInstance", Component.class, Store.class);
+      assertNotNull(method, "createInstance(Component, Store) method should exist");
       assertEquals(
           ComponentInstance.class,
           method.getReturnType(),
           "Return type should be ComponentInstance");
       assertEquals(2, method.getParameterCount(), "createInstance should have 2 parameters");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getParameterTypes()[0],
-          "First parameter should be ComponentSimple");
+          "First parameter should be Component");
       assertEquals(Store.class, method.getParameterTypes()[1], "Second parameter should be Store");
     }
 
     @Test
-    @DisplayName("createInstance(ComponentSimple, Store) should throw WasmException")
+    @DisplayName("createInstance(Component, Store) should throw WasmException")
     void createInstanceShouldThrowWasmException() throws NoSuchMethodException {
       Method method =
-          ComponentEngine.class.getMethod("createInstance", ComponentSimple.class, Store.class);
+          ComponentEngine.class.getMethod("createInstance", Component.class, Store.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(1, exceptionTypes.length, "Should declare one exception");
       assertEquals(WasmException.class, exceptionTypes[0], "Should throw WasmException");
     }
 
     @Test
-    @DisplayName("should have createInstance(ComponentSimple, Store, List) method")
+    @DisplayName("should have createInstance(Component, Store, List) method")
     void shouldHaveCreateInstanceWithImportsMethod() throws NoSuchMethodException {
       Method method =
           ComponentEngine.class.getMethod(
-              "createInstance", ComponentSimple.class, Store.class, List.class);
-      assertNotNull(method, "createInstance(ComponentSimple, Store, List) method should exist");
+              "createInstance", Component.class, Store.class, List.class);
+      assertNotNull(method, "createInstance(Component, Store, List) method should exist");
       assertEquals(
           ComponentInstance.class,
           method.getReturnType(),
           "Return type should be ComponentInstance");
       assertEquals(3, method.getParameterCount(), "createInstance should have 3 parameters");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getParameterTypes()[0],
-          "First parameter should be ComponentSimple");
+          "First parameter should be Component");
       assertEquals(Store.class, method.getParameterTypes()[1], "Second parameter should be Store");
       assertEquals(List.class, method.getParameterTypes()[2], "Third parameter should be List");
     }
 
     @Test
-    @DisplayName("createInstance(ComponentSimple, Store, List) should throw WasmException")
+    @DisplayName("createInstance(Component, Store, List) should throw WasmException")
     void createInstanceWithImportsShouldThrowWasmException() throws NoSuchMethodException {
       Method method =
           ComponentEngine.class.getMethod(
-              "createInstance", ComponentSimple.class, Store.class, List.class);
+              "createInstance", Component.class, Store.class, List.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(1, exceptionTypes.length, "Should declare one exception");
       assertEquals(WasmException.class, exceptionTypes[0], "Should throw WasmException");
@@ -343,7 +343,7 @@ class ComponentEngineTest {
     @Test
     @DisplayName("should have validateComponent method")
     void shouldHaveValidateComponentMethod() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("validateComponent", ComponentSimple.class);
+      Method method = ComponentEngine.class.getMethod("validateComponent", Component.class);
       assertNotNull(method, "validateComponent method should exist");
       assertEquals(
           ComponentValidationResult.class,
@@ -351,15 +351,15 @@ class ComponentEngineTest {
           "Return type should be ComponentValidationResult");
       assertEquals(1, method.getParameterCount(), "validateComponent should have 1 parameter");
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           method.getParameterTypes()[0],
-          "Parameter should be ComponentSimple");
+          "Parameter should be Component");
     }
 
     @Test
     @DisplayName("validateComponent should not throw checked exceptions")
     void validateComponentShouldNotThrowCheckedExceptions() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("validateComponent", ComponentSimple.class);
+      Method method = ComponentEngine.class.getMethod("validateComponent", Component.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(
           0, exceptionTypes.length, "validateComponent should not declare checked exceptions");
@@ -565,38 +565,38 @@ class ComponentEngineTest {
   class ParameterTypeTests {
 
     @Test
-    @DisplayName("createInstance third parameter should be List<ComponentSimple>")
+    @DisplayName("createInstance third parameter should be List<Component>")
     void createInstanceThirdParameterShouldBeComponentList() throws NoSuchMethodException {
       Method method =
           ComponentEngine.class.getMethod(
-              "createInstance", ComponentSimple.class, Store.class, List.class);
+              "createInstance", Component.class, Store.class, List.class);
       Type[] genericParameterTypes = method.getGenericParameterTypes();
       assertEquals(3, genericParameterTypes.length, "Should have 3 generic parameter types");
 
-      // Third parameter should be List<ComponentSimple>
+      // Third parameter should be List<Component>
       if (genericParameterTypes[2] instanceof ParameterizedType) {
         ParameterizedType paramType = (ParameterizedType) genericParameterTypes[2];
         assertEquals(List.class, paramType.getRawType(), "Raw type should be List");
         Type[] typeArgs = paramType.getActualTypeArguments();
         assertEquals(1, typeArgs.length, "List should have one type argument");
         assertEquals(
-            ComponentSimple.class, typeArgs[0], "List type argument should be ComponentSimple");
+            Component.class, typeArgs[0], "List type argument should be Component");
       }
     }
 
     @Test
     @DisplayName("All methods should use appropriate parameter types")
     void allMethodsShouldUseAppropriateParameterTypes() throws NoSuchMethodException {
-      // Verify component-related parameters use ComponentSimple
+      // Verify component-related parameters use Component
       Method compileMethod = ComponentEngine.class.getMethod("compileComponent", byte[].class);
       assertEquals(
-          ComponentSimple.class,
+          Component.class,
           compileMethod.getReturnType(),
-          "compileComponent should return ComponentSimple");
+          "compileComponent should return Component");
 
       // Verify store-related parameters use Store
       Method createMethod =
-          ComponentEngine.class.getMethod("createInstance", ComponentSimple.class, Store.class);
+          ComponentEngine.class.getMethod("createInstance", Component.class, Store.class);
       assertEquals(
           Store.class, createMethod.getParameterTypes()[1], "createInstance should accept Store");
 

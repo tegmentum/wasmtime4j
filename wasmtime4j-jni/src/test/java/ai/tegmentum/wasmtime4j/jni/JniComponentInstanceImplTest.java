@@ -25,7 +25,7 @@ import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -189,11 +189,11 @@ class JniComponentInstanceImplTest {
     }
 
     @Test
-    @DisplayName("getComponent method should exist and return ComponentSimple")
+    @DisplayName("getComponent method should exist and return Component")
     void getComponentMethodShouldExist() throws NoSuchMethodException {
       Method method = JniComponentInstanceImpl.class.getMethod("getComponent");
       assertNotNull(method, "getComponent method should exist");
-      assertEquals(ComponentSimple.class, method.getReturnType(), "Should return ComponentSimple");
+      assertEquals(Component.class, method.getReturnType(), "Should return Component");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
 

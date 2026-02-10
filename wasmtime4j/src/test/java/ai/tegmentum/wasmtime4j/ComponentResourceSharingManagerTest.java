@@ -159,7 +159,7 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "allocateResources",
-              ComponentSimple.class,
+              Component.class,
               String.class,
               ComponentResourceSharingManager.ResourceAllocationRequest.class);
       assertNotNull(method, "allocateResources method should exist");
@@ -185,7 +185,7 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "setupResourceIsolation",
-              ComponentSimple.class,
+              Component.class,
               ComponentResourceSharingManager.ResourceIsolationConfig.class);
       assertNotNull(method, "setupResourceIsolation method should exist");
     }
@@ -195,7 +195,7 @@ class ComponentResourceSharingManagerTest {
     void shouldHaveRemoveResourceIsolationMethod() throws NoSuchMethodException {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
-              "removeResourceIsolation", ComponentSimple.class);
+              "removeResourceIsolation", Component.class);
       assertNotNull(method, "removeResourceIsolation method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }
@@ -211,7 +211,7 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "setResourceQuotas",
-              ComponentSimple.class,
+              Component.class,
               ComponentResourceSharingManager.ResourceQuotas.class);
       assertNotNull(method, "setResourceQuotas method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -222,7 +222,7 @@ class ComponentResourceSharingManagerTest {
     void shouldHaveGetResourceQuotasMethod() throws NoSuchMethodException {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
-              "getResourceQuotas", ComponentSimple.class);
+              "getResourceQuotas", Component.class);
       assertNotNull(method, "getResourceQuotas method should exist");
     }
 
@@ -232,7 +232,7 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "updateResourceQuotas",
-              ComponentSimple.class,
+              Component.class,
               ComponentResourceSharingManager.ResourceQuotaUpdates.class);
       assertNotNull(method, "updateResourceQuotas method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
@@ -243,7 +243,7 @@ class ComponentResourceSharingManagerTest {
     void shouldHaveGetResourceUsageMethod() throws NoSuchMethodException {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
-              "getResourceUsage", ComponentSimple.class);
+              "getResourceUsage", Component.class);
       assertNotNull(method, "getResourceUsage method should exist");
     }
   }
@@ -258,7 +258,7 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "startResourceMonitoring",
-              ComponentSimple.class,
+              Component.class,
               ComponentResourceSharingManager.ResourceMonitoringConfig.class);
       assertNotNull(method, "startResourceMonitoring method should exist");
     }
@@ -503,7 +503,7 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "createResourceSnapshot",
-              ComponentSimple.class,
+              Component.class,
               ComponentResourceSharingManager.ResourceSnapshotConfig.class);
       assertNotNull(method, "createResourceSnapshot method should exist");
     }
@@ -514,7 +514,7 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "restoreResourceSnapshot",
-              ComponentSimple.class,
+              Component.class,
               ComponentResourceSharingManager.ResourceSnapshot.class);
       assertNotNull(method, "restoreResourceSnapshot method should exist");
     }
@@ -530,8 +530,8 @@ class ComponentResourceSharingManagerTest {
       final Method method =
           ComponentResourceSharingManager.class.getMethod(
               "setupResourceCommunication",
-              ComponentSimple.class,
-              ComponentSimple.class,
+              Component.class,
+              Component.class,
               ComponentResourceSharingManager.ResourceCommunicationConfig.class);
       assertNotNull(method, "setupResourceCommunication method should exist");
     }

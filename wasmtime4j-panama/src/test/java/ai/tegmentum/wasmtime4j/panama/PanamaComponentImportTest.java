@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.ComponentSimple;
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,7 +67,7 @@ final class PanamaComponentImportTest {
     final Path componentPath = Path.of("src/test/resources/components/with-imports.wasm");
     final byte[] componentBytes = Files.readAllBytes(componentPath);
 
-    final ComponentSimple component = componentEngine.compileComponent(componentBytes);
+    final Component component = componentEngine.compileComponent(componentBytes);
     assertNotNull(component, "Component should be loaded");
 
     final Set<String> imports = component.getImportedInterfaces();

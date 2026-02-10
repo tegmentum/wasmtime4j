@@ -2,12 +2,15 @@
 //!
 //! This module provides C-compatible functions for the Panama Foreign Function API
 //! to support WebAssembly exception handling operations.
+//! All FFI functions are wrapped with catch_unwind to prevent panics from crashing the JVM.
 
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_long, c_void};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+
+use crate::{ffi_boundary_ptr, ffi_boundary_result, ffi_boundary_void};
 
 /// Configuration for exception handling
 #[derive(Debug, Clone)]
@@ -216,16 +219,18 @@ pub extern "C" fn wasmtime4j_exception_handler_create(
     max_unwind_depth: c_int,
     type_validation: bool,
 ) -> *mut c_void {
-    let config = ExceptionHandlingConfig {
-        nested_try_catch,
-        exception_unwinding,
-        max_unwind_depth,
-        type_validation,
-        stack_traces: true, // Default to enabled
-    };
+    ffi_boundary_ptr!({
+        let config = ExceptionHandlingConfig {
+            nested_try_catch,
+            exception_unwinding,
+            max_unwind_depth,
+            type_validation,
+            stack_traces: true,
+        };
 
-    let handler = Box::new(ExceptionHandler::new(config));
-    Box::into_raw(handler) as *mut c_void
+        let handler = Box::new(ExceptionHandler::new(config));
+        Box::into_raw(handler) as *mut c_void
+    })
 }
 
 /// Create an exception tag
@@ -250,36 +255,35 @@ pub unsafe extern "C" fn wasmtime4j_exception_tag_create(
     param_types_ptr: *const u8,
     param_count: c_long,
 ) -> c_long {
-    if handler_ptr.is_null() {
-        return 0;
-    }
-
-    if name_ptr.is_null() {
-        return 0;
-    }
-
-    let handler = &*(handler_ptr as *const ExceptionHandler);
-
-    // Convert name from C string
-    let name = match CStr::from_ptr(name_ptr).to_str() {
-        Ok(s) => s,
-        Err(_) => return 0,
-    };
-
-    // Convert parameter types
-    let mut parameter_types = Vec::new();
-    if param_count > 0 && !param_types_ptr.is_null() {
-        for i in 0..param_count as usize {
-            let type_byte = *param_types_ptr.add(i);
-            parameter_types.push(WasmValueType::from(type_byte));
+    ffi_boundary_result!(0i64 as c_long, {
+        if handler_ptr.is_null() {
+            return Ok(0);
         }
-    }
 
-    // Create the tag
-    match handler.create_tag(name, parameter_types) {
-        Some(handle) => handle as c_long,
-        None => 0,
-    }
+        if name_ptr.is_null() {
+            return Ok(0);
+        }
+
+        let handler = &*(handler_ptr as *const ExceptionHandler);
+
+        let name = match CStr::from_ptr(name_ptr).to_str() {
+            Ok(s) => s,
+            Err(_) => return Ok(0),
+        };
+
+        let mut parameter_types = Vec::new();
+        if param_count > 0 && !param_types_ptr.is_null() {
+            for i in 0..param_count as usize {
+                let type_byte = *param_types_ptr.add(i);
+                parameter_types.push(WasmValueType::from(type_byte));
+            }
+        }
+
+        match handler.create_tag(name, parameter_types) {
+            Some(handle) => Ok(handle as c_long),
+            None => Ok(0),
+        }
+    })
 }
 
 /// Capture a stack trace for an exception
@@ -299,21 +303,23 @@ pub unsafe extern "C" fn wasmtime4j_exception_capture_stack_trace(
     handler_ptr: *mut c_void,
     tag_handle: c_long,
 ) -> *mut c_char {
-    if handler_ptr.is_null() {
-        return std::ptr::null_mut();
-    }
-
-    let handler = &*(handler_ptr as *const ExceptionHandler);
-
-    match handler.capture_stack_trace(tag_handle as u64) {
-        Some(trace) => {
-            match CString::new(trace) {
-                Ok(c_str) => c_str.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
+    ffi_boundary_ptr!({
+        if handler_ptr.is_null() {
+            return std::ptr::null_mut();
         }
-        None => std::ptr::null_mut(),
-    }
+
+        let handler = &*(handler_ptr as *const ExceptionHandler);
+
+        match handler.capture_stack_trace(tag_handle as u64) {
+            Some(trace) => {
+                match CString::new(trace) {
+                    Ok(c_str) => c_str.into_raw(),
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            None => std::ptr::null_mut(),
+        }
+    })
 }
 
 /// Check if exception unwinding should continue at the current depth
@@ -332,12 +338,14 @@ pub unsafe extern "C" fn wasmtime4j_exception_perform_unwinding(
     handler_ptr: *mut c_void,
     current_depth: c_int,
 ) -> bool {
-    if handler_ptr.is_null() {
-        return false;
-    }
+    ffi_boundary_result!(false, {
+        if handler_ptr.is_null() {
+            return Ok(false);
+        }
 
-    let handler = &*(handler_ptr as *const ExceptionHandler);
-    handler.perform_unwinding(current_depth)
+        let handler = &*(handler_ptr as *const ExceptionHandler);
+        Ok(handler.perform_unwinding(current_depth))
+    })
 }
 
 /// Close and release an exception handler
@@ -350,13 +358,14 @@ pub unsafe extern "C" fn wasmtime4j_exception_perform_unwinding(
 /// After this call, the handler_ptr is no longer valid.
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_exception_handler_close(handler_ptr: *mut c_void) {
-    if handler_ptr.is_null() {
-        return;
-    }
+    ffi_boundary_void!({
+        if handler_ptr.is_null() {
+            return;
+        }
 
-    let handler = Box::from_raw(handler_ptr as *mut ExceptionHandler);
-    handler.close();
-    // handler is dropped here, releasing resources
+        let handler = Box::from_raw(handler_ptr as *mut ExceptionHandler);
+        handler.close();
+    })
 }
 
 /// Free a string allocated by the exception handling functions
@@ -369,9 +378,11 @@ pub unsafe extern "C" fn wasmtime4j_exception_handler_close(handler_ptr: *mut c_
 /// or null (which is a no-op).
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_exception_free_string(string_ptr: *mut c_char) {
-    if !string_ptr.is_null() {
-        drop(CString::from_raw(string_ptr));
-    }
+    ffi_boundary_void!({
+        if !string_ptr.is_null() {
+            drop(CString::from_raw(string_ptr));
+        }
+    })
 }
 
 #[cfg(test)]

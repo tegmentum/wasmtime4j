@@ -60,7 +60,7 @@ public final class WitInterfaceLinker {
    * @return the linking result
    * @throws WasmException if linking fails
    */
-  public ComponentLinkResult linkComponents(final List<ComponentSimple> components)
+  public ComponentLinkResult linkComponents(final List<Component> components)
       throws WasmException {
     Objects.requireNonNull(components, "components");
     if (components.isEmpty()) {
@@ -111,7 +111,7 @@ public final class WitInterfaceLinker {
    * @throws WasmException if validation fails
    */
   public InterfaceCompatibilityResult validateInterfaceCompatibility(
-      final ComponentSimple provider, final ComponentSimple consumer, final String interfaceName)
+      final Component provider, final Component consumer, final String interfaceName)
       throws WasmException {
 
     Objects.requireNonNull(provider, "provider");
@@ -171,7 +171,7 @@ public final class WitInterfaceLinker {
    * @throws WasmException if binding fails
    */
   public void bindInterface(
-      final ComponentSimple provider, final ComponentSimple consumer, final String interfaceName)
+      final Component provider, final Component consumer, final String interfaceName)
       throws WasmException {
 
     Objects.requireNonNull(provider, "provider");
@@ -265,14 +265,14 @@ public final class WitInterfaceLinker {
    * @return dependency analysis result
    * @throws WasmException if analysis fails
    */
-  private DependencyAnalysis analyzeDependencies(final List<ComponentSimple> components)
+  private DependencyAnalysis analyzeDependencies(final List<Component> components)
       throws WasmException {
     final Map<String, Set<String>> exports = new HashMap<>();
     final Map<String, Set<String>> imports = new HashMap<>();
-    final Map<String, ComponentSimple> componentMap = new HashMap<>();
+    final Map<String, Component> componentMap = new HashMap<>();
 
     // Collect imports and exports for each component
-    for (final ComponentSimple component : components) {
+    for (final Component component : components) {
       final String componentId = component.getId();
       componentMap.put(componentId, component);
 
@@ -390,7 +390,7 @@ public final class WitInterfaceLinker {
    * @return linking manifest
    */
   private LinkingManifest createLinkingManifest(
-      final List<ComponentSimple> components, final List<ComponentLink> links) {
+      final List<Component> components, final List<ComponentLink> links) {
 
     final Map<String, Object> metadata =
         Map.of(
@@ -399,7 +399,7 @@ public final class WitInterfaceLinker {
             "timestamp", System.currentTimeMillis());
 
     return new LinkingManifest(
-        components.stream().map(ComponentSimple::getId).toList(),
+        components.stream().map(Component::getId).toList(),
         links.stream().map(ComponentLink::getLinkId).toList(),
         metadata);
   }
@@ -413,7 +413,7 @@ public final class WitInterfaceLinker {
    * @throws WasmException if extraction fails
    */
   private WitInterfaceDefinition extractInterfaceDefinition(
-      final ComponentSimple component, final String interfaceName) throws WasmException {
+      final Component component, final String interfaceName) throws WasmException {
 
     // Get the WIT interface from the component
     final WitInterfaceDefinition witInterface = component.getWitInterface();
@@ -480,13 +480,13 @@ public final class WitInterfaceLinker {
 
   /** Dependency analysis result. */
   private static final class DependencyAnalysis {
-    private final Map<String, ComponentSimple> components;
+    private final Map<String, Component> components;
     private final Map<String, Set<String>> exports;
     private final Map<String, Set<String>> imports;
     private final Set<String> unsatisfiedImports;
 
     public DependencyAnalysis(
-        final Map<String, ComponentSimple> components,
+        final Map<String, Component> components,
         final Map<String, Set<String>> exports,
         final Map<String, Set<String>> imports,
         final Set<String> unsatisfiedImports) {
@@ -496,7 +496,7 @@ public final class WitInterfaceLinker {
       this.unsatisfiedImports = Set.copyOf(unsatisfiedImports);
     }
 
-    public Map<String, ComponentSimple> getComponents() {
+    public Map<String, Component> getComponents() {
       return components;
     }
 
@@ -587,7 +587,7 @@ public final class WitInterfaceLinker {
   public static final class ComponentLinkResult {
     private final boolean success;
     private final String message;
-    private final List<ComponentSimple> components;
+    private final List<Component> components;
     private final List<ComponentLink> links;
     private final LinkingManifest manifest;
 
@@ -603,7 +603,7 @@ public final class WitInterfaceLinker {
     public ComponentLinkResult(
         final boolean success,
         final String message,
-        final List<ComponentSimple> components,
+        final List<Component> components,
         final List<ComponentLink> links,
         final LinkingManifest manifest) {
       this.success = success;
@@ -621,7 +621,7 @@ public final class WitInterfaceLinker {
       return message;
     }
 
-    public List<ComponentSimple> getComponents() {
+    public List<Component> getComponents() {
       return components;
     }
 

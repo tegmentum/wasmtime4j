@@ -224,34 +224,6 @@ public class JniPerformancePackageTest {
   }
 
   @Nested
-  @DisplayName("JniOptimizationEngine Tests")
-  class JniOptimizationEngineTests {
-
-    @Test
-    @DisplayName("Should be a final class")
-    void shouldBeFinalClass() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "JniOptimizationEngine");
-      assertTrue(Modifier.isFinal(clazz.getModifiers()), "JniOptimizationEngine should be final");
-    }
-
-    @Test
-    @DisplayName("Should have optimization methods")
-    void shouldHaveOptimizationMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "JniOptimizationEngine");
-      boolean hasOptimize = false;
-
-      for (final Method method : clazz.getDeclaredMethods()) {
-        if (method.getName().toLowerCase().contains("optim")) {
-          hasOptimize = true;
-          break;
-        }
-      }
-
-      assertTrue(hasOptimize, "Should have optimization methods");
-    }
-  }
-
-  @Nested
   @DisplayName("Package Completeness Tests")
   class PackageCompletenessTests {
 
@@ -263,7 +235,6 @@ public class JniPerformancePackageTest {
         "NativeCallOptimizer",
         "CompilationCache",
         "NativeObjectPool",
-        "JniOptimizationEngine",
         "OptimizedMarshalling",
         "CallBatch"
       };
@@ -286,8 +257,7 @@ public class JniPerformancePackageTest {
         "PerformanceMonitor",
         "NativeCallOptimizer",
         "CompilationCache",
-        "NativeObjectPool",
-        "JniOptimizationEngine"
+        "NativeObjectPool"
       };
 
       for (final String className : performanceClasses) {
@@ -303,8 +273,7 @@ public class JniPerformancePackageTest {
         "PerformanceMonitor",
         "NativeCallOptimizer",
         "CompilationCache",
-        "NativeObjectPool",
-        "JniOptimizationEngine"
+        "NativeObjectPool"
       };
 
       for (final String className : performanceClasses) {

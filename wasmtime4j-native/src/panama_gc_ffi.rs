@@ -82,12 +82,10 @@ pub extern "C" fn wasmtime4j_gc_register_array_type(
     element_type: i32,
     mutable: u8,
 ) -> i32 {
-    let result = register_array_type_internal(runtime_handle, name_ptr, name_len, element_type, mutable);
-
-    match result {
-        Ok(type_id) => type_id as i32,
-        Err(_) => -1,
-    }
+    ffi_boundary_result!(-1i32, {
+        let type_id = register_array_type_internal(runtime_handle, name_ptr, name_len, element_type, mutable)?;
+        Ok(type_id as i32)
+    })
 }
 
 /// Panama FFI function for creating a struct instance
@@ -98,28 +96,19 @@ pub extern "C" fn wasmtime4j_gc_struct_new(
     field_values_ptr: *const i64,
     field_count: i32,
 ) -> i64 {
-    // DEBUG: Write to file to prove this function is being called
-    use std::io::Write;
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/gc_debug.txt") {
-        let _ = writeln!(f, "[FFI_ENTRY] wasmtime4j_gc_struct_new: runtime={}, type={}, count={}", runtime_handle, type_id, field_count);
-    }
-    let result = struct_new_internal(runtime_handle, type_id, field_values_ptr, field_count);
-
-    match result {
-        Ok(object_id) => object_id as i64,
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0i64, {
+        let object_id = struct_new_internal(runtime_handle, type_id, field_values_ptr, field_count)?;
+        Ok(object_id as i64)
+    })
 }
 
 /// Panama FFI function for creating a struct instance with default values
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_struct_new_default(runtime_handle: i64, type_id: i32) -> i64 {
-    let result = struct_new_default_internal(runtime_handle, type_id);
-
-    match result {
-        Ok(object_id) => object_id as i64,
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0i64, {
+        let object_id = struct_new_default_internal(runtime_handle, type_id)?;
+        Ok(object_id as i64)
+    })
 }
 
 /// Panama FFI function for getting a struct field
@@ -131,18 +120,14 @@ pub extern "C" fn wasmtime4j_gc_struct_get(
     result_value: *mut i64,
     result_type: *mut i32,
 ) -> i32 {
-    let result = struct_get_internal(runtime_handle, object_id, field_index);
-
-    match result {
-        Ok((value, value_type)) => {
-            unsafe {
-                *result_value = value;
-                *result_type = value_type;
-            }
-            FFI_SUCCESS
-        },
-        Err(_) => FFI_ERROR,
-    }
+    ffi_boundary_i32!({
+        let (value, value_type) = struct_get_internal(runtime_handle, object_id, field_index)?;
+        unsafe {
+            *result_value = value;
+            *result_type = value_type;
+        }
+        Ok(FFI_SUCCESS)
+    })
 }
 
 /// Panama FFI function for setting a struct field
@@ -154,12 +139,10 @@ pub extern "C" fn wasmtime4j_gc_struct_set(
     value: i64,
     value_type: i32,
 ) -> i32 {
-    let result = struct_set_internal(runtime_handle, object_id, field_index, value, value_type);
-
-    match result {
-        Ok(_) => FFI_SUCCESS,
-        Err(_) => FFI_ERROR,
-    }
+    ffi_boundary_i32!({
+        struct_set_internal(runtime_handle, object_id, field_index, value, value_type)?;
+        Ok(FFI_SUCCESS)
+    })
 }
 
 /// Panama FFI function for creating an array instance
@@ -170,12 +153,10 @@ pub extern "C" fn wasmtime4j_gc_array_new(
     elements_ptr: *const i64,
     element_count: i32,
 ) -> i64 {
-    let result = array_new_internal(runtime_handle, type_id, elements_ptr, element_count);
-
-    match result {
-        Ok(object_id) => object_id as i64,
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0i64, {
+        let object_id = array_new_internal(runtime_handle, type_id, elements_ptr, element_count)?;
+        Ok(object_id as i64)
+    })
 }
 
 /// Panama FFI function for creating an array instance with default values
@@ -185,12 +166,10 @@ pub extern "C" fn wasmtime4j_gc_array_new_default(
     type_id: i32,
     length: i32,
 ) -> i64 {
-    let result = array_new_default_internal(runtime_handle, type_id, length);
-
-    match result {
-        Ok(object_id) => object_id as i64,
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0i64, {
+        let object_id = array_new_default_internal(runtime_handle, type_id, length)?;
+        Ok(object_id as i64)
+    })
 }
 
 /// Panama FFI function for getting an array element
@@ -202,18 +181,14 @@ pub extern "C" fn wasmtime4j_gc_array_get(
     result_value: *mut i64,
     result_type: *mut i32,
 ) -> i32 {
-    let result = array_get_internal(runtime_handle, object_id, element_index);
-
-    match result {
-        Ok((value, value_type)) => {
-            unsafe {
-                *result_value = value;
-                *result_type = value_type;
-            }
-            FFI_SUCCESS
-        },
-        Err(_) => FFI_ERROR,
-    }
+    ffi_boundary_i32!({
+        let (value, value_type) = array_get_internal(runtime_handle, object_id, element_index)?;
+        unsafe {
+            *result_value = value;
+            *result_type = value_type;
+        }
+        Ok(FFI_SUCCESS)
+    })
 }
 
 /// Panama FFI function for setting an array element
@@ -225,34 +200,28 @@ pub extern "C" fn wasmtime4j_gc_array_set(
     value: i64,
     value_type: i32,
 ) -> i32 {
-    let result = array_set_internal(runtime_handle, object_id, element_index, value, value_type);
-
-    match result {
-        Ok(_) => FFI_SUCCESS,
-        Err(_) => FFI_ERROR,
-    }
+    ffi_boundary_i32!({
+        array_set_internal(runtime_handle, object_id, element_index, value, value_type)?;
+        Ok(FFI_SUCCESS)
+    })
 }
 
 /// Panama FFI function for getting array length
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_array_len(runtime_handle: i64, object_id: i64) -> i32 {
-    let result = array_len_internal(runtime_handle, object_id);
-
-    match result {
-        Ok(length) => length as i32,
-        Err(_) => -1,
-    }
+    ffi_boundary_result!(-1i32, {
+        let length = array_len_internal(runtime_handle, object_id)?;
+        Ok(length as i32)
+    })
 }
 
 /// Panama FFI function for creating an I31 instance
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_i31_new(runtime_handle: i64, value: i32) -> i64 {
-    let result = i31_new_internal(runtime_handle, value);
-
-    match result {
-        Ok(object_id) => object_id as i64,
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0i64, {
+        let object_id = i31_new_internal(runtime_handle, value)?;
+        Ok(object_id as i64)
+    })
 }
 
 /// Panama FFI function for getting I31 value
@@ -262,12 +231,9 @@ pub extern "C" fn wasmtime4j_gc_i31_get(
     object_id: i64,
     signed: u8,
 ) -> i32 {
-    let result = i31_get_internal(runtime_handle, object_id, signed);
-
-    match result {
-        Ok(value) => value,
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0i32, {
+        i31_get_internal(runtime_handle, object_id, signed)
+    })
 }
 
 /// Panama FFI function for reference cast
@@ -277,12 +243,10 @@ pub extern "C" fn wasmtime4j_gc_ref_cast(
     object_id: i64,
     target_type: i32,
 ) -> i64 {
-    let result = ref_cast_internal(runtime_handle, object_id, target_type);
-
-    match result {
-        Ok(cast_object_id) => cast_object_id as i64,
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0i64, {
+        let cast_object_id = ref_cast_internal(runtime_handle, object_id, target_type)?;
+        Ok(cast_object_id as i64)
+    })
 }
 
 /// Panama FFI function for reference test
@@ -292,12 +256,10 @@ pub extern "C" fn wasmtime4j_gc_ref_test(
     object_id: i64,
     target_type: i32,
 ) -> u8 {
-    let result = ref_test_internal(runtime_handle, object_id, target_type);
-
-    match result {
-        Ok(test_result) => if test_result { 1 } else { 0 },
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0u8, {
+        let test_result = ref_test_internal(runtime_handle, object_id, target_type)?;
+        Ok(if test_result { 1 } else { 0 })
+    })
 }
 
 /// Panama FFI function for reference equality
@@ -307,23 +269,19 @@ pub extern "C" fn wasmtime4j_gc_ref_eq(
     object_id1: i64,
     object_id2: i64,
 ) -> u8 {
-    let result = ref_eq_internal(runtime_handle, object_id1, object_id2);
-
-    match result {
-        Ok(eq_result) => if eq_result { 1 } else { 0 },
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0u8, {
+        let eq_result = ref_eq_internal(runtime_handle, object_id1, object_id2)?;
+        Ok(if eq_result { 1 } else { 0 })
+    })
 }
 
 /// Panama FFI function for null check
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_ref_is_null(runtime_handle: i64, object_id: i64) -> u8 {
-    let result = ref_is_null_internal(runtime_handle, object_id);
-
-    match result {
-        Ok(is_null) => if is_null { 1 } else { 0 },
-        Err(_) => 0,
-    }
+    ffi_boundary_result!(0u8, {
+        let is_null = ref_is_null_internal(runtime_handle, object_id)?;
+        Ok(if is_null { 1 } else { 0 })
+    })
 }
 
 /// Panama FFI function for garbage collection
@@ -332,19 +290,15 @@ pub extern "C" fn wasmtime4j_gc_collect_garbage(
     runtime_handle: i64,
     stats_ptr: *mut GcStatsFFI,
 ) -> i32 {
-    let result = collect_garbage_internal(runtime_handle);
-
-    match result {
-        Ok(stats) => {
-            if !stats_ptr.is_null() {
-                unsafe {
-                    *stats_ptr = stats;
-                }
+    ffi_boundary_i32!({
+        let stats = collect_garbage_internal(runtime_handle)?;
+        if !stats_ptr.is_null() {
+            unsafe {
+                *stats_ptr = stats;
             }
-            FFI_SUCCESS
-        },
-        Err(_) => FFI_ERROR,
-    }
+        }
+        Ok(FFI_SUCCESS)
+    })
 }
 
 /// Panama FFI function for getting GC stats
@@ -353,19 +307,15 @@ pub extern "C" fn wasmtime4j_gc_get_stats(
     runtime_handle: i64,
     stats_ptr: *mut GcStatsFFI,
 ) -> i32 {
-    let result = get_gc_stats_internal(runtime_handle);
-
-    match result {
-        Ok(stats) => {
-            if !stats_ptr.is_null() {
-                unsafe {
-                    *stats_ptr = stats;
-                }
+    ffi_boundary_i32!({
+        let stats = get_gc_stats_internal(runtime_handle)?;
+        if !stats_ptr.is_null() {
+            unsafe {
+                *stats_ptr = stats;
             }
-            FFI_SUCCESS
-        },
-        Err(_) => FFI_ERROR,
-    }
+        }
+        Ok(FFI_SUCCESS)
+    })
 }
 
 /// FFI-compatible GC statistics structure
