@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentEngine;
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.ComponentEngineDebugInfo;
@@ -16,10 +17,7 @@ import ai.tegmentum.wasmtime4j.ComponentGarbageCollectionResult;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentLoadConfig;
 import ai.tegmentum.wasmtime4j.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.ComponentOrchestrationConfig;
-import ai.tegmentum.wasmtime4j.ComponentOrchestrator;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.ComponentVersion;
 import ai.tegmentum.wasmtime4j.EngineConfig;
@@ -642,14 +640,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   @Override
   public Optional<Integer> getMaxLinkDepth() {
     return Optional.of(10); // Configurable limit
-  }
-
-  // Advanced Orchestration Features - Basic implementations
-
-  public ComponentOrchestrator createOrchestrator(
-      final ComponentOrchestrationConfig orchestrationConfig) throws WasmException {
-    ensureNotClosed();
-    throw new UnsupportedOperationException("Component orchestration not yet implemented");
   }
 
   // Resource Management

@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentAuditLog;
 import ai.tegmentum.wasmtime4j.ComponentBackup;
 import ai.tegmentum.wasmtime4j.ComponentBackupConfig;
@@ -19,7 +20,6 @@ import ai.tegmentum.wasmtime4j.ComponentResourceLimits;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentRestoreOptions;
 import ai.tegmentum.wasmtime4j.ComponentSecurityPolicy;
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentStateTransitionConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;

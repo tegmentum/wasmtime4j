@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive test suite for core root package classes (Phase 21).
  *
- * <p>This test file covers all 18 existing core root package classes:
+ * <p>This test file covers the existing core root package classes:
  *
  * <ul>
  *   <li>WasmExecutionContext - Execution context interface
@@ -40,12 +40,10 @@ import org.junit.jupiter.api.Test;
  *   <li>ComplexMarshalingService - Marshaling service class
  *   <li>ComponentEngineStatistics - Statistics interface
  *   <li>ComponentLinker - Component linking interface
- *   <li>ComponentResourceSharingManager - Resource sharing interface
  *   <li>InstanceManager - Instance pooling interface
  *   <li>WitInterfaceLinker - WIT interface linking class
  *   <li>WitTypeValidator - Type validation class
  *   <li>ComponentLifecycleManager - Lifecycle management interface
- *   <li>ComponentFuture - Async future interface
  *   <li>DebugFrame - Debug frame class
  *   <li>WasmMemory - Memory interface
  *   <li>StoreBuilder - Builder for stores
@@ -861,113 +859,6 @@ class CoreRootPackageTest {
   }
 
   // ========================================================================
-  // ComponentResourceSharingManager Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("ComponentResourceSharingManager Interface Tests")
-  class ComponentResourceSharingManagerTests {
-
-    @Test
-    @DisplayName("should be an interface")
-    void shouldBeAnInterface() {
-      assertTrue(
-          ComponentResourceSharingManager.class.isInterface(),
-          "ComponentResourceSharingManager should be an interface");
-    }
-
-    @Test
-    @DisplayName("should have getId method")
-    void shouldHaveGetIdMethod() throws NoSuchMethodException {
-      Method method = ComponentResourceSharingManager.class.getMethod("getId");
-      assertNotNull(method, "getId method should exist");
-      assertEquals(String.class, method.getReturnType(), "Return type should be String");
-    }
-
-    @Test
-    @DisplayName("should have getConfiguration method")
-    void shouldHaveGetConfigurationMethod() throws NoSuchMethodException {
-      Method method = ComponentResourceSharingManager.class.getMethod("getConfiguration");
-      assertNotNull(method, "getConfiguration method should exist");
-    }
-
-    @Test
-    @DisplayName("should have getResourcePool method")
-    void shouldHaveGetResourcePoolMethod() throws NoSuchMethodException {
-      Method method =
-          ComponentResourceSharingManager.class.getMethod("getResourcePool", String.class);
-      assertNotNull(method, "getResourcePool method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
-    }
-
-    @Test
-    @DisplayName("should have removeResourcePool method")
-    void shouldHaveRemoveResourcePoolMethod() throws NoSuchMethodException {
-      Method method =
-          ComponentResourceSharingManager.class.getMethod("removeResourcePool", String.class);
-      assertNotNull(method, "removeResourcePool method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
-    }
-
-    @Test
-    @DisplayName("should have allocateResources method returning CompletableFuture")
-    void shouldHaveAllocateResourcesMethod() throws NoSuchMethodException {
-      Method method =
-          ComponentResourceSharingManager.class.getMethod(
-              "allocateResources",
-              Component.class,
-              String.class,
-              ComponentResourceSharingManager.ResourceAllocationRequest.class);
-      assertNotNull(method, "allocateResources method should exist");
-      assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "Return type should be CompletableFuture");
-    }
-
-    @Test
-    @DisplayName("should have getStatistics method")
-    void shouldHaveGetStatisticsMethod() throws NoSuchMethodException {
-      Method method = ComponentResourceSharingManager.class.getMethod("getStatistics");
-      assertNotNull(method, "getStatistics method should exist");
-    }
-
-    @Test
-    @DisplayName("should have start method")
-    void shouldHaveStartMethod() throws NoSuchMethodException {
-      Method method = ComponentResourceSharingManager.class.getMethod("start");
-      assertNotNull(method, "start method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
-    }
-
-    @Test
-    @DisplayName("should have stop method")
-    void shouldHaveStopMethod() throws NoSuchMethodException {
-      Method method = ComponentResourceSharingManager.class.getMethod("stop");
-      assertNotNull(method, "stop method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
-    }
-
-    @Test
-    @DisplayName("should have close method")
-    void shouldHaveCloseMethod() throws NoSuchMethodException {
-      Method method = ComponentResourceSharingManager.class.getMethod("close");
-      assertNotNull(method, "close method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
-    }
-
-    @Test
-    @DisplayName("should have ResourceType inner enum")
-    void shouldHaveResourceTypeEnum() {
-      Class<?>[] innerClasses = ComponentResourceSharingManager.class.getDeclaredClasses();
-      boolean hasResourceType =
-          Arrays.stream(innerClasses)
-              .anyMatch(c -> c.getSimpleName().equals("ResourceType") && c.isEnum());
-      assertTrue(hasResourceType, "Should have ResourceType inner enum");
-    }
-  }
-
-  // ========================================================================
   // InstanceManager Tests
   // ========================================================================
 
@@ -1383,163 +1274,6 @@ class CoreRootPackageTest {
           Arrays.stream(innerClasses)
               .anyMatch(c -> c.getSimpleName().equals("ComponentRestartPolicy") && c.isEnum());
       assertTrue(hasPolicy, "Should have ComponentRestartPolicy inner enum");
-    }
-  }
-
-  // ========================================================================
-  // ComponentFuture Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("ComponentFuture Interface Tests")
-  class ComponentFutureTests {
-
-    @Test
-    @DisplayName("should be an interface")
-    void shouldBeAnInterface() {
-      assertTrue(ComponentFuture.class.isInterface(), "ComponentFuture should be an interface");
-    }
-
-    @Test
-    @DisplayName("should be a generic interface")
-    void shouldBeGenericInterface() {
-      TypeVariable<?>[] typeParams = ComponentFuture.class.getTypeParameters();
-      assertEquals(1, typeParams.length, "ComponentFuture should have one type parameter");
-      assertEquals("T", typeParams[0].getName(), "Type parameter should be named T");
-    }
-
-    @Test
-    @DisplayName("should have getPayloadType method")
-    void shouldHaveGetPayloadTypeMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("getPayloadType");
-      assertNotNull(method, "getPayloadType method should exist");
-      assertEquals(WitType.class, method.getReturnType(), "Return type should be WitType");
-    }
-
-    @Test
-    @DisplayName("should have isReady method")
-    void shouldHaveIsReadyMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("isReady");
-      assertNotNull(method, "isReady method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Return type should be boolean");
-    }
-
-    @Test
-    @DisplayName("should have get method without timeout")
-    void shouldHaveGetMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("get");
-      assertNotNull(method, "get method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
-    }
-
-    @Test
-    @DisplayName("should have get method with timeout")
-    void shouldHaveGetWithTimeoutMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("get", long.class, TimeUnit.class);
-      assertNotNull(method, "get method with timeout should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
-    }
-
-    @Test
-    @DisplayName("should have getBlocking method")
-    void shouldHaveGetBlockingMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("getBlocking");
-      assertNotNull(method, "getBlocking method should exist");
-    }
-
-    @Test
-    @DisplayName("should have subscribe method")
-    void shouldHaveSubscribeMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("subscribe");
-      assertNotNull(method, "subscribe method should exist");
-      assertEquals(
-          WasiPollable.class, method.getReturnType(), "Return type should be WasiPollable");
-    }
-
-    @Test
-    @DisplayName("should have isDone method")
-    void shouldHaveIsDoneMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("isDone");
-      assertNotNull(method, "isDone method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Return type should be boolean");
-    }
-
-    @Test
-    @DisplayName("should have isCompletedExceptionally method")
-    void shouldHaveIsCompletedExceptionallyMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("isCompletedExceptionally");
-      assertNotNull(method, "isCompletedExceptionally method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Return type should be boolean");
-    }
-
-    @Test
-    @DisplayName("should have getException method")
-    void shouldHaveGetExceptionMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("getException");
-      assertNotNull(method, "getException method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
-    }
-
-    @Test
-    @DisplayName("should have toCompletableFuture method")
-    void shouldHaveToCompletableFutureMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("toCompletableFuture");
-      assertNotNull(method, "toCompletableFuture method should exist");
-      assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "Return type should be CompletableFuture");
-    }
-
-    @Test
-    @DisplayName("should have close method")
-    void shouldHaveCloseMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("close");
-      assertNotNull(method, "close method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
-    }
-
-    @Test
-    @DisplayName("should have getState method")
-    void shouldHaveGetStateMethod() throws NoSuchMethodException {
-      Method method = ComponentFuture.class.getMethod("getState");
-      assertNotNull(method, "getState method should exist");
-    }
-
-    @Test
-    @DisplayName("should have State inner enum")
-    void shouldHaveStateEnum() {
-      Class<?>[] innerClasses = ComponentFuture.class.getDeclaredClasses();
-      boolean hasState =
-          Arrays.stream(innerClasses)
-              .anyMatch(c -> c.getSimpleName().equals("State") && c.isEnum());
-      assertTrue(hasState, "Should have State inner enum");
-    }
-
-    @Test
-    @DisplayName("State enum should have expected values")
-    void stateEnumShouldHaveExpectedValues() throws ClassNotFoundException {
-      Class<?>[] innerClasses = ComponentFuture.class.getDeclaredClasses();
-      Class<?> stateClass =
-          Arrays.stream(innerClasses)
-              .filter(c -> c.getSimpleName().equals("State") && c.isEnum())
-              .findFirst()
-              .orElseThrow(() -> new ClassNotFoundException("State enum not found"));
-
-      Object[] enumConstants = stateClass.getEnumConstants();
-      assertNotNull(enumConstants, "State enum should have constants");
-      assertTrue(enumConstants.length >= 4, "State enum should have at least 4 values");
-
-      String[] constantNames =
-          Arrays.stream(enumConstants).map(Object::toString).toArray(String[]::new);
-
-      assertTrue(
-          Arrays.asList(constantNames).contains("PENDING"), "State enum should have PENDING");
-      assertTrue(
-          Arrays.asList(constantNames).contains("COMPLETED"), "State enum should have COMPLETED");
-      assertTrue(Arrays.asList(constantNames).contains("FAILED"), "State enum should have FAILED");
-      assertTrue(
-          Arrays.asList(constantNames).contains("CANCELLED"), "State enum should have CANCELLED");
     }
   }
 

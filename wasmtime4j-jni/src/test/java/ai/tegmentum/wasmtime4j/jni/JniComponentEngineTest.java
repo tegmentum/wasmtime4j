@@ -960,26 +960,6 @@ class JniComponentEngineTest {
   }
 
   @Nested
-  @DisplayName("Orchestration Method Tests")
-  class OrchestrationMethodTests {
-
-    @Test
-    @DisplayName("Should have createOrchestrator method")
-    void shouldHaveCreateOrchestratorMethod() {
-      boolean hasMethod =
-          Arrays.stream(getTestedClass().getDeclaredMethods())
-              .anyMatch(
-                  m ->
-                      m.getName().equals("createOrchestrator")
-                          && m.getParameterCount() == 1
-                          && m.getParameterTypes()[0]
-                              .getSimpleName()
-                              .equals("ComponentOrchestrationConfig"));
-      assertTrue(hasMethod, "Should have createOrchestrator method");
-    }
-  }
-
-  @Nested
   @DisplayName("Lifecycle Method Tests")
   class LifecycleMethodTests {
 

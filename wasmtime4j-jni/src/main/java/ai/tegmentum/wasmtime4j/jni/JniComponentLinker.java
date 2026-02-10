@@ -16,13 +16,13 @@
 
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentHostFunction;
 import ai.tegmentum.wasmtime4j.ComponentImportValidation;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentLinker;
 import ai.tegmentum.wasmtime4j.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiPreview2Config;

@@ -15,7 +15,6 @@ import ai.tegmentum.wasmtime4j.ComponentCapability;
 import ai.tegmentum.wasmtime4j.ComponentCompatibility;
 import ai.tegmentum.wasmtime4j.ComponentCompatibilityResult;
 import ai.tegmentum.wasmtime4j.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.ComponentDebuggingSystem;
 import ai.tegmentum.wasmtime4j.ComponentDependencyGraph;
 import ai.tegmentum.wasmtime4j.ComponentEngineDebugInfo;
 import ai.tegmentum.wasmtime4j.ComponentEngineHealth;
@@ -26,46 +25,31 @@ import ai.tegmentum.wasmtime4j.ComponentEngineOptimizationResult;
 import ai.tegmentum.wasmtime4j.ComponentEngineResourceLimits;
 import ai.tegmentum.wasmtime4j.ComponentEngineResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentEngineStatistics;
-import ai.tegmentum.wasmtime4j.ComponentEvent;
-import ai.tegmentum.wasmtime4j.ComponentEventConfig;
 import ai.tegmentum.wasmtime4j.ComponentFeature;
-import ai.tegmentum.wasmtime4j.ComponentFuture;
 import ai.tegmentum.wasmtime4j.ComponentGarbageCollectionConfig;
 import ai.tegmentum.wasmtime4j.ComponentGarbageCollectionResult;
 import ai.tegmentum.wasmtime4j.ComponentImportValidation;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentLifecycleManager;
 import ai.tegmentum.wasmtime4j.ComponentLinkInfo;
-import ai.tegmentum.wasmtime4j.ComponentLinkingConfig;
-import ai.tegmentum.wasmtime4j.ComponentLoadConditions;
 import ai.tegmentum.wasmtime4j.ComponentLoadConfig;
 import ai.tegmentum.wasmtime4j.ComponentMetrics;
 import ai.tegmentum.wasmtime4j.ComponentMonitoringConfig;
 import ai.tegmentum.wasmtime4j.ComponentOptimizationConfig;
 import ai.tegmentum.wasmtime4j.ComponentOptimizationResult;
-import ai.tegmentum.wasmtime4j.ComponentOrchestrationConfig;
-import ai.tegmentum.wasmtime4j.ComponentOrchestrator;
-import ai.tegmentum.wasmtime4j.ComponentPipelineConfig;
-import ai.tegmentum.wasmtime4j.ComponentPipelineSpec;
-import ai.tegmentum.wasmtime4j.ComponentPipelineStream;
 import ai.tegmentum.wasmtime4j.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.ComponentRegistryStatistics;
 import ai.tegmentum.wasmtime4j.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.ComponentResourceLimits;
-import ai.tegmentum.wasmtime4j.ComponentResourceSharingManager;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.ComponentRestoreOptions;
 import ai.tegmentum.wasmtime4j.ComponentSearchCriteria;
 import ai.tegmentum.wasmtime4j.ComponentSecurityPolicy;
 import ai.tegmentum.wasmtime4j.ComponentSpecification;
 import ai.tegmentum.wasmtime4j.ComponentStateTransitionConfig;
-import ai.tegmentum.wasmtime4j.ComponentStream;
-import ai.tegmentum.wasmtime4j.ComponentSwapConfig;
-import ai.tegmentum.wasmtime4j.ComponentSwapResult;
 import ai.tegmentum.wasmtime4j.ComponentValFactory;
 import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.ComponentVersionCompatibilityChecker;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -105,18 +89,6 @@ public class ComponentModelIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should verify ComponentOrchestrator is an interface")
-    void shouldVerifyComponentOrchestratorIsInterface() {
-      LOGGER.info("Testing ComponentOrchestrator interface");
-
-      assertTrue(
-          ComponentOrchestrator.class.isInterface(),
-          "ComponentOrchestrator should be an interface");
-
-      LOGGER.info("ComponentOrchestrator interface verified");
-    }
-
-    @Test
     @DisplayName("Should verify ComponentRegistry is an interface")
     void shouldVerifyComponentRegistryIsInterface() {
       LOGGER.info("Testing ComponentRegistry interface");
@@ -153,31 +125,6 @@ public class ComponentModelIntegrationTest {
           ComponentLoadConfig.class.isInterface(), "ComponentLoadConfig should be an interface");
 
       LOGGER.info("ComponentLoadConfig interface verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentLinkingConfig is a class")
-    void shouldVerifyComponentLinkingConfigIsClass() {
-      LOGGER.info("Testing ComponentLinkingConfig class");
-
-      assertFalse(
-          ComponentLinkingConfig.class.isInterface(), "ComponentLinkingConfig should be a class");
-      assertFalse(
-          ComponentLinkingConfig.class.isEnum(), "ComponentLinkingConfig should not be an enum");
-
-      LOGGER.info("ComponentLinkingConfig class verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentOrchestrationConfig is an interface")
-    void shouldVerifyComponentOrchestrationConfigIsInterface() {
-      LOGGER.info("Testing ComponentOrchestrationConfig interface");
-
-      assertTrue(
-          ComponentOrchestrationConfig.class.isInterface(),
-          "ComponentOrchestrationConfig should be an interface");
-
-      LOGGER.info("ComponentOrchestrationConfig interface verified");
     }
 
     @Test
@@ -276,17 +223,6 @@ public class ComponentModelIntegrationTest {
           "ComponentCompatibilityResult should not be an enum");
 
       LOGGER.info("ComponentCompatibilityResult class verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentSwapResult is a class")
-    void shouldVerifyComponentSwapResultIsClass() {
-      LOGGER.info("Testing ComponentSwapResult class");
-
-      assertFalse(ComponentSwapResult.class.isInterface(), "ComponentSwapResult should be a class");
-      assertFalse(ComponentSwapResult.class.isEnum(), "ComponentSwapResult should not be an enum");
-
-      LOGGER.info("ComponentSwapResult class verified");
     }
 
     @Test
@@ -458,35 +394,11 @@ public class ComponentModelIntegrationTest {
 
       LOGGER.info("ComponentResourceDefinition interface verified");
     }
-
-    @Test
-    @DisplayName("Should verify ComponentResourceSharingManager is an interface")
-    void shouldVerifyComponentResourceSharingManagerIsInterface() {
-      LOGGER.info("Testing ComponentResourceSharingManager interface");
-
-      assertTrue(
-          ComponentResourceSharingManager.class.isInterface(),
-          "ComponentResourceSharingManager should be an interface");
-
-      LOGGER.info("ComponentResourceSharingManager interface verified");
-    }
   }
 
   @Nested
   @DisplayName("Component Debugging Interfaces Tests")
   class ComponentDebuggingInterfacesTests {
-
-    @Test
-    @DisplayName("Should verify ComponentDebuggingSystem is an interface")
-    void shouldVerifyComponentDebuggingSystemIsInterface() {
-      LOGGER.info("Testing ComponentDebuggingSystem interface");
-
-      assertTrue(
-          ComponentDebuggingSystem.class.isInterface(),
-          "ComponentDebuggingSystem should be an interface");
-
-      LOGGER.info("ComponentDebuggingSystem interface verified");
-    }
 
     @Test
     @DisplayName("Should verify ComponentDebugInfo is an interface")
@@ -507,59 +419,6 @@ public class ComponentModelIntegrationTest {
       assertTrue(ComponentAuditLog.class.isInterface(), "ComponentAuditLog should be an interface");
 
       LOGGER.info("ComponentAuditLog interface verified");
-    }
-  }
-
-  @Nested
-  @DisplayName("Component Pipeline Interfaces Tests")
-  class ComponentPipelineInterfacesTests {
-
-    @Test
-    @DisplayName("Should verify ComponentPipelineConfig is a class")
-    void shouldVerifyComponentPipelineConfigIsClass() {
-      LOGGER.info("Testing ComponentPipelineConfig class");
-
-      assertFalse(
-          ComponentPipelineConfig.class.isInterface(), "ComponentPipelineConfig should be a class");
-      assertFalse(
-          ComponentPipelineConfig.class.isEnum(), "ComponentPipelineConfig should not be an enum");
-
-      LOGGER.info("ComponentPipelineConfig class verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentPipelineSpec is a class")
-    void shouldVerifyComponentPipelineSpecIsClass() {
-      LOGGER.info("Testing ComponentPipelineSpec class");
-
-      assertFalse(
-          ComponentPipelineSpec.class.isInterface(), "ComponentPipelineSpec should be a class");
-      assertFalse(
-          ComponentPipelineSpec.class.isEnum(), "ComponentPipelineSpec should not be an enum");
-
-      LOGGER.info("ComponentPipelineSpec class verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentPipelineStream is an interface")
-    void shouldVerifyComponentPipelineStreamIsInterface() {
-      LOGGER.info("Testing ComponentPipelineStream interface");
-
-      assertTrue(
-          ComponentPipelineStream.class.isInterface(),
-          "ComponentPipelineStream should be an interface");
-
-      LOGGER.info("ComponentPipelineStream interface verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentStream is an interface")
-    void shouldVerifyComponentStreamIsInterface() {
-      LOGGER.info("Testing ComponentStream interface");
-
-      assertTrue(ComponentStream.class.isInterface(), "ComponentStream should be an interface");
-
-      LOGGER.info("ComponentStream interface verified");
     }
   }
 
@@ -607,17 +466,6 @@ public class ComponentModelIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should verify ComponentEvent is a class")
-    void shouldVerifyComponentEventIsClass() {
-      LOGGER.info("Testing ComponentEvent class");
-
-      assertFalse(ComponentEvent.class.isInterface(), "ComponentEvent should be a class");
-      assertFalse(ComponentEvent.class.isEnum(), "ComponentEvent should not be an enum");
-
-      LOGGER.info("ComponentEvent class verified");
-    }
-
-    @Test
     @DisplayName("Should verify ComponentFeature is an enum")
     void shouldVerifyComponentFeatureIsEnum() {
       LOGGER.info("Testing ComponentFeature enum");
@@ -625,16 +473,6 @@ public class ComponentModelIntegrationTest {
       assertTrue(ComponentFeature.class.isEnum(), "ComponentFeature should be an enum");
 
       LOGGER.info("ComponentFeature enum verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentFuture is an interface")
-    void shouldVerifyComponentFutureIsInterface() {
-      LOGGER.info("Testing ComponentFuture interface");
-
-      assertTrue(ComponentFuture.class.isInterface(), "ComponentFuture should be an interface");
-
-      LOGGER.info("ComponentFuture interface verified");
     }
 
     @Test
@@ -661,19 +499,6 @@ public class ComponentModelIntegrationTest {
       assertFalse(ComponentLinkInfo.class.isEnum(), "ComponentLinkInfo should not be an enum");
 
       LOGGER.info("ComponentLinkInfo class verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentLoadConditions is a class")
-    void shouldVerifyComponentLoadConditionsIsClass() {
-      LOGGER.info("Testing ComponentLoadConditions class");
-
-      assertFalse(
-          ComponentLoadConditions.class.isInterface(), "ComponentLoadConditions should be a class");
-      assertFalse(
-          ComponentLoadConditions.class.isEnum(), "ComponentLoadConditions should not be an enum");
-
-      LOGGER.info("ComponentLoadConditions class verified");
     }
 
     @Test
@@ -721,18 +546,6 @@ public class ComponentModelIntegrationTest {
       assertFalse(ComponentValFactory.class.isEnum(), "ComponentValFactory should not be an enum");
 
       LOGGER.info("ComponentValFactory class verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentVersionCompatibilityChecker is an interface")
-    void shouldVerifyComponentVersionCompatibilityCheckerIsInterface() {
-      LOGGER.info("Testing ComponentVersionCompatibilityChecker interface");
-
-      assertTrue(
-          ComponentVersionCompatibilityChecker.class.isInterface(),
-          "ComponentVersionCompatibilityChecker should be an interface");
-
-      LOGGER.info("ComponentVersionCompatibilityChecker interface verified");
     }
   }
 
@@ -793,12 +606,11 @@ public class ComponentModelIntegrationTest {
 
       LOGGER.info("ComponentRegistryStatistics class verified");
     }
-
   }
 
   @Nested
-  @DisplayName("Component State and Swap Interfaces Tests")
-  class ComponentStateSwapInterfacesTests {
+  @DisplayName("Component State Interfaces Tests")
+  class ComponentStateInterfacesTests {
 
     @Test
     @DisplayName("Should verify ComponentStateTransitionConfig is an interface")
@@ -810,30 +622,6 @@ public class ComponentModelIntegrationTest {
           "ComponentStateTransitionConfig should be an interface");
 
       LOGGER.info("ComponentStateTransitionConfig interface verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentSwapConfig is a class")
-    void shouldVerifyComponentSwapConfigIsClass() {
-      LOGGER.info("Testing ComponentSwapConfig class");
-
-      assertFalse(ComponentSwapConfig.class.isInterface(), "ComponentSwapConfig should be a class");
-      assertFalse(ComponentSwapConfig.class.isEnum(), "ComponentSwapConfig should not be an enum");
-
-      LOGGER.info("ComponentSwapConfig class verified");
-    }
-
-    @Test
-    @DisplayName("Should verify ComponentEventConfig is a class")
-    void shouldVerifyComponentEventConfigIsClass() {
-      LOGGER.info("Testing ComponentEventConfig class");
-
-      assertFalse(
-          ComponentEventConfig.class.isInterface(), "ComponentEventConfig should be a class");
-      assertFalse(
-          ComponentEventConfig.class.isEnum(), "ComponentEventConfig should not be an enum");
-
-      LOGGER.info("ComponentEventConfig class verified");
     }
 
     @Test
