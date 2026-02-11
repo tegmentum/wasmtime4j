@@ -19,10 +19,10 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncHostFunction;
-import ai.tegmentum.wasmtime4j.CallbackRegistry.CallbackHandle;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncHostFunction;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackHandle;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import org.junit.jupiter.api.BeforeEach;
@@ -230,7 +230,7 @@ class JniCallbackRegistryTest {
 
   @Test
   void testInvokeAsyncCallbackWithNullParams() throws WasmException {
-    final ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncCallbackHandle fakeHandle =
+    final ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle fakeHandle =
         createFakeAsyncCallbackHandle(1L, "test");
 
     final NullPointerException exception =
@@ -245,7 +245,7 @@ class JniCallbackRegistryTest {
 
   @Test
   void testInvokeAsyncCallbackWithInvalidHandle() throws WasmException {
-    final ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncCallbackHandle invalidHandle =
+    final ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle invalidHandle =
         createInvalidAsyncCallbackHandle(1L, "test");
 
     final WasmException exception =
@@ -258,7 +258,7 @@ class JniCallbackRegistryTest {
 
   @Test
   void testGetMetricsReturnsNonNull() {
-    final ai.tegmentum.wasmtime4j.CallbackRegistry.CallbackMetrics metrics = registry.getMetrics();
+    final ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackMetrics metrics = registry.getMetrics();
 
     assertThat(metrics).isNotNull();
     assertThat(metrics.getTotalInvocations()).isEqualTo(0);
@@ -347,9 +347,9 @@ class JniCallbackRegistryTest {
     };
   }
 
-  private ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncCallbackHandle
+  private ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle
       createFakeAsyncCallbackHandle(final long id, final String name) {
-    return new ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncCallbackHandle() {
+    return new ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle() {
       @Override
       public long getId() {
         return id;
@@ -382,9 +382,9 @@ class JniCallbackRegistryTest {
     };
   }
 
-  private ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncCallbackHandle
+  private ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle
       createInvalidAsyncCallbackHandle(final long id, final String name) {
-    return new ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncCallbackHandle() {
+    return new ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle() {
       @Override
       public long getId() {
         return id;

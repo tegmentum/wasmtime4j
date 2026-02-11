@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**

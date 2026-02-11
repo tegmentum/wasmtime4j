@@ -16,10 +16,10 @@
 
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.CallbackRegistry;
-import ai.tegmentum.wasmtime4j.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.ref.WeakReference;

@@ -16,8 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.validation;
 
-import ai.tegmentum.wasmtime4j.Caller;
-import ai.tegmentum.wasmtime4j.Function;
+import ai.tegmentum.wasmtime4j.func.Caller;
+import ai.tegmentum.wasmtime4j.func.Function;
 import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.Table;

@@ -449,7 +449,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
           if (funcrefValue == null) {
             return null;
           }
-          if (funcrefValue instanceof ai.tegmentum.wasmtime4j.FunctionReference) {
+          if (funcrefValue instanceof ai.tegmentum.wasmtime4j.func.FunctionReference) {
             // Cast to JniFunctionReference to get native handle
             if (funcrefValue instanceof JniFunctionReference) {
               return ((JniFunctionReference) funcrefValue).getNativeHandle();

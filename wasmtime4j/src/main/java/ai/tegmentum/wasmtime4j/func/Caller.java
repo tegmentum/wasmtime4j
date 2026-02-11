@@ -1,4 +1,18 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.func;
+
+import ai.tegmentum.wasmtime4j.Table;
+
+import ai.tegmentum.wasmtime4j.ModuleExport;
+
+import ai.tegmentum.wasmtime4j.Memory;
+
+import ai.tegmentum.wasmtime4j.Global;
+
+import ai.tegmentum.wasmtime4j.Export;
+
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+
+import ai.tegmentum.wasmtime4j.Engine;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Optional;

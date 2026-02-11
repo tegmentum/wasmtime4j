@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.func.Function;
+
 /**
  * Types of WebAssembly runtime implementations.
  *

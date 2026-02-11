@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.Function;
+import ai.tegmentum.wasmtime4j.func.Function;
 import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.Table;

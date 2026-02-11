@@ -19,11 +19,11 @@ package ai.tegmentum.wasmtime4j.core;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;

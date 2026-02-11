@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;

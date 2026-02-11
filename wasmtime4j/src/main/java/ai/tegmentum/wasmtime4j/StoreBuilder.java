@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.func.Caller;
+
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 
 /**

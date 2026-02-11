@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.TypedFunc;
+import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;

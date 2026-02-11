@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;

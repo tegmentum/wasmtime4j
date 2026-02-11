@@ -226,7 +226,7 @@ class JniProviderClassesTest {
         Method method = JniCallerContextProvider.class.getMethod("getCurrentCaller");
         assertNotNull(method, "getCurrentCaller method should exist");
         assertEquals(
-            ai.tegmentum.wasmtime4j.Caller.class,
+            ai.tegmentum.wasmtime4j.func.Caller.class,
             method.getReturnType(),
             "getCurrentCaller should return Caller");
         assertTrue(Modifier.isPublic(method.getModifiers()), "getCurrentCaller should be public");

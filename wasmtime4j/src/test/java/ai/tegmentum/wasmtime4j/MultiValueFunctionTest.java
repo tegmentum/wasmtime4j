@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+
+import ai.tegmentum.wasmtime4j.func.Function;
+
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 
 

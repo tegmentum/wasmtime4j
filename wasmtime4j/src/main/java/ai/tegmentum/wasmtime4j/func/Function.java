@@ -1,4 +1,6 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.func;
+
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.List;

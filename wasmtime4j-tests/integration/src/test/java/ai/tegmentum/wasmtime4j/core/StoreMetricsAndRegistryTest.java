@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.CallbackRegistry;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;

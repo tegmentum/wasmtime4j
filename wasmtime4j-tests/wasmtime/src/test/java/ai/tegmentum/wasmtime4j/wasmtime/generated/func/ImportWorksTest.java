@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.wasmtime.generated.func;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import ai.tegmentum.wasmtime4j.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;

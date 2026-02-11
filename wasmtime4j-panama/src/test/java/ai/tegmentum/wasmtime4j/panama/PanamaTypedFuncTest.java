@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.tegmentum.wasmtime4j.TypedFunc;
+import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;

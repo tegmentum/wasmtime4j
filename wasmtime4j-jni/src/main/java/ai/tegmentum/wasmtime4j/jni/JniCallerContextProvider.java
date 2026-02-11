@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.spi.CallerContextProvider;
 
 /**

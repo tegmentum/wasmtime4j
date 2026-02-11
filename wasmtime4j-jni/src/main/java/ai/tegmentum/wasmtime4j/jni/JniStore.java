@@ -1,10 +1,10 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.CallbackRegistry;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -1524,11 +1524,11 @@ public final class JniStore extends JniResource implements Store {
   private native void nativeClearEpochDeadlineCallback(long storeHandle);
 
   // Call hook support
-  private ai.tegmentum.wasmtime4j.CallHookHandler callHookHandler;
+  private ai.tegmentum.wasmtime4j.func.CallHookHandler callHookHandler;
   private ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler asyncCallHookHandler;
 
   @Override
-  public void setCallHook(final ai.tegmentum.wasmtime4j.CallHookHandler handler)
+  public void setCallHook(final ai.tegmentum.wasmtime4j.func.CallHookHandler handler)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
     this.callHookHandler = handler;
@@ -1559,7 +1559,7 @@ public final class JniStore extends JniResource implements Store {
   private void onCallHook(final int hookType)
       throws ai.tegmentum.wasmtime4j.exception.TrapException {
     if (callHookHandler != null) {
-      callHookHandler.onCallHook(ai.tegmentum.wasmtime4j.CallHook.fromValue(hookType));
+      callHookHandler.onCallHook(ai.tegmentum.wasmtime4j.func.CallHook.fromValue(hookType));
     }
   }
 
@@ -1570,7 +1570,7 @@ public final class JniStore extends JniResource implements Store {
       justification = "Called from native JNI code")
   private void onCallHookAsync(final int hookType) {
     if (asyncCallHookHandler != null) {
-      asyncCallHookHandler.onCallHook(ai.tegmentum.wasmtime4j.CallHook.fromValue(hookType));
+      asyncCallHookHandler.onCallHook(ai.tegmentum.wasmtime4j.func.CallHook.fromValue(hookType));
     }
   }
 

@@ -16,10 +16,10 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Export;
-import ai.tegmentum.wasmtime4j.Function;
+import ai.tegmentum.wasmtime4j.func.Function;
 import ai.tegmentum.wasmtime4j.Global;
 import ai.tegmentum.wasmtime4j.Memory;
 import ai.tegmentum.wasmtime4j.ModuleExport;

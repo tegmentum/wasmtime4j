@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExternRef;
-import ai.tegmentum.wasmtime4j.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
@@ -441,7 +441,7 @@ public final class PanamaStore implements Store {
   public ai.tegmentum.wasmtime4j.WasmFunction createHostFunction(
       final String name,
       final ai.tegmentum.wasmtime4j.type.FunctionType functionType,
-      final ai.tegmentum.wasmtime4j.HostFunction implementation)
+      final ai.tegmentum.wasmtime4j.func.HostFunction implementation)
       throws WasmException {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
@@ -792,8 +792,8 @@ public final class PanamaStore implements Store {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.FunctionReference createFunctionReference(
-      final ai.tegmentum.wasmtime4j.HostFunction implementation,
+  public ai.tegmentum.wasmtime4j.func.FunctionReference createFunctionReference(
+      final ai.tegmentum.wasmtime4j.func.HostFunction implementation,
       final ai.tegmentum.wasmtime4j.type.FunctionType functionType)
       throws WasmException {
     ensureNotClosed();
@@ -805,20 +805,20 @@ public final class PanamaStore implements Store {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.FunctionReference createFunctionReference(
+  public ai.tegmentum.wasmtime4j.func.FunctionReference createFunctionReference(
       final ai.tegmentum.wasmtime4j.WasmFunction function) throws WasmException {
     ensureNotClosed();
     PanamaValidation.requireNonNull(function, "function");
 
     // Create a host function wrapper that delegates to the wasm function
-    final ai.tegmentum.wasmtime4j.HostFunction wrapper = function::call;
+    final ai.tegmentum.wasmtime4j.func.HostFunction wrapper = function::call;
 
     return new PanamaFunctionReference(
         wrapper, function.getFunctionType(), this, resourceManager, errorHandler);
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.CallbackRegistry getCallbackRegistry() {
+  public ai.tegmentum.wasmtime4j.func.CallbackRegistry getCallbackRegistry() {
     ensureNotClosed();
     // Lazy initialization of callback registry
     if (callbackRegistry == null) {
@@ -1253,11 +1253,11 @@ public final class PanamaStore implements Store {
   private ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback epochDeadlineCallback;
 
   // Call hook support
-  private ai.tegmentum.wasmtime4j.CallHookHandler callHookHandler;
+  private ai.tegmentum.wasmtime4j.func.CallHookHandler callHookHandler;
   private ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler asyncCallHookHandler;
 
   @Override
-  public void setCallHook(final ai.tegmentum.wasmtime4j.CallHookHandler handler)
+  public void setCallHook(final ai.tegmentum.wasmtime4j.func.CallHookHandler handler)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
     this.callHookHandler = handler;

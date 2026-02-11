@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.spi;
 
-import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.func.Caller;
 
 /**
  * Service provider interface for accessing caller context in host functions.

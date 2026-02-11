@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.Caller;
+import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.spi.CallerContextProvider;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

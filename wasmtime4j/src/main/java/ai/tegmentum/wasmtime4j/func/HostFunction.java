@@ -1,4 +1,16 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.func;
+
+import ai.tegmentum.wasmtime4j.WasmFunction;
+
+import ai.tegmentum.wasmtime4j.Export;
+
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+
+import ai.tegmentum.wasmtime4j.Store;
+
+import ai.tegmentum.wasmtime4j.WasmValueType;
+
+import ai.tegmentum.wasmtime4j.WasmValue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 

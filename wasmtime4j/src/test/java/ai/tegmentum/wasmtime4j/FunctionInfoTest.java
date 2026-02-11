@@ -16,6 +16,8 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.func.FunctionInfo;
+
 import ai.tegmentum.wasmtime4j.type.FuncType;
 
 

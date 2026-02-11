@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.ExternRef;
-import ai.tegmentum.wasmtime4j.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;

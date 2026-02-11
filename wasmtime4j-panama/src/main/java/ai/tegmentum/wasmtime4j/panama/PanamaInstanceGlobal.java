@@ -172,7 +172,7 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
           final Object refValue = value.getValue();
           if (refValue != null) {
             refIdPresent = 1;
-            if (refValue instanceof ai.tegmentum.wasmtime4j.FunctionReference funcReference) {
+            if (refValue instanceof ai.tegmentum.wasmtime4j.func.FunctionReference funcReference) {
               refId = funcReference.getId();
             } else if (refValue instanceof Long) {
               refId = (Long) refValue;

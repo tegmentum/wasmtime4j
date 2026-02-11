@@ -16,10 +16,10 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Caller;
-import ai.tegmentum.wasmtime4j.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.Caller;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -66,7 +66,7 @@ public final class PanamaHostFunction implements WasmFunction {
   private final String functionName;
   private final FunctionType functionType;
   private final HostFunctionCallback callback;
-  private final ai.tegmentum.wasmtime4j.HostFunction implementation;
+  private final ai.tegmentum.wasmtime4j.func.HostFunction implementation;
   private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
   private final PanamaErrorHandler errorHandler;
@@ -113,7 +113,7 @@ public final class PanamaHostFunction implements WasmFunction {
       final String functionName,
       final FunctionType functionType,
       final HostFunctionCallback callback,
-      final ai.tegmentum.wasmtime4j.HostFunction implementation,
+      final ai.tegmentum.wasmtime4j.func.HostFunction implementation,
       final PanamaStore store,
       final ArenaResourceManager arenaManager,
       final PanamaErrorHandler errorHandler)
