@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.async.AsyncRuntimeFactory;
-import ai.tegmentum.wasmtime4j.cache.ModuleCacheFactory;
 import ai.tegmentum.wasmtime4j.profiler.ProfilerFactory;
 import ai.tegmentum.wasmtime4j.spi.CallerContextProvider;
 import java.lang.reflect.Constructor;
@@ -44,7 +43,6 @@ import org.junit.jupiter.api.Test;
  * <ul>
  *   <li>{@link JniAsyncRuntimeProvider}
  *   <li>{@link JniCallerContextProvider}
- *   <li>{@link JniModuleCacheProvider}
  *   <li>{@link JniProfilerProvider}
  * </ul>
  */
@@ -281,137 +279,6 @@ class JniProviderClassesTest {
   }
 
   // ===================================================================================
-  // JniModuleCacheProvider Tests
-  // ===================================================================================
-
-  @Nested
-  @DisplayName("JniModuleCacheProvider Tests")
-  class JniModuleCacheProviderTests {
-
-    @Nested
-    @DisplayName("Class Structure Tests")
-    class ClassStructureTests {
-
-      @Test
-      @DisplayName("JniModuleCacheProvider should be final class")
-      void shouldBeFinalClass() {
-        assertTrue(
-            Modifier.isFinal(JniModuleCacheProvider.class.getModifiers()),
-            "JniModuleCacheProvider should be final");
-      }
-
-      @Test
-      @DisplayName("JniModuleCacheProvider should be public")
-      void shouldBePublic() {
-        assertTrue(
-            Modifier.isPublic(JniModuleCacheProvider.class.getModifiers()),
-            "JniModuleCacheProvider should be public");
-      }
-
-      @Test
-      @DisplayName("JniModuleCacheProvider should implement ModuleCacheProvider")
-      void shouldImplementModuleCacheProvider() {
-        assertTrue(
-            ModuleCacheFactory.ModuleCacheProvider.class.isAssignableFrom(
-                JniModuleCacheProvider.class),
-            "JniModuleCacheProvider should implement ModuleCacheFactory.ModuleCacheProvider");
-      }
-    }
-
-    @Nested
-    @DisplayName("Constructor Tests")
-    class ConstructorTests {
-
-      @Test
-      @DisplayName("Should have public no-arg constructor for ServiceLoader")
-      void shouldHavePublicNoArgConstructor() throws NoSuchMethodException {
-        Constructor<?> constructor = JniModuleCacheProvider.class.getDeclaredConstructor();
-        assertNotNull(constructor, "No-arg constructor should exist");
-        assertTrue(
-            Modifier.isPublic(constructor.getModifiers()),
-            "Constructor should be public for ServiceLoader");
-      }
-
-      @Test
-      @DisplayName("No-arg constructor should be instantiable")
-      void noArgConstructorShouldBeInstantiable() throws Exception {
-        JniModuleCacheProvider provider = new JniModuleCacheProvider();
-        assertNotNull(provider, "Provider should be instantiable");
-      }
-    }
-
-    @Nested
-    @DisplayName("Method Tests")
-    class MethodTests {
-
-      @Test
-      @DisplayName("Should have create method with Engine and ModuleCacheConfig parameters")
-      void shouldHaveCreateMethod() throws NoSuchMethodException {
-        Method method =
-            JniModuleCacheProvider.class.getMethod(
-                "create",
-                ai.tegmentum.wasmtime4j.Engine.class,
-                ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig.class);
-        assertNotNull(method, "create method should exist");
-        assertEquals(
-            ai.tegmentum.wasmtime4j.cache.ModuleCache.class,
-            method.getReturnType(),
-            "create should return ModuleCache");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "create should be public");
-      }
-
-      @Test
-      @DisplayName("create method should have correct parameter types")
-      void createMethodShouldHaveCorrectParameters() throws NoSuchMethodException {
-        Method method =
-            JniModuleCacheProvider.class.getMethod(
-                "create",
-                ai.tegmentum.wasmtime4j.Engine.class,
-                ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig.class);
-        Class<?>[] paramTypes = method.getParameterTypes();
-        assertEquals(2, paramTypes.length, "create should have 2 parameters");
-        assertEquals(
-            ai.tegmentum.wasmtime4j.Engine.class, paramTypes[0], "First param should be Engine");
-        assertEquals(
-            ai.tegmentum.wasmtime4j.cache.ModuleCacheConfig.class,
-            paramTypes[1],
-            "Second param should be ModuleCacheConfig");
-      }
-    }
-
-    @Nested
-    @DisplayName("Package Location Tests")
-    class PackageLocationTests {
-
-      @Test
-      @DisplayName("Class should be in correct package")
-      void shouldBeInCorrectPackage() {
-        assertEquals(
-            "ai.tegmentum.wasmtime4j.jni",
-            JniModuleCacheProvider.class.getPackage().getName(),
-            "Should be in ai.tegmentum.wasmtime4j.jni package");
-      }
-    }
-
-    @Nested
-    @DisplayName("Minimal Footprint Tests")
-    class MinimalFootprintTests {
-
-      @Test
-      @DisplayName("Should have no non-synthetic fields (stateless provider)")
-      void shouldHaveNoNonSyntheticFields() {
-        // Count only non-synthetic fields (excludes $jacocoData and similar)
-        long nonSyntheticCount =
-            java.util.Arrays.stream(JniModuleCacheProvider.class.getDeclaredFields())
-                .filter(f -> !f.isSynthetic())
-                .count();
-        assertEquals(
-            0, nonSyntheticCount, "JniModuleCacheProvider should have no non-synthetic fields");
-      }
-    }
-  }
-
-  // ===================================================================================
   // JniProfilerProvider Tests
   // ===================================================================================
 
@@ -536,9 +403,6 @@ class JniProviderClassesTest {
           Modifier.isFinal(JniCallerContextProvider.class.getModifiers()),
           "JniCallerContextProvider should be final");
       assertTrue(
-          Modifier.isFinal(JniModuleCacheProvider.class.getModifiers()),
-          "JniModuleCacheProvider should be final");
-      assertTrue(
           Modifier.isFinal(JniProfilerProvider.class.getModifiers()),
           "JniProfilerProvider should be final");
     }
@@ -553,9 +417,6 @@ class JniProviderClassesTest {
           Modifier.isPublic(JniCallerContextProvider.class.getModifiers()),
           "JniCallerContextProvider should be public");
       assertTrue(
-          Modifier.isPublic(JniModuleCacheProvider.class.getModifiers()),
-          "JniModuleCacheProvider should be public");
-      assertTrue(
           Modifier.isPublic(JniProfilerProvider.class.getModifiers()),
           "JniProfilerProvider should be public");
     }
@@ -565,13 +426,11 @@ class JniProviderClassesTest {
     void allProvidersShouldHaveNoArgConstructors() throws NoSuchMethodException {
       final Constructor<?> c1 = JniAsyncRuntimeProvider.class.getDeclaredConstructor();
       final Constructor<?> c2 = JniCallerContextProvider.class.getDeclaredConstructor();
-      final Constructor<?> c3 = JniModuleCacheProvider.class.getDeclaredConstructor();
-      final Constructor<?> c4 = JniProfilerProvider.class.getDeclaredConstructor();
+      final Constructor<?> c3 = JniProfilerProvider.class.getDeclaredConstructor();
 
       assertTrue(Modifier.isPublic(c1.getModifiers()), "JniAsyncRuntimeProvider constructor");
       assertTrue(Modifier.isPublic(c2.getModifiers()), "JniCallerContextProvider constructor");
-      assertTrue(Modifier.isPublic(c3.getModifiers()), "JniModuleCacheProvider constructor");
-      assertTrue(Modifier.isPublic(c4.getModifiers()), "JniProfilerProvider constructor");
+      assertTrue(Modifier.isPublic(c3.getModifiers()), "JniProfilerProvider constructor");
     }
 
     @Test
@@ -580,7 +439,6 @@ class JniProviderClassesTest {
       String expectedPackage = "ai.tegmentum.wasmtime4j.jni";
       assertEquals(expectedPackage, JniAsyncRuntimeProvider.class.getPackage().getName());
       assertEquals(expectedPackage, JniCallerContextProvider.class.getPackage().getName());
-      assertEquals(expectedPackage, JniModuleCacheProvider.class.getPackage().getName());
       assertEquals(expectedPackage, JniProfilerProvider.class.getPackage().getName());
     }
 
@@ -591,7 +449,6 @@ class JniProviderClassesTest {
           new JniAsyncRuntimeProvider(), "JniAsyncRuntimeProvider should be instantiable");
       assertNotNull(
           new JniCallerContextProvider(), "JniCallerContextProvider should be instantiable");
-      assertNotNull(new JniModuleCacheProvider(), "JniModuleCacheProvider should be instantiable");
       assertNotNull(new JniProfilerProvider(), "JniProfilerProvider should be instantiable");
     }
   }
@@ -630,24 +487,6 @@ class JniProviderClassesTest {
         if (!interfaceMethod.isDefault() && !Modifier.isStatic(interfaceMethod.getModifiers())) {
           boolean found = false;
           for (Method implMethod : JniCallerContextProvider.class.getMethods()) {
-            if (methodsMatch(interfaceMethod, implMethod)) {
-              found = true;
-              break;
-            }
-          }
-          assertTrue(found, "Should implement: " + interfaceMethod.getName());
-        }
-      }
-    }
-
-    @Test
-    @DisplayName("JniModuleCacheProvider should implement all interface methods")
-    void moduleCacheProviderShouldImplementAllMethods() {
-      Class<?> providerInterface = ModuleCacheFactory.ModuleCacheProvider.class;
-      for (Method interfaceMethod : providerInterface.getMethods()) {
-        if (!interfaceMethod.isDefault() && !Modifier.isStatic(interfaceMethod.getModifiers())) {
-          boolean found = false;
-          for (Method implMethod : JniModuleCacheProvider.class.getMethods()) {
             if (methodsMatch(interfaceMethod, implMethod)) {
               found = true;
               break;
@@ -717,10 +556,6 @@ class JniProviderClassesTest {
       // JniCallerContextProvider
       assertProviderFollowsServiceLoaderPattern(
           JniCallerContextProvider.class, CallerContextProvider.class);
-
-      // JniModuleCacheProvider
-      assertProviderFollowsServiceLoaderPattern(
-          JniModuleCacheProvider.class, ModuleCacheFactory.ModuleCacheProvider.class);
 
       // JniProfilerProvider
       assertProviderFollowsServiceLoaderPattern(

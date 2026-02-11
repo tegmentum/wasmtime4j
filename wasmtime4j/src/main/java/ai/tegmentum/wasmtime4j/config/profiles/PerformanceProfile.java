@@ -9,7 +9,7 @@ import java.util.Map;
  * Predefined performance optimization profiles for common use cases.
  *
  * <p>This enum provides carefully tuned configuration profiles that balance performance, memory
- * usage, compilation time, and power consumption for different application scenarios.
+ * usage, compilation time, and debugging capabilities for different application scenarios.
  *
  * @since 1.0.0
  */
@@ -17,7 +17,9 @@ public enum PerformanceProfile {
 
   /**
    * Maximum performance profile optimized for CPU-intensive workloads. Enables aggressive
-   * optimizations with higher memory and compilation overhead.
+   * optimizations with higher memory and compilation overhead. Use this for production workloads
+   * requiring maximum speed, including real-time, latency-sensitive, and throughput-oriented
+   * applications.
    */
   MAXIMUM_PERFORMANCE(
       "Maximum Performance", "Aggressive optimizations for CPU-intensive workloads") {
@@ -53,7 +55,8 @@ public enum PerformanceProfile {
 
   /**
    * Balanced performance profile suitable for most production workloads. Provides good performance
-   * with reasonable resource usage.
+   * with reasonable resource usage. This is the recommended default for general-purpose
+   * applications.
    */
   BALANCED("Balanced Performance", "Optimized balance of performance and resource usage") {
     @Override
@@ -86,7 +89,8 @@ public enum PerformanceProfile {
 
   /**
    * Memory-optimized profile for resource-constrained environments. Minimizes memory usage and
-   * compilation overhead.
+   * compilation overhead. Suitable for embedded systems, containers with limited memory, mobile
+   * applications, and edge computing scenarios.
    */
   MEMORY_OPTIMIZED("Memory Optimized", "Minimized memory usage and compilation overhead") {
     @Override
@@ -120,10 +124,11 @@ public enum PerformanceProfile {
   },
 
   /**
-   * Fast compilation profile optimized for development and testing. Prioritizes compilation speed
-   * over runtime performance.
+   * Debug profile for development and troubleshooting. Enables debug information and verification
+   * with minimal optimizations. Also suitable for fast compilation during development and CI
+   * pipelines.
    */
-  FAST_COMPILATION("Fast Compilation", "Optimized for quick compilation during development") {
+  DEBUG("Debug", "Development and debugging with fast compilation") {
     @Override
     public EngineConfig applyTo(final EngineConfig config) {
       if (config == null) {
@@ -133,118 +138,14 @@ public enum PerformanceProfile {
           .copy()
           .optimizationLevel(OptimizationLevel.NONE)
           .parallelCompilation(true)
-          .craneliftDebugVerifier(false)
-          .setGenerateDebugInfo(true)
-          .setFuelConsumption(false)
-          .setEpochInterruption(false)
-          .setCraneliftSettings(createFastCompilationSettings());
-    }
-
-    private Map<String, String> createFastCompilationSettings() {
-      final Map<String, String> settings = new HashMap<>();
-      settings.put("opt_level", "none");
-      settings.put("enable_verifier", "false");
-      settings.put("enable_nan_canonicalization", "false");
-      settings.put("enable_jump_threading", "false");
-      settings.put("enable_alias_analysis", "false");
-      settings.put("regalloc", "linear_scan");
-      return settings;
-    }
-  },
-
-  /**
-   * Power-efficient profile for mobile and battery-powered devices. Balances performance with power
-   * consumption considerations.
-   */
-  POWER_EFFICIENT("Power Efficient", "Balanced performance with power consumption awareness") {
-    @Override
-    public EngineConfig applyTo(final EngineConfig config) {
-      if (config == null) {
-        throw new IllegalArgumentException("Engine configuration cannot be null");
-      }
-      return config
-          .copy()
-          .optimizationLevel(OptimizationLevel.SIZE)
-          .parallelCompilation(false)
-          .craneliftDebugVerifier(false)
-          .setGenerateDebugInfo(false)
-          .setFuelConsumption(true) // Enable for execution limiting
-          .setEpochInterruption(true) // Enable for cooperative scheduling
-          .setMaxWasmStack(256 * 1024) // 256KB stack limit
-          .setCraneliftSettings(createPowerEfficientSettings());
-    }
-
-    private Map<String, String> createPowerEfficientSettings() {
-      final Map<String, String> settings = new HashMap<>();
-      settings.put("opt_level", "size");
-      settings.put("enable_verifier", "false");
-      settings.put("enable_nan_canonicalization", "true");
-      settings.put("enable_jump_threading", "false");
-      settings.put("enable_alias_analysis", "false");
-      settings.put("regalloc", "linear_scan");
-      settings.put("enable_probestack", "true");
-      return settings;
-    }
-  },
-
-  /**
-   * Security-hardened profile with enhanced safety and validation. Enables comprehensive security
-   * features with performance trade-offs.
-   */
-  SECURITY_HARDENED("Security Hardened", "Enhanced security with comprehensive validation") {
-    @Override
-    public EngineConfig applyTo(final EngineConfig config) {
-      if (config == null) {
-        throw new IllegalArgumentException("Engine configuration cannot be null");
-      }
-      return config
-          .copy()
-          .optimizationLevel(OptimizationLevel.SPEED)
-          .parallelCompilation(false) // Single-threaded for deterministic behavior
           .craneliftDebugVerifier(true)
           .setGenerateDebugInfo(true)
           .setFuelConsumption(true)
           .setEpochInterruption(true)
-          .setMaxWasmStack(1024 * 1024) // 1MB stack limit
-          .setCraneliftSettings(createSecurityHardenedSettings());
+          .setCraneliftSettings(createDebugSettings());
     }
 
-    private Map<String, String> createSecurityHardenedSettings() {
-      final Map<String, String> settings = new HashMap<>();
-      settings.put("opt_level", "speed");
-      settings.put("enable_verifier", "true");
-      settings.put("enable_nan_canonicalization", "true");
-      settings.put("enable_jump_threading", "false"); // Disable for predictable behavior
-      settings.put("enable_alias_analysis", "true");
-      settings.put("regalloc", "linear_scan");
-      settings.put("enable_probestack", "true");
-      settings.put("enable_bounds_checks", "true");
-      return settings;
-    }
-  },
-
-  /**
-   * Debug-optimized profile for development and troubleshooting. Enables debug information and
-   * verification with minimal optimizations.
-   */
-  DEBUG_OPTIMIZED("Debug Optimized", "Comprehensive debugging support with minimal optimizations") {
-    @Override
-    public EngineConfig applyTo(final EngineConfig config) {
-      if (config == null) {
-        throw new IllegalArgumentException("Engine configuration cannot be null");
-      }
-      return config
-          .copy()
-          .optimizationLevel(OptimizationLevel.NONE)
-          .parallelCompilation(false)
-          .craneliftDebugVerifier(true)
-          .setGenerateDebugInfo(true)
-          .setFuelConsumption(true)
-          .setEpochInterruption(true)
-          .setCraneliftSettings(createDebugOptimizedSettings());
-    }
-
-    private Map<String, String> createDebugOptimizedSettings() {
+    private Map<String, String> createDebugSettings() {
       final Map<String, String> settings = new HashMap<>();
       settings.put("opt_level", "none");
       settings.put("enable_verifier", "true");
@@ -254,78 +155,6 @@ public enum PerformanceProfile {
       settings.put("regalloc", "linear_scan");
       settings.put("enable_probestack", "true");
       settings.put("enable_bounds_checks", "true");
-      return settings;
-    }
-  },
-
-  /**
-   * Latency-optimized profile for real-time and interactive applications. Optimizes for consistent,
-   * low-latency execution.
-   */
-  LATENCY_OPTIMIZED("Latency Optimized", "Optimized for consistent, low-latency execution") {
-    @Override
-    public EngineConfig applyTo(final EngineConfig config) {
-      if (config == null) {
-        throw new IllegalArgumentException("Engine configuration cannot be null");
-      }
-      return config
-          .copy()
-          .optimizationLevel(OptimizationLevel.SPEED)
-          .parallelCompilation(true)
-          .craneliftDebugVerifier(false)
-          .setGenerateDebugInfo(false)
-          .setFuelConsumption(false)
-          .setEpochInterruption(false)
-          .setMaxWasmStack(2 * 1024 * 1024) // 2MB stack for reduced allocations
-          .setCraneliftSettings(createLatencyOptimizedSettings());
-    }
-
-    private Map<String, String> createLatencyOptimizedSettings() {
-      final Map<String, String> settings = new HashMap<>();
-      settings.put("opt_level", "speed");
-      settings.put("enable_verifier", "false");
-      settings.put("enable_nan_canonicalization", "false");
-      settings.put("enable_jump_threading", "true");
-      settings.put("enable_alias_analysis", "true");
-      settings.put("regalloc", "backtracking");
-      settings.put("enable_probestack", "false");
-      settings.put("enable_safepoints", "false");
-      return settings;
-    }
-  },
-
-  /**
-   * Throughput-optimized profile for batch processing workloads. Maximizes overall throughput with
-   * aggressive optimizations.
-   */
-  THROUGHPUT_OPTIMIZED(
-      "Throughput Optimized", "Maximized throughput for batch processing workloads") {
-    @Override
-    public EngineConfig applyTo(final EngineConfig config) {
-      if (config == null) {
-        throw new IllegalArgumentException("Engine configuration cannot be null");
-      }
-      return config
-          .copy()
-          .optimizationLevel(OptimizationLevel.SPEED)
-          .parallelCompilation(true)
-          .craneliftDebugVerifier(false)
-          .setGenerateDebugInfo(false)
-          .setFuelConsumption(false)
-          .setEpochInterruption(false)
-          .setCraneliftSettings(createThroughputOptimizedSettings());
-    }
-
-    private Map<String, String> createThroughputOptimizedSettings() {
-      final Map<String, String> settings = new HashMap<>();
-      settings.put("opt_level", "speed_and_size");
-      settings.put("enable_verifier", "false");
-      settings.put("enable_nan_canonicalization", "false");
-      settings.put("enable_jump_threading", "true");
-      settings.put("enable_alias_analysis", "true");
-      settings.put("enable_llvm_abi_extensions", "true");
-      settings.put("regalloc", "backtracking");
-      settings.put("enable_probestack", "false");
       return settings;
     }
   };
@@ -382,23 +211,13 @@ public enum PerformanceProfile {
   public PerformanceCharacteristics getPerformanceCharacteristics() {
     switch (this) {
       case MAXIMUM_PERFORMANCE:
-        return new PerformanceCharacteristics(95, 30, 80, 90, 40);
+        return new PerformanceCharacteristics(95, 30, 80, 70, 40);
       case BALANCED:
         return new PerformanceCharacteristics(80, 60, 70, 75, 65);
       case MEMORY_OPTIMIZED:
         return new PerformanceCharacteristics(60, 90, 85, 50, 85);
-      case FAST_COMPILATION:
-        return new PerformanceCharacteristics(40, 50, 95, 30, 70);
-      case POWER_EFFICIENT:
-        return new PerformanceCharacteristics(65, 85, 75, 45, 90);
-      case SECURITY_HARDENED:
-        return new PerformanceCharacteristics(70, 60, 60, 95, 50);
-      case DEBUG_OPTIMIZED:
-        return new PerformanceCharacteristics(30, 40, 40, 90, 60);
-      case LATENCY_OPTIMIZED:
-        return new PerformanceCharacteristics(85, 50, 75, 70, 55);
-      case THROUGHPUT_OPTIMIZED:
-        return new PerformanceCharacteristics(90, 45, 85, 65, 45);
+      case DEBUG:
+        return new PerformanceCharacteristics(30, 50, 95, 90, 70);
       default:
         return new PerformanceCharacteristics(50, 50, 50, 50, 50);
     }
@@ -416,7 +235,9 @@ public enum PerformanceProfile {
           "High-performance computing applications",
           "Game engines and real-time simulations",
           "Scientific computing workloads",
-          "Video/audio processing applications"
+          "Video/audio processing applications",
+          "Real-time trading systems",
+          "Batch processing and ETL pipelines"
         };
       case BALANCED:
         return new String[] {
@@ -432,47 +253,13 @@ public enum PerformanceProfile {
           "Mobile applications",
           "Edge computing scenarios"
         };
-      case FAST_COMPILATION:
-        return new String[] {
-          "Development and testing environments",
-          "Continuous integration pipelines",
-          "Rapid prototyping",
-          "Educational and learning scenarios"
-        };
-      case POWER_EFFICIENT:
-        return new String[] {
-          "Mobile and battery-powered devices",
-          "Green computing initiatives",
-          "Always-on background services",
-          "Resource-constrained cloud instances"
-        };
-      case SECURITY_HARDENED:
-        return new String[] {
-          "Financial services applications",
-          "Healthcare and medical systems",
-          "Government and defense applications",
-          "Multi-tenant cloud environments"
-        };
-      case DEBUG_OPTIMIZED:
+      case DEBUG:
         return new String[] {
           "Development and debugging",
+          "Continuous integration pipelines",
           "Testing and quality assurance",
           "Performance profiling",
-          "Issue diagnosis and troubleshooting"
-        };
-      case LATENCY_OPTIMIZED:
-        return new String[] {
-          "Real-time trading systems",
-          "Interactive gaming applications",
-          "Live streaming and media processing",
-          "Time-critical control systems"
-        };
-      case THROUGHPUT_OPTIMIZED:
-        return new String[] {
-          "Batch processing systems",
-          "Data analytics and ETL pipelines",
-          "Large-scale web crawling",
-          "Background processing services"
+          "Rapid prototyping"
         };
       default:
         return new String[] {"General purpose applications"};
@@ -489,13 +276,8 @@ public enum PerformanceProfile {
       case MAXIMUM_PERFORMANCE:
       case BALANCED:
       case MEMORY_OPTIMIZED:
-      case POWER_EFFICIENT:
-      case SECURITY_HARDENED:
-      case LATENCY_OPTIMIZED:
-      case THROUGHPUT_OPTIMIZED:
         return true;
-      case FAST_COMPILATION:
-      case DEBUG_OPTIMIZED:
+      case DEBUG:
         return false;
       default:
         return true;
@@ -514,15 +296,13 @@ public enum PerformanceProfile {
     final boolean isDevelopment = isDebugModeEnabled();
 
     if (isDevelopment) {
-      return new PerformanceProfile[] {FAST_COMPILATION, DEBUG_OPTIMIZED, BALANCED};
+      return new PerformanceProfile[] {DEBUG, BALANCED};
     } else if (isLowMemory) {
-      return new PerformanceProfile[] {MEMORY_OPTIMIZED, POWER_EFFICIENT, BALANCED};
+      return new PerformanceProfile[] {MEMORY_OPTIMIZED, BALANCED};
     } else if (isHighCpu) {
-      return new PerformanceProfile[] {
-        MAXIMUM_PERFORMANCE, THROUGHPUT_OPTIMIZED, LATENCY_OPTIMIZED
-      };
+      return new PerformanceProfile[] {MAXIMUM_PERFORMANCE, BALANCED};
     } else {
-      return new PerformanceProfile[] {BALANCED, POWER_EFFICIENT, SECURITY_HARDENED};
+      return new PerformanceProfile[] {BALANCED, MEMORY_OPTIMIZED};
     }
   }
 

@@ -71,44 +71,12 @@ class PerformanceProfileTest {
   }
 
   @Test
-  @DisplayName("Fast Compilation profile should prioritize compilation speed")
-  void testFastCompilationProfile() {
-    EngineConfig config = PerformanceProfile.FAST_COMPILATION.createConfig();
+  @DisplayName("Debug profile should enable all debugging features with fast compilation")
+  void testDebugProfile() {
+    EngineConfig config = PerformanceProfile.DEBUG.createConfig();
 
     assertEquals(OptimizationLevel.NONE, config.getOptimizationLevel());
     assertTrue(config.isParallelCompilation());
-    assertTrue(config.isGenerateDebugInfo());
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("none", settings.get("opt_level"));
-    assertEquals("false", settings.get("enable_jump_threading"));
-  }
-
-  @Test
-  @DisplayName("Security Hardened profile should enable verification and limits")
-  void testSecurityHardenedProfile() {
-    EngineConfig config = PerformanceProfile.SECURITY_HARDENED.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertFalse(config.isParallelCompilation()); // Single-threaded for deterministic behavior
-    assertTrue(config.isCraneliftDebugVerifier());
-    assertTrue(config.isGenerateDebugInfo());
-    assertTrue(config.isConsumeFuel());
-    assertTrue(config.isEpochInterruption());
-    assertEquals(1024 * 1024, config.getMaxWasmStack()); // 1MB stack limit
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("true", settings.get("enable_verifier"));
-    assertEquals("true", settings.get("enable_bounds_checks"));
-  }
-
-  @Test
-  @DisplayName("Debug Optimized profile should enable all debugging features")
-  void testDebugOptimizedProfile() {
-    EngineConfig config = PerformanceProfile.DEBUG_OPTIMIZED.createConfig();
-
-    assertEquals(OptimizationLevel.NONE, config.getOptimizationLevel());
-    assertFalse(config.isParallelCompilation());
     assertTrue(config.isCraneliftDebugVerifier());
     assertTrue(config.isGenerateDebugInfo());
     assertTrue(config.isConsumeFuel());
@@ -118,53 +86,6 @@ class PerformanceProfileTest {
     assertEquals("none", settings.get("opt_level"));
     assertEquals("true", settings.get("enable_verifier"));
     assertEquals("true", settings.get("enable_bounds_checks"));
-  }
-
-  @Test
-  @DisplayName("Power Efficient profile should balance performance and power consumption")
-  void testPowerEfficientProfile() {
-    EngineConfig config = PerformanceProfile.POWER_EFFICIENT.createConfig();
-
-    assertEquals(OptimizationLevel.SIZE, config.getOptimizationLevel());
-    assertFalse(config.isParallelCompilation());
-    assertTrue(config.isConsumeFuel()); // Enable for execution limiting
-    assertTrue(config.isEpochInterruption()); // Enable for cooperative scheduling
-    assertEquals(256 * 1024, config.getMaxWasmStack()); // 256KB stack limit
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("size", settings.get("opt_level"));
-    assertEquals("true", settings.get("enable_probestack"));
-  }
-
-  @Test
-  @DisplayName("Latency Optimized profile should minimize execution latency")
-  void testLatencyOptimizedProfile() {
-    EngineConfig config = PerformanceProfile.LATENCY_OPTIMIZED.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertTrue(config.isParallelCompilation());
-    assertFalse(config.isConsumeFuel()); // Disable for predictable timing
-    assertFalse(config.isEpochInterruption());
-    assertEquals(2 * 1024 * 1024, config.getMaxWasmStack()); // 2MB stack for reduced allocations
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("speed", settings.get("opt_level"));
-    assertEquals("false", settings.get("enable_safepoints"));
-  }
-
-  @Test
-  @DisplayName("Throughput Optimized profile should maximize overall throughput")
-  void testThroughputOptimizedProfile() {
-    EngineConfig config = PerformanceProfile.THROUGHPUT_OPTIMIZED.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertTrue(config.isParallelCompilation());
-    assertFalse(config.isGenerateDebugInfo());
-    assertFalse(config.isConsumeFuel());
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("speed_and_size", settings.get("opt_level"));
-    assertEquals("true", settings.get("enable_llvm_abi_extensions"));
   }
 
   @ParameterizedTest
@@ -200,43 +121,35 @@ class PerformanceProfileTest {
   void testPerformanceCharacteristicsReflectPriorities() {
     var maxPerf = PerformanceProfile.MAXIMUM_PERFORMANCE.getPerformanceCharacteristics();
     var memOpt = PerformanceProfile.MEMORY_OPTIMIZED.getPerformanceCharacteristics();
-    var fastComp = PerformanceProfile.FAST_COMPILATION.getPerformanceCharacteristics();
+    var debug = PerformanceProfile.DEBUG.getPerformanceCharacteristics();
 
     // Maximum performance should have highest performance score
     assertTrue(
         maxPerf.getPerformanceScore() > memOpt.getPerformanceScore(),
         "Maximum performance should outperform memory optimized");
     assertTrue(
-        maxPerf.getPerformanceScore() > fastComp.getPerformanceScore(),
-        "Maximum performance should outperform fast compilation");
+        maxPerf.getPerformanceScore() > debug.getPerformanceScore(),
+        "Maximum performance should outperform debug");
 
     // Memory optimized should have highest memory efficiency
     assertTrue(
         memOpt.getMemoryEfficiency() > maxPerf.getMemoryEfficiency(),
         "Memory optimized should be more memory efficient than maximum performance");
 
-    // Fast compilation should have highest compilation speed
-    var security = PerformanceProfile.SECURITY_HARDENED.getPerformanceCharacteristics();
+    // Debug should have highest compilation speed (no optimizations)
     assertTrue(
-        fastComp.getCompilationSpeed() > maxPerf.getCompilationSpeed(),
-        "Fast compilation should compile faster than maximum performance");
-    assertTrue(
-        fastComp.getCompilationSpeed() > security.getCompilationSpeed(),
-        "Fast compilation should compile faster than security hardened");
+        debug.getCompilationSpeed() > maxPerf.getCompilationSpeed(),
+        "Debug should compile faster than maximum performance");
 
-    // Security hardened should have highest security level
+    // Debug should have highest security level (verifier enabled)
     assertTrue(
-        security.getSecurityLevel() > maxPerf.getSecurityLevel(),
-        "Security hardened should be more secure than maximum performance");
-    assertTrue(
-        security.getSecurityLevel() > fastComp.getSecurityLevel(),
-        "Security hardened should be more secure than fast compilation");
+        debug.getSecurityLevel() > maxPerf.getSecurityLevel(),
+        "Debug should be more secure than maximum performance");
 
-    // Power efficient should have highest power efficiency
-    var power = PerformanceProfile.POWER_EFFICIENT.getPerformanceCharacteristics();
+    // Memory optimized should have highest power efficiency
     assertTrue(
-        power.getPowerEfficiency() > maxPerf.getPowerEfficiency(),
-        "Power efficient should be more power efficient than maximum performance");
+        memOpt.getPowerEfficiency() > maxPerf.getPowerEfficiency(),
+        "Memory optimized should be more power efficient than maximum performance");
   }
 
   @ParameterizedTest
@@ -261,14 +174,9 @@ class PerformanceProfileTest {
     assertTrue(PerformanceProfile.MAXIMUM_PERFORMANCE.isProductionSuitable());
     assertTrue(PerformanceProfile.BALANCED.isProductionSuitable());
     assertTrue(PerformanceProfile.MEMORY_OPTIMIZED.isProductionSuitable());
-    assertTrue(PerformanceProfile.POWER_EFFICIENT.isProductionSuitable());
-    assertTrue(PerformanceProfile.SECURITY_HARDENED.isProductionSuitable());
-    assertTrue(PerformanceProfile.LATENCY_OPTIMIZED.isProductionSuitable());
-    assertTrue(PerformanceProfile.THROUGHPUT_OPTIMIZED.isProductionSuitable());
 
     // Development/testing profiles
-    assertFalse(PerformanceProfile.FAST_COMPILATION.isProductionSuitable());
-    assertFalse(PerformanceProfile.DEBUG_OPTIMIZED.isProductionSuitable());
+    assertFalse(PerformanceProfile.DEBUG.isProductionSuitable());
   }
 
   @Test
@@ -300,7 +208,7 @@ class PerformanceProfileTest {
   void testProfileComparison() {
     PerformanceProfile maxPerf = PerformanceProfile.MAXIMUM_PERFORMANCE;
     PerformanceProfile memOpt = PerformanceProfile.MEMORY_OPTIMIZED;
-    PerformanceProfile debug = PerformanceProfile.DEBUG_OPTIMIZED;
+    PerformanceProfile debug = PerformanceProfile.DEBUG;
 
     // Maximum performance should compare higher than memory optimized
     assertTrue(maxPerf.comparePerformance(memOpt) > 0);
@@ -410,17 +318,17 @@ class PerformanceProfileTest {
   @Test
   @DisplayName("WebAssembly features should be appropriate for profiles")
   void testWebAssemblyFeatureConfiguration() {
-    // Check that profiles that need specific features have them
-    EngineConfig securityConfig = PerformanceProfile.SECURITY_HARDENED.createConfig();
-    Set<WasmFeature> securityFeatures = securityConfig.getWasmFeatures();
-    // Security profile might have specific feature requirements
+    // Check that profiles create valid feature sets
+    EngineConfig debugConfig = PerformanceProfile.DEBUG.createConfig();
+    Set<WasmFeature> debugFeatures = debugConfig.getWasmFeatures();
+    // Debug profile should have standard features
 
     EngineConfig maxPerfConfig = PerformanceProfile.MAXIMUM_PERFORMANCE.createConfig();
     Set<WasmFeature> maxPerfFeatures = maxPerfConfig.getWasmFeatures();
     // Maximum performance might enable all available features
 
     // Features should be non-null for all profiles
-    assertNotNull(securityFeatures);
+    assertNotNull(debugFeatures);
     assertNotNull(maxPerfFeatures);
   }
 }

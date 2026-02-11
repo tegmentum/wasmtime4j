@@ -48,7 +48,6 @@ public final class NativeFunctionBindings {
 
   // Core components
   private final NativeLibraryLoader libraryLoader;
-  private final MethodHandleCache methodHandleCache;
   private final ConcurrentHashMap<String, FunctionBinding> functionBindings;
 
   // Status
@@ -83,7 +82,6 @@ public final class NativeFunctionBindings {
   private NativeFunctionBindings() {
     try {
       this.libraryLoader = NativeLibraryLoader.getInstance();
-      this.methodHandleCache = new MethodHandleCache();
       this.functionBindings = new ConcurrentHashMap<>();
 
       // Verify library loader is ready before proceeding

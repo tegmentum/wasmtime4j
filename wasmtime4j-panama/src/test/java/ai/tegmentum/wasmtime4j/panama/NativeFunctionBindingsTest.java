@@ -217,24 +217,6 @@ class NativeFunctionBindingsTest {
     }
 
     @Test
-    @DisplayName("Should have methodHandleCache field")
-    void shouldHaveMethodHandleCacheField() {
-      assertDoesNotThrow(
-          () -> {
-            Field field = getTestedClass().getDeclaredField("methodHandleCache");
-            assertNotNull(field, "methodHandleCache field should exist");
-            assertFalse(
-                Modifier.isStatic(field.getModifiers()),
-                "methodHandleCache field should not be static");
-            assertTrue(
-                Modifier.isPrivate(field.getModifiers()),
-                "methodHandleCache field should be private");
-            assertTrue(
-                Modifier.isFinal(field.getModifiers()), "methodHandleCache field should be final");
-          });
-    }
-
-    @Test
     @DisplayName("Should have functionBindings field")
     void shouldHaveFunctionBindingsField() {
       assertDoesNotThrow(
@@ -1455,86 +1437,6 @@ class NativeFunctionBindingsTest {
                 MemorySegment.class,
                 method.getReturnType(),
                 "globalCreate should return MemorySegment");
-          });
-    }
-  }
-
-  @Nested
-  @DisplayName("Module Cache Methods Tests")
-  class ModuleCacheMethodsTests {
-
-    @Test
-    @DisplayName("Should have moduleCacheDestroy method")
-    void shouldHaveModuleCacheDestroyMethod() {
-      assertDoesNotThrow(
-          () -> {
-            Method method =
-                getTestedClass().getDeclaredMethod("moduleCacheDestroy", MemorySegment.class);
-            assertNotNull(method, "moduleCacheDestroy method should exist");
-            assertTrue(
-                Modifier.isPublic(method.getModifiers()), "moduleCacheDestroy should be public");
-            assertEquals(
-                void.class, method.getReturnType(), "moduleCacheDestroy should return void");
-          });
-    }
-
-    @Test
-    @DisplayName("Should have moduleCacheEntryCount method")
-    void shouldHaveModuleCacheEntryCountMethod() {
-      assertDoesNotThrow(
-          () -> {
-            Method method =
-                getTestedClass().getDeclaredMethod("moduleCacheEntryCount", MemorySegment.class);
-            assertNotNull(method, "moduleCacheEntryCount method should exist");
-            assertTrue(
-                Modifier.isPublic(method.getModifiers()), "moduleCacheEntryCount should be public");
-            assertEquals(
-                long.class, method.getReturnType(), "moduleCacheEntryCount should return long");
-          });
-    }
-
-    @Test
-    @DisplayName("Should have moduleCacheHitCount method")
-    void shouldHaveModuleCacheHitCountMethod() {
-      assertDoesNotThrow(
-          () -> {
-            Method method =
-                getTestedClass().getDeclaredMethod("moduleCacheHitCount", MemorySegment.class);
-            assertNotNull(method, "moduleCacheHitCount method should exist");
-            assertTrue(
-                Modifier.isPublic(method.getModifiers()), "moduleCacheHitCount should be public");
-            assertEquals(
-                long.class, method.getReturnType(), "moduleCacheHitCount should return long");
-          });
-    }
-
-    @Test
-    @DisplayName("Should have moduleCacheMissCount method")
-    void shouldHaveModuleCacheMissCountMethod() {
-      assertDoesNotThrow(
-          () -> {
-            Method method =
-                getTestedClass().getDeclaredMethod("moduleCacheMissCount", MemorySegment.class);
-            assertNotNull(method, "moduleCacheMissCount method should exist");
-            assertTrue(
-                Modifier.isPublic(method.getModifiers()), "moduleCacheMissCount should be public");
-            assertEquals(
-                long.class, method.getReturnType(), "moduleCacheMissCount should return long");
-          });
-    }
-
-    @Test
-    @DisplayName("Should have moduleCacheClear method")
-    void shouldHaveModuleCacheClearMethod() {
-      assertDoesNotThrow(
-          () -> {
-            Method method =
-                getTestedClass().getDeclaredMethod("moduleCacheClear", MemorySegment.class);
-            assertNotNull(method, "moduleCacheClear method should exist");
-            assertTrue(
-                Modifier.isPublic(method.getModifiers()), "moduleCacheClear should be public");
-            assertEquals(
-                boolean.class, method.getReturnType(), "moduleCacheClear should return boolean");
           });
     }
   }

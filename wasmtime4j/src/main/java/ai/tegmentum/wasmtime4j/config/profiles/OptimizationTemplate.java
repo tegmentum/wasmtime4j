@@ -39,26 +39,14 @@ public final class OptimizationTemplate {
 
   /** Template types for different optimization strategies. */
   public enum TemplateType {
-    /** CPU-bound workload optimization. */
+    /** CPU-bound workload optimization. Also suitable for batch processing and ML inference. */
     CPU_INTENSIVE,
-    /** I/O-bound workload optimization. */
+    /** I/O-bound workload optimization. Also suitable for web applications and microservices. */
     IO_INTENSIVE,
     /** Memory-constrained optimization. */
     MEMORY_CONSTRAINED,
-    /** Real-time performance optimization. */
-    REAL_TIME,
-    /** Batch processing optimization. */
-    BATCH_PROCESSING,
-    /** Web application optimization. */
-    WEB_APPLICATION,
-    /** Microservice optimization. */
-    MICROSERVICE,
-    /** Machine learning inference optimization. */
-    ML_INFERENCE,
-    /** Game engine optimization. */
-    GAME_ENGINE,
-    /** Scientific computing optimization. */
-    SCIENTIFIC_COMPUTING
+    /** Real-time performance optimization. Also suitable for game engines and latency-sensitive apps. */
+    REAL_TIME
   }
 
   /**
@@ -88,24 +76,6 @@ public final class OptimizationTemplate {
       case REAL_TIME:
         modifiedConfig = applyRealTimeOptimizations(modifiedConfig);
         break;
-      case BATCH_PROCESSING:
-        modifiedConfig = applyBatchProcessingOptimizations(modifiedConfig);
-        break;
-      case WEB_APPLICATION:
-        modifiedConfig = applyWebApplicationOptimizations(modifiedConfig);
-        break;
-      case MICROSERVICE:
-        modifiedConfig = applyMicroserviceOptimizations(modifiedConfig);
-        break;
-      case ML_INFERENCE:
-        modifiedConfig = applyMlInferenceOptimizations(modifiedConfig);
-        break;
-      case GAME_ENGINE:
-        modifiedConfig = applyGameEngineOptimizations(modifiedConfig);
-        break;
-      case SCIENTIFIC_COMPUTING:
-        modifiedConfig = applyScientificComputingOptimizations(modifiedConfig);
-        break;
       default:
         // No optimization changes for unknown types
         break;
@@ -131,6 +101,7 @@ public final class OptimizationTemplate {
     settings.put("enable_nan_canonicalization", "false");
     settings.put("enable_jump_threading", "true");
     settings.put("enable_alias_analysis", "true");
+    settings.put("enable_llvm_abi_extensions", "true");
     settings.put("regalloc", "backtracking");
     settings.put("enable_probestack", "false");
     settings.put("enable_safepoints", "false");
@@ -145,16 +116,16 @@ public final class OptimizationTemplate {
 
   private EngineConfig applyIoIntensiveOptimizations(final EngineConfig config) {
     final Map<String, String> settings = new HashMap<>();
-    settings.put("opt_level", "speed_and_size");
+    settings.put("opt_level", "speed");
     settings.put("enable_verifier", "false");
     settings.put("enable_nan_canonicalization", "true");
-    settings.put("enable_jump_threading", "false");
+    settings.put("enable_jump_threading", "true");
     settings.put("enable_alias_analysis", "true");
     settings.put("regalloc", "linear_scan");
 
     return config
         .optimizationLevel(OptimizationLevel.SPEED)
-        .parallelCompilation(false) // Reduce CPU contention during I/O
+        .parallelCompilation(true)
         .setFuelConsumption(true) // Enable cooperative scheduling
         .setEpochInterruption(true)
         .setCraneliftSettings(settings);
@@ -195,139 +166,6 @@ public final class OptimizationTemplate {
         .setMaxWasmStack(2 * 1024 * 1024) // 2MB stack for reduced allocations
         .setFuelConsumption(false) // Disable for predictable timing
         .setEpochInterruption(false)
-        .setCraneliftSettings(settings);
-  }
-
-  private EngineConfig applyBatchProcessingOptimizations(final EngineConfig config) {
-    final Map<String, String> settings = new HashMap<>();
-    settings.put("opt_level", "speed_and_size");
-    settings.put("enable_verifier", "false");
-    settings.put("enable_nan_canonicalization", "false");
-    settings.put("enable_jump_threading", "true");
-    settings.put("enable_alias_analysis", "true");
-    settings.put("enable_llvm_abi_extensions", "true");
-    settings.put("regalloc", "backtracking");
-
-    return config
-        .optimizationLevel(OptimizationLevel.SPEED)
-        .parallelCompilation(true)
-        .setGenerateDebugInfo(false)
-        .setCraneliftSettings(settings);
-  }
-
-  private EngineConfig applyWebApplicationOptimizations(final EngineConfig config) {
-    final Map<String, String> settings = new HashMap<>();
-    settings.put("opt_level", "speed");
-    settings.put("enable_verifier", "false");
-    settings.put("enable_nan_canonicalization", "true");
-    settings.put("enable_jump_threading", "true");
-    settings.put("enable_alias_analysis", "true");
-    settings.put("regalloc", "linear_scan");
-
-    final Set<WasmFeature> webFeatures =
-        EnumSet.of(WasmFeature.REFERENCE_TYPES, WasmFeature.BULK_MEMORY, WasmFeature.MULTI_VALUE);
-
-    return config
-        .optimizationLevel(OptimizationLevel.SPEED)
-        .parallelCompilation(true)
-        .setWasmFeatures(webFeatures)
-        .setFuelConsumption(true) // Enable for execution limiting
-        .setCraneliftSettings(settings);
-  }
-
-  private EngineConfig applyMicroserviceOptimizations(final EngineConfig config) {
-    final Map<String, String> settings = new HashMap<>();
-    settings.put("opt_level", "speed");
-    settings.put("enable_verifier", "false");
-    settings.put("enable_nan_canonicalization", "true");
-    settings.put("enable_jump_threading", "true");
-    settings.put("enable_alias_analysis", "true");
-    settings.put("regalloc", "linear_scan");
-
-    final Set<WasmFeature> microserviceFeatures =
-        EnumSet.of(WasmFeature.REFERENCE_TYPES, WasmFeature.BULK_MEMORY);
-
-    return config
-        .optimizationLevel(OptimizationLevel.SPEED)
-        .parallelCompilation(true)
-        .setWasmFeatures(microserviceFeatures)
-        .setMaxWasmStack(1024 * 1024) // 1MB stack for moderate memory usage
-        .setFuelConsumption(true) // Enable for resource limiting
-        .setEpochInterruption(true)
-        .setCraneliftSettings(settings);
-  }
-
-  private EngineConfig applyMlInferenceOptimizations(final EngineConfig config) {
-    final Map<String, String> settings = new HashMap<>();
-    settings.put("opt_level", "speed");
-    settings.put("enable_verifier", "false");
-    settings.put("enable_nan_canonicalization", "false");
-    settings.put("enable_jump_threading", "true");
-    settings.put("enable_alias_analysis", "true");
-    settings.put("enable_llvm_abi_extensions", "true");
-    settings.put("regalloc", "backtracking");
-
-    final Set<WasmFeature> mlFeatures =
-        EnumSet.of(WasmFeature.SIMD, WasmFeature.BULK_MEMORY, WasmFeature.MULTI_VALUE);
-
-    return config
-        .optimizationLevel(OptimizationLevel.SPEED)
-        .parallelCompilation(true)
-        .setWasmFeatures(mlFeatures)
-        .setMaxWasmStack(4 * 1024 * 1024) // 4MB stack for ML workloads
-        .setCraneliftSettings(settings);
-  }
-
-  private EngineConfig applyGameEngineOptimizations(final EngineConfig config) {
-    final Map<String, String> settings = new HashMap<>();
-    settings.put("opt_level", "speed");
-    settings.put("enable_verifier", "false");
-    settings.put("enable_nan_canonicalization", "false");
-    settings.put("enable_jump_threading", "true");
-    settings.put("enable_alias_analysis", "true");
-    settings.put("regalloc", "backtracking");
-    settings.put("enable_probestack", "false");
-    settings.put("enable_safepoints", "false");
-
-    final Set<WasmFeature> gameFeatures =
-        EnumSet.of(
-            WasmFeature.SIMD,
-            WasmFeature.THREADS,
-            WasmFeature.BULK_MEMORY,
-            WasmFeature.MULTI_VALUE);
-
-    return config
-        .optimizationLevel(OptimizationLevel.SPEED)
-        .parallelCompilation(true)
-        .setWasmFeatures(gameFeatures)
-        .setMaxWasmStack(8 * 1024 * 1024) // 8MB stack for game engines
-        .setFuelConsumption(false) // Disable for consistent frame timing
-        .setCraneliftSettings(settings);
-  }
-
-  private EngineConfig applyScientificComputingOptimizations(final EngineConfig config) {
-    final Map<String, String> settings = new HashMap<>();
-    settings.put("opt_level", "speed");
-    settings.put("enable_verifier", "false");
-    settings.put("enable_nan_canonicalization", "false");
-    settings.put("enable_jump_threading", "true");
-    settings.put("enable_alias_analysis", "true");
-    settings.put("enable_llvm_abi_extensions", "true");
-    settings.put("regalloc", "backtracking");
-
-    final Set<WasmFeature> scientificFeatures =
-        EnumSet.of(
-            WasmFeature.SIMD,
-            WasmFeature.THREADS,
-            WasmFeature.BULK_MEMORY,
-            WasmFeature.MULTI_VALUE,
-            WasmFeature.MEMORY64);
-
-    return config
-        .optimizationLevel(OptimizationLevel.SPEED)
-        .parallelCompilation(true)
-        .setWasmFeatures(scientificFeatures)
-        .setMaxWasmStack(16 * 1024 * 1024) // 16MB stack for scientific computing
         .setCraneliftSettings(settings);
   }
 
@@ -459,13 +297,7 @@ public final class OptimizationTemplate {
       createCpuIntensiveTemplate(),
       createIoIntensiveTemplate(),
       createMemoryConstrainedTemplate(),
-      createRealTimeTemplate(),
-      createBatchProcessingTemplate(),
-      createWebApplicationTemplate(),
-      createMicroserviceTemplate(),
-      createMlInferenceTemplate(),
-      createGameEngineTemplate(),
-      createScientificComputingTemplate()
+      createRealTimeTemplate()
     };
   }
 
@@ -486,22 +318,28 @@ public final class OptimizationTemplate {
 
   private static OptimizationTemplate createCpuIntensiveTemplate() {
     return builder("CPU Intensive", TemplateType.CPU_INTENSIVE)
-        .description("Optimized for CPU-bound computations with maximum performance")
+        .description(
+            "Optimized for CPU-bound computations including batch processing, ML inference, and scientific computing")
         .parameter("optimization_level", OptimizationLevel.SPEED)
         .parameter("parallel_compilation", true)
         .parameter("debug_info", false)
         .parameter("fuel_consumption", false)
         .parameter("max_stack_size", 4L * 1024 * 1024) // 4MB
+        .optionalFeature(WasmFeature.SIMD)
+        .optionalFeature(WasmFeature.THREADS)
         .build();
   }
 
   private static OptimizationTemplate createIoIntensiveTemplate() {
     return builder("I/O Intensive", TemplateType.IO_INTENSIVE)
-        .description("Optimized for I/O-bound applications with cooperative scheduling")
+        .description(
+            "Optimized for I/O-bound applications including web apps and microservices with cooperative scheduling")
         .parameter("optimization_level", OptimizationLevel.SPEED)
-        .parameter("parallel_compilation", false)
+        .parameter("parallel_compilation", true)
         .parameter("fuel_consumption", true)
         .parameter("max_stack_size", 1L * 1024 * 1024) // 1MB
+        .requiredFeature(WasmFeature.REFERENCE_TYPES)
+        .requiredFeature(WasmFeature.BULK_MEMORY)
         .build();
   }
 
@@ -517,84 +355,14 @@ public final class OptimizationTemplate {
 
   private static OptimizationTemplate createRealTimeTemplate() {
     return builder("Real-time", TemplateType.REAL_TIME)
-        .description("Optimized for consistent, low-latency real-time performance")
+        .description(
+            "Optimized for consistent, low-latency real-time performance including game engines and trading systems")
         .parameter("optimization_level", OptimizationLevel.SPEED)
         .parameter("parallel_compilation", true)
         .parameter("fuel_consumption", false)
         .parameter("max_stack_size", 2L * 1024 * 1024) // 2MB
-        .build();
-  }
-
-  private static OptimizationTemplate createBatchProcessingTemplate() {
-    return builder("Batch Processing", TemplateType.BATCH_PROCESSING)
-        .description("Optimized for high-throughput batch processing workloads")
-        .parameter("optimization_level", OptimizationLevel.SPEED)
-        .parameter("parallel_compilation", true)
-        .parameter("debug_info", false)
-        .parameter("max_stack_size", 8L * 1024 * 1024) // 8MB
-        .build();
-  }
-
-  private static OptimizationTemplate createWebApplicationTemplate() {
-    return builder("Web Application", TemplateType.WEB_APPLICATION)
-        .description("Optimized for web applications with standard WebAssembly features")
-        .parameter("optimization_level", OptimizationLevel.SPEED)
-        .parameter("parallel_compilation", true)
-        .parameter("fuel_consumption", true)
-        .requiredFeature(WasmFeature.REFERENCE_TYPES)
-        .requiredFeature(WasmFeature.BULK_MEMORY)
         .optionalFeature(WasmFeature.SIMD)
-        .build();
-  }
-
-  private static OptimizationTemplate createMicroserviceTemplate() {
-    return builder("Microservice", TemplateType.MICROSERVICE)
-        .description("Optimized for microservice architectures with resource limiting")
-        .parameter("optimization_level", OptimizationLevel.SPEED)
-        .parameter("parallel_compilation", true)
-        .parameter("fuel_consumption", true)
-        .parameter("max_stack_size", 1L * 1024 * 1024) // 1MB
-        .requiredFeature(WasmFeature.REFERENCE_TYPES)
-        .requiredFeature(WasmFeature.BULK_MEMORY)
-        .build();
-  }
-
-  private static OptimizationTemplate createMlInferenceTemplate() {
-    return builder("ML Inference", TemplateType.ML_INFERENCE)
-        .description("Optimized for machine learning inference workloads")
-        .parameter("optimization_level", OptimizationLevel.SPEED)
-        .parameter("parallel_compilation", true)
-        .parameter("max_stack_size", 4L * 1024 * 1024) // 4MB
-        .requiredFeature(WasmFeature.SIMD)
-        .requiredFeature(WasmFeature.BULK_MEMORY)
         .optionalFeature(WasmFeature.THREADS)
-        .build();
-  }
-
-  private static OptimizationTemplate createGameEngineTemplate() {
-    return builder("Game Engine", TemplateType.GAME_ENGINE)
-        .description("Optimized for game engines with maximum performance and SIMD")
-        .parameter("optimization_level", OptimizationLevel.SPEED)
-        .parameter("parallel_compilation", true)
-        .parameter("fuel_consumption", false)
-        .parameter("max_stack_size", 8L * 1024 * 1024) // 8MB
-        .requiredFeature(WasmFeature.SIMD)
-        .requiredFeature(WasmFeature.THREADS)
-        .requiredFeature(WasmFeature.BULK_MEMORY)
-        .build();
-  }
-
-  private static OptimizationTemplate createScientificComputingTemplate() {
-    return builder("Scientific Computing", TemplateType.SCIENTIFIC_COMPUTING)
-        .description("Optimized for scientific computing with all performance features")
-        .parameter("optimization_level", OptimizationLevel.SPEED)
-        .parameter("parallel_compilation", true)
-        .parameter("max_stack_size", 16L * 1024 * 1024) // 16MB
-        .requiredFeature(WasmFeature.SIMD)
-        .requiredFeature(WasmFeature.THREADS)
-        .requiredFeature(WasmFeature.BULK_MEMORY)
-        .requiredFeature(WasmFeature.MULTI_VALUE)
-        .optionalFeature(WasmFeature.MEMORY64)
         .build();
   }
 

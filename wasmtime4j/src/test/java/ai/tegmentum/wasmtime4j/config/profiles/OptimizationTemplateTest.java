@@ -180,13 +180,12 @@ class OptimizationTemplateTest {
     EngineConfig config = template.createConfig();
 
     assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertFalse(config.isParallelCompilation()); // Reduce CPU contention during I/O
+    assertTrue(config.isParallelCompilation());
     assertTrue(config.isConsumeFuel()); // Enable cooperative scheduling
     assertTrue(config.isEpochInterruption());
 
     var settings = config.getCraneliftSettings();
-    assertEquals("speed_and_size", settings.get("opt_level"));
-    assertEquals("false", settings.get("enable_jump_threading"));
+    assertEquals("speed", settings.get("opt_level"));
   }
 
   @Test
@@ -231,141 +230,6 @@ class OptimizationTemplateTest {
     assertEquals("false", settings.get("enable_safepoints"));
   }
 
-  @Test
-  @DisplayName("Batch processing template should maximize throughput")
-  void testBatchProcessingTemplate() {
-    OptimizationTemplate template =
-        OptimizationTemplate.builder(
-                "Batch Test", OptimizationTemplate.TemplateType.BATCH_PROCESSING)
-            .description("Batch processing workload")
-            .build();
-
-    EngineConfig config = template.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertTrue(config.isParallelCompilation());
-    assertFalse(config.isGenerateDebugInfo());
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("speed_and_size", settings.get("opt_level"));
-    assertEquals("true", settings.get("enable_llvm_abi_extensions"));
-  }
-
-  @Test
-  @DisplayName("Web application template should enable standard web features")
-  void testWebApplicationTemplate() {
-    OptimizationTemplate template =
-        OptimizationTemplate.builder("Web Test", OptimizationTemplate.TemplateType.WEB_APPLICATION)
-            .description("Web application workload")
-            .build();
-
-    EngineConfig config = template.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertTrue(config.isParallelCompilation());
-    assertTrue(config.isConsumeFuel()); // Enable for execution limiting
-
-    Set<WasmFeature> features = config.getWasmFeatures();
-    assertTrue(features.contains(WasmFeature.REFERENCE_TYPES));
-    assertTrue(features.contains(WasmFeature.BULK_MEMORY));
-    assertTrue(features.contains(WasmFeature.MULTI_VALUE));
-  }
-
-  @Test
-  @DisplayName("Microservice template should enable resource limiting")
-  void testMicroserviceTemplate() {
-    OptimizationTemplate template =
-        OptimizationTemplate.builder(
-                "Microservice Test", OptimizationTemplate.TemplateType.MICROSERVICE)
-            .description("Microservice workload")
-            .build();
-
-    EngineConfig config = template.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertTrue(config.isParallelCompilation());
-    assertEquals(1024 * 1024, config.getMaxWasmStack()); // 1MB stack for moderate memory usage
-    assertTrue(config.isConsumeFuel()); // Enable for resource limiting
-    assertTrue(config.isEpochInterruption());
-
-    Set<WasmFeature> features = config.getWasmFeatures();
-    assertTrue(features.contains(WasmFeature.REFERENCE_TYPES));
-    assertTrue(features.contains(WasmFeature.BULK_MEMORY));
-  }
-
-  @Test
-  @DisplayName("ML inference template should enable SIMD features")
-  void testMlInferenceTemplate() {
-    OptimizationTemplate template =
-        OptimizationTemplate.builder("ML Test", OptimizationTemplate.TemplateType.ML_INFERENCE)
-            .description("ML inference workload")
-            .build();
-
-    EngineConfig config = template.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertTrue(config.isParallelCompilation());
-    assertEquals(4 * 1024 * 1024, config.getMaxWasmStack()); // 4MB stack for ML workloads
-
-    Set<WasmFeature> features = config.getWasmFeatures();
-    assertTrue(features.contains(WasmFeature.SIMD));
-    assertTrue(features.contains(WasmFeature.BULK_MEMORY));
-    assertTrue(features.contains(WasmFeature.MULTI_VALUE));
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("true", settings.get("enable_llvm_abi_extensions"));
-  }
-
-  @Test
-  @DisplayName("Game engine template should enable all performance features")
-  void testGameEngineTemplate() {
-    OptimizationTemplate template =
-        OptimizationTemplate.builder("Game Test", OptimizationTemplate.TemplateType.GAME_ENGINE)
-            .description("Game engine workload")
-            .build();
-
-    EngineConfig config = template.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertTrue(config.isParallelCompilation());
-    assertEquals(8 * 1024 * 1024, config.getMaxWasmStack()); // 8MB stack for game engines
-    assertFalse(config.isConsumeFuel()); // Disable for consistent frame timing
-
-    Set<WasmFeature> features = config.getWasmFeatures();
-    assertTrue(features.contains(WasmFeature.SIMD));
-    assertTrue(features.contains(WasmFeature.THREADS));
-    assertTrue(features.contains(WasmFeature.BULK_MEMORY));
-    assertTrue(features.contains(WasmFeature.MULTI_VALUE));
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("false", settings.get("enable_safepoints"));
-  }
-
-  @Test
-  @DisplayName("Scientific computing template should enable all advanced features")
-  void testScientificComputingTemplate() {
-    OptimizationTemplate template =
-        OptimizationTemplate.builder(
-                "Scientific Test", OptimizationTemplate.TemplateType.SCIENTIFIC_COMPUTING)
-            .description("Scientific computing workload")
-            .build();
-
-    EngineConfig config = template.createConfig();
-
-    assertEquals(OptimizationLevel.SPEED, config.getOptimizationLevel());
-    assertTrue(config.isParallelCompilation());
-    assertEquals(16 * 1024 * 1024, config.getMaxWasmStack()); // 16MB stack for scientific computing
-
-    Set<WasmFeature> features = config.getWasmFeatures();
-    assertTrue(features.contains(WasmFeature.SIMD));
-    assertTrue(features.contains(WasmFeature.THREADS));
-    assertTrue(features.contains(WasmFeature.BULK_MEMORY));
-    assertTrue(features.contains(WasmFeature.MULTI_VALUE));
-    assertTrue(features.contains(WasmFeature.MEMORY64));
-
-    var settings = config.getCraneliftSettings();
-    assertEquals("true", settings.get("enable_llvm_abi_extensions"));
-  }
 
   @Test
   @DisplayName("Custom parameters should override template defaults")
@@ -505,6 +369,7 @@ class OptimizationTemplateTest {
     assertNotNull(OptimizationTemplate.findTemplate("CPU Intensive"));
     assertNotNull(OptimizationTemplate.findTemplate("Memory Constrained"));
     assertNotNull(OptimizationTemplate.findTemplate("Real-time"));
+    assertNotNull(OptimizationTemplate.findTemplate("I/O Intensive"));
 
     // Should return null for non-existent templates
     assertNull(OptimizationTemplate.findTemplate("Non-existent Template"));

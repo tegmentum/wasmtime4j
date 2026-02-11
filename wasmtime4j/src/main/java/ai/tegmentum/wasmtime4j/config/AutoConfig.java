@@ -23,11 +23,6 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-@edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
-    value = "DB_DUPLICATE_SWITCH_CLAUSES",
-    justification =
-        "Multiple workload types intentionally share the same SIMD recommendation"
-            + " (CPU_INTENSIVE, MACHINE_LEARNING, WEB_APPLICATION all benefit from SIMD)")
 public final class AutoConfig {
 
   private static final Logger LOGGER = Logger.getLogger(AutoConfig.class.getName());
@@ -190,47 +185,32 @@ public final class AutoConfig {
       return PerformanceProfile.MEMORY_OPTIMIZED;
     }
 
-    // Consider power constraints
-    if (systemCapabilities.isPowerConstrained()) {
-      return PerformanceProfile.POWER_EFFICIENT;
-    }
-
     // Consider development vs production
     if (runtimeEnvironment.isDevelopmentMode()) {
-      return PerformanceProfile.FAST_COMPILATION;
+      return PerformanceProfile.DEBUG;
     }
 
     // Select based on workload type
     switch (workloadType) {
       case CPU_INTENSIVE:
+      case MACHINE_LEARNING:
+      case BATCH_PROCESSING:
         return systemCapabilities.getProcessorCount() >= 4
             ? PerformanceProfile.MAXIMUM_PERFORMANCE
             : PerformanceProfile.BALANCED;
 
       case IO_INTENSIVE:
+      case WEB_APPLICATION:
         return PerformanceProfile.BALANCED;
 
       case REAL_TIME:
-        return PerformanceProfile.LATENCY_OPTIMIZED;
-
-      case BATCH_PROCESSING:
-        return PerformanceProfile.THROUGHPUT_OPTIMIZED;
-
-      case WEB_APPLICATION:
-        return systemCapabilities.isServerEnvironment()
-            ? PerformanceProfile.BALANCED
-            : PerformanceProfile.MEMORY_OPTIMIZED;
-
-      case MACHINE_LEARNING:
-        return systemCapabilities.hasSimdSupport()
-            ? PerformanceProfile.MAXIMUM_PERFORMANCE
-            : PerformanceProfile.BALANCED;
+        return PerformanceProfile.MAXIMUM_PERFORMANCE;
 
       case SECURITY_CRITICAL:
-        return PerformanceProfile.SECURITY_HARDENED;
+        return PerformanceProfile.BALANCED;
 
       case DEVELOPMENT_TESTING:
-        return PerformanceProfile.DEBUG_OPTIMIZED;
+        return PerformanceProfile.DEBUG;
 
       case GENERAL_PURPOSE:
       default:
@@ -294,17 +274,14 @@ public final class AutoConfig {
   private OptimizationTemplate getTemplateForWorkload(final WorkloadType workloadType) {
     switch (workloadType) {
       case CPU_INTENSIVE:
+      case MACHINE_LEARNING:
+      case BATCH_PROCESSING:
         return OptimizationTemplate.findTemplate("CPU Intensive");
       case IO_INTENSIVE:
+      case WEB_APPLICATION:
         return OptimizationTemplate.findTemplate("I/O Intensive");
       case REAL_TIME:
         return OptimizationTemplate.findTemplate("Real-time");
-      case BATCH_PROCESSING:
-        return OptimizationTemplate.findTemplate("Batch Processing");
-      case WEB_APPLICATION:
-        return OptimizationTemplate.findTemplate("Web Application");
-      case MACHINE_LEARNING:
-        return OptimizationTemplate.findTemplate("ML Inference");
       default:
         return null;
     }
@@ -322,6 +299,7 @@ public final class AutoConfig {
     switch (workloadType) {
       case MACHINE_LEARNING:
       case CPU_INTENSIVE:
+      case BATCH_PROCESSING:
         if (systemCapabilities.hasSimdSupport()) {
           features.add(WasmFeature.SIMD);
         }
@@ -333,6 +311,7 @@ public final class AutoConfig {
         break;
 
       case WEB_APPLICATION:
+      case IO_INTENSIVE:
         if (systemCapabilities.hasSimdSupport()) {
           features.add(WasmFeature.SIMD);
         }
@@ -423,8 +402,7 @@ public final class AutoConfig {
 
     // Analyze compilation time
     if (metrics.getCompilationTimeMs() >= 5000) { // >= 5 seconds
-      recommendations.add(
-          "Consider using FAST_COMPILATION profile for faster development iterations");
+      recommendations.add("Consider using DEBUG profile for faster development iterations");
       adjustments.put("optimization_level", OptimizationLevel.NONE);
     }
 
