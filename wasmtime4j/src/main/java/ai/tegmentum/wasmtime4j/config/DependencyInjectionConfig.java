@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.config;
 
 import java.util.Map;
 import java.util.Objects;

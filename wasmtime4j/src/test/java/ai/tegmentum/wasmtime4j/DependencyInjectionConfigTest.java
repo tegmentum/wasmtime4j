@@ -27,6 +27,7 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.config.DependencyInjectionConfig;
 
 /**
  * Tests for {@link DependencyInjectionConfig} class.

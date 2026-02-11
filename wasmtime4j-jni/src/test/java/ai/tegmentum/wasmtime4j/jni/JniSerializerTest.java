@@ -208,7 +208,7 @@ class JniSerializerTest {
         }
 
         @Override
-        public ai.tegmentum.wasmtime4j.EngineConfig getConfig() {
+        public ai.tegmentum.wasmtime4j.config.EngineConfig getConfig() {
           return null;
         }
 

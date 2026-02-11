@@ -30,6 +30,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 
 /**
  * Tests for {@link DependencyResolution} class.

@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 
 /**
  * WebAssembly compilation engine interface.

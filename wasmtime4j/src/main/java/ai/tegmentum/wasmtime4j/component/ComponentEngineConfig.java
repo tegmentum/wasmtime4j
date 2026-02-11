@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.component;
 
-import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashSet;
 import java.util.Set;

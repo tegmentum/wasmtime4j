@@ -535,7 +535,7 @@ class PanamaInstanceTest {
           PanamaInstancePre.class.getMethod(
               "instantiate",
               ai.tegmentum.wasmtime4j.Store.class,
-              ai.tegmentum.wasmtime4j.ImportMap.class);
+              ai.tegmentum.wasmtime4j.validation.ImportMap.class);
       assertThat(method.getReturnType()).isEqualTo(Instance.class);
     }
 
@@ -556,7 +556,7 @@ class PanamaInstanceTest {
           PanamaInstancePre.class.getMethod(
               "instantiateAsync",
               ai.tegmentum.wasmtime4j.Store.class,
-              ai.tegmentum.wasmtime4j.ImportMap.class);
+              ai.tegmentum.wasmtime4j.validation.ImportMap.class);
       assertThat(method.getReturnType()).isEqualTo(CompletableFuture.class);
     }
 
@@ -942,7 +942,7 @@ class PanamaInstanceTest {
     @Test
     @DisplayName("PreInstantiationStatistics should have builder method")
     void preInstantiationStatisticsShouldHaveBuilderMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = ai.tegmentum.wasmtime4j.PreInstantiationStatistics.class;
+      final Class<?> statsClass = ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.class;
       final Method method = statsClass.getMethod("builder");
       assertThat(method).isNotNull();
     }
@@ -950,8 +950,8 @@ class PanamaInstanceTest {
     @Test
     @DisplayName("PreInstantiationStatistics builder should support creationTime")
     void preInstantiationStatisticsBuilderShouldSupportCreationTime() {
-      final ai.tegmentum.wasmtime4j.PreInstantiationStatistics stats =
-          ai.tegmentum.wasmtime4j.PreInstantiationStatistics.builder()
+      final ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics stats =
+          ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder()
               .creationTime(Instant.now())
               .build();
       assertThat(stats).isNotNull();
@@ -960,8 +960,8 @@ class PanamaInstanceTest {
     @Test
     @DisplayName("PreInstantiationStatistics builder should support preparationTime")
     void preInstantiationStatisticsBuilderShouldSupportPreparationTime() {
-      final ai.tegmentum.wasmtime4j.PreInstantiationStatistics stats =
-          ai.tegmentum.wasmtime4j.PreInstantiationStatistics.builder()
+      final ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics stats =
+          ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder()
               .preparationTime(Duration.ofMillis(100))
               .build();
       assertThat(stats).isNotNull();
@@ -970,16 +970,16 @@ class PanamaInstanceTest {
     @Test
     @DisplayName("PreInstantiationStatistics builder should support instancesCreated")
     void preInstantiationStatisticsBuilderShouldSupportInstancesCreated() {
-      final ai.tegmentum.wasmtime4j.PreInstantiationStatistics stats =
-          ai.tegmentum.wasmtime4j.PreInstantiationStatistics.builder().instancesCreated(5L).build();
+      final ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics stats =
+          ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder().instancesCreated(5L).build();
       assertThat(stats).isNotNull();
     }
 
     @Test
     @DisplayName("PreInstantiationStatistics builder should support averageInstantiationTime")
     void preInstantiationStatisticsBuilderShouldSupportAverageInstantiationTime() {
-      final ai.tegmentum.wasmtime4j.PreInstantiationStatistics stats =
-          ai.tegmentum.wasmtime4j.PreInstantiationStatistics.builder()
+      final ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics stats =
+          ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder()
               .averageInstantiationTime(Duration.ofNanos(50000))
               .build();
       assertThat(stats).isNotNull();

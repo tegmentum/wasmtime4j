@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.concurrent;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 

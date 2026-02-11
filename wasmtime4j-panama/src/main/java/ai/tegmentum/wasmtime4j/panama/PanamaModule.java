@@ -6,7 +6,7 @@ import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
-import ai.tegmentum.wasmtime4j.ImportMap;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.type.ImportType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
@@ -306,16 +306,16 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.ImportValidation validateImportsDetailed(
-      final ai.tegmentum.wasmtime4j.ImportMap imports) {
+  public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImportsDetailed(
+      final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {
       throw new IllegalArgumentException("imports cannot be null");
     }
     ensureNotClosed();
 
     final long startTime = System.nanoTime();
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportIssue> issues = new java.util.ArrayList<>();
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> validatedImports =
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> validatedImports =
         new java.util.ArrayList<>();
     final java.util.Map<String, java.util.Map<String, Object>> importsMap = imports.getImports();
 
@@ -332,9 +332,9 @@ public final class PanamaModule implements Module {
       // Check if import exists
       if (!imports.contains(moduleName, fieldName)) {
         issues.add(
-            new ai.tegmentum.wasmtime4j.ImportIssue(
-                ai.tegmentum.wasmtime4j.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.ImportIssue.Type.MISSING_IMPORT,
+            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
+                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
+                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.MISSING_IMPORT,
                 moduleName,
                 fieldName,
                 "Required import is missing from ImportMap"));
@@ -345,9 +345,9 @@ public final class PanamaModule implements Module {
       final java.util.Map<String, Object> moduleMap = importsMap.get(moduleName);
       if (moduleMap == null) {
         issues.add(
-            new ai.tegmentum.wasmtime4j.ImportIssue(
-                ai.tegmentum.wasmtime4j.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.ImportIssue.Type.MODULE_NOT_FOUND,
+            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
+                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
+                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.MODULE_NOT_FOUND,
                 moduleName,
                 fieldName,
                 "Module not found in ImportMap"));
@@ -357,9 +357,9 @@ public final class PanamaModule implements Module {
       final Object actualImport = moduleMap.get(fieldName);
       if (actualImport == null) {
         issues.add(
-            new ai.tegmentum.wasmtime4j.ImportIssue(
-                ai.tegmentum.wasmtime4j.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.ImportIssue.Type.EXPORT_NOT_FOUND,
+            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
+                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
+                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.EXPORT_NOT_FOUND,
                 moduleName,
                 fieldName,
                 "Import field not found in module"));
@@ -484,9 +484,9 @@ public final class PanamaModule implements Module {
 
       if (!typeMatches) {
         issues.add(
-            new ai.tegmentum.wasmtime4j.ImportIssue(
-                ai.tegmentum.wasmtime4j.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.ImportIssue.Type.TYPE_MISMATCH,
+            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
+                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
+                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.TYPE_MISMATCH,
                 moduleName,
                 fieldName,
                 "Import type does not match expected type",
@@ -495,26 +495,26 @@ public final class PanamaModule implements Module {
       } else {
         validCount++;
         // Determine ImportInfo.ImportType from WasmTypeKind
-        final ai.tegmentum.wasmtime4j.ImportInfo.ImportType infoType;
+        final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType infoType;
         switch (expectedKind) {
           case GLOBAL:
-            infoType = ai.tegmentum.wasmtime4j.ImportInfo.ImportType.GLOBAL;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
             break;
           case TABLE:
-            infoType = ai.tegmentum.wasmtime4j.ImportInfo.ImportType.TABLE;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
             break;
           case MEMORY:
-            infoType = ai.tegmentum.wasmtime4j.ImportInfo.ImportType.MEMORY;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
             break;
           case FUNCTION:
-            infoType = ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
             break;
           default:
-            infoType = ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
         }
 
         validatedImports.add(
-            new ai.tegmentum.wasmtime4j.ImportInfo(
+            new ai.tegmentum.wasmtime4j.validation.ImportInfo(
                 moduleName,
                 fieldName,
                 infoType,
@@ -530,7 +530,7 @@ public final class PanamaModule implements Module {
 
     System.err.println(
         "[DEBUG] Validation complete: validCount=" + validCount + ", issues=" + issues.size());
-    for (final ai.tegmentum.wasmtime4j.ImportIssue issue : issues) {
+    for (final ai.tegmentum.wasmtime4j.validation.ImportIssue issue : issues) {
       System.err.println(
           "[DEBUG]   Issue: "
               + issue.getModuleName()
@@ -543,7 +543,7 @@ public final class PanamaModule implements Module {
     }
     System.err.flush();
 
-    return new ai.tegmentum.wasmtime4j.ImportValidation(
+    return new ai.tegmentum.wasmtime4j.validation.ImportValidation(
         issues.isEmpty(),
         issues,
         validatedImports,

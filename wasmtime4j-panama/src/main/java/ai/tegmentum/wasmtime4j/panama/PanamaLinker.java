@@ -1,15 +1,15 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.DependencyResolution;
+import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.ImportInfo;
-import ai.tegmentum.wasmtime4j.ImportIssue;
-import ai.tegmentum.wasmtime4j.ImportValidation;
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
+import ai.tegmentum.wasmtime4j.validation.ImportIssue;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -57,7 +57,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   private final MemorySegment nativeLinker;
   private volatile boolean closed = false;
   private final Set<String> imports = new HashSet<>();
-  private final java.util.Map<String, ai.tegmentum.wasmtime4j.ImportInfo> importRegistry =
+  private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo> importRegistry =
       new java.util.concurrent.ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = new HashSet<>();
   private volatile PanamaWasiContext wasiContext = null;
@@ -159,7 +159,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       addImportWithMetadata(
           moduleName,
           name,
-          ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION,
+          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION,
           functionType.toString());
 
       LOGGER.fine(
@@ -659,7 +659,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final java.util.Map<String, Module> exportProviders = new java.util.HashMap<>();
       final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.type.ImportType>>
           moduleImports = new java.util.HashMap<>();
-      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies =
+      final java.util.List<ai.tegmentum.wasmtime4j.config.DependencyEdge> dependencies =
           new java.util.ArrayList<>();
 
       // Collect exports from all modules
@@ -694,10 +694,10 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
           // Create dependency edge
           if (resolvedByModule) {
-            final ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType depType =
+            final ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType depType =
                 mapImportTypeToDependencyType(importType);
             dependencies.add(
-                new ai.tegmentum.wasmtime4j.DependencyEdge(
+                new ai.tegmentum.wasmtime4j.config.DependencyEdge(
                     module,
                     provider,
                     importType.getModuleName(),
@@ -724,7 +724,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final boolean successful =
           !circularResult.hasCircular && resolvedCount == countTotalImports(moduleImports);
 
-      return new ai.tegmentum.wasmtime4j.DependencyResolution(
+      return new ai.tegmentum.wasmtime4j.config.DependencyResolution(
           instantiationOrder,
           dependencies,
           circularResult.hasCircular,
@@ -851,11 +851,11 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @param importType the import type
    * @return the corresponding dependency type
    */
-  private ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType mapImportTypeToDependencyType(
+  private ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType mapImportTypeToDependencyType(
       final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     // For now, we infer from the import type string
     // A more robust implementation would use actual type inspection
-    return ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType.FUNCTION;
+    return ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType.FUNCTION;
   }
 
   /**
@@ -877,14 +877,14 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @return circular dependency detection result
    */
   private CircularDependencyResult detectCircularDependencies(
-      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies) {
+      final java.util.List<ai.tegmentum.wasmtime4j.config.DependencyEdge> dependencies) {
     final java.util.Map<Module, java.util.Set<Module>> graph = new java.util.HashMap<>();
     final java.util.Set<Module> visited = new java.util.HashSet<>();
     final java.util.Set<Module> recursionStack = new java.util.HashSet<>();
     final java.util.List<String> chains = new java.util.ArrayList<>();
 
     // Build adjacency list
-    for (final ai.tegmentum.wasmtime4j.DependencyEdge edge : dependencies) {
+    for (final ai.tegmentum.wasmtime4j.config.DependencyEdge edge : dependencies) {
       graph
           .computeIfAbsent(edge.getDependent(), k -> new java.util.HashSet<>())
           .add(edge.getDependency());
@@ -962,7 +962,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    */
   private java.util.List<Module> topologicalSort(
       final Module[] modules,
-      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies) {
+      final java.util.List<ai.tegmentum.wasmtime4j.config.DependencyEdge> dependencies) {
     final java.util.Map<Module, Integer> inDegree = new java.util.HashMap<>();
     final java.util.Map<Module, java.util.List<Module>> graph = new java.util.HashMap<>();
 
@@ -973,7 +973,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
 
     // Build graph and calculate in-degrees
-    for (final ai.tegmentum.wasmtime4j.DependencyEdge edge : dependencies) {
+    for (final ai.tegmentum.wasmtime4j.config.DependencyEdge edge : dependencies) {
       final Module dependent = edge.getDependent();
       final Module dependency = edge.getDependency();
 
@@ -1141,12 +1141,12 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   void addImportWithMetadata(
       final String moduleName,
       final String name,
-      final ai.tegmentum.wasmtime4j.ImportInfo.ImportType importType,
+      final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType importType,
       final String typeSignature) {
     imports.add(moduleName + "::" + name);
     final String key = moduleName + "::" + name;
-    final ai.tegmentum.wasmtime4j.ImportInfo info =
-        new ai.tegmentum.wasmtime4j.ImportInfo(
+    final ai.tegmentum.wasmtime4j.validation.ImportInfo info =
+        new ai.tegmentum.wasmtime4j.validation.ImportInfo(
             moduleName,
             name,
             importType,

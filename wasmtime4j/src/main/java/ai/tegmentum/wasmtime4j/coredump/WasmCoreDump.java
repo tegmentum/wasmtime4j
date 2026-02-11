@@ -28,7 +28,7 @@ import java.util.List;
  * <p>Coredumps follow the WebAssembly Coredump specification and can be serialized to a standard
  * format for analysis with external tools.
  *
- * @see ai.tegmentum.wasmtime4j.EngineConfig#setCoredumpOnTrap(boolean)
+ * @see ai.tegmentum.wasmtime4j.config.EngineConfig#setCoredumpOnTrap(boolean)
  * @since 1.0.0
  */
 public interface WasmCoreDump {

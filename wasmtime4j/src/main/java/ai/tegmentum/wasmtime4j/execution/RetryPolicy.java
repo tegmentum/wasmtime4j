@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.execution;
 
 /**
  * Retry policy for failed network requests during streaming compilation.

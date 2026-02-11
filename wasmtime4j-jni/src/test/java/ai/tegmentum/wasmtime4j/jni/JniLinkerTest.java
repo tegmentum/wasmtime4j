@@ -311,7 +311,7 @@ class JniLinkerTest {
 
   @Test
   void testGetImportRegistryReturnsEmptyList() {
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> registry = linker.getImportRegistry();
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> registry = linker.getImportRegistry();
 
     assertThat(registry).isNotNull();
     assertThat(registry).isEmpty();
@@ -322,7 +322,7 @@ class JniLinkerTest {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
     // validateImports is now implemented and should not throw for valid module
-    final ai.tegmentum.wasmtime4j.ImportValidation result = linker.validateImports(module);
+    final ai.tegmentum.wasmtime4j.validation.ImportValidation result = linker.validateImports(module);
     assertThat(result).isNotNull();
   }
 
@@ -331,7 +331,7 @@ class JniLinkerTest {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
     // resolveDependencies is now implemented and should not throw for valid module
-    final ai.tegmentum.wasmtime4j.DependencyResolution result = linker.resolveDependencies(module);
+    final ai.tegmentum.wasmtime4j.config.DependencyResolution result = linker.resolveDependencies(module);
     assertThat(result).isNotNull();
   }
 

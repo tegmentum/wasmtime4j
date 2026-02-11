@@ -35,6 +35,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
+import ai.tegmentum.wasmtime4j.validation.ImportIssue;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 
 /**
  * Tests for {@link ImportValidation} class.

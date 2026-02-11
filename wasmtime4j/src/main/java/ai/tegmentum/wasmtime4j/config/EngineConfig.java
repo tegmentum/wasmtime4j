@@ -1,8 +1,15 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.config;
+
+import ai.tegmentum.wasmtime4j.OptimizationLevel;
+import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
 
 import ai.tegmentum.wasmtime4j.memory.Memory;
 
 import ai.tegmentum.wasmtime4j.config.CompilationStrategy;
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.InstanceAllocationStrategy;
+import ai.tegmentum.wasmtime4j.Instance;
 
 /**
  * Configuration options for WebAssembly engine creation.

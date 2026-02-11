@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.config;
 
 /**
  * Listener for network-related events during streaming compilation.

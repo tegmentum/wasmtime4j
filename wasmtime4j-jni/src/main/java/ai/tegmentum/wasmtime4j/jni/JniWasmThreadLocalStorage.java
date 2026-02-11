@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.WasmThreadLocalStorage;
+import ai.tegmentum.wasmtime4j.concurrent.WasmThreadLocalStorage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -216,7 +216,7 @@ public final class NativeFunctionBindings {
    * @param config the engine configuration
    * @return memory segment pointer to the engine, or null on failure
    */
-  public MemorySegment engineCreateWithConfig(final ai.tegmentum.wasmtime4j.EngineConfig config) {
+  public MemorySegment engineCreateWithConfig(final ai.tegmentum.wasmtime4j.config.EngineConfig config) {
     try {
       if (!isInitialized()) {
         LOGGER.severe("NativeFunctionBindings not initialized, cannot create engine");

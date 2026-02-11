@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.tests.module;
 
-import ai.tegmentum.wasmtime4j.ImportMap;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;

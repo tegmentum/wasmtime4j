@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocator;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig;

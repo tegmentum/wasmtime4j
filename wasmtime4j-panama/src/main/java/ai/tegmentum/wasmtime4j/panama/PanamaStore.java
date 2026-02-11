@@ -151,7 +151,7 @@ public final class PanamaStore implements Store {
    * @param limits the resource limits to apply
    * @throws WasmException if store creation fails
    */
-  public PanamaStore(final PanamaEngine engine, final ai.tegmentum.wasmtime4j.StoreLimits limits)
+  public PanamaStore(final PanamaEngine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
       throws WasmException {
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");

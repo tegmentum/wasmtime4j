@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.execution;
 
 import ai.tegmentum.wasmtime4j.func.Function;
 

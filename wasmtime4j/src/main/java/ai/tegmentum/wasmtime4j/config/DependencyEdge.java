@@ -1,5 +1,6 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.config;
 
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.memory.Table;
 
 import ai.tegmentum.wasmtime4j.memory.Memory;

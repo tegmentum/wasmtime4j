@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.concurrent;
 
 /**
  * Represents the possible states of a WebAssembly thread.

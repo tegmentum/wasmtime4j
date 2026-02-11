@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.pool;
 
-import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;

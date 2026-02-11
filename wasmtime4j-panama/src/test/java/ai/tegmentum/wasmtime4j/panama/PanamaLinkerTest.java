@@ -7,11 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.DependencyResolution;
+import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.ImportInfo;
-import ai.tegmentum.wasmtime4j.ImportValidation;
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.WasmValue;

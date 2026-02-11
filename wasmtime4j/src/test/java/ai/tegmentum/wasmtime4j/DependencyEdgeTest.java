@@ -27,6 +27,7 @@ import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.config.DependencyEdge;
 
 /**
  * Tests for {@link DependencyEdge} class.

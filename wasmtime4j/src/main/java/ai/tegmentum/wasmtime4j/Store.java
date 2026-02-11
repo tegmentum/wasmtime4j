@@ -29,6 +29,8 @@ import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
+import ai.tegmentum.wasmtime4j.config.StoreLimits;
 
 /**
  * Represents a WebAssembly store.

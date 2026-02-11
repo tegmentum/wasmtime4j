@@ -1,4 +1,6 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.validation;
+
+import ai.tegmentum.wasmtime4j.WasmValue;
 
 import ai.tegmentum.wasmtime4j.memory.Table;
 

@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j;
 import ai.tegmentum.wasmtime4j.func.Caller;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.config.StoreLimits;
 
 /**
  * Builder for creating Store instances with custom configuration.

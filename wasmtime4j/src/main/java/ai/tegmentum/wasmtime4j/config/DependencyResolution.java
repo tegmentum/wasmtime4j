@@ -1,9 +1,16 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.config;
+
+import ai.tegmentum.wasmtime4j.InstanceAllocationStrategy;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
 
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import ai.tegmentum.wasmtime4j.Module;
 
 /**
  * Result of dependency resolution analysis for a set of WebAssembly modules.

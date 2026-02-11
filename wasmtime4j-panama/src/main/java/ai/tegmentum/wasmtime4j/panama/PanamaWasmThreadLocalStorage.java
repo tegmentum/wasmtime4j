@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.WasmThreadLocalStorage;
+import ai.tegmentum.wasmtime4j.concurrent.WasmThreadLocalStorage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;

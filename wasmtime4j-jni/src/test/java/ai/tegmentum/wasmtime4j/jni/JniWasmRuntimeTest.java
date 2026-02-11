@@ -161,7 +161,7 @@ class JniWasmRuntimeTest {
     @DisplayName("should have createEngine method with config")
     void shouldHaveCreateEngineWithConfigMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
-      Class<?> configClass = Class.forName("ai.tegmentum.wasmtime4j.EngineConfig");
+      Class<?> configClass = Class.forName("ai.tegmentum.wasmtime4j.config.EngineConfig");
       Method method = clazz.getMethod("createEngine", configClass);
 
       assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Engine");
@@ -187,7 +187,7 @@ class JniWasmRuntimeTest {
     void shouldHaveCreateStoreWithLimitsMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Class<?> engineClass = Class.forName("ai.tegmentum.wasmtime4j.Engine");
-      Class<?> limitsClass = Class.forName("ai.tegmentum.wasmtime4j.StoreLimits");
+      Class<?> limitsClass = Class.forName("ai.tegmentum.wasmtime4j.config.StoreLimits");
       Method method = clazz.getMethod("createStore", engineClass, limitsClass);
 
       assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Store");
@@ -249,7 +249,7 @@ class JniWasmRuntimeTest {
     void shouldHaveInstantiateWithImportsMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Class<?> moduleClass = Class.forName("ai.tegmentum.wasmtime4j.Module");
-      Class<?> importsClass = Class.forName("ai.tegmentum.wasmtime4j.ImportMap");
+      Class<?> importsClass = Class.forName("ai.tegmentum.wasmtime4j.validation.ImportMap");
       Method method = clazz.getMethod("instantiate", moduleClass, importsClass);
 
       assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Instance");

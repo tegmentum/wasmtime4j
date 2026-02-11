@@ -22,10 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmThread;
-import ai.tegmentum.wasmtime4j.WasmThreadLocalStorage;
-import ai.tegmentum.wasmtime4j.WasmThreadState;
-import ai.tegmentum.wasmtime4j.WasmThreadStatistics;
+import ai.tegmentum.wasmtime4j.concurrent.WasmThread;
+import ai.tegmentum.wasmtime4j.concurrent.WasmThreadLocalStorage;
+import ai.tegmentum.wasmtime4j.concurrent.WasmThreadState;
+import ai.tegmentum.wasmtime4j.concurrent.WasmThreadStatistics;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.pool;
 
-import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;
 import java.time.Duration;

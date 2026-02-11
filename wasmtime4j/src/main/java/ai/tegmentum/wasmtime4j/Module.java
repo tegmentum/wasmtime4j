@@ -24,6 +24,9 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.Closeable;
 import java.util.List;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
+import ai.tegmentum.wasmtime4j.validation.ModuleValidationResult;
 
 /**
  * Represents a compiled WebAssembly module.

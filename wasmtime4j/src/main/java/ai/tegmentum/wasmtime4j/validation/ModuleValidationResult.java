@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.validation;
 
 import java.util.Collections;
 import java.util.List;

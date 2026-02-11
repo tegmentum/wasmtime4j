@@ -33,7 +33,7 @@ public class JniLinker<T> implements Linker<T> {
   private final Engine engine;
   private volatile boolean closed = false;
   private final Set<String> imports = new HashSet<>();
-  private final java.util.Map<String, ai.tegmentum.wasmtime4j.ImportInfo> importRegistry =
+  private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo> importRegistry =
       new java.util.concurrent.ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = new HashSet<>();
 
@@ -101,7 +101,7 @@ public class JniLinker<T> implements Linker<T> {
       addImportWithMetadata(
           moduleName,
           name,
-          ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION,
+          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION,
           functionType.toString());
       return;
     }
@@ -118,7 +118,7 @@ public class JniLinker<T> implements Linker<T> {
       addImportWithMetadata(
           moduleName,
           name,
-          ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION,
+          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION,
           functionType.toString());
     } catch (final Exception e) {
       if (e instanceof WasmException) {
@@ -395,13 +395,13 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
-  public java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> getImportRegistry() {
+  public java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> getImportRegistry() {
     ensureNotClosed();
     return new java.util.ArrayList<>(importRegistry.values());
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.ImportValidation validateImports(final Module... modules) {
+  public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImports(final Module... modules) {
     if (modules == null) {
       throw new IllegalArgumentException("Modules cannot be null");
     }
@@ -412,8 +412,8 @@ public class JniLinker<T> implements Linker<T> {
 
     final long startTime = System.nanoTime();
 
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportIssue> issues = new java.util.ArrayList<>();
-    final java.util.List<ai.tegmentum.wasmtime4j.ImportInfo> validatedImports =
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> validatedImports =
         new java.util.ArrayList<>();
 
     int totalImports = 0;
@@ -435,13 +435,13 @@ public class JniLinker<T> implements Linker<T> {
           validImports++;
 
           // Create ImportInfo for valid import
-          final ai.tegmentum.wasmtime4j.ImportInfo.ImportType infoType =
+          final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType infoType =
               mapImportTypeToInfoType(importType);
           final java.util.Optional<String> typeSignature =
               java.util.Optional.of(importType.getType().toString());
 
-          final ai.tegmentum.wasmtime4j.ImportInfo info =
-              new ai.tegmentum.wasmtime4j.ImportInfo(
+          final ai.tegmentum.wasmtime4j.validation.ImportInfo info =
+              new ai.tegmentum.wasmtime4j.validation.ImportInfo(
                   moduleName,
                   importName,
                   infoType,
@@ -454,10 +454,10 @@ public class JniLinker<T> implements Linker<T> {
           validatedImports.add(info);
         } else {
           // Create ImportIssue for missing import
-          final ai.tegmentum.wasmtime4j.ImportIssue issue =
-              new ai.tegmentum.wasmtime4j.ImportIssue(
-                  ai.tegmentum.wasmtime4j.ImportIssue.Severity.ERROR,
-                  ai.tegmentum.wasmtime4j.ImportIssue.Type.MISSING_IMPORT,
+          final ai.tegmentum.wasmtime4j.validation.ImportIssue issue =
+              new ai.tegmentum.wasmtime4j.validation.ImportIssue(
+                  ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
+                  ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.MISSING_IMPORT,
                   moduleName,
                   importName,
                   "Import not defined in linker",
@@ -474,7 +474,7 @@ public class JniLinker<T> implements Linker<T> {
 
     final boolean valid = issues.isEmpty();
 
-    return new ai.tegmentum.wasmtime4j.ImportValidation(
+    return new ai.tegmentum.wasmtime4j.validation.ImportValidation(
         valid, issues, validatedImports, totalImports, validImports, validationTime);
   }
 
@@ -484,27 +484,27 @@ public class JniLinker<T> implements Linker<T> {
    * @param importType the import type from module
    * @return the corresponding ImportInfo.ImportType
    */
-  private ai.tegmentum.wasmtime4j.ImportInfo.ImportType mapImportTypeToInfoType(
+  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType mapImportTypeToInfoType(
       final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     final ai.tegmentum.wasmtime4j.type.WasmTypeKind kind = importType.getType().getKind();
 
     switch (kind) {
       case FUNCTION:
-        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
       case MEMORY:
-        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.MEMORY;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
       case TABLE:
-        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.TABLE;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
       case GLOBAL:
-        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.GLOBAL;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
       default:
         // Default to FUNCTION if we can't determine
-        return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
     }
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.DependencyResolution resolveDependencies(final Module... modules)
+  public ai.tegmentum.wasmtime4j.config.DependencyResolution resolveDependencies(final Module... modules)
       throws WasmException {
     if (modules == null) {
       throw new IllegalArgumentException("Modules cannot be null");
@@ -521,7 +521,7 @@ public class JniLinker<T> implements Linker<T> {
       final java.util.Map<String, Module> exportProviders = new java.util.HashMap<>();
       final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.type.ImportType>>
           moduleImports = new java.util.HashMap<>();
-      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies =
+      final java.util.List<ai.tegmentum.wasmtime4j.config.DependencyEdge> dependencies =
           new java.util.ArrayList<>();
 
       // Collect exports from all modules
@@ -556,10 +556,10 @@ public class JniLinker<T> implements Linker<T> {
 
           // Create dependency edge
           if (resolvedByModule) {
-            final ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType depType =
+            final ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType depType =
                 mapImportTypeToDependencyType(importType);
             dependencies.add(
-                new ai.tegmentum.wasmtime4j.DependencyEdge(
+                new ai.tegmentum.wasmtime4j.config.DependencyEdge(
                     module,
                     provider,
                     importType.getModuleName(),
@@ -586,7 +586,7 @@ public class JniLinker<T> implements Linker<T> {
       final boolean successful =
           !circularResult.hasCircular && resolvedCount == countTotalImports(moduleImports);
 
-      return new ai.tegmentum.wasmtime4j.DependencyResolution(
+      return new ai.tegmentum.wasmtime4j.config.DependencyResolution(
           instantiationOrder,
           dependencies,
           circularResult.hasCircular,
@@ -607,11 +607,11 @@ public class JniLinker<T> implements Linker<T> {
    * @param importType the import type
    * @return the corresponding dependency type
    */
-  private ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType mapImportTypeToDependencyType(
+  private ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType mapImportTypeToDependencyType(
       final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     // For now, we infer from the import type string
     // A more robust implementation would use actual type inspection
-    return ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType.FUNCTION;
+    return ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType.FUNCTION;
   }
 
   /**
@@ -633,14 +633,14 @@ public class JniLinker<T> implements Linker<T> {
    * @return circular dependency detection result
    */
   private CircularDependencyResult detectCircularDependencies(
-      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies) {
+      final java.util.List<ai.tegmentum.wasmtime4j.config.DependencyEdge> dependencies) {
     final java.util.Map<Module, java.util.Set<Module>> graph = new java.util.HashMap<>();
     final java.util.Set<Module> visited = new java.util.HashSet<>();
     final java.util.Set<Module> recursionStack = new java.util.HashSet<>();
     final java.util.List<String> chains = new java.util.ArrayList<>();
 
     // Build adjacency list
-    for (final ai.tegmentum.wasmtime4j.DependencyEdge edge : dependencies) {
+    for (final ai.tegmentum.wasmtime4j.config.DependencyEdge edge : dependencies) {
       graph
           .computeIfAbsent(edge.getDependent(), k -> new java.util.HashSet<>())
           .add(edge.getDependency());
@@ -718,7 +718,7 @@ public class JniLinker<T> implements Linker<T> {
    */
   private java.util.List<Module> topologicalSort(
       final Module[] modules,
-      final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies) {
+      final java.util.List<ai.tegmentum.wasmtime4j.config.DependencyEdge> dependencies) {
     final java.util.Map<Module, Integer> inDegree = new java.util.HashMap<>();
     final java.util.Map<Module, java.util.List<Module>> graph = new java.util.HashMap<>();
 
@@ -729,7 +729,7 @@ public class JniLinker<T> implements Linker<T> {
     }
 
     // Build graph and calculate in-degrees
-    for (final ai.tegmentum.wasmtime4j.DependencyEdge edge : dependencies) {
+    for (final ai.tegmentum.wasmtime4j.config.DependencyEdge edge : dependencies) {
       final Module dependent = edge.getDependent();
       final Module dependency = edge.getDependency();
 
@@ -807,12 +807,12 @@ public class JniLinker<T> implements Linker<T> {
   void addImportWithMetadata(
       final String moduleName,
       final String name,
-      final ai.tegmentum.wasmtime4j.ImportInfo.ImportType importType,
+      final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType importType,
       final String typeSignature) {
     imports.add(moduleName + "::" + name);
     final String key = moduleName + "::" + name;
-    final ai.tegmentum.wasmtime4j.ImportInfo info =
-        new ai.tegmentum.wasmtime4j.ImportInfo(
+    final ai.tegmentum.wasmtime4j.validation.ImportInfo info =
+        new ai.tegmentum.wasmtime4j.validation.ImportInfo(
             moduleName,
             name,
             importType,
@@ -1286,7 +1286,7 @@ public class JniLinker<T> implements Linker<T> {
     final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
         new java.util.ArrayList<>();
 
-    for (final ai.tegmentum.wasmtime4j.ImportInfo info : importRegistry.values()) {
+    for (final ai.tegmentum.wasmtime4j.validation.ImportInfo info : importRegistry.values()) {
       final ai.tegmentum.wasmtime4j.type.ExternType externType;
       switch (info.getImportType()) {
         case FUNCTION:
@@ -1457,17 +1457,17 @@ public class JniLinker<T> implements Linker<T> {
    * @param extern the extern to get the type from
    * @return the import type
    */
-  private ai.tegmentum.wasmtime4j.ImportInfo.ImportType getExternImportType(final Extern extern) {
+  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType getExternImportType(final Extern extern) {
     if (extern instanceof JniExternFunc) {
-      return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
     } else if (extern instanceof JniExternTable) {
-      return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.TABLE;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
     } else if (extern instanceof JniExternMemory) {
-      return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.MEMORY;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
     } else if (extern instanceof JniExternGlobal) {
-      return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.GLOBAL;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
     }
-    return ai.tegmentum.wasmtime4j.ImportInfo.ImportType.FUNCTION;
+    return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
   }
 
   @Override

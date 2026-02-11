@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.execution;
 
 /**
  * Hot swap strategy interface for WebAssembly components.

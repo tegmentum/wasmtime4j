@@ -1,9 +1,12 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.concurrent;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmValue;
 
 /**
  * Represents a WebAssembly thread for multi-threaded WebAssembly execution.

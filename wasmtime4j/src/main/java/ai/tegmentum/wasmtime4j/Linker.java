@@ -10,6 +10,9 @@ import ai.tegmentum.wasmtime4j.async.AsyncHostFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
+import ai.tegmentum.wasmtime4j.config.DependencyResolution;
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 
 /**
  * WebAssembly linker interface for defining host functions and resolving imports.

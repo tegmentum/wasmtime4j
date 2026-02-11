@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.EngineConfig;
-import ai.tegmentum.wasmtime4j.ImportMap;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -204,7 +204,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public Store createStore(final Engine engine, final ai.tegmentum.wasmtime4j.StoreLimits limits)
+  public Store createStore(final Engine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
       throws WasmException {
     JniValidation.requireNonNull(engine, "engine");
     JniValidation.requireNonNull(limits, "limits");

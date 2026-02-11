@@ -31,6 +31,7 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
 
 /**
  * Tests for core enums in the wasmtime4j package.

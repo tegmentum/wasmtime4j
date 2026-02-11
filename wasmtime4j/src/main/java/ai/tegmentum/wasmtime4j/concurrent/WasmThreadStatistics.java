@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.concurrent;
 
 /**
  * Performance statistics for WebAssembly threads.

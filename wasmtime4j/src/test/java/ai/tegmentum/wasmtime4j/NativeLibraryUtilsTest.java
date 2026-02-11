@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.util.NativeLibraryUtils;
+import ai.tegmentum.wasmtime4j.util.PlatformDetector;
 
 /** Tests for {@link NativeLibraryUtils}. */
 @SuppressWarnings("deprecation") // Testing deprecated wrapper class
@@ -81,17 +83,17 @@ final class NativeLibraryUtilsTest {
     assertThrows(
         NullPointerException.class,
         () ->
-            ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar(
+            ai.tegmentum.wasmtime4j.util.NativeLibraryUtils.extractLibraryFromJar(
                 null, platformInfo, "/test"));
     assertThrows(
         NullPointerException.class,
         () ->
-            ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar(
+            ai.tegmentum.wasmtime4j.util.NativeLibraryUtils.extractLibraryFromJar(
                 "test", null, "/test"));
     assertThrows(
         NullPointerException.class,
         () ->
-            ai.tegmentum.wasmtime4j.NativeLibraryUtils.extractLibraryFromJar(
+            ai.tegmentum.wasmtime4j.util.NativeLibraryUtils.extractLibraryFromJar(
                 "test", platformInfo, null));
   }
 

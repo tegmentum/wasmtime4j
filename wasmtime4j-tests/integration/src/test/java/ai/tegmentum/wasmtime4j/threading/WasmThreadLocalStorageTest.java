@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.EngineConfig;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.WasmFeature;
-import ai.tegmentum.wasmtime4j.WasmThreadLocalStorage;
+import ai.tegmentum.wasmtime4j.concurrent.WasmThreadLocalStorage;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.PanamaWasmThreadLocalStorage;
 import java.lang.foreign.Arena;
