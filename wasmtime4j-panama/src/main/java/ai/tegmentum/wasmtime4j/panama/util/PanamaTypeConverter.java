@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.MemoryLayouts;
 import ai.tegmentum.wasmtime4j.panama.PanamaFunctionReference;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
+import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.util.logging.Logger;
@@ -35,7 +36,8 @@ import java.util.logging.Logger;
  * (funcref, externref) when using Panama FFI.
  *
  * <p>All conversions are defensive and validate input types to prevent JVM crashes or incorrect
- * behavior in native calls.
+ * behavior in native calls. This class delegates to {@link TypeConversionUtilities} for shared
+ * functionality and wraps any exceptions in Panama-specific exception types.
  *
  * @since 1.0.0
  */
@@ -44,7 +46,7 @@ public final class PanamaTypeConverter {
   private static final Logger LOGGER = Logger.getLogger(PanamaTypeConverter.class.getName());
 
   /** Size of v128 vector type in bytes. */
-  private static final int V128_SIZE_BYTES = 16;
+  private static final int V128_SIZE_BYTES = TypeConversionUtilities.V128_SIZE_BYTES;
 
   /** Private constructor to prevent instantiation. */
   private PanamaTypeConverter() {}
@@ -250,29 +252,10 @@ public final class PanamaTypeConverter {
    */
   public static void validateParameterTypes(
       final WasmValue[] params, final WasmValueType[] expectedTypes) throws PanamaException {
-    PanamaValidation.requireNonNull(params, "params");
-    PanamaValidation.requireNonNull(expectedTypes, "expectedTypes");
-
-    if (params.length != expectedTypes.length) {
-      throw new PanamaException(
-          "Parameter count mismatch: got " + params.length + ", expected " + expectedTypes.length);
-    }
-
-    for (int i = 0; i < params.length; i++) {
-      if (params[i] == null) {
-        throw new PanamaException("Parameter at index " + i + " is null");
-      }
-      final WasmValueType actualType = params[i].getType();
-      final WasmValueType expectedType = expectedTypes[i];
-      if (actualType != expectedType) {
-        throw new PanamaException(
-            "Parameter type mismatch at index "
-                + i
-                + ": got "
-                + actualType
-                + ", expected "
-                + expectedType);
-      }
+    try {
+      TypeConversionUtilities.validateParameterTypes(params, expectedTypes);
+    } catch (final IllegalArgumentException e) {
+      throw new PanamaException(e.getMessage(), e);
     }
   }
 
@@ -283,12 +266,10 @@ public final class PanamaTypeConverter {
    * @throws PanamaException if array size is incorrect
    */
   public static void validateV128Size(final byte[] bytes) throws PanamaException {
-    if (bytes == null) {
-      throw new PanamaException("v128 bytes cannot be null");
-    }
-    if (bytes.length != V128_SIZE_BYTES) {
-      throw new PanamaException(
-          "v128 must be exactly " + V128_SIZE_BYTES + " bytes, got " + bytes.length);
+    try {
+      TypeConversionUtilities.validateV128Size(bytes);
+    } catch (final IllegalArgumentException e) {
+      throw new PanamaException(e.getMessage(), e);
     }
   }
 

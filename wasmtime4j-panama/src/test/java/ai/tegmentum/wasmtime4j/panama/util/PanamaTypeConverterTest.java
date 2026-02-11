@@ -636,7 +636,7 @@ class PanamaTypeConverterTest {
       final WasmValueType[] expectedTypes = new WasmValueType[] {WasmValueType.I32};
 
       assertThrows(
-          IllegalArgumentException.class,
+          PanamaException.class,
           () -> PanamaTypeConverter.validateParameterTypes(null, expectedTypes),
           "Should throw for null params");
     }
@@ -647,7 +647,7 @@ class PanamaTypeConverterTest {
       final WasmValue[] params = new WasmValue[] {WasmValue.i32(1)};
 
       assertThrows(
-          IllegalArgumentException.class,
+          PanamaException.class,
           () -> PanamaTypeConverter.validateParameterTypes(params, null),
           "Should throw for null expectedTypes");
     }

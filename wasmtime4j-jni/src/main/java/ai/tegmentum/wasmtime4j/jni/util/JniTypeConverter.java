@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.util;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
+import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
 import java.util.logging.Logger;
 
 /**
@@ -13,14 +14,15 @@ import java.util.logging.Logger;
  * (funcref, externref).
  *
  * <p>All conversions are defensive and validate input types to prevent JVM crashes or incorrect
- * behavior.
+ * behavior. This class delegates to {@link TypeConversionUtilities} for shared functionality and
+ * wraps any exceptions in JNI-specific exception types.
  */
 public final class JniTypeConverter {
 
   private static final Logger LOGGER = Logger.getLogger(JniTypeConverter.class.getName());
 
   /** Size of v128 vector type in bytes. */
-  private static final int V128_SIZE_BYTES = 16;
+  private static final int V128_SIZE_BYTES = TypeConversionUtilities.V128_SIZE_BYTES;
 
   /** Private constructor to prevent instantiation. */
   private JniTypeConverter() {}
@@ -33,24 +35,10 @@ public final class JniTypeConverter {
    * @throws JniValidationException if type is null
    */
   public static String typeToString(final WasmValueType type) {
-    JniValidation.requireNonNull(type, "type");
-    switch (type) {
-      case I32:
-        return "i32";
-      case I64:
-        return "i64";
-      case F32:
-        return "f32";
-      case F64:
-        return "f64";
-      case V128:
-        return "v128";
-      case FUNCREF:
-        return "funcref";
-      case EXTERNREF:
-        return "externref";
-      default:
-        throw new JniValidationException("Unknown WebAssembly type: " + type);
+    try {
+      return TypeConversionUtilities.typeToString(type);
+    } catch (final IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), e);
     }
   }
 
@@ -62,24 +50,10 @@ public final class JniTypeConverter {
    * @throws JniValidationException if typeString is null or invalid
    */
   public static WasmValueType stringToType(final String typeString) {
-    JniValidation.requireNonNull(typeString, "typeString");
-    switch (typeString.toLowerCase()) {
-      case "i32":
-        return WasmValueType.I32;
-      case "i64":
-        return WasmValueType.I64;
-      case "f32":
-        return WasmValueType.F32;
-      case "f64":
-        return WasmValueType.F64;
-      case "v128":
-        return WasmValueType.V128;
-      case "funcref":
-        return WasmValueType.FUNCREF;
-      case "externref":
-        return WasmValueType.EXTERNREF;
-      default:
-        throw new JniValidationException("Invalid WebAssembly type string: " + typeString);
+    try {
+      return TypeConversionUtilities.stringToType(typeString);
+    } catch (final IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), e);
     }
   }
 
@@ -238,29 +212,10 @@ public final class JniTypeConverter {
    */
   public static void validateParameterTypes(
       final WasmValue[] params, final WasmValueType[] expectedTypes) {
-    JniValidation.requireNonNull(params, "params");
-    JniValidation.requireNonNull(expectedTypes, "expectedTypes");
-
-    if (params.length != expectedTypes.length) {
-      throw new JniValidationException(
-          "Parameter count mismatch: got " + params.length + ", expected " + expectedTypes.length);
-    }
-
-    for (int i = 0; i < params.length; i++) {
-      if (params[i] == null) {
-        throw new JniValidationException("Parameter at index " + i + " is null");
-      }
-      final WasmValueType actualType = params[i].getType();
-      final WasmValueType expectedType = expectedTypes[i];
-      if (actualType != expectedType) {
-        throw new JniValidationException(
-            "Parameter type mismatch at index "
-                + i
-                + ": got "
-                + actualType
-                + ", expected "
-                + expectedType);
-      }
+    try {
+      TypeConversionUtilities.validateParameterTypes(params, expectedTypes);
+    } catch (final IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), e);
     }
   }
 
@@ -271,12 +226,10 @@ public final class JniTypeConverter {
    * @throws JniValidationException if array size is incorrect
    */
   public static void validateV128Size(final byte[] bytes) {
-    if (bytes == null) {
-      throw new JniValidationException("v128 bytes cannot be null");
-    }
-    if (bytes.length != V128_SIZE_BYTES) {
-      throw new JniValidationException(
-          "v128 must be exactly " + V128_SIZE_BYTES + " bytes, got " + bytes.length);
+    try {
+      TypeConversionUtilities.validateV128Size(bytes);
+    } catch (final IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), e);
     }
   }
 
@@ -287,13 +240,7 @@ public final class JniTypeConverter {
    * @return the type name
    */
   private static String getTypeName(final Object obj) {
-    if (obj == null) {
-      return "null";
-    }
-    if (obj instanceof byte[]) {
-      return "byte[" + ((byte[]) obj).length + "]";
-    }
-    return obj.getClass().getSimpleName();
+    return TypeConversionUtilities.getTypeName(obj);
   }
 
   /**
@@ -303,7 +250,7 @@ public final class JniTypeConverter {
    * @return a defensive copy or empty array if input is null
    */
   public static WasmValueType[] copyTypes(final WasmValueType[] types) {
-    return types == null ? new WasmValueType[0] : types.clone();
+    return TypeConversionUtilities.copyTypes(types);
   }
 
   /**
@@ -314,16 +261,11 @@ public final class JniTypeConverter {
    * @throws JniValidationException if types contains null elements
    */
   public static String[] typesToStrings(final WasmValueType[] types) {
-    JniValidation.requireNonNull(types, "types");
-
-    final String[] strings = new String[types.length];
-    for (int i = 0; i < types.length; i++) {
-      if (types[i] == null) {
-        throw new JniValidationException("Type at index " + i + " is null");
-      }
-      strings[i] = typeToString(types[i]);
+    try {
+      return TypeConversionUtilities.typesToStrings(types);
+    } catch (final IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), e);
     }
-    return strings;
   }
 
   /**
@@ -334,16 +276,11 @@ public final class JniTypeConverter {
    * @throws JniValidationException if any string is invalid
    */
   public static WasmValueType[] stringsToTypes(final String[] typeStrings) {
-    JniValidation.requireNonNull(typeStrings, "typeStrings");
-
-    final WasmValueType[] types = new WasmValueType[typeStrings.length];
-    for (int i = 0; i < typeStrings.length; i++) {
-      if (typeStrings[i] == null) {
-        throw new JniValidationException("Type string at index " + i + " is null");
-      }
-      types[i] = stringToType(typeStrings[i]);
+    try {
+      return TypeConversionUtilities.stringsToTypes(typeStrings);
+    } catch (final IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), e);
     }
-    return types;
   }
 
   /**
@@ -456,23 +393,10 @@ public final class JniTypeConverter {
    * @return byte representation of the type
    */
   private static byte encodeValueType(final ai.tegmentum.wasmtime4j.WasmValueType valueType) {
-    switch (valueType) {
-      case I32:
-        return 0;
-      case I64:
-        return 1;
-      case F32:
-        return 2;
-      case F64:
-        return 3;
-      case V128:
-        return 4;
-      case FUNCREF:
-        return 5;
-      case EXTERNREF:
-        return 6;
-      default:
-        throw new JniValidationException("Unsupported value type: " + valueType);
+    try {
+      return TypeConversionUtilities.encodeValueType(valueType);
+    } catch (final IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), e);
     }
   }
 
@@ -483,19 +407,10 @@ public final class JniTypeConverter {
    * @return size in bytes
    */
   private static int getValueSize(final ai.tegmentum.wasmtime4j.WasmValueType valueType) {
-    switch (valueType) {
-      case I32:
-      case F32:
-        return 4;
-      case I64:
-      case F64:
-      case FUNCREF:
-      case EXTERNREF:
-        return 8;
-      case V128:
-        return 16;
-      default:
-        throw new JniValidationException("Unsupported value type: " + valueType);
+    try {
+      return TypeConversionUtilities.getValueSize(valueType);
+    } catch (final IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), e);
     }
   }
 

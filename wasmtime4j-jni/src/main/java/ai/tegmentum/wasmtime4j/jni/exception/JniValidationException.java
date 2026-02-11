@@ -40,6 +40,18 @@ public final class JniValidationException extends IllegalArgumentException {
   }
 
   /**
+   * Creates a new JNI validation exception with the specified message and cause.
+   *
+   * @param message the error message
+   * @param cause the underlying cause
+   */
+  public JniValidationException(final String message, final Throwable cause) {
+    super(message, cause);
+    this.parameterName = null;
+    this.parameterValue = null;
+  }
+
+  /**
    * Creates a new JNI validation exception with the specified message and parameter details.
    *
    * @param message the error message
