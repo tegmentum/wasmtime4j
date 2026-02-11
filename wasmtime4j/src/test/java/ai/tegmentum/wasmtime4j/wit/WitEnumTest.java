@@ -58,7 +58,7 @@ class WitEnumTest {
     @DisplayName("should have of factory method")
     void shouldHaveOfFactoryMethod() throws NoSuchMethodException {
       final Method method = WitEnum.class.getMethod(
-          "of", ai.tegmentum.wasmtime4j.WitType.class, String.class);
+          "of", WitType.class, String.class);
       assertNotNull(method, "Should have of(WitType, String) method");
       assertEquals(WitEnum.class, method.getReturnType(), "Should return WitEnum");
     }
@@ -80,7 +80,7 @@ class WitEnumTest {
     @Test
     @DisplayName("of with null discriminant should throw IllegalArgumentException")
     void ofWithNullDiscriminantShouldThrow() {
-      final var enumType = ai.tegmentum.wasmtime4j.WitType.enumType(
+      final var enumType = WitType.enumType(
           "color", java.util.Arrays.asList("red", "green", "blue"));
       assertThrows(
           IllegalArgumentException.class,
@@ -91,7 +91,7 @@ class WitEnumTest {
     @Test
     @DisplayName("of with empty discriminant should throw IllegalArgumentException")
     void ofWithEmptyDiscriminantShouldThrow() {
-      final var enumType = ai.tegmentum.wasmtime4j.WitType.enumType(
+      final var enumType = WitType.enumType(
           "color", java.util.Arrays.asList("red", "green", "blue"));
       assertThrows(
           IllegalArgumentException.class,

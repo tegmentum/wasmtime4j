@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -40,13 +41,12 @@ public class ConfigIntegrationTest {
       LOGGER.info("Testing OptimizationLevel enum values");
 
       OptimizationLevel[] levels = OptimizationLevel.values();
-      assertEquals(5, levels.length, "Should have 5 optimization levels");
+      assertEquals(4, levels.length, "Should have 4 optimization levels");
 
       assertNotNull(OptimizationLevel.NONE, "NONE should exist");
-      assertNotNull(OptimizationLevel.BASIC, "BASIC should exist");
-      assertNotNull(OptimizationLevel.STANDARD, "STANDARD should exist");
-      assertNotNull(OptimizationLevel.AGGRESSIVE, "AGGRESSIVE should exist");
-      assertNotNull(OptimizationLevel.MAXIMUM, "MAXIMUM should exist");
+      assertNotNull(OptimizationLevel.SPEED, "SPEED should exist");
+      assertNotNull(OptimizationLevel.SIZE, "SIZE should exist");
+      assertNotNull(OptimizationLevel.SPEED_AND_SIZE, "SPEED_AND_SIZE should exist");
 
       LOGGER.info("OptimizationLevel enum values verified: " + levels.length);
     }
@@ -57,10 +57,9 @@ public class ConfigIntegrationTest {
       LOGGER.info("Testing OptimizationLevel ordinal values");
 
       assertEquals(0, OptimizationLevel.NONE.ordinal(), "NONE should have ordinal 0");
-      assertEquals(1, OptimizationLevel.BASIC.ordinal(), "BASIC should have ordinal 1");
-      assertEquals(2, OptimizationLevel.STANDARD.ordinal(), "STANDARD should have ordinal 2");
-      assertEquals(3, OptimizationLevel.AGGRESSIVE.ordinal(), "AGGRESSIVE should have ordinal 3");
-      assertEquals(4, OptimizationLevel.MAXIMUM.ordinal(), "MAXIMUM should have ordinal 4");
+      assertEquals(1, OptimizationLevel.SPEED.ordinal(), "SPEED should have ordinal 1");
+      assertEquals(2, OptimizationLevel.SIZE.ordinal(), "SIZE should have ordinal 2");
+      assertEquals(3, OptimizationLevel.SPEED_AND_SIZE.ordinal(), "SPEED_AND_SIZE should have ordinal 3");
 
       LOGGER.info("OptimizationLevel ordinal values verified");
     }
@@ -71,10 +70,9 @@ public class ConfigIntegrationTest {
       LOGGER.info("Testing OptimizationLevel valueOf");
 
       assertEquals(OptimizationLevel.NONE, OptimizationLevel.valueOf("NONE"));
-      assertEquals(OptimizationLevel.BASIC, OptimizationLevel.valueOf("BASIC"));
-      assertEquals(OptimizationLevel.STANDARD, OptimizationLevel.valueOf("STANDARD"));
-      assertEquals(OptimizationLevel.AGGRESSIVE, OptimizationLevel.valueOf("AGGRESSIVE"));
-      assertEquals(OptimizationLevel.MAXIMUM, OptimizationLevel.valueOf("MAXIMUM"));
+      assertEquals(OptimizationLevel.SPEED, OptimizationLevel.valueOf("SPEED"));
+      assertEquals(OptimizationLevel.SIZE, OptimizationLevel.valueOf("SIZE"));
+      assertEquals(OptimizationLevel.SPEED_AND_SIZE, OptimizationLevel.valueOf("SPEED_AND_SIZE"));
 
       LOGGER.info("OptimizationLevel valueOf verified");
     }

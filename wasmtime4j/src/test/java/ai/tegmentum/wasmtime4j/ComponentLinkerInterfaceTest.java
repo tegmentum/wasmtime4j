@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import java.io.Closeable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;

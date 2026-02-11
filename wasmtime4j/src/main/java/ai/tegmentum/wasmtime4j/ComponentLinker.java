@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import java.io.Closeable;
 import java.util.Map;
 import java.util.Set;

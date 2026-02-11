@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.WitType;
 import ai.tegmentum.wasmtime4j.exception.WitRangeException;
 import java.util.Objects;
 

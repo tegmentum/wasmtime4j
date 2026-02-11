@@ -529,7 +529,7 @@ public final class WitValueDeserializer {
 
     if (hasPayload == 0) {
       // Create a placeholder variant type - full implementation would need actual WitType
-      return WitVariant.of(ai.tegmentum.wasmtime4j.WitType.createString(), caseName);
+      return WitVariant.of(WitType.createString(), caseName);
     } else {
       // Read payload
       if (buffer.remaining() < 8) {
@@ -556,7 +556,7 @@ public final class WitValueDeserializer {
       final WitValue payload = deserialize(discriminator, payloadData);
 
       // Create a placeholder variant type - full implementation would need actual WitType
-      return WitVariant.of(ai.tegmentum.wasmtime4j.WitType.createString(), caseName, payload);
+      return WitVariant.of(WitType.createString(), caseName, payload);
     }
   }
 
@@ -597,7 +597,7 @@ public final class WitValueDeserializer {
     final String discriminant = new String(nameBytes, StandardCharsets.UTF_8);
 
     // Create a placeholder enum type - full implementation would need actual WitType
-    return WitEnum.of(ai.tegmentum.wasmtime4j.WitType.createString(), discriminant);
+    return WitEnum.of(WitType.createString(), discriminant);
   }
 
   /**
@@ -625,7 +625,7 @@ public final class WitValueDeserializer {
     if (isSome == 0) {
       // Create a placeholder option type - full implementation would need actual WitType
       return WitOption.none(
-          ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createBool()));
+          WitType.option(WitType.createBool()));
     } else {
       if (buffer.remaining() < 8) {
         throw new WitValueException(
@@ -652,7 +652,7 @@ public final class WitValueDeserializer {
 
       // Create a placeholder option type - full implementation would need actual WitType
       return WitOption.some(
-          ai.tegmentum.wasmtime4j.WitType.option(ai.tegmentum.wasmtime4j.WitType.createBool()),
+          WitType.option(WitType.createBool()),
           value);
     }
   }
@@ -681,8 +681,8 @@ public final class WitValueDeserializer {
     final byte hasValue = buffer.get();
 
     // Create a placeholder result type - full implementation would need actual WitType
-    final ai.tegmentum.wasmtime4j.WitType resultType =
-        ai.tegmentum.wasmtime4j.WitType.result(
+    final WitType resultType =
+        WitType.result(
             java.util.Optional.empty(), java.util.Optional.empty());
 
     if (hasValue == 0) {
@@ -769,7 +769,7 @@ public final class WitValueDeserializer {
 
     // Create a placeholder flags type - full implementation would need actual WitType
     return WitFlags.of(
-        ai.tegmentum.wasmtime4j.WitType.flags("placeholder", java.util.Arrays.asList()), flagNames);
+        WitType.flags("placeholder", java.util.Arrays.asList()), flagNames);
   }
 
   /**

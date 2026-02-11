@@ -2,9 +2,9 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.FrameInfo;
-import ai.tegmentum.wasmtime4j.FrameSymbol;
-import ai.tegmentum.wasmtime4j.WasmBacktrace;
+import ai.tegmentum.wasmtime4j.debug.FrameInfo;
+import ai.tegmentum.wasmtime4j.debug.FrameSymbol;
+import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import java.util.Collections;
 import org.junit.jupiter.api.*;
 

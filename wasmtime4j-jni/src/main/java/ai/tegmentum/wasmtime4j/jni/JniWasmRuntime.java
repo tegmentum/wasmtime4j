@@ -824,7 +824,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.Serializer createSerializer() throws WasmException {
+  public ai.tegmentum.wasmtime4j.config.Serializer createSerializer() throws WasmException {
     validateRuntimeState();
     return concurrencyManager.executeWithWriteLock(
         nativeHandle,
@@ -838,7 +838,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.Serializer createSerializer(
+  public ai.tegmentum.wasmtime4j.config.Serializer createSerializer(
       final long maxCacheSize, final boolean enableCompression, final int compressionLevel)
       throws WasmException {
     if (compressionLevel < 0 || compressionLevel > 9) {

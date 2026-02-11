@@ -25,7 +25,7 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiLinker;
+import ai.tegmentum.wasmtime4j.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
@@ -170,7 +170,7 @@ class WasiClockIntegrationTest {
     module = sharedRuntime.compileModuleWat(sharedEngine, CLOCK_MODULE_WAT);
 
     // Link WASI and instantiate
-    linker = WasiLinker.createLinker(sharedEngine, wasiContext);
+    linker = WasiLinkerUtils.createLinker(sharedEngine, wasiContext);
     instance = linker.instantiate(store, module);
 
     LOGGER.info("Clock test resources created");

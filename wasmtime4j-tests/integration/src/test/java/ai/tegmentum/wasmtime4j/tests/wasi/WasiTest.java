@@ -8,7 +8,7 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiLinker;
+import ai.tegmentum.wasmtime4j.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -68,7 +68,7 @@ public class WasiTest {
 
     final WasiContext wasiCtx = WasiContext.create();
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
     assertNotNull(instance);
@@ -120,7 +120,7 @@ public class WasiTest {
     wasiCtx.setEnv("ANOTHER_VAR", "another_value");
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -161,7 +161,7 @@ public class WasiTest {
     wasiCtx.setArgv(new String[] {"program", "arg1", "arg2", "arg3"});
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -201,7 +201,7 @@ public class WasiTest {
     wasiCtx.preopenedDir(tempDir, "/testdir");
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -242,7 +242,7 @@ public class WasiTest {
     wasiCtx.preopenedDirReadOnly(readOnlyDir, "/readonly");
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -277,7 +277,7 @@ public class WasiTest {
 
     final WasiContext wasiCtx = WasiContext.create();
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -317,7 +317,7 @@ public class WasiTest {
 
     final WasiContext wasiCtx = WasiContext.create();
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -361,7 +361,7 @@ public class WasiTest {
     wasiCtx.inheritEnv(); // Inherit all host environment variables
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -404,7 +404,7 @@ public class WasiTest {
     wasiCtx.setEnv(envVars);
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -440,7 +440,7 @@ public class WasiTest {
     wasiCtx.setWorkingDirectory("/app");
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
     assertNotNull(instance);
@@ -472,7 +472,7 @@ public class WasiTest {
     wasiCtx.setMaxOpenFiles(10);
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -520,7 +520,7 @@ public class WasiTest {
     wasiCtx.setNetworkEnabled(false);
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     // Verify instantiation works with network disabled
     final Instance instance = linker.instantiate(store, module);
@@ -570,7 +570,7 @@ public class WasiTest {
     wasiCtx.inheritStdio();
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -602,7 +602,7 @@ public class WasiTest {
 
     final WasiContext wasiCtx = WasiContext.create();
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -657,7 +657,7 @@ public class WasiTest {
     wasiCtx.enableOutputCapture();
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -709,7 +709,7 @@ public class WasiTest {
     wasiCtx.enableOutputCapture();
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -769,7 +769,7 @@ public class WasiTest {
     wasiCtx.setStdinBytes("Test input".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 
@@ -846,7 +846,7 @@ public class WasiTest {
     wasiCtx.enableOutputCapture();
 
     final Linker<WasiContext> linker = Linker.create(engine);
-    WasiLinker.addToLinker(linker, wasiCtx);
+    WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
     final Instance instance = linker.instantiate(store, module);
 

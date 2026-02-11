@@ -16,9 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.WasiAddressFamily;
-import ai.tegmentum.wasmtime4j.WasiSocketAddress;
-import ai.tegmentum.wasmtime4j.WasiUdpSocket;
+import ai.tegmentum.wasmtime4j.wasi.WasiAddressFamily;
+import ai.tegmentum.wasmtime4j.wasi.WasiSocketAddress;
+import ai.tegmentum.wasmtime4j.wasi.WasiUdpSocket;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;

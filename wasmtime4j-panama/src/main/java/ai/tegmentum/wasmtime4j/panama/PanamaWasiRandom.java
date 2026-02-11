@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.WasiRandom;
+import ai.tegmentum.wasmtime4j.wasi.WasiRandom;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;

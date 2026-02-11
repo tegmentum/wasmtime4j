@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiAddressFamily;
+import ai.tegmentum.wasmtime4j.wasi.WasiSocketAddress;
 import java.net.InetSocketAddress;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

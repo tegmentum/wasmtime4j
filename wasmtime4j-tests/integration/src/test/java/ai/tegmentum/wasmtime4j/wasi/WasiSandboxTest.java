@@ -27,7 +27,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiLinker;
+import ai.tegmentum.wasmtime4j.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.nio.file.Files;
@@ -113,7 +113,7 @@ public class WasiSandboxTest extends DualRuntimeTest {
       wasiCtx.preopenedDir(sandboxDir, "/sandbox");
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
 
@@ -157,7 +157,7 @@ public class WasiSandboxTest extends DualRuntimeTest {
       wasiCtx.preopenedDir(sandboxDir, "/sandbox");
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
 
@@ -226,7 +226,7 @@ public class WasiSandboxTest extends DualRuntimeTest {
       wasiCtx.preopenedDirReadOnly(readOnlyDir, "/readonly");
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
       final WasmValue[] result = instance.callFunction("try_create");
@@ -270,7 +270,7 @@ public class WasiSandboxTest extends DualRuntimeTest {
       wasiCtx.preopenedDir(sandboxDir, "/sandbox");
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
 

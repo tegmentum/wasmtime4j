@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.WitType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**

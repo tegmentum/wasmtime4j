@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.WasiMonotonicClock;
+import ai.tegmentum.wasmtime4j.wasi.WasiMonotonicClock;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;

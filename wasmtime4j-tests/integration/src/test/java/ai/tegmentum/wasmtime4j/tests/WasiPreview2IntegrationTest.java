@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiDirectoryPermissions;
-import ai.tegmentum.wasmtime4j.WasiLinker;
+import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
+import ai.tegmentum.wasmtime4j.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
@@ -92,12 +92,12 @@ public class WasiPreview2IntegrationTest {
         runtime.createWasiContext().setAsyncIoEnabled(true).setComponentModelEnabled(true);
 
     // Create linker with WASI Preview 2 support
-    Linker<WasiContext> linker = WasiLinker.createPreview2Linker(engine, context);
+    Linker<WasiContext> linker = WasiLinkerUtils.createPreview2Linker(engine, context);
     assertNotNull(linker, "Preview 2 linker should be created");
 
     // Verify WASI Preview 2 imports are present
     assertTrue(
-        WasiLinker.hasWasiPreview2Imports(linker), "Linker should have WASI Preview 2 imports");
+        WasiLinkerUtils.hasWasiPreview2Imports(linker), "Linker should have WASI Preview 2 imports");
 
     LOGGER.info("Successfully created WASI Preview 2 linker");
   }
@@ -121,7 +121,7 @@ public class WasiPreview2IntegrationTest {
 
     // Verify component model imports
     assertTrue(
-        WasiLinker.hasComponentModelImports(linker), "Linker should have component model imports");
+        WasiLinkerUtils.hasComponentModelImports(linker), "Linker should have component model imports");
 
     LOGGER.info("Successfully validated component model support");
   }
@@ -230,15 +230,15 @@ public class WasiPreview2IntegrationTest {
             .setAsyncTimeout(15000);
 
     // Create full linker with both Preview 2 and Component Model
-    Linker<WasiContext> linker = WasiLinker.createFullLinker(engine, context);
+    Linker<WasiContext> linker = WasiLinkerUtils.createFullLinker(engine, context);
     assertNotNull(linker, "Full linker should be created");
 
     // Verify all imports are present
     assertTrue(
-        WasiLinker.hasWasiPreview2Imports(linker),
+        WasiLinkerUtils.hasWasiPreview2Imports(linker),
         "Full linker should have WASI Preview 2 imports");
     assertTrue(
-        WasiLinker.hasComponentModelImports(linker),
+        WasiLinkerUtils.hasComponentModelImports(linker),
         "Full linker should have Component Model imports");
 
     LOGGER.info("Successfully created full WASI Preview 2 + Component Model linker");
@@ -260,7 +260,7 @@ public class WasiPreview2IntegrationTest {
 
     // Verify imports were added
     assertTrue(
-        WasiLinker.hasWasiPreview2Imports(linker),
+        WasiLinkerUtils.hasWasiPreview2Imports(linker),
         "Linker should have WASI Preview 2 imports after adding");
 
     LOGGER.info("Successfully added WASI Preview 2 imports to linker");
@@ -352,7 +352,7 @@ public class WasiPreview2IntegrationTest {
               .setComponentModelEnabled(true)
               .setMaxAsyncOperations(10);
 
-      Linker<WasiContext> linker = WasiLinker.createPreview2Linker(engine, context);
+      Linker<WasiContext> linker = WasiLinkerUtils.createPreview2Linker(engine, context);
       assertNotNull(linker, "Linker " + i + " should be created");
 
       // Contexts and linkers should be properly managed by the runtime
@@ -375,7 +375,7 @@ public class WasiPreview2IntegrationTest {
             .setMaxAsyncOperations(5)
             .setAsyncTimeout(1000);
 
-    Linker<WasiContext> linker = WasiLinker.createPreview2Linker(engine, context);
+    Linker<WasiContext> linker = WasiLinkerUtils.createPreview2Linker(engine, context);
     assertNotNull(linker, "Async I/O linker should be created");
 
     // In a real test, we would load a WASM component that performs async I/O

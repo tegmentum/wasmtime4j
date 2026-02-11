@@ -27,7 +27,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiLinker;
+import ai.tegmentum.wasmtime4j.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.HashMap;
@@ -128,7 +128,7 @@ public class WasiEnvironTest extends DualRuntimeTest {
       wasiCtx.setEnv("ANOTHER_KEY", "another_value");
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
 
@@ -159,7 +159,7 @@ public class WasiEnvironTest extends DualRuntimeTest {
       wasiCtx.setArgv(new String[] {"program", "arg1", "arg2", "arg3"});
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
 
@@ -190,7 +190,7 @@ public class WasiEnvironTest extends DualRuntimeTest {
       // No env vars set
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
 
@@ -221,7 +221,7 @@ public class WasiEnvironTest extends DualRuntimeTest {
       // No args set
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
 

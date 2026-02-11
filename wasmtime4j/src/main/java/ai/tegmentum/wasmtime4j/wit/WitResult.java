@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.WitType;
-import ai.tegmentum.wasmtime4j.WitTypeCategory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

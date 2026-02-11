@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.WitType;
 import ai.tegmentum.wasmtime4j.exception.WitMarshallingException;
 import ai.tegmentum.wasmtime4j.exception.WitRangeException;
 import java.lang.reflect.Method;

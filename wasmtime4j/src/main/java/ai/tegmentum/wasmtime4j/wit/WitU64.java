@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.WitType;
 import java.math.BigInteger;
 import java.util.Objects;
 

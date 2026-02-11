@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -155,7 +155,7 @@ class JniWitInterfaceDefinitionTest {
               "isCompatibleWith", WitInterfaceDefinition.class);
       assertNotNull(method, "isCompatibleWith method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.WitCompatibilityResult.class,
+          ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult.class,
           method.getReturnType(),
           "isCompatibleWith should return WitCompatibilityResult");
     }

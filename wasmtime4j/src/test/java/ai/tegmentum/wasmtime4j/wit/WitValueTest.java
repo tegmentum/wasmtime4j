@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.WitType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
@@ -99,7 +98,7 @@ class WitValueTest {
     @DisplayName("should have isCompatibleWith method")
     void shouldHaveIsCompatibleWithMethod() throws NoSuchMethodException {
       final Method method =
-          WitValue.class.getMethod("isCompatibleWith", ai.tegmentum.wasmtime4j.WitType.class);
+          WitValue.class.getMethod("isCompatibleWith", WitType.class);
       assertNotNull(method, "isCompatibleWith method should exist");
       assertEquals(boolean.class, method.getReturnType(), "isCompatibleWith should return boolean");
     }
@@ -127,7 +126,7 @@ class WitValueTest {
     @DisplayName("should have protected constructor")
     void shouldHaveProtectedConstructor() throws NoSuchMethodException {
       final var constructor =
-          WitValue.class.getDeclaredConstructor(ai.tegmentum.wasmtime4j.WitType.class);
+          WitValue.class.getDeclaredConstructor(WitType.class);
       assertNotNull(constructor, "WitType constructor should exist");
       assertTrue(
           Modifier.isProtected(constructor.getModifiers()), "Constructor should be protected");

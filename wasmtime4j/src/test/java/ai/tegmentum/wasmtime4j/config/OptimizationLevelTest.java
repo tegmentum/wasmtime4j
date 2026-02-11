@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.OptimizationLevel;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
@@ -68,16 +69,16 @@ class OptimizationLevelTest {
   class EnumValuesTests {
 
     @Test
-    @DisplayName("OptimizationLevel should have 5 values")
-    void shouldHaveFiveValues() {
+    @DisplayName("OptimizationLevel should have 4 values")
+    void shouldHaveFourValues() {
       OptimizationLevel[] values = OptimizationLevel.values();
-      assertEquals(5, values.length, "OptimizationLevel should have 5 values");
+      assertEquals(4, values.length, "OptimizationLevel should have 4 values");
     }
 
     @Test
     @DisplayName("OptimizationLevel should have expected values")
     void shouldHaveExpectedValues() {
-      Set<String> expectedNames = Set.of("NONE", "BASIC", "STANDARD", "AGGRESSIVE", "MAXIMUM");
+      Set<String> expectedNames = Set.of("NONE", "SPEED", "SIZE", "SPEED_AND_SIZE");
       Set<String> actualNames = new HashSet<>();
       for (OptimizationLevel level : OptimizationLevel.values()) {
         actualNames.add(level.name());
@@ -94,35 +95,27 @@ class OptimizationLevelTest {
     }
 
     @Test
-    @DisplayName("BASIC value should exist")
-    void shouldHaveBasicValue() {
-      OptimizationLevel basic = OptimizationLevel.valueOf("BASIC");
-      assertNotNull(basic, "BASIC value should exist");
-      assertEquals("BASIC", basic.name(), "Name should be BASIC");
+    @DisplayName("SPEED value should exist")
+    void shouldHaveSpeedValue() {
+      OptimizationLevel speed = OptimizationLevel.valueOf("SPEED");
+      assertNotNull(speed, "SPEED value should exist");
+      assertEquals("SPEED", speed.name(), "Name should be SPEED");
     }
 
     @Test
-    @DisplayName("STANDARD value should exist")
-    void shouldHaveStandardValue() {
-      OptimizationLevel standard = OptimizationLevel.valueOf("STANDARD");
-      assertNotNull(standard, "STANDARD value should exist");
-      assertEquals("STANDARD", standard.name(), "Name should be STANDARD");
+    @DisplayName("SIZE value should exist")
+    void shouldHaveSizeValue() {
+      OptimizationLevel size = OptimizationLevel.valueOf("SIZE");
+      assertNotNull(size, "SIZE value should exist");
+      assertEquals("SIZE", size.name(), "Name should be SIZE");
     }
 
     @Test
-    @DisplayName("AGGRESSIVE value should exist")
-    void shouldHaveAggressiveValue() {
-      OptimizationLevel aggressive = OptimizationLevel.valueOf("AGGRESSIVE");
-      assertNotNull(aggressive, "AGGRESSIVE value should exist");
-      assertEquals("AGGRESSIVE", aggressive.name(), "Name should be AGGRESSIVE");
-    }
-
-    @Test
-    @DisplayName("MAXIMUM value should exist")
-    void shouldHaveMaximumValue() {
-      OptimizationLevel maximum = OptimizationLevel.valueOf("MAXIMUM");
-      assertNotNull(maximum, "MAXIMUM value should exist");
-      assertEquals("MAXIMUM", maximum.name(), "Name should be MAXIMUM");
+    @DisplayName("SPEED_AND_SIZE value should exist")
+    void shouldHaveSpeedAndSizeValue() {
+      OptimizationLevel speedAndSize = OptimizationLevel.valueOf("SPEED_AND_SIZE");
+      assertNotNull(speedAndSize, "SPEED_AND_SIZE value should exist");
+      assertEquals("SPEED_AND_SIZE", speedAndSize.name(), "Name should be SPEED_AND_SIZE");
     }
   }
 
@@ -141,27 +134,22 @@ class OptimizationLevelTest {
     }
 
     @Test
-    @DisplayName("BASIC should have ordinal 1")
-    void basicShouldHaveOrdinalOne() {
-      assertEquals(1, OptimizationLevel.BASIC.ordinal(), "BASIC should have ordinal 1");
+    @DisplayName("SPEED should have ordinal 1")
+    void speedShouldHaveOrdinalOne() {
+      assertEquals(1, OptimizationLevel.SPEED.ordinal(), "SPEED should have ordinal 1");
     }
 
     @Test
-    @DisplayName("STANDARD should have ordinal 2")
-    void standardShouldHaveOrdinalTwo() {
-      assertEquals(2, OptimizationLevel.STANDARD.ordinal(), "STANDARD should have ordinal 2");
+    @DisplayName("SIZE should have ordinal 2")
+    void sizeShouldHaveOrdinalTwo() {
+      assertEquals(2, OptimizationLevel.SIZE.ordinal(), "SIZE should have ordinal 2");
     }
 
     @Test
-    @DisplayName("AGGRESSIVE should have ordinal 3")
-    void aggressiveShouldHaveOrdinalThree() {
-      assertEquals(3, OptimizationLevel.AGGRESSIVE.ordinal(), "AGGRESSIVE should have ordinal 3");
-    }
-
-    @Test
-    @DisplayName("MAXIMUM should have ordinal 4")
-    void maximumShouldHaveOrdinalFour() {
-      assertEquals(4, OptimizationLevel.MAXIMUM.ordinal(), "MAXIMUM should have ordinal 4");
+    @DisplayName("SPEED_AND_SIZE should have ordinal 3")
+    void speedAndSizeShouldHaveOrdinalThree() {
+      assertEquals(
+          3, OptimizationLevel.SPEED_AND_SIZE.ordinal(), "SPEED_AND_SIZE should have ordinal 3");
     }
   }
 }

@@ -16,15 +16,15 @@
 
 package ai.tegmentum.wasmtime4j.benchmarks;
 
-import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
-import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
-import ai.tegmentum.wasmtime4j.WitInterfaceLinker;
-import ai.tegmentum.wasmtime4j.WitInterfaceParser;
-import ai.tegmentum.wasmtime4j.WitPrimitiveType;
-import ai.tegmentum.wasmtime4j.WitResourceManager;
-import ai.tegmentum.wasmtime4j.WitType;
-import ai.tegmentum.wasmtime4j.WitTypeValidator;
-import ai.tegmentum.wasmtime4j.WitValueMarshaler;
+import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceParser;
+import ai.tegmentum.wasmtime4j.wit.WitPrimitiveType;
+import ai.tegmentum.wasmtime4j.wit.WitResourceManager;
+import ai.tegmentum.wasmtime4j.wit.WitType;
+import ai.tegmentum.wasmtime4j.wit.WitTypeValidator;
+import ai.tegmentum.wasmtime4j.wit.WitValueMarshaler;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.List;
 import java.util.Map;

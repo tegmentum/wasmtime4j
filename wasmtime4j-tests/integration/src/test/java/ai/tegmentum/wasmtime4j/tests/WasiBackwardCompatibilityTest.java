@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiLinker;
+import ai.tegmentum.wasmtime4j.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
@@ -78,11 +78,11 @@ public class WasiBackwardCompatibilityTest {
     WasiContext context = runtime.createWasiContext().inheritStdio().inheritEnv();
 
     // Create traditional WASI linker (Preview 1)
-    Linker<WasiContext> linker = WasiLinker.createLinker(engine, context);
+    Linker<WasiContext> linker = WasiLinkerUtils.createLinker(engine, context);
     assertNotNull(linker, "Preview 1 linker should be created");
 
     // Verify traditional WASI imports are present
-    assertTrue(WasiLinker.hasWasiImports(linker), "Linker should have traditional WASI imports");
+    assertTrue(WasiLinkerUtils.hasWasiImports(linker), "Linker should have traditional WASI imports");
 
     LOGGER.info("Successfully created WASI Preview 1 linker");
   }
@@ -95,7 +95,7 @@ public class WasiBackwardCompatibilityTest {
     Linker<WasiContext> linker1 = runtime.createLinker(engine);
     assertDoesNotThrow(
         () -> {
-          WasiLinker.addToLinker(linker1, context);
+          WasiLinkerUtils.addToLinker(linker1, context);
         },
         "Adding WASI to linker should not throw");
 
@@ -103,15 +103,15 @@ public class WasiBackwardCompatibilityTest {
     Linker<WasiContext> linker2 = runtime.createLinker(engine);
     assertDoesNotThrow(
         () -> {
-          WasiLinker.addToLinker(linker2);
+          WasiLinkerUtils.addToLinker(linker2);
         },
         "Adding WASI with default context should not throw");
 
     // Test convenience linker creation
-    Linker<WasiContext> linker3 = WasiLinker.createLinker(engine, context);
+    Linker<WasiContext> linker3 = WasiLinkerUtils.createLinker(engine, context);
     assertNotNull(linker3, "Convenience linker creation should work");
 
-    Linker<WasiContext> linker4 = WasiLinker.createLinker(engine);
+    Linker<WasiContext> linker4 = WasiLinkerUtils.createLinker(engine);
     assertNotNull(linker4, "Convenience linker creation with default context should work");
 
     LOGGER.info("Successfully validated traditional WasiLinker methods");
@@ -299,17 +299,17 @@ public class WasiBackwardCompatibilityTest {
             .setMaxOpenFiles(100);
 
     // Create both Preview 1 and Preview 2 linkers with same context
-    Linker<WasiContext> preview1Linker = WasiLinker.createLinker(engine, context);
-    Linker<WasiContext> preview2Linker = WasiLinker.createPreview2Linker(engine, context);
+    Linker<WasiContext> preview1Linker = WasiLinkerUtils.createLinker(engine, context);
+    Linker<WasiContext> preview2Linker = WasiLinkerUtils.createPreview2Linker(engine, context);
 
     assertNotNull(preview1Linker, "Preview 1 linker should be created");
     assertNotNull(preview2Linker, "Preview 2 linker should be created");
 
     // Both should have their respective imports
     assertTrue(
-        WasiLinker.hasWasiImports(preview1Linker), "Preview 1 linker should have WASI imports");
+        WasiLinkerUtils.hasWasiImports(preview1Linker), "Preview 1 linker should have WASI imports");
     assertTrue(
-        WasiLinker.hasWasiPreview2Imports(preview2Linker),
+        WasiLinkerUtils.hasWasiPreview2Imports(preview2Linker),
         "Preview 2 linker should have WASI Preview 2 imports");
 
     LOGGER.info("Successfully validated Preview 1 and Preview 2 coexistence");
@@ -384,11 +384,11 @@ public class WasiBackwardCompatibilityTest {
     // Test that legacy WASM modules expecting Preview 1 still work
     WasiContext context = runtime.createWasiContext().inheritStdio().inheritEnv();
 
-    Linker<WasiContext> linker = WasiLinker.createLinker(engine, context);
+    Linker<WasiContext> linker = WasiLinkerUtils.createLinker(engine, context);
 
     // Verify that the linker has the expected Preview 1 function imports
     assertTrue(
-        WasiLinker.hasWasiImports(linker),
+        WasiLinkerUtils.hasWasiImports(linker),
         "Linker should have traditional WASI imports for legacy modules");
 
     // In a real test, we would load and run a legacy WASM module here
@@ -423,9 +423,9 @@ public class WasiBackwardCompatibilityTest {
         "Adding Preview 2 features to Preview 1 context should not throw");
 
     // Create linkers for both versions with the same context
-    Linker<WasiContext> preview1Linker = WasiLinker.createLinker(engine, context);
-    Linker<WasiContext> preview2Linker = WasiLinker.createPreview2Linker(engine, context);
-    Linker<WasiContext> fullLinker = WasiLinker.createFullLinker(engine, context);
+    Linker<WasiContext> preview1Linker = WasiLinkerUtils.createLinker(engine, context);
+    Linker<WasiContext> preview2Linker = WasiLinkerUtils.createPreview2Linker(engine, context);
+    Linker<WasiContext> fullLinker = WasiLinkerUtils.createFullLinker(engine, context);
 
     assertNotNull(preview1Linker, "Preview 1 linker should work with migrated context");
     assertNotNull(preview2Linker, "Preview 2 linker should work with migrated context");

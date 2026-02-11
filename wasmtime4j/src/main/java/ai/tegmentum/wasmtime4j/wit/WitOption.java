@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.WitType;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -174,7 +173,7 @@ public final class WitOption extends WitValue {
     // This is a simplified extraction - in a full implementation,
     // WitType would provide a getInnerType() method
     if (optionType.getKind() == null
-        || optionType.getKind().getCategory() != ai.tegmentum.wasmtime4j.WitTypeCategory.OPTION) {
+        || optionType.getKind().getCategory() != WitTypeCategory.OPTION) {
       throw new IllegalArgumentException("Type must be an option type");
     }
 

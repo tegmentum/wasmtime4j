@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.WitType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -189,7 +188,7 @@ public final class WitVariant extends WitValue {
 
     // If cases is empty and this is supposedly a variant type, verify it's actually a variant
     if (cases.isEmpty()
-        && variantType.getKind().getCategory() != ai.tegmentum.wasmtime4j.WitTypeCategory.VARIANT) {
+        && variantType.getKind().getCategory() != WitTypeCategory.VARIANT) {
       throw new IllegalArgumentException("Type must be a variant type");
     }
 

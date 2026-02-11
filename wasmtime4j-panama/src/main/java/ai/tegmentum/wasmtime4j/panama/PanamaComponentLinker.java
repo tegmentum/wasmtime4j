@@ -24,7 +24,7 @@ import ai.tegmentum.wasmtime4j.ComponentLinker;
 import ai.tegmentum.wasmtime4j.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasiPreview2Config;
+import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;

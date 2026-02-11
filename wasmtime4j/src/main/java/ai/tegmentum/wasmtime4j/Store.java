@@ -4,6 +4,8 @@ import ai.tegmentum.wasmtime4j.concurrent.Accessor;
 import ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask;
 import ai.tegmentum.wasmtime4j.concurrent.JoinHandle;
 import ai.tegmentum.wasmtime4j.concurrent.SpawnableTask;
+import ai.tegmentum.wasmtime4j.debug.DebugFrame;
+import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;

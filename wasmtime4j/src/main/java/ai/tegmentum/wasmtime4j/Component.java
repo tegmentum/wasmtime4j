@@ -17,6 +17,8 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.util.Set;
 
 /**

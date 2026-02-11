@@ -25,9 +25,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/** Tests for {@link WasiLinker} WASI linking utility. */
-@DisplayName("WasiLinker")
-final class WasiLinkerTest {
+/** Tests for {@link WasiLinkerUtils} WASI linking utility. */
+@DisplayName("WasiLinkerUtils")
+final class WasiLinkerUtilsTest {
 
   @Nested
   @DisplayName("addToLinker with linker and context")
@@ -39,7 +39,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.addToLinker(null, null),
+              () -> WasiLinkerUtils.addToLinker(null, null),
               "Expected IllegalArgumentException for null linker");
       assertEquals(
           "Linker cannot be null",
@@ -59,7 +59,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.addPreview2ToLinker(null, null),
+              () -> WasiLinkerUtils.addPreview2ToLinker(null, null),
               "Expected IllegalArgumentException for null linker in preview2");
       assertEquals(
           "Linker cannot be null",
@@ -79,7 +79,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.createLinker(null, null),
+              () -> WasiLinkerUtils.createLinker(null, null),
               "Expected IllegalArgumentException for null engine");
       assertEquals(
           "Engine cannot be null",
@@ -98,7 +98,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.createPreview2Linker(null, null),
+              () -> WasiLinkerUtils.createPreview2Linker(null, null),
               "Expected IllegalArgumentException for null engine in preview2");
       assertEquals(
           "Engine cannot be null",
@@ -117,7 +117,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.createFullLinker(null, null),
+              () -> WasiLinkerUtils.createFullLinker(null, null),
               "Expected IllegalArgumentException for null engine in full linker");
       assertEquals(
           "Engine cannot be null",
@@ -136,7 +136,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.hasWasiImports(null),
+              () -> WasiLinkerUtils.hasWasiImports(null),
               "Expected IllegalArgumentException for null linker in hasWasiImports");
       assertEquals(
           "Linker cannot be null",
@@ -155,7 +155,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.hasWasiPreview2Imports(null),
+              () -> WasiLinkerUtils.hasWasiPreview2Imports(null),
               "Expected IllegalArgumentException for null linker in hasWasiPreview2Imports");
       assertEquals(
           "Linker cannot be null",
@@ -174,7 +174,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.hasComponentModelImports(null),
+              () -> WasiLinkerUtils.hasComponentModelImports(null),
               "Expected IllegalArgumentException for null linker in hasComponentModelImports");
       assertEquals(
           "Linker cannot be null",
@@ -193,7 +193,7 @@ final class WasiLinkerTest {
       final IllegalArgumentException exception =
           assertThrows(
               IllegalArgumentException.class,
-              () -> WasiLinker.addComponentModelToLinker(null),
+              () -> WasiLinkerUtils.addComponentModelToLinker(null),
               "Expected IllegalArgumentException for null linker in addComponentModelToLinker");
       assertEquals(
           "Linker cannot be null",
@@ -209,15 +209,15 @@ final class WasiLinkerTest {
     @Test
     @DisplayName("should not be instantiable")
     void shouldNotBeInstantiable() {
-      final Class<WasiLinker> clazz = WasiLinker.class;
-      assertNotNull(clazz, "WasiLinker class should exist");
+      final Class<WasiLinkerUtils> clazz = WasiLinkerUtils.class;
+      assertNotNull(clazz, "WasiLinkerUtils class should exist");
       assertDoesNotThrow(
           () -> {
-            final java.lang.reflect.Constructor<WasiLinker> constructor =
-                WasiLinker.class.getDeclaredConstructor();
+            final java.lang.reflect.Constructor<WasiLinkerUtils> constructor =
+                WasiLinkerUtils.class.getDeclaredConstructor();
             assertNotNull(constructor, "Private constructor should exist");
           },
-          "WasiLinker should have a declared no-arg constructor");
+          "WasiLinkerUtils should have a declared no-arg constructor");
     }
   }
 }

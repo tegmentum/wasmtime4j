@@ -1385,13 +1385,13 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.WasmBacktrace captureBacktrace() {
+  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace() {
     ensureNotClosed();
     return nativeCaptureBacktrace(nativeHandle);
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.WasmBacktrace forceCaptureBacktrace() {
+  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace() {
     ensureNotClosed();
     return nativeForceCaptureBacktrace(nativeHandle);
   }
@@ -1499,9 +1499,9 @@ public final class JniStore extends JniResource implements Store {
     return -1; // Signal trap
   }
 
-  private native ai.tegmentum.wasmtime4j.WasmBacktrace nativeCaptureBacktrace(long storeHandle);
+  private native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeCaptureBacktrace(long storeHandle);
 
-  private native ai.tegmentum.wasmtime4j.WasmBacktrace nativeForceCaptureBacktrace(
+  private native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeForceCaptureBacktrace(
       long storeHandle);
 
   private native void nativeGc(long storeHandle);
@@ -1610,7 +1610,7 @@ public final class JniStore extends JniResource implements Store {
   // ===== Debug Methods =====
 
   @Override
-  public java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> debugFrames() throws WasmException {
+  public java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> debugFrames() throws WasmException {
     ensureNotClosed();
     // Return debug frames from native (empty if debugging not enabled)
     final String framesJson = nativeGetDebugFrames(nativeHandle);
@@ -1620,9 +1620,9 @@ public final class JniStore extends JniResource implements Store {
     return parseDebugFrames(framesJson);
   }
 
-  private java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> parseDebugFrames(final String json) {
+  private java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> parseDebugFrames(final String json) {
     // Simple JSON parsing for debug frames
-    java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> frames = new java.util.ArrayList<>();
+    java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> frames = new java.util.ArrayList<>();
     // For now return empty list - native implementation will provide real data
     return frames;
   }

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;

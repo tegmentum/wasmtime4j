@@ -22,6 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
+import ai.tegmentum.wasmtime4j.wit.WitType;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;

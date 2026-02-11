@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.exception;
 
-import ai.tegmentum.wasmtime4j.WitType;
+import ai.tegmentum.wasmtime4j.wit.WitType;
 
 /**
  * Exception thrown when a value is out of range for the target WIT type.

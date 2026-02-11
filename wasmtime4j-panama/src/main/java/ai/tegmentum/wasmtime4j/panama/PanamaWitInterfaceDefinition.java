@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.WitCompatibilityResult;
-import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;

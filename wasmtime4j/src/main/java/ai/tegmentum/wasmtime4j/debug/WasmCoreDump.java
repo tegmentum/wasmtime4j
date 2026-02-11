@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.debug;
 
-import ai.tegmentum.wasmtime4j.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

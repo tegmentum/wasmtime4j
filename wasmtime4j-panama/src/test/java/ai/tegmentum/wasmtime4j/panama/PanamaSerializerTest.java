@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.tegmentum.wasmtime4j.Serializer;
+import ai.tegmentum.wasmtime4j.config.Serializer;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;

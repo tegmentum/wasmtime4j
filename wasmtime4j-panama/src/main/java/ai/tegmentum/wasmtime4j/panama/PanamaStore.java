@@ -1043,13 +1043,13 @@ public final class PanamaStore implements Store {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.WasmBacktrace captureBacktrace() {
+  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace() {
     ensureNotClosed();
     return captureBacktraceInternal(false);
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.WasmBacktrace forceCaptureBacktrace() {
+  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace() {
     ensureNotClosed();
     return captureBacktraceInternal(true);
   }
@@ -1061,7 +1061,7 @@ public final class PanamaStore implements Store {
    * @return the captured backtrace
    * @throws WasmException if backtrace capture fails
    */
-  private ai.tegmentum.wasmtime4j.WasmBacktrace captureBacktraceInternal(
+  private ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktraceInternal(
       final boolean forceCapture) {
     try {
       // Allocate output parameters
@@ -1087,7 +1087,7 @@ public final class PanamaStore implements Store {
 
       if (bufferPtr == null || bufferPtr.equals(MemorySegment.NULL) || bufferLen <= 0) {
         // Empty backtrace
-        return new ai.tegmentum.wasmtime4j.WasmBacktrace(new ArrayList<>(), forceCapture);
+        return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(new ArrayList<>(), forceCapture);
       }
 
       // Copy buffer data to Java byte array
@@ -1349,7 +1349,7 @@ public final class PanamaStore implements Store {
   // ===== Debug Methods =====
 
   @Override
-  public java.util.List<ai.tegmentum.wasmtime4j.DebugFrame> debugFrames()
+  public java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> debugFrames()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
     // Return empty list - debug frames require native implementation

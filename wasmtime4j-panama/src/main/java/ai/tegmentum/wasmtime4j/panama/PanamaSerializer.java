@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Serializer;
+import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.util.Arrays;

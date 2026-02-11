@@ -20,9 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.WasiMonotonicClock;
-import ai.tegmentum.wasmtime4j.WasiRandom;
-import ai.tegmentum.wasmtime4j.WasiWallClock;
+import ai.tegmentum.wasmtime4j.wasi.WasiMonotonicClock;
+import ai.tegmentum.wasmtime4j.wasi.WasiRandom;
+import ai.tegmentum.wasmtime4j.wasi.WasiWallClock;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

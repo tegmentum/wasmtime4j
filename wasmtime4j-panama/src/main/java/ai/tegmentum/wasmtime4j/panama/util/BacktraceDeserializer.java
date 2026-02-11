@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
-import ai.tegmentum.wasmtime4j.FrameInfo;
-import ai.tegmentum.wasmtime4j.FrameSymbol;
-import ai.tegmentum.wasmtime4j.WasmBacktrace;
+import ai.tegmentum.wasmtime4j.debug.FrameInfo;
+import ai.tegmentum.wasmtime4j.debug.FrameSymbol;
+import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;

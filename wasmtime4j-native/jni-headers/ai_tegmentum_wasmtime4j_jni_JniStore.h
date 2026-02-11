@@ -234,7 +234,7 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroySt
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeCaptureBacktrace
- * Signature: (J)Lai/tegmentum/wasmtime4j/WasmBacktrace;
+ * Signature: (J)Lai/tegmentum/wasmtime4j/debug/WasmBacktrace;
  */
 JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptureBacktrace
   (JNIEnv *, jobject, jlong);
@@ -242,7 +242,7 @@ JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptur
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeForceCaptureBacktrace
- * Signature: (J)Lai/tegmentum/wasmtime4j/WasmBacktrace;
+ * Signature: (J)Lai/tegmentum/wasmtime4j/debug/WasmBacktrace;
  */
 JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCaptureBacktrace
   (JNIEnv *, jobject, jlong);

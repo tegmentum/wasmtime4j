@@ -23,6 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wit.WitPrimitiveType;
+import ai.tegmentum.wasmtime4j.wit.WitType;
+import ai.tegmentum.wasmtime4j.wit.WitValueMarshaler;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

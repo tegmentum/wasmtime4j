@@ -26,7 +26,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiLinker;
+import ai.tegmentum.wasmtime4j.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.nio.charset.StandardCharsets;
@@ -94,7 +94,7 @@ public class WasiIoEndToEndTest extends DualRuntimeTest {
       wasiCtx.enableOutputCapture();
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
       final WasmValue[] results = instance.callFunction("write_hello");
@@ -158,7 +158,7 @@ public class WasiIoEndToEndTest extends DualRuntimeTest {
       wasiCtx.enableOutputCapture();
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
       final WasmValue[] results = instance.callFunction("write_error");
@@ -222,7 +222,7 @@ public class WasiIoEndToEndTest extends DualRuntimeTest {
       wasiCtx.setStdinBytes(inputData.getBytes(StandardCharsets.UTF_8));
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
       final WasmValue[] results = instance.callFunction("read_stdin");
@@ -301,7 +301,7 @@ public class WasiIoEndToEndTest extends DualRuntimeTest {
       wasiCtx.enableOutputCapture();
 
       final Linker<WasiContext> linker = Linker.create(engine);
-      WasiLinker.addToLinker(linker, wasiCtx);
+      WasiLinkerUtils.addToLinker(linker, wasiCtx);
 
       final Instance instance = linker.instantiate(store, module);
       final WasmValue[] results = instance.callFunction("write_both");

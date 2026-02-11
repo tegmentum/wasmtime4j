@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.WitType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -187,7 +186,7 @@ public final class WitFlags extends WitValue {
     // This is a simplified extraction - in a full implementation,
     // WitType would provide a getFlagNames() method
     if (flagsType.getKind() == null
-        || flagsType.getKind().getCategory() != ai.tegmentum.wasmtime4j.WitTypeCategory.FLAGS) {
+        || flagsType.getKind().getCategory() != WitTypeCategory.FLAGS) {
       throw new IllegalArgumentException("Type must be a flags type");
     }
 

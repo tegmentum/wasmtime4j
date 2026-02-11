@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiDirectoryPermissions;
+import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import java.nio.file.Path;

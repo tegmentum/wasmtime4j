@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.debug.FrameInfo;
+import ai.tegmentum.wasmtime4j.debug.FrameSymbol;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

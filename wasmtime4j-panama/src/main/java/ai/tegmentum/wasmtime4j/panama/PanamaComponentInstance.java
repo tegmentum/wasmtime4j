@@ -6,7 +6,7 @@ import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;

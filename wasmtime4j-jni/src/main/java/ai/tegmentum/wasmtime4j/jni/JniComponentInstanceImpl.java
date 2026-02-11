@@ -133,7 +133,7 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   }
 
   @Override
-  public java.util.Map<String, ai.tegmentum.wasmtime4j.WitInterfaceDefinition>
+  public java.util.Map<String, ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition>
       getExportedInterfaces() {
     // Return empty map as the native layer handles interface exports directly
     // In a full implementation, this would query the component for its WIT exports

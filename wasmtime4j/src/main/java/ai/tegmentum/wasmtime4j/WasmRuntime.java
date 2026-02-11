@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;
 
