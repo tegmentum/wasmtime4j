@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.Memory64Instruction;
-import ai.tegmentum.wasmtime4j.Memory64InstructionHandler;
+import ai.tegmentum.wasmtime4j.memory.Memory64Instruction;
+import ai.tegmentum.wasmtime4j.memory.Memory64InstructionHandler;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;

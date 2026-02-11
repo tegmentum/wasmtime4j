@@ -16,6 +16,10 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.memory.Table;
+
+import ai.tegmentum.wasmtime4j.memory.Memory;
+
 /**
  * Fluent builder for creating {@link StoreLimits} instances.
  *

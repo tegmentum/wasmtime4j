@@ -1,4 +1,10 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.memory;
+
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+
+import ai.tegmentum.wasmtime4j.Store;
+
+import ai.tegmentum.wasmtime4j.WasmValueType;
 
 import ai.tegmentum.wasmtime4j.type.TagType;
 

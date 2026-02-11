@@ -30,9 +30,9 @@ import static org.mockito.Mockito.when;
 
 import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.func.Function;
-import ai.tegmentum.wasmtime4j.Global;
-import ai.tegmentum.wasmtime4j.Memory;
-import ai.tegmentum.wasmtime4j.Table;
+import ai.tegmentum.wasmtime4j.memory.Global;
+import ai.tegmentum.wasmtime4j.memory.Memory;
+import ai.tegmentum.wasmtime4j.memory.Table;
 import ai.tegmentum.wasmtime4j.validation.CallerContextValidator.ValidationConfig;
 import ai.tegmentum.wasmtime4j.validation.CallerContextValidator.ValidationResult;
 import java.util.Optional;

@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.memory.Table;
+
+import ai.tegmentum.wasmtime4j.memory.Memory;
+
 /**
  * Configuration for resource limits on WebAssembly stores.
  *

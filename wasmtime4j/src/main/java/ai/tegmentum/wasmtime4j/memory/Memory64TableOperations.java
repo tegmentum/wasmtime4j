@@ -1,4 +1,8 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.memory;
+
+import ai.tegmentum.wasmtime4j.WasmTable;
+
+import ai.tegmentum.wasmtime4j.WasmValue;
 
 /**
  * Represents WebAssembly Memory64 proposal table operations with 64-bit addressing.

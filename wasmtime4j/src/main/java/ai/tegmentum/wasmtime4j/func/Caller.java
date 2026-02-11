@@ -1,12 +1,12 @@
 package ai.tegmentum.wasmtime4j.func;
 
-import ai.tegmentum.wasmtime4j.Table;
+import ai.tegmentum.wasmtime4j.memory.Table;
 
 import ai.tegmentum.wasmtime4j.ModuleExport;
 
-import ai.tegmentum.wasmtime4j.Memory;
+import ai.tegmentum.wasmtime4j.memory.Memory;
 
-import ai.tegmentum.wasmtime4j.Global;
+import ai.tegmentum.wasmtime4j.memory.Global;
 
 import ai.tegmentum.wasmtime4j.Export;
 

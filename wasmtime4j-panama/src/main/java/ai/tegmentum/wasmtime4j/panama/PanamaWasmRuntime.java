@@ -30,7 +30,7 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.StoreLimits;
-import ai.tegmentum.wasmtime4j.Tag;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasiContext;
 import ai.tegmentum.wasmtime4j.WasmRuntime;

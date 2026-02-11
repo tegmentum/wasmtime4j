@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.memory;
 
 import java.util.Objects;
 import java.util.Optional;

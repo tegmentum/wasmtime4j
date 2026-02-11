@@ -1,5 +1,11 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.memory.Memory64InstructionHandler;
+
+import ai.tegmentum.wasmtime4j.memory.Memory64Instruction;
+
+import ai.tegmentum.wasmtime4j.memory.Memory;
+
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 

@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.adapter;
 
-import ai.tegmentum.wasmtime4j.Memory;
+import ai.tegmentum.wasmtime4j.memory.Memory;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.nio.ByteBuffer;

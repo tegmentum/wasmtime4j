@@ -327,7 +327,7 @@ class JniWasmRuntimeTest {
       Class<?> tagTypeClass = Class.forName("ai.tegmentum.wasmtime4j.type.TagType");
       Method method = clazz.getMethod("createTag", storeClass, tagTypeClass);
 
-      assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Tag");
+      assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.memory.Tag");
     }
   }
 

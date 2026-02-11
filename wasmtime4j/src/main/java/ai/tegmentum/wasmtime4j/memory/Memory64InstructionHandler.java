@@ -1,4 +1,6 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.memory;
+
+import ai.tegmentum.wasmtime4j.WasmMemory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

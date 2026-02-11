@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.Tag;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
 import java.util.logging.Logger;

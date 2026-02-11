@@ -9,7 +9,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.Tag;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;

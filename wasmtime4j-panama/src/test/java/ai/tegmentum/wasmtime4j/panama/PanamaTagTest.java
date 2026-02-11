@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.Tag;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Method;

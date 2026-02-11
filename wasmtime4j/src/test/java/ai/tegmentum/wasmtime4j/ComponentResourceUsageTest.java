@@ -16,6 +16,8 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.memory.Memory;
+
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentCapability;
 import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;

@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.Table;
+import ai.tegmentum.wasmtime4j.memory.Table;
 import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import java.lang.reflect.Constructor;

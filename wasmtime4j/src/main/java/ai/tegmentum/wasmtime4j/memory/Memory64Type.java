@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.memory;
 
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 

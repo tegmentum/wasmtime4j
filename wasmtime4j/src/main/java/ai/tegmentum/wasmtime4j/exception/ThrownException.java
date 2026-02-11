@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.exception;
 
 import ai.tegmentum.wasmtime4j.ExnRef;
-import ai.tegmentum.wasmtime4j.Tag;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Collections;

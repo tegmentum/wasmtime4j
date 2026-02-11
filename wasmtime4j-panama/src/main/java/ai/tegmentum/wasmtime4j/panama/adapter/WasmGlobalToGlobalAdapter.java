@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.adapter;
 
-import ai.tegmentum.wasmtime4j.Global;
+import ai.tegmentum.wasmtime4j.memory.Global;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
