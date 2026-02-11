@@ -5,7 +5,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.FunctionReference;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.ImportInfo;
 import ai.tegmentum.wasmtime4j.ImportIssue;
@@ -16,7 +16,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
-import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -657,7 +657,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     try {
       // Step 1: Build maps of imports and exports
       final java.util.Map<String, Module> exportProviders = new java.util.HashMap<>();
-      final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.ImportType>>
+      final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.type.ImportType>>
           moduleImports = new java.util.HashMap<>();
       final java.util.List<ai.tegmentum.wasmtime4j.DependencyEdge> dependencies =
           new java.util.ArrayList<>();
@@ -666,8 +666,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       // Note: Exports don't have module names - they're provided by the module itself
       // We map export names to the providing module
       for (final Module module : modules) {
-        final java.util.List<ai.tegmentum.wasmtime4j.ExportType> exports = module.getExports();
-        for (final ai.tegmentum.wasmtime4j.ExportType export : exports) {
+        final java.util.List<ai.tegmentum.wasmtime4j.type.ExportType> exports = module.getExports();
+        for (final ai.tegmentum.wasmtime4j.type.ExportType export : exports) {
           // Just use the export name as the key
           exportProviders.put(export.getName(), module);
         }
@@ -676,10 +676,10 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       // Analyze imports for each module
       int resolvedCount = 0;
       for (final Module module : modules) {
-        final java.util.List<ai.tegmentum.wasmtime4j.ImportType> imports = module.getImports();
+        final java.util.List<ai.tegmentum.wasmtime4j.type.ImportType> imports = module.getImports();
         moduleImports.put(module, imports);
 
-        for (final ai.tegmentum.wasmtime4j.ImportType importType : imports) {
+        for (final ai.tegmentum.wasmtime4j.type.ImportType importType : imports) {
           // Import has both a module name (like "env") and a field name (like "memory")
           // We need to check if the linker or another module provides this
           final boolean resolvedByLinker =
@@ -759,10 +759,10 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Validate each module's imports
     for (final Module module : modules) {
-      final List<ai.tegmentum.wasmtime4j.ImportType> moduleImports = module.getImports();
+      final List<ai.tegmentum.wasmtime4j.type.ImportType> moduleImports = module.getImports();
       totalImports += moduleImports.size();
 
-      for (final ai.tegmentum.wasmtime4j.ImportType importType : moduleImports) {
+      for (final ai.tegmentum.wasmtime4j.type.ImportType importType : moduleImports) {
         final String moduleName = importType.getModuleName();
         final String importName = importType.getName();
 
@@ -821,7 +821,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @return the corresponding ImportInfo.ImportType
    */
   private ImportInfo.ImportType mapImportTypeToInfoType(
-      final ai.tegmentum.wasmtime4j.ImportType importType) {
+      final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     final WasmTypeKind kind = importType.getType().getKind();
 
     switch (kind) {
@@ -852,7 +852,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @return the corresponding dependency type
    */
   private ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType mapImportTypeToDependencyType(
-      final ai.tegmentum.wasmtime4j.ImportType importType) {
+      final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     // For now, we infer from the import type string
     // A more robust implementation would use actual type inspection
     return ai.tegmentum.wasmtime4j.DependencyEdge.DependencyType.FUNCTION;
@@ -865,7 +865,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @return total import count
    */
   private int countTotalImports(
-      final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.ImportType>>
+      final java.util.Map<Module, java.util.List<ai.tegmentum.wasmtime4j.type.ImportType>>
           moduleImports) {
     return moduleImports.values().stream().mapToInt(java.util.List::size).sum();
   }
@@ -1634,22 +1634,22 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Convert import registry to LinkerDefinition objects
     for (final ImportInfo info : importRegistry.values()) {
-      final ai.tegmentum.wasmtime4j.ExternType externType;
+      final ai.tegmentum.wasmtime4j.type.ExternType externType;
       switch (info.getImportType()) {
         case FUNCTION:
-          externType = ai.tegmentum.wasmtime4j.ExternType.FUNC;
+          externType = ai.tegmentum.wasmtime4j.type.ExternType.FUNC;
           break;
         case MEMORY:
-          externType = ai.tegmentum.wasmtime4j.ExternType.MEMORY;
+          externType = ai.tegmentum.wasmtime4j.type.ExternType.MEMORY;
           break;
         case TABLE:
-          externType = ai.tegmentum.wasmtime4j.ExternType.TABLE;
+          externType = ai.tegmentum.wasmtime4j.type.ExternType.TABLE;
           break;
         case GLOBAL:
-          externType = ai.tegmentum.wasmtime4j.ExternType.GLOBAL;
+          externType = ai.tegmentum.wasmtime4j.type.ExternType.GLOBAL;
           break;
         default:
-          externType = ai.tegmentum.wasmtime4j.ExternType.FUNC;
+          externType = ai.tegmentum.wasmtime4j.type.ExternType.FUNC;
       }
 
       definitions.add(

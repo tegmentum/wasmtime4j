@@ -1,5 +1,13 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.TableType;
+
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+
+import ai.tegmentum.wasmtime4j.type.GlobalType;
+
+import ai.tegmentum.wasmtime4j.type.FuncType;
+
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;
 import java.util.Optional;

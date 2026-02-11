@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.ExportType;
-import ai.tegmentum.wasmtime4j.ImportType;
+import ai.tegmentum.wasmtime4j.type.ExportType;
+import ai.tegmentum.wasmtime4j.type.ImportType;
 import ai.tegmentum.wasmtime4j.Module;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
@@ -135,48 +135,48 @@ public class JniModule implements Module {
   }
 
   @Override
-  public List<ai.tegmentum.wasmtime4j.GlobalType> getGlobalTypes() {
+  public List<ai.tegmentum.wasmtime4j.type.GlobalType> getGlobalTypes() {
     final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.GlobalType> globalTypes = new java.util.ArrayList<>();
+    final List<ai.tegmentum.wasmtime4j.type.GlobalType> globalTypes = new java.util.ArrayList<>();
     for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL) {
-        globalTypes.add((ai.tegmentum.wasmtime4j.GlobalType) export.getType());
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL) {
+        globalTypes.add((ai.tegmentum.wasmtime4j.type.GlobalType) export.getType());
       }
     }
     return java.util.Collections.unmodifiableList(globalTypes);
   }
 
   @Override
-  public List<ai.tegmentum.wasmtime4j.TableType> getTableTypes() {
+  public List<ai.tegmentum.wasmtime4j.type.TableType> getTableTypes() {
     final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.TableType> tableTypes = new java.util.ArrayList<>();
+    final List<ai.tegmentum.wasmtime4j.type.TableType> tableTypes = new java.util.ArrayList<>();
     for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.TABLE) {
-        tableTypes.add((ai.tegmentum.wasmtime4j.TableType) export.getType());
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.TABLE) {
+        tableTypes.add((ai.tegmentum.wasmtime4j.type.TableType) export.getType());
       }
     }
     return java.util.Collections.unmodifiableList(tableTypes);
   }
 
   @Override
-  public List<ai.tegmentum.wasmtime4j.MemoryType> getMemoryTypes() {
+  public List<ai.tegmentum.wasmtime4j.type.MemoryType> getMemoryTypes() {
     final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.MemoryType> memoryTypes = new java.util.ArrayList<>();
+    final List<ai.tegmentum.wasmtime4j.type.MemoryType> memoryTypes = new java.util.ArrayList<>();
     for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.MEMORY) {
-        memoryTypes.add((ai.tegmentum.wasmtime4j.MemoryType) export.getType());
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.MEMORY) {
+        memoryTypes.add((ai.tegmentum.wasmtime4j.type.MemoryType) export.getType());
       }
     }
     return java.util.Collections.unmodifiableList(memoryTypes);
   }
 
   @Override
-  public List<ai.tegmentum.wasmtime4j.FuncType> getFunctionTypes() {
+  public List<ai.tegmentum.wasmtime4j.type.FuncType> getFunctionTypes() {
     final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.FuncType> functionTypes = new java.util.ArrayList<>();
+    final List<ai.tegmentum.wasmtime4j.type.FuncType> functionTypes = new java.util.ArrayList<>();
     for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.FUNCTION) {
-        functionTypes.add((ai.tegmentum.wasmtime4j.FuncType) export.getType());
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.FUNCTION) {
+        functionTypes.add((ai.tegmentum.wasmtime4j.type.FuncType) export.getType());
       }
     }
     return java.util.Collections.unmodifiableList(functionTypes);
@@ -189,7 +189,7 @@ public class JniModule implements Module {
         new java.util.ArrayList<>(moduleExports.size());
 
     for (final ai.tegmentum.wasmtime4j.ModuleExport moduleExport : moduleExports) {
-      final ai.tegmentum.wasmtime4j.ExportType exportType = moduleExport.getExportType();
+      final ai.tegmentum.wasmtime4j.type.ExportType exportType = moduleExport.getExportType();
       descriptors.add(
           new ai.tegmentum.wasmtime4j.jni.type.JniExportDescriptor(
               exportType.getName(), exportType.getType()));
@@ -205,7 +205,7 @@ public class JniModule implements Module {
         new java.util.ArrayList<>(moduleImports.size());
 
     for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.ImportType importType = moduleImport.getImportType();
+      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
       descriptors.add(
           new ai.tegmentum.wasmtime4j.jni.type.JniImportDescriptor(
               importType.getModuleName(), importType.getName(), importType.getType()));
@@ -283,7 +283,7 @@ public class JniModule implements Module {
   }
 
   @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.FuncType> getFunctionType(
+  public java.util.Optional<ai.tegmentum.wasmtime4j.type.FuncType> getFunctionType(
       final String functionName) {
     if (functionName == null) {
       return java.util.Optional.empty();
@@ -291,15 +291,15 @@ public class JniModule implements Module {
     final List<ExportType> exports = getExports();
     for (final ExportType export : exports) {
       if (export.getName().equals(functionName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.FUNCTION) {
-        return java.util.Optional.of((ai.tegmentum.wasmtime4j.FuncType) export.getType());
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.FUNCTION) {
+        return java.util.Optional.of((ai.tegmentum.wasmtime4j.type.FuncType) export.getType());
       }
     }
     return java.util.Optional.empty();
   }
 
   @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.GlobalType> getGlobalType(
+  public java.util.Optional<ai.tegmentum.wasmtime4j.type.GlobalType> getGlobalType(
       final String globalName) {
     if (globalName == null) {
       return java.util.Optional.empty();
@@ -307,15 +307,15 @@ public class JniModule implements Module {
     final List<ExportType> exports = getExports();
     for (final ExportType export : exports) {
       if (export.getName().equals(globalName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL) {
-        return java.util.Optional.of((ai.tegmentum.wasmtime4j.GlobalType) export.getType());
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL) {
+        return java.util.Optional.of((ai.tegmentum.wasmtime4j.type.GlobalType) export.getType());
       }
     }
     return java.util.Optional.empty();
   }
 
   @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.MemoryType> getMemoryType(
+  public java.util.Optional<ai.tegmentum.wasmtime4j.type.MemoryType> getMemoryType(
       final String memoryName) {
     if (memoryName == null) {
       return java.util.Optional.empty();
@@ -323,15 +323,15 @@ public class JniModule implements Module {
     final List<ExportType> exports = getExports();
     for (final ExportType export : exports) {
       if (export.getName().equals(memoryName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.MEMORY) {
-        return java.util.Optional.of((ai.tegmentum.wasmtime4j.MemoryType) export.getType());
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.MEMORY) {
+        return java.util.Optional.of((ai.tegmentum.wasmtime4j.type.MemoryType) export.getType());
       }
     }
     return java.util.Optional.empty();
   }
 
   @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.TableType> getTableType(
+  public java.util.Optional<ai.tegmentum.wasmtime4j.type.TableType> getTableType(
       final String tableName) {
     if (tableName == null) {
       return java.util.Optional.empty();
@@ -339,8 +339,8 @@ public class JniModule implements Module {
     final List<ExportType> exports = getExports();
     for (final ExportType export : exports) {
       if (export.getName().equals(tableName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.TABLE) {
-        return java.util.Optional.of((ai.tegmentum.wasmtime4j.TableType) export.getType());
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.TABLE) {
+        return java.util.Optional.of((ai.tegmentum.wasmtime4j.type.TableType) export.getType());
       }
     }
     return java.util.Optional.empty();
@@ -401,7 +401,7 @@ public class JniModule implements Module {
     final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
 
     for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.ImportType importType = moduleImport.getImportType();
+      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
       final String moduleName = importType.getModuleName();
       final String fieldName = importType.getName();
 
@@ -440,10 +440,10 @@ public class JniModule implements Module {
     int validCount = 0;
 
     for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.ImportType importType = moduleImport.getImportType();
+      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
       final String moduleName = importType.getModuleName();
       final String fieldName = importType.getName();
-      final ai.tegmentum.wasmtime4j.WasmType expectedType = importType.getType();
+      final ai.tegmentum.wasmtime4j.type.WasmType expectedType = importType.getType();
 
       // Check if import exists
       if (!imports.contains(moduleName, fieldName)) {
@@ -483,7 +483,7 @@ public class JniModule implements Module {
       }
 
       // Type check based on expected type kind
-      final ai.tegmentum.wasmtime4j.WasmTypeKind expectedKind = expectedType.getKind();
+      final ai.tegmentum.wasmtime4j.type.WasmTypeKind expectedKind = expectedType.getKind();
       boolean typeMatches = true;
       String expectedTypeStr = expectedKind.toString();
       String actualTypeStr = actualImport.getClass().getSimpleName();
@@ -493,9 +493,9 @@ public class JniModule implements Module {
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmGlobal) {
             final ai.tegmentum.wasmtime4j.WasmGlobal global =
                 (ai.tegmentum.wasmtime4j.WasmGlobal) actualImport;
-            final ai.tegmentum.wasmtime4j.GlobalType actualGlobalType = global.getGlobalType();
-            final ai.tegmentum.wasmtime4j.GlobalType expectedGlobalType =
-                (ai.tegmentum.wasmtime4j.GlobalType) expectedType;
+            final ai.tegmentum.wasmtime4j.type.GlobalType actualGlobalType = global.getGlobalType();
+            final ai.tegmentum.wasmtime4j.type.GlobalType expectedGlobalType =
+                (ai.tegmentum.wasmtime4j.type.GlobalType) expectedType;
 
             if (!typesMatch(expectedGlobalType, actualGlobalType)) {
               typeMatches = false;
@@ -511,9 +511,9 @@ public class JniModule implements Module {
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmTable) {
             final ai.tegmentum.wasmtime4j.WasmTable table =
                 (ai.tegmentum.wasmtime4j.WasmTable) actualImport;
-            final ai.tegmentum.wasmtime4j.TableType actualTableType = table.getTableType();
-            final ai.tegmentum.wasmtime4j.TableType expectedTableType =
-                (ai.tegmentum.wasmtime4j.TableType) expectedType;
+            final ai.tegmentum.wasmtime4j.type.TableType actualTableType = table.getTableType();
+            final ai.tegmentum.wasmtime4j.type.TableType expectedTableType =
+                (ai.tegmentum.wasmtime4j.type.TableType) expectedType;
 
             if (!typesMatch(expectedTableType, actualTableType)) {
               typeMatches = false;
@@ -529,9 +529,9 @@ public class JniModule implements Module {
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmMemory) {
             final ai.tegmentum.wasmtime4j.WasmMemory memory =
                 (ai.tegmentum.wasmtime4j.WasmMemory) actualImport;
-            final ai.tegmentum.wasmtime4j.MemoryType actualMemoryType = memory.getMemoryType();
-            final ai.tegmentum.wasmtime4j.MemoryType expectedMemoryType =
-                (ai.tegmentum.wasmtime4j.MemoryType) expectedType;
+            final ai.tegmentum.wasmtime4j.type.MemoryType actualMemoryType = memory.getMemoryType();
+            final ai.tegmentum.wasmtime4j.type.MemoryType expectedMemoryType =
+                (ai.tegmentum.wasmtime4j.type.MemoryType) expectedType;
 
             if (!typesMatch(expectedMemoryType, actualMemoryType)) {
               typeMatches = false;
@@ -614,15 +614,15 @@ public class JniModule implements Module {
   }
 
   private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.GlobalType expected,
-      final ai.tegmentum.wasmtime4j.GlobalType actual) {
+      final ai.tegmentum.wasmtime4j.type.GlobalType expected,
+      final ai.tegmentum.wasmtime4j.type.GlobalType actual) {
     return expected.getValueType() == actual.getValueType()
         && expected.isMutable() == actual.isMutable();
   }
 
   private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.TableType expected,
-      final ai.tegmentum.wasmtime4j.TableType actual) {
+      final ai.tegmentum.wasmtime4j.type.TableType expected,
+      final ai.tegmentum.wasmtime4j.type.TableType actual) {
     return expected.getElementType() == actual.getElementType()
         && expected.getMinimum() <= actual.getMinimum()
         && (!expected.getMaximum().isPresent()
@@ -631,8 +631,8 @@ public class JniModule implements Module {
   }
 
   private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.MemoryType expected,
-      final ai.tegmentum.wasmtime4j.MemoryType actual) {
+      final ai.tegmentum.wasmtime4j.type.MemoryType expected,
+      final ai.tegmentum.wasmtime4j.type.MemoryType actual) {
     return expected.getMinimum() <= actual.getMinimum()
         && expected.is64Bit() == actual.is64Bit()
         && expected.isShared() == actual.isShared()
@@ -641,12 +641,12 @@ public class JniModule implements Module {
                 && expected.getMaximum().get() >= actual.getMaximum().get()));
   }
 
-  private String formatGlobalType(final ai.tegmentum.wasmtime4j.GlobalType type) {
+  private String formatGlobalType(final ai.tegmentum.wasmtime4j.type.GlobalType type) {
     return String.format(
         "Global(%s, %s)", type.getValueType(), type.isMutable() ? "mutable" : "immutable");
   }
 
-  private String formatTableType(final ai.tegmentum.wasmtime4j.TableType type) {
+  private String formatTableType(final ai.tegmentum.wasmtime4j.type.TableType type) {
     return String.format(
         "Table(%s, min=%d, max=%s)",
         type.getElementType(),
@@ -654,7 +654,7 @@ public class JniModule implements Module {
         type.getMaximum().map(String::valueOf).orElse("none"));
   }
 
-  private String formatMemoryType(final ai.tegmentum.wasmtime4j.MemoryType type) {
+  private String formatMemoryType(final ai.tegmentum.wasmtime4j.type.MemoryType type) {
     return String.format(
         "Memory(min=%d, max=%s, %s, %s)",
         type.getMinimum(),

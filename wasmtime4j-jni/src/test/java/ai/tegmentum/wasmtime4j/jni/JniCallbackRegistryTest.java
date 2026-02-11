@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncHostFunction;
 import ai.tegmentum.wasmtime4j.CallbackRegistry.CallbackHandle;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;

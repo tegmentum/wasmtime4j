@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.Tag;
-import ai.tegmentum.wasmtime4j.TagType;
+import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import java.util.logging.Logger;
@@ -67,8 +67,8 @@ public final class JniTag extends JniResource implements Tag {
       returns[i] = ai.tegmentum.wasmtime4j.WasmValueType.fromNativeTypeCode(returnTypes[i]);
     }
 
-    final ai.tegmentum.wasmtime4j.FunctionType funcType =
-        new ai.tegmentum.wasmtime4j.FunctionType(params, returns);
+    final ai.tegmentum.wasmtime4j.type.FunctionType funcType =
+        new ai.tegmentum.wasmtime4j.type.FunctionType(params, returns);
     return TagType.create(funcType);
   }
 

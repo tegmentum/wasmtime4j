@@ -16,6 +16,8 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.ExternType;
+
 /**
  * Represents an external value that can be imported or exported by a WebAssembly module.
  *

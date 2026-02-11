@@ -528,7 +528,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.MemoryType getMemoryType() {
+  public ai.tegmentum.wasmtime4j.type.MemoryType getMemoryType() {
     ensureNotClosed();
     try {
       final long[] typeInfo = nativeGetMemoryTypeInfo(getNativeHandle());

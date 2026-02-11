@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Extern;
-import ai.tegmentum.wasmtime4j.ExternType;
+import ai.tegmentum.wasmtime4j.type.ExternType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;

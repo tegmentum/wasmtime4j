@@ -440,7 +440,7 @@ public final class PanamaStore implements Store {
   @Override
   public ai.tegmentum.wasmtime4j.WasmFunction createHostFunction(
       final String name,
-      final ai.tegmentum.wasmtime4j.FunctionType functionType,
+      final ai.tegmentum.wasmtime4j.type.FunctionType functionType,
       final ai.tegmentum.wasmtime4j.HostFunction implementation)
       throws WasmException {
     if (name == null) {
@@ -794,7 +794,7 @@ public final class PanamaStore implements Store {
   @Override
   public ai.tegmentum.wasmtime4j.FunctionReference createFunctionReference(
       final ai.tegmentum.wasmtime4j.HostFunction implementation,
-      final ai.tegmentum.wasmtime4j.FunctionType functionType)
+      final ai.tegmentum.wasmtime4j.type.FunctionType functionType)
       throws WasmException {
     ensureNotClosed();
     PanamaValidation.requireNonNull(implementation, "implementation");

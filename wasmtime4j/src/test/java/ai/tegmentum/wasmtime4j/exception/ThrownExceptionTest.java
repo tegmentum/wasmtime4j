@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.Tag;
-import ai.tegmentum.wasmtime4j.TagType;
+import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.util.Arrays;
 import java.util.Collections;

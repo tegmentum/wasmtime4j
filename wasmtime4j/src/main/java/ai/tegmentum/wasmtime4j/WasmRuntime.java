@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.TagType;
+
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;

@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.ExportType;
+import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -30,7 +30,7 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmTable;
-import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.ArrayList;

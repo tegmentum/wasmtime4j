@@ -373,7 +373,7 @@ class PanamaStoreTest {
           () ->
               store.createHostFunction(
                   null,
-                  ai.tegmentum.wasmtime4j.FunctionType.of(
+                  ai.tegmentum.wasmtime4j.type.FunctionType.of(
                       new WasmValueType[] {}, new WasmValueType[] {}),
                   params -> new WasmValue[0]));
       LOGGER.info("Correctly rejected null function name");
@@ -400,7 +400,7 @@ class PanamaStoreTest {
           () ->
               store.createHostFunction(
                   "test",
-                  ai.tegmentum.wasmtime4j.FunctionType.of(
+                  ai.tegmentum.wasmtime4j.type.FunctionType.of(
                       new WasmValueType[] {}, new WasmValueType[] {}),
                   null));
       LOGGER.info("Correctly rejected null implementation");
@@ -414,7 +414,7 @@ class PanamaStoreTest {
       final ai.tegmentum.wasmtime4j.WasmFunction hostFunc =
           store.createHostFunction(
               "test_func",
-              ai.tegmentum.wasmtime4j.FunctionType.of(
+              ai.tegmentum.wasmtime4j.type.FunctionType.of(
                   new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32}),
               params -> new WasmValue[] {WasmValue.i32(params[0].asInt() * 2)});
 

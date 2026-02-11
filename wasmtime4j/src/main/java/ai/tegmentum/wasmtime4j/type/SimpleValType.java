@@ -1,4 +1,5 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.type;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 
 import java.util.Objects;
 
@@ -10,7 +11,7 @@ import java.util.Objects;
  *
  * @since 1.0.0
  */
-final class SimpleValType implements ValType {
+public final class SimpleValType implements ValType {
 
   private final WasmValueType valueType;
 

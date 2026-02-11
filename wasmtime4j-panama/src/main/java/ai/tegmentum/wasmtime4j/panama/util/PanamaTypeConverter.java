@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
 import ai.tegmentum.wasmtime4j.FunctionReference;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.MemoryLayouts;

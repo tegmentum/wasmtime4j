@@ -1,4 +1,5 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.type;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 
 /**
  * Represents the type information of a WebAssembly global.

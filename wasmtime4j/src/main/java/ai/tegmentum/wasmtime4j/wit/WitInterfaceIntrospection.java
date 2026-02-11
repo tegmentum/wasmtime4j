@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j.wit;
 
+import ai.tegmentum.wasmtime4j.type.ImportType;
+
+import ai.tegmentum.wasmtime4j.type.ExportType;
+
 /**
  * WIT interface introspection interface for WebAssembly components.
  *

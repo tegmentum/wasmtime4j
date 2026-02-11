@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmGlobal;
-import ai.tegmentum.wasmtime4j.WasmTypeException;
+import ai.tegmentum.wasmtime4j.type.WasmTypeException;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.lang.foreign.Arena;
@@ -220,11 +220,11 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.GlobalType getGlobalType() {
+  public ai.tegmentum.wasmtime4j.type.GlobalType getGlobalType() {
     ensureNotClosed();
     final WasmValueType valueType = getType();
     final boolean mutableFlag = isMutable();
-    return new ai.tegmentum.wasmtime4j.GlobalType() {
+    return new ai.tegmentum.wasmtime4j.type.GlobalType() {
       @Override
       public WasmValueType getValueType() {
         return valueType;
@@ -236,8 +236,8 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
       }
 
       @Override
-      public ai.tegmentum.wasmtime4j.WasmTypeKind getKind() {
-        return ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL;
+      public ai.tegmentum.wasmtime4j.type.WasmTypeKind getKind() {
+        return ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL;
       }
     };
   }

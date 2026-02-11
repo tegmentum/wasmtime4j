@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;

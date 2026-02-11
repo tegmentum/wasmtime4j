@@ -16,6 +16,14 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.FuncType;
+import ai.tegmentum.wasmtime4j.type.GlobalType;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+import ai.tegmentum.wasmtime4j.type.TableType;
+import ai.tegmentum.wasmtime4j.type.WasmType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
+
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

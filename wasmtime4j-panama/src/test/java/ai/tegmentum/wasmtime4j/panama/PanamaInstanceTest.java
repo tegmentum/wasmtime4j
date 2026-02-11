@@ -434,7 +434,7 @@ class PanamaInstanceTest {
     @DisplayName("PanamaInstanceGlobal should have getGlobalType method")
     void panamaInstanceGlobalShouldHaveGetGlobalTypeMethod() throws NoSuchMethodException {
       final Method method = PanamaInstanceGlobal.class.getMethod("getGlobalType");
-      assertThat(method.getReturnType()).isEqualTo(ai.tegmentum.wasmtime4j.GlobalType.class);
+      assertThat(method.getReturnType()).isEqualTo(ai.tegmentum.wasmtime4j.type.GlobalType.class);
     }
 
     @Test

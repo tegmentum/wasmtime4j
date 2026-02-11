@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+
 /**
  * Represents the addressing mode for WebAssembly memory.
  *

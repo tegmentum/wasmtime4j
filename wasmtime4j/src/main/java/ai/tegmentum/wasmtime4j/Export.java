@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
+
+import ai.tegmentum.wasmtime4j.type.ExportType;
+
 /**
  * Represents a WebAssembly export item.
  *

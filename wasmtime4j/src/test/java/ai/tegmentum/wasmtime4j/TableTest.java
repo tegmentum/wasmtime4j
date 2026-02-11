@@ -1,5 +1,8 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.TableType;
+
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;

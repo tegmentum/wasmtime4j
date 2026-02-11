@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni.type;
 
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
-import ai.tegmentum.wasmtime4j.WasmType;
-import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.type.WasmType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.logging.Logger;
 

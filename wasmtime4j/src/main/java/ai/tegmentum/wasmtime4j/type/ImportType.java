@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.type;
 
 /**
  * Represents the type information of a WebAssembly import.

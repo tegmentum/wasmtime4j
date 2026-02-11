@@ -2,19 +2,19 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExportDescriptor;
-import ai.tegmentum.wasmtime4j.ExportType;
-import ai.tegmentum.wasmtime4j.FuncType;
-import ai.tegmentum.wasmtime4j.GlobalType;
+import ai.tegmentum.wasmtime4j.type.ExportType;
+import ai.tegmentum.wasmtime4j.type.FuncType;
+import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
 import ai.tegmentum.wasmtime4j.ImportMap;
-import ai.tegmentum.wasmtime4j.ImportType;
+import ai.tegmentum.wasmtime4j.type.ImportType;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.MemoryType;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.ModuleImport;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.TableType;
+import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -162,7 +162,7 @@ public final class PanamaModule implements Module {
         new java.util.ArrayList<>(moduleExports.size());
 
     for (final ai.tegmentum.wasmtime4j.ModuleExport moduleExport : moduleExports) {
-      final ai.tegmentum.wasmtime4j.ExportType exportType = moduleExport.getExportType();
+      final ai.tegmentum.wasmtime4j.type.ExportType exportType = moduleExport.getExportType();
       descriptors.add(
           new ai.tegmentum.wasmtime4j.panama.type.PanamaExportDescriptor(
               exportType.getName(), exportType.getType()));
@@ -178,7 +178,7 @@ public final class PanamaModule implements Module {
         new java.util.ArrayList<>(moduleImports.size());
 
     for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.ImportType importType = moduleImport.getImportType();
+      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
       descriptors.add(
           new ai.tegmentum.wasmtime4j.panama.type.PanamaImportDescriptor(
               importType.getModuleName(), importType.getName(), importType.getType()));
@@ -195,8 +195,8 @@ public final class PanamaModule implements Module {
     final List<ExportType> exports = getExports();
     for (final ExportType export : exports) {
       if (export.getName().equals(functionName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.FUNCTION) {
-        return Optional.of((ai.tegmentum.wasmtime4j.FuncType) export.getType());
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.FUNCTION) {
+        return Optional.of((ai.tegmentum.wasmtime4j.type.FuncType) export.getType());
       }
     }
     return Optional.empty();
@@ -210,8 +210,8 @@ public final class PanamaModule implements Module {
     final List<ExportType> exports = getExports();
     for (final ExportType export : exports) {
       if (export.getName().equals(globalName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL) {
-        return Optional.of((ai.tegmentum.wasmtime4j.GlobalType) export.getType());
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL) {
+        return Optional.of((ai.tegmentum.wasmtime4j.type.GlobalType) export.getType());
       }
     }
     return Optional.empty();
@@ -225,8 +225,8 @@ public final class PanamaModule implements Module {
     final List<ExportType> exports = getExports();
     for (final ExportType export : exports) {
       if (export.getName().equals(memoryName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.MEMORY) {
-        return Optional.of((ai.tegmentum.wasmtime4j.MemoryType) export.getType());
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.MEMORY) {
+        return Optional.of((ai.tegmentum.wasmtime4j.type.MemoryType) export.getType());
       }
     }
     return Optional.empty();
@@ -240,8 +240,8 @@ public final class PanamaModule implements Module {
     final List<ExportType> exports = getExports();
     for (final ExportType export : exports) {
       if (export.getName().equals(tableName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.TABLE) {
-        return Optional.of((ai.tegmentum.wasmtime4j.TableType) export.getType());
+          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.TABLE) {
+        return Optional.of((ai.tegmentum.wasmtime4j.type.TableType) export.getType());
       }
     }
     return Optional.empty();
@@ -324,10 +324,10 @@ public final class PanamaModule implements Module {
     int validCount = 0;
 
     for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.ImportType importType = moduleImport.getImportType();
+      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
       final String moduleName = importType.getModuleName();
       final String fieldName = importType.getName();
-      final ai.tegmentum.wasmtime4j.WasmType expectedType = importType.getType();
+      final ai.tegmentum.wasmtime4j.type.WasmType expectedType = importType.getType();
 
       // Check if import exists
       if (!imports.contains(moduleName, fieldName)) {
@@ -367,7 +367,7 @@ public final class PanamaModule implements Module {
       }
 
       // Type check based on expected type kind
-      final ai.tegmentum.wasmtime4j.WasmTypeKind expectedKind = expectedType.getKind();
+      final ai.tegmentum.wasmtime4j.type.WasmTypeKind expectedKind = expectedType.getKind();
       System.err.println(
           "[DEBUG] Checking "
               + moduleName
@@ -391,9 +391,9 @@ public final class PanamaModule implements Module {
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmGlobal) {
             final ai.tegmentum.wasmtime4j.WasmGlobal global =
                 (ai.tegmentum.wasmtime4j.WasmGlobal) actualImport;
-            final ai.tegmentum.wasmtime4j.GlobalType actualGlobalType = global.getGlobalType();
-            final ai.tegmentum.wasmtime4j.GlobalType expectedGlobalType =
-                (ai.tegmentum.wasmtime4j.GlobalType) expectedType;
+            final ai.tegmentum.wasmtime4j.type.GlobalType actualGlobalType = global.getGlobalType();
+            final ai.tegmentum.wasmtime4j.type.GlobalType expectedGlobalType =
+                (ai.tegmentum.wasmtime4j.type.GlobalType) expectedType;
             System.err.println(
                 "[DEBUG]   expected: "
                     + formatGlobalType(expectedGlobalType)
@@ -419,9 +419,9 @@ public final class PanamaModule implements Module {
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmTable) {
             final ai.tegmentum.wasmtime4j.WasmTable table =
                 (ai.tegmentum.wasmtime4j.WasmTable) actualImport;
-            final ai.tegmentum.wasmtime4j.TableType actualTableType = table.getTableType();
-            final ai.tegmentum.wasmtime4j.TableType expectedTableType =
-                (ai.tegmentum.wasmtime4j.TableType) expectedType;
+            final ai.tegmentum.wasmtime4j.type.TableType actualTableType = table.getTableType();
+            final ai.tegmentum.wasmtime4j.type.TableType expectedTableType =
+                (ai.tegmentum.wasmtime4j.type.TableType) expectedType;
             System.err.println(
                 "[DEBUG]   expected: "
                     + formatTableType(expectedTableType)
@@ -447,9 +447,9 @@ public final class PanamaModule implements Module {
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmMemory) {
             final ai.tegmentum.wasmtime4j.WasmMemory memory =
                 (ai.tegmentum.wasmtime4j.WasmMemory) actualImport;
-            final ai.tegmentum.wasmtime4j.MemoryType actualMemoryType = memory.getMemoryType();
-            final ai.tegmentum.wasmtime4j.MemoryType expectedMemoryType =
-                (ai.tegmentum.wasmtime4j.MemoryType) expectedType;
+            final ai.tegmentum.wasmtime4j.type.MemoryType actualMemoryType = memory.getMemoryType();
+            final ai.tegmentum.wasmtime4j.type.MemoryType expectedMemoryType =
+                (ai.tegmentum.wasmtime4j.type.MemoryType) expectedType;
             System.err.println(
                 "[DEBUG]   expected: "
                     + formatMemoryType(expectedMemoryType)
@@ -553,15 +553,15 @@ public final class PanamaModule implements Module {
   }
 
   private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.GlobalType expected,
-      final ai.tegmentum.wasmtime4j.GlobalType actual) {
+      final ai.tegmentum.wasmtime4j.type.GlobalType expected,
+      final ai.tegmentum.wasmtime4j.type.GlobalType actual) {
     return expected.getValueType() == actual.getValueType()
         && expected.isMutable() == actual.isMutable();
   }
 
   private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.TableType expected,
-      final ai.tegmentum.wasmtime4j.TableType actual) {
+      final ai.tegmentum.wasmtime4j.type.TableType expected,
+      final ai.tegmentum.wasmtime4j.type.TableType actual) {
     return expected.getElementType() == actual.getElementType()
         && expected.getMinimum() <= actual.getMinimum()
         && (!expected.getMaximum().isPresent()
@@ -570,8 +570,8 @@ public final class PanamaModule implements Module {
   }
 
   private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.MemoryType expected,
-      final ai.tegmentum.wasmtime4j.MemoryType actual) {
+      final ai.tegmentum.wasmtime4j.type.MemoryType expected,
+      final ai.tegmentum.wasmtime4j.type.MemoryType actual) {
     return expected.getMinimum() <= actual.getMinimum()
         && expected.is64Bit() == actual.is64Bit()
         && expected.isShared() == actual.isShared()
@@ -580,12 +580,12 @@ public final class PanamaModule implements Module {
                 && expected.getMaximum().get() >= actual.getMaximum().get()));
   }
 
-  private String formatGlobalType(final ai.tegmentum.wasmtime4j.GlobalType type) {
+  private String formatGlobalType(final ai.tegmentum.wasmtime4j.type.GlobalType type) {
     return String.format(
         "Global(%s, %s)", type.getValueType(), type.isMutable() ? "mutable" : "immutable");
   }
 
-  private String formatTableType(final ai.tegmentum.wasmtime4j.TableType type) {
+  private String formatTableType(final ai.tegmentum.wasmtime4j.type.TableType type) {
     return String.format(
         "Table(%s, min=%d, max=%s)",
         type.getElementType(),
@@ -593,7 +593,7 @@ public final class PanamaModule implements Module {
         type.getMaximum().map(String::valueOf).orElse("none"));
   }
 
-  private String formatMemoryType(final ai.tegmentum.wasmtime4j.MemoryType type) {
+  private String formatMemoryType(final ai.tegmentum.wasmtime4j.type.MemoryType type) {
     return String.format(
         "Memory(min=%d, max=%s, %s, %s)",
         type.getMinimum(),
@@ -665,10 +665,10 @@ public final class PanamaModule implements Module {
   @Override
   public List<FuncType> getFunctionTypes() {
     final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.FuncType> functionTypes = new java.util.ArrayList<>();
+    final List<ai.tegmentum.wasmtime4j.type.FuncType> functionTypes = new java.util.ArrayList<>();
     for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.FUNCTION) {
-        functionTypes.add((ai.tegmentum.wasmtime4j.FuncType) export.getType());
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.FUNCTION) {
+        functionTypes.add((ai.tegmentum.wasmtime4j.type.FuncType) export.getType());
       }
     }
     return java.util.Collections.unmodifiableList(functionTypes);
@@ -677,10 +677,10 @@ public final class PanamaModule implements Module {
   @Override
   public List<MemoryType> getMemoryTypes() {
     final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.MemoryType> memoryTypes = new java.util.ArrayList<>();
+    final List<ai.tegmentum.wasmtime4j.type.MemoryType> memoryTypes = new java.util.ArrayList<>();
     for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.MEMORY) {
-        memoryTypes.add((ai.tegmentum.wasmtime4j.MemoryType) export.getType());
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.MEMORY) {
+        memoryTypes.add((ai.tegmentum.wasmtime4j.type.MemoryType) export.getType());
       }
     }
     return java.util.Collections.unmodifiableList(memoryTypes);
@@ -689,10 +689,10 @@ public final class PanamaModule implements Module {
   @Override
   public List<TableType> getTableTypes() {
     final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.TableType> tableTypes = new java.util.ArrayList<>();
+    final List<ai.tegmentum.wasmtime4j.type.TableType> tableTypes = new java.util.ArrayList<>();
     for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.TABLE) {
-        tableTypes.add((ai.tegmentum.wasmtime4j.TableType) export.getType());
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.TABLE) {
+        tableTypes.add((ai.tegmentum.wasmtime4j.type.TableType) export.getType());
       }
     }
     return java.util.Collections.unmodifiableList(tableTypes);
@@ -701,10 +701,10 @@ public final class PanamaModule implements Module {
   @Override
   public List<GlobalType> getGlobalTypes() {
     final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.GlobalType> globalTypes = new java.util.ArrayList<>();
+    final List<ai.tegmentum.wasmtime4j.type.GlobalType> globalTypes = new java.util.ArrayList<>();
     for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.WasmTypeKind.GLOBAL) {
-        globalTypes.add((ai.tegmentum.wasmtime4j.GlobalType) export.getType());
+      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL) {
+        globalTypes.add((ai.tegmentum.wasmtime4j.type.GlobalType) export.getType());
       }
     }
     return java.util.Collections.unmodifiableList(globalTypes);
@@ -961,9 +961,9 @@ public final class PanamaModule implements Module {
       final String fieldName = importObj.get("name").getAsString();
       final com.google.gson.JsonObject importTypeObj = importObj.getAsJsonObject("import_type");
 
-      final ai.tegmentum.wasmtime4j.WasmType wasmType = parseImportTypeJson(importTypeObj);
-      final ai.tegmentum.wasmtime4j.ImportType importType =
-          new ai.tegmentum.wasmtime4j.ImportType(moduleName, fieldName, wasmType);
+      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseImportTypeJson(importTypeObj);
+      final ai.tegmentum.wasmtime4j.type.ImportType importType =
+          new ai.tegmentum.wasmtime4j.type.ImportType(moduleName, fieldName, wasmType);
       imports.add(new ModuleImport(moduleName, fieldName, importType));
     }
 
@@ -988,9 +988,9 @@ public final class PanamaModule implements Module {
       final String name = exportObj.get("name").getAsString();
       final com.google.gson.JsonObject exportTypeObj = exportObj.getAsJsonObject("export_type");
 
-      final ai.tegmentum.wasmtime4j.WasmType wasmType = parseExportTypeJson(exportTypeObj);
-      final ai.tegmentum.wasmtime4j.ExportType exportType =
-          new ai.tegmentum.wasmtime4j.ExportType(name, wasmType);
+      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseExportTypeJson(exportTypeObj);
+      final ai.tegmentum.wasmtime4j.type.ExportType exportType =
+          new ai.tegmentum.wasmtime4j.type.ExportType(name, wasmType);
       exports.add(new ModuleExport(name, exportType));
     }
 
@@ -1003,7 +1003,7 @@ public final class PanamaModule implements Module {
    * @param typeObj JSON object containing type information
    * @return WasmType instance
    */
-  private ai.tegmentum.wasmtime4j.WasmType parseImportTypeJson(
+  private ai.tegmentum.wasmtime4j.type.WasmType parseImportTypeJson(
       final com.google.gson.JsonObject typeObj) {
     // The type object will have one key indicating the variant
     final String typeKind = typeObj.keySet().iterator().next();
@@ -1023,7 +1023,7 @@ public final class PanamaModule implements Module {
    * @param typeObj JSON object containing type information
    * @return WasmType instance
    */
-  private ai.tegmentum.wasmtime4j.WasmType parseExportTypeJson(
+  private ai.tegmentum.wasmtime4j.type.WasmType parseExportTypeJson(
       final com.google.gson.JsonObject typeObj) {
     // The type object will have one key indicating the variant
     final String typeKind = typeObj.keySet().iterator().next();
@@ -1043,7 +1043,7 @@ public final class PanamaModule implements Module {
    * @param funcObj JSON object with params and returns arrays
    * @return FuncType instance
    */
-  private ai.tegmentum.wasmtime4j.FuncType parseFunctionType(
+  private ai.tegmentum.wasmtime4j.type.FuncType parseFunctionType(
       final com.google.gson.JsonObject funcObj) {
     final com.google.gson.JsonArray paramsArray = funcObj.getAsJsonArray("params");
     final com.google.gson.JsonArray returnsArray = funcObj.getAsJsonArray("returns");
@@ -1060,7 +1060,7 @@ public final class PanamaModule implements Module {
    * @param globalArray JSON array [valueType, isMutable]
    * @return GlobalType instance
    */
-  private ai.tegmentum.wasmtime4j.GlobalType parseGlobalType(
+  private ai.tegmentum.wasmtime4j.type.GlobalType parseGlobalType(
       final com.google.gson.JsonArray globalArray) {
     final String valueTypeStr = globalArray.get(0).getAsString();
     final boolean isMutable = globalArray.get(1).getAsBoolean();
@@ -1076,7 +1076,7 @@ public final class PanamaModule implements Module {
    * @param memoryArray JSON array [min, max(optional), isShared]
    * @return MemoryType instance
    */
-  private ai.tegmentum.wasmtime4j.MemoryType parseMemoryType(
+  private ai.tegmentum.wasmtime4j.type.MemoryType parseMemoryType(
       final com.google.gson.JsonArray memoryArray) {
     final long minimum = memoryArray.get(0).getAsLong();
     final com.google.gson.JsonElement maxElement = memoryArray.get(1);
@@ -1093,7 +1093,7 @@ public final class PanamaModule implements Module {
    * @param tableArray JSON array [elementType, min, max(optional)]
    * @return TableType instance
    */
-  private ai.tegmentum.wasmtime4j.TableType parseTableType(
+  private ai.tegmentum.wasmtime4j.type.TableType parseTableType(
       final com.google.gson.JsonArray tableArray) {
     final String elementTypeStr = tableArray.get(0).getAsString();
     final long minimum = tableArray.get(1).getAsLong();

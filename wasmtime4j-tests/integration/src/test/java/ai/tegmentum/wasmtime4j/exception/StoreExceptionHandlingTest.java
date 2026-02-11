@@ -22,11 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExnRef;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.Tag;
-import ai.tegmentum.wasmtime4j.TagType;
+import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;

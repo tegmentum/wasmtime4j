@@ -324,7 +324,7 @@ class JniWasmRuntimeTest {
     void shouldHaveCreateTagMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Class<?> storeClass = Class.forName("ai.tegmentum.wasmtime4j.Store");
-      Class<?> tagTypeClass = Class.forName("ai.tegmentum.wasmtime4j.TagType");
+      Class<?> tagTypeClass = Class.forName("ai.tegmentum.wasmtime4j.type.TagType");
       Method method = clazz.getMethod("createTag", storeClass, tagTypeClass);
 
       assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Tag");

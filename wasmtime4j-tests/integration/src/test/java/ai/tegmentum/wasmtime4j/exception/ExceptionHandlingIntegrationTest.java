@@ -24,10 +24,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExnRef;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.Tag;
-import ai.tegmentum.wasmtime4j.TagType;
+import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;

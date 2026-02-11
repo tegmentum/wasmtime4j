@@ -296,7 +296,7 @@ public final class JniTypeConverter {
    * @throws JniValidationException if functionType is null
    */
   public static byte[] marshalFunctionType(
-      final ai.tegmentum.wasmtime4j.FunctionType functionType) {
+      final ai.tegmentum.wasmtime4j.type.FunctionType functionType) {
     JniValidation.requireNonNull(functionType, "functionType");
 
     final ai.tegmentum.wasmtime4j.WasmValueType[] paramTypes = functionType.getParamTypes();

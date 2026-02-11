@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.type;
 
 /**
  * Base interface for WebAssembly types.

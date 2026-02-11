@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.MemoryType;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;

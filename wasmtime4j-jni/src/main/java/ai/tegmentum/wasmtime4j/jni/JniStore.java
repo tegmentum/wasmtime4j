@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.FunctionReference;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;

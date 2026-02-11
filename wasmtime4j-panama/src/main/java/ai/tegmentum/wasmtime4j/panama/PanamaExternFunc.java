@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Extern;
-import ai.tegmentum.wasmtime4j.ExternType;
+import ai.tegmentum.wasmtime4j.type.ExternType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import java.lang.foreign.MemorySegment;
 

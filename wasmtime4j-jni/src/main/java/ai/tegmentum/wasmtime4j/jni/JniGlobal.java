@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.WasmGlobal;
-import ai.tegmentum.wasmtime4j.WasmTypeException;
+import ai.tegmentum.wasmtime4j.type.WasmTypeException;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
@@ -342,7 +342,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     final WasmValueType globalType = getType();
     final WasmValueType valueType = value.getType();
     if (globalType != valueType) {
-      throw new ai.tegmentum.wasmtime4j.WasmTypeException(
+      throw new ai.tegmentum.wasmtime4j.type.WasmTypeException(
           "Type mismatch: cannot set " + valueType + " value on " + globalType + " global");
     }
 
@@ -382,7 +382,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.GlobalType getGlobalType() {
+  public ai.tegmentum.wasmtime4j.type.GlobalType getGlobalType() {
     ensureNotClosed();
     try {
       final long[] typeInfo = nativeGetGlobalTypeInfo(getNativeHandle());

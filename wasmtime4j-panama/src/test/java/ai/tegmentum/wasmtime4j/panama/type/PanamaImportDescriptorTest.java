@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
-import ai.tegmentum.wasmtime4j.WasmType;
-import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.type.WasmType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;

@@ -3,15 +3,15 @@ package ai.tegmentum.wasmtime4j.tests.module;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.GlobalType;
+import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.ImportMap;
 import ai.tegmentum.wasmtime4j.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.MemoryType;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.TableType;
+import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;

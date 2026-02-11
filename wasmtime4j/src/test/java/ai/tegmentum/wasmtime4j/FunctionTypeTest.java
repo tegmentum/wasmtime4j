@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
+
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.DisplayName;

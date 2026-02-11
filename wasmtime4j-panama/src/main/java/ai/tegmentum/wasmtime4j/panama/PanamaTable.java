@@ -109,7 +109,7 @@ public final class PanamaTable implements WasmTable {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.TableType getTableType() {
+  public ai.tegmentum.wasmtime4j.type.TableType getTableType() {
     ensureNotClosed();
 
     try {

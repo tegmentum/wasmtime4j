@@ -69,7 +69,7 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.MemoryType getMemoryType() {
+    public ai.tegmentum.wasmtime4j.type.MemoryType getMemoryType() {
       return null;
     }
 
@@ -247,7 +247,7 @@ class WasmMemoryToMemoryAdapterTest {
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.MemoryType getMemoryType() {
+    public ai.tegmentum.wasmtime4j.type.MemoryType getMemoryType() {
       throw new RuntimeException("Memory access failed");
     }
 

@@ -71,7 +71,7 @@ class JniTagTest {
       final Method method = JniTag.class.getMethod("getType", ai.tegmentum.wasmtime4j.Store.class);
       assertNotNull(method, "getType method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.TagType.class,
+          ai.tegmentum.wasmtime4j.type.TagType.class,
           method.getReturnType(),
           "getType should return TagType");
     }

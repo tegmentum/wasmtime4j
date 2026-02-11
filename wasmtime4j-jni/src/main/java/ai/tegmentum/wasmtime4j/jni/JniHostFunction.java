@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Caller;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;

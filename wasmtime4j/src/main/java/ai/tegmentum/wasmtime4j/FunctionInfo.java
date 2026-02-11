@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.FuncType;
+
 /**
  * Information about a function in a WebAssembly module.
  *

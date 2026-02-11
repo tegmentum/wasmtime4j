@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.type;
 
 /**
  * Enumeration of external value types in WebAssembly.

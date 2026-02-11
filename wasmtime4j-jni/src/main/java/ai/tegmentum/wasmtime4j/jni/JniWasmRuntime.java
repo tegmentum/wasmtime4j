@@ -10,7 +10,7 @@ import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.Tag;
-import ai.tegmentum.wasmtime4j.TagType;
+import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
@@ -336,7 +336,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
       final JniStore jniStore = (JniStore) store;
       final long storeHandle = jniStore.getNativeHandle();
-      final ai.tegmentum.wasmtime4j.FunctionType funcType = tagType.getFunctionType();
+      final ai.tegmentum.wasmtime4j.type.FunctionType funcType = tagType.getFunctionType();
 
       // Convert function type to native format
       final ai.tegmentum.wasmtime4j.WasmValueType[] funcParamTypes = funcType.getParamTypes();

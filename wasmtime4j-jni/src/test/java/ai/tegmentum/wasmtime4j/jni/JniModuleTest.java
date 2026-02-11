@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ExportType;
-import ai.tegmentum.wasmtime4j.ImportType;
+import ai.tegmentum.wasmtime4j.type.ExportType;
+import ai.tegmentum.wasmtime4j.type.ImportType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -349,7 +349,7 @@ class JniModuleTest {
     void shouldReturnEmptyOptionalForNullFunctionName() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final Optional<ai.tegmentum.wasmtime4j.FuncType> funcType = module.getFunctionType(null);
+      final Optional<ai.tegmentum.wasmtime4j.type.FuncType> funcType = module.getFunctionType(null);
 
       assertNotNull(funcType, "Optional should not be null");
       assertFalse(funcType.isPresent(), "Should return empty optional for null name");
@@ -360,7 +360,7 @@ class JniModuleTest {
     void shouldReturnEmptyOptionalForNonExistentFunction() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final Optional<ai.tegmentum.wasmtime4j.FuncType> funcType =
+      final Optional<ai.tegmentum.wasmtime4j.type.FuncType> funcType =
           module.getFunctionType("non_existent");
 
       assertNotNull(funcType, "Optional should not be null");
@@ -377,7 +377,7 @@ class JniModuleTest {
     void shouldReturnEmptyOptionalForNullGlobalName() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final Optional<ai.tegmentum.wasmtime4j.GlobalType> globalType = module.getGlobalType(null);
+      final Optional<ai.tegmentum.wasmtime4j.type.GlobalType> globalType = module.getGlobalType(null);
 
       assertNotNull(globalType, "Optional should not be null");
       assertFalse(globalType.isPresent(), "Should return empty optional for null name");
@@ -393,7 +393,7 @@ class JniModuleTest {
     void shouldReturnEmptyOptionalForNullMemoryName() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final Optional<ai.tegmentum.wasmtime4j.MemoryType> memoryType = module.getMemoryType(null);
+      final Optional<ai.tegmentum.wasmtime4j.type.MemoryType> memoryType = module.getMemoryType(null);
 
       assertNotNull(memoryType, "Optional should not be null");
       assertFalse(memoryType.isPresent(), "Should return empty optional for null name");
@@ -409,7 +409,7 @@ class JniModuleTest {
     void shouldReturnEmptyOptionalForNullTableName() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final Optional<ai.tegmentum.wasmtime4j.TableType> tableType = module.getTableType(null);
+      final Optional<ai.tegmentum.wasmtime4j.type.TableType> tableType = module.getTableType(null);
 
       assertNotNull(tableType, "Optional should not be null");
       assertFalse(tableType.isPresent(), "Should return empty optional for null name");
@@ -425,7 +425,7 @@ class JniModuleTest {
     void shouldReturnEmptyGlobalTypesForFakeHandle() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final List<ai.tegmentum.wasmtime4j.GlobalType> types = module.getGlobalTypes();
+      final List<ai.tegmentum.wasmtime4j.type.GlobalType> types = module.getGlobalTypes();
 
       assertNotNull(types, "Types should not be null");
       assertTrue(types.isEmpty(), "Should be empty for fake handle");
@@ -436,7 +436,7 @@ class JniModuleTest {
     void shouldReturnEmptyTableTypesForFakeHandle() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final List<ai.tegmentum.wasmtime4j.TableType> types = module.getTableTypes();
+      final List<ai.tegmentum.wasmtime4j.type.TableType> types = module.getTableTypes();
 
       assertNotNull(types, "Types should not be null");
       assertTrue(types.isEmpty(), "Should be empty for fake handle");
@@ -447,7 +447,7 @@ class JniModuleTest {
     void shouldReturnEmptyMemoryTypesForFakeHandle() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final List<ai.tegmentum.wasmtime4j.MemoryType> types = module.getMemoryTypes();
+      final List<ai.tegmentum.wasmtime4j.type.MemoryType> types = module.getMemoryTypes();
 
       assertNotNull(types, "Types should not be null");
       assertTrue(types.isEmpty(), "Should be empty for fake handle");
@@ -458,7 +458,7 @@ class JniModuleTest {
     void shouldReturnEmptyFunctionTypesForFakeHandle() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final List<ai.tegmentum.wasmtime4j.FuncType> types = module.getFunctionTypes();
+      final List<ai.tegmentum.wasmtime4j.type.FuncType> types = module.getFunctionTypes();
 
       assertNotNull(types, "Types should not be null");
       assertTrue(types.isEmpty(), "Should be empty for fake handle");

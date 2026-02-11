@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.ImportType;
+
 /**
  * Represents a WebAssembly module import with complete type information.
  *

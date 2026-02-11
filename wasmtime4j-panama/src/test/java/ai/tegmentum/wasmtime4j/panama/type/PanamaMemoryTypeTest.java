@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.MemoryType;
-import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.Optional;

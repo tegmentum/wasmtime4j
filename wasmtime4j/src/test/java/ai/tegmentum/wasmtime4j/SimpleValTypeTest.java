@@ -16,6 +16,10 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.ValType;
+import ai.tegmentum.wasmtime4j.type.SimpleValType;
+
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,7 +46,7 @@ class SimpleValTypeTest {
   // Get the package-private class via reflection
   private Class<?> getSimpleValTypeClass() {
     try {
-      return Class.forName("ai.tegmentum.wasmtime4j.SimpleValType");
+      return Class.forName("ai.tegmentum.wasmtime4j.type.SimpleValType");
     } catch (ClassNotFoundException e) {
       throw new RuntimeException("SimpleValType class not found", e);
     }
@@ -273,7 +277,7 @@ class SimpleValTypeTest {
 
     private Class<?> getFactoryClass() {
       try {
-        return Class.forName("ai.tegmentum.wasmtime4j.SimpleValType$Factory");
+        return Class.forName("ai.tegmentum.wasmtime4j.type.SimpleValType$Factory");
       } catch (ClassNotFoundException e) {
         throw new RuntimeException("SimpleValType.Factory class not found", e);
       }

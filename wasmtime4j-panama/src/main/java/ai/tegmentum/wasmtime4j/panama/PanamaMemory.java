@@ -501,7 +501,7 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.MemoryType getMemoryType() {
+  public ai.tegmentum.wasmtime4j.type.MemoryType getMemoryType() {
     ensureNotClosed();
 
     // Get type characteristics from native calls

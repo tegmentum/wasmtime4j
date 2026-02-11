@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmValueType;

@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Caller;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.HostFunction.CallerContextUsage;
 import ai.tegmentum.wasmtime4j.HostFunction.OptimizedCallerAwareHostFunction;

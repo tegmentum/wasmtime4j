@@ -28,7 +28,7 @@ import ai.tegmentum.wasmtime4j.CallbackRegistry.AsyncHostFunction;
 import ai.tegmentum.wasmtime4j.CallbackRegistry.CallbackHandle;
 import ai.tegmentum.wasmtime4j.CallbackRegistry.CallbackMetrics;
 import ai.tegmentum.wasmtime4j.FunctionReference;
-import ai.tegmentum.wasmtime4j.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;

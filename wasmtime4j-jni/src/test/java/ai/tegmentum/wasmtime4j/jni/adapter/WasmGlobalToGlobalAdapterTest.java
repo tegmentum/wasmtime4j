@@ -83,10 +83,10 @@ class WasmGlobalToGlobalAdapterTest {
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.GlobalType getGlobalType() {
+    public ai.tegmentum.wasmtime4j.type.GlobalType getGlobalType() {
       final WasmValueType valueType = type != null ? type : WasmValueType.I32;
       final boolean isMut = mutable;
-      return new ai.tegmentum.wasmtime4j.GlobalType() {
+      return new ai.tegmentum.wasmtime4j.type.GlobalType() {
         @Override
         public WasmValueType getValueType() {
           return valueType;
@@ -128,8 +128,8 @@ class WasmGlobalToGlobalAdapterTest {
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.GlobalType getGlobalType() {
-      return new ai.tegmentum.wasmtime4j.GlobalType() {
+    public ai.tegmentum.wasmtime4j.type.GlobalType getGlobalType() {
+      return new ai.tegmentum.wasmtime4j.type.GlobalType() {
         @Override
         public WasmValueType getValueType() {
           return WasmValueType.I32;

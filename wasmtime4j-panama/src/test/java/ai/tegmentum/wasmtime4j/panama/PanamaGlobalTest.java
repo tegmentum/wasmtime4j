@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.WasmGlobal;
-import ai.tegmentum.wasmtime4j.WasmTypeException;
+import ai.tegmentum.wasmtime4j.type.WasmTypeException;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.nio.file.Files;

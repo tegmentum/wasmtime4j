@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+
+import ai.tegmentum.wasmtime4j.type.ExternType;
+
 import ai.tegmentum.wasmtime4j.async.AsyncHostFunction;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.Closeable;

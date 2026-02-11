@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.type;
 
-import ai.tegmentum.wasmtime4j.FuncType;
-import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.type.FuncType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.ArrayList;

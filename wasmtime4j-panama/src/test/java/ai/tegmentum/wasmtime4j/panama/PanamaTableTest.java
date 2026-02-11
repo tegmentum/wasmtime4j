@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.TableType;
+import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.io.InputStream;

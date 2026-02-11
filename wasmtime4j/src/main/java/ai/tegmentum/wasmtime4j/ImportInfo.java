@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.ImportType;
+
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;

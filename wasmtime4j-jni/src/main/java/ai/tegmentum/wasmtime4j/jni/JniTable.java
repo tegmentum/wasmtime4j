@@ -128,7 +128,7 @@ public final class JniTable extends JniResource implements WasmTable {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.TableType getTableType() {
+  public ai.tegmentum.wasmtime4j.type.TableType getTableType() {
     if (store.isClosed()) {
       throw new JniResourceException("Store is closed");
     }

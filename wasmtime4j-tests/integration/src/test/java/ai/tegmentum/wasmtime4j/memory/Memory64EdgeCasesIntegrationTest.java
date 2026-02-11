@@ -28,7 +28,7 @@ import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Memory64Config;
 import ai.tegmentum.wasmtime4j.Memory64Type;
 import ai.tegmentum.wasmtime4j.MemoryAddressingMode;
-import ai.tegmentum.wasmtime4j.MemoryType;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import java.util.ArrayList;

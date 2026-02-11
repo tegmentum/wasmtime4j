@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama.type;
 
-import ai.tegmentum.wasmtime4j.GlobalType;
-import ai.tegmentum.wasmtime4j.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.type.GlobalType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;

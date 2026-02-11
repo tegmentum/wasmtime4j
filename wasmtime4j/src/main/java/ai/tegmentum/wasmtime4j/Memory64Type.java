@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+
 /**
  * Represents the type information of a WebAssembly 64-bit memory.
  *
