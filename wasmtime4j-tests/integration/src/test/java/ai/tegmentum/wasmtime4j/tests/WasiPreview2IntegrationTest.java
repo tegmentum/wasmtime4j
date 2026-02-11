@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Linker;
-import ai.tegmentum.wasmtime4j.WasiContext;
+import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmRuntime;

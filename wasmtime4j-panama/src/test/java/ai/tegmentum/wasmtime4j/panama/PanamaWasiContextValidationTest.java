@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.tegmentum.wasmtime4j.WasiContext;
+import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;

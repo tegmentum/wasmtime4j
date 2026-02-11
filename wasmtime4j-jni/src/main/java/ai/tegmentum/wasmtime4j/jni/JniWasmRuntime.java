@@ -925,7 +925,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   // ===== WASI OPERATIONS =====
 
   @Override
-  public ai.tegmentum.wasmtime4j.WasiContext createWasiContext() throws WasmException {
+  public ai.tegmentum.wasmtime4j.wasi.WasiContext createWasiContext() throws WasmException {
     validateRuntimeState();
     return concurrencyManager.executeWithWriteLock(
         nativeHandle,
@@ -1027,8 +1027,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public void addWasiToLinker(
-      Linker<ai.tegmentum.wasmtime4j.WasiContext> linker,
-      ai.tegmentum.wasmtime4j.WasiContext context)
+      Linker<ai.tegmentum.wasmtime4j.wasi.WasiContext> linker,
+      ai.tegmentum.wasmtime4j.wasi.WasiContext context)
       throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("Linker cannot be null");
@@ -1067,8 +1067,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public void addWasiPreview2ToLinker(
-      Linker<ai.tegmentum.wasmtime4j.WasiContext> linker,
-      ai.tegmentum.wasmtime4j.WasiContext context)
+      Linker<ai.tegmentum.wasmtime4j.wasi.WasiContext> linker,
+      ai.tegmentum.wasmtime4j.wasi.WasiContext context)
       throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("Linker cannot be null");
@@ -1102,7 +1102,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public void addComponentModelToLinker(Linker<ai.tegmentum.wasmtime4j.WasiContext> linker)
+  public void addComponentModelToLinker(Linker<ai.tegmentum.wasmtime4j.wasi.WasiContext> linker)
       throws WasmException {
     if (linker == null) {
       throw new IllegalArgumentException("Linker cannot be null");

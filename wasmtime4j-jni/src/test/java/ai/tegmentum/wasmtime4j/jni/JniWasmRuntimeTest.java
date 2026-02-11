@@ -442,7 +442,7 @@ class JniWasmRuntimeTest {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Method method = clazz.getMethod("createWasiContext");
 
-      assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.WasiContext");
+      assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.wasi.WasiContext");
     }
 
     @Test
@@ -498,7 +498,7 @@ class JniWasmRuntimeTest {
     void shouldHaveAddWasiToLinkerMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Class<?> linkerClass = Class.forName("ai.tegmentum.wasmtime4j.Linker");
-      Class<?> contextClass = Class.forName("ai.tegmentum.wasmtime4j.WasiContext");
+      Class<?> contextClass = Class.forName("ai.tegmentum.wasmtime4j.wasi.WasiContext");
       Method method = clazz.getMethod("addWasiToLinker", linkerClass, contextClass);
 
       assertThat(method.getReturnType()).isEqualTo(void.class);
@@ -509,7 +509,7 @@ class JniWasmRuntimeTest {
     void shouldHaveAddWasiPreview2ToLinkerMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Class<?> linkerClass = Class.forName("ai.tegmentum.wasmtime4j.Linker");
-      Class<?> contextClass = Class.forName("ai.tegmentum.wasmtime4j.WasiContext");
+      Class<?> contextClass = Class.forName("ai.tegmentum.wasmtime4j.wasi.WasiContext");
       Method method = clazz.getMethod("addWasiPreview2ToLinker", linkerClass, contextClass);
 
       assertThat(method.getReturnType()).isEqualTo(void.class);
