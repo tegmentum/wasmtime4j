@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.metadata;
 
 import java.util.List;
 import java.util.Map;

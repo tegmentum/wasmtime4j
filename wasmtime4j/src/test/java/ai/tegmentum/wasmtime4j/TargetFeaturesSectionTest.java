@@ -28,6 +28,7 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.metadata.TargetFeaturesSection;
 
 /** Tests for {@link TargetFeaturesSection} target features custom section data. */
 @DisplayName("TargetFeaturesSection")

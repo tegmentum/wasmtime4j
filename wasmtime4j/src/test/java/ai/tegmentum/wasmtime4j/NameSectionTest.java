@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.metadata.NameSection;
 
 /** Tests for NameSection functionality. */
 final class NameSectionTest {

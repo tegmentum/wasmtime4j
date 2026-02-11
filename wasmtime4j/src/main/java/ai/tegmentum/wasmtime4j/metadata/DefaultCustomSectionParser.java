@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.metadata;
 
 import ai.tegmentum.wasmtime4j.memory.Tag;
 

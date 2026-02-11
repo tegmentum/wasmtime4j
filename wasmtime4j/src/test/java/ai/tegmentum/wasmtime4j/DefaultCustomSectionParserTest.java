@@ -30,6 +30,14 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.metadata.CustomSection;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionParser;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionType;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult;
+import ai.tegmentum.wasmtime4j.metadata.DefaultCustomSectionParser;
+import ai.tegmentum.wasmtime4j.metadata.NameSection;
+import ai.tegmentum.wasmtime4j.metadata.ProducersSection;
+import ai.tegmentum.wasmtime4j.metadata.TargetFeaturesSection;
 
 /** Tests for {@link DefaultCustomSectionParser} custom section parsing. */
 @DisplayName("DefaultCustomSectionParser")

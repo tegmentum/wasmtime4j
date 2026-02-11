@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.metadata;
 
 /**
  * Enumeration of standard WebAssembly custom section types.

@@ -1,6 +1,16 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.*;
+import ai.tegmentum.wasmtime4j.metadata.CustomSection;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionParser;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionSecurity;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionType;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult;
+import ai.tegmentum.wasmtime4j.metadata.DefaultCustomSectionMetadata;
+import ai.tegmentum.wasmtime4j.metadata.DefaultCustomSectionParser;
+import ai.tegmentum.wasmtime4j.metadata.NameSection;
+import ai.tegmentum.wasmtime4j.metadata.ProducersSection;
+import ai.tegmentum.wasmtime4j.metadata.TargetFeaturesSection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;

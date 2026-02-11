@@ -23,13 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.CustomSectionValidationResult.ValidationIssue;
-import ai.tegmentum.wasmtime4j.CustomSectionValidationResult.ValidationIssueType;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult.ValidationIssue;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult.ValidationIssueType;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.metadata.CustomSection;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult;
 
 /**
  * Tests for {@link CustomSectionValidationResult} class.

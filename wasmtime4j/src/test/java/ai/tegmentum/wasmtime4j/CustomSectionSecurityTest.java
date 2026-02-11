@@ -9,6 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.metadata.CustomSection;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionSecurity;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionType;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult;
 
 /** Tests for CustomSectionSecurity functionality. */
 final class CustomSectionSecurityTest {
