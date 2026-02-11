@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
+import ai.tegmentum.wasmtime4j.wasi.WasiComponentContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeInfo;
 import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeType;
 import java.io.IOException;
@@ -50,7 +50,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaWasiComponentContext implements WasiContext {
+public final class PanamaWasiComponentContext implements WasiComponentContext {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWasiComponentContext.class.getName());
 

@@ -512,7 +512,7 @@ public final class JniComponentImpl implements Component {
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.ExecutionState getExecutionState() {
+    public ai.tegmentum.wasmtime4j.component.ExecutionState getExecutionState() {
       return null;
     }
 

@@ -14,7 +14,7 @@ import java.util.Map;
  * <p>Example usage:
  *
  * <pre>{@code
- * try (WasiContext context = WasiFactory.createContext()) {
+ * try (WasiComponentContext context = WasiFactory.createContext()) {
  *     WasiProcess process = context.getProcess();
  *
  *     // Spawn a new process

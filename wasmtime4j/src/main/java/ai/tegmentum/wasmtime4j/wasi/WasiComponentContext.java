@@ -6,7 +6,7 @@ import java.io.Closeable;
 /**
  * Main interface for WASI (WebAssembly System Interface) context operations.
  *
- * <p>This is the primary entry point for interacting with WASI functionality. A WasiContext
+ * <p>This is the primary entry point for interacting with WASI functionality. A WasiComponentContext
  * provides methods to create WASI-enabled WebAssembly components and manage their lifecycle.
  *
  * <p>The context abstracts away the underlying implementation details (JNI vs Panama FFI) and
@@ -15,7 +15,7 @@ import java.io.Closeable;
  * <p>Example usage:
  *
  * <pre>{@code
- * try (WasiContext context = WasiFactory.createContext()) {
+ * try (WasiComponentContext context = WasiFactory.createContext()) {
  *     WasiComponent component = context.createComponent(wasmBytes);
  *     // Use the component...
  * }
@@ -23,7 +23,7 @@ import java.io.Closeable;
  *
  * @since 1.0.0
  */
-public interface WasiContext extends Closeable {
+public interface WasiComponentContext extends Closeable {
 
   /**
    * Creates a new WASI component from WebAssembly bytecode.

@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 @RequiresWasmRuntime
 class WasiInstanceTest {
 
-  private WasiContext context;
+  private WasiComponentContext context;
   private WasiConfig config;
 
   @BeforeEach

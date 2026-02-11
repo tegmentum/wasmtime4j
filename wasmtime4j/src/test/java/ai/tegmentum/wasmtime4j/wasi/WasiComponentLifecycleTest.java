@@ -30,7 +30,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 @RequiresWasmRuntime
 class WasiComponentLifecycleTest {
 
-  private WasiContext context;
+  private WasiComponentContext context;
   private WasiComponent component;
   private WasiInstance instance;
 
@@ -208,7 +208,7 @@ class WasiComponentLifecycleTest {
     System.out.println("Testing JNI-specific features...");
 
     // Force JNI runtime
-    WasiContext jniContext = WasiFactory.createContext(WasiRuntimeType.JNI);
+    WasiComponentContext jniContext = WasiFactory.createContext(WasiRuntimeType.JNI);
 
     try {
       assertEquals(
@@ -231,7 +231,7 @@ class WasiComponentLifecycleTest {
     // Only run on Java 23+
     if (WasiFactory.getJavaVersion() >= 23) {
       // Force Panama runtime
-      WasiContext panamaContext = WasiFactory.createContext(WasiRuntimeType.PANAMA);
+      WasiComponentContext panamaContext = WasiFactory.createContext(WasiRuntimeType.PANAMA);
 
       try {
         assertEquals(

@@ -14,7 +14,7 @@ import java.util.List;
  * <p>Example usage:
  *
  * <pre>{@code
- * try (WasiContext context = WasiFactory.createContext()) {
+ * try (WasiComponentContext context = WasiFactory.createContext()) {
  *     WasiFilesystem fs = context.getFilesystem();
  *
  *     // Open a file for reading

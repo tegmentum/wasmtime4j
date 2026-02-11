@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
+import ai.tegmentum.wasmtime4j.wasi.WasiComponentContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiFilesystem;
 import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeInfo;
 import java.lang.reflect.Method;
@@ -55,11 +55,11 @@ class PanamaWasiComponentContextTest {
     }
 
     @Test
-    @DisplayName("should implement WasiContext interface")
-    void shouldImplementWasiContextInterface() {
+    @DisplayName("should implement WasiComponentContext interface")
+    void shouldImplementWasiComponentContextInterface() {
       assertTrue(
-          WasiContext.class.isAssignableFrom(PanamaWasiComponentContext.class),
-          "PanamaWasiComponentContext should implement WasiContext");
+          WasiComponentContext.class.isAssignableFrom(PanamaWasiComponentContext.class),
+          "PanamaWasiComponentContext should implement WasiComponentContext");
     }
   }
 

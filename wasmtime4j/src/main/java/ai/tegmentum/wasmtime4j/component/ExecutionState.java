@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.component;
 
 /**
  * Execution state interface for WebAssembly execution monitoring.

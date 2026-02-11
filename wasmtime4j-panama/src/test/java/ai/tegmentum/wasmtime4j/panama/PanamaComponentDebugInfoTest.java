@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.ExecutionState;
+import ai.tegmentum.wasmtime4j.component.ExecutionState;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;

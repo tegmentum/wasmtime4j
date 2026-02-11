@@ -27,7 +27,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasiContext;
-import ai.tegmentum.wasmtime4j.WasiLinkerUtils;
+import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.nio.file.Files;
