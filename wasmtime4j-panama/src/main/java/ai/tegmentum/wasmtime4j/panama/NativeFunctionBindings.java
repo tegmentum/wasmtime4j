@@ -27,6 +27,7 @@ import java.lang.invoke.MethodHandle;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Type-safe wrappers for native function signatures.

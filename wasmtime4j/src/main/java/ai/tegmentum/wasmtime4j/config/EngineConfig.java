@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.config;
 
-import ai.tegmentum.wasmtime4j.OptimizationLevel;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
 

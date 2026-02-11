@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Scanner;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Interactive WebAssembly calculator demonstrating:

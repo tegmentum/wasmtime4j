@@ -9,6 +9,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * JNI implementation of the Engine interface.

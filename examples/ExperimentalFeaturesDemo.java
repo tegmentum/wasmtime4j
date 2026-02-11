@@ -8,6 +8,7 @@ import ai.tegmentum.wasmtime4j.panama.PanamaExperimentalFeatures;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Comprehensive demonstration of experimental WebAssembly features in wasmtime4j.

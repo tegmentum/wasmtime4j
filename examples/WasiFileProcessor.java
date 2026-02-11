@@ -6,6 +6,7 @@ import java.nio.file.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * WASI file processing example demonstrating:

@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Comprehensive unit tests for {@link NativeFunctionBindings}.

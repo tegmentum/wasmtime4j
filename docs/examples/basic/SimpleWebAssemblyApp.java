@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Simple standalone WebAssembly application demonstrating basic usage patterns.

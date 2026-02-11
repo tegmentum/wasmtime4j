@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.config.profiles;
 
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.OptimizationLevel;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import java.util.EnumSet;
 import java.util.HashMap;

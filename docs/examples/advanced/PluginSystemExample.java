@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Advanced example demonstrating a plugin system using WebAssembly.

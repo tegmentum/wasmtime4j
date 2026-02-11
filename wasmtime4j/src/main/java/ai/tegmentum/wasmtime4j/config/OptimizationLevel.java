@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.config;
 
 /**
  * Optimization levels for WebAssembly compilation.

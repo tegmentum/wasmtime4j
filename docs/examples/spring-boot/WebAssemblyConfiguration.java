@@ -13,6 +13,7 @@ import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Spring Boot configuration for WebAssembly integration using Wasmtime4j.

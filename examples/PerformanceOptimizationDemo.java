@@ -5,6 +5,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.time.Duration;
 import java.time.Instant;
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Performance optimization demonstration showing:
