@@ -92,9 +92,8 @@ class MarshalingMetadataTest {
     @Test
     @DisplayName("should set arrayDimensions")
     void shouldSetArrayDimensions() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withArrayDimensions(3)
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder().withArrayDimensions(3).build();
 
       assertTrue(metadata.getArrayDimensions().isPresent(), "arrayDimensions should be present");
       assertEquals(3, metadata.getArrayDimensions().get(), "arrayDimensions should be 3");
@@ -103,22 +102,21 @@ class MarshalingMetadataTest {
     @Test
     @DisplayName("should set componentType")
     void shouldSetComponentType() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withComponentType(Integer.class)
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder().withComponentType(Integer.class).build();
 
       assertTrue(metadata.getComponentType().isPresent(), "componentType should be present");
       assertEquals(
-          Integer.class, metadata.getComponentType().get(),
+          Integer.class,
+          metadata.getComponentType().get(),
           "componentType should be Integer.class");
     }
 
     @Test
     @DisplayName("should set collectionSize")
     void shouldSetCollectionSize() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withCollectionSize(100)
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder().withCollectionSize(100).build();
 
       assertTrue(metadata.getCollectionSize().isPresent(), "collectionSize should be present");
       assertEquals(100, metadata.getCollectionSize().get(), "collectionSize should be 100");
@@ -127,38 +125,36 @@ class MarshalingMetadataTest {
     @Test
     @DisplayName("should set keyType and valueType for maps")
     void shouldSetKeyAndValueTypes() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withKeyType(String.class)
-          .withValueType(Integer.class)
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder()
+              .withKeyType(String.class)
+              .withValueType(Integer.class)
+              .build();
 
       assertTrue(metadata.getKeyType().isPresent(), "keyType should be present");
       assertEquals(String.class, metadata.getKeyType().get(), "keyType should be String.class");
       assertTrue(metadata.getValueType().isPresent(), "valueType should be present");
       assertEquals(
-          Integer.class, metadata.getValueType().get(),
-          "valueType should be Integer.class");
+          Integer.class, metadata.getValueType().get(), "valueType should be Integer.class");
     }
 
     @Test
     @DisplayName("should set objectClassName")
     void shouldSetObjectClassName() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withObjectClassName("com.example.MyClass")
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder().withObjectClassName("com.example.MyClass").build();
 
       assertTrue(metadata.getObjectClassName().isPresent(), "objectClassName should be present");
       assertEquals(
-          "com.example.MyClass", metadata.getObjectClassName().get(),
+          "com.example.MyClass",
+          metadata.getObjectClassName().get(),
           "objectClassName should match");
     }
 
     @Test
     @DisplayName("should set dataSize")
     void shouldSetDataSize() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withDataSize(4096)
-          .build();
+      final MarshalingMetadata metadata = MarshalingMetadata.builder().withDataSize(4096).build();
 
       assertTrue(metadata.getDataSize().isPresent(), "dataSize should be present");
       assertEquals(4096, metadata.getDataSize().get(), "dataSize should be 4096");
@@ -167,22 +163,18 @@ class MarshalingMetadataTest {
     @Test
     @DisplayName("should set stringEncoding")
     void shouldSetStringEncoding() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withStringEncoding("UTF-8")
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder().withStringEncoding("UTF-8").build();
 
       assertTrue(metadata.getStringEncoding().isPresent(), "stringEncoding should be present");
-      assertEquals(
-          "UTF-8", metadata.getStringEncoding().get(),
-          "stringEncoding should be 'UTF-8'");
+      assertEquals("UTF-8", metadata.getStringEncoding().get(), "stringEncoding should be 'UTF-8'");
     }
 
     @Test
     @DisplayName("should set memoryPassing flag")
     void shouldSetMemoryPassing() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withMemoryPassing(true)
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder().withMemoryPassing(true).build();
 
       assertTrue(metadata.shouldUseMemoryPassing().isPresent(), "memoryPassing should be present");
       assertTrue(metadata.shouldUseMemoryPassing().get(), "memoryPassing should be true");
@@ -191,9 +183,8 @@ class MarshalingMetadataTest {
     @Test
     @DisplayName("should set memoryAlignment")
     void shouldSetMemoryAlignment() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withMemoryAlignment(16)
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder().withMemoryAlignment(16).build();
 
       assertTrue(metadata.getMemoryAlignment().isPresent(), "memoryAlignment should be present");
       assertEquals(16, metadata.getMemoryAlignment().get(), "memoryAlignment should be 16");
@@ -236,11 +227,11 @@ class MarshalingMetadataTest {
     void shouldAcceptPowerOf2Alignment() {
       final int[] validAlignments = {1, 2, 4, 8, 16, 32, 64, 128, 256};
       for (final int alignment : validAlignments) {
-        final MarshalingMetadata metadata = MarshalingMetadata.builder()
-            .withMemoryAlignment(alignment)
-            .build();
+        final MarshalingMetadata metadata =
+            MarshalingMetadata.builder().withMemoryAlignment(alignment).build();
         assertEquals(
-            alignment, metadata.getMemoryAlignment().get(),
+            alignment,
+            metadata.getMemoryAlignment().get(),
             "Alignment " + alignment + " should be accepted");
       }
     }
@@ -253,18 +244,19 @@ class MarshalingMetadataTest {
     @Test
     @DisplayName("should chain all builder methods together")
     void shouldChainAllMethods() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withArrayDimensions(2)
-          .withComponentType(Byte.class)
-          .withCollectionSize(50)
-          .withKeyType(String.class)
-          .withValueType(Long.class)
-          .withObjectClassName("test.Class")
-          .withDataSize(2048)
-          .withStringEncoding("UTF-16")
-          .withMemoryPassing(false)
-          .withMemoryAlignment(8)
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder()
+              .withArrayDimensions(2)
+              .withComponentType(Byte.class)
+              .withCollectionSize(50)
+              .withKeyType(String.class)
+              .withValueType(Long.class)
+              .withObjectClassName("test.Class")
+              .withDataSize(2048)
+              .withStringEncoding("UTF-16")
+              .withMemoryPassing(false)
+              .withMemoryAlignment(8)
+              .build();
 
       assertEquals(2, metadata.getArrayDimensions().get(), "arrayDimensions should be 2");
       assertEquals(Byte.class, metadata.getComponentType().get(), "componentType should be Byte");
@@ -286,30 +278,26 @@ class MarshalingMetadataTest {
     @Test
     @DisplayName("equal metadata should be equal")
     void equalMetadataShouldBeEqual() {
-      final MarshalingMetadata meta1 = MarshalingMetadata.builder()
-          .withArrayDimensions(2)
-          .withComponentType(Integer.class)
-          .build();
-      final MarshalingMetadata meta2 = MarshalingMetadata.builder()
-          .withArrayDimensions(2)
-          .withComponentType(Integer.class)
-          .build();
+      final MarshalingMetadata meta1 =
+          MarshalingMetadata.builder()
+              .withArrayDimensions(2)
+              .withComponentType(Integer.class)
+              .build();
+      final MarshalingMetadata meta2 =
+          MarshalingMetadata.builder()
+              .withArrayDimensions(2)
+              .withComponentType(Integer.class)
+              .build();
 
       assertEquals(meta1, meta2, "Identical metadata should be equal");
-      assertEquals(
-          meta1.hashCode(), meta2.hashCode(),
-          "Equal objects should have same hashCode");
+      assertEquals(meta1.hashCode(), meta2.hashCode(), "Equal objects should have same hashCode");
     }
 
     @Test
     @DisplayName("different metadata should not be equal")
     void differentMetadataShouldNotBeEqual() {
-      final MarshalingMetadata meta1 = MarshalingMetadata.builder()
-          .withArrayDimensions(2)
-          .build();
-      final MarshalingMetadata meta2 = MarshalingMetadata.builder()
-          .withArrayDimensions(3)
-          .build();
+      final MarshalingMetadata meta1 = MarshalingMetadata.builder().withArrayDimensions(2).build();
+      final MarshalingMetadata meta2 = MarshalingMetadata.builder().withArrayDimensions(3).build();
 
       assertNotEquals(meta1, meta2, "Different metadata should not be equal");
     }
@@ -331,16 +319,12 @@ class MarshalingMetadataTest {
     @Test
     @DisplayName("toString should contain field information")
     void toStringShouldContainFieldInfo() {
-      final MarshalingMetadata metadata = MarshalingMetadata.builder()
-          .withArrayDimensions(2)
-          .withStringEncoding("UTF-8")
-          .build();
+      final MarshalingMetadata metadata =
+          MarshalingMetadata.builder().withArrayDimensions(2).withStringEncoding("UTF-8").build();
 
       final String result = metadata.toString();
       assertNotNull(result, "toString should not return null");
-      assertTrue(
-          result.contains("MarshalingMetadata"),
-          "toString should contain class name");
+      assertTrue(result.contains("MarshalingMetadata"), "toString should contain class name");
       assertTrue(result.contains("2"), "toString should contain arrayDimensions");
       assertTrue(result.contains("UTF-8"), "toString should contain stringEncoding");
     }

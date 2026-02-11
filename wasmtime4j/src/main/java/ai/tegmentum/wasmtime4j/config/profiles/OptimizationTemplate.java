@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.config.profiles;
 
+import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
-import ai.tegmentum.wasmtime4j.WasmFeature;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,7 +45,10 @@ public final class OptimizationTemplate {
     IO_INTENSIVE,
     /** Memory-constrained optimization. */
     MEMORY_CONSTRAINED,
-    /** Real-time performance optimization. Also suitable for game engines and latency-sensitive apps. */
+    /**
+     * Real-time performance optimization. Also suitable for game engines and latency-sensitive
+     * apps.
+     */
     REAL_TIME
   }
 
@@ -319,7 +322,8 @@ public final class OptimizationTemplate {
   private static OptimizationTemplate createCpuIntensiveTemplate() {
     return builder("CPU Intensive", TemplateType.CPU_INTENSIVE)
         .description(
-            "Optimized for CPU-bound computations including batch processing, ML inference, and scientific computing")
+            "Optimized for CPU-bound computations including batch processing, ML inference, and"
+                + " scientific computing")
         .parameter("optimization_level", OptimizationLevel.SPEED)
         .parameter("parallel_compilation", true)
         .parameter("debug_info", false)
@@ -333,7 +337,8 @@ public final class OptimizationTemplate {
   private static OptimizationTemplate createIoIntensiveTemplate() {
     return builder("I/O Intensive", TemplateType.IO_INTENSIVE)
         .description(
-            "Optimized for I/O-bound applications including web apps and microservices with cooperative scheduling")
+            "Optimized for I/O-bound applications including web apps and microservices with"
+                + " cooperative scheduling")
         .parameter("optimization_level", OptimizationLevel.SPEED)
         .parameter("parallel_compilation", true)
         .parameter("fuel_consumption", true)
@@ -356,7 +361,8 @@ public final class OptimizationTemplate {
   private static OptimizationTemplate createRealTimeTemplate() {
     return builder("Real-time", TemplateType.REAL_TIME)
         .description(
-            "Optimized for consistent, low-latency real-time performance including game engines and trading systems")
+            "Optimized for consistent, low-latency real-time performance including game engines and"
+                + " trading systems")
         .parameter("optimization_level", OptimizationLevel.SPEED)
         .parameter("parallel_compilation", true)
         .parameter("fuel_consumption", false)

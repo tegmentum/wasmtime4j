@@ -436,7 +436,8 @@ class WasiExceptionTest {
     @DisplayName("non-null non-empty operation should be added to message")
     void nonNullNonEmptyOperationShouldBeAddedToMessage() {
       final WasiException exception =
-          new WasiException("error", "my-operation", null, false, WasiException.ErrorCategory.SYSTEM);
+          new WasiException(
+              "error", "my-operation", null, false, WasiException.ErrorCategory.SYSTEM);
       assertTrue(exception.getMessage().contains("operation: my-operation"));
     }
 
@@ -444,7 +445,8 @@ class WasiExceptionTest {
     @DisplayName("non-null non-empty resource should be added to message")
     void nonNullNonEmptyResourceShouldBeAddedToMessage() {
       final WasiException exception =
-          new WasiException("error", null, "my-resource", false, WasiException.ErrorCategory.SYSTEM);
+          new WasiException(
+              "error", null, "my-resource", false, WasiException.ErrorCategory.SYSTEM);
       assertTrue(exception.getMessage().contains("resource: my-resource"));
     }
 

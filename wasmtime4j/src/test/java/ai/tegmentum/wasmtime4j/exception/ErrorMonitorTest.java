@@ -343,7 +343,8 @@ class ErrorMonitorTest {
       // The check is: memoryErrors > getTotalErrorCount() * 0.3
       // 3 > 10 * 0.3 = 3 > 3 = false
       for (int i = 0; i < 3; i++) {
-        monitor.recordError(new TrapException(TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "mem " + i));
+        monitor.recordError(
+            new TrapException(TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "mem " + i));
       }
       for (int i = 0; i < 7; i++) {
         monitor.recordError(new CompilationException("compile " + i));
@@ -360,7 +361,8 @@ class ErrorMonitorTest {
       // Record 4 memory errors and 6 non-memory errors = 40% memory
       // 4 > 10 * 0.3 = 4 > 3 = true
       for (int i = 0; i < 4; i++) {
-        monitor.recordError(new TrapException(TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "mem " + i));
+        monitor.recordError(
+            new TrapException(TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "mem " + i));
       }
       for (int i = 0; i < 6; i++) {
         monitor.recordError(new CompilationException("compile " + i));
@@ -545,11 +547,7 @@ class ErrorMonitorTest {
       // WasiException with retryable=false
       final WasiException nonRetryableWasi =
           new WasiException(
-              "Invalid argument",
-              "open",
-              "/path",
-              false,
-              WasiException.ErrorCategory.FILE_SYSTEM);
+              "Invalid argument", "open", "/path", false, WasiException.ErrorCategory.FILE_SYSTEM);
       monitor.recordError(nonRetryableWasi);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -618,8 +616,7 @@ class ErrorMonitorTest {
       // Create a transient WasiFileSystemException (e.g., WOULD_BLOCK is retryable)
       final WasiFileSystemException transientFsException =
           new WasiFileSystemException(
-              WasiFileSystemException.FileSystemErrorType.WOULD_BLOCK,
-              "Resource would block");
+              WasiFileSystemException.FileSystemErrorType.WOULD_BLOCK, "Resource would block");
       monitor.recordError(transientFsException);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -638,8 +635,7 @@ class ErrorMonitorTest {
       // Create a non-transient WasiFileSystemException (e.g., permission denied)
       final WasiFileSystemException permanentFsException =
           new WasiFileSystemException(
-              WasiFileSystemException.FileSystemErrorType.PERMISSION_DENIED,
-              "Permission denied");
+              WasiFileSystemException.FileSystemErrorType.PERMISSION_DENIED, "Permission denied");
       monitor.recordError(permanentFsException);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -670,8 +666,7 @@ class ErrorMonitorTest {
     @Test
     @DisplayName("CompilationException should not be retryable")
     void compilationExceptionShouldNotBeRetryable() {
-      final CompilationException compileException =
-          new CompilationException("Compilation failed");
+      final CompilationException compileException = new CompilationException("Compilation failed");
       monitor.recordError(compileException);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -760,8 +755,7 @@ class ErrorMonitorTest {
       final List<String> commonFunctions = stats.get(0).getCommonFunctions();
       // Should be empty since extractFunctionContext returns null for WasmException
       assertTrue(
-          commonFunctions.isEmpty(),
-          "Generic WasmException should have no function context");
+          commonFunctions.isEmpty(), "Generic WasmException should have no function context");
     }
 
     @Test
@@ -871,7 +865,8 @@ class ErrorMonitorTest {
 
       // 5 > 3, so burst should be detected
       assertTrue(
-          testHandler.hasWarningContaining("burst") || testHandler.hasWarningContaining("errors in 10 seconds"),
+          testHandler.hasWarningContaining("burst")
+              || testHandler.hasWarningContaining("errors in 10 seconds"),
           "Should detect burst when >3 errors occur within 10 seconds");
     }
 
@@ -906,7 +901,8 @@ class ErrorMonitorTest {
 
       // 100% > 70%, so thread-specific pattern should be detected
       assertTrue(
-          testHandler.hasWarningContaining("Thread") || testHandler.hasWarningContaining("responsible"),
+          testHandler.hasWarningContaining("Thread")
+              || testHandler.hasWarningContaining("responsible"),
           "Should detect thread pattern when one thread has >70% of errors");
     }
   }
@@ -926,8 +922,7 @@ class ErrorMonitorTest {
       // With very few errors, rate should be well below 10
       monitor.recordError(new WasmException("Error"));
       assertFalse(
-          monitor.hasConcerningPatterns(),
-          "Single error should not trigger concerning patterns");
+          monitor.hasConcerningPatterns(), "Single error should not trigger concerning patterns");
     }
 
     @Test
@@ -957,9 +952,7 @@ class ErrorMonitorTest {
       }
 
       // With 100 trap errors, single type rate should exceed 5/minute
-      assertTrue(
-          monitor.getTotalErrorCount() >= 100,
-          "Should have recorded at least 100 errors");
+      assertTrue(monitor.getTotalErrorCount() >= 100, "Should have recorded at least 100 errors");
     }
 
     @Test
@@ -1014,15 +1007,12 @@ class ErrorMonitorTest {
       final String report = monitor.generateSummaryReport();
 
       // Verify report contains top error types header
-      assertTrue(
-          report.contains("Top Error Types"),
-          "Report should have Top Error Types section");
+      assertTrue(report.contains("Top Error Types"), "Report should have Top Error Types section");
 
       // Count the number of occurrence lines in the report
       // The limit(10) should cap the output
-      final long occurrenceLineCount = report.lines()
-          .filter(line -> line.contains("occurrences"))
-          .count();
+      final long occurrenceLineCount =
+          report.lines().filter(line -> line.contains("occurrences")).count();
 
       assertTrue(
           occurrenceLineCount <= 10,
@@ -1065,14 +1055,11 @@ class ErrorMonitorTest {
       final String report = monitor.generateSummaryReport();
 
       // Verify limit(10) is applied by counting occurrence entries
-      final long occurrenceCount = report.lines()
-          .filter(line -> line.trim().matches(".*: \\d+ occurrences.*"))
-          .count();
+      final long occurrenceCount =
+          report.lines().filter(line -> line.trim().matches(".*: \\d+ occurrences.*")).count();
 
       assertEquals(
-          10,
-          occurrenceCount,
-          "Report should show exactly 10 error types when more than 10 exist");
+          10, occurrenceCount, "Report should show exactly 10 error types when more than 10 exist");
     }
   }
 
@@ -1092,9 +1079,7 @@ class ErrorMonitorTest {
 
       // Overall rate should be the sum of individual rates
       // Since all errors were just recorded, rates should be > 0
-      assertTrue(
-          overallRate >= 0,
-          "Overall error rate should be non-negative");
+      assertTrue(overallRate >= 0, "Overall error rate should be non-negative");
     }
 
     @Test
@@ -1119,9 +1104,7 @@ class ErrorMonitorTest {
       monitor.recordError(new WasmException("Error 5"));
       final double rate2 = monitor.getOverallErrorRate();
 
-      assertTrue(
-          rate2 > rate1,
-          "Rate should increase with more errors: " + rate1 + " vs " + rate2);
+      assertTrue(rate2 > rate1, "Rate should increase with more errors: " + rate1 + " vs " + rate2);
     }
   }
 
@@ -1203,7 +1186,10 @@ class ErrorMonitorTest {
       monitor.reset();
 
       // Verify error rate is zero after reset (errorRates.clear() was called)
-      assertEquals(0.0, monitor.getOverallErrorRate(), 0.001,
+      assertEquals(
+          0.0,
+          monitor.getOverallErrorRate(),
+          0.001,
           "Error rate should be 0 after reset - errorRates should be cleared");
     }
 
@@ -1284,9 +1270,7 @@ class ErrorMonitorTest {
       assertTrue(
           report.contains("Top Error Types"),
           "Report should include Top Error Types section when errors exist");
-      assertTrue(
-          report.contains("occurrences"),
-          "Report should show occurrence counts");
+      assertTrue(report.contains("occurrences"), "Report should show occurrence counts");
     }
   }
 
@@ -1313,13 +1297,14 @@ class ErrorMonitorTest {
     @DisplayName("TrapException branch should be taken for TrapException instances")
     void trapExceptionBranchShouldBeTakenForTrapExceptionInstances() {
       // Create TrapException with a function name
-      final TrapException trap = new TrapException(
-          TrapException.TrapType.UNKNOWN,
-          "Trap with function",
-          null,
-          "my_trap_function",
-          null,
-          null);
+      final TrapException trap =
+          new TrapException(
+              TrapException.TrapType.UNKNOWN,
+              "Trap with function",
+              null,
+              "my_trap_function",
+              null,
+              null);
       monitor.recordError(trap);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -1334,11 +1319,12 @@ class ErrorMonitorTest {
     @DisplayName("RuntimeException branch should be taken when not TrapException")
     void runtimeExceptionBranchShouldBeTakenWhenNotTrapException() {
       // Create RuntimeException with function name
-      final RuntimeException runtime = new RuntimeException(
-          RuntimeException.RuntimeErrorType.UNKNOWN,
-          "Runtime error with function",
-          "my_runtime_function",
-          null);
+      final RuntimeException runtime =
+          new RuntimeException(
+              RuntimeException.RuntimeErrorType.UNKNOWN,
+              "Runtime error with function",
+              "my_runtime_function",
+              null);
       monitor.recordError(runtime);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -1353,13 +1339,14 @@ class ErrorMonitorTest {
     @DisplayName("ModuleCompilationException branch should be taken appropriately")
     void moduleCompilationExceptionBranchShouldBeTakenAppropriately() {
       // Create ModuleCompilationException with function name
-      final ModuleCompilationException moduleCompile = new ModuleCompilationException(
-          ModuleCompilationException.CompilationErrorType.UNKNOWN,
-          "Module compile error",
-          ModuleCompilationException.CompilationPhase.UNKNOWN,
-          "my_module_function",
-          10,
-          null);
+      final ModuleCompilationException moduleCompile =
+          new ModuleCompilationException(
+              ModuleCompilationException.CompilationErrorType.UNKNOWN,
+              "Module compile error",
+              ModuleCompilationException.CompilationPhase.UNKNOWN,
+              "my_module_function",
+              10,
+              null);
       monitor.recordError(moduleCompile);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -1379,9 +1366,9 @@ class ErrorMonitorTest {
     @DisplayName("WasiFileSystemException with transient error should be retryable")
     void wasiFileSystemExceptionWithTransientErrorShouldBeRetryable() {
       // WOULD_BLOCK is a transient error type
-      final WasiFileSystemException wouldBlockException = new WasiFileSystemException(
-          WasiFileSystemException.FileSystemErrorType.WOULD_BLOCK,
-          "Operation would block");
+      final WasiFileSystemException wouldBlockException =
+          new WasiFileSystemException(
+              WasiFileSystemException.FileSystemErrorType.WOULD_BLOCK, "Operation would block");
       monitor.recordError(wouldBlockException);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -1397,9 +1384,9 @@ class ErrorMonitorTest {
     @DisplayName("WasiFileSystemException with non-transient error should not be retryable")
     void wasiFileSystemExceptionWithNonTransientErrorShouldNotBeRetryable() {
       // PERMISSION_DENIED is not a transient error
-      final WasiFileSystemException permDeniedException = new WasiFileSystemException(
-          WasiFileSystemException.FileSystemErrorType.PERMISSION_DENIED,
-          "Permission denied");
+      final WasiFileSystemException permDeniedException =
+          new WasiFileSystemException(
+              WasiFileSystemException.FileSystemErrorType.PERMISSION_DENIED, "Permission denied");
       monitor.recordError(permDeniedException);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -1414,11 +1401,12 @@ class ErrorMonitorTest {
     @Test
     @DisplayName("WasiFileSystemException branch should be reached after TrapException check fails")
     void wasiFileSystemExceptionBranchShouldBeReachedAfterTrapExceptionCheckFails() {
-      // This test verifies the else-if chain: WasiException -> TrapException -> WasiFileSystemException
+      // This test verifies the else-if chain: WasiException -> TrapException ->
+      // WasiFileSystemException
       // Record WasiFileSystemException (not WasiException, not TrapException)
-      final WasiFileSystemException fsException = new WasiFileSystemException(
-          WasiFileSystemException.FileSystemErrorType.WOULD_BLOCK,
-          "Would block");
+      final WasiFileSystemException fsException =
+          new WasiFileSystemException(
+              WasiFileSystemException.FileSystemErrorType.WOULD_BLOCK, "Would block");
       monitor.recordError(fsException);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -1457,13 +1445,9 @@ class ErrorMonitorTest {
     void commonFunctionsLimitShouldBeExactly5() {
       // Record errors with 10 different function names
       for (int i = 0; i < 10; i++) {
-        final TrapException trap = new TrapException(
-            TrapException.TrapType.UNKNOWN,
-            "Trap " + i,
-            null,
-            "function_" + i,
-            null,
-            null);
+        final TrapException trap =
+            new TrapException(
+                TrapException.TrapType.UNKNOWN, "Trap " + i, null, "function_" + i, null, null);
         monitor.recordError(trap);
       }
 
@@ -1480,26 +1464,29 @@ class ErrorMonitorTest {
     void functionFilterShouldExcludeNullFunctionContexts() {
       // Mix of exceptions with and without function names
       monitor.recordError(new WasmException("No function"));
-      monitor.recordError(new TrapException(
-          TrapException.TrapType.UNKNOWN, "With function", null, "has_function", null, null));
+      monitor.recordError(
+          new TrapException(
+              TrapException.TrapType.UNKNOWN, "With function", null, "has_function", null, null));
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
 
       // WasmException stats should have empty common functions
-      final ErrorMonitor.ErrorStatistics wasmStats = stats.stream()
-          .filter(s -> s.getErrorType().equals("WasmException"))
-          .findFirst()
-          .orElse(null);
+      final ErrorMonitor.ErrorStatistics wasmStats =
+          stats.stream()
+              .filter(s -> s.getErrorType().equals("WasmException"))
+              .findFirst()
+              .orElse(null);
       assertNotNull(wasmStats, "Should have WasmException stats");
       assertTrue(
           wasmStats.getCommonFunctions().isEmpty(),
           "WasmException should have no function context");
 
       // TrapException stats should have the function
-      final ErrorMonitor.ErrorStatistics trapStats = stats.stream()
-          .filter(s -> s.getErrorType().equals("TrapException"))
-          .findFirst()
-          .orElse(null);
+      final ErrorMonitor.ErrorStatistics trapStats =
+          stats.stream()
+              .filter(s -> s.getErrorType().equals("TrapException"))
+              .findFirst()
+              .orElse(null);
       assertNotNull(trapStats, "Should have TrapException stats");
       assertTrue(
           trapStats.getCommonFunctions().contains("has_function"),
@@ -1510,13 +1497,9 @@ class ErrorMonitorTest {
     @DisplayName("Function filter should exclude empty string function contexts")
     void functionFilterShouldExcludeEmptyStringFunctionContexts() {
       // Create a TrapException with empty function name
-      final TrapException trapWithEmptyFunction = new TrapException(
-          TrapException.TrapType.UNKNOWN,
-          "Trap with empty function",
-          null,
-          "",
-          null,
-          null);
+      final TrapException trapWithEmptyFunction =
+          new TrapException(
+              TrapException.TrapType.UNKNOWN, "Trap with empty function", null, "", null, null);
       monitor.recordError(trapWithEmptyFunction);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -1524,9 +1507,7 @@ class ErrorMonitorTest {
 
       // The filter is: func != null && !func.isEmpty()
       // Empty string should be filtered out
-      assertFalse(
-          functions.contains(""),
-          "Empty function name should be filtered out");
+      assertFalse(functions.contains(""), "Empty function name should be filtered out");
     }
 
     @Test
@@ -1719,8 +1700,7 @@ class ErrorMonitorTest {
       }
 
       assertTrue(
-          monitor.hasConcerningPatterns(),
-          "50% memory errors should trigger concerning patterns");
+          monitor.hasConcerningPatterns(), "50% memory errors should trigger concerning patterns");
     }
   }
 
@@ -1780,7 +1760,8 @@ class ErrorMonitorTest {
       // Create scenario where overall rate is <= 10 but single type rate > 5
       // This requires careful balancing
       for (int i = 0; i < 100; i++) {
-        monitor.recordError(new TrapException(TrapException.TrapType.UNKNOWN, "High rate type " + i));
+        monitor.recordError(
+            new TrapException(TrapException.TrapType.UNKNOWN, "High rate type " + i));
       }
 
       // 100 traps / 15 min = 6.67/min > 5 for single type
@@ -1910,7 +1891,8 @@ class ErrorMonitorTest {
 
       // "Repeated message" should be first (most common)
       assertFalse(commonMessages.isEmpty(), "Should have common messages");
-      assertEquals("Repeated message", commonMessages.get(0), "Most common message should be first");
+      assertEquals(
+          "Repeated message", commonMessages.get(0), "Most common message should be first");
     }
   }
 
@@ -1929,10 +1911,7 @@ class ErrorMonitorTest {
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
       assertEquals(1, stats.size(), "Should have one error type");
       assertEquals(
-          100.0,
-          stats.get(0).getRetryablePercentage(),
-          0.01,
-          "All retryable should be 100%");
+          100.0, stats.get(0).getRetryablePercentage(), 0.01, "All retryable should be 100%");
     }
 
     @Test
@@ -1946,10 +1925,7 @@ class ErrorMonitorTest {
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
       assertEquals(1, stats.size(), "Should have one error type");
       assertEquals(
-          0.0,
-          stats.get(0).getRetryablePercentage(),
-          0.01,
-          "All non-retryable should be 0%");
+          0.0, stats.get(0).getRetryablePercentage(), 0.01, "All non-retryable should be 0%");
     }
 
     @Test
@@ -1965,10 +1941,7 @@ class ErrorMonitorTest {
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
       assertEquals(
-          60.0,
-          stats.get(0).getRetryablePercentage(),
-          0.01,
-          "3/5 retryable should be 60%");
+          60.0, stats.get(0).getRetryablePercentage(), 0.01, "3/5 retryable should be 60%");
     }
 
     @Test
@@ -2013,9 +1986,8 @@ class ErrorMonitorTest {
       final String report = monitor.generateSummaryReport();
 
       // Verify no occurrence line pattern appears
-      final long occurrenceCount = report.lines()
-          .filter(line -> line.contains(" occurrences ("))
-          .count();
+      final long occurrenceCount =
+          report.lines().filter(line -> line.contains(" occurrences (")).count();
 
       assertEquals(0, occurrenceCount, "Empty stats should produce 0 occurrence lines");
     }
@@ -2030,9 +2002,8 @@ class ErrorMonitorTest {
       final String report = monitor.generateSummaryReport();
 
       // Verify occurrence lines appear
-      final long occurrenceCount = report.lines()
-          .filter(line -> line.contains(" occurrences ("))
-          .count();
+      final long occurrenceCount =
+          report.lines().filter(line -> line.contains(" occurrences (")).count();
 
       assertTrue(occurrenceCount >= 1, "Non-empty stats should produce occurrence lines");
     }
@@ -2067,13 +2038,8 @@ class ErrorMonitorTest {
     @DisplayName("TrapException should be checked before other types")
     void trapExceptionShouldBeCheckedBeforeOtherTypes() {
       // TrapException with function name
-      final TrapException trap = new TrapException(
-          TrapException.TrapType.UNKNOWN,
-          "Trap",
-          null,
-          "trap_func",
-          null,
-          null);
+      final TrapException trap =
+          new TrapException(TrapException.TrapType.UNKNOWN, "Trap", null, "trap_func", null, null);
       monitor.recordError(trap);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -2086,11 +2052,9 @@ class ErrorMonitorTest {
     @DisplayName("RuntimeException should be checked when not TrapException")
     void runtimeExceptionShouldBeCheckedWhenNotTrapException() {
       // RuntimeException with function name
-      final RuntimeException runtime = new RuntimeException(
-          RuntimeException.RuntimeErrorType.UNKNOWN,
-          "Runtime",
-          "runtime_func",
-          null);
+      final RuntimeException runtime =
+          new RuntimeException(
+              RuntimeException.RuntimeErrorType.UNKNOWN, "Runtime", "runtime_func", null);
       monitor.recordError(runtime);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -2132,12 +2096,8 @@ class ErrorMonitorTest {
     @DisplayName("WasiException is checked first in instanceof chain")
     void wasiExceptionIsCheckedFirstInInstanceofChain() {
       // WasiException with retryable=true
-      final WasiException wasi = new WasiException(
-          "WASI error",
-          "op",
-          "/path",
-          true,
-          WasiException.ErrorCategory.SYSTEM);
+      final WasiException wasi =
+          new WasiException("WASI error", "op", "/path", true, WasiException.ErrorCategory.SYSTEM);
       monitor.recordError(wasi);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -2152,12 +2112,8 @@ class ErrorMonitorTest {
     @DisplayName("WasiException with retryable=false should be non-retryable")
     void wasiExceptionWithRetryableFalseShouldBeNonRetryable() {
       // WasiException with retryable=false
-      final WasiException wasi = new WasiException(
-          "WASI error",
-          "op",
-          "/path",
-          false,
-          WasiException.ErrorCategory.SYSTEM);
+      final WasiException wasi =
+          new WasiException("WASI error", "op", "/path", false, WasiException.ErrorCategory.SYSTEM);
       monitor.recordError(wasi);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -2175,10 +2131,7 @@ class ErrorMonitorTest {
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
       assertEquals(
-          100.0,
-          stats.get(0).getRetryablePercentage(),
-          0.01,
-          "INTERRUPT trap should be retryable");
+          100.0, stats.get(0).getRetryablePercentage(), 0.01, "INTERRUPT trap should be retryable");
     }
 
     @Test
@@ -2322,7 +2275,8 @@ class ErrorMonitorTest {
       }
 
       assertTrue(
-          testHandler.hasWarningContaining("Thread") || testHandler.hasWarningContaining("responsible"),
+          testHandler.hasWarningContaining("Thread")
+              || testHandler.hasWarningContaining("responsible"),
           "100% from one thread (>70%) should trigger thread pattern warning");
     }
 
@@ -2339,7 +2293,8 @@ class ErrorMonitorTest {
 
       // With all 5 errors in 10-second window, 5 > 3 triggers burst
       assertTrue(
-          testHandler.hasWarningContaining("10 seconds") || testHandler.hasWarningContaining("burst"),
+          testHandler.hasWarningContaining("10 seconds")
+              || testHandler.hasWarningContaining("burst"),
           "Errors within 10-second window should be counted");
     }
 
@@ -2358,7 +2313,8 @@ class ErrorMonitorTest {
 
       // 5 > 3 = true, so burst warning should appear
       assertTrue(
-          testHandler.hasWarningContaining("burst") || testHandler.hasWarningContaining("errors in 10 seconds"),
+          testHandler.hasWarningContaining("burst")
+              || testHandler.hasWarningContaining("errors in 10 seconds"),
           "5 errors (>3) should trigger burst detection");
     }
 
@@ -2374,7 +2330,8 @@ class ErrorMonitorTest {
 
       // 10/10 = 100% > 70%, should trigger thread warning
       assertTrue(
-          testHandler.hasWarningContaining("Thread") || testHandler.hasWarningContaining("responsible"),
+          testHandler.hasWarningContaining("Thread")
+              || testHandler.hasWarningContaining("responsible"),
           "100% of errors from one thread should trigger thread pattern warning");
     }
   }
@@ -2464,9 +2421,7 @@ class ErrorMonitorTest {
       assertTrue(
           testHandler.hasRecordWithLevel(java.util.logging.Level.INFO),
           "reset should log at INFO level");
-      assertTrue(
-          testHandler.hasRecordContaining("reset"),
-          "Log message should contain 'reset'");
+      assertTrue(testHandler.hasRecordContaining("reset"), "Log message should contain 'reset'");
     }
 
     @Test
@@ -2525,8 +2480,8 @@ class ErrorMonitorTest {
 
       final double rate = monitor.getOverallErrorRate();
 
-      assertEquals(0.0, rate, 0.0001,
-          "Fresh monitor with no errors should have exactly 0.0 rate, not 1/15");
+      assertEquals(
+          0.0, rate, 0.0001, "Fresh monitor with no errors should have exactly 0.0 rate, not 1/15");
     }
 
     @Test
@@ -2542,8 +2497,7 @@ class ErrorMonitorTest {
       final double rate = monitor.getOverallErrorRate();
 
       // Rate should be 1/15 = 0.0667 (events per minute over 15 minute window)
-      assertEquals(1.0 / 15.0, rate, 0.0001,
-          "Single error should give rate of 1/15 per minute");
+      assertEquals(1.0 / 15.0, rate, 0.0001, "Single error should give rate of 1/15 per minute");
     }
 
     @Test
@@ -2560,8 +2514,7 @@ class ErrorMonitorTest {
       final double rate = monitor.getOverallErrorRate();
 
       // Rate should be 30/15 = 2.0 events per minute
-      assertEquals(30.0 / 15.0, rate, 0.0001,
-          "30 errors should give rate of 2.0 per minute");
+      assertEquals(30.0 / 15.0, rate, 0.0001, "30 errors should give rate of 2.0 per minute");
     }
 
     @Test
@@ -2578,10 +2531,13 @@ class ErrorMonitorTest {
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
 
       assertEquals(1, stats.size(), "Should have one error type");
-      assertEquals(overallRate, stats.get(0).getErrorRate(), 0.0001,
+      assertEquals(
+          overallRate,
+          stats.get(0).getErrorRate(),
+          0.0001,
           "Per-type rate should match overall rate for single type");
-      assertEquals(1.0, stats.get(0).getErrorRate(), 0.0001,
-          "15 errors should give rate of 1.0 per minute");
+      assertEquals(
+          1.0, stats.get(0).getErrorRate(), 0.0001, "15 errors should give rate of 1.0 per minute");
     }
 
     @Test
@@ -2601,8 +2557,7 @@ class ErrorMonitorTest {
       // 15 errors / 15 minute window = 1.0 per minute
       // If divisor was 16, rate would be 15/16 = 0.9375
       // If divisor was 1, rate would be 15/1 = 15.0
-      assertEquals(1.0, rate, 0.0001,
-          "Rate divisor should be 15 (RATE_WINDOW_MINUTES)");
+      assertEquals(1.0, rate, 0.0001, "Rate divisor should be 15 (RATE_WINDOW_MINUTES)");
       assertTrue(rate < 15.0, "Rate should not be 15.0 (divisor 1)");
       assertTrue(rate > 0.9, "Rate should not be 0.9375 (divisor 16)");
     }
@@ -2616,21 +2571,19 @@ class ErrorMonitorTest {
 
       // Get rate before any errors
       final double rateBefore = monitor.getOverallErrorRate();
-      assertEquals(0.0, rateBefore, 0.0001,
-          "Rate before any errors should be exactly 0.0");
+      assertEquals(0.0, rateBefore, 0.0001, "Rate before any errors should be exactly 0.0");
 
       // Record one error
       monitor.recordError(new WasmException("First error"));
 
       // Get rate after one error
       final double rateAfter = monitor.getOverallErrorRate();
-      assertEquals(1.0 / 15.0, rateAfter, 0.0001,
-          "Rate after one error should be exactly 1/15");
+      assertEquals(1.0 / 15.0, rateAfter, 0.0001, "Rate after one error should be exactly 1/15");
 
       // The difference should be exactly 1/15
       final double rateDiff = rateAfter - rateBefore;
-      assertEquals(1.0 / 15.0, rateDiff, 0.0001,
-          "Rate difference after first error should be exactly 1/15");
+      assertEquals(
+          1.0 / 15.0, rateDiff, 0.0001, "Rate difference after first error should be exactly 1/15");
     }
 
     @Test
@@ -2649,8 +2602,7 @@ class ErrorMonitorTest {
 
       // Overall rate should be 15/15 = 1.0
       final double overallRate = monitor.getOverallErrorRate();
-      assertEquals(1.0, overallRate, 0.0001,
-          "Overall rate should be 15/15 = 1.0");
+      assertEquals(1.0, overallRate, 0.0001, "Overall rate should be 15/15 = 1.0");
 
       // Get per-type rates
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
@@ -2661,8 +2613,8 @@ class ErrorMonitorTest {
         sumOfRates += stat.getErrorRate();
       }
 
-      assertEquals(overallRate, sumOfRates, 0.0001,
-          "Sum of per-type rates should equal overall rate");
+      assertEquals(
+          overallRate, sumOfRates, 0.0001, "Sum of per-type rates should equal overall rate");
     }
 
     @Test
@@ -2681,8 +2633,7 @@ class ErrorMonitorTest {
       final double rate = monitor.getOverallErrorRate();
 
       // All 5 errors should be counted
-      assertEquals(5.0 / 15.0, rate, 0.0001,
-          "All 5 errors in current bucket should be counted");
+      assertEquals(5.0 / 15.0, rate, 0.0001, "All 5 errors in current bucket should be counted");
     }
 
     @Test
@@ -2698,14 +2649,12 @@ class ErrorMonitorTest {
 
       // Verify rate is non-zero
       final double rateBeforeReset = monitor.getOverallErrorRate();
-      assertEquals(10.0 / 15.0, rateBeforeReset, 0.0001,
-          "Rate should be 10/15 before reset");
+      assertEquals(10.0 / 15.0, rateBeforeReset, 0.0001, "Rate should be 10/15 before reset");
 
       // Reset and verify rate is zero
       monitor.reset();
       final double rateAfterReset = monitor.getOverallErrorRate();
-      assertEquals(0.0, rateAfterReset, 0.0001,
-          "Rate should be exactly 0.0 after reset");
+      assertEquals(0.0, rateAfterReset, 0.0001, "Rate should be exactly 0.0 after reset");
     }
 
     @Test
@@ -2721,12 +2670,14 @@ class ErrorMonitorTest {
       // The bucket should have count 1 (0 + increment = 1)
       // Rate = 1 / 15 = 0.0667
       final double rate = monitor.getOverallErrorRate();
-      assertEquals(1.0 / 15.0, rate, 0.00001,
+      assertEquals(
+          1.0 / 15.0,
+          rate,
+          0.00001,
           "Single error should give rate 1/15, proving AtomicLong starts at 0");
 
       // If AtomicLong started at 1, rate would be 2/15 = 0.1333
-      assertTrue(rate < 0.1,
-          "Rate should be less than 0.1 (2/15 would be 0.1333)");
+      assertTrue(rate < 0.1, "Rate should be less than 0.1 (2/15 would be 0.1333)");
     }
   }
 
@@ -2788,7 +2739,8 @@ class ErrorMonitorTest {
 
       // "FIRST_ERROR" should not be in common messages after trimming
       // (it was removed as the oldest when we exceeded 100)
-      assertFalse(commonMessages.contains("FIRST_ERROR"),
+      assertFalse(
+          commonMessages.contains("FIRST_ERROR"),
           "First error should be removed when exceeding MAX_RECENT_ERRORS");
     }
   }
@@ -2884,7 +2836,8 @@ class ErrorMonitorTest {
 
       // Common functions list should be empty since extractFunctionContext returns null
       final List<String> commonFunctions = stats.get(0).getCommonFunctions();
-      assertTrue(commonFunctions.isEmpty(),
+      assertTrue(
+          commonFunctions.isEmpty(),
           "Common functions should be empty for WasmException (null context)");
     }
 
@@ -2893,14 +2846,16 @@ class ErrorMonitorTest {
     void trapExceptionShouldExtractFunctionName() {
       // This kills line 448 ELSE mutation by verifying TrapException path works
       monitor.reset();
-      final TrapException trap = new TrapException(
-          TrapException.TrapType.UNKNOWN, "Trap", null, "my_trap_function", null, null);
+      final TrapException trap =
+          new TrapException(
+              TrapException.TrapType.UNKNOWN, "Trap", null, "my_trap_function", null, null);
       monitor.recordError(trap);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
       final List<String> commonFunctions = stats.get(0).getCommonFunctions();
 
-      assertTrue(commonFunctions.contains("my_trap_function"),
+      assertTrue(
+          commonFunctions.contains("my_trap_function"),
           "Should extract function name from TrapException");
     }
 
@@ -2909,14 +2864,19 @@ class ErrorMonitorTest {
     void runtimeExceptionShouldExtractFunctionName() {
       // This tests the RuntimeException path in extractFunctionContext
       monitor.reset();
-      final RuntimeException runtime = new RuntimeException(
-          RuntimeException.RuntimeErrorType.UNKNOWN, "Runtime error", "my_runtime_function", null);
+      final RuntimeException runtime =
+          new RuntimeException(
+              RuntimeException.RuntimeErrorType.UNKNOWN,
+              "Runtime error",
+              "my_runtime_function",
+              null);
       monitor.recordError(runtime);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
       final List<String> commonFunctions = stats.get(0).getCommonFunctions();
 
-      assertTrue(commonFunctions.contains("my_runtime_function"),
+      assertTrue(
+          commonFunctions.contains("my_runtime_function"),
           "Should extract function name from RuntimeException");
     }
   }
@@ -2930,12 +2890,16 @@ class ErrorMonitorTest {
     void wasiFileSystemExceptionTransientShouldBeRetryable() {
       // This kills line 466 ELSE mutation by verifying WasiFileSystemException path
       monitor.reset();
-      final WasiFileSystemException transientException = new WasiFileSystemException(
-          WasiFileSystemException.FileSystemErrorType.WOULD_BLOCK, "Transient error");
+      final WasiFileSystemException transientException =
+          new WasiFileSystemException(
+              WasiFileSystemException.FileSystemErrorType.WOULD_BLOCK, "Transient error");
       monitor.recordError(transientException);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
-      assertEquals(100.0, stats.get(0).getRetryablePercentage(), 0.01,
+      assertEquals(
+          100.0,
+          stats.get(0).getRetryablePercentage(),
+          0.01,
           "Transient WasiFileSystemException should be 100% retryable");
     }
 
@@ -2943,12 +2907,16 @@ class ErrorMonitorTest {
     @DisplayName("WasiFileSystemException non-transient error should not be retryable")
     void wasiFileSystemExceptionNonTransientShouldNotBeRetryable() {
       monitor.reset();
-      final WasiFileSystemException permanentException = new WasiFileSystemException(
-          WasiFileSystemException.FileSystemErrorType.PERMISSION_DENIED, "Permanent error");
+      final WasiFileSystemException permanentException =
+          new WasiFileSystemException(
+              WasiFileSystemException.FileSystemErrorType.PERMISSION_DENIED, "Permanent error");
       monitor.recordError(permanentException);
 
       final List<ErrorMonitor.ErrorStatistics> stats = monitor.getErrorStatistics();
-      assertEquals(0.0, stats.get(0).getRetryablePercentage(), 0.01,
+      assertEquals(
+          0.0,
+          stats.get(0).getRetryablePercentage(),
+          0.01,
           "Non-transient WasiFileSystemException should be 0% retryable");
     }
   }
@@ -2967,7 +2935,8 @@ class ErrorMonitorTest {
 
       // With no errors, stats.isEmpty() is true, so !stats.isEmpty() is false
       // The "Top Error Types:" section should NOT appear
-      assertFalse(report.contains("Top Error Types:"),
+      assertFalse(
+          report.contains("Top Error Types:"),
           "Report should not have 'Top Error Types:' section when no errors recorded");
     }
 
@@ -2979,7 +2948,8 @@ class ErrorMonitorTest {
       monitor.recordError(new WasmException("Test error"));
       final String report = monitor.generateSummaryReport();
 
-      assertTrue(report.contains("Top Error Types:"),
+      assertTrue(
+          report.contains("Top Error Types:"),
           "Report should have 'Top Error Types:' section when errors recorded");
     }
   }
@@ -3103,8 +3073,8 @@ class ErrorMonitorTest {
       // So "TrapException" doesn't match "Memory"
 
       // Let's just verify the OR condition by testing OutOfBounds
-      final TrapException memoryTrap = new TrapException(
-          TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "Memory error");
+      final TrapException memoryTrap =
+          new TrapException(TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "Memory error");
       monitor.recordError(memoryTrap);
 
       assertEquals(1, monitor.getTotalErrorCount(), "Should have 1 error");
@@ -3115,7 +3085,8 @@ class ErrorMonitorTest {
     @Test
     @DisplayName("Memory error filter should check for 'OutOfBounds' in key")
     void memoryErrorFilterShouldCheckForOutOfBoundsInKey() {
-      // The filter checks: entry.getKey().contains("Memory") || entry.getKey().contains("OutOfBounds")
+      // The filter checks: entry.getKey().contains("Memory") ||
+      // entry.getKey().contains("OutOfBounds")
       // The key is the simple class name, e.g., "TrapException"
       // Neither "TrapException" nor "WasmException" contains "Memory" or "OutOfBounds"
       monitor.reset();

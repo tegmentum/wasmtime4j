@@ -16,10 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
-import ai.tegmentum.wasmtime4j.func.Function;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -62,7 +58,8 @@ class InstanceStatisticsTest {
     @Test
     @DisplayName("should create instance with all parameters")
     void shouldCreateInstanceWithAllParameters() {
-      final InstanceStatistics stats = new InstanceStatistics(100L, 5000L, 1024L, 2048L, 10, 5, 50L, 3L);
+      final InstanceStatistics stats =
+          new InstanceStatistics(100L, 5000L, 1024L, 2048L, 10, 5, 50L, 3L);
 
       assertNotNull(stats, "InstanceStatistics should be created");
     }
@@ -87,12 +84,23 @@ class InstanceStatisticsTest {
     void shouldAcceptLargeValuesForLongParameters() {
       final long largeValue = Long.MAX_VALUE;
       final InstanceStatistics stats =
-          new InstanceStatistics(largeValue, largeValue, largeValue, largeValue, Integer.MAX_VALUE,
-              Integer.MAX_VALUE, largeValue, largeValue);
+          new InstanceStatistics(
+              largeValue,
+              largeValue,
+              largeValue,
+              largeValue,
+              Integer.MAX_VALUE,
+              Integer.MAX_VALUE,
+              largeValue,
+              largeValue);
 
-      assertEquals(largeValue, stats.getFunctionCallCount(),
+      assertEquals(
+          largeValue,
+          stats.getFunctionCallCount(),
           "Function call count should handle Long.MAX_VALUE");
-      assertEquals(largeValue, stats.getTotalExecutionTime(),
+      assertEquals(
+          largeValue,
+          stats.getTotalExecutionTime(),
           "Total execution time should handle Long.MAX_VALUE");
     }
   }
@@ -112,9 +120,12 @@ class InstanceStatisticsTest {
     @Test
     @DisplayName("getTotalExecutionTime should return constructor value in nanoseconds")
     void getTotalExecutionTimeShouldReturnConstructorValue() {
-      final InstanceStatistics stats = new InstanceStatistics(0L, 999_999_999L, 0L, 0L, 0, 0, 0L, 0L);
+      final InstanceStatistics stats =
+          new InstanceStatistics(0L, 999_999_999L, 0L, 0L, 0, 0, 0L, 0L);
 
-      assertEquals(999_999_999L, stats.getTotalExecutionTime(),
+      assertEquals(
+          999_999_999L,
+          stats.getTotalExecutionTime(),
           "Total execution time should be 999999999 ns");
     }
 
@@ -123,8 +134,8 @@ class InstanceStatisticsTest {
     void getMemoryBytesAllocatedShouldReturnConstructorValue() {
       final InstanceStatistics stats = new InstanceStatistics(0L, 0L, 65536L, 0L, 0, 0, 0L, 0L);
 
-      assertEquals(65536L, stats.getMemoryBytesAllocated(),
-          "Memory bytes allocated should be 65536");
+      assertEquals(
+          65536L, stats.getMemoryBytesAllocated(), "Memory bytes allocated should be 65536");
     }
 
     @Test
@@ -177,7 +188,10 @@ class InstanceStatisticsTest {
     void getAverageExecutionTimePerCallShouldComputeCorrectAverage() {
       final InstanceStatistics stats = new InstanceStatistics(10L, 1000L, 0L, 0L, 0, 0, 0L, 0L);
 
-      assertEquals(100.0, stats.getAverageExecutionTimePerCall(), 0.001,
+      assertEquals(
+          100.0,
+          stats.getAverageExecutionTimePerCall(),
+          0.001,
           "Average execution time per call should be 100.0 ns");
     }
 
@@ -186,7 +200,10 @@ class InstanceStatisticsTest {
     void getAverageExecutionTimePerCallShouldReturnZeroWhenNoCalls() {
       final InstanceStatistics stats = new InstanceStatistics(0L, 5000L, 0L, 0L, 0, 0, 0L, 0L);
 
-      assertEquals(0.0, stats.getAverageExecutionTimePerCall(), 0.001,
+      assertEquals(
+          0.0,
+          stats.getAverageExecutionTimePerCall(),
+          0.001,
           "Average execution time should be 0.0 when no calls made");
     }
 
@@ -195,7 +212,10 @@ class InstanceStatisticsTest {
     void getAverageExecutionTimePerCallShouldHandleSingleCall() {
       final InstanceStatistics stats = new InstanceStatistics(1L, 500L, 0L, 0L, 0, 0, 0L, 0L);
 
-      assertEquals(500.0, stats.getAverageExecutionTimePerCall(), 0.001,
+      assertEquals(
+          500.0,
+          stats.getAverageExecutionTimePerCall(),
+          0.001,
           "Average should equal total time when only one call");
     }
 
@@ -204,7 +224,10 @@ class InstanceStatisticsTest {
     void getFuelConsumptionRateShouldComputeCorrectRate() {
       final InstanceStatistics stats = new InstanceStatistics(0L, 1000L, 0L, 0L, 0, 0, 500L, 0L);
 
-      assertEquals(0.5, stats.getFuelConsumptionRate(), 0.001,
+      assertEquals(
+          0.5,
+          stats.getFuelConsumptionRate(),
+          0.001,
           "Fuel consumption rate should be 0.5 fuel/ns");
     }
 
@@ -213,7 +236,10 @@ class InstanceStatisticsTest {
     void getFuelConsumptionRateShouldReturnZeroWhenNoExecutionTime() {
       final InstanceStatistics stats = new InstanceStatistics(0L, 0L, 0L, 0L, 0, 0, 100L, 0L);
 
-      assertEquals(0.0, stats.getFuelConsumptionRate(), 0.001,
+      assertEquals(
+          0.0,
+          stats.getFuelConsumptionRate(),
+          0.001,
           "Fuel consumption rate should be 0.0 when no execution time");
     }
 
@@ -222,7 +248,10 @@ class InstanceStatisticsTest {
     void getFuelConsumptionRateShouldHandleZeroFuelWithNonzeroTime() {
       final InstanceStatistics stats = new InstanceStatistics(0L, 1000L, 0L, 0L, 0, 0, 0L, 0L);
 
-      assertEquals(0.0, stats.getFuelConsumptionRate(), 0.001,
+      assertEquals(
+          0.0,
+          stats.getFuelConsumptionRate(),
+          0.001,
           "Fuel consumption rate should be 0.0 when no fuel consumed");
     }
   }
@@ -234,8 +263,10 @@ class InstanceStatisticsTest {
     @Test
     @DisplayName("equals should return true for identical values")
     void equalsShouldReturnTrueForIdenticalValues() {
-      final InstanceStatistics stats1 = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
-      final InstanceStatistics stats2 = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats1 =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats2 =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
 
       assertEquals(stats1, stats2, "Statistics with identical values should be equal");
     }
@@ -243,17 +274,20 @@ class InstanceStatisticsTest {
     @Test
     @DisplayName("equals should return false for different function call count")
     void equalsShouldReturnFalseForDifferentFunctionCallCount() {
-      final InstanceStatistics stats1 = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
-      final InstanceStatistics stats2 = new InstanceStatistics(11L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats1 =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats2 =
+          new InstanceStatistics(11L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
 
-      assertNotEquals(stats1, stats2,
-          "Statistics with different function call counts should not be equal");
+      assertNotEquals(
+          stats1, stats2, "Statistics with different function call counts should not be equal");
     }
 
     @Test
     @DisplayName("equals should return true for same reference")
     void equalsShouldReturnTrueForSameReference() {
-      final InstanceStatistics stats = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
 
       assertEquals(stats, stats, "Same reference should be equal to itself");
     }
@@ -261,7 +295,8 @@ class InstanceStatisticsTest {
     @Test
     @DisplayName("equals should return false for null")
     void equalsShouldReturnFalseForNull() {
-      final InstanceStatistics stats = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
 
       assertNotEquals(null, stats, "Statistics should not be equal to null");
     }
@@ -269,29 +304,36 @@ class InstanceStatisticsTest {
     @Test
     @DisplayName("equals should return false for different type")
     void equalsShouldReturnFalseForDifferentType() {
-      final InstanceStatistics stats = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
 
-      assertNotEquals("not a stats object", stats,
-          "Statistics should not be equal to a different type");
+      assertNotEquals(
+          "not a stats object", stats, "Statistics should not be equal to a different type");
     }
 
     @Test
     @DisplayName("hashCode should be equal for equal objects")
     void hashCodeShouldBeEqualForEqualObjects() {
-      final InstanceStatistics stats1 = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
-      final InstanceStatistics stats2 = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats1 =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats2 =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
 
-      assertEquals(stats1.hashCode(), stats2.hashCode(),
-          "Equal objects should have equal hash codes");
+      assertEquals(
+          stats1.hashCode(), stats2.hashCode(), "Equal objects should have equal hash codes");
     }
 
     @Test
     @DisplayName("hashCode should differ for different objects")
     void hashCodeShouldDifferForDifferentObjects() {
-      final InstanceStatistics stats1 = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
-      final InstanceStatistics stats2 = new InstanceStatistics(20L, 600L, 2048L, 4096L, 10, 6, 200L, 14L);
+      final InstanceStatistics stats1 =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats2 =
+          new InstanceStatistics(20L, 600L, 2048L, 4096L, 10, 6, 200L, 14L);
 
-      assertNotEquals(stats1.hashCode(), stats2.hashCode(),
+      assertNotEquals(
+          stats1.hashCode(),
+          stats2.hashCode(),
           "Different objects should likely have different hash codes");
     }
   }
@@ -303,7 +345,8 @@ class InstanceStatisticsTest {
     @Test
     @DisplayName("toString should contain all field values")
     void toStringShouldContainAllFieldValues() {
-      final InstanceStatistics stats = new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
+      final InstanceStatistics stats =
+          new InstanceStatistics(10L, 500L, 1024L, 2048L, 5, 3, 100L, 7L);
 
       final String str = stats.toString();
 
@@ -322,7 +365,8 @@ class InstanceStatisticsTest {
     void toStringShouldContainPrefix() {
       final InstanceStatistics stats = new InstanceStatistics(0L, 0L, 0L, 0L, 0, 0, 0L, 0L);
 
-      assertTrue(stats.toString().startsWith("InstanceStatistics{"),
+      assertTrue(
+          stats.toString().startsWith("InstanceStatistics{"),
           "toString should start with 'InstanceStatistics{'");
     }
   }

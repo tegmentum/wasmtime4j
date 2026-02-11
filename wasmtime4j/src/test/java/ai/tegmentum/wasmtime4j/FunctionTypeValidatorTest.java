@@ -16,10 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.type.FunctionTypeValidator;
-
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.FunctionTypeValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,8 +40,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("FunctionTypeValidator Tests")
 class FunctionTypeValidatorTest {
 
-  private FunctionType createType(
-      final WasmValueType[] params, final WasmValueType[] returns) {
+  private FunctionType createType(final WasmValueType[] params, final WasmValueType[] returns) {
     return new FunctionType(params, returns);
   }
 
@@ -55,15 +52,16 @@ class FunctionTypeValidatorTest {
     @DisplayName("should return true when both types are identical by value")
     void shouldReturnTrueForIdenticalTypes() {
       final FunctionType type1 =
-          createType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+          createType(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
       final FunctionType type2 =
-          createType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+          createType(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
       // Same type passed as both will use equals which is identity-based for FunctionType
       // So we test with same object reference
       assertTrue(
-          FunctionTypeValidator.isSubtype(type1, type1),
-          "Same type should be subtype of itself");
+          FunctionTypeValidator.isSubtype(type1, type1), "Same type should be subtype of itself");
     }
 
     @Test
@@ -82,8 +80,7 @@ class FunctionTypeValidatorTest {
       final FunctionType type =
           createType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
 
-      assertFalse(
-          FunctionTypeValidator.isSubtype(type, null), "should not be subtype of null");
+      assertFalse(FunctionTypeValidator.isSubtype(type, null), "should not be subtype of null");
     }
 
     @Test
@@ -114,8 +111,7 @@ class FunctionTypeValidatorTest {
           createType(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
       final FunctionType twoReturns =
           createType(
-              new WasmValueType[] {},
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I64});
+              new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32, WasmValueType.I64});
 
       assertFalse(
           FunctionTypeValidator.isSubtype(oneReturn, twoReturns),
@@ -157,17 +153,16 @@ class FunctionTypeValidatorTest {
     @DisplayName("should return true for identical types")
     void shouldReturnTrueForIdenticalTypes() {
       final FunctionType type =
-          createType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+          createType(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      assertTrue(
-          FunctionTypeValidator.isCompatible(type, type), "Same type should be compatible");
+      assertTrue(FunctionTypeValidator.isCompatible(type, type), "Same type should be compatible");
     }
 
     @Test
     @DisplayName("should return false when caller is null")
     void shouldReturnFalseWhenCallerNull() {
-      final FunctionType type =
-          createType(new WasmValueType[] {}, new WasmValueType[] {});
+      final FunctionType type = createType(new WasmValueType[] {}, new WasmValueType[] {});
 
       assertFalse(
           FunctionTypeValidator.isCompatible(null, type), "null caller should not be compatible");
@@ -176,8 +171,7 @@ class FunctionTypeValidatorTest {
     @Test
     @DisplayName("should return false when callee is null")
     void shouldReturnFalseWhenCalleeNull() {
-      final FunctionType type =
-          createType(new WasmValueType[] {}, new WasmValueType[] {});
+      final FunctionType type = createType(new WasmValueType[] {}, new WasmValueType[] {});
 
       assertFalse(
           FunctionTypeValidator.isCompatible(type, null), "null callee should not be compatible");
@@ -188,8 +182,7 @@ class FunctionTypeValidatorTest {
     void shouldReturnFalseForDifferentParamCounts() {
       final FunctionType oneParam =
           createType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
-      final FunctionType noParams =
-          createType(new WasmValueType[] {}, new WasmValueType[] {});
+      final FunctionType noParams = createType(new WasmValueType[] {}, new WasmValueType[] {});
 
       assertFalse(
           FunctionTypeValidator.isCompatible(oneParam, noParams),
@@ -223,8 +216,7 @@ class FunctionTypeValidatorTest {
           createType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final FunctionType actual =
           createType(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-              new WasmValueType[] {});
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32}, new WasmValueType[] {});
       final WasmValue[] params = new WasmValue[] {WasmValue.i32(1)};
 
       assertThrows(
@@ -280,7 +272,8 @@ class FunctionTypeValidatorTest {
     @DisplayName("should not throw for same type assignment")
     void shouldNotThrowForSameTypeAssignment() {
       final FunctionType type =
-          createType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I64});
+          createType(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I64});
 
       assertDoesNotThrow(
           () -> FunctionTypeValidator.validateAssignment(type, type),
@@ -321,8 +314,7 @@ class FunctionTypeValidatorTest {
     @Test
     @DisplayName("should return null when first type is null")
     void shouldReturnNullWhenFirstTypeNull() {
-      final FunctionType type =
-          createType(new WasmValueType[] {}, new WasmValueType[] {});
+      final FunctionType type = createType(new WasmValueType[] {}, new WasmValueType[] {});
 
       assertNull(
           FunctionTypeValidator.getCommonSupertype(null, type),
@@ -332,8 +324,7 @@ class FunctionTypeValidatorTest {
     @Test
     @DisplayName("should return null when second type is null")
     void shouldReturnNullWhenSecondTypeNull() {
-      final FunctionType type =
-          createType(new WasmValueType[] {}, new WasmValueType[] {});
+      final FunctionType type = createType(new WasmValueType[] {}, new WasmValueType[] {});
 
       assertNull(
           FunctionTypeValidator.getCommonSupertype(type, null),
@@ -381,8 +372,7 @@ class FunctionTypeValidatorTest {
     @DisplayName("should return false for null subtype")
     void shouldReturnFalseForNullSubtype() {
       assertFalse(
-          FunctionTypeValidator.isSubtypeOf(null, WasmValueType.I32),
-          "null should not be subtype");
+          FunctionTypeValidator.isSubtypeOf(null, WasmValueType.I32), "null should not be subtype");
     }
 
     @Test

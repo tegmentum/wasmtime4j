@@ -20,11 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiAddressFamily;
 import ai.tegmentum.wasmtime4j.wasi.WasiSocketAddress;
 import ai.tegmentum.wasmtime4j.wasi.WasiTcpSocket;
 import ai.tegmentum.wasmtime4j.wasi.WasiUdpSocket;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

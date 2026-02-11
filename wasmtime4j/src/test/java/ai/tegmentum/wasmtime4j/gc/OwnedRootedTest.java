@@ -44,9 +44,7 @@ class OwnedRootedTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(OwnedRooted.class.getModifiers()),
-          "OwnedRooted should be final");
+      assertTrue(Modifier.isFinal(OwnedRooted.class.getModifiers()), "OwnedRooted should be final");
     }
 
     @Test
@@ -76,8 +74,7 @@ class OwnedRootedTest {
     void shouldHaveIsValidMethod() throws NoSuchMethodException {
       final Method method = OwnedRooted.class.getMethod("isValid");
       assertNotNull(method, "Should have isValid() method");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isValid should return boolean");
+      assertEquals(boolean.class, method.getReturnType(), "isValid should return boolean");
     }
 
     @Test
@@ -92,8 +89,7 @@ class OwnedRootedTest {
     void shouldHaveGetRootIdMethod() throws NoSuchMethodException {
       final Method method = OwnedRooted.class.getMethod("getRootId");
       assertNotNull(method, "Should have getRootId() method");
-      assertEquals(
-          long.class, method.getReturnType(), "getRootId should return long");
+      assertEquals(long.class, method.getReturnType(), "getRootId should return long");
     }
 
     @Test
@@ -101,8 +97,7 @@ class OwnedRootedTest {
     void shouldHaveGetStoreIdMethod() throws NoSuchMethodException {
       final Method method = OwnedRooted.class.getMethod("getStoreId");
       assertNotNull(method, "Should have getStoreId() method");
-      assertEquals(
-          long.class, method.getReturnType(), "getStoreId should return long");
+      assertEquals(long.class, method.getReturnType(), "getStoreId should return long");
     }
 
     @Test
@@ -110,8 +105,7 @@ class OwnedRootedTest {
     void shouldHaveTransferToScopeMethod() throws NoSuchMethodException {
       final Method method = OwnedRooted.class.getMethod("transferToScope", RootScope.class);
       assertNotNull(method, "Should have transferToScope(RootScope) method");
-      assertEquals(
-          Rooted.class, method.getReturnType(), "transferToScope should return Rooted");
+      assertEquals(Rooted.class, method.getReturnType(), "transferToScope should return Rooted");
     }
   }
 
@@ -179,8 +173,7 @@ class OwnedRootedTest {
         }
       }
       assertTrue(
-          createCount >= 5,
-          "Should have at least 5 create overloads, found: " + createCount);
+          createCount >= 5, "Should have at least 5 create overloads, found: " + createCount);
     }
   }
 
@@ -212,8 +205,7 @@ class OwnedRootedTest {
     void shouldHaveToStringMethod() throws NoSuchMethodException {
       final Method method = OwnedRooted.class.getMethod("toString");
       assertNotNull(method, "Should have toString() method");
-      assertEquals(
-          String.class, method.getReturnType(), "toString should return String");
+      assertEquals(String.class, method.getReturnType(), "toString should return String");
     }
   }
 }

@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.ref;
 
-
 import ai.tegmentum.wasmtime4j.WasmValueType;
 
 /**

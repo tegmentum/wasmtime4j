@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for NetworkErrorCode enum.
  *
- * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage for
- * WASI socket network error codes.
+ * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage
+ * for WASI socket network error codes.
  */
 @DisplayName("NetworkErrorCode Tests")
 class NetworkErrorCodeTest {
@@ -52,8 +52,7 @@ class NetworkErrorCodeTest {
     @Test
     @DisplayName("should be a valid enum type")
     void shouldBeValidEnumType() {
-      assertTrue(
-          NetworkErrorCode.class.isEnum(), "NetworkErrorCode should be an enum type");
+      assertTrue(NetworkErrorCode.class.isEnum(), "NetworkErrorCode should be an enum type");
     }
 
     @Test
@@ -129,8 +128,7 @@ class NetworkErrorCodeTest {
       final NetworkErrorCode code = NetworkErrorCode.CONCURRENCY_CONFLICT;
 
       assertNotNull(code, "CONCURRENCY_CONFLICT should not be null");
-      assertEquals(
-          "CONCURRENCY_CONFLICT", code.name(), "Name should be CONCURRENCY_CONFLICT");
+      assertEquals("CONCURRENCY_CONFLICT", code.name(), "Name should be CONCURRENCY_CONFLICT");
     }
 
     @Test
@@ -175,8 +173,7 @@ class NetworkErrorCodeTest {
       final NetworkErrorCode code = NetworkErrorCode.ADDRESS_NOT_BINDABLE;
 
       assertNotNull(code, "ADDRESS_NOT_BINDABLE should not be null");
-      assertEquals(
-          "ADDRESS_NOT_BINDABLE", code.name(), "Name should be ADDRESS_NOT_BINDABLE");
+      assertEquals("ADDRESS_NOT_BINDABLE", code.name(), "Name should be ADDRESS_NOT_BINDABLE");
     }
 
     @Test
@@ -194,8 +191,7 @@ class NetworkErrorCodeTest {
       final NetworkErrorCode code = NetworkErrorCode.REMOTE_UNREACHABLE;
 
       assertNotNull(code, "REMOTE_UNREACHABLE should not be null");
-      assertEquals(
-          "REMOTE_UNREACHABLE", code.name(), "Name should be REMOTE_UNREACHABLE");
+      assertEquals("REMOTE_UNREACHABLE", code.name(), "Name should be REMOTE_UNREACHABLE");
     }
 
     @Test
@@ -204,8 +200,7 @@ class NetworkErrorCodeTest {
       final NetworkErrorCode code = NetworkErrorCode.CONNECTION_REFUSED;
 
       assertNotNull(code, "CONNECTION_REFUSED should not be null");
-      assertEquals(
-          "CONNECTION_REFUSED", code.name(), "Name should be CONNECTION_REFUSED");
+      assertEquals("CONNECTION_REFUSED", code.name(), "Name should be CONNECTION_REFUSED");
     }
 
     @Test
@@ -223,8 +218,7 @@ class NetworkErrorCodeTest {
       final NetworkErrorCode code = NetworkErrorCode.CONNECTION_ABORTED;
 
       assertNotNull(code, "CONNECTION_ABORTED should not be null");
-      assertEquals(
-          "CONNECTION_ABORTED", code.name(), "Name should be CONNECTION_ABORTED");
+      assertEquals("CONNECTION_ABORTED", code.name(), "Name should be CONNECTION_ABORTED");
     }
 
     @Test
@@ -233,8 +227,7 @@ class NetworkErrorCodeTest {
       final NetworkErrorCode code = NetworkErrorCode.DATAGRAM_TOO_LARGE;
 
       assertNotNull(code, "DATAGRAM_TOO_LARGE should not be null");
-      assertEquals(
-          "DATAGRAM_TOO_LARGE", code.name(), "Name should be DATAGRAM_TOO_LARGE");
+      assertEquals("DATAGRAM_TOO_LARGE", code.name(), "Name should be DATAGRAM_TOO_LARGE");
     }
 
     @Test
@@ -253,9 +246,7 @@ class NetworkErrorCodeTest {
 
       assertNotNull(code, "TEMPORARY_RESOLVER_FAILURE should not be null");
       assertEquals(
-          "TEMPORARY_RESOLVER_FAILURE",
-          code.name(),
-          "Name should be TEMPORARY_RESOLVER_FAILURE");
+          "TEMPORARY_RESOLVER_FAILURE", code.name(), "Name should be TEMPORARY_RESOLVER_FAILURE");
     }
 
     @Test
@@ -265,9 +256,7 @@ class NetworkErrorCodeTest {
 
       assertNotNull(code, "PERMANENT_RESOLVER_FAILURE should not be null");
       assertEquals(
-          "PERMANENT_RESOLVER_FAILURE",
-          code.name(),
-          "Name should be PERMANENT_RESOLVER_FAILURE");
+          "PERMANENT_RESOLVER_FAILURE", code.name(), "Name should be PERMANENT_RESOLVER_FAILURE");
     }
   }
 
@@ -303,8 +292,7 @@ class NetworkErrorCodeTest {
       final NetworkErrorCode[] values = NetworkErrorCode.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -429,9 +417,7 @@ class NetworkErrorCodeTest {
     @DisplayName("values should return array of length 21")
     void valuesShouldReturnArrayOfLengthTwentyOne() {
       assertEquals(
-          21,
-          NetworkErrorCode.values().length,
-          "values() should return array with 21 elements");
+          21, NetworkErrorCode.values().length, "values() should return array with 21 elements");
     }
 
     @Test
@@ -440,8 +426,7 @@ class NetworkErrorCodeTest {
       final Set<NetworkErrorCode> valueSet =
           new HashSet<>(Arrays.asList(NetworkErrorCode.values()));
 
-      assertTrue(
-          valueSet.contains(NetworkErrorCode.UNKNOWN), "values() should contain UNKNOWN");
+      assertTrue(valueSet.contains(NetworkErrorCode.UNKNOWN), "values() should contain UNKNOWN");
       assertTrue(
           valueSet.contains(NetworkErrorCode.ACCESS_DENIED),
           "values() should contain ACCESS_DENIED");
@@ -454,8 +439,7 @@ class NetworkErrorCodeTest {
       assertTrue(
           valueSet.contains(NetworkErrorCode.OUT_OF_MEMORY),
           "values() should contain OUT_OF_MEMORY");
-      assertTrue(
-          valueSet.contains(NetworkErrorCode.TIMEOUT), "values() should contain TIMEOUT");
+      assertTrue(valueSet.contains(NetworkErrorCode.TIMEOUT), "values() should contain TIMEOUT");
       assertTrue(
           valueSet.contains(NetworkErrorCode.CONCURRENCY_CONFLICT),
           "values() should contain CONCURRENCY_CONFLICT");
@@ -463,8 +447,7 @@ class NetworkErrorCodeTest {
           valueSet.contains(NetworkErrorCode.NOT_IN_PROGRESS),
           "values() should contain NOT_IN_PROGRESS");
       assertTrue(
-          valueSet.contains(NetworkErrorCode.WOULD_BLOCK),
-          "values() should contain WOULD_BLOCK");
+          valueSet.contains(NetworkErrorCode.WOULD_BLOCK), "values() should contain WOULD_BLOCK");
       assertTrue(
           valueSet.contains(NetworkErrorCode.INVALID_STATE),
           "values() should contain INVALID_STATE");
@@ -526,9 +509,7 @@ class NetworkErrorCodeTest {
     void toStringShouldMatchNameForAllConstants() {
       for (final NetworkErrorCode code : NetworkErrorCode.values()) {
         assertEquals(
-            code.name(),
-            code.toString(),
-            "toString() should match name() for " + code.name());
+            code.name(), code.toString(), "toString() should match name() for " + code.name());
       }
     }
 
@@ -536,9 +517,7 @@ class NetworkErrorCodeTest {
     @DisplayName("toString should return 'UNKNOWN' for UNKNOWN")
     void toStringShouldReturnUnknown() {
       assertEquals(
-          "UNKNOWN",
-          NetworkErrorCode.UNKNOWN.toString(),
-          "toString() should return 'UNKNOWN'");
+          "UNKNOWN", NetworkErrorCode.UNKNOWN.toString(), "toString() should return 'UNKNOWN'");
     }
 
     @Test

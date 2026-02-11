@@ -74,8 +74,7 @@ class PanamaComponentRegistryTest {
     @Test
     @DisplayName("should have register method with Component")
     void shouldHaveRegisterMethodWithComponent() throws NoSuchMethodException {
-      final Method method =
-          PanamaComponentRegistry.class.getMethod("register", Component.class);
+      final Method method = PanamaComponentRegistry.class.getMethod("register", Component.class);
       assertNotNull(method, "register method should exist");
       assertEquals(void.class, method.getReturnType(), "Should return void");
     }

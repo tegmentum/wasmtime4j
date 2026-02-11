@@ -40,9 +40,7 @@ class MacAlgorithmTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          MacAlgorithm.class.isEnum(),
-          "MacAlgorithm should be an enum type");
+      assertTrue(MacAlgorithm.class.isEnum(), "MacAlgorithm should be an enum type");
     }
 
     @Test
@@ -143,10 +141,7 @@ class MacAlgorithmTest {
       final MacAlgorithm[] values = MacAlgorithm.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -187,10 +182,7 @@ class MacAlgorithmTest {
       final MacAlgorithm[] second = MacAlgorithm.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 
@@ -313,27 +305,21 @@ class MacAlgorithmTest {
     @DisplayName("should return 256 for HMAC_SHA256")
     void shouldReturnCorrectOutputSizeForHmacSha256() {
       assertEquals(
-          256,
-          MacAlgorithm.HMAC_SHA256.getOutputSize(),
-          "HMAC_SHA256 should have output size 256");
+          256, MacAlgorithm.HMAC_SHA256.getOutputSize(), "HMAC_SHA256 should have output size 256");
     }
 
     @Test
     @DisplayName("should return 384 for HMAC_SHA384")
     void shouldReturnCorrectOutputSizeForHmacSha384() {
       assertEquals(
-          384,
-          MacAlgorithm.HMAC_SHA384.getOutputSize(),
-          "HMAC_SHA384 should have output size 384");
+          384, MacAlgorithm.HMAC_SHA384.getOutputSize(), "HMAC_SHA384 should have output size 384");
     }
 
     @Test
     @DisplayName("should return 512 for HMAC_SHA512")
     void shouldReturnCorrectOutputSizeForHmacSha512() {
       assertEquals(
-          512,
-          MacAlgorithm.HMAC_SHA512.getOutputSize(),
-          "HMAC_SHA512 should have output size 512");
+          512, MacAlgorithm.HMAC_SHA512.getOutputSize(), "HMAC_SHA512 should have output size 512");
     }
 
     @Test
@@ -349,54 +335,42 @@ class MacAlgorithmTest {
     @DisplayName("should return 128 for POLY1305")
     void shouldReturnCorrectOutputSizeForPoly1305() {
       assertEquals(
-          128,
-          MacAlgorithm.POLY1305.getOutputSize(),
-          "POLY1305 should have output size 128");
+          128, MacAlgorithm.POLY1305.getOutputSize(), "POLY1305 should have output size 128");
     }
 
     @Test
     @DisplayName("should return 512 for BLAKE2B_MAC")
     void shouldReturnCorrectOutputSizeForBlake2bMac() {
       assertEquals(
-          512,
-          MacAlgorithm.BLAKE2B_MAC.getOutputSize(),
-          "BLAKE2B_MAC should have output size 512");
+          512, MacAlgorithm.BLAKE2B_MAC.getOutputSize(), "BLAKE2B_MAC should have output size 512");
     }
 
     @Test
     @DisplayName("should return 256 for BLAKE2S_MAC")
     void shouldReturnCorrectOutputSizeForBlake2sMac() {
       assertEquals(
-          256,
-          MacAlgorithm.BLAKE2S_MAC.getOutputSize(),
-          "BLAKE2S_MAC should have output size 256");
+          256, MacAlgorithm.BLAKE2S_MAC.getOutputSize(), "BLAKE2S_MAC should have output size 256");
     }
 
     @Test
     @DisplayName("should return 128 for AES_CMAC")
     void shouldReturnCorrectOutputSizeForAesCmac() {
       assertEquals(
-          128,
-          MacAlgorithm.AES_CMAC.getOutputSize(),
-          "AES_CMAC should have output size 128");
+          128, MacAlgorithm.AES_CMAC.getOutputSize(), "AES_CMAC should have output size 128");
     }
 
     @Test
     @DisplayName("should return 256 for KMAC128")
     void shouldReturnCorrectOutputSizeForKmac128() {
       assertEquals(
-          256,
-          MacAlgorithm.KMAC128.getOutputSize(),
-          "KMAC128 should have output size 256");
+          256, MacAlgorithm.KMAC128.getOutputSize(), "KMAC128 should have output size 256");
     }
 
     @Test
     @DisplayName("should return 512 for KMAC256")
     void shouldReturnCorrectOutputSizeForKmac256() {
       assertEquals(
-          512,
-          MacAlgorithm.KMAC256.getOutputSize(),
-          "KMAC256 should have output size 512");
+          512, MacAlgorithm.KMAC256.getOutputSize(), "KMAC256 should have output size 512");
     }
   }
 }

@@ -194,7 +194,7 @@ public enum WasmValueType {
         return FUNCREF;
       case 6:
         return EXTERNREF;
-        // WasmGC type codes
+      // WasmGC type codes
       case 7:
         return ANYREF;
       case 8:
@@ -237,7 +237,7 @@ public enum WasmValueType {
         return 5;
       case EXTERNREF:
         return 6;
-        // WasmGC type codes
+      // WasmGC type codes
       case ANYREF:
         return 7;
       case EQREF:

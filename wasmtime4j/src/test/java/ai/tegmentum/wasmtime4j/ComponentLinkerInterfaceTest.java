@@ -16,55 +16,16 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.func.Function;
-
-import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCapability;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibilityResult;
-import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
-import ai.tegmentum.wasmtime4j.component.ComponentEngine;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentFeature;
-import ai.tegmentum.wasmtime4j.component.ComponentFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentId;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
-import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleManager;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentLinker;
-import ai.tegmentum.wasmtime4j.component.ComponentLinkInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentResult;
-import ai.tegmentum.wasmtime4j.component.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.component.ComponentSpecification;
-import ai.tegmentum.wasmtime4j.component.ComponentStateTransitionConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentType;
-import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
-import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentVal;
-import ai.tegmentum.wasmtime4j.component.ComponentValFactory;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVariant;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
+import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
+import ai.tegmentum.wasmtime4j.component.ComponentInstance;
+import ai.tegmentum.wasmtime4j.component.ComponentLinker;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import java.io.Closeable;
@@ -311,9 +272,7 @@ class ComponentLinkerInterfaceTest {
       assertEquals(2, method.getParameterCount(), "linkComponent should have 2 parameters");
       assertEquals(Store.class, method.getParameterTypes()[0], "First parameter should be Store");
       assertEquals(
-          Component.class,
-          method.getParameterTypes()[1],
-          "Second parameter should be Component");
+          Component.class, method.getParameterTypes()[1], "Second parameter should be Component");
     }
 
     @Test
@@ -338,8 +297,7 @@ class ComponentLinkerInterfaceTest {
     @Test
     @DisplayName("should have instantiate method")
     void shouldHaveInstantiateMethod() throws NoSuchMethodException {
-      Method method =
-          ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
+      Method method = ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
       assertNotNull(method, "instantiate method should exist");
       assertEquals(
           ComponentInstance.class,
@@ -348,16 +306,13 @@ class ComponentLinkerInterfaceTest {
       assertEquals(2, method.getParameterCount(), "instantiate should have 2 parameters");
       assertEquals(Store.class, method.getParameterTypes()[0], "First parameter should be Store");
       assertEquals(
-          Component.class,
-          method.getParameterTypes()[1],
-          "Second parameter should be Component");
+          Component.class, method.getParameterTypes()[1], "Second parameter should be Component");
     }
 
     @Test
     @DisplayName("instantiate should throw WasmException")
     void instantiateShouldThrowWasmException() throws NoSuchMethodException {
-      Method method =
-          ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
+      Method method = ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(1, exceptionTypes.length, "Should declare one exception");
       assertEquals(WasmException.class, exceptionTypes[0], "Should throw WasmException");
@@ -521,10 +476,7 @@ class ComponentLinkerInterfaceTest {
           method.getReturnType(),
           "Return type should be ComponentImportValidation");
       assertEquals(1, method.getParameterCount(), "validateImports should have 1 parameter");
-      assertEquals(
-          Component.class,
-          method.getParameterTypes()[0],
-          "Parameter should be Component");
+      assertEquals(Component.class, method.getParameterTypes()[0], "Parameter should be Component");
     }
 
     @Test
@@ -685,8 +637,7 @@ class ComponentLinkerInterfaceTest {
     @Test
     @DisplayName("instantiate should return ComponentInstance")
     void instantiateShouldReturnComponentInstance() throws NoSuchMethodException {
-      Method method =
-          ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
+      Method method = ComponentLinker.class.getMethod("instantiate", Store.class, Component.class);
       assertEquals(
           ComponentInstance.class,
           method.getReturnType(),

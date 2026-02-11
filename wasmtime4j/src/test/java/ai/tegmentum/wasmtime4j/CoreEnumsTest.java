@@ -16,14 +16,14 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
+import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,8 +31,6 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
-import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Tests for core enums in the wasmtime4j package.

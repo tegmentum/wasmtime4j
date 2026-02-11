@@ -16,8 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.component;
 
-import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.Caller;
 import java.util.List;
 
 /**

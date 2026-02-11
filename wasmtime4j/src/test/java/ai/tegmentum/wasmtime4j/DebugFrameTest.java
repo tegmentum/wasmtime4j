@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,8 +52,7 @@ class DebugFrameTest {
       final List<WasmValue> stack = List.of(WasmValue.f32(1.5f));
       final Map<String, Object> attrs = Map.of("key", "value");
 
-      final DebugFrame frame =
-          new DebugFrame(3, "compute", "myModule", 0xFF, locals, stack, attrs);
+      final DebugFrame frame = new DebugFrame(3, "compute", "myModule", 0xFF, locals, stack, attrs);
 
       assertEquals(3, frame.getFunctionIndex(), "functionIndex should be 3");
       assertEquals("compute", frame.getFunctionName(), "functionName should be 'compute'");
@@ -204,8 +202,7 @@ class DebugFrameTest {
     @Test
     @DisplayName("getLocalCount should return number of locals")
     void getLocalCountShouldReturnNumberOfLocals() {
-      final List<WasmValue> locals =
-          List.of(WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3));
+      final List<WasmValue> locals = List.of(WasmValue.i32(1), WasmValue.i32(2), WasmValue.i32(3));
       final DebugFrame frame = new DebugFrame(0, null, null, 0, locals, null, null);
 
       assertEquals(3, frame.getLocalCount(), "getLocalCount should return 3");
@@ -226,9 +223,7 @@ class DebugFrameTest {
       final List<WasmValue> returned = frame.getOperandStack();
 
       assertNotSame(
-          returned,
-          frame.getOperandStack(),
-          "getOperandStack should return a new list each time");
+          returned, frame.getOperandStack(), "getOperandStack should return a new list each time");
     }
 
     @Test

@@ -22,6 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.metadata.CustomSection;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionParser;
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionType;
+import ai.tegmentum.wasmtime4j.metadata.DefaultCustomSectionMetadata;
+import ai.tegmentum.wasmtime4j.metadata.DefaultCustomSectionParser;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
@@ -29,12 +34,6 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.metadata.CustomSection;
-import ai.tegmentum.wasmtime4j.metadata.CustomSectionMetadata;
-import ai.tegmentum.wasmtime4j.metadata.CustomSectionParser;
-import ai.tegmentum.wasmtime4j.metadata.CustomSectionType;
-import ai.tegmentum.wasmtime4j.metadata.DefaultCustomSectionMetadata;
-import ai.tegmentum.wasmtime4j.metadata.DefaultCustomSectionParser;
 
 /** Tests for {@link DefaultCustomSectionMetadata} custom section metadata implementation. */
 @DisplayName("DefaultCustomSectionMetadata")
@@ -82,12 +81,13 @@ final class DefaultCustomSectionMetadataTest {
     @DisplayName("should return all sections")
     void shouldReturnAllSections() {
       final CustomSection section1 =
-          createSection("sec1", "data1".getBytes(StandardCharsets.UTF_8), CustomSectionType.UNKNOWN);
+          createSection(
+              "sec1", "data1".getBytes(StandardCharsets.UTF_8), CustomSectionType.UNKNOWN);
       final CustomSection section2 =
-          createSection("sec2", "data2".getBytes(StandardCharsets.UTF_8), CustomSectionType.UNKNOWN);
+          createSection(
+              "sec2", "data2".getBytes(StandardCharsets.UTF_8), CustomSectionType.UNKNOWN);
       final DefaultCustomSectionMetadata metadata = createMetadata(List.of(section1, section2));
-      assertEquals(
-          2, metadata.getAllCustomSections().size(), "Should return all 2 sections");
+      assertEquals(2, metadata.getAllCustomSections().size(), "Should return all 2 sections");
     }
 
     @Test
@@ -305,9 +305,7 @@ final class DefaultCustomSectionMetadataTest {
       final DefaultCustomSectionMetadata metadata = createMetadata(List.of());
       final String summary = metadata.getCustomSectionsSummary();
       assertNotNull(summary, "Summary should not be null");
-      assertTrue(
-          summary.contains("Custom Sections Summary"),
-          "Summary should contain header text");
+      assertTrue(summary.contains("Custom Sections Summary"), "Summary should contain header text");
     }
   }
 }

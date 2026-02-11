@@ -16,14 +16,12 @@
 
 package ai.tegmentum.wasmtime4j.gc;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -46,8 +44,7 @@ class GcRootManagerTest {
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
       assertTrue(
-          Modifier.isFinal(GcRootManager.class.getModifiers()),
-          "GcRootManager should be final");
+          Modifier.isFinal(GcRootManager.class.getModifiers()), "GcRootManager should be final");
     }
   }
 
@@ -147,8 +144,7 @@ class GcRootManagerTest {
     @DisplayName("getRootCount should return non-negative")
     void getRootCountShouldReturnNonNegative() {
       final GcRootManager manager = GcRootManager.getInstance();
-      assertTrue(
-          manager.getRootCount() >= 0, "getRootCount should return non-negative value");
+      assertTrue(manager.getRootCount() >= 0, "getRootCount should return non-negative value");
     }
   }
 
@@ -168,24 +164,21 @@ class GcRootManagerTest {
     @DisplayName("stats rootsAdded should be non-negative")
     void statsRootsAddedShouldBeNonNegative() {
       final GcRootManager.RootManagerStats stats = GcRootManager.getInstance().getStats();
-      assertTrue(
-          stats.getRootsAdded() >= 0, "rootsAdded should be non-negative");
+      assertTrue(stats.getRootsAdded() >= 0, "rootsAdded should be non-negative");
     }
 
     @Test
     @DisplayName("stats rootsRemoved should be non-negative")
     void statsRootsRemovedShouldBeNonNegative() {
       final GcRootManager.RootManagerStats stats = GcRootManager.getInstance().getStats();
-      assertTrue(
-          stats.getRootsRemoved() >= 0, "rootsRemoved should be non-negative");
+      assertTrue(stats.getRootsRemoved() >= 0, "rootsRemoved should be non-negative");
     }
 
     @Test
     @DisplayName("stats objectsFinalized should be non-negative")
     void statsObjectsFinalizedShouldBeNonNegative() {
       final GcRootManager.RootManagerStats stats = GcRootManager.getInstance().getStats();
-      assertTrue(
-          stats.getObjectsFinalized() >= 0, "objectsFinalized should be non-negative");
+      assertTrue(stats.getObjectsFinalized() >= 0, "objectsFinalized should be non-negative");
     }
 
     @Test
@@ -194,8 +187,7 @@ class GcRootManagerTest {
       final GcRootManager.RootManagerStats stats = GcRootManager.getInstance().getStats();
       final String str = stats.toString();
       assertNotNull(str, "toString should not return null");
-      assertTrue(
-          str.contains("RootManagerStats"), "toString should contain 'RootManagerStats'");
+      assertTrue(str.contains("RootManagerStats"), "toString should contain 'RootManagerStats'");
     }
   }
 }

@@ -74,7 +74,9 @@ class JniExnRefTest {
           JniExnRef.class.getMethod("getTag", ai.tegmentum.wasmtime4j.Store.class);
       assertNotNull(method, "getTag method should exist");
       assertEquals(
-          ai.tegmentum.wasmtime4j.memory.Tag.class, method.getReturnType(), "getTag should return Tag");
+          ai.tegmentum.wasmtime4j.memory.Tag.class,
+          method.getReturnType(),
+          "getTag should return Tag");
     }
 
     @Test

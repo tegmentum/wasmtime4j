@@ -185,8 +185,7 @@ public final class WitFlags extends WitValue {
     // Get flag names from flags type kind
     // This is a simplified extraction - in a full implementation,
     // WitType would provide a getFlagNames() method
-    if (flagsType.getKind() == null
-        || flagsType.getKind().getCategory() != WitTypeCategory.FLAGS) {
+    if (flagsType.getKind() == null || flagsType.getKind().getCategory() != WitTypeCategory.FLAGS) {
       throw new IllegalArgumentException("Type must be a flags type");
     }
 

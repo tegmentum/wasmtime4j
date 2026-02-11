@@ -95,9 +95,7 @@ class KeyValueExceptionTest {
       assertEquals(message, exception.getMessage(), "Message should match the provided message");
       assertNull(exception.getCause(), "Cause should be null when not provided");
       assertEquals(
-          errorCode,
-          exception.getErrorCode(),
-          "Error code should match the provided error code");
+          errorCode, exception.getErrorCode(), "Error code should match the provided error code");
     }
 
     @Test
@@ -125,9 +123,7 @@ class KeyValueExceptionTest {
 
       assertEquals(message, exception.getMessage(), "Message should match the provided message");
       assertEquals(
-          errorCode,
-          exception.getErrorCode(),
-          "Error code should match the provided error code");
+          errorCode, exception.getErrorCode(), "Error code should match the provided error code");
       assertSame(cause, exception.getCause(), "Cause should match the provided cause");
     }
   }
@@ -215,9 +211,7 @@ class KeyValueExceptionTest {
       assertTrue(
           exception.getMessage().contains("not found"),
           "Message should contain 'not found' keyword");
-      assertTrue(
-          exception.getMessage().contains("Key"),
-          "Message should contain 'Key' keyword");
+      assertTrue(exception.getMessage().contains("Key"), "Message should contain 'Key' keyword");
     }
 
     @Test
@@ -225,15 +219,12 @@ class KeyValueExceptionTest {
     void shouldHandleCapacityExceededErrorMessage() {
       final KeyValueException exception =
           new KeyValueException(
-              "Storage capacity exceeded: 10GB limit reached",
-              KeyValueErrorCode.CAPACITY_EXCEEDED);
+              "Storage capacity exceeded: 10GB limit reached", KeyValueErrorCode.CAPACITY_EXCEEDED);
 
       assertTrue(
-          exception.getMessage().contains("capacity"),
-          "Message should contain 'capacity' keyword");
+          exception.getMessage().contains("capacity"), "Message should contain 'capacity' keyword");
       assertTrue(
-          exception.getMessage().contains("exceeded"),
-          "Message should contain 'exceeded' keyword");
+          exception.getMessage().contains("exceeded"), "Message should contain 'exceeded' keyword");
     }
 
     @Test
@@ -248,8 +239,7 @@ class KeyValueExceptionTest {
           exception.getMessage().contains("Connection"),
           "Message should contain 'Connection' keyword");
       assertTrue(
-          exception.getMessage().contains("failed"),
-          "Message should contain 'failed' keyword");
+          exception.getMessage().contains("failed"), "Message should contain 'failed' keyword");
     }
 
     @Test

@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
@@ -11,16 +15,12 @@ import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmFeature;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
-import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
+import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -401,8 +401,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public Component linkComponents(final List<Component> components)
-      throws WasmException {
+  public Component linkComponents(final List<Component> components) throws WasmException {
     JniValidation.requireNonNull(components, "components");
     if (components.isEmpty()) {
       throw new IllegalArgumentException("Components list cannot be empty");
@@ -431,8 +430,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public WitCompatibilityResult checkCompatibility(
-      final Component source, final Component target) {
+  public WitCompatibilityResult checkCompatibility(final Component source, final Component target) {
     JniValidation.requireNonNull(source, "source");
     JniValidation.requireNonNull(target, "target");
 

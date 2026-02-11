@@ -16,14 +16,12 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.type.ValType;
-import ai.tegmentum.wasmtime4j.type.ValTypes;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.type.ValType;
+import ai.tegmentum.wasmtime4j.type.ValTypes;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
@@ -55,8 +53,7 @@ class ValTypesTest {
       final Constructor<?>[] constructors = ValTypes.class.getDeclaredConstructors();
       assertEquals(1, constructors.length, "Should have exactly one constructor");
       assertTrue(
-          Modifier.isPrivate(constructors[0].getModifiers()),
-          "Constructor should be private");
+          Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
     }
   }
 

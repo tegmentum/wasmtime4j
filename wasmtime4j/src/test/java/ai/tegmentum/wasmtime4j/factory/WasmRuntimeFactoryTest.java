@@ -82,19 +82,14 @@ class WasmRuntimeFactoryTest {
     @Test
     @DisplayName("RUNTIME_JNI should be correct")
     void runtimeJniShouldBeCorrect() {
-      assertEquals(
-          "jni",
-          WasmRuntimeFactory.RUNTIME_JNI,
-          "RUNTIME_JNI should be 'jni'");
+      assertEquals("jni", WasmRuntimeFactory.RUNTIME_JNI, "RUNTIME_JNI should be 'jni'");
     }
 
     @Test
     @DisplayName("RUNTIME_PANAMA should be correct")
     void runtimePanamaShouldBeCorrect() {
       assertEquals(
-          "panama",
-          WasmRuntimeFactory.RUNTIME_PANAMA,
-          "RUNTIME_PANAMA should be 'panama'");
+          "panama", WasmRuntimeFactory.RUNTIME_PANAMA, "RUNTIME_PANAMA should be 'panama'");
     }
   }
 
@@ -124,10 +119,7 @@ class WasmRuntimeFactoryTest {
       System.setProperty(WasmRuntimeFactory.RUNTIME_PROPERTY, "jni");
       WasmRuntimeFactory.clearCache();
       final RuntimeType type = WasmRuntimeFactory.getSelectedRuntimeType();
-      assertEquals(
-          RuntimeType.JNI,
-          type,
-          "System property 'jni' should select JNI runtime");
+      assertEquals(RuntimeType.JNI, type, "System property 'jni' should select JNI runtime");
     }
 
     @Test
@@ -137,9 +129,7 @@ class WasmRuntimeFactoryTest {
       WasmRuntimeFactory.clearCache();
       final RuntimeType type = WasmRuntimeFactory.getSelectedRuntimeType();
       assertEquals(
-          RuntimeType.PANAMA,
-          type,
-          "System property 'panama' should select Panama runtime");
+          RuntimeType.PANAMA, type, "System property 'panama' should select Panama runtime");
     }
   }
 
@@ -205,10 +195,7 @@ class WasmRuntimeFactoryTest {
       WasmRuntimeFactory.clearCache();
       final RuntimeType after = WasmRuntimeFactory.getSelectedRuntimeType();
       assertNotNull(after, "Runtime type should be selectable after cache clear");
-      assertEquals(
-          before,
-          after,
-          "Re-evaluation with same conditions should produce same result");
+      assertEquals(before, after, "Re-evaluation with same conditions should produce same result");
     }
   }
 

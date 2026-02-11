@@ -86,8 +86,7 @@ class PathFlagsTest {
     @Test
     @DisplayName("SYMLINK_FOLLOW should have ordinal 0")
     void symlinkFollowShouldHaveOrdinalZero() {
-      assertEquals(
-          0, PathFlags.SYMLINK_FOLLOW.ordinal(), "SYMLINK_FOLLOW ordinal should be 0");
+      assertEquals(0, PathFlags.SYMLINK_FOLLOW.ordinal(), "SYMLINK_FOLLOW ordinal should be 0");
     }
 
     @Test
@@ -96,8 +95,7 @@ class PathFlagsTest {
       final PathFlags[] values = PathFlags.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -141,8 +139,7 @@ class PathFlagsTest {
     @Test
     @DisplayName("values should return array of length 1")
     void valuesShouldReturnArrayOfLengthOne() {
-      assertEquals(
-          1, PathFlags.values().length, "values() should return array with 1 element");
+      assertEquals(1, PathFlags.values().length, "values() should return array with 1 element");
     }
 
     @Test
@@ -151,8 +148,7 @@ class PathFlagsTest {
       final Set<PathFlags> valueSet = new HashSet<>(Arrays.asList(PathFlags.values()));
 
       assertTrue(
-          valueSet.contains(PathFlags.SYMLINK_FOLLOW),
-          "values() should contain SYMLINK_FOLLOW");
+          valueSet.contains(PathFlags.SYMLINK_FOLLOW), "values() should contain SYMLINK_FOLLOW");
     }
 
     @Test
@@ -187,9 +183,7 @@ class PathFlagsTest {
     void toStringShouldMatchNameForAllConstants() {
       for (final PathFlags flag : PathFlags.values()) {
         assertEquals(
-            flag.name(),
-            flag.toString(),
-            "toString() should match name() for " + flag.name());
+            flag.name(), flag.toString(), "toString() should match name() for " + flag.name());
       }
     }
   }
@@ -204,8 +198,7 @@ class PathFlagsTest {
       final Set<PathFlags> flags = PathFlags.of(PathFlags.SYMLINK_FOLLOW);
 
       assertEquals(1, flags.size(), "Set should contain exactly 1 flag");
-      assertTrue(
-          flags.contains(PathFlags.SYMLINK_FOLLOW), "Set should contain SYMLINK_FOLLOW");
+      assertTrue(flags.contains(PathFlags.SYMLINK_FOLLOW), "Set should contain SYMLINK_FOLLOW");
     }
 
     @Test
@@ -220,8 +213,7 @@ class PathFlagsTest {
     @Test
     @DisplayName("of should deduplicate flags")
     void ofShouldDeduplicateFlags() {
-      final Set<PathFlags> flags =
-          PathFlags.of(PathFlags.SYMLINK_FOLLOW, PathFlags.SYMLINK_FOLLOW);
+      final Set<PathFlags> flags = PathFlags.of(PathFlags.SYMLINK_FOLLOW, PathFlags.SYMLINK_FOLLOW);
 
       assertEquals(1, flags.size(), "Set should deduplicate repeated flags");
     }
@@ -253,9 +245,7 @@ class PathFlagsTest {
 
       assertNotNull(flags, "all() should not return null");
       assertEquals(1, flags.size(), "all() should return set with 1 flag");
-      assertTrue(
-          flags.contains(PathFlags.SYMLINK_FOLLOW),
-          "all() should contain SYMLINK_FOLLOW");
+      assertTrue(flags.contains(PathFlags.SYMLINK_FOLLOW), "all() should contain SYMLINK_FOLLOW");
     }
 
     @Test
@@ -285,9 +275,7 @@ class PathFlagsTest {
             result = "unknown";
         }
         assertEquals(
-            "symlink_follow",
-            result,
-            "Switch should handle " + flag + " but got: " + result);
+            "symlink_follow", result, "Switch should handle " + flag + " but got: " + result);
       }
     }
   }

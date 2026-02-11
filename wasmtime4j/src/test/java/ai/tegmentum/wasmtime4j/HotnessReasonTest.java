@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.execution.HotnessReason;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.execution.HotnessReason;
 
 /**
  * Tests for {@link HotnessReason}.
@@ -49,8 +49,7 @@ class HotnessReasonTest {
     @Test
     @DisplayName("should have exactly 8 values")
     void shouldHaveExactValueCount() {
-      assertEquals(8, HotnessReason.values().length,
-          "HotnessReason should have exactly 8 values");
+      assertEquals(8, HotnessReason.values().length, "HotnessReason should have exactly 8 values");
     }
   }
 
@@ -61,36 +60,32 @@ class HotnessReasonTest {
     @Test
     @DisplayName("should contain STATIC_ANALYSIS")
     void shouldContainStaticAnalysis() {
-      assertNotNull(HotnessReason.STATIC_ANALYSIS,
-          "STATIC_ANALYSIS constant should exist");
+      assertNotNull(HotnessReason.STATIC_ANALYSIS, "STATIC_ANALYSIS constant should exist");
     }
 
     @Test
     @DisplayName("should contain RUNTIME_PROFILING")
     void shouldContainRuntimeProfiling() {
-      assertNotNull(HotnessReason.RUNTIME_PROFILING,
-          "RUNTIME_PROFILING constant should exist");
+      assertNotNull(HotnessReason.RUNTIME_PROFILING, "RUNTIME_PROFILING constant should exist");
     }
 
     @Test
     @DisplayName("should contain HOT_CALLER_PROPAGATION")
     void shouldContainHotCallerPropagation() {
-      assertNotNull(HotnessReason.HOT_CALLER_PROPAGATION,
-          "HOT_CALLER_PROPAGATION constant should exist");
+      assertNotNull(
+          HotnessReason.HOT_CALLER_PROPAGATION, "HOT_CALLER_PROPAGATION constant should exist");
     }
 
     @Test
     @DisplayName("should contain CRITICAL_PATH")
     void shouldContainCriticalPath() {
-      assertNotNull(HotnessReason.CRITICAL_PATH,
-          "CRITICAL_PATH constant should exist");
+      assertNotNull(HotnessReason.CRITICAL_PATH, "CRITICAL_PATH constant should exist");
     }
 
     @Test
     @DisplayName("should contain LOOP_ANALYSIS")
     void shouldContainLoopAnalysis() {
-      assertNotNull(HotnessReason.LOOP_ANALYSIS,
-          "LOOP_ANALYSIS constant should exist");
+      assertNotNull(HotnessReason.LOOP_ANALYSIS, "LOOP_ANALYSIS constant should exist");
     }
 
     @Test
@@ -102,15 +97,13 @@ class HotnessReasonTest {
     @Test
     @DisplayName("should contain USER_ANNOTATION")
     void shouldContainUserAnnotation() {
-      assertNotNull(HotnessReason.USER_ANNOTATION,
-          "USER_ANNOTATION constant should exist");
+      assertNotNull(HotnessReason.USER_ANNOTATION, "USER_ANNOTATION constant should exist");
     }
 
     @Test
     @DisplayName("should contain MACHINE_LEARNING")
     void shouldContainMachineLearning() {
-      assertNotNull(HotnessReason.MACHINE_LEARNING,
-          "MACHINE_LEARNING constant should exist");
+      assertNotNull(HotnessReason.MACHINE_LEARNING, "MACHINE_LEARNING constant should exist");
     }
   }
 
@@ -125,8 +118,7 @@ class HotnessReasonTest {
       for (final HotnessReason value : HotnessReason.values()) {
         ordinals.add(value.ordinal());
       }
-      assertEquals(HotnessReason.values().length, ordinals.size(),
-          "All ordinals should be unique");
+      assertEquals(HotnessReason.values().length, ordinals.size(), "All ordinals should be unique");
     }
 
     @Test
@@ -134,8 +126,7 @@ class HotnessReasonTest {
     void shouldHaveSequentialOrdinals() {
       final HotnessReason[] values = HotnessReason.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -148,15 +139,16 @@ class HotnessReasonTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final HotnessReason value : HotnessReason.values()) {
-        assertEquals(value, HotnessReason.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, HotnessReason.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> HotnessReason.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -183,7 +175,9 @@ class HotnessReasonTest {
     @DisplayName("should return enum name as toString")
     void shouldReturnEnumNameAsToString() {
       for (final HotnessReason value : HotnessReason.values()) {
-        assertEquals(value.name(), value.toString(),
+        assertEquals(
+            value.name(),
+            value.toString(),
             "toString should return the enum name for " + value.name());
       }
     }

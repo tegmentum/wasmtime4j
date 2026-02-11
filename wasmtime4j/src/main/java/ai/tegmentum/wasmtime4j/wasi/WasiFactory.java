@@ -74,7 +74,8 @@ public final class WasiFactory {
    * @throws WasmException if the specified runtime type is not available
    * @throws IllegalArgumentException if runtimeType is null
    */
-  public static WasiComponentContext createContext(final WasiRuntimeType runtimeType) throws WasmException {
+  public static WasiComponentContext createContext(final WasiRuntimeType runtimeType)
+      throws WasmException {
     if (runtimeType == null) {
       throw new IllegalArgumentException("WASI runtime type cannot be null");
     }
@@ -187,7 +188,8 @@ public final class WasiFactory {
       // This will be implemented by loading the JNI WASI implementation class
       final Class<?> jniWasiComponentContextClass =
           Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasiComponentContext");
-      return (WasiComponentContext) jniWasiComponentContextClass.getDeclaredConstructor().newInstance();
+      return (WasiComponentContext)
+          jniWasiComponentContextClass.getDeclaredConstructor().newInstance();
     } catch (final Exception e) {
       throw new WasmException("Failed to create JNI WASI context: " + e.getMessage(), e);
     }
@@ -198,7 +200,8 @@ public final class WasiFactory {
       // This will be implemented by loading the Panama WASI implementation class
       final Class<?> panamaWasiComponentContextClass =
           Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaWasiComponentContext");
-      return (WasiComponentContext) panamaWasiComponentContextClass.getDeclaredConstructor().newInstance();
+      return (WasiComponentContext)
+          panamaWasiComponentContextClass.getDeclaredConstructor().newInstance();
     } catch (final Exception e) {
       throw new WasmException("Failed to create Panama WASI context: " + e.getMessage(), e);
     }

@@ -16,14 +16,12 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.type.ExternType;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.type.ExternType;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -146,15 +144,13 @@ class ExternTypeTest {
     @Test
     @DisplayName("should return MEMORY for code 2")
     void shouldReturnMemoryForCode2() {
-      assertEquals(
-          ExternType.MEMORY, ExternType.fromCode(2), "fromCode(2) should return MEMORY");
+      assertEquals(ExternType.MEMORY, ExternType.fromCode(2), "fromCode(2) should return MEMORY");
     }
 
     @Test
     @DisplayName("should return GLOBAL for code 3")
     void shouldReturnGlobalForCode3() {
-      assertEquals(
-          ExternType.GLOBAL, ExternType.fromCode(3), "fromCode(3) should return GLOBAL");
+      assertEquals(ExternType.GLOBAL, ExternType.fromCode(3), "fromCode(3) should return GLOBAL");
     }
 
     @Test
@@ -219,8 +215,7 @@ class ExternTypeTest {
     void shouldHaveSequentialOrdinals() {
       final ExternType[] values = ExternType.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -239,9 +234,7 @@ class ExternTypeTest {
       for (int i = 0; i < nativeCodes.length; i++) {
         final ExternType resolved = ExternType.fromCode(nativeCodes[i]);
         assertEquals(
-            ExternType.values()[i],
-            resolved,
-            "FFI round-trip should preserve enum at index " + i);
+            ExternType.values()[i], resolved, "FFI round-trip should preserve enum at index " + i);
       }
     }
 

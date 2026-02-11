@@ -1012,9 +1012,7 @@ final class WitValueDeserializerTest {
 
     assertInstanceOf(WitS8.class, deserialized, "Deserialized value should be WitS8");
     assertEquals(
-        original.getValue(),
-        ((WitS8) deserialized).getValue(),
-        "Round-trip should preserve value");
+        original.getValue(), ((WitS8) deserialized).getValue(), "Round-trip should preserve value");
   }
 
   @Test
@@ -1040,9 +1038,7 @@ final class WitValueDeserializerTest {
 
     assertInstanceOf(WitU8.class, deserialized, "Deserialized value should be WitU8");
     assertEquals(
-        original.getValue(),
-        ((WitU8) deserialized).getValue(),
-        "Round-trip should preserve value");
+        original.getValue(), ((WitU8) deserialized).getValue(), "Round-trip should preserve value");
   }
 
   @Test
@@ -1105,7 +1101,8 @@ final class WitValueDeserializerTest {
   // ==================== List Deserialization Boundary Tests ====================
 
   @Test
-  @DisplayName("Deserialize list with exactly 4 bytes (minimum for count) should work if count is 0")
+  @DisplayName(
+      "Deserialize list with exactly 4 bytes (minimum for count) should work if count is 0")
   void testDeserializeListExactlyMinimumBytesForCount() {
     // 4 bytes for count, but count=0 is not allowed (can't infer type from empty list)
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);

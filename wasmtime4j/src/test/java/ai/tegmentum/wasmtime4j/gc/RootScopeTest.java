@@ -44,8 +44,7 @@ class RootScopeTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(RootScope.class.getModifiers()), "RootScope should be final");
+      assertTrue(Modifier.isFinal(RootScope.class.getModifiers()), "RootScope should be final");
     }
 
     @Test
@@ -61,10 +60,8 @@ class RootScopeTest {
     void shouldHaveCreateFactoryMethod() throws NoSuchMethodException {
       final Method method = RootScope.class.getMethod("create", Store.class);
       assertNotNull(method, "Should have create(Store) method");
-      assertEquals(
-          RootScope.class, method.getReturnType(), "create should return RootScope");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "create should be static");
+      assertEquals(RootScope.class, method.getReturnType(), "create should return RootScope");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
     }
 
     @Test
@@ -72,8 +69,7 @@ class RootScopeTest {
     void shouldHaveGenericRootMethod() throws NoSuchMethodException {
       final Method method = RootScope.class.getMethod("root", Object.class);
       assertNotNull(method, "Should have root(Object) method");
-      assertEquals(
-          Rooted.class, method.getReturnType(), "root should return Rooted");
+      assertEquals(Rooted.class, method.getReturnType(), "root should return Rooted");
     }
 
     @Test
@@ -109,8 +105,7 @@ class RootScopeTest {
     void shouldHaveGetRootedCountMethod() throws NoSuchMethodException {
       final Method method = RootScope.class.getMethod("getRootedCount");
       assertNotNull(method, "Should have getRootedCount() method");
-      assertEquals(
-          int.class, method.getReturnType(), "getRootedCount should return int");
+      assertEquals(int.class, method.getReturnType(), "getRootedCount should return int");
     }
 
     @Test
@@ -118,8 +113,7 @@ class RootScopeTest {
     void shouldHaveGetScopeIdMethod() throws NoSuchMethodException {
       final Method method = RootScope.class.getMethod("getScopeId");
       assertNotNull(method, "Should have getScopeId() method");
-      assertEquals(
-          long.class, method.getReturnType(), "getScopeId should return long");
+      assertEquals(long.class, method.getReturnType(), "getScopeId should return long");
     }
 
     @Test
@@ -127,8 +121,7 @@ class RootScopeTest {
     void shouldHaveIsOpenMethod() throws NoSuchMethodException {
       final Method method = RootScope.class.getMethod("isOpen");
       assertNotNull(method, "Should have isOpen() method");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isOpen should return boolean");
+      assertEquals(boolean.class, method.getReturnType(), "isOpen should return boolean");
     }
 
     @Test
@@ -136,8 +129,7 @@ class RootScopeTest {
     void shouldHaveGetStoreMethod() throws NoSuchMethodException {
       final Method method = RootScope.class.getMethod("getStore");
       assertNotNull(method, "Should have getStore() method");
-      assertEquals(
-          Store.class, method.getReturnType(), "getStore should return Store");
+      assertEquals(Store.class, method.getReturnType(), "getStore should return Store");
     }
   }
 
@@ -168,9 +160,7 @@ class RootScopeTest {
           rootCount++;
         }
       }
-      assertTrue(
-          rootCount >= 5,
-          "Should have at least 5 root overloads, found: " + rootCount);
+      assertTrue(rootCount >= 5, "Should have at least 5 root overloads, found: " + rootCount);
     }
   }
 
@@ -183,8 +173,7 @@ class RootScopeTest {
     void shouldHaveToStringMethod() throws NoSuchMethodException {
       final Method method = RootScope.class.getMethod("toString");
       assertNotNull(method, "Should have toString() method");
-      assertEquals(
-          String.class, method.getReturnType(), "toString should return String");
+      assertEquals(String.class, method.getReturnType(), "toString should return String");
     }
   }
 }

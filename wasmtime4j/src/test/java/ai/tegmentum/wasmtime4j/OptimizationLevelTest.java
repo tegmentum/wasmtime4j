@@ -100,8 +100,7 @@ class OptimizationLevelTest {
     void shouldHaveSequentialOrdinals() {
       final OptimizationLevel[] values = OptimizationLevel.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
 
@@ -110,8 +109,7 @@ class OptimizationLevelTest {
     void ordinalsShouldBeUnique() {
       final Set<Integer> ordinals = new HashSet<>();
       for (final OptimizationLevel level : OptimizationLevel.values()) {
-        assertTrue(
-            ordinals.add(level.ordinal()), "Ordinal should be unique: " + level.ordinal());
+        assertTrue(ordinals.add(level.ordinal()), "Ordinal should be unique: " + level.ordinal());
       }
     }
   }
@@ -220,9 +218,7 @@ class OptimizationLevelTest {
           OptimizationLevel.NONE.compareTo(OptimizationLevel.SPEED) != 0,
           "Different enums should be different");
       assertEquals(
-          0,
-          OptimizationLevel.NONE.compareTo(OptimizationLevel.NONE),
-          "Same enum should be equal");
+          0, OptimizationLevel.NONE.compareTo(OptimizationLevel.NONE), "Same enum should be equal");
     }
   }
 }

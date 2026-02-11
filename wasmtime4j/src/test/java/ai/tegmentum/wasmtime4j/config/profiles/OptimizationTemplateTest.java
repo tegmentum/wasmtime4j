@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
-import ai.tegmentum.wasmtime4j.WasmFeature;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -229,7 +229,6 @@ class OptimizationTemplateTest {
     assertEquals("speed", settings.get("opt_level"));
     assertEquals("false", settings.get("enable_safepoints"));
   }
-
 
   @Test
   @DisplayName("Custom parameters should override template defaults")

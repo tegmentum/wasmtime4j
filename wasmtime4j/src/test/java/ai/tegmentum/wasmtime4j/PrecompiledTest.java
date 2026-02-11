@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link Precompiled}.
  *
- * <p>Verifies enum structure, constants, getValue/fromValue, and round-trip conversion.
- * Note: fromValue returns null for unknown values rather than throwing.
+ * <p>Verifies enum structure, constants, getValue/fromValue, and round-trip conversion. Note:
+ * fromValue returns null for unknown values rather than throwing.
  */
 @DisplayName("Precompiled Tests")
 class PrecompiledTest {
@@ -50,8 +50,7 @@ class PrecompiledTest {
     @Test
     @DisplayName("should have exactly 2 values")
     void shouldHaveExactValueCount() {
-      assertEquals(2, Precompiled.values().length,
-          "Precompiled should have exactly 2 values");
+      assertEquals(2, Precompiled.values().length, "Precompiled should have exactly 2 values");
     }
   }
 
@@ -70,8 +69,7 @@ class PrecompiledTest {
     @DisplayName("should contain COMPONENT")
     void shouldContainComponent() {
       assertNotNull(Precompiled.COMPONENT, "COMPONENT constant should exist");
-      assertEquals("COMPONENT", Precompiled.COMPONENT.name(),
-          "COMPONENT name should match");
+      assertEquals("COMPONENT", Precompiled.COMPONENT.name(), "COMPONENT name should match");
     }
   }
 
@@ -82,15 +80,13 @@ class PrecompiledTest {
     @Test
     @DisplayName("MODULE should have value 0")
     void moduleShouldHaveValue0() {
-      assertEquals(0, Precompiled.MODULE.getValue(),
-          "MODULE should have value 0");
+      assertEquals(0, Precompiled.MODULE.getValue(), "MODULE should have value 0");
     }
 
     @Test
     @DisplayName("COMPONENT should have value 1")
     void componentShouldHaveValue1() {
-      assertEquals(1, Precompiled.COMPONENT.getValue(),
-          "COMPONENT should have value 1");
+      assertEquals(1, Precompiled.COMPONENT.getValue(), "COMPONENT should have value 1");
     }
 
     @Test
@@ -100,8 +96,7 @@ class PrecompiledTest {
       for (final Precompiled value : Precompiled.values()) {
         values.add(value.getValue());
       }
-      assertEquals(Precompiled.values().length, values.size(),
-          "All values should be unique");
+      assertEquals(Precompiled.values().length, values.size(), "All values should be unique");
     }
   }
 
@@ -112,36 +107,36 @@ class PrecompiledTest {
     @Test
     @DisplayName("should return MODULE for value 0")
     void shouldReturnModuleForValue0() {
-      assertEquals(Precompiled.MODULE, Precompiled.fromValue(0),
-          "fromValue(0) should return MODULE");
+      assertEquals(
+          Precompiled.MODULE, Precompiled.fromValue(0), "fromValue(0) should return MODULE");
     }
 
     @Test
     @DisplayName("should return COMPONENT for value 1")
     void shouldReturnComponentForValue1() {
-      assertEquals(Precompiled.COMPONENT, Precompiled.fromValue(1),
-          "fromValue(1) should return COMPONENT");
+      assertEquals(
+          Precompiled.COMPONENT, Precompiled.fromValue(1), "fromValue(1) should return COMPONENT");
     }
 
     @Test
     @DisplayName("should return null for negative value")
     void shouldReturnNullForNegativeValue() {
-      assertNull(Precompiled.fromValue(-1),
-          "fromValue(-1) should return null");
+      assertNull(Precompiled.fromValue(-1), "fromValue(-1) should return null");
     }
 
     @Test
     @DisplayName("should return null for out-of-range value")
     void shouldReturnNullForOutOfRangeValue() {
-      assertNull(Precompiled.fromValue(99),
-          "fromValue(99) should return null");
+      assertNull(Precompiled.fromValue(99), "fromValue(99) should return null");
     }
 
     @Test
     @DisplayName("should round-trip getValue and fromValue for all constants")
     void shouldRoundTripGetValueAndFromValue() {
       for (final Precompiled value : Precompiled.values()) {
-        assertEquals(value, Precompiled.fromValue(value.getValue()),
+        assertEquals(
+            value,
+            Precompiled.fromValue(value.getValue()),
             "Round-trip should return original for " + value.name());
       }
     }
@@ -155,15 +150,16 @@ class PrecompiledTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final Precompiled value : Precompiled.values()) {
-        assertEquals(value, Precompiled.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, Precompiled.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> Precompiled.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -178,8 +174,7 @@ class PrecompiledTest {
     void shouldHaveSequentialOrdinals() {
       final Precompiled[] values = Precompiled.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -202,8 +197,7 @@ class PrecompiledTest {
             result = "unknown";
             break;
         }
-        assertEquals(precompiled.name(), result,
-            "Switch should handle " + precompiled.name());
+        assertEquals(precompiled.name(), result, "Switch should handle " + precompiled.name());
       }
     }
   }

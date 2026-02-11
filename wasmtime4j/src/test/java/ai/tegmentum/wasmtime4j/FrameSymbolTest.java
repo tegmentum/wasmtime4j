@@ -108,8 +108,7 @@ class FrameSymbolTest {
     void getLineShouldReturnOptionalWithLineValue() {
       final FrameSymbol symbol = new FrameSymbol(null, null, 100, null);
 
-      assertEquals(
-          Optional.of(100), symbol.getLine(), "getLine should return Optional of 100");
+      assertEquals(Optional.of(100), symbol.getLine(), "getLine should return Optional of 100");
     }
 
     @Test
@@ -117,8 +116,7 @@ class FrameSymbolTest {
     void getColumnShouldReturnOptionalWithColumnValue() {
       final FrameSymbol symbol = new FrameSymbol(null, null, null, 25);
 
-      assertEquals(
-          Optional.of(25), symbol.getColumn(), "getColumn should return Optional of 25");
+      assertEquals(Optional.of(25), symbol.getColumn(), "getColumn should return Optional of 25");
     }
   }
 

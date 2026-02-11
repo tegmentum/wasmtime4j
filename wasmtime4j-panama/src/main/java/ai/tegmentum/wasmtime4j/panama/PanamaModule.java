@@ -2,20 +2,20 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExportDescriptor;
-import ai.tegmentum.wasmtime4j.type.ExportType;
-import ai.tegmentum.wasmtime4j.type.FuncType;
-import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.ImportDescriptor;
-import ai.tegmentum.wasmtime4j.validation.ImportMap;
-import ai.tegmentum.wasmtime4j.type.ImportType;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.ModuleImport;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.type.ExportType;
+import ai.tegmentum.wasmtime4j.type.FuncType;
+import ai.tegmentum.wasmtime4j.type.GlobalType;
+import ai.tegmentum.wasmtime4j.type.ImportType;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+import ai.tegmentum.wasmtime4j.type.TableType;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -314,7 +314,8 @@ public final class PanamaModule implements Module {
     ensureNotClosed();
 
     final long startTime = System.nanoTime();
-    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues =
+        new java.util.ArrayList<>();
     final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> validatedImports =
         new java.util.ArrayList<>();
     final java.util.Map<String, java.util.Map<String, Object>> importsMap = imports.getImports();

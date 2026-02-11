@@ -1,12 +1,5 @@
 package ai.tegmentum.wasmtime4j.config;
 
-import ai.tegmentum.wasmtime4j.InstanceAllocationStrategy;
-
-import ai.tegmentum.wasmtime4j.memory.Table;
-
-import ai.tegmentum.wasmtime4j.memory.Memory;
-import ai.tegmentum.wasmtime4j.Instance;
-
 /**
  * Configuration for resource limits on WebAssembly stores.
  *

@@ -16,14 +16,14 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.func.Caller;
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.Caller;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -795,8 +795,8 @@ public final class PanamaHostFunction implements WasmFunction {
       case F32 -> float.class;
       case F64 -> double.class;
       case V128 -> MemorySegment.class;
-      case FUNCREF, EXTERNREF -> MemorySegment
-          .class; // Use MemorySegment to match VALUE_LAYOUT.ADDRESS
+      case FUNCREF, EXTERNREF ->
+          MemorySegment.class; // Use MemorySegment to match VALUE_LAYOUT.ADDRESS
       default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
     };
   }
@@ -1040,20 +1040,26 @@ public final class PanamaHostFunction implements WasmFunction {
     final MethodHandles.Lookup lookup = MethodHandles.lookup();
 
     return switch (returnType.getName()) {
-      case "float" -> lookup.findStatic(
-          PanamaHostFunction.class,
-          "convertToFloat",
-          MethodType.methodType(float.class, Object.class));
-      case "int" -> lookup.findStatic(
-          PanamaHostFunction.class, "convertToInt", MethodType.methodType(int.class, Object.class));
-      case "double" -> lookup.findStatic(
-          PanamaHostFunction.class,
-          "convertToDouble",
-          MethodType.methodType(double.class, Object.class));
-      case "long" -> lookup.findStatic(
-          PanamaHostFunction.class,
-          "convertToLong",
-          MethodType.methodType(long.class, Object.class));
+      case "float" ->
+          lookup.findStatic(
+              PanamaHostFunction.class,
+              "convertToFloat",
+              MethodType.methodType(float.class, Object.class));
+      case "int" ->
+          lookup.findStatic(
+              PanamaHostFunction.class,
+              "convertToInt",
+              MethodType.methodType(int.class, Object.class));
+      case "double" ->
+          lookup.findStatic(
+              PanamaHostFunction.class,
+              "convertToDouble",
+              MethodType.methodType(double.class, Object.class));
+      case "long" ->
+          lookup.findStatic(
+              PanamaHostFunction.class,
+              "convertToLong",
+              MethodType.methodType(long.class, Object.class));
       default -> throw new IllegalArgumentException("Unsupported return type: " + returnType);
     };
   }
@@ -1244,8 +1250,8 @@ public final class PanamaHostFunction implements WasmFunction {
       case F64 -> wasmValue.asF64();
       case V128 -> wasmValue.asV128();
       case FUNCREF, EXTERNREF -> wasmValue.asExternref();
-      default -> throw new IllegalArgumentException(
-          "Unsupported value type: " + wasmValue.getType());
+      default ->
+          throw new IllegalArgumentException("Unsupported value type: " + wasmValue.getType());
     };
   }
 

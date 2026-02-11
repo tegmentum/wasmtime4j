@@ -1,15 +1,5 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Memory64InstructionHandler;
-
-import ai.tegmentum.wasmtime4j.memory.Memory64Instruction;
-
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
-import ai.tegmentum.wasmtime4j.type.MemoryType;
-import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
-
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -17,6 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.memory.Memory64Instruction;
+import ai.tegmentum.wasmtime4j.memory.Memory64InstructionHandler;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;

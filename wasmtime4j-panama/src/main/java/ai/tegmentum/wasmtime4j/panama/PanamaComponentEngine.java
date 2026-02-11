@@ -1,5 +1,9 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
@@ -8,14 +12,10 @@ import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmFeature;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.foreign.Arena;
@@ -283,8 +283,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
-  public Component linkComponents(final List<Component> components)
-      throws WasmException {
+  public Component linkComponents(final List<Component> components) throws WasmException {
     Objects.requireNonNull(components, "components cannot be null");
     if (components.isEmpty()) {
       throw new IllegalArgumentException("components cannot be empty");
@@ -320,8 +319,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
-  public WitCompatibilityResult checkCompatibility(
-      final Component source, final Component target) {
+  public WitCompatibilityResult checkCompatibility(final Component source, final Component target) {
     Objects.requireNonNull(source, "source cannot be null");
     Objects.requireNonNull(target, "target cannot be null");
     ensureNotClosed();

@@ -1,10 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -16,10 +12,14 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -1499,7 +1499,8 @@ public final class JniStore extends JniResource implements Store {
     return -1; // Signal trap
   }
 
-  private native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeCaptureBacktrace(long storeHandle);
+  private native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeCaptureBacktrace(
+      long storeHandle);
 
   private native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeForceCaptureBacktrace(
       long storeHandle);
@@ -1610,7 +1611,8 @@ public final class JniStore extends JniResource implements Store {
   // ===== Debug Methods =====
 
   @Override
-  public java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> debugFrames() throws WasmException {
+  public java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> debugFrames()
+      throws WasmException {
     ensureNotClosed();
     // Return debug frames from native (empty if debugging not enabled)
     final String framesJson = nativeGetDebugFrames(nativeHandle);
@@ -1620,7 +1622,8 @@ public final class JniStore extends JniResource implements Store {
     return parseDebugFrames(framesJson);
   }
 
-  private java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> parseDebugFrames(final String json) {
+  private java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> parseDebugFrames(
+      final String json) {
     // Simple JSON parsing for debug frames
     java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> frames = new java.util.ArrayList<>();
     // For now return empty list - native implementation will provide real data

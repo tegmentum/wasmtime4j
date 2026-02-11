@@ -347,8 +347,7 @@ class LinkingExceptionTest {
             && type != LinkingException.LinkingErrorType.EXPORT_NOT_FOUND) {
           final LinkingException exception = new LinkingException(type, "Error");
           assertFalse(
-              exception.isMissingItemError(),
-              type.name() + " should NOT be a missing item error");
+              exception.isMissingItemError(), type.name() + " should NOT be a missing item error");
         }
       }
     }
@@ -448,8 +447,7 @@ class LinkingExceptionTest {
         if (!componentSet.contains(type)) {
           final LinkingException exception = new LinkingException(type, "Error");
           assertFalse(
-              exception.isComponentError(),
-              type.name() + " should NOT be a component error");
+              exception.isComponentError(), type.name() + " should NOT be a component error");
         }
       }
     }
@@ -532,8 +530,7 @@ class LinkingExceptionTest {
               null);
 
       assertTrue(
-          exception.getMessage().contains("(my_func)"),
-          "Message should contain item name only");
+          exception.getMessage().contains("(my_func)"), "Message should contain item name only");
       assertFalse(
           exception.getMessage().contains("(module:"),
           "Message should not have module format when only item provided");
@@ -601,13 +598,7 @@ class LinkingExceptionTest {
     void messageShouldNotIncludeTypesWhenBothEmpty() {
       final LinkingException exception =
           new LinkingException(
-              LinkingException.LinkingErrorType.UNKNOWN,
-              "Error message",
-              null,
-              null,
-              "",
-              "",
-              null);
+              LinkingException.LinkingErrorType.UNKNOWN, "Error message", null, null, "", "", null);
 
       assertFalse(
           exception.getMessage().contains("expected:"),
@@ -622,13 +613,7 @@ class LinkingExceptionTest {
     void messageShouldNotIncludeModuleItemWhenBothEmpty() {
       final LinkingException exception =
           new LinkingException(
-              LinkingException.LinkingErrorType.UNKNOWN,
-              "Error message",
-              "",
-              "",
-              null,
-              null,
-              null);
+              LinkingException.LinkingErrorType.UNKNOWN, "Error message", "", "", null, null, null);
 
       // The message should just be "[UNKNOWN] Error message" without module/item markers
       assertFalse(
@@ -659,8 +644,7 @@ class LinkingExceptionTest {
       assertTrue(message.contains("Test error"), "Should contain base message");
       assertTrue(message.contains("(env.log)"), "Should contain module.item");
       assertTrue(
-          message.contains("(expected: (i32), actual: (i64))"),
-          "Should contain type comparison");
+          message.contains("(expected: (i32), actual: (i64))"), "Should contain type comparison");
     }
   }
 
@@ -777,17 +761,8 @@ class LinkingExceptionTest {
       for (String name : testNames) {
         final LinkingException exception =
             new LinkingException(
-                LinkingException.LinkingErrorType.UNKNOWN,
-                "Error",
-                name,
-                null,
-                null,
-                null,
-                null);
-        assertEquals(
-            name,
-            exception.getModuleName(),
-            "getModuleName should return: " + name);
+                LinkingException.LinkingErrorType.UNKNOWN, "Error", name, null, null, null, null);
+        assertEquals(name, exception.getModuleName(), "getModuleName should return: " + name);
       }
     }
 
@@ -798,17 +773,8 @@ class LinkingExceptionTest {
       for (String name : testNames) {
         final LinkingException exception =
             new LinkingException(
-                LinkingException.LinkingErrorType.UNKNOWN,
-                "Error",
-                null,
-                name,
-                null,
-                null,
-                null);
-        assertEquals(
-            name,
-            exception.getItemName(),
-            "getItemName should return: " + name);
+                LinkingException.LinkingErrorType.UNKNOWN, "Error", null, name, null, null, null);
+        assertEquals(name, exception.getItemName(), "getItemName should return: " + name);
       }
     }
 
@@ -819,17 +785,8 @@ class LinkingExceptionTest {
       for (String type : testTypes) {
         final LinkingException exception =
             new LinkingException(
-                LinkingException.LinkingErrorType.UNKNOWN,
-                "Error",
-                null,
-                null,
-                type,
-                null,
-                null);
-        assertEquals(
-            type,
-            exception.getExpectedType(),
-            "getExpectedType should return: " + type);
+                LinkingException.LinkingErrorType.UNKNOWN, "Error", null, null, type, null, null);
+        assertEquals(type, exception.getExpectedType(), "getExpectedType should return: " + type);
       }
     }
 
@@ -840,17 +797,8 @@ class LinkingExceptionTest {
       for (String type : testTypes) {
         final LinkingException exception =
             new LinkingException(
-                LinkingException.LinkingErrorType.UNKNOWN,
-                "Error",
-                null,
-                null,
-                null,
-                type,
-                null);
-        assertEquals(
-            type,
-            exception.getActualType(),
-            "getActualType should return: " + type);
+                LinkingException.LinkingErrorType.UNKNOWN, "Error", null, null, null, type, null);
+        assertEquals(type, exception.getActualType(), "getActualType should return: " + type);
       }
     }
 

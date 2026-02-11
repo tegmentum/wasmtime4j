@@ -2,10 +2,6 @@ package ai.tegmentum.wasmtime4j.memory;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 
-import ai.tegmentum.wasmtime4j.func.Function;
-
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-
 /**
  * Represents a WebAssembly global variable instance.
  *

@@ -22,12 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.config.DependencyInjectionConfig;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.config.DependencyInjectionConfig;
 
 /**
  * Tests for {@link DependencyInjectionConfig} class.
@@ -58,18 +58,16 @@ class DependencyInjectionConfigTest {
     void shouldHavePublicNoArgConstructor() throws NoSuchMethodException {
       final var constructor = DependencyInjectionConfig.class.getConstructor();
       assertTrue(
-          Modifier.isPublic(constructor.getModifiers()),
-          "No-arg constructor should be public");
+          Modifier.isPublic(constructor.getModifiers()), "No-arg constructor should be public");
     }
 
     @Test
     @DisplayName("should have public full constructor")
     void shouldHavePublicFullConstructor() throws NoSuchMethodException {
-      final var constructor = DependencyInjectionConfig.class.getConstructor(
-          boolean.class, boolean.class, Map.class);
+      final var constructor =
+          DependencyInjectionConfig.class.getConstructor(boolean.class, boolean.class, Map.class);
       assertTrue(
-          Modifier.isPublic(constructor.getModifiers()),
-          "Full constructor should be public");
+          Modifier.isPublic(constructor.getModifiers()), "Full constructor should be public");
     }
   }
 
@@ -83,18 +81,11 @@ class DependencyInjectionConfigTest {
       final DependencyInjectionConfig config = new DependencyInjectionConfig();
 
       assertNotNull(config, "Config should not be null");
+      assertTrue(config.isAutowiringEnabled(), "Default autowiring should be enabled");
+      assertFalse(config.isLazyLoadingEnabled(), "Default lazy loading should be disabled");
+      assertNotNull(config.getExplicitBindings(), "Default explicit bindings should not be null");
       assertTrue(
-          config.isAutowiringEnabled(),
-          "Default autowiring should be enabled");
-      assertFalse(
-          config.isLazyLoadingEnabled(),
-          "Default lazy loading should be disabled");
-      assertNotNull(
-          config.getExplicitBindings(),
-          "Default explicit bindings should not be null");
-      assertTrue(
-          config.getExplicitBindings().isEmpty(),
-          "Default explicit bindings should be empty");
+          config.getExplicitBindings().isEmpty(), "Default explicit bindings should be empty");
     }
   }
 
@@ -106,16 +97,14 @@ class DependencyInjectionConfigTest {
     @DisplayName("should create config with all parameters")
     void shouldCreateWithAllParameters() {
       final Map<String, Object> bindings = Map.of("service", "myService");
-      final DependencyInjectionConfig config =
-          new DependencyInjectionConfig(true, true, bindings);
+      final DependencyInjectionConfig config = new DependencyInjectionConfig(true, true, bindings);
 
       assertTrue(config.isAutowiringEnabled(), "autowiring should be true");
       assertTrue(config.isLazyLoadingEnabled(), "lazy loading should be true");
+      assertEquals(1, config.getExplicitBindings().size(), "Explicit bindings should have 1 entry");
       assertEquals(
-          1, config.getExplicitBindings().size(),
-          "Explicit bindings should have 1 entry");
-      assertEquals(
-          "myService", config.getExplicitBindings().get("service"),
+          "myService",
+          config.getExplicitBindings().get("service"),
           "Binding value should be 'myService'");
     }
 
@@ -147,8 +136,7 @@ class DependencyInjectionConfigTest {
     @DisplayName("getExplicitBindings should return immutable map")
     void getExplicitBindingsShouldReturnImmutableMap() {
       final Map<String, Object> bindings = Map.of("key", "value");
-      final DependencyInjectionConfig config =
-          new DependencyInjectionConfig(true, false, bindings);
+      final DependencyInjectionConfig config = new DependencyInjectionConfig(true, false, bindings);
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -164,8 +152,7 @@ class DependencyInjectionConfigTest {
     @Test
     @DisplayName("should support autowiring enabled with lazy loading")
     void shouldSupportAutowiringWithLazy() {
-      final DependencyInjectionConfig config =
-          new DependencyInjectionConfig(true, true, Map.of());
+      final DependencyInjectionConfig config = new DependencyInjectionConfig(true, true, Map.of());
 
       assertTrue(config.isAutowiringEnabled(), "Autowiring should be enabled");
       assertTrue(config.isLazyLoadingEnabled(), "Lazy loading should be enabled");
@@ -174,26 +161,25 @@ class DependencyInjectionConfigTest {
     @Test
     @DisplayName("should support explicit bindings with autowiring disabled")
     void shouldSupportExplicitBindingsWithoutAutowiring() {
-      final Map<String, Object> bindings = Map.of(
-          "dbService", "PostgresDB",
-          "cacheService", "Redis");
+      final Map<String, Object> bindings =
+          Map.of(
+              "dbService", "PostgresDB",
+              "cacheService", "Redis");
       final DependencyInjectionConfig config =
           new DependencyInjectionConfig(false, false, bindings);
 
       assertFalse(config.isAutowiringEnabled(), "Autowiring should be disabled");
+      assertEquals(2, config.getExplicitBindings().size(), "Should have 2 explicit bindings");
       assertEquals(
-          2, config.getExplicitBindings().size(),
-          "Should have 2 explicit bindings");
-      assertEquals(
-          "PostgresDB", config.getExplicitBindings().get("dbService"),
+          "PostgresDB",
+          config.getExplicitBindings().get("dbService"),
           "dbService binding should be 'PostgresDB'");
     }
 
     @Test
     @DisplayName("should support empty bindings with lazy loading")
     void shouldSupportEmptyBindingsWithLazy() {
-      final DependencyInjectionConfig config =
-          new DependencyInjectionConfig(false, true, Map.of());
+      final DependencyInjectionConfig config = new DependencyInjectionConfig(false, true, Map.of());
 
       assertFalse(config.isAutowiringEnabled(), "Autowiring should be disabled");
       assertTrue(config.isLazyLoadingEnabled(), "Lazy loading should be enabled");

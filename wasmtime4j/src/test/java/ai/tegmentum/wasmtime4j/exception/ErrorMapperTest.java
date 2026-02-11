@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -482,7 +481,8 @@ class ErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Should detect register allocation failed errors with correct error type and phase")
+    @DisplayName(
+        "Should detect register allocation failed errors with correct error type and phase")
     void shouldDetectRegisterAllocationFailedErrors() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "register allocation failed");
@@ -688,8 +688,7 @@ class ErrorMapperTest {
     void outOfMemoryTakesPriorityOverTime() {
       // Message contains both 'memory' and 'time' - memory should win (first in chain)
       final WasmException result =
-          ErrorMapper.mapError(
-              ErrorMapper.COMPILATION_ERROR, "out of memory during compile time");
+          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "out of memory during compile time");
 
       assertInstanceOf(ModuleCompilationException.class, result);
       final ModuleCompilationException ex = (ModuleCompilationException) result;
@@ -1295,9 +1294,7 @@ class ErrorMapperTest {
       assertInstanceOf(TrapException.class, result, "Should return TrapException");
       final TrapException trap = (TrapException) result;
       assertEquals(
-          TrapException.TrapType.BAD_SIGNATURE,
-          trap.getTrapType(),
-          "Should be BAD_SIGNATURE type");
+          TrapException.TrapType.BAD_SIGNATURE, trap.getTrapType(), "Should be BAD_SIGNATURE type");
     }
 
     @Test
@@ -1309,9 +1306,7 @@ class ErrorMapperTest {
       assertInstanceOf(TrapException.class, result, "Should return TrapException");
       final TrapException trap = (TrapException) result;
       assertEquals(
-          TrapException.TrapType.BAD_SIGNATURE,
-          trap.getTrapType(),
-          "Should be BAD_SIGNATURE type");
+          TrapException.TrapType.BAD_SIGNATURE, trap.getTrapType(), "Should be BAD_SIGNATURE type");
     }
 
     @Test
@@ -1379,9 +1374,7 @@ class ErrorMapperTest {
       assertInstanceOf(TrapException.class, result, "Should return TrapException");
       final TrapException trap = (TrapException) result;
       assertEquals(
-          TrapException.TrapType.INTERRUPT,
-          trap.getTrapType(),
-          "Should be INTERRUPT type");
+          TrapException.TrapType.INTERRUPT, trap.getTrapType(), "Should be INTERRUPT type");
     }
 
     @Test
@@ -1393,9 +1386,7 @@ class ErrorMapperTest {
       assertInstanceOf(TrapException.class, result, "Should return TrapException");
       final TrapException trap = (TrapException) result;
       assertEquals(
-          TrapException.TrapType.OUT_OF_FUEL,
-          trap.getTrapType(),
-          "Should be OUT_OF_FUEL type");
+          TrapException.TrapType.OUT_OF_FUEL, trap.getTrapType(), "Should be OUT_OF_FUEL type");
     }
 
     @Test
@@ -1407,9 +1398,7 @@ class ErrorMapperTest {
       assertInstanceOf(TrapException.class, result, "Should return TrapException");
       final TrapException trap = (TrapException) result;
       assertEquals(
-          TrapException.TrapType.OUT_OF_FUEL,
-          trap.getTrapType(),
-          "Should be OUT_OF_FUEL type");
+          TrapException.TrapType.OUT_OF_FUEL, trap.getTrapType(), "Should be OUT_OF_FUEL type");
     }
 
     @Test
@@ -1871,8 +1860,7 @@ class ErrorMapperTest {
     @DisplayName("Should extract module and item name from import pattern")
     void shouldExtractModuleAndItemNameFromImportPattern() {
       final WasmException result =
-          ErrorMapper.mapError(
-              ErrorMapper.IMPORT_EXPORT_ERROR, "import:env.my_function not found");
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "import:env.my_function not found");
 
       assertInstanceOf(LinkingException.class, result);
       final LinkingException linking = (LinkingException) result;
@@ -2006,8 +1994,7 @@ class ErrorMapperTest {
     @DisplayName("Priority: 'import' + 'not found' takes priority")
     void importNotFoundTakesPriority() {
       final WasmException result =
-          ErrorMapper.mapError(
-              ErrorMapper.IMPORT_EXPORT_ERROR, "import not found signature error");
+          ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "import not found signature error");
       assertInstanceOf(LinkingException.class, result);
       final LinkingException linking = (LinkingException) result;
       assertEquals(
@@ -2034,9 +2021,7 @@ class ErrorMapperTest {
       assertInstanceOf(RuntimeException.class, result);
       final RuntimeException rt = (RuntimeException) result;
       assertEquals(
-          RuntimeException.RuntimeErrorType.TIMEOUT,
-          rt.getErrorType(),
-          "Should be TIMEOUT type");
+          RuntimeException.RuntimeErrorType.TIMEOUT, rt.getErrorType(), "Should be TIMEOUT type");
     }
 
     @Test
@@ -2174,9 +2159,7 @@ class ErrorMapperTest {
       assertInstanceOf(RuntimeException.class, result);
       final RuntimeException rt = (RuntimeException) result;
       assertEquals(
-          RuntimeException.RuntimeErrorType.UNKNOWN,
-          rt.getErrorType(),
-          "Should be UNKNOWN type");
+          RuntimeException.RuntimeErrorType.UNKNOWN, rt.getErrorType(), "Should be UNKNOWN type");
     }
 
     @Test
@@ -2449,7 +2432,8 @@ class ErrorMapperTest {
     @DisplayName("Should detect data segment init failed in instantiation error")
     void shouldDetectDataSegmentInitFailedInInstantiationError() {
       final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.ENGINE_CONFIG_ERROR, "data segment initialization failed");
+          ErrorMapper.mapError(
+              ErrorMapper.ENGINE_CONFIG_ERROR, "data segment initialization failed");
 
       assertInstanceOf(ModuleInstantiationException.class, result);
       final ModuleInstantiationException ex = (ModuleInstantiationException) result;
@@ -2676,8 +2660,7 @@ class ErrorMapperTest {
     @DisplayName("Priority: 'import not found' takes priority")
     void importNotFoundTakesPriority() {
       final WasmException result =
-          ErrorMapper.mapError(
-              ErrorMapper.ENGINE_CONFIG_ERROR, "import not found type mismatch");
+          ErrorMapper.mapError(ErrorMapper.ENGINE_CONFIG_ERROR, "import not found type mismatch");
       assertInstanceOf(ModuleInstantiationException.class, result);
       final ModuleInstantiationException ex = (ModuleInstantiationException) result;
       assertEquals(
@@ -2700,9 +2683,7 @@ class ErrorMapperTest {
       assertInstanceOf(WasiException.class, result);
       final WasiException wasi = (WasiException) result;
       assertEquals(
-          WasiException.ErrorCategory.NETWORK,
-          wasi.getCategory(),
-          "Should be NETWORK category");
+          WasiException.ErrorCategory.NETWORK, wasi.getCategory(), "Should be NETWORK category");
     }
 
     @Test
@@ -2722,8 +2703,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("Should detect access keyword in WASI error")
     void shouldDetectAccessKeywordInWasiError() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "access denied");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "access denied");
 
       assertInstanceOf(WasiException.class, result);
       final WasiException wasi = (WasiException) result;
@@ -2750,8 +2730,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("Should detect limit keyword in WASI error")
     void shouldDetectLimitKeywordInWasiError() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit exceeded");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit exceeded");
 
       assertInstanceOf(WasiException.class, result);
       final WasiException wasi = (WasiException) result;
@@ -2778,8 +2757,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("Should detect configuration category in WASI error")
     void shouldDetectConfigurationCategoryInWasiError() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "config invalid");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "config invalid");
 
       assertInstanceOf(WasiException.class, result);
       final WasiException wasi = (WasiException) result;
@@ -2792,15 +2770,12 @@ class ErrorMapperTest {
     @Test
     @DisplayName("Should default to SYSTEM category for unrecognized WASI error")
     void shouldDefaultToSystemCategoryForUnrecognizedWasiError() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "xyz random error");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "xyz random error");
 
       assertInstanceOf(WasiException.class, result);
       final WasiException wasi = (WasiException) result;
       assertEquals(
-          WasiException.ErrorCategory.SYSTEM,
-          wasi.getCategory(),
-          "Should be SYSTEM category");
+          WasiException.ErrorCategory.SYSTEM, wasi.getCategory(), "Should be SYSTEM category");
     }
 
     @Test
@@ -2900,9 +2875,7 @@ class ErrorMapperTest {
       assertInstanceOf(WasiException.class, result);
       final WasiException wasi = (WasiException) result;
       assertNotEquals(
-          WasiException.ErrorCategory.NETWORK,
-          wasi.getCategory(),
-          "unknown should NOT be NETWORK");
+          WasiException.ErrorCategory.NETWORK, wasi.getCategory(), "unknown should NOT be NETWORK");
       assertNotEquals(
           WasiException.ErrorCategory.PERMISSION,
           wasi.getCategory(),
@@ -3061,8 +3034,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("Should default to UNKNOWN for unrecognized file system error")
     void shouldDefaultToUnknownForUnrecognizedFileSystemError() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file xyz random");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file xyz random");
 
       assertInstanceOf(WasiFileSystemException.class, result);
       final WasiFileSystemException ex = (WasiFileSystemException) result;
@@ -3195,8 +3167,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("OR boundary: 'efbig' alone triggers FILE_TOO_LARGE")
     void efbigAloneShouldTriggerFileTooLarge() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file error efbig");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file error efbig");
       assertInstanceOf(WasiFileSystemException.class, result);
       final WasiFileSystemException ex = (WasiFileSystemException) result;
       assertEquals(
@@ -3208,8 +3179,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("OR boundary: 'ebadf' alone triggers INVALID_FILE_DESCRIPTOR")
     void ebadfAloneShouldTriggerInvalidFileDescriptor() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file error ebadf");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file error ebadf");
       assertInstanceOf(WasiFileSystemException.class, result);
       final WasiFileSystemException ex = (WasiFileSystemException) result;
       assertEquals(
@@ -3221,8 +3191,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("OR boundary: 'eio' alone triggers IO_ERROR")
     void eioAloneShouldTriggerIoError() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file error eio");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file error eio");
       assertInstanceOf(WasiFileSystemException.class, result);
       final WasiFileSystemException ex = (WasiFileSystemException) result;
       assertEquals(
@@ -3234,8 +3203,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("Negative: unrecognized file error should be UNKNOWN")
     void unrecognizedFileErrorShouldBeUnknown() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file xyz random");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file xyz random");
       assertInstanceOf(WasiFileSystemException.class, result);
       final WasiFileSystemException ex = (WasiFileSystemException) result;
       assertEquals(
@@ -3362,9 +3330,7 @@ class ErrorMapperTest {
           ErrorMapper.mapError(ErrorMapper.TYPE_ERROR, "type error occurred");
 
       assertInstanceOf(ValidationException.class, result);
-      assertTrue(
-          result.getMessage().contains("Type error"),
-          "Message should contain 'Type error'");
+      assertTrue(result.getMessage().contains("Type error"), "Message should contain 'Type error'");
     }
 
     @Test
@@ -3384,8 +3350,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("IO_ERROR should map to WasiFileSystemException with IO_ERROR type")
     void ioErrorShouldMapToWasiFileSystemException() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.IO_ERROR, "io error occurred");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.IO_ERROR, "io error occurred");
 
       assertInstanceOf(WasiFileSystemException.class, result);
       final WasiFileSystemException ex = (WasiFileSystemException) result;
@@ -3454,9 +3419,7 @@ class ErrorMapperTest {
           ErrorMapper.mapError(ErrorMapper.INTERNAL_ERROR, "internal error");
 
       assertInstanceOf(WasmException.class, result);
-      assertTrue(
-          result.getMessage().contains("Error code"),
-          "Message should contain 'Error code'");
+      assertTrue(result.getMessage().contains("Error code"), "Message should contain 'Error code'");
     }
   }
 
@@ -3523,10 +3486,7 @@ class ErrorMapperTest {
     void runtimeErrorWithTrapShouldReturnTrapException() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: stack overflow");
-      assertEquals(
-          TrapException.class,
-          result.getClass(),
-          "Should return exactly TrapException");
+      assertEquals(TrapException.class, result.getClass(), "Should return exactly TrapException");
     }
 
     @Test
@@ -3546,9 +3506,7 @@ class ErrorMapperTest {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "linking error");
       assertEquals(
-          LinkingException.class,
-          result.getClass(),
-          "Should return exactly LinkingException");
+          LinkingException.class, result.getClass(), "Should return exactly LinkingException");
     }
   }
 
@@ -3938,8 +3896,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("'limit' alone should trigger RESOURCE_LIMIT category")
     void limitAloneShouldTriggerResourceLimit() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit reached");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit reached");
       assertInstanceOf(WasiException.class, result);
       final WasiException wasi = (WasiException) result;
       assertEquals(
@@ -4094,7 +4051,8 @@ class ErrorMapperTest {
     // ===== mapCompilationError =====
 
     @Test
-    @DisplayName("Line 205: Message with ONLY 'memory' (not 'out of memory') should trigger OUT_OF_MEMORY")
+    @DisplayName(
+        "Line 205: Message with ONLY 'memory' (not 'out of memory') should trigger OUT_OF_MEMORY")
     void line205OnlyMemoryShouldTriggerOutOfMemory() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "insufficient memory space");
@@ -4138,7 +4096,9 @@ class ErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Line 209: Message with ONLY 'complex' (not 'too complex') should trigger FUNCTION_TOO_COMPLEX")
+    @DisplayName(
+        "Line 209: Message with ONLY 'complex' (not 'too complex') should trigger"
+            + " FUNCTION_TOO_COMPLEX")
     void line209OnlyComplexShouldTriggerTooComplex() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "highly complex logic");
@@ -4162,7 +4122,8 @@ class ErrorMapperTest {
     // ===== mapValidationError =====
 
     @Test
-    @DisplayName("Line 246: Message with ONLY 'type' (not 'type mismatch') should trigger TYPE_MISMATCH")
+    @DisplayName(
+        "Line 246: Message with ONLY 'type' (not 'type mismatch') should trigger TYPE_MISMATCH")
     void line246OnlyTypeShouldTriggerTypeMismatch() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "invalid type used");
@@ -4173,7 +4134,9 @@ class ErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Line 258: Message with ONLY 'feature' (not 'unsupported') should trigger UNSUPPORTED_FEATURE")
+    @DisplayName(
+        "Line 258: Message with ONLY 'feature' (not 'unsupported') should trigger"
+            + " UNSUPPORTED_FEATURE")
     void line258OnlyFeatureShouldTriggerUnsupported() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.VALIDATION_ERROR, "feature unavailable");
@@ -4219,12 +4182,13 @@ class ErrorMapperTest {
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "execution time exceeded");
       assertInstanceOf(RuntimeException.class, result);
       assertEquals(
-          RuntimeException.RuntimeErrorType.TIMEOUT,
-          ((RuntimeException) result).getErrorType());
+          RuntimeException.RuntimeErrorType.TIMEOUT, ((RuntimeException) result).getErrorType());
     }
 
     @Test
-    @DisplayName("Line 295: Message with ONLY 'access' (not 'memory') should trigger MEMORY_ACCESS_VIOLATION")
+    @DisplayName(
+        "Line 295: Message with ONLY 'access' (not 'memory') should trigger"
+            + " MEMORY_ACCESS_VIOLATION")
     void line295OnlyAccessShouldTriggerMemoryViolation() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "invalid access detected");
@@ -4243,19 +4207,18 @@ class ErrorMapperTest {
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: table index out of bounds");
       assertInstanceOf(TrapException.class, result);
       assertEquals(
-          TrapException.TrapType.TABLE_OUT_OF_BOUNDS,
-          ((TrapException) result).getTrapType());
+          TrapException.TrapType.TABLE_OUT_OF_BOUNDS, ((TrapException) result).getTrapType());
     }
 
     @Test
-    @DisplayName("Line 327: 'table' alone (without 'out of bounds') should NOT be TABLE_OUT_OF_BOUNDS")
+    @DisplayName(
+        "Line 327: 'table' alone (without 'out of bounds') should NOT be TABLE_OUT_OF_BOUNDS")
     void line327TableAloneShouldNotBe() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: table error");
       assertInstanceOf(TrapException.class, result);
       assertNotEquals(
-          TrapException.TrapType.TABLE_OUT_OF_BOUNDS,
-          ((TrapException) result).getTrapType());
+          TrapException.TrapType.TABLE_OUT_OF_BOUNDS, ((TrapException) result).getTrapType());
     }
 
     @Test
@@ -4265,19 +4228,18 @@ class ErrorMapperTest {
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: array out of bounds access");
       assertInstanceOf(TrapException.class, result);
       assertEquals(
-          TrapException.TrapType.ARRAY_OUT_OF_BOUNDS,
-          ((TrapException) result).getTrapType());
+          TrapException.TrapType.ARRAY_OUT_OF_BOUNDS, ((TrapException) result).getTrapType());
     }
 
     @Test
-    @DisplayName("Line 329: 'array' alone (without 'out of bounds') should NOT be ARRAY_OUT_OF_BOUNDS")
+    @DisplayName(
+        "Line 329: 'array' alone (without 'out of bounds') should NOT be ARRAY_OUT_OF_BOUNDS")
     void line329ArrayAloneShouldNotBe() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: array error");
       assertInstanceOf(TrapException.class, result);
       assertNotEquals(
-          TrapException.TrapType.ARRAY_OUT_OF_BOUNDS,
-          ((TrapException) result).getTrapType());
+          TrapException.TrapType.ARRAY_OUT_OF_BOUNDS, ((TrapException) result).getTrapType());
     }
 
     @Test
@@ -4286,9 +4248,7 @@ class ErrorMapperTest {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: integer overflow detected");
       assertInstanceOf(TrapException.class, result);
-      assertEquals(
-          TrapException.TrapType.INTEGER_OVERFLOW,
-          ((TrapException) result).getTrapType());
+      assertEquals(TrapException.TrapType.INTEGER_OVERFLOW, ((TrapException) result).getTrapType());
     }
 
     @Test
@@ -4298,8 +4258,7 @@ class ErrorMapperTest {
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: stack overflow");
       assertInstanceOf(TrapException.class, result);
       assertNotEquals(
-          TrapException.TrapType.INTEGER_OVERFLOW,
-          ((TrapException) result).getTrapType());
+          TrapException.TrapType.INTEGER_OVERFLOW, ((TrapException) result).getTrapType());
     }
 
     @Test
@@ -4308,9 +4267,7 @@ class ErrorMapperTest {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: out of fuel");
       assertInstanceOf(TrapException.class, result);
-      assertEquals(
-          TrapException.TrapType.OUT_OF_FUEL,
-          ((TrapException) result).getTrapType());
+      assertEquals(TrapException.TrapType.OUT_OF_FUEL, ((TrapException) result).getTrapType());
     }
 
     @Test
@@ -4319,9 +4276,7 @@ class ErrorMapperTest {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: fuel exhausted");
       assertInstanceOf(TrapException.class, result);
-      assertEquals(
-          TrapException.TrapType.OUT_OF_FUEL,
-          ((TrapException) result).getTrapType());
+      assertEquals(TrapException.TrapType.OUT_OF_FUEL, ((TrapException) result).getTrapType());
     }
 
     // ===== mapInstantiationError =====
@@ -4384,7 +4339,8 @@ class ErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Line 436: 'limit' alone (without 'memory') should NOT be MEMORY_LIMITS_INCOMPATIBLE")
+    @DisplayName(
+        "Line 436: 'limit' alone (without 'memory') should NOT be MEMORY_LIMITS_INCOMPATIBLE")
     void line436LimitAloneShouldNotBe() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "limit error");
@@ -4428,7 +4384,8 @@ class ErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Line 444: 'mutability' alone (without 'global') should NOT be GLOBAL_MUTABILITY_MISMATCH")
+    @DisplayName(
+        "Line 444: 'mutability' alone (without 'global') should NOT be GLOBAL_MUTABILITY_MISMATCH")
     void line444MutabilityAloneShouldNotBe() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.IMPORT_EXPORT_ERROR, "mutability error");
@@ -4443,12 +4400,10 @@ class ErrorMapperTest {
     @Test
     @DisplayName("Line 485: 'limit' alone (without 'resource') should trigger RESOURCE_LIMIT")
     void line485LimitAloneShouldTriggerResourceLimit() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit exceeded");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit exceeded");
       assertInstanceOf(WasiException.class, result);
       assertEquals(
-          WasiException.ErrorCategory.RESOURCE_LIMIT,
-          ((WasiException) result).getCategory());
+          WasiException.ErrorCategory.RESOURCE_LIMIT, ((WasiException) result).getCategory());
     }
   }
 
@@ -4511,8 +4466,7 @@ class ErrorMapperTest {
           ((ModuleCompilationException) positive).getErrorType());
 
       // Negative: 'xyz' should NOT return FUNCTION_TOO_COMPLEX
-      final WasmException negative =
-          ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "xyz abc");
+      final WasmException negative = ErrorMapper.mapError(ErrorMapper.COMPILATION_ERROR, "xyz abc");
       assertNotEquals(
           ModuleCompilationException.CompilationErrorType.FUNCTION_TOO_COMPLEX,
           ((ModuleCompilationException) negative).getErrorType(),
@@ -4705,7 +4659,8 @@ class ErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Instantiation: 'start function' must NOT trigger TABLE_ALLOCATION_FAILED (line 389)")
+    @DisplayName(
+        "Instantiation: 'start function' must NOT trigger TABLE_ALLOCATION_FAILED (line 389)")
     void instantiationStartFunctionMustNotTriggerTableAllocation() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.ENGINE_CONFIG_ERROR, "start function error");
@@ -4789,8 +4744,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("WASI: 'component' must NOT trigger RESOURCE_LIMIT (line 485)")
     void wasiComponentMustNotTriggerResourceLimit() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "component error");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "component error");
       assertInstanceOf(WasiException.class, result);
       final WasiException wasi = (WasiException) result;
       assertNotEquals(
@@ -4807,16 +4761,12 @@ class ErrorMapperTest {
     @Test
     @DisplayName("RuntimeException should NOT be TrapException")
     void runtimeExceptionShouldNotBeTrapException() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "timeout error");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "timeout error");
       assertEquals(
           RuntimeException.class,
           result.getClass(),
           "RuntimeException should not be TrapException");
-      assertNotEquals(
-          TrapException.class,
-          result.getClass(),
-          "Should not be TrapException");
+      assertNotEquals(TrapException.class, result.getClass(), "Should not be TrapException");
     }
 
     @Test
@@ -4824,17 +4774,13 @@ class ErrorMapperTest {
     void trapExceptionShouldBeExactlyTrapException() {
       final WasmException result =
           ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "trap: overflow");
-      assertEquals(
-          TrapException.class,
-          result.getClass(),
-          "Should be exactly TrapException");
+      assertEquals(TrapException.class, result.getClass(), "Should be exactly TrapException");
     }
 
     @Test
     @DisplayName("WasiFileSystemException should be exactly WasiFileSystemException")
     void wasiFileSystemExceptionShouldBeExact() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file not found");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "file not found");
       assertEquals(
           WasiFileSystemException.class,
           result.getClass(),
@@ -4844,8 +4790,7 @@ class ErrorMapperTest {
     @Test
     @DisplayName("WasiException without file keywords should be exactly WasiException")
     void wasiExceptionWithoutFileShouldBeExact() {
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "network timeout");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "network timeout");
       assertEquals(
           WasiException.class,
           result.getClass(),
@@ -4968,8 +4913,7 @@ class ErrorMapperTest {
     void runtimeTimeOnlyShouldTriggerTimeout() {
       // This kills mutation: contains("timeout") replaced with true
       // Message has "time" but NOT "timeout" and NOT "trap"
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "exceeded time");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "exceeded time");
       assertInstanceOf(RuntimeException.class, result);
       assertNotEquals(TrapException.class, result.getClass());
       final RuntimeException runtime = (RuntimeException) result;
@@ -5033,8 +4977,7 @@ class ErrorMapperTest {
     void limitOnlyShouldTriggerResourceLimit() {
       // This kills mutation: contains("resource") replaced with true
       // Message has "limit" but NOT "resource"
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit exceeded");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "limit exceeded");
       assertInstanceOf(WasiException.class, result);
       assertNotEquals(WasiFileSystemException.class, result.getClass());
       final WasiException wasi = (WasiException) result;
@@ -5067,7 +5010,8 @@ class ErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Line 389: 'allocation' without 'table' should NOT trigger TABLE_ALLOCATION_FAILED")
+    @DisplayName(
+        "Line 389: 'allocation' without 'table' should NOT trigger TABLE_ALLOCATION_FAILED")
     void allocationWithoutTableShouldNotTriggerTableAllocation() {
       // This kills mutation: contains("table") replaced with true
       // If mutated to true, "allocation error" would incorrectly match
@@ -5141,7 +5085,8 @@ class ErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Line 444: 'mutability' without 'global' should NOT trigger GLOBAL_MUTABILITY_MISMATCH")
+    @DisplayName(
+        "Line 444: 'mutability' without 'global' should NOT trigger GLOBAL_MUTABILITY_MISMATCH")
     void mutabilityWithoutGlobalShouldNotTriggerGlobalMutability() {
       // This kills mutation: contains("global") replaced with true
       final WasmException result =
@@ -5167,7 +5112,8 @@ class ErrorMapperTest {
       // The pattern is "import[: ](word).(word)" - expects import:mod.name or import mod.name
       // This kills mutation: find() replaced with false
       final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.ENGINE_CONFIG_ERROR, "import:test_module.test_func failed");
+          ErrorMapper.mapError(
+              ErrorMapper.ENGINE_CONFIG_ERROR, "import:test_module.test_func failed");
       assertInstanceOf(ModuleInstantiationException.class, result);
       final ModuleInstantiationException inst = (ModuleInstantiationException) result;
       // The first find() extracts moduleName (group 1)
@@ -5435,8 +5381,7 @@ class ErrorMapperTest {
       // This kills: contains("memory") replaced with true on line 295
       // "stack error" doesn't contain "memory" or "access"
       // If mutated, would incorrectly get MEMORY_ACCESS_VIOLATION
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "stack error");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.RUNTIME_ERROR, "stack error");
       assertInstanceOf(RuntimeException.class, result);
       assertNotEquals(TrapException.class, result.getClass());
       final RuntimeException runtime = (RuntimeException) result;
@@ -5571,8 +5516,7 @@ class ErrorMapperTest {
       // This kills: contains("resource") replaced with true on line 485
       // "component error" doesn't contain "resource" or "limit"
       // If mutated, would incorrectly get RESOURCE_LIMIT
-      final WasmException result =
-          ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "component error");
+      final WasmException result = ErrorMapper.mapError(ErrorMapper.WASI_ERROR, "component error");
       assertInstanceOf(WasiException.class, result);
       assertNotEquals(WasiFileSystemException.class, result.getClass());
       final WasiException wasi = (WasiException) result;

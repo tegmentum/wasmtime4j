@@ -34,8 +34,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Ipv6SocketAddress Tests")
 class Ipv6SocketAddressTest {
 
-  private static final Ipv6Address LOOPBACK =
-      new Ipv6Address(new short[]{0, 0, 0, 0, 0, 0, 0, 1});
+  private static final Ipv6Address LOOPBACK = new Ipv6Address(new short[] {0, 0, 0, 0, 0, 0, 0, 1});
 
   @Nested
   @DisplayName("Construction Tests")
@@ -84,7 +83,7 @@ class Ipv6SocketAddressTest {
     @DisplayName("should accept non-zero scope id for link-local")
     void shouldAcceptNonZeroScopeId() {
       final Ipv6Address linkLocal =
-          new Ipv6Address(new short[]{(short) 0xFE80, 0, 0, 0, 0, 0, 0, 1});
+          new Ipv6Address(new short[] {(short) 0xFE80, 0, 0, 0, 0, 0, 0, 1});
       final Ipv6SocketAddress sockAddr = new Ipv6SocketAddress(80, 0, linkLocal, 5);
       assertEquals(5, sockAddr.getScopeId(), "Scope ID 5 should be accepted for link-local");
     }
@@ -127,9 +126,7 @@ class Ipv6SocketAddressTest {
       final Ipv6SocketAddress sa1 = new Ipv6SocketAddress(443, 10, LOOPBACK, 2);
       final Ipv6SocketAddress sa2 = new Ipv6SocketAddress(443, 10, LOOPBACK, 2);
       assertEquals(sa1, sa2, "Same values should be equal");
-      assertEquals(
-          sa1.hashCode(), sa2.hashCode(),
-          "Same values should have same hashCode");
+      assertEquals(sa1.hashCode(), sa2.hashCode(), "Same values should have same hashCode");
     }
 
     @Test
@@ -159,7 +156,7 @@ class Ipv6SocketAddressTest {
     @Test
     @DisplayName("different addresses should not be equal")
     void differentAddressesShouldNotBeEqual() {
-      final Ipv6Address addr2 = new Ipv6Address(new short[]{0, 0, 0, 0, 0, 0, 0, 2});
+      final Ipv6Address addr2 = new Ipv6Address(new short[] {0, 0, 0, 0, 0, 0, 0, 2});
       final Ipv6SocketAddress sa1 = new Ipv6SocketAddress(80, 0, LOOPBACK, 0);
       final Ipv6SocketAddress sa2 = new Ipv6SocketAddress(80, 0, addr2, 0);
       assertNotEquals(sa1, sa2, "Different addresses should not be equal");
@@ -189,15 +186,9 @@ class Ipv6SocketAddressTest {
     void toStringShouldFormatAsBracketedAddrPort() {
       final Ipv6SocketAddress sa = new Ipv6SocketAddress(8080, 0, LOOPBACK, 0);
       final String result = sa.toString();
-      assertTrue(
-          result.startsWith("["),
-          "toString should start with [ bracket: " + result);
-      assertTrue(
-          result.contains("]:"),
-          "toString should contain ]: separator: " + result);
-      assertTrue(
-          result.endsWith("8080"),
-          "toString should end with port: " + result);
+      assertTrue(result.startsWith("["), "toString should start with [ bracket: " + result);
+      assertTrue(result.contains("]:"), "toString should contain ]: separator: " + result);
+      assertTrue(result.endsWith("8080"), "toString should end with port: " + result);
     }
 
     @Test
@@ -205,7 +196,8 @@ class Ipv6SocketAddressTest {
     void toStringShouldMatchExpectedForLoopback() {
       final Ipv6SocketAddress sa = new Ipv6SocketAddress(443, 0, LOOPBACK, 0);
       assertEquals(
-          "[0:0:0:0:0:0:0:1]:443", sa.toString(),
+          "[0:0:0:0:0:0:0:1]:443",
+          sa.toString(),
           "toString should format loopback as [0:0:0:0:0:0:0:1]:443");
     }
 
@@ -213,9 +205,7 @@ class Ipv6SocketAddressTest {
     @DisplayName("toString should handle port 0")
     void toStringShouldHandlePortZero() {
       final Ipv6SocketAddress sa = new Ipv6SocketAddress(0, 0, LOOPBACK, 0);
-      assertTrue(
-          sa.toString().endsWith(":0"),
-          "toString should end with :0 for port 0");
+      assertTrue(sa.toString().endsWith(":0"), "toString should end with :0 for port 0");
     }
   }
 }

@@ -68,7 +68,7 @@
         <!-- Quality tool plugin versions -->
         <checkstyle.plugin.version>3.3.0</checkstyle.plugin.version>
         <checkstyle.version>10.12.3</checkstyle.version>
-        <spotless.plugin.version>2.40.0</spotless.plugin.version>
+        <spotless.plugin.version>2.46.1</spotless.plugin.version>
         <spotbugs.plugin.version>4.8.6.4</spotbugs.plugin.version>
         <spotbugs.version>4.8.6</spotbugs.version>
         <findsecbugs.version>1.12.0</findsecbugs.version>
@@ -521,7 +521,7 @@
                     <configuration>
                         <java>
                             <googleJavaFormat>
-                                <version>1.17.0</version>
+                                <version>1.34.1</version>
                                 <style>GOOGLE</style>
                                 <reflowLongStrings>true</reflowLongStrings>
                             </googleJavaFormat>

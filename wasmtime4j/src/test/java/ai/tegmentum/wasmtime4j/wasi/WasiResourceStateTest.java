@@ -111,8 +111,7 @@ class WasiResourceStateTest {
     void ordinalsShouldBeUnique() {
       final Set<Integer> ordinals = new HashSet<>();
       for (final WasiResourceState state : WasiResourceState.values()) {
-        assertTrue(
-            ordinals.add(state.ordinal()), "Ordinal should be unique: " + state.ordinal());
+        assertTrue(ordinals.add(state.ordinal()), "Ordinal should be unique: " + state.ordinal());
       }
     }
 
@@ -134,11 +133,8 @@ class WasiResourceStateTest {
     @DisplayName("valueOf should return correct constant for each name")
     void valueOfShouldReturnCorrectConstant() {
       assertEquals(
-          WasiResourceState.CREATED,
-          WasiResourceState.valueOf("CREATED"),
-          "Should return CREATED");
-      assertEquals(
-          WasiResourceState.OPEN, WasiResourceState.valueOf("OPEN"), "Should return OPEN");
+          WasiResourceState.CREATED, WasiResourceState.valueOf("CREATED"), "Should return CREATED");
+      assertEquals(WasiResourceState.OPEN, WasiResourceState.valueOf("OPEN"), "Should return OPEN");
       assertEquals(
           WasiResourceState.ACTIVE, WasiResourceState.valueOf("ACTIVE"), "Should return ACTIVE");
       assertEquals(
@@ -200,8 +196,7 @@ class WasiResourceStateTest {
       assertTrue(WasiResourceState.OPEN.isUsable(), "OPEN.isUsable() should be true");
       assertTrue(WasiResourceState.ACTIVE.isUsable(), "ACTIVE.isUsable() should be true");
       assertFalse(WasiResourceState.CREATED.isUsable(), "CREATED.isUsable() should be false");
-      assertFalse(
-          WasiResourceState.SUSPENDED.isUsable(), "SUSPENDED.isUsable() should be false");
+      assertFalse(WasiResourceState.SUSPENDED.isUsable(), "SUSPENDED.isUsable() should be false");
       assertFalse(WasiResourceState.ERROR.isUsable(), "ERROR.isUsable() should be false");
       assertFalse(WasiResourceState.CLOSED.isUsable(), "CLOSED.isUsable() should be false");
     }
@@ -211,8 +206,7 @@ class WasiResourceStateTest {
     void isTerminalShouldReturnTrueOnlyForClosedAndError() {
       assertTrue(WasiResourceState.CLOSED.isTerminal(), "CLOSED.isTerminal() should be true");
       assertTrue(WasiResourceState.ERROR.isTerminal(), "ERROR.isTerminal() should be true");
-      assertFalse(
-          WasiResourceState.CREATED.isTerminal(), "CREATED.isTerminal() should be false");
+      assertFalse(WasiResourceState.CREATED.isTerminal(), "CREATED.isTerminal() should be false");
       assertFalse(WasiResourceState.OPEN.isTerminal(), "OPEN.isTerminal() should be false");
       assertFalse(WasiResourceState.ACTIVE.isTerminal(), "ACTIVE.isTerminal() should be false");
       assertFalse(

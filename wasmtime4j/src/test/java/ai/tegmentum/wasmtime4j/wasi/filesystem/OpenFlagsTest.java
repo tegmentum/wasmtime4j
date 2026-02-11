@@ -140,8 +140,7 @@ class OpenFlagsTest {
       final OpenFlags[] values = OpenFlags.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -154,9 +153,7 @@ class OpenFlagsTest {
     @DisplayName("valueOf should return correct constant for each name")
     void valueOfShouldReturnCorrectConstant() {
       assertEquals(
-          OpenFlags.CREATE,
-          OpenFlags.valueOf("CREATE"),
-          "valueOf('CREATE') should return CREATE");
+          OpenFlags.CREATE, OpenFlags.valueOf("CREATE"), "valueOf('CREATE') should return CREATE");
       assertEquals(
           OpenFlags.DIRECTORY,
           OpenFlags.valueOf("DIRECTORY"),
@@ -197,8 +194,7 @@ class OpenFlagsTest {
     @Test
     @DisplayName("values should return array of length 4")
     void valuesShouldReturnArrayOfLengthFour() {
-      assertEquals(
-          4, OpenFlags.values().length, "values() should return array with 4 elements");
+      assertEquals(4, OpenFlags.values().length, "values() should return array with 4 elements");
     }
 
     @Test
@@ -235,17 +231,14 @@ class OpenFlagsTest {
     void toStringShouldMatchNameForAllConstants() {
       for (final OpenFlags flag : OpenFlags.values()) {
         assertEquals(
-            flag.name(),
-            flag.toString(),
-            "toString() should match name() for " + flag.name());
+            flag.name(), flag.toString(), "toString() should match name() for " + flag.name());
       }
     }
 
     @Test
     @DisplayName("toString should return 'CREATE' for CREATE")
     void toStringShouldReturnCreate() {
-      assertEquals(
-          "CREATE", OpenFlags.CREATE.toString(), "toString() should return 'CREATE'");
+      assertEquals("CREATE", OpenFlags.CREATE.toString(), "toString() should return 'CREATE'");
     }
 
     @Test
@@ -284,10 +277,7 @@ class OpenFlagsTest {
     void ofShouldCreateSetWithAllFlags() {
       final Set<OpenFlags> flags =
           OpenFlags.of(
-              OpenFlags.CREATE,
-              OpenFlags.DIRECTORY,
-              OpenFlags.EXCLUSIVE,
-              OpenFlags.TRUNCATE);
+              OpenFlags.CREATE, OpenFlags.DIRECTORY, OpenFlags.EXCLUSIVE, OpenFlags.TRUNCATE);
 
       assertEquals(4, flags.size(), "Set should contain all 4 flags");
     }
@@ -348,8 +338,7 @@ class OpenFlagsTest {
       final Set<OpenFlags> empty = OpenFlags.none();
 
       for (final OpenFlags flag : OpenFlags.values()) {
-        assertFalse(
-            empty.contains(flag), "none() result should not contain " + flag);
+        assertFalse(empty.contains(flag), "none() result should not contain " + flag);
       }
     }
   }

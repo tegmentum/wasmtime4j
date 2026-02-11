@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstancePre;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
+import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
 import java.io.Closeable;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Method;

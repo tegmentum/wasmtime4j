@@ -48,8 +48,7 @@ class RuntimeTypeTest {
     @Test
     @DisplayName("should have exactly 2 values")
     void shouldHaveExactValueCount() {
-      assertEquals(2, RuntimeType.values().length,
-          "RuntimeType should have exactly 2 values");
+      assertEquals(2, RuntimeType.values().length, "RuntimeType should have exactly 2 values");
     }
   }
 
@@ -83,8 +82,7 @@ class RuntimeTypeTest {
       for (final RuntimeType value : RuntimeType.values()) {
         ordinals.add(value.ordinal());
       }
-      assertEquals(RuntimeType.values().length, ordinals.size(),
-          "All ordinals should be unique");
+      assertEquals(RuntimeType.values().length, ordinals.size(), "All ordinals should be unique");
     }
 
     @Test
@@ -92,8 +90,7 @@ class RuntimeTypeTest {
     void shouldHaveSequentialOrdinals() {
       final RuntimeType[] values = RuntimeType.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -106,15 +103,16 @@ class RuntimeTypeTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final RuntimeType value : RuntimeType.values()) {
-        assertEquals(value, RuntimeType.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, RuntimeType.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> RuntimeType.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -141,7 +139,9 @@ class RuntimeTypeTest {
     @DisplayName("should return enum name as toString")
     void shouldReturnEnumNameAsToString() {
       for (final RuntimeType value : RuntimeType.values()) {
-        assertEquals(value.name(), value.toString(),
+        assertEquals(
+            value.name(),
+            value.toString(),
             "toString should return the enum name for " + value.name());
       }
     }

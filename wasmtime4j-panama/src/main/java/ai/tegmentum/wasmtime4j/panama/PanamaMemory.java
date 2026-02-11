@@ -1395,8 +1395,8 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   /**
-   * Throws an appropriate exception for a failed atomic operation based on
-   * the native error code and error message.
+   * Throws an appropriate exception for a failed atomic operation based on the native error code
+   * and error message.
    *
    * @param errorCode the native error code
    * @param operation description of the failed operation

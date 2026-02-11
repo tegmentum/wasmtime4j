@@ -442,7 +442,8 @@ class JniWasmRuntimeTest {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Method method = clazz.getMethod("createWasiContext");
 
-      assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.wasi.WasiContext");
+      assertThat(method.getReturnType().getName())
+          .isEqualTo("ai.tegmentum.wasmtime4j.wasi.WasiContext");
     }
 
     @Test
@@ -544,7 +545,8 @@ class JniWasmRuntimeTest {
     @DisplayName("should have createComponentEngine method with config")
     void shouldHaveCreateComponentEngineWithConfigMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
-      Class<?> configClass = Class.forName("ai.tegmentum.wasmtime4j.component.ComponentEngineConfig");
+      Class<?> configClass =
+          Class.forName("ai.tegmentum.wasmtime4j.component.ComponentEngineConfig");
       Method method = clazz.getMethod("createComponentEngine", configClass);
 
       assertThat(method.getReturnType().getName())

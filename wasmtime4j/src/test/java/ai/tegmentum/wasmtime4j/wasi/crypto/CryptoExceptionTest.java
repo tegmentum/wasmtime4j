@@ -95,9 +95,7 @@ class CryptoExceptionTest {
       assertEquals(message, exception.getMessage(), "Message should match the provided message");
       assertNull(exception.getCause(), "Cause should be null when not provided");
       assertEquals(
-          errorCode,
-          exception.getErrorCode(),
-          "Error code should match the provided error code");
+          errorCode, exception.getErrorCode(), "Error code should match the provided error code");
     }
 
     @Test
@@ -125,9 +123,7 @@ class CryptoExceptionTest {
 
       assertEquals(message, exception.getMessage(), "Message should match the provided message");
       assertEquals(
-          errorCode,
-          exception.getErrorCode(),
-          "Error code should match the provided error code");
+          errorCode, exception.getErrorCode(), "Error code should match the provided error code");
       assertSame(cause, exception.getCause(), "Cause should match the provided cause");
     }
   }
@@ -139,8 +135,7 @@ class CryptoExceptionTest {
     @Test
     @DisplayName("should return correct error code via getErrorCode")
     void shouldReturnCorrectErrorCode() {
-      final CryptoException exception =
-          new CryptoException("Timeout", CryptoErrorCode.TIMEOUT);
+      final CryptoException exception = new CryptoException("Timeout", CryptoErrorCode.TIMEOUT);
 
       assertEquals(
           CryptoErrorCode.TIMEOUT,
@@ -248,8 +243,7 @@ class CryptoExceptionTest {
           exception.getMessage().contains("key generation"),
           "Message should contain 'key generation' keyword");
       assertTrue(
-          exception.getMessage().contains("entropy"),
-          "Message should contain 'entropy' keyword");
+          exception.getMessage().contains("entropy"), "Message should contain 'entropy' keyword");
     }
 
     @Test

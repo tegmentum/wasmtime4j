@@ -116,36 +116,35 @@ class NoExternTest {
     @DisplayName("should be subtype of itself")
     void shouldBeSubtypeOfItself() {
       final NoExtern noExtern = NoExtern.getInstance();
-      assertTrue(
-          noExtern.isSubtypeOf(noExtern),
-          "NoExtern should be a subtype of itself");
+      assertTrue(noExtern.isSubtypeOf(noExtern), "NoExtern should be a subtype of itself");
     }
 
     @Test
     @DisplayName("should be subtype of any EXTERNREF heap type")
     void shouldBeSubtypeOfExternrefHeapType() {
       final NoExtern noExtern = NoExtern.getInstance();
-      final HeapType externType = new HeapType() {
-        @Override
-        public WasmValueType getValueType() {
-          return WasmValueType.EXTERNREF;
-        }
+      final HeapType externType =
+          new HeapType() {
+            @Override
+            public WasmValueType getValueType() {
+              return WasmValueType.EXTERNREF;
+            }
 
-        @Override
-        public boolean isNullable() {
-          return false;
-        }
+            @Override
+            public boolean isNullable() {
+              return false;
+            }
 
-        @Override
-        public boolean isSubtypeOf(final HeapType other) {
-          return false;
-        }
+            @Override
+            public boolean isSubtypeOf(final HeapType other) {
+              return false;
+            }
 
-        @Override
-        public String getTypeName() {
-          return "extern";
-        }
-      };
+            @Override
+            public String getTypeName() {
+              return "extern";
+            }
+          };
       assertTrue(
           noExtern.isSubtypeOf(externType),
           "NoExtern should be a subtype of any EXTERNREF heap type");
@@ -226,9 +225,7 @@ class NoExternTest {
     @DisplayName("should implement HeapType interface")
     void shouldImplementHeapTypeInterface() {
       final NoExtern noExtern = NoExtern.getInstance();
-      assertTrue(
-          noExtern instanceof HeapType,
-          "NoExtern should implement HeapType interface");
+      assertTrue(noExtern instanceof HeapType, "NoExtern should implement HeapType interface");
     }
 
     @Test
@@ -245,9 +242,7 @@ class NoExternTest {
       final NoExtern noExtern = NoExtern.getInstance();
       final HeapType nonNullable = noExtern.asNonNullable();
       assertSame(
-          noExtern,
-          nonNullable,
-          "asNonNullable should return the same instance for bottom types");
+          noExtern, nonNullable, "asNonNullable should return the same instance for bottom types");
     }
   }
 }

@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link Finality}.
  *
- * <p>Verifies enum structure, constants, getWasmKeyword, allowsSubtypes, isFinal,
- * fromWasmKeyword, and toString.
+ * <p>Verifies enum structure, constants, getWasmKeyword, allowsSubtypes, isFinal, fromWasmKeyword,
+ * and toString.
  */
 @DisplayName("Finality Tests")
 class FinalityTest {
@@ -48,8 +48,7 @@ class FinalityTest {
     @Test
     @DisplayName("should have exactly 2 values")
     void shouldHaveExactValueCount() {
-      assertEquals(2, Finality.values().length,
-          "Finality should have exactly 2 values");
+      assertEquals(2, Finality.values().length, "Finality should have exactly 2 values");
     }
   }
 
@@ -77,15 +76,15 @@ class FinalityTest {
     @Test
     @DisplayName("FINAL should have wasm keyword 'final'")
     void finalShouldHaveKeywordFinal() {
-      assertEquals("final", Finality.FINAL.getWasmKeyword(),
-          "FINAL should have wasm keyword 'final'");
+      assertEquals(
+          "final", Finality.FINAL.getWasmKeyword(), "FINAL should have wasm keyword 'final'");
     }
 
     @Test
     @DisplayName("NON_FINAL should have wasm keyword 'sub'")
     void nonFinalShouldHaveKeywordSub() {
-      assertEquals("sub", Finality.NON_FINAL.getWasmKeyword(),
-          "NON_FINAL should have wasm keyword 'sub'");
+      assertEquals(
+          "sub", Finality.NON_FINAL.getWasmKeyword(), "NON_FINAL should have wasm keyword 'sub'");
     }
   }
 
@@ -96,15 +95,13 @@ class FinalityTest {
     @Test
     @DisplayName("FINAL should not allow subtypes")
     void finalShouldNotAllowSubtypes() {
-      assertFalse(Finality.FINAL.allowsSubtypes(),
-          "FINAL should not allow subtypes");
+      assertFalse(Finality.FINAL.allowsSubtypes(), "FINAL should not allow subtypes");
     }
 
     @Test
     @DisplayName("NON_FINAL should allow subtypes")
     void nonFinalShouldAllowSubtypes() {
-      assertTrue(Finality.NON_FINAL.allowsSubtypes(),
-          "NON_FINAL should allow subtypes");
+      assertTrue(Finality.NON_FINAL.allowsSubtypes(), "NON_FINAL should allow subtypes");
     }
   }
 
@@ -115,15 +112,13 @@ class FinalityTest {
     @Test
     @DisplayName("FINAL should return true for isFinal")
     void finalShouldReturnTrueForIsFinal() {
-      assertTrue(Finality.FINAL.isFinal(),
-          "FINAL.isFinal() should return true");
+      assertTrue(Finality.FINAL.isFinal(), "FINAL.isFinal() should return true");
     }
 
     @Test
     @DisplayName("NON_FINAL should return false for isFinal")
     void nonFinalShouldReturnFalseForIsFinal() {
-      assertFalse(Finality.NON_FINAL.isFinal(),
-          "NON_FINAL.isFinal() should return false");
+      assertFalse(Finality.NON_FINAL.isFinal(), "NON_FINAL.isFinal() should return false");
     }
   }
 
@@ -134,21 +129,26 @@ class FinalityTest {
     @Test
     @DisplayName("should return FINAL for keyword 'final'")
     void shouldReturnFinalForKeywordFinal() {
-      assertEquals(Finality.FINAL, Finality.fromWasmKeyword("final"),
+      assertEquals(
+          Finality.FINAL,
+          Finality.fromWasmKeyword("final"),
           "fromWasmKeyword('final') should return FINAL");
     }
 
     @Test
     @DisplayName("should return NON_FINAL for keyword 'sub'")
     void shouldReturnNonFinalForKeywordSub() {
-      assertEquals(Finality.NON_FINAL, Finality.fromWasmKeyword("sub"),
+      assertEquals(
+          Finality.NON_FINAL,
+          Finality.fromWasmKeyword("sub"),
           "fromWasmKeyword('sub') should return NON_FINAL");
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for unknown keyword")
     void shouldThrowForUnknownKeyword() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> Finality.fromWasmKeyword("unknown"),
           "fromWasmKeyword('unknown') should throw IllegalArgumentException");
     }
@@ -156,7 +156,8 @@ class FinalityTest {
     @Test
     @DisplayName("should throw IllegalArgumentException for null keyword")
     void shouldThrowForNullKeyword() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> Finality.fromWasmKeyword(null),
           "fromWasmKeyword(null) should throw IllegalArgumentException");
     }
@@ -169,15 +170,14 @@ class FinalityTest {
     @Test
     @DisplayName("FINAL toString should return wasm keyword")
     void finalToStringShouldReturnKeyword() {
-      assertEquals("final", Finality.FINAL.toString(),
-          "FINAL.toString() should return 'final'");
+      assertEquals("final", Finality.FINAL.toString(), "FINAL.toString() should return 'final'");
     }
 
     @Test
     @DisplayName("NON_FINAL toString should return wasm keyword")
     void nonFinalToStringShouldReturnKeyword() {
-      assertEquals("sub", Finality.NON_FINAL.toString(),
-          "NON_FINAL.toString() should return 'sub'");
+      assertEquals(
+          "sub", Finality.NON_FINAL.toString(), "NON_FINAL.toString() should return 'sub'");
     }
   }
 
@@ -189,15 +189,16 @@ class FinalityTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final Finality value : Finality.values()) {
-        assertEquals(value, Finality.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, Finality.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> Finality.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -211,9 +212,9 @@ class FinalityTest {
     @DisplayName("isFinal and allowsSubtypes should be mutually exclusive")
     void isFinalAndAllowsSubtypesShouldBeMutuallyExclusive() {
       for (final Finality value : Finality.values()) {
-        assertTrue(value.isFinal() != value.allowsSubtypes(),
-            "isFinal and allowsSubtypes should be mutually exclusive for "
-                + value.name());
+        assertTrue(
+            value.isFinal() != value.allowsSubtypes(),
+            "isFinal and allowsSubtypes should be mutually exclusive for " + value.name());
       }
     }
   }

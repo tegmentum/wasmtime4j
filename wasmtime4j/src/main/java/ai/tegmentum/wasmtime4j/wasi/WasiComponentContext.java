@@ -6,8 +6,9 @@ import java.io.Closeable;
 /**
  * Main interface for WASI (WebAssembly System Interface) context operations.
  *
- * <p>This is the primary entry point for interacting with WASI functionality. A WasiComponentContext
- * provides methods to create WASI-enabled WebAssembly components and manage their lifecycle.
+ * <p>This is the primary entry point for interacting with WASI functionality. A
+ * WasiComponentContext provides methods to create WASI-enabled WebAssembly components and manage
+ * their lifecycle.
  *
  * <p>The context abstracts away the underlying implementation details (JNI vs Panama FFI) and
  * provides a consistent API across different Java versions and native bindings.

@@ -19,11 +19,11 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -311,7 +311,8 @@ class JniLinkerTest {
 
   @Test
   void testGetImportRegistryReturnsEmptyList() {
-    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> registry = linker.getImportRegistry();
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> registry =
+        linker.getImportRegistry();
 
     assertThat(registry).isNotNull();
     assertThat(registry).isEmpty();
@@ -322,7 +323,8 @@ class JniLinkerTest {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
     // validateImports is now implemented and should not throw for valid module
-    final ai.tegmentum.wasmtime4j.validation.ImportValidation result = linker.validateImports(module);
+    final ai.tegmentum.wasmtime4j.validation.ImportValidation result =
+        linker.validateImports(module);
     assertThat(result).isNotNull();
   }
 
@@ -331,7 +333,8 @@ class JniLinkerTest {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
     // resolveDependencies is now implemented and should not throw for valid module
-    final ai.tegmentum.wasmtime4j.config.DependencyResolution result = linker.resolveDependencies(module);
+    final ai.tegmentum.wasmtime4j.config.DependencyResolution result =
+        linker.resolveDependencies(module);
     assertThat(result).isNotNull();
   }
 

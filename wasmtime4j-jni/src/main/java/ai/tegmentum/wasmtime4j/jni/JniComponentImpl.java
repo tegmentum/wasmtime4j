@@ -14,15 +14,14 @@ import ai.tegmentum.wasmtime4j.component.ComponentStateTransitionConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.HotSwapStrategy;
+import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceIntrospection;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceMigrationPlan;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceVersion;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -215,8 +214,7 @@ public final class JniComponentImpl implements Component {
    * @throws WasmException if resolution fails
    */
   @Override
-  public Set<Component> resolveDependencies(final ComponentRegistry registry)
-      throws WasmException {
+  public Set<Component> resolveDependencies(final ComponentRegistry registry) throws WasmException {
     JniValidation.requireNonNull(registry, "registry");
     ensureValid();
     // Return empty set for now
@@ -232,8 +230,7 @@ public final class JniComponentImpl implements Component {
    * @throws WasmException if hot-swap fails
    */
   public CompletableFuture<Void> hotSwap(
-      final Component newComponent, final HotSwapStrategy migrationStrategy)
-      throws WasmException {
+      final Component newComponent, final HotSwapStrategy migrationStrategy) throws WasmException {
     JniValidation.requireNonNull(newComponent, "newComponent");
     JniValidation.requireNonNull(migrationStrategy, "migrationStrategy");
     ensureValid();
@@ -289,8 +286,7 @@ public final class JniComponentImpl implements Component {
    * @throws WasmException if check fails
    */
   @Override
-  public ComponentCompatibility checkCompatibility(final Component other)
-      throws WasmException {
+  public ComponentCompatibility checkCompatibility(final Component other) throws WasmException {
     JniValidation.requireNonNull(other, "other");
     ensureValid();
 
@@ -320,8 +316,7 @@ public final class JniComponentImpl implements Component {
   }
 
   @Override
-  public WitCompatibilityResult checkWitCompatibility(final Component other)
-      throws WasmException {
+  public WitCompatibilityResult checkWitCompatibility(final Component other) throws WasmException {
     JniValidation.requireNonNull(other, "other");
     ensureValid();
 

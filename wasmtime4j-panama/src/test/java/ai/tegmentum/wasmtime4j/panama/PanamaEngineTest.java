@@ -2,10 +2,10 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -37,7 +37,8 @@ class PanamaEngineTest {
       """
       (module
         (func (export "add") (param i32 i32) (result i32)
-          local.get 0 local.get 1 i32.add))""";
+          local.get 0 local.get 1 i32.add))\
+      """;
 
   /** Resources to close after each test, in reverse order. */
   private final List<AutoCloseable> resources = new ArrayList<>();

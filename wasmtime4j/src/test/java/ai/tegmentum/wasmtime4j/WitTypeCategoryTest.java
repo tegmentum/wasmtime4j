@@ -43,15 +43,14 @@ class WitTypeCategoryTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(WitTypeCategory.class.isEnum(),
-          "WitTypeCategory should be an enum type");
+      assertTrue(WitTypeCategory.class.isEnum(), "WitTypeCategory should be an enum type");
     }
 
     @Test
     @DisplayName("should have exactly 10 values")
     void shouldHaveExactValueCount() {
-      assertEquals(10, WitTypeCategory.values().length,
-          "WitTypeCategory should have exactly 10 values");
+      assertEquals(
+          10, WitTypeCategory.values().length, "WitTypeCategory should have exactly 10 values");
     }
   }
 
@@ -86,8 +85,8 @@ class WitTypeCategoryTest {
       for (final WitTypeCategory value : WitTypeCategory.values()) {
         ordinals.add(value.ordinal());
       }
-      assertEquals(WitTypeCategory.values().length, ordinals.size(),
-          "All ordinals should be unique");
+      assertEquals(
+          WitTypeCategory.values().length, ordinals.size(), "All ordinals should be unique");
     }
 
     @Test
@@ -95,8 +94,7 @@ class WitTypeCategoryTest {
     void shouldHaveSequentialOrdinals() {
       final WitTypeCategory[] values = WitTypeCategory.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -109,15 +107,16 @@ class WitTypeCategoryTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final WitTypeCategory value : WitTypeCategory.values()) {
-        assertEquals(value, WitTypeCategory.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, WitTypeCategory.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> WitTypeCategory.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -144,7 +143,9 @@ class WitTypeCategoryTest {
     @DisplayName("should return enum name as toString")
     void shouldReturnEnumNameAsToString() {
       for (final WitTypeCategory value : WitTypeCategory.values()) {
-        assertEquals(value.name(), value.toString(),
+        assertEquals(
+            value.name(),
+            value.toString(),
             "toString should return the enum name for " + value.name());
       }
     }
@@ -176,8 +177,7 @@ class WitTypeCategoryTest {
             result = "unknown";
             break;
         }
-        assertEquals(category.name(), result,
-            "Switch should handle " + category.name());
+        assertEquals(category.name(), result, "Switch should handle " + category.name());
       }
     }
   }

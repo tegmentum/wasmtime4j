@@ -1,19 +1,17 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Tag;
-
-import ai.tegmentum.wasmtime4j.type.TagType;
-
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.config.Serializer;
+import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.memory.Tag;
+import ai.tegmentum.wasmtime4j.type.TagType;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import java.io.Closeable;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.config.StoreLimits;
-import ai.tegmentum.wasmtime4j.validation.ImportMap;
 
 /**
  * Main interface for WebAssembly runtime operations.

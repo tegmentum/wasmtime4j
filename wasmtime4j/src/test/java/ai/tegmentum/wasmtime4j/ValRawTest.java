@@ -16,14 +16,13 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.type.ValRaw;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.type.ValRaw;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -165,8 +164,7 @@ class ValRawTest {
     @DisplayName("should store and retrieve Float.POSITIVE_INFINITY")
     void shouldStoreAndRetrievePositiveInfinity() {
       final ValRaw val = ValRaw.f32(Float.POSITIVE_INFINITY);
-      assertEquals(
-          Float.POSITIVE_INFINITY, val.asF32(), "asF32 should return POSITIVE_INFINITY");
+      assertEquals(Float.POSITIVE_INFINITY, val.asF32(), "asF32 should return POSITIVE_INFINITY");
     }
   }
 

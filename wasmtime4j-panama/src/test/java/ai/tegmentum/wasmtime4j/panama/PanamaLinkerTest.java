@@ -7,15 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.config.DependencyResolution;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.validation.ImportInfo;
-import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.config.DependencyResolution;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -714,7 +714,8 @@ class PanamaLinkerTest {
 
       // Native function defines trap stubs for unknown imports
       assertDoesNotThrow(() -> linker.defineUnknownImportsAsTraps(store, module));
-      LOGGER.info("defineUnknownImportsAsTraps successfully defined trap stubs for unknown imports");
+      LOGGER.info(
+          "defineUnknownImportsAsTraps successfully defined trap stubs for unknown imports");
     }
 
     @Test
@@ -751,8 +752,7 @@ class PanamaLinkerTest {
 
       // Native function defines default-value stubs for unknown imports
       assertDoesNotThrow(() -> linker.defineUnknownImportsAsDefaultValues(store, module));
-      LOGGER.info(
-          "defineUnknownImportsAsDefaultValues successfully defined default-value stubs");
+      LOGGER.info("defineUnknownImportsAsDefaultValues successfully defined default-value stubs");
     }
   }
 

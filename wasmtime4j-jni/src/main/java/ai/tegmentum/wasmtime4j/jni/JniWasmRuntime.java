@@ -1,17 +1,14 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.memory.Tag;
-import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.util.JniConcurrencyManager;
@@ -20,7 +17,10 @@ import ai.tegmentum.wasmtime4j.jni.util.JniPhantomReferenceManager;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniResourceCache;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
+import ai.tegmentum.wasmtime4j.type.TagType;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.logging.Logger;
 
@@ -204,7 +204,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public Store createStore(final Engine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
+  public Store createStore(
+      final Engine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
       throws WasmException {
     JniValidation.requireNonNull(engine, "engine");
     JniValidation.requireNonNull(limits, "limits");
@@ -790,7 +791,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.component.ComponentEngine createComponentEngine() throws WasmException {
+  public ai.tegmentum.wasmtime4j.component.ComponentEngine createComponentEngine()
+      throws WasmException {
     return createComponentEngine(new ai.tegmentum.wasmtime4j.component.ComponentEngineConfig());
   }
 
@@ -1006,8 +1008,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public <T> ai.tegmentum.wasmtime4j.component.ComponentLinker<T> createComponentLinker(final Engine engine)
-      throws WasmException {
+  public <T> ai.tegmentum.wasmtime4j.component.ComponentLinker<T> createComponentLinker(
+      final Engine engine) throws WasmException {
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");
     }

@@ -2,10 +2,10 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExternRef;
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -151,7 +151,8 @@ public final class PanamaStore implements Store {
    * @param limits the resource limits to apply
    * @throws WasmException if store creation fails
    */
-  public PanamaStore(final PanamaEngine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
+  public PanamaStore(
+      final PanamaEngine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
       throws WasmException {
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");

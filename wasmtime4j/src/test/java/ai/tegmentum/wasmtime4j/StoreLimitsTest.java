@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.config.StoreLimits;
 
 /**
  * Tests for {@link StoreLimits} class.
@@ -44,11 +44,8 @@ class StoreLimitsTest {
     @DisplayName("should be public final class")
     void shouldBePublicFinalClass() {
       assertTrue(
-          Modifier.isPublic(StoreLimits.class.getModifiers()),
-          "StoreLimits should be public");
-      assertTrue(
-          Modifier.isFinal(StoreLimits.class.getModifiers()),
-          "StoreLimits should be final");
+          Modifier.isPublic(StoreLimits.class.getModifiers()), "StoreLimits should be public");
+      assertTrue(Modifier.isFinal(StoreLimits.class.getModifiers()), "StoreLimits should be final");
     }
 
     @Test
@@ -84,35 +81,25 @@ class StoreLimitsTest {
     @DisplayName("should set memorySize via builder")
     void shouldSetMemorySize() {
       final long memorySizeBytes = 10L * 1024 * 1024; // 10 MB
-      final StoreLimits limits = StoreLimits.builder()
-          .memorySize(memorySizeBytes)
-          .build();
+      final StoreLimits limits = StoreLimits.builder().memorySize(memorySizeBytes).build();
 
-      assertEquals(
-          memorySizeBytes, limits.getMemorySize(),
-          "memorySize should be 10 MB in bytes");
+      assertEquals(memorySizeBytes, limits.getMemorySize(), "memorySize should be 10 MB in bytes");
     }
 
     @Test
     @DisplayName("should set tableElements via builder")
     void shouldSetTableElements() {
       final long elements = 5000L;
-      final StoreLimits limits = StoreLimits.builder()
-          .tableElements(elements)
-          .build();
+      final StoreLimits limits = StoreLimits.builder().tableElements(elements).build();
 
-      assertEquals(
-          elements, limits.getTableElements(),
-          "tableElements should be 5000");
+      assertEquals(elements, limits.getTableElements(), "tableElements should be 5000");
     }
 
     @Test
     @DisplayName("should set instances via builder")
     void shouldSetInstances() {
       final long count = 42L;
-      final StoreLimits limits = StoreLimits.builder()
-          .instances(count)
-          .build();
+      final StoreLimits limits = StoreLimits.builder().instances(count).build();
 
       assertEquals(count, limits.getInstances(), "instances should be 42");
     }
@@ -120,15 +107,14 @@ class StoreLimitsTest {
     @Test
     @DisplayName("should support method chaining for all builder methods")
     void shouldSupportMethodChaining() {
-      final StoreLimits limits = StoreLimits.builder()
-          .memorySize(1024 * 1024L)
-          .tableElements(1000L)
-          .instances(10L)
-          .build();
+      final StoreLimits limits =
+          StoreLimits.builder()
+              .memorySize(1024 * 1024L)
+              .tableElements(1000L)
+              .instances(10L)
+              .build();
 
-      assertEquals(
-          1024 * 1024L, limits.getMemorySize(),
-          "memorySize should be 1 MB");
+      assertEquals(1024 * 1024L, limits.getMemorySize(), "memorySize should be 1 MB");
       assertEquals(1000L, limits.getTableElements(), "tableElements should be 1000");
       assertEquals(10L, limits.getInstances(), "instances should be 10");
     }
@@ -141,10 +127,11 @@ class StoreLimitsTest {
     @Test
     @DisplayName("should reject negative memorySize")
     void shouldRejectNegativeMemorySize() {
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> StoreLimits.builder().memorySize(-1L),
-          "Negative memorySize should throw IllegalArgumentException");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> StoreLimits.builder().memorySize(-1L),
+              "Negative memorySize should throw IllegalArgumentException");
       assertTrue(
           exception.getMessage().toLowerCase().contains("negative"),
           "Exception message should mention 'negative': " + exception.getMessage());
@@ -153,10 +140,11 @@ class StoreLimitsTest {
     @Test
     @DisplayName("should reject negative tableElements")
     void shouldRejectNegativeTableElements() {
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> StoreLimits.builder().tableElements(-100L),
-          "Negative tableElements should throw IllegalArgumentException");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> StoreLimits.builder().tableElements(-100L),
+              "Negative tableElements should throw IllegalArgumentException");
       assertTrue(
           exception.getMessage().toLowerCase().contains("negative"),
           "Exception message should mention 'negative': " + exception.getMessage());
@@ -165,10 +153,11 @@ class StoreLimitsTest {
     @Test
     @DisplayName("should reject negative instances")
     void shouldRejectNegativeInstances() {
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> StoreLimits.builder().instances(-5L),
-          "Negative instances should throw IllegalArgumentException");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> StoreLimits.builder().instances(-5L),
+              "Negative instances should throw IllegalArgumentException");
       assertTrue(
           exception.getMessage().toLowerCase().contains("negative"),
           "Exception message should mention 'negative': " + exception.getMessage());
@@ -177,11 +166,8 @@ class StoreLimitsTest {
     @Test
     @DisplayName("should accept zero values as unlimited")
     void shouldAcceptZeroValues() {
-      final StoreLimits limits = StoreLimits.builder()
-          .memorySize(0L)
-          .tableElements(0L)
-          .instances(0L)
-          .build();
+      final StoreLimits limits =
+          StoreLimits.builder().memorySize(0L).tableElements(0L).instances(0L).build();
 
       assertEquals(0L, limits.getMemorySize(), "Zero memorySize should be accepted");
       assertEquals(0L, limits.getTableElements(), "Zero tableElements should be accepted");
@@ -196,23 +182,19 @@ class StoreLimitsTest {
     @Test
     @DisplayName("should accept Long.MAX_VALUE for memorySize")
     void shouldAcceptMaxValueForMemorySize() {
-      final StoreLimits limits = StoreLimits.builder()
-          .memorySize(Long.MAX_VALUE)
-          .build();
+      final StoreLimits limits = StoreLimits.builder().memorySize(Long.MAX_VALUE).build();
 
       assertEquals(
-          Long.MAX_VALUE, limits.getMemorySize(),
+          Long.MAX_VALUE,
+          limits.getMemorySize(),
           "Long.MAX_VALUE should be accepted for memorySize");
     }
 
     @Test
     @DisplayName("should accept value of 1 for all limits")
     void shouldAcceptMinimumPositiveValues() {
-      final StoreLimits limits = StoreLimits.builder()
-          .memorySize(1L)
-          .tableElements(1L)
-          .instances(1L)
-          .build();
+      final StoreLimits limits =
+          StoreLimits.builder().memorySize(1L).tableElements(1L).instances(1L).build();
 
       assertEquals(1L, limits.getMemorySize(), "memorySize of 1 should be accepted");
       assertEquals(1L, limits.getTableElements(), "tableElements of 1 should be accepted");

@@ -50,16 +50,14 @@ class WitOptionTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(WitOption.class.getModifiers()), "WitOption should be final");
+      assertTrue(Modifier.isFinal(WitOption.class.getModifiers()), "WitOption should be final");
     }
 
     @Test
     @DisplayName("should extend WitValue")
     void shouldExtendWitValue() {
       assertTrue(
-          WitValue.class.isAssignableFrom(WitOption.class),
-          "WitOption should extend WitValue");
+          WitValue.class.isAssignableFrom(WitOption.class), "WitOption should extend WitValue");
     }
 
     @Test
@@ -67,8 +65,7 @@ class WitOptionTest {
     void shouldHaveIsSomeMethod() throws NoSuchMethodException {
       final Method method = WitOption.class.getMethod("isSome");
       assertNotNull(method, "Should have isSome() method");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isSome should return boolean");
+      assertEquals(boolean.class, method.getReturnType(), "isSome should return boolean");
     }
 
     @Test
@@ -76,8 +73,7 @@ class WitOptionTest {
     void shouldHaveIsNoneMethod() throws NoSuchMethodException {
       final Method method = WitOption.class.getMethod("isNone");
       assertNotNull(method, "Should have isNone() method");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isNone should return boolean");
+      assertEquals(boolean.class, method.getReturnType(), "isNone should return boolean");
     }
 
     @Test
@@ -85,8 +81,7 @@ class WitOptionTest {
     void shouldHaveGetMethod() throws NoSuchMethodException {
       final Method method = WitOption.class.getMethod("get");
       assertNotNull(method, "Should have get() method");
-      assertEquals(
-          WitValue.class, method.getReturnType(), "get should return WitValue");
+      assertEquals(WitValue.class, method.getReturnType(), "get should return WitValue");
     }
 
     @Test
@@ -94,8 +89,7 @@ class WitOptionTest {
     void shouldHaveGetValueMethod() throws NoSuchMethodException {
       final Method method = WitOption.class.getMethod("getValue");
       assertNotNull(method, "Should have getValue() method");
-      assertEquals(
-          Optional.class, method.getReturnType(), "getValue should return Optional");
+      assertEquals(Optional.class, method.getReturnType(), "getValue should return Optional");
     }
 
     @Test
@@ -103,8 +97,7 @@ class WitOptionTest {
     void shouldHaveGetInnerTypeMethod() throws NoSuchMethodException {
       final Method method = WitOption.class.getMethod("getInnerType");
       assertNotNull(method, "Should have getInnerType() method");
-      assertEquals(
-          WitType.class, method.getReturnType(), "getInnerType should return WitType");
+      assertEquals(WitType.class, method.getReturnType(), "getInnerType should return WitType");
     }
   }
 
@@ -135,9 +128,7 @@ class WitOptionTest {
     void someGetValueShouldReturnPresentOptional() {
       final WitType ot = createOptionS32Type();
       final WitOption opt = WitOption.some(ot, WitS32.of(42));
-      assertTrue(
-          opt.getValue().isPresent(),
-          "getValue should return present Optional for some");
+      assertTrue(opt.getValue().isPresent(), "getValue should return present Optional for some");
     }
 
     @Test
@@ -181,9 +172,7 @@ class WitOptionTest {
     void noneGetValueShouldReturnEmpty() {
       final WitType ot = createOptionS32Type();
       final WitOption opt = WitOption.none(ot);
-      assertFalse(
-          opt.getValue().isPresent(),
-          "getValue should return empty Optional for none");
+      assertFalse(opt.getValue().isPresent(), "getValue should return empty Optional for none");
     }
   }
 
@@ -241,9 +230,7 @@ class WitOptionTest {
       final WitOption opt = WitOption.none(ot);
       final Object javaValue = opt.toJava();
       assertTrue(javaValue instanceof Optional, "toJava should return Optional");
-      assertFalse(
-          ((Optional<?>) javaValue).isPresent(),
-          "toJava of none should be empty Optional");
+      assertFalse(((Optional<?>) javaValue).isPresent(), "toJava of none should be empty Optional");
     }
   }
 
@@ -289,9 +276,7 @@ class WitOptionTest {
       final WitType ot = createOptionS32Type();
       final WitOption o1 = WitOption.some(ot, WitS32.of(42));
       final WitOption o2 = WitOption.some(ot, WitS32.of(42));
-      assertEquals(
-          o1.hashCode(), o2.hashCode(),
-          "Same options should have same hash code");
+      assertEquals(o1.hashCode(), o2.hashCode(), "Same options should have same hash code");
     }
   }
 

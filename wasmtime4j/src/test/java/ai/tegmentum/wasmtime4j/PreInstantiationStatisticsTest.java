@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -25,13 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
 
 /**
  * Tests for {@link PreInstantiationStatistics} class.
@@ -69,14 +67,18 @@ class PreInstantiationStatisticsTest {
 
       assertNotNull(stats, "Statistics should not be null");
       assertNotNull(stats.getCreationTime(), "Creation time should have a default");
-      assertEquals(Duration.ZERO, stats.getPreparationTime(),
+      assertEquals(
+          Duration.ZERO,
+          stats.getPreparationTime(),
           "Default preparation time should be Duration.ZERO");
       assertEquals(0L, stats.getMemoryFootprint(), "Default memory footprint should be 0");
-      assertEquals(0L, stats.getFunctionsPrecompiled(),
-          "Default functions precompiled should be 0");
+      assertEquals(
+          0L, stats.getFunctionsPrecompiled(), "Default functions precompiled should be 0");
       assertEquals(0L, stats.getTotalFunctions(), "Default total functions should be 0");
       assertEquals(0L, stats.getInstancesCreated(), "Default instances created should be 0");
-      assertEquals(Duration.ZERO, stats.getAverageInstantiationTime(),
+      assertEquals(
+          Duration.ZERO,
+          stats.getAverageInstantiationTime(),
           "Default average instantiation time should be Duration.ZERO");
       assertEquals(0L, stats.getMemoryPoolSize(), "Default memory pool size should be 0");
       assertFalse(stats.isPoolingEnabled(), "Default pooling enabled should be false");
@@ -103,9 +105,8 @@ class PreInstantiationStatisticsTest {
     @DisplayName("should set creationTime via builder")
     void shouldSetCreationTimeViaBuilder() {
       final Instant fixedTime = Instant.parse("2025-01-01T00:00:00Z");
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .creationTime(fixedTime)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().creationTime(fixedTime).build();
 
       assertEquals(fixedTime, stats.getCreationTime(), "Creation time should match set value");
     }
@@ -114,20 +115,17 @@ class PreInstantiationStatisticsTest {
     @DisplayName("should set preparationTime via builder")
     void shouldSetPreparationTimeViaBuilder() {
       final Duration prepTime = Duration.ofMillis(500);
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .preparationTime(prepTime)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().preparationTime(prepTime).build();
 
-      assertEquals(prepTime, stats.getPreparationTime(),
-          "Preparation time should match set value");
+      assertEquals(prepTime, stats.getPreparationTime(), "Preparation time should match set value");
     }
 
     @Test
     @DisplayName("should set memoryFootprint via builder")
     void shouldSetMemoryFootprintViaBuilder() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .memoryFootprint(65536L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().memoryFootprint(65536L).build();
 
       assertEquals(65536L, stats.getMemoryFootprint(), "Memory footprint should be 65536");
     }
@@ -135,20 +133,17 @@ class PreInstantiationStatisticsTest {
     @Test
     @DisplayName("should set functionsPrecompiled via builder")
     void shouldSetFunctionsPrecompiledViaBuilder() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .functionsPrecompiled(42L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().functionsPrecompiled(42L).build();
 
-      assertEquals(42L, stats.getFunctionsPrecompiled(),
-          "Functions precompiled should be 42");
+      assertEquals(42L, stats.getFunctionsPrecompiled(), "Functions precompiled should be 42");
     }
 
     @Test
     @DisplayName("should set totalFunctions via builder")
     void shouldSetTotalFunctionsViaBuilder() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .totalFunctions(100L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().totalFunctions(100L).build();
 
       assertEquals(100L, stats.getTotalFunctions(), "Total functions should be 100");
     }
@@ -156,9 +151,8 @@ class PreInstantiationStatisticsTest {
     @Test
     @DisplayName("should set instancesCreated via builder")
     void shouldSetInstancesCreatedViaBuilder() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .instancesCreated(25L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().instancesCreated(25L).build();
 
       assertEquals(25L, stats.getInstancesCreated(), "Instances created should be 25");
     }
@@ -167,20 +161,20 @@ class PreInstantiationStatisticsTest {
     @DisplayName("should set averageInstantiationTime via builder")
     void shouldSetAverageInstantiationTimeViaBuilder() {
       final Duration avgTime = Duration.ofMillis(10);
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .averageInstantiationTime(avgTime)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().averageInstantiationTime(avgTime).build();
 
-      assertEquals(avgTime, stats.getAverageInstantiationTime(),
+      assertEquals(
+          avgTime,
+          stats.getAverageInstantiationTime(),
           "Average instantiation time should match set value");
     }
 
     @Test
     @DisplayName("should set memoryPoolSize via builder")
     void shouldSetMemoryPoolSizeViaBuilder() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .memoryPoolSize(1048576L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().memoryPoolSize(1048576L).build();
 
       assertEquals(1048576L, stats.getMemoryPoolSize(), "Memory pool size should be 1048576");
     }
@@ -188,9 +182,8 @@ class PreInstantiationStatisticsTest {
     @Test
     @DisplayName("should set poolingEnabled via builder")
     void shouldSetPoolingEnabledViaBuilder() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .poolingEnabled(true)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().poolingEnabled(true).build();
 
       assertTrue(stats.isPoolingEnabled(), "Pooling should be enabled");
     }
@@ -202,17 +195,18 @@ class PreInstantiationStatisticsTest {
       final Duration prepTime = Duration.ofMillis(250);
       final Duration avgTime = Duration.ofMillis(5);
 
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .creationTime(fixedTime)
-          .preparationTime(prepTime)
-          .memoryFootprint(32768L)
-          .functionsPrecompiled(80L)
-          .totalFunctions(100L)
-          .instancesCreated(50L)
-          .averageInstantiationTime(avgTime)
-          .memoryPoolSize(524288L)
-          .poolingEnabled(true)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder()
+              .creationTime(fixedTime)
+              .preparationTime(prepTime)
+              .memoryFootprint(32768L)
+              .functionsPrecompiled(80L)
+              .totalFunctions(100L)
+              .instancesCreated(50L)
+              .averageInstantiationTime(avgTime)
+              .memoryPoolSize(524288L)
+              .poolingEnabled(true)
+              .build();
 
       assertEquals(fixedTime, stats.getCreationTime(), "Creation time should match");
       assertEquals(prepTime, stats.getPreparationTime(), "Preparation time should match");
@@ -220,8 +214,8 @@ class PreInstantiationStatisticsTest {
       assertEquals(80L, stats.getFunctionsPrecompiled(), "Functions precompiled should match");
       assertEquals(100L, stats.getTotalFunctions(), "Total functions should match");
       assertEquals(50L, stats.getInstancesCreated(), "Instances created should match");
-      assertEquals(avgTime, stats.getAverageInstantiationTime(),
-          "Average instantiation time should match");
+      assertEquals(
+          avgTime, stats.getAverageInstantiationTime(), "Average instantiation time should match");
       assertEquals(524288L, stats.getMemoryPoolSize(), "Memory pool size should match");
       assertTrue(stats.isPoolingEnabled(), "Pooling enabled should match");
     }
@@ -266,72 +260,93 @@ class PreInstantiationStatisticsTest {
     @Test
     @DisplayName("getFunctionPrecompilationRatio should compute correct ratio")
     void getFunctionPrecompilationRatioShouldComputeCorrectRatio() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .functionsPrecompiled(75L)
-          .totalFunctions(100L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder()
+              .functionsPrecompiled(75L)
+              .totalFunctions(100L)
+              .build();
 
-      assertEquals(0.75, stats.getFunctionPrecompilationRatio(), 0.001,
+      assertEquals(
+          0.75,
+          stats.getFunctionPrecompilationRatio(),
+          0.001,
           "Precompilation ratio should be 0.75");
     }
 
     @Test
     @DisplayName("getFunctionPrecompilationRatio should return zero when no total functions")
     void getFunctionPrecompilationRatioShouldReturnZeroWhenNoTotalFunctions() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .functionsPrecompiled(10L)
-          .totalFunctions(0L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().functionsPrecompiled(10L).totalFunctions(0L).build();
 
-      assertEquals(0.0, stats.getFunctionPrecompilationRatio(), 0.001,
+      assertEquals(
+          0.0,
+          stats.getFunctionPrecompilationRatio(),
+          0.001,
           "Precompilation ratio should be 0.0 when totalFunctions is 0");
     }
 
     @Test
     @DisplayName("getFunctionPrecompilationRatio should return 1.0 when all precompiled")
     void getFunctionPrecompilationRatioShouldReturnOneWhenAllPrecompiled() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .functionsPrecompiled(50L)
-          .totalFunctions(50L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder()
+              .functionsPrecompiled(50L)
+              .totalFunctions(50L)
+              .build();
 
-      assertEquals(1.0, stats.getFunctionPrecompilationRatio(), 0.001,
+      assertEquals(
+          1.0,
+          stats.getFunctionPrecompilationRatio(),
+          0.001,
           "Precompilation ratio should be 1.0 when all functions are precompiled");
     }
 
     @Test
     @DisplayName("getPreparationEfficiency should compute instances per second")
     void getPreparationEfficiencyShouldComputeInstancesPerSecond() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .preparationTime(Duration.ofSeconds(2))
-          .instancesCreated(100L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder()
+              .preparationTime(Duration.ofSeconds(2))
+              .instancesCreated(100L)
+              .build();
 
-      assertEquals(50.0, stats.getPreparationEfficiency(), 0.001,
+      assertEquals(
+          50.0,
+          stats.getPreparationEfficiency(),
+          0.001,
           "Preparation efficiency should be 50 instances/second");
     }
 
     @Test
     @DisplayName("getPreparationEfficiency should return zero when preparation time is zero")
     void getPreparationEfficiencyShouldReturnZeroWhenPrepTimeZero() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .preparationTime(Duration.ZERO)
-          .instancesCreated(100L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder()
+              .preparationTime(Duration.ZERO)
+              .instancesCreated(100L)
+              .build();
 
-      assertEquals(0.0, stats.getPreparationEfficiency(), 0.001,
+      assertEquals(
+          0.0,
+          stats.getPreparationEfficiency(),
+          0.001,
           "Preparation efficiency should be 0.0 when preparation time is zero");
     }
 
     @Test
     @DisplayName("getPreparationEfficiency should return zero when no instances created")
     void getPreparationEfficiencyShouldReturnZeroWhenNoInstances() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .preparationTime(Duration.ofSeconds(1))
-          .instancesCreated(0L)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder()
+              .preparationTime(Duration.ofSeconds(1))
+              .instancesCreated(0L)
+              .build();
 
-      assertEquals(0.0, stats.getPreparationEfficiency(), 0.001,
+      assertEquals(
+          0.0,
+          stats.getPreparationEfficiency(),
+          0.001,
           "Preparation efficiency should be 0.0 when no instances created");
     }
   }
@@ -346,29 +361,31 @@ class PreInstantiationStatisticsTest {
       final Instant fixedTime = Instant.parse("2025-01-01T00:00:00Z");
       final Duration prepTime = Duration.ofMillis(100);
 
-      final PreInstantiationStatistics stats1 = PreInstantiationStatistics.builder()
-          .creationTime(fixedTime)
-          .preparationTime(prepTime)
-          .memoryFootprint(1024L)
-          .functionsPrecompiled(10L)
-          .totalFunctions(20L)
-          .instancesCreated(5L)
-          .averageInstantiationTime(Duration.ofMillis(2))
-          .memoryPoolSize(4096L)
-          .poolingEnabled(true)
-          .build();
+      final PreInstantiationStatistics stats1 =
+          PreInstantiationStatistics.builder()
+              .creationTime(fixedTime)
+              .preparationTime(prepTime)
+              .memoryFootprint(1024L)
+              .functionsPrecompiled(10L)
+              .totalFunctions(20L)
+              .instancesCreated(5L)
+              .averageInstantiationTime(Duration.ofMillis(2))
+              .memoryPoolSize(4096L)
+              .poolingEnabled(true)
+              .build();
 
-      final PreInstantiationStatistics stats2 = PreInstantiationStatistics.builder()
-          .creationTime(fixedTime)
-          .preparationTime(prepTime)
-          .memoryFootprint(1024L)
-          .functionsPrecompiled(10L)
-          .totalFunctions(20L)
-          .instancesCreated(5L)
-          .averageInstantiationTime(Duration.ofMillis(2))
-          .memoryPoolSize(4096L)
-          .poolingEnabled(true)
-          .build();
+      final PreInstantiationStatistics stats2 =
+          PreInstantiationStatistics.builder()
+              .creationTime(fixedTime)
+              .preparationTime(prepTime)
+              .memoryFootprint(1024L)
+              .functionsPrecompiled(10L)
+              .totalFunctions(20L)
+              .instancesCreated(5L)
+              .averageInstantiationTime(Duration.ofMillis(2))
+              .memoryPoolSize(4096L)
+              .poolingEnabled(true)
+              .build();
 
       assertEquals(stats1, stats2, "Statistics with identical values should be equal");
     }
@@ -378,18 +395,20 @@ class PreInstantiationStatisticsTest {
     void equalsShouldReturnFalseForDifferentMemoryFootprint() {
       final Instant fixedTime = Instant.parse("2025-01-01T00:00:00Z");
 
-      final PreInstantiationStatistics stats1 = PreInstantiationStatistics.builder()
-          .creationTime(fixedTime)
-          .memoryFootprint(1024L)
-          .build();
+      final PreInstantiationStatistics stats1 =
+          PreInstantiationStatistics.builder()
+              .creationTime(fixedTime)
+              .memoryFootprint(1024L)
+              .build();
 
-      final PreInstantiationStatistics stats2 = PreInstantiationStatistics.builder()
-          .creationTime(fixedTime)
-          .memoryFootprint(2048L)
-          .build();
+      final PreInstantiationStatistics stats2 =
+          PreInstantiationStatistics.builder()
+              .creationTime(fixedTime)
+              .memoryFootprint(2048L)
+              .build();
 
-      assertNotEquals(stats1, stats2,
-          "Statistics with different memoryFootprint should not be equal");
+      assertNotEquals(
+          stats1, stats2, "Statistics with different memoryFootprint should not be equal");
     }
 
     @Test
@@ -413,18 +432,20 @@ class PreInstantiationStatisticsTest {
     void hashCodeShouldBeEqualForEqualObjects() {
       final Instant fixedTime = Instant.parse("2025-01-01T00:00:00Z");
 
-      final PreInstantiationStatistics stats1 = PreInstantiationStatistics.builder()
-          .creationTime(fixedTime)
-          .memoryFootprint(1024L)
-          .build();
+      final PreInstantiationStatistics stats1 =
+          PreInstantiationStatistics.builder()
+              .creationTime(fixedTime)
+              .memoryFootprint(1024L)
+              .build();
 
-      final PreInstantiationStatistics stats2 = PreInstantiationStatistics.builder()
-          .creationTime(fixedTime)
-          .memoryFootprint(1024L)
-          .build();
+      final PreInstantiationStatistics stats2 =
+          PreInstantiationStatistics.builder()
+              .creationTime(fixedTime)
+              .memoryFootprint(1024L)
+              .build();
 
-      assertEquals(stats1.hashCode(), stats2.hashCode(),
-          "Equal objects should have equal hash codes");
+      assertEquals(
+          stats1.hashCode(), stats2.hashCode(), "Equal objects should have equal hash codes");
     }
   }
 
@@ -437,17 +458,16 @@ class PreInstantiationStatisticsTest {
     void toStringShouldContainPrefix() {
       final PreInstantiationStatistics stats = PreInstantiationStatistics.builder().build();
 
-      assertTrue(stats.toString().startsWith("PreInstantiationStatistics{"),
+      assertTrue(
+          stats.toString().startsWith("PreInstantiationStatistics{"),
           "toString should start with 'PreInstantiationStatistics{'");
     }
 
     @Test
     @DisplayName("toString should contain key field names")
     void toStringShouldContainKeyFieldNames() {
-      final PreInstantiationStatistics stats = PreInstantiationStatistics.builder()
-          .memoryFootprint(4096L)
-          .poolingEnabled(true)
-          .build();
+      final PreInstantiationStatistics stats =
+          PreInstantiationStatistics.builder().memoryFootprint(4096L).poolingEnabled(true).build();
 
       final String str = stats.toString();
 

@@ -22,13 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.metadata.TargetFeaturesSection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.metadata.TargetFeaturesSection;
 
 /** Tests for {@link TargetFeaturesSection} target features custom section data. */
 @DisplayName("TargetFeaturesSection")
@@ -96,8 +96,7 @@ final class TargetFeaturesSectionTest {
           TargetFeaturesSection.builder().addRequiredFeature("mutable-globals").build();
       assertEquals(1, section.getRequiredFeatures().size(), "Should have 1 required feature");
       assertTrue(
-          section.isFeatureRequired("mutable-globals"),
-          "mutable-globals should be required");
+          section.isFeatureRequired("mutable-globals"), "mutable-globals should be required");
     }
 
     @Test
@@ -200,8 +199,7 @@ final class TargetFeaturesSectionTest {
     @DisplayName("should get feature entry by name")
     void shouldGetFeatureByName() {
       final TargetFeaturesSection section = createTestSection();
-      final Optional<TargetFeaturesSection.FeatureEntry> feature =
-          section.getFeature("sign-ext");
+      final Optional<TargetFeaturesSection.FeatureEntry> feature = section.getFeature("sign-ext");
       assertTrue(feature.isPresent(), "Should find sign-ext feature");
       assertEquals(
           TargetFeaturesSection.FeatureStatus.USED,
@@ -213,8 +211,7 @@ final class TargetFeaturesSectionTest {
     @DisplayName("should return empty for non-existent feature")
     void shouldReturnEmptyForNonExistent() {
       final TargetFeaturesSection section = createTestSection();
-      final Optional<TargetFeaturesSection.FeatureEntry> result =
-          section.getFeature("nonexistent");
+      final Optional<TargetFeaturesSection.FeatureEntry> result = section.getFeature("nonexistent");
       assertFalse(result.isPresent(), "Should not find non-existent feature");
     }
   }
@@ -329,9 +326,7 @@ final class TargetFeaturesSectionTest {
           section.validateCompatibility(supported);
       assertFalse(result.isCompatible(), "Should not be compatible with missing required feature");
       assertEquals(
-          1,
-          result.getMissingRequiredFeatures().size(),
-          "Should have 1 missing required feature");
+          1, result.getMissingRequiredFeatures().size(), "Should have 1 missing required feature");
       assertTrue(
           result.getMissingRequiredFeatures().contains("bulk-memory"),
           "bulk-memory should be in missing required");
@@ -351,9 +346,7 @@ final class TargetFeaturesSectionTest {
       assertTrue(result.isCompatible(), "Should be compatible (only used, not required)");
       assertTrue(result.hasWarnings(), "Should have warnings for unsupported used features");
       assertEquals(
-          1,
-          result.getUnsupportedUsedFeatures().size(),
-          "Should have 1 unsupported used feature");
+          1, result.getUnsupportedUsedFeatures().size(), "Should have 1 unsupported used feature");
     }
 
     @Test
@@ -409,8 +402,9 @@ final class TargetFeaturesSectionTest {
     void shouldRejectNullName() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new TargetFeaturesSection.FeatureEntry(
-              null, TargetFeaturesSection.FeatureStatus.REQUIRED),
+          () ->
+              new TargetFeaturesSection.FeatureEntry(
+                  null, TargetFeaturesSection.FeatureStatus.REQUIRED),
           "Expected IllegalArgumentException for null name");
     }
 
@@ -419,8 +413,9 @@ final class TargetFeaturesSectionTest {
     void shouldRejectEmptyName() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new TargetFeaturesSection.FeatureEntry(
-              "  ", TargetFeaturesSection.FeatureStatus.REQUIRED),
+          () ->
+              new TargetFeaturesSection.FeatureEntry(
+                  "  ", TargetFeaturesSection.FeatureStatus.REQUIRED),
           "Expected IllegalArgumentException for blank name");
     }
 
@@ -443,9 +438,7 @@ final class TargetFeaturesSectionTest {
       final TargetFeaturesSection.FeatureEntry entry3 =
           TargetFeaturesSection.FeatureEntry.used("mutable-globals");
       assertEquals(entry1, entry2, "Entries with same name and status should be equal");
-      assertFalse(
-          entry1.equals(entry3),
-          "Entries with different status should not be equal");
+      assertFalse(entry1.equals(entry3), "Entries with different status should not be equal");
     }
 
     @Test
@@ -455,8 +448,7 @@ final class TargetFeaturesSectionTest {
           TargetFeaturesSection.FeatureEntry.required("mutable-globals");
       final TargetFeaturesSection.FeatureEntry entry2 =
           TargetFeaturesSection.FeatureEntry.required("mutable-globals");
-      assertEquals(
-          entry1.hashCode(), entry2.hashCode(), "Equal entries should have same hashCode");
+      assertEquals(entry1.hashCode(), entry2.hashCode(), "Equal entries should have same hashCode");
     }
 
     @Test
@@ -492,8 +484,7 @@ final class TargetFeaturesSectionTest {
     @DisplayName("should handle empty lists")
     void shouldHandleEmptyLists() {
       final TargetFeaturesSection.FeatureCompatibilityResult result =
-          new TargetFeaturesSection.FeatureCompatibilityResult(
-              List.of(), List.of());
+          new TargetFeaturesSection.FeatureCompatibilityResult(List.of(), List.of());
       assertTrue(result.isCompatible(), "Empty missing should be compatible");
       assertFalse(result.hasWarnings(), "Empty unsupported should have no warnings");
     }

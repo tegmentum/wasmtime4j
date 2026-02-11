@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.wit;
-import ai.tegmentum.wasmtime4j.WasmValue;
 
+import ai.tegmentum.wasmtime4j.WasmValue;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

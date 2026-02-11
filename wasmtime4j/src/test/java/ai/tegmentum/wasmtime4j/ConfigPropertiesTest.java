@@ -36,7 +36,8 @@ import org.junit.jupiter.api.Test;
  * Tests for {@link ConfigProperties} class.
  *
  * <p>ConfigProperties is a type-safe configuration properties container supporting string, int,
- * long, double, and boolean access with defaults, immutability, and functional with/without methods.
+ * long, double, and boolean access with defaults, immutability, and functional with/without
+ * methods.
  */
 @DisplayName("ConfigProperties Tests")
 class ConfigPropertiesTest {
@@ -200,8 +201,7 @@ class ConfigPropertiesTest {
     @Test
     @DisplayName("getLong should parse valid long")
     void getLongShouldParseValidLong() {
-      final ConfigProperties props =
-          new ConfigProperties(Map.of("bignum", "9999999999"));
+      final ConfigProperties props = new ConfigProperties(Map.of("bignum", "9999999999"));
       final Optional<Long> result = props.getLong("bignum");
 
       assertTrue(result.isPresent(), "getLong should parse large number");
@@ -400,9 +400,7 @@ class ConfigPropertiesTest {
 
       assertNotNull(result, "toString should not return null");
       assertTrue(result.contains("2"), "toString should include size");
-      assertTrue(
-          result.contains("ConfigProperties"),
-          "toString should contain class name");
+      assertTrue(result.contains("ConfigProperties"), "toString should contain class name");
     }
   }
 }

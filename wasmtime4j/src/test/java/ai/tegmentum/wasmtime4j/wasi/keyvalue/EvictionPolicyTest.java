@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for EvictionPolicy enum.
  *
- * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage for
- * WASI key-value cache eviction policies.
+ * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage
+ * for WASI key-value cache eviction policies.
  */
 @DisplayName("EvictionPolicy Tests")
 class EvictionPolicyTest {
@@ -184,8 +184,7 @@ class EvictionPolicyTest {
       final EvictionPolicy[] values = EvictionPolicy.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -198,21 +197,15 @@ class EvictionPolicyTest {
     @DisplayName("valueOf should return correct constant for each name")
     void valueOfShouldReturnCorrectConstant() {
       assertEquals(
-          EvictionPolicy.LRU,
-          EvictionPolicy.valueOf("LRU"),
-          "valueOf('LRU') should return LRU");
+          EvictionPolicy.LRU, EvictionPolicy.valueOf("LRU"), "valueOf('LRU') should return LRU");
       assertEquals(
-          EvictionPolicy.LFU,
-          EvictionPolicy.valueOf("LFU"),
-          "valueOf('LFU') should return LFU");
+          EvictionPolicy.LFU, EvictionPolicy.valueOf("LFU"), "valueOf('LFU') should return LFU");
       assertEquals(
           EvictionPolicy.FIFO,
           EvictionPolicy.valueOf("FIFO"),
           "valueOf('FIFO') should return FIFO");
       assertEquals(
-          EvictionPolicy.TTL,
-          EvictionPolicy.valueOf("TTL"),
-          "valueOf('TTL') should return TTL");
+          EvictionPolicy.TTL, EvictionPolicy.valueOf("TTL"), "valueOf('TTL') should return TTL");
       assertEquals(
           EvictionPolicy.SIZE_BASED,
           EvictionPolicy.valueOf("SIZE_BASED"),
@@ -254,24 +247,20 @@ class EvictionPolicyTest {
     @DisplayName("values should return array of length 7")
     void valuesShouldReturnArrayOfLengthSeven() {
       assertEquals(
-          7,
-          EvictionPolicy.values().length,
-          "values() should return array with 7 elements");
+          7, EvictionPolicy.values().length, "values() should return array with 7 elements");
     }
 
     @Test
     @DisplayName("values should contain all constants")
     void valuesShouldContainAllConstants() {
-      final Set<EvictionPolicy> valueSet =
-          new HashSet<>(Arrays.asList(EvictionPolicy.values()));
+      final Set<EvictionPolicy> valueSet = new HashSet<>(Arrays.asList(EvictionPolicy.values()));
 
       assertTrue(valueSet.contains(EvictionPolicy.LRU), "values() should contain LRU");
       assertTrue(valueSet.contains(EvictionPolicy.LFU), "values() should contain LFU");
       assertTrue(valueSet.contains(EvictionPolicy.FIFO), "values() should contain FIFO");
       assertTrue(valueSet.contains(EvictionPolicy.TTL), "values() should contain TTL");
       assertTrue(
-          valueSet.contains(EvictionPolicy.SIZE_BASED),
-          "values() should contain SIZE_BASED");
+          valueSet.contains(EvictionPolicy.SIZE_BASED), "values() should contain SIZE_BASED");
       assertTrue(valueSet.contains(EvictionPolicy.RANDOM), "values() should contain RANDOM");
       assertTrue(valueSet.contains(EvictionPolicy.NONE), "values() should contain NONE");
     }
@@ -308,15 +297,13 @@ class EvictionPolicyTest {
     @Test
     @DisplayName("toString should return 'LRU' for LRU")
     void toStringShouldReturnLru() {
-      assertEquals(
-          "LRU", EvictionPolicy.LRU.toString(), "toString() should return 'LRU'");
+      assertEquals("LRU", EvictionPolicy.LRU.toString(), "toString() should return 'LRU'");
     }
 
     @Test
     @DisplayName("toString should return 'NONE' for NONE")
     void toStringShouldReturnNone() {
-      assertEquals(
-          "NONE", EvictionPolicy.NONE.toString(), "toString() should return 'NONE'");
+      assertEquals("NONE", EvictionPolicy.NONE.toString(), "toString() should return 'NONE'");
     }
   }
 

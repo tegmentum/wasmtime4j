@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for IsolationLevel enum.
  *
- * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage for
- * WASI key-value transaction isolation levels.
+ * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage
+ * for WASI key-value transaction isolation levels.
  */
 @DisplayName("IsolationLevel Tests")
 class IsolationLevelTest {
@@ -142,8 +142,7 @@ class IsolationLevelTest {
     @Test
     @DisplayName("SERIALIZABLE should have ordinal 3")
     void serializableShouldHaveOrdinalThree() {
-      assertEquals(
-          3, IsolationLevel.SERIALIZABLE.ordinal(), "SERIALIZABLE ordinal should be 3");
+      assertEquals(3, IsolationLevel.SERIALIZABLE.ordinal(), "SERIALIZABLE ordinal should be 3");
     }
 
     @Test
@@ -158,8 +157,7 @@ class IsolationLevelTest {
       final IsolationLevel[] values = IsolationLevel.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -220,16 +218,13 @@ class IsolationLevelTest {
     @DisplayName("values should return array of length 5")
     void valuesShouldReturnArrayOfLengthFive() {
       assertEquals(
-          5,
-          IsolationLevel.values().length,
-          "values() should return array with 5 elements");
+          5, IsolationLevel.values().length, "values() should return array with 5 elements");
     }
 
     @Test
     @DisplayName("values should contain all constants")
     void valuesShouldContainAllConstants() {
-      final Set<IsolationLevel> valueSet =
-          new HashSet<>(Arrays.asList(IsolationLevel.values()));
+      final Set<IsolationLevel> valueSet = new HashSet<>(Arrays.asList(IsolationLevel.values()));
 
       assertTrue(
           valueSet.contains(IsolationLevel.READ_UNCOMMITTED),
@@ -241,10 +236,8 @@ class IsolationLevelTest {
           valueSet.contains(IsolationLevel.REPEATABLE_READ),
           "values() should contain REPEATABLE_READ");
       assertTrue(
-          valueSet.contains(IsolationLevel.SERIALIZABLE),
-          "values() should contain SERIALIZABLE");
-      assertTrue(
-          valueSet.contains(IsolationLevel.SNAPSHOT), "values() should contain SNAPSHOT");
+          valueSet.contains(IsolationLevel.SERIALIZABLE), "values() should contain SERIALIZABLE");
+      assertTrue(valueSet.contains(IsolationLevel.SNAPSHOT), "values() should contain SNAPSHOT");
     }
 
     @Test
@@ -270,9 +263,7 @@ class IsolationLevelTest {
     void toStringShouldMatchNameForAllConstants() {
       for (final IsolationLevel level : IsolationLevel.values()) {
         assertEquals(
-            level.name(),
-            level.toString(),
-            "toString() should match name() for " + level.name());
+            level.name(), level.toString(), "toString() should match name() for " + level.name());
       }
     }
 
@@ -289,9 +280,7 @@ class IsolationLevelTest {
     @DisplayName("toString should return 'SNAPSHOT' for SNAPSHOT")
     void toStringShouldReturnSnapshot() {
       assertEquals(
-          "SNAPSHOT",
-          IsolationLevel.SNAPSHOT.toString(),
-          "toString() should return 'SNAPSHOT'");
+          "SNAPSHOT", IsolationLevel.SNAPSHOT.toString(), "toString() should return 'SNAPSHOT'");
     }
   }
 

@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.async;
 
-import ai.tegmentum.wasmtime4j.func.Function;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.func.Function;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;

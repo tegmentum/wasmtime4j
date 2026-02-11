@@ -74,9 +74,7 @@ class NoFuncTest {
     void getValueTypeShouldReturnFuncref() {
       final NoFunc noFunc = NoFunc.getInstance();
       assertEquals(
-          WasmValueType.FUNCREF,
-          noFunc.getValueType(),
-          "NoFunc value type should be FUNCREF");
+          WasmValueType.FUNCREF, noFunc.getValueType(), "NoFunc value type should be FUNCREF");
     }
 
     @Test
@@ -116,39 +114,37 @@ class NoFuncTest {
     @DisplayName("should be subtype of itself")
     void shouldBeSubtypeOfItself() {
       final NoFunc noFunc = NoFunc.getInstance();
-      assertTrue(
-          noFunc.isSubtypeOf(noFunc),
-          "NoFunc should be a subtype of itself");
+      assertTrue(noFunc.isSubtypeOf(noFunc), "NoFunc should be a subtype of itself");
     }
 
     @Test
     @DisplayName("should be subtype of any FUNCREF heap type")
     void shouldBeSubtypeOfFuncrefHeapType() {
       final NoFunc noFunc = NoFunc.getInstance();
-      final HeapType funcType = new HeapType() {
-        @Override
-        public WasmValueType getValueType() {
-          return WasmValueType.FUNCREF;
-        }
+      final HeapType funcType =
+          new HeapType() {
+            @Override
+            public WasmValueType getValueType() {
+              return WasmValueType.FUNCREF;
+            }
 
-        @Override
-        public boolean isNullable() {
-          return false;
-        }
+            @Override
+            public boolean isNullable() {
+              return false;
+            }
 
-        @Override
-        public boolean isSubtypeOf(final HeapType other) {
-          return false;
-        }
+            @Override
+            public boolean isSubtypeOf(final HeapType other) {
+              return false;
+            }
 
-        @Override
-        public String getTypeName() {
-          return "func";
-        }
-      };
+            @Override
+            public String getTypeName() {
+              return "func";
+            }
+          };
       assertTrue(
-          noFunc.isSubtypeOf(funcType),
-          "NoFunc should be a subtype of any FUNCREF heap type");
+          noFunc.isSubtypeOf(funcType), "NoFunc should be a subtype of any FUNCREF heap type");
     }
 
     @Test
@@ -226,9 +222,7 @@ class NoFuncTest {
     @DisplayName("should implement HeapType interface")
     void shouldImplementHeapTypeInterface() {
       final NoFunc noFunc = NoFunc.getInstance();
-      assertTrue(
-          noFunc instanceof HeapType,
-          "NoFunc should implement HeapType interface");
+      assertTrue(noFunc instanceof HeapType, "NoFunc should implement HeapType interface");
     }
 
     @Test
@@ -245,9 +239,7 @@ class NoFuncTest {
       final NoFunc noFunc = NoFunc.getInstance();
       final HeapType nonNullable = noFunc.asNonNullable();
       assertSame(
-          noFunc,
-          nonNullable,
-          "asNonNullable should return the same instance for bottom types");
+          noFunc, nonNullable, "asNonNullable should return the same instance for bottom types");
     }
   }
 }

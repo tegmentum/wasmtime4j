@@ -17,8 +17,8 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.ExternRef;
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -27,7 +27,6 @@ import java.lang.invoke.MethodHandle;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
-import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Type-safe wrappers for native function signatures.
@@ -123,7 +122,8 @@ public final class NativeFunctionBindings {
         this.mhPanamaMemoryReadBytes = memReadBinding.getMethodHandle().orElse(null);
       }
 
-      FunctionBinding memWriteBinding = functionBindings.get("wasmtime4j_panama_memory_write_bytes");
+      FunctionBinding memWriteBinding =
+          functionBindings.get("wasmtime4j_panama_memory_write_bytes");
       if (memWriteBinding != null) {
         this.mhPanamaMemoryWriteBytes = memWriteBinding.getMethodHandle().orElse(null);
       }
@@ -217,7 +217,8 @@ public final class NativeFunctionBindings {
    * @param config the engine configuration
    * @return memory segment pointer to the engine, or null on failure
    */
-  public MemorySegment engineCreateWithConfig(final ai.tegmentum.wasmtime4j.config.EngineConfig config) {
+  public MemorySegment engineCreateWithConfig(
+      final ai.tegmentum.wasmtime4j.config.EngineConfig config) {
     try {
       if (!isInitialized()) {
         LOGGER.severe("NativeFunctionBindings not initialized, cannot create engine");

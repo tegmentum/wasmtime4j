@@ -260,11 +260,7 @@ class WasiPermissionsImplTest {
     @DisplayName("builder should support special bits")
     void builderShouldSupportSpecialBits() {
       final WasiPermissions perms =
-          WasiPermissions.builder()
-              .setuid(true)
-              .setgid(true)
-              .sticky(true)
-              .build();
+          WasiPermissions.builder().setuid(true).setgid(true).sticky(true).build();
       assertTrue(perms.isSetuid(), "Setuid should be set via builder");
       assertTrue(perms.isSetgid(), "Setgid should be set via builder");
       assertTrue(perms.isSticky(), "Sticky should be set via builder");
@@ -274,10 +270,7 @@ class WasiPermissionsImplTest {
     @DisplayName("builder should toggle bits off")
     void builderShouldToggleBitsOff() {
       final WasiPermissions perms =
-          WasiPermissions.builder()
-              .ownerRead(true)
-              .ownerRead(false)
-              .build();
+          WasiPermissions.builder().ownerRead(true).ownerRead(false).build();
       assertFalse(perms.isOwnerRead(), "Owner read should be toggled off");
     }
 
@@ -341,7 +334,8 @@ class WasiPermissionsImplTest {
       final WasiPermissions perms2 = WasiPermissions.of(0755);
       assertEquals(perms1, perms2, "Permissions with same mode should be equal");
       assertEquals(
-          perms1.hashCode(), perms2.hashCode(),
+          perms1.hashCode(),
+          perms2.hashCode(),
           "Permissions with same mode should have same hashCode");
     }
 
@@ -371,8 +365,7 @@ class WasiPermissionsImplTest {
       final WasiPermissions perms = WasiPermissions.of(0755);
       final String result = perms.toString();
       assertTrue(
-          result.contains("755"),
-          "toString should contain octal mode representation: " + result);
+          result.contains("755"), "toString should contain octal mode representation: " + result);
     }
 
     @Test

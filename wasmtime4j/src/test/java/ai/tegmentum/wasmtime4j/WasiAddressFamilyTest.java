@@ -43,15 +43,14 @@ class WasiAddressFamilyTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(WasiAddressFamily.class.isEnum(),
-          "WasiAddressFamily should be an enum type");
+      assertTrue(WasiAddressFamily.class.isEnum(), "WasiAddressFamily should be an enum type");
     }
 
     @Test
     @DisplayName("should have exactly 2 values")
     void shouldHaveExactValueCount() {
-      assertEquals(2, WasiAddressFamily.values().length,
-          "WasiAddressFamily should have exactly 2 values");
+      assertEquals(
+          2, WasiAddressFamily.values().length, "WasiAddressFamily should have exactly 2 values");
     }
   }
 
@@ -81,15 +80,13 @@ class WasiAddressFamilyTest {
     @Test
     @DisplayName("IPV4 should have value 0")
     void ipv4ShouldHaveValue0() {
-      assertEquals(0, WasiAddressFamily.IPV4.getValue(),
-          "IPV4 should have value 0");
+      assertEquals(0, WasiAddressFamily.IPV4.getValue(), "IPV4 should have value 0");
     }
 
     @Test
     @DisplayName("IPV6 should have value 1")
     void ipv6ShouldHaveValue1() {
-      assertEquals(1, WasiAddressFamily.IPV6.getValue(),
-          "IPV6 should have value 1");
+      assertEquals(1, WasiAddressFamily.IPV6.getValue(), "IPV6 should have value 1");
     }
 
     @Test
@@ -99,8 +96,7 @@ class WasiAddressFamilyTest {
       for (final WasiAddressFamily value : WasiAddressFamily.values()) {
         values.add(value.getValue());
       }
-      assertEquals(WasiAddressFamily.values().length, values.size(),
-          "All values should be unique");
+      assertEquals(WasiAddressFamily.values().length, values.size(), "All values should be unique");
     }
   }
 
@@ -111,21 +107,26 @@ class WasiAddressFamilyTest {
     @Test
     @DisplayName("should return IPV4 for value 0")
     void shouldReturnIpv4ForValue0() {
-      assertEquals(WasiAddressFamily.IPV4, WasiAddressFamily.fromValue(0),
+      assertEquals(
+          WasiAddressFamily.IPV4,
+          WasiAddressFamily.fromValue(0),
           "fromValue(0) should return IPV4");
     }
 
     @Test
     @DisplayName("should return IPV6 for value 1")
     void shouldReturnIpv6ForValue1() {
-      assertEquals(WasiAddressFamily.IPV6, WasiAddressFamily.fromValue(1),
+      assertEquals(
+          WasiAddressFamily.IPV6,
+          WasiAddressFamily.fromValue(1),
           "fromValue(1) should return IPV6");
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for negative value")
     void shouldThrowForNegativeValue() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> WasiAddressFamily.fromValue(-1),
           "fromValue(-1) should throw IllegalArgumentException");
     }
@@ -133,7 +134,8 @@ class WasiAddressFamilyTest {
     @Test
     @DisplayName("should throw IllegalArgumentException for out-of-range value")
     void shouldThrowForOutOfRangeValue() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> WasiAddressFamily.fromValue(99),
           "fromValue(99) should throw IllegalArgumentException");
     }
@@ -142,7 +144,9 @@ class WasiAddressFamilyTest {
     @DisplayName("should round-trip getValue and fromValue for all constants")
     void shouldRoundTripGetValueAndFromValue() {
       for (final WasiAddressFamily value : WasiAddressFamily.values()) {
-        assertEquals(value, WasiAddressFamily.fromValue(value.getValue()),
+        assertEquals(
+            value,
+            WasiAddressFamily.fromValue(value.getValue()),
             "Round-trip should return original for " + value.name());
       }
     }
@@ -156,7 +160,9 @@ class WasiAddressFamilyTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final WasiAddressFamily value : WasiAddressFamily.values()) {
-        assertEquals(value, WasiAddressFamily.valueOf(value.name()),
+        assertEquals(
+            value,
+            WasiAddressFamily.valueOf(value.name()),
             "valueOf should return " + value.name());
       }
     }
@@ -164,7 +170,8 @@ class WasiAddressFamilyTest {
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> WasiAddressFamily.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -179,8 +186,7 @@ class WasiAddressFamilyTest {
     void shouldHaveSequentialOrdinals() {
       final WasiAddressFamily[] values = WasiAddressFamily.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -198,7 +204,9 @@ class WasiAddressFamilyTest {
       }
       for (int i = 0; i < nativeCodes.length; i++) {
         final WasiAddressFamily resolved = WasiAddressFamily.fromValue(nativeCodes[i]);
-        assertEquals(WasiAddressFamily.values()[i], resolved,
+        assertEquals(
+            WasiAddressFamily.values()[i],
+            resolved,
             "FFI round-trip should preserve enum at index " + i);
       }
     }

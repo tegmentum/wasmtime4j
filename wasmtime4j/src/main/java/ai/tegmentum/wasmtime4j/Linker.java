@@ -1,18 +1,15 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-
-import ai.tegmentum.wasmtime4j.type.ExternType;
-
 import ai.tegmentum.wasmtime4j.async.AsyncHostFunction;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.io.Closeable;
-import java.util.concurrent.CompletableFuture;
 import ai.tegmentum.wasmtime4j.config.DependencyResolution;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.ExternType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 import ai.tegmentum.wasmtime4j.validation.ImportValidation;
+import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * WebAssembly linker interface for defining host functions and resolving imports.

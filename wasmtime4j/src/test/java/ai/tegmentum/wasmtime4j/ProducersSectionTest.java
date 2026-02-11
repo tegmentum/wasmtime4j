@@ -22,13 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.metadata.ProducersSection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.metadata.ProducersSection;
 
 /** Tests for {@link ProducersSection} producers custom section data. */
 @DisplayName("ProducersSection")
@@ -53,7 +53,8 @@ final class ProducersSectionTest {
     @DisplayName("should return empty getAllEntries for empty section")
     void shouldReturnEmptyAllEntries() {
       final ProducersSection section = ProducersSection.builder().build();
-      assertTrue(section.getAllEntries().isEmpty(), "getAllEntries should be empty for empty section");
+      assertTrue(
+          section.getAllEntries().isEmpty(), "getAllEntries should be empty for empty section");
     }
   }
 
@@ -66,8 +67,7 @@ final class ProducersSectionTest {
     void shouldSetLanguages() {
       final List<ProducersSection.ProducerEntry> langs =
           List.of(new ProducersSection.ProducerEntry("Rust", "1.70.0"));
-      final ProducersSection section =
-          ProducersSection.builder().setLanguages(langs).build();
+      final ProducersSection section = ProducersSection.builder().setLanguages(langs).build();
       assertEquals(1, section.getLanguages().size(), "Should have 1 language entry");
       assertEquals("Rust", section.getLanguages().get(0).getName(), "Language name should be Rust");
     }
@@ -77,8 +77,7 @@ final class ProducersSectionTest {
     void shouldSetProcessedBy() {
       final List<ProducersSection.ProducerEntry> tools =
           List.of(new ProducersSection.ProducerEntry("clang", "15.0"));
-      final ProducersSection section =
-          ProducersSection.builder().setProcessedBy(tools).build();
+      final ProducersSection section = ProducersSection.builder().setProcessedBy(tools).build();
       assertEquals(1, section.getProcessedBy().size(), "Should have 1 processedBy entry");
       assertEquals("clang", section.getProcessedBy().get(0).getName(), "Tool name should be clang");
     }
@@ -88,8 +87,7 @@ final class ProducersSectionTest {
     void shouldSetSdk() {
       final List<ProducersSection.ProducerEntry> sdks =
           List.of(new ProducersSection.ProducerEntry("emscripten", "3.1.0"));
-      final ProducersSection section =
-          ProducersSection.builder().setSdk(sdks).build();
+      final ProducersSection section = ProducersSection.builder().setSdk(sdks).build();
       assertEquals(1, section.getSdk().size(), "Should have 1 SDK entry");
       assertEquals(
           "emscripten", section.getSdk().get(0).getName(), "SDK name should be emscripten");
@@ -99,11 +97,7 @@ final class ProducersSectionTest {
     @DisplayName("should handle null set values gracefully")
     void shouldHandleNullSetValues() {
       final ProducersSection section =
-          ProducersSection.builder()
-              .setLanguages(null)
-              .setProcessedBy(null)
-              .setSdk(null)
-              .build();
+          ProducersSection.builder().setLanguages(null).setProcessedBy(null).setSdk(null).build();
       assertTrue(section.getLanguages().isEmpty(), "Null languages should default to empty");
       assertTrue(section.getProcessedBy().isEmpty(), "Null processedBy should default to empty");
       assertTrue(section.getSdk().isEmpty(), "Null SDK should default to empty");
@@ -387,8 +381,7 @@ final class ProducersSectionTest {
           new ProducersSection.ProducerEntry("Rust", "1.70.0");
       final ProducersSection.ProducerEntry entry2 =
           new ProducersSection.ProducerEntry("Rust", "1.70.0");
-      final ProducersSection.ProducerEntry entry3 =
-          new ProducersSection.ProducerEntry("C", "17");
+      final ProducersSection.ProducerEntry entry3 = new ProducersSection.ProducerEntry("C", "17");
       assertEquals(entry1, entry2, "Entries with same name and version should be equal");
       assertFalse(entry1.equals(entry3), "Entries with different names should not be equal");
     }
@@ -400,8 +393,7 @@ final class ProducersSectionTest {
           new ProducersSection.ProducerEntry("Rust", "1.70.0");
       final ProducersSection.ProducerEntry entry2 =
           new ProducersSection.ProducerEntry("Rust", "1.70.0");
-      assertEquals(
-          entry1.hashCode(), entry2.hashCode(), "Equal entries should have same hashCode");
+      assertEquals(entry1.hashCode(), entry2.hashCode(), "Equal entries should have same hashCode");
     }
 
     @Test

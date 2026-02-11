@@ -482,8 +482,7 @@ class WasiComponentExceptionTest {
     @Test
     void testNullOperationTypeDefaultsRetryableToFalse() {
       // When operationType is null, isRetryableOperation should return false
-      final WasiComponentException exception =
-          new WasiComponentException("Error", "comp", null);
+      final WasiComponentException exception = new WasiComponentException("Error", "comp", null);
 
       assertFalse(exception.isRetryable());
       assertEquals(false, exception.isRetryable());
@@ -496,8 +495,7 @@ class WasiComponentExceptionTest {
     @Test
     void testFormatOperationWithNullReturnsComponentOperation() {
       // Kill mutation at line 228: null check
-      final WasiComponentException exception =
-          new WasiComponentException("Error", "comp", null);
+      final WasiComponentException exception = new WasiComponentException("Error", "comp", null);
 
       assertEquals("component-operation", exception.getOperation());
       // Verify it's exactly this string
@@ -547,10 +545,7 @@ class WasiComponentExceptionTest {
       // When interfaceName is null but componentId is not
       final WasiComponentException exception =
           new WasiComponentException(
-              "Error",
-              "my-component",
-              null,
-              WasiComponentException.ComponentOperation.EXECUTION);
+              "Error", "my-component", null, WasiComponentException.ComponentOperation.EXECUTION);
 
       assertEquals("my-component", exception.getResource());
       assertFalse(exception.getResource().contains(":"));
@@ -580,18 +575,12 @@ class WasiComponentExceptionTest {
       // Test when only one is null (should not return null)
       final WasiComponentException onlyCompNull =
           new WasiComponentException(
-              "Error",
-              null,
-              "interface",
-              WasiComponentException.ComponentOperation.EXECUTION);
+              "Error", null, "interface", WasiComponentException.ComponentOperation.EXECUTION);
       assertNotNull(onlyCompNull.getResource());
 
       final WasiComponentException onlyIntfNull =
           new WasiComponentException(
-              "Error",
-              "component",
-              null,
-              WasiComponentException.ComponentOperation.EXECUTION);
+              "Error", "component", null, WasiComponentException.ComponentOperation.EXECUTION);
       assertNotNull(onlyIntfNull.getResource());
     }
   }
@@ -602,8 +591,7 @@ class WasiComponentExceptionTest {
     @Test
     void testIsRetryableOperationWithNull() {
       // Kill mutation at line 282: null check
-      final WasiComponentException exception =
-          new WasiComponentException("Error", "comp", null);
+      final WasiComponentException exception = new WasiComponentException("Error", "comp", null);
 
       assertFalse(exception.isRetryable());
     }

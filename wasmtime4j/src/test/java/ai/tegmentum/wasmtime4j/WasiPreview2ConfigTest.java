@@ -66,8 +66,7 @@ final class WasiPreview2ConfigTest {
     @DisplayName("should create minimal config with no preopened dirs")
     void shouldCreateMinimalConfigWithNoPreopenDirs() {
       final WasiPreview2Config config = WasiPreview2Config.minimal();
-      assertTrue(
-          config.getPreopenDirs().isEmpty(), "Minimal config should have no preopened dirs");
+      assertTrue(config.getPreopenDirs().isEmpty(), "Minimal config should have no preopened dirs");
     }
   }
 
@@ -134,8 +133,7 @@ final class WasiPreview2ConfigTest {
     @Test
     @DisplayName("should set single environment variable")
     void shouldSetSingleEnvVar() {
-      final WasiPreview2Config config =
-          WasiPreview2Config.builder().env("KEY", "VALUE").build();
+      final WasiPreview2Config config = WasiPreview2Config.builder().env("KEY", "VALUE").build();
       assertEquals(1, config.getEnv().size(), "Should have 1 environment variable");
       assertEquals("VALUE", config.getEnv().get("KEY"), "Environment variable KEY should be VALUE");
     }
@@ -186,9 +184,7 @@ final class WasiPreview2ConfigTest {
       final Path hostPath = Path.of("/data");
       final WasiPreview2Config config =
           WasiPreview2Config.builder().preopenDir(hostPath, "/sandbox/data", true).build();
-      assertTrue(
-          config.getPreopenDirs().get(0).isReadOnly(),
-          "Preopened dir should be read-only");
+      assertTrue(config.getPreopenDirs().get(0).isReadOnly(), "Preopened dir should be read-only");
     }
   }
 
@@ -199,40 +195,35 @@ final class WasiPreview2ConfigTest {
     @Test
     @DisplayName("should enable network access")
     void shouldEnableNetwork() {
-      final WasiPreview2Config config =
-          WasiPreview2Config.builder().allowNetwork(true).build();
+      final WasiPreview2Config config = WasiPreview2Config.builder().allowNetwork(true).build();
       assertTrue(config.isAllowNetwork(), "Network should be allowed");
     }
 
     @Test
     @DisplayName("should enable clock access")
     void shouldEnableClock() {
-      final WasiPreview2Config config =
-          WasiPreview2Config.builder().allowClock(true).build();
+      final WasiPreview2Config config = WasiPreview2Config.builder().allowClock(true).build();
       assertTrue(config.isAllowClock(), "Clock should be allowed");
     }
 
     @Test
     @DisplayName("should enable random access")
     void shouldEnableRandom() {
-      final WasiPreview2Config config =
-          WasiPreview2Config.builder().allowRandom(true).build();
+      final WasiPreview2Config config = WasiPreview2Config.builder().allowRandom(true).build();
       assertTrue(config.isAllowRandom(), "Random should be allowed");
     }
 
     @Test
     @DisplayName("should enable stdio inheritance")
     void shouldEnableStdioInheritance() {
-      final WasiPreview2Config config =
-          WasiPreview2Config.builder().inheritStdio().build();
+      final WasiPreview2Config config = WasiPreview2Config.builder().inheritStdio().build();
       assertTrue(config.isInheritStdio(), "Stdio should be inherited");
     }
 
     @Test
     @DisplayName("should enable env inheritance")
     void shouldEnableEnvInheritance() {
-      final WasiPreview2Config config =
-          WasiPreview2Config.builder().inheritEnv().build();
+      final WasiPreview2Config config = WasiPreview2Config.builder().inheritEnv().build();
       assertTrue(config.isInheritEnv(), "Env should be inherited");
     }
   }

@@ -40,9 +40,7 @@ class HashAlgorithmTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          HashAlgorithm.class.isEnum(),
-          "HashAlgorithm should be an enum type");
+      assertTrue(HashAlgorithm.class.isEnum(), "HashAlgorithm should be an enum type");
     }
 
     @Test
@@ -143,10 +141,7 @@ class HashAlgorithmTest {
       final HashAlgorithm[] values = HashAlgorithm.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -187,10 +182,7 @@ class HashAlgorithmTest {
       final HashAlgorithm[] second = HashAlgorithm.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 
@@ -313,27 +305,21 @@ class HashAlgorithmTest {
     @DisplayName("should return 256 for SHA_256")
     void shouldReturnCorrectOutputSizeForSha256() {
       assertEquals(
-          256,
-          HashAlgorithm.SHA_256.getOutputSize(),
-          "SHA_256 should have output size 256");
+          256, HashAlgorithm.SHA_256.getOutputSize(), "SHA_256 should have output size 256");
     }
 
     @Test
     @DisplayName("should return 384 for SHA_384")
     void shouldReturnCorrectOutputSizeForSha384() {
       assertEquals(
-          384,
-          HashAlgorithm.SHA_384.getOutputSize(),
-          "SHA_384 should have output size 384");
+          384, HashAlgorithm.SHA_384.getOutputSize(), "SHA_384 should have output size 384");
     }
 
     @Test
     @DisplayName("should return 512 for SHA_512")
     void shouldReturnCorrectOutputSizeForSha512() {
       assertEquals(
-          512,
-          HashAlgorithm.SHA_512.getOutputSize(),
-          "SHA_512 should have output size 512");
+          512, HashAlgorithm.SHA_512.getOutputSize(), "SHA_512 should have output size 512");
     }
 
     @Test
@@ -349,54 +335,41 @@ class HashAlgorithmTest {
     @DisplayName("should return 256 for SHA3_256")
     void shouldReturnCorrectOutputSizeForSha3256() {
       assertEquals(
-          256,
-          HashAlgorithm.SHA3_256.getOutputSize(),
-          "SHA3_256 should have output size 256");
+          256, HashAlgorithm.SHA3_256.getOutputSize(), "SHA3_256 should have output size 256");
     }
 
     @Test
     @DisplayName("should return 384 for SHA3_384")
     void shouldReturnCorrectOutputSizeForSha3384() {
       assertEquals(
-          384,
-          HashAlgorithm.SHA3_384.getOutputSize(),
-          "SHA3_384 should have output size 384");
+          384, HashAlgorithm.SHA3_384.getOutputSize(), "SHA3_384 should have output size 384");
     }
 
     @Test
     @DisplayName("should return 512 for SHA3_512")
     void shouldReturnCorrectOutputSizeForSha3512() {
       assertEquals(
-          512,
-          HashAlgorithm.SHA3_512.getOutputSize(),
-          "SHA3_512 should have output size 512");
+          512, HashAlgorithm.SHA3_512.getOutputSize(), "SHA3_512 should have output size 512");
     }
 
     @Test
     @DisplayName("should return 512 for BLAKE2B")
     void shouldReturnCorrectOutputSizeForBlake2b() {
       assertEquals(
-          512,
-          HashAlgorithm.BLAKE2B.getOutputSize(),
-          "BLAKE2B should have output size 512");
+          512, HashAlgorithm.BLAKE2B.getOutputSize(), "BLAKE2B should have output size 512");
     }
 
     @Test
     @DisplayName("should return 256 for BLAKE2S")
     void shouldReturnCorrectOutputSizeForBlake2s() {
       assertEquals(
-          256,
-          HashAlgorithm.BLAKE2S.getOutputSize(),
-          "BLAKE2S should have output size 256");
+          256, HashAlgorithm.BLAKE2S.getOutputSize(), "BLAKE2S should have output size 256");
     }
 
     @Test
     @DisplayName("should return 256 for BLAKE3")
     void shouldReturnCorrectOutputSizeForBlake3() {
-      assertEquals(
-          256,
-          HashAlgorithm.BLAKE3.getOutputSize(),
-          "BLAKE3 should have output size 256");
+      assertEquals(256, HashAlgorithm.BLAKE3.getOutputSize(), "BLAKE3 should have output size 256");
     }
   }
 }

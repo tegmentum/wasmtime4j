@@ -180,8 +180,7 @@ class JniComponentRegistryTest {
     @Test
     @DisplayName("resolveDependencies method should exist and return Set")
     void resolveDependenciesMethodShouldExist() throws NoSuchMethodException {
-      Method method =
-          JniComponentRegistry.class.getMethod("resolveDependencies", Component.class);
+      Method method = JniComponentRegistry.class.getMethod("resolveDependencies", Component.class);
       assertNotNull(method, "resolveDependencies method should exist");
       assertEquals(Set.class, method.getReturnType(), "Should return Set");
     }
@@ -189,8 +188,7 @@ class JniComponentRegistryTest {
     @Test
     @DisplayName("validateDependencies method should exist and return ComponentValidationResult")
     void validateDependenciesMethodShouldExist() throws NoSuchMethodException {
-      Method method =
-          JniComponentRegistry.class.getMethod("validateDependencies", Component.class);
+      Method method = JniComponentRegistry.class.getMethod("validateDependencies", Component.class);
       assertNotNull(method, "validateDependencies method should exist");
       assertEquals(
           ComponentValidationResult.class,
@@ -300,8 +298,7 @@ class JniComponentRegistryTest {
     @DisplayName("Should have rollbackRegistration private method")
     void shouldHaveRollbackRegistrationMethod() throws NoSuchMethodException {
       Method method =
-          JniComponentRegistry.class.getDeclaredMethod(
-              "rollbackRegistration", Component.class);
+          JniComponentRegistry.class.getDeclaredMethod("rollbackRegistration", Component.class);
       assertNotNull(method, "rollbackRegistration method should exist");
       assertTrue(Modifier.isPrivate(method.getModifiers()), "Should be private");
       assertEquals(void.class, method.getReturnType(), "Should return void");

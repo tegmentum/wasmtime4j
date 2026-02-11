@@ -1,25 +1,25 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.ExternRef;
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.validation.ImportInfo;
-import ai.tegmentum.wasmtime4j.validation.ImportIssue;
-import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
-import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
+import ai.tegmentum.wasmtime4j.validation.ImportIssue;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -57,8 +57,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   private final MemorySegment nativeLinker;
   private volatile boolean closed = false;
   private final Set<String> imports = new HashSet<>();
-  private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo> importRegistry =
-      new java.util.concurrent.ConcurrentHashMap<>();
+  private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo>
+      importRegistry = new java.util.concurrent.ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = new HashSet<>();
   private volatile PanamaWasiContext wasiContext = null;
   private volatile boolean wasiEnabled = false;
@@ -851,8 +851,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @param importType the import type
    * @return the corresponding dependency type
    */
-  private ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType mapImportTypeToDependencyType(
-      final ai.tegmentum.wasmtime4j.type.ImportType importType) {
+  private ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType
+      mapImportTypeToDependencyType(final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     // For now, we infer from the import type string
     // A more robust implementation would use actual type inspection
     return ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType.FUNCTION;

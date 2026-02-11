@@ -1,16 +1,11 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Table;
-
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
-import ai.tegmentum.wasmtime4j.memory.Global;
-
-import ai.tegmentum.wasmtime4j.func.Function;
-
-import ai.tegmentum.wasmtime4j.type.ExportType;
-
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.Function;
+import ai.tegmentum.wasmtime4j.memory.Global;
+import ai.tegmentum.wasmtime4j.memory.Memory;
+import ai.tegmentum.wasmtime4j.memory.Table;
+import ai.tegmentum.wasmtime4j.type.ExportType;
 import java.io.Closeable;
 import java.util.List;
 import java.util.Map;

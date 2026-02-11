@@ -58,8 +58,7 @@ class SignatureOptionsTest {
     void defaultsShouldHaveNullPrehashAlgorithm() {
       final SignatureOptions options = SignatureOptions.defaults();
       assertNull(
-          options.getPrehashAlgorithm(),
-          "Default options should have null prehash algorithm");
+          options.getPrehashAlgorithm(), "Default options should have null prehash algorithm");
     }
 
     @Test
@@ -67,8 +66,7 @@ class SignatureOptionsTest {
     void defaultsShouldEnableHardwareAcceleration() {
       final SignatureOptions options = SignatureOptions.defaults();
       assertTrue(
-          options.useHardwareAcceleration(),
-          "Default options should enable hardware acceleration");
+          options.useHardwareAcceleration(), "Default options should enable hardware acceleration");
     }
 
     @Test
@@ -91,11 +89,9 @@ class SignatureOptionsTest {
       final SignatureOptions options = SignatureOptions.builder().build();
       assertFalse(options.isPrehashed(), "Builder default should not be prehashed");
       assertNull(
-          options.getPrehashAlgorithm(),
-          "Builder default should have null prehash algorithm");
+          options.getPrehashAlgorithm(), "Builder default should have null prehash algorithm");
       assertTrue(
-          options.useHardwareAcceleration(),
-          "Builder default should enable hardware acceleration");
+          options.useHardwareAcceleration(), "Builder default should enable hardware acceleration");
       assertTrue(
           options.useDeterministicSignatures(),
           "Builder default should enable deterministic signatures");
@@ -108,13 +104,16 @@ class SignatureOptionsTest {
       final SignatureOptions fromBuilder = SignatureOptions.builder().build();
 
       assertEquals(
-          fromDefaults.isPrehashed(), fromBuilder.isPrehashed(),
+          fromDefaults.isPrehashed(),
+          fromBuilder.isPrehashed(),
           "isPrehashed should match between defaults() and builder().build()");
       assertEquals(
-          fromDefaults.useHardwareAcceleration(), fromBuilder.useHardwareAcceleration(),
+          fromDefaults.useHardwareAcceleration(),
+          fromBuilder.useHardwareAcceleration(),
           "useHardwareAcceleration should match");
       assertEquals(
-          fromDefaults.useDeterministicSignatures(), fromBuilder.useDeterministicSignatures(),
+          fromDefaults.useDeterministicSignatures(),
+          fromBuilder.useDeterministicSignatures(),
           "useDeterministicSignatures should match");
     }
   }
@@ -127,13 +126,12 @@ class SignatureOptionsTest {
     @DisplayName("prehashed should set algorithm and flag")
     void prehashedShouldSetAlgorithmAndFlag() {
       final SignatureOptions options =
-          SignatureOptions.builder()
-              .prehashed(HashAlgorithm.SHA_256)
-              .build();
+          SignatureOptions.builder().prehashed(HashAlgorithm.SHA_256).build();
 
       assertTrue(options.isPrehashed(), "Should be prehashed");
       assertEquals(
-          HashAlgorithm.SHA_256, options.getPrehashAlgorithm(),
+          HashAlgorithm.SHA_256,
+          options.getPrehashAlgorithm(),
           "Prehash algorithm should be SHA-256");
     }
 
@@ -141,13 +139,12 @@ class SignatureOptionsTest {
     @DisplayName("prehashed with SHA-512 should set correctly")
     void prehashedWithSha512() {
       final SignatureOptions options =
-          SignatureOptions.builder()
-              .prehashed(HashAlgorithm.SHA_512)
-              .build();
+          SignatureOptions.builder().prehashed(HashAlgorithm.SHA_512).build();
 
       assertTrue(options.isPrehashed(), "Should be prehashed with SHA-512");
       assertEquals(
-          HashAlgorithm.SHA_512, options.getPrehashAlgorithm(),
+          HashAlgorithm.SHA_512,
+          options.getPrehashAlgorithm(),
           "Prehash algorithm should be SHA-512");
     }
 
@@ -155,13 +152,12 @@ class SignatureOptionsTest {
     @DisplayName("prehashed with BLAKE3 should set correctly")
     void prehashedWithBlake3() {
       final SignatureOptions options =
-          SignatureOptions.builder()
-              .prehashed(HashAlgorithm.BLAKE3)
-              .build();
+          SignatureOptions.builder().prehashed(HashAlgorithm.BLAKE3).build();
 
       assertTrue(options.isPrehashed(), "Should be prehashed with BLAKE3");
       assertEquals(
-          HashAlgorithm.BLAKE3, options.getPrehashAlgorithm(),
+          HashAlgorithm.BLAKE3,
+          options.getPrehashAlgorithm(),
           "Prehash algorithm should be BLAKE3");
     }
   }
@@ -174,24 +170,16 @@ class SignatureOptionsTest {
     @DisplayName("should disable hardware acceleration")
     void shouldDisableHardwareAcceleration() {
       final SignatureOptions options =
-          SignatureOptions.builder()
-              .useHardwareAcceleration(false)
-              .build();
-      assertFalse(
-          options.useHardwareAcceleration(),
-          "Hardware acceleration should be disabled");
+          SignatureOptions.builder().useHardwareAcceleration(false).build();
+      assertFalse(options.useHardwareAcceleration(), "Hardware acceleration should be disabled");
     }
 
     @Test
     @DisplayName("should explicitly enable hardware acceleration")
     void shouldExplicitlyEnableHardwareAcceleration() {
       final SignatureOptions options =
-          SignatureOptions.builder()
-              .useHardwareAcceleration(true)
-              .build();
-      assertTrue(
-          options.useHardwareAcceleration(),
-          "Hardware acceleration should be enabled");
+          SignatureOptions.builder().useHardwareAcceleration(true).build();
+      assertTrue(options.useHardwareAcceleration(), "Hardware acceleration should be enabled");
     }
   }
 
@@ -203,24 +191,18 @@ class SignatureOptionsTest {
     @DisplayName("should disable deterministic signatures")
     void shouldDisableDeterministicSignatures() {
       final SignatureOptions options =
-          SignatureOptions.builder()
-              .deterministicSignatures(false)
-              .build();
+          SignatureOptions.builder().deterministicSignatures(false).build();
       assertFalse(
-          options.useDeterministicSignatures(),
-          "Deterministic signatures should be disabled");
+          options.useDeterministicSignatures(), "Deterministic signatures should be disabled");
     }
 
     @Test
     @DisplayName("should explicitly enable deterministic signatures")
     void shouldExplicitlyEnableDeterministicSignatures() {
       final SignatureOptions options =
-          SignatureOptions.builder()
-              .deterministicSignatures(true)
-              .build();
+          SignatureOptions.builder().deterministicSignatures(true).build();
       assertTrue(
-          options.useDeterministicSignatures(),
-          "Deterministic signatures should be enabled");
+          options.useDeterministicSignatures(), "Deterministic signatures should be enabled");
     }
   }
 
@@ -240,14 +222,10 @@ class SignatureOptionsTest {
 
       assertTrue(options.isPrehashed(), "Should be prehashed");
       assertEquals(
-          HashAlgorithm.SHA_384, options.getPrehashAlgorithm(),
-          "Algorithm should be SHA-384");
+          HashAlgorithm.SHA_384, options.getPrehashAlgorithm(), "Algorithm should be SHA-384");
+      assertFalse(options.useHardwareAcceleration(), "Hardware acceleration should be disabled");
       assertFalse(
-          options.useHardwareAcceleration(),
-          "Hardware acceleration should be disabled");
-      assertFalse(
-          options.useDeterministicSignatures(),
-          "Deterministic signatures should be disabled");
+          options.useDeterministicSignatures(), "Deterministic signatures should be disabled");
     }
   }
 }

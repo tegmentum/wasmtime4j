@@ -522,13 +522,7 @@ class ComponentLinkingExceptionTest {
     void reportShouldNotIncludeEmptyComponentsSection() {
       final ComponentLinkingException exception =
           new ComponentLinkingException(
-              "Error",
-              LinkingFailureType.UNKNOWN,
-              Collections.emptyList(),
-              null,
-              null,
-              null,
-              null);
+              "Error", LinkingFailureType.UNKNOWN, Collections.emptyList(), null, null, null, null);
 
       final String report = exception.getDetailedErrorReport();
 
@@ -542,13 +536,7 @@ class ComponentLinkingExceptionTest {
     void reportShouldNotIncludeEmptyCompatibilityIssuesSection() {
       final ComponentLinkingException exception =
           new ComponentLinkingException(
-              "Error",
-              LinkingFailureType.UNKNOWN,
-              null,
-              Collections.emptyMap(),
-              null,
-              null,
-              null);
+              "Error", LinkingFailureType.UNKNOWN, null, Collections.emptyMap(), null, null, null);
 
       final String report = exception.getDetailedErrorReport();
 
@@ -562,13 +550,7 @@ class ComponentLinkingExceptionTest {
     void reportShouldNotIncludeEmptyMissingDependenciesSection() {
       final ComponentLinkingException exception =
           new ComponentLinkingException(
-              "Error",
-              LinkingFailureType.UNKNOWN,
-              null,
-              null,
-              Collections.emptySet(),
-              null,
-              null);
+              "Error", LinkingFailureType.UNKNOWN, null, null, Collections.emptySet(), null, null);
 
       final String report = exception.getDetailedErrorReport();
 
@@ -582,13 +564,7 @@ class ComponentLinkingExceptionTest {
     void reportShouldNotIncludeEmptyCircularDependenciesSection() {
       final ComponentLinkingException exception =
           new ComponentLinkingException(
-              "Error",
-              LinkingFailureType.UNKNOWN,
-              null,
-              null,
-              null,
-              Collections.emptySet(),
-              null);
+              "Error", LinkingFailureType.UNKNOWN, null, null, null, Collections.emptySet(), null);
 
       final String report = exception.getDetailedErrorReport();
 
@@ -602,13 +578,7 @@ class ComponentLinkingExceptionTest {
     void reportShouldNotIncludeEmptySuggestedResolutionsSection() {
       final ComponentLinkingException exception =
           new ComponentLinkingException(
-              "Error",
-              LinkingFailureType.UNKNOWN,
-              null,
-              null,
-              null,
-              null,
-              Collections.emptyList());
+              "Error", LinkingFailureType.UNKNOWN, null, null, null, null, Collections.emptyList());
 
       final String report = exception.getDetailedErrorReport();
 
@@ -697,10 +667,12 @@ class ComponentLinkingExceptionTest {
 
       assertTrue(
           report.contains("Suggested Resolutions:"), "Report should contain Suggested Resolutions");
-      assertTrue(report.contains("1. First fix"), "Report should contain numbered first suggestion");
+      assertTrue(
+          report.contains("1. First fix"), "Report should contain numbered first suggestion");
       assertTrue(
           report.contains("2. Second fix"), "Report should contain numbered second suggestion");
-      assertTrue(report.contains("3. Third fix"), "Report should contain numbered third suggestion");
+      assertTrue(
+          report.contains("3. Third fix"), "Report should contain numbered third suggestion");
     }
 
     @Test
@@ -728,14 +700,7 @@ class ComponentLinkingExceptionTest {
 
       final ComponentLinkingException exception =
           new ComponentLinkingException(
-              "Error",
-              cause,
-              LinkingFailureType.UNKNOWN,
-              components,
-              null,
-              null,
-              null,
-              null);
+              "Error", cause, LinkingFailureType.UNKNOWN, components, null, null, null, null);
 
       final List<String> retrieved = exception.getInvolvedComponents();
       assertNotNull(retrieved, "Should have involved components");

@@ -46,16 +46,14 @@ class WitRecordTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(WitRecord.class.getModifiers()), "WitRecord should be final");
+      assertTrue(Modifier.isFinal(WitRecord.class.getModifiers()), "WitRecord should be final");
     }
 
     @Test
     @DisplayName("should extend WitValue")
     void shouldExtendWitValue() {
       assertTrue(
-          WitValue.class.isAssignableFrom(WitRecord.class),
-          "WitRecord should extend WitValue");
+          WitValue.class.isAssignableFrom(WitRecord.class), "WitRecord should extend WitValue");
     }
   }
 
@@ -75,10 +73,8 @@ class WitRecordTest {
     @Test
     @DisplayName("builder should create record")
     void builderShouldCreateRecord() {
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(10))
-          .field("y", WitS32.of(20))
-          .build();
+      final WitRecord record =
+          WitRecord.builder().field("x", WitS32.of(10)).field("y", WitS32.of(20)).build();
       assertNotNull(record, "Builder should create non-null record");
     }
 
@@ -127,9 +123,7 @@ class WitRecordTest {
     @Test
     @DisplayName("getField should return correct value")
     void getFieldShouldReturnCorrectValue() {
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(10))
-          .build();
+      final WitRecord record = WitRecord.builder().field("x", WitS32.of(10)).build();
       final WitValue field = record.getField("x");
       assertNotNull(field, "getField should return non-null for existing field");
       assertEquals(WitS32.of(10), field, "Field value should match");
@@ -138,20 +132,14 @@ class WitRecordTest {
     @Test
     @DisplayName("getField for nonexistent field should return null")
     void getFieldForNonexistentShouldReturnNull() {
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(10))
-          .build();
-      assertNull(
-          record.getField("nonexistent"),
-          "getField for missing field should return null");
+      final WitRecord record = WitRecord.builder().field("x", WitS32.of(10)).build();
+      assertNull(record.getField("nonexistent"), "getField for missing field should return null");
     }
 
     @Test
     @DisplayName("getFields should return unmodifiable map")
     void getFieldsShouldReturnUnmodifiableMap() {
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(10))
-          .build();
+      final WitRecord record = WitRecord.builder().field("x", WitS32.of(10)).build();
       final Map<String, WitValue> fields = record.getFields();
       assertThrows(
           UnsupportedOperationException.class,
@@ -162,30 +150,23 @@ class WitRecordTest {
     @Test
     @DisplayName("getFieldCount should return correct count")
     void getFieldCountShouldReturnCorrectCount() {
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(10))
-          .field("y", WitS32.of(20))
-          .build();
+      final WitRecord record =
+          WitRecord.builder().field("x", WitS32.of(10)).field("y", WitS32.of(20)).build();
       assertEquals(2, record.getFieldCount(), "Field count should be 2");
     }
 
     @Test
     @DisplayName("hasField should return true for existing field")
     void hasFieldShouldReturnTrueForExisting() {
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(10))
-          .build();
+      final WitRecord record = WitRecord.builder().field("x", WitS32.of(10)).build();
       assertTrue(record.hasField("x"), "hasField should return true for existing field");
     }
 
     @Test
     @DisplayName("hasField should return false for nonexistent field")
     void hasFieldShouldReturnFalseForNonexistent() {
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(10))
-          .build();
-      assertFalse(
-          record.hasField("y"), "hasField should return false for nonexistent field");
+      final WitRecord record = WitRecord.builder().field("x", WitS32.of(10)).build();
+      assertFalse(record.hasField("y"), "hasField should return false for nonexistent field");
     }
   }
 
@@ -196,9 +177,7 @@ class WitRecordTest {
     @Test
     @DisplayName("toJava should return Map")
     void toJavaShouldReturnMap() {
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(10))
-          .build();
+      final WitRecord record = WitRecord.builder().field("x", WitS32.of(10)).build();
       final Object javaValue = record.toJava();
       assertTrue(javaValue instanceof Map, "toJava should return a Map");
     }
@@ -241,9 +220,7 @@ class WitRecordTest {
     void sameRecordsShouldHaveSameHashCode() {
       final WitRecord r1 = WitRecord.builder().field("x", WitS32.of(10)).build();
       final WitRecord r2 = WitRecord.builder().field("x", WitS32.of(10)).build();
-      assertEquals(
-          r1.hashCode(), r2.hashCode(),
-          "Same records should have same hash code");
+      assertEquals(r1.hashCode(), r2.hashCode(), "Same records should have same hash code");
     }
   }
 
@@ -327,9 +304,7 @@ class WitRecordTest {
     @Test
     @DisplayName("hasField must return true for existing and false for non-existing")
     void hasFieldMutationTest() {
-      final WitRecord record = WitRecord.builder()
-          .field("exists", WitS32.of(1))
-          .build();
+      final WitRecord record = WitRecord.builder().field("exists", WitS32.of(1)).build();
 
       // Existing field must return true
       assertTrue(record.hasField("exists"), "hasField() for existing must return exactly true");
@@ -351,11 +326,12 @@ class WitRecordTest {
       assertFalse(one.getFieldCount() == 2, "One field count == 2 must be false");
 
       // Three field record: count must be exactly 3
-      final WitRecord three = WitRecord.builder()
-          .field("a", WitS32.of(1))
-          .field("b", WitS32.of(2))
-          .field("c", WitS32.of(3))
-          .build();
+      final WitRecord three =
+          WitRecord.builder()
+              .field("a", WitS32.of(1))
+              .field("b", WitS32.of(2))
+              .field("c", WitS32.of(3))
+              .build();
       assertEquals(3, three.getFieldCount(), "Three field count must be exactly 3");
       assertTrue(three.getFieldCount() == 3, "Three field count == 3 must be true");
     }
@@ -363,10 +339,8 @@ class WitRecordTest {
     @Test
     @DisplayName("getField must return correct value for each field")
     void getFieldMutationTest() {
-      final WitRecord record = WitRecord.builder()
-          .field("first", WitS32.of(10))
-          .field("second", WitS32.of(20))
-          .build();
+      final WitRecord record =
+          WitRecord.builder().field("first", WitS32.of(10)).field("second", WitS32.of(20)).build();
 
       // First field must return correct value
       assertEquals(WitS32.of(10), record.getField("first"), "getField('first') must return 10");
@@ -383,10 +357,8 @@ class WitRecordTest {
     @Test
     @DisplayName("toJava must return map with correct values")
     void toJavaMutationTest() {
-      final WitRecord record = WitRecord.builder()
-          .field("num", WitS32.of(42))
-          .field("flag", WitBool.TRUE)
-          .build();
+      final WitRecord record =
+          WitRecord.builder().field("num", WitS32.of(42)).field("flag", WitBool.TRUE).build();
 
       final Map<String, Object> javaMap = record.toJava();
       assertEquals(2, javaMap.size(), "toJava map must have correct size");
@@ -419,10 +391,8 @@ class WitRecordTest {
       assertFalse(record.equals(differentValue), "Different field value must not be equal");
 
       // Different number of fields
-      final WitRecord moreFields = WitRecord.builder()
-          .field("x", WitS32.of(1))
-          .field("y", WitS32.of(2))
-          .build();
+      final WitRecord moreFields =
+          WitRecord.builder().field("x", WitS32.of(1)).field("y", WitS32.of(2)).build();
       assertFalse(record.equals(moreFields), "Different field count must not be equal");
     }
 
@@ -430,10 +400,11 @@ class WitRecordTest {
     @DisplayName("builder field replacement must use latest value")
     void builderFieldReplacementMutationTest() {
       // Adding same field twice should use the last value
-      final WitRecord record = WitRecord.builder()
-          .field("x", WitS32.of(1))
-          .field("x", WitS32.of(99))  // Replace
-          .build();
+      final WitRecord record =
+          WitRecord.builder()
+              .field("x", WitS32.of(1))
+              .field("x", WitS32.of(99)) // Replace
+              .build();
 
       assertEquals(WitS32.of(99), record.getField("x"), "Field replacement must use latest value");
       assertEquals(1, record.getFieldCount(), "Replacement must not increase count");
@@ -442,11 +413,12 @@ class WitRecordTest {
     @Test
     @DisplayName("getFields must preserve field order")
     void getFieldsOrderMutationTest() {
-      final WitRecord record = WitRecord.builder()
-          .field("first", WitS32.of(1))
-          .field("second", WitS32.of(2))
-          .field("third", WitS32.of(3))
-          .build();
+      final WitRecord record =
+          WitRecord.builder()
+              .field("first", WitS32.of(1))
+              .field("second", WitS32.of(2))
+              .field("third", WitS32.of(3))
+              .build();
 
       final Map<String, WitValue> fields = record.getFields();
       final String[] keys = fields.keySet().toArray(new String[0]);

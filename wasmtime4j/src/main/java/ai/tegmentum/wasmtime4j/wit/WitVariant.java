@@ -187,8 +187,7 @@ public final class WitVariant extends WitValue {
     final Map<String, Optional<WitType>> cases = variantType.getKind().getVariantCases();
 
     // If cases is empty and this is supposedly a variant type, verify it's actually a variant
-    if (cases.isEmpty()
-        && variantType.getKind().getCategory() != WitTypeCategory.VARIANT) {
+    if (cases.isEmpty() && variantType.getKind().getCategory() != WitTypeCategory.VARIANT) {
       throw new IllegalArgumentException("Type must be a variant type");
     }
 

@@ -51,9 +51,7 @@ class WasmComplexValueTest {
     @DisplayName("should have exactly 9 complex types")
     void shouldHaveExactlyNineComplexTypes() {
       assertEquals(
-          9,
-          WasmComplexValue.ComplexType.values().length,
-          "ComplexType should have 9 values");
+          9, WasmComplexValue.ComplexType.values().length, "ComplexType should have 9 values");
     }
 
     @Test
@@ -142,8 +140,7 @@ class WasmComplexValueTest {
     void shouldCreateListValue() {
       final List<String> list = Arrays.asList("a", "b", "c");
       final WasmComplexValue val = WasmComplexValue.list(list, String.class);
-      assertEquals(
-          WasmComplexValue.ComplexType.LIST, val.getComplexType(), "Type should be LIST");
+      assertEquals(WasmComplexValue.ComplexType.LIST, val.getComplexType(), "Type should be LIST");
     }
 
     @Test
@@ -216,9 +213,7 @@ class WasmComplexValueTest {
     void shouldCreateObjectValue() {
       final WasmComplexValue val = WasmComplexValue.object("test object");
       assertEquals(
-          WasmComplexValue.ComplexType.OBJECT,
-          val.getComplexType(),
-          "Type should be OBJECT");
+          WasmComplexValue.ComplexType.OBJECT, val.getComplexType(), "Type should be OBJECT");
     }
 
     @Test
@@ -332,9 +327,7 @@ class WasmComplexValueTest {
     void shouldCreateNullRefValue() {
       final WasmComplexValue val = WasmComplexValue.nullRef(String.class);
       assertEquals(
-          WasmComplexValue.ComplexType.NULL_REF,
-          val.getComplexType(),
-          "Type should be NULL_REF");
+          WasmComplexValue.ComplexType.NULL_REF, val.getComplexType(), "Type should be NULL_REF");
       assertTrue(val.isNull(), "Should be null");
     }
 
@@ -362,8 +355,7 @@ class WasmComplexValueTest {
     @Test
     @DisplayName("getJavaType should return correct type for list")
     void getJavaTypeShouldReturnCorrectTypeForList() {
-      final WasmComplexValue val =
-          WasmComplexValue.list(Arrays.asList("a"), String.class);
+      final WasmComplexValue val = WasmComplexValue.list(Arrays.asList("a"), String.class);
       assertEquals(List.class, val.getJavaType(), "Java type should be List");
     }
 

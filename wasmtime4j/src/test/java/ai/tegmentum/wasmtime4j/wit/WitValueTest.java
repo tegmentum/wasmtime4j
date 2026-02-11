@@ -97,8 +97,7 @@ class WitValueTest {
     @Test
     @DisplayName("should have isCompatibleWith method")
     void shouldHaveIsCompatibleWithMethod() throws NoSuchMethodException {
-      final Method method =
-          WitValue.class.getMethod("isCompatibleWith", WitType.class);
+      final Method method = WitValue.class.getMethod("isCompatibleWith", WitType.class);
       assertNotNull(method, "isCompatibleWith method should exist");
       assertEquals(boolean.class, method.getReturnType(), "isCompatibleWith should return boolean");
     }
@@ -125,8 +124,7 @@ class WitValueTest {
     @Test
     @DisplayName("should have protected constructor")
     void shouldHaveProtectedConstructor() throws NoSuchMethodException {
-      final var constructor =
-          WitValue.class.getDeclaredConstructor(WitType.class);
+      final var constructor = WitValue.class.getDeclaredConstructor(WitType.class);
       assertNotNull(constructor, "WitType constructor should exist");
       assertTrue(
           Modifier.isProtected(constructor.getModifiers()), "Constructor should be protected");

@@ -60,10 +60,8 @@ class Ipv4AddressTest {
       final byte[] octets = {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
       final Ipv4Address addr = new Ipv4Address(octets);
       final byte[] retrieved = addr.getOctets();
-      assertEquals(
-          (byte) 0xFF, retrieved[0], "First octet should be 0xFF");
-      assertEquals(
-          (byte) 0xFF, retrieved[3], "Last octet should be 0xFF");
+      assertEquals((byte) 0xFF, retrieved[0], "First octet should be 0xFF");
+      assertEquals((byte) 0xFF, retrieved[3], "Last octet should be 0xFF");
     }
 
     @Test
@@ -80,7 +78,7 @@ class Ipv4AddressTest {
     void shouldThrowForTooFewBytes() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new Ipv4Address(new byte[]{1, 2, 3}),
+          () -> new Ipv4Address(new byte[] {1, 2, 3}),
           "Should throw for 3 bytes");
     }
 
@@ -89,7 +87,7 @@ class Ipv4AddressTest {
     void shouldThrowForTooManyBytes() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new Ipv4Address(new byte[]{1, 2, 3, 4, 5}),
+          () -> new Ipv4Address(new byte[] {1, 2, 3, 4, 5}),
           "Should throw for 5 bytes");
     }
 
@@ -98,7 +96,7 @@ class Ipv4AddressTest {
     void shouldThrowForEmptyArray() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new Ipv4Address(new byte[]{}),
+          () -> new Ipv4Address(new byte[] {}),
           "Should throw for empty array");
     }
   }
@@ -114,9 +112,7 @@ class Ipv4AddressTest {
       final Ipv4Address addr = new Ipv4Address(octets);
 
       octets[0] = 99;
-      assertEquals(
-          10, addr.getOctets()[0],
-          "Modifying original octets should not affect address");
+      assertEquals(10, addr.getOctets()[0], "Modifying original octets should not affect address");
     }
 
     @Test
@@ -127,9 +123,7 @@ class Ipv4AddressTest {
 
       final byte[] retrieved = addr.getOctets();
       retrieved[0] = 99;
-      assertEquals(
-          10, addr.getOctets()[0],
-          "Modifying retrieved octets should not affect address");
+      assertEquals(10, addr.getOctets()[0], "Modifying retrieved octets should not affect address");
     }
   }
 
@@ -140,42 +134,41 @@ class Ipv4AddressTest {
     @Test
     @DisplayName("same octets should be equal")
     void sameOctetsShouldBeEqual() {
-      final Ipv4Address addr1 =
-          new Ipv4Address(new byte[]{(byte) 192, (byte) 168, 1, 1});
-      final Ipv4Address addr2 =
-          new Ipv4Address(new byte[]{(byte) 192, (byte) 168, 1, 1});
+      final Ipv4Address addr1 = new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, 1});
+      final Ipv4Address addr2 = new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, 1});
       assertEquals(addr1, addr2, "Addresses with same octets should be equal");
       assertEquals(
-          addr1.hashCode(), addr2.hashCode(),
+          addr1.hashCode(),
+          addr2.hashCode(),
           "Addresses with same octets should have same hashCode");
     }
 
     @Test
     @DisplayName("different octets should not be equal")
     void differentOctetsShouldNotBeEqual() {
-      final Ipv4Address addr1 = new Ipv4Address(new byte[]{10, 0, 0, 1});
-      final Ipv4Address addr2 = new Ipv4Address(new byte[]{10, 0, 0, 2});
+      final Ipv4Address addr1 = new Ipv4Address(new byte[] {10, 0, 0, 1});
+      final Ipv4Address addr2 = new Ipv4Address(new byte[] {10, 0, 0, 2});
       assertNotEquals(addr1, addr2, "Addresses with different octets should not be equal");
     }
 
     @Test
     @DisplayName("should not equal null")
     void shouldNotEqualNull() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{127, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
       assertNotEquals(null, addr, "Address should not equal null");
     }
 
     @Test
     @DisplayName("should not equal different type")
     void shouldNotEqualDifferentType() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{127, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
       assertNotEquals("127.0.0.1", addr, "Address should not equal a String");
     }
 
     @Test
     @DisplayName("should equal itself")
     void shouldEqualItself() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{10, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {10, 0, 0, 1});
       assertEquals(addr, addr, "Address should equal itself");
     }
   }
@@ -187,39 +180,31 @@ class Ipv4AddressTest {
     @Test
     @DisplayName("toString should format as dotted decimal")
     void toStringShouldFormatAsDottedDecimal() {
-      final Ipv4Address addr =
-          new Ipv4Address(new byte[]{(byte) 192, (byte) 168, 1, 100});
-      assertEquals(
-          "192.168.1.100", addr.toString(),
-          "toString should format as dotted decimal");
+      final Ipv4Address addr = new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, 100});
+      assertEquals("192.168.1.100", addr.toString(), "toString should format as dotted decimal");
     }
 
     @Test
     @DisplayName("toString should handle loopback")
     void toStringShouldHandleLoopback() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{127, 0, 0, 1});
-      assertEquals(
-          "127.0.0.1", addr.toString(),
-          "toString should format loopback as 127.0.0.1");
+      final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
+      assertEquals("127.0.0.1", addr.toString(), "toString should format loopback as 127.0.0.1");
     }
 
     @Test
     @DisplayName("toString should handle all zeros")
     void toStringShouldHandleAllZeros() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{0, 0, 0, 0});
-      assertEquals(
-          "0.0.0.0", addr.toString(),
-          "toString should format all zeros as 0.0.0.0");
+      final Ipv4Address addr = new Ipv4Address(new byte[] {0, 0, 0, 0});
+      assertEquals("0.0.0.0", addr.toString(), "toString should format all zeros as 0.0.0.0");
     }
 
     @Test
     @DisplayName("toString should handle high byte values (unsigned)")
     void toStringShouldHandleHighByteValues() {
       final Ipv4Address addr =
-          new Ipv4Address(new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF});
+          new Ipv4Address(new byte[] {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF});
       assertEquals(
-          "255.255.255.255", addr.toString(),
-          "toString should handle 0xFF bytes as unsigned 255");
+          "255.255.255.255", addr.toString(), "toString should handle 0xFF bytes as unsigned 255");
     }
   }
 }

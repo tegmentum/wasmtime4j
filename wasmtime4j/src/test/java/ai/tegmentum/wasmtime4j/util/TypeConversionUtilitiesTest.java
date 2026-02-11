@@ -225,8 +225,7 @@ class TypeConversionUtilitiesTest {
       final String[] strings = {"i32", "i64", "f32"};
       final WasmValueType[] result = TypeConversionUtilities.stringsToTypes(strings);
 
-      assertThat(result)
-          .containsExactly(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32);
+      assertThat(result).containsExactly(WasmValueType.I32, WasmValueType.I64, WasmValueType.F32);
     }
 
     @Test
@@ -338,8 +337,7 @@ class TypeConversionUtilitiesTest {
     @DisplayName("validateParameterTypes should throw for null params")
     void validateParameterTypesShouldThrowForNullParams() {
       final WasmValueType[] expectedTypes = {WasmValueType.I32};
-      assertThatThrownBy(
-              () -> TypeConversionUtilities.validateParameterTypes(null, expectedTypes))
+      assertThatThrownBy(() -> TypeConversionUtilities.validateParameterTypes(null, expectedTypes))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("params");
     }
@@ -488,7 +486,8 @@ class TypeConversionUtilitiesTest {
     @Test
     @DisplayName("decodeValueType should decode 5 as FUNCREF")
     void decodeValueTypeShouldDecodeFuncref() {
-      assertThat(TypeConversionUtilities.decodeValueType((byte) 5)).isEqualTo(WasmValueType.FUNCREF);
+      assertThat(TypeConversionUtilities.decodeValueType((byte) 5))
+          .isEqualTo(WasmValueType.FUNCREF);
     }
 
     @Test

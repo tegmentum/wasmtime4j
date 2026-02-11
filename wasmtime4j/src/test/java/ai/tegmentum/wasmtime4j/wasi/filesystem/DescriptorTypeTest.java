@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for DescriptorType enum.
  *
- * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage for
- * WASI filesystem descriptor types.
+ * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage
+ * for WASI filesystem descriptor types.
  */
 @DisplayName("DescriptorType Tests")
 class DescriptorTypeTest {
@@ -154,17 +154,14 @@ class DescriptorTypeTest {
     @Test
     @DisplayName("BLOCK_DEVICE should have ordinal 1")
     void blockDeviceShouldHaveOrdinalOne() {
-      assertEquals(
-          1, DescriptorType.BLOCK_DEVICE.ordinal(), "BLOCK_DEVICE ordinal should be 1");
+      assertEquals(1, DescriptorType.BLOCK_DEVICE.ordinal(), "BLOCK_DEVICE ordinal should be 1");
     }
 
     @Test
     @DisplayName("CHARACTER_DEVICE should have ordinal 2")
     void characterDeviceShouldHaveOrdinalTwo() {
       assertEquals(
-          2,
-          DescriptorType.CHARACTER_DEVICE.ordinal(),
-          "CHARACTER_DEVICE ordinal should be 2");
+          2, DescriptorType.CHARACTER_DEVICE.ordinal(), "CHARACTER_DEVICE ordinal should be 2");
     }
 
     @Test
@@ -182,15 +179,13 @@ class DescriptorTypeTest {
     @Test
     @DisplayName("SYMBOLIC_LINK should have ordinal 5")
     void symbolicLinkShouldHaveOrdinalFive() {
-      assertEquals(
-          5, DescriptorType.SYMBOLIC_LINK.ordinal(), "SYMBOLIC_LINK ordinal should be 5");
+      assertEquals(5, DescriptorType.SYMBOLIC_LINK.ordinal(), "SYMBOLIC_LINK ordinal should be 5");
     }
 
     @Test
     @DisplayName("REGULAR_FILE should have ordinal 6")
     void regularFileShouldHaveOrdinalSix() {
-      assertEquals(
-          6, DescriptorType.REGULAR_FILE.ordinal(), "REGULAR_FILE ordinal should be 6");
+      assertEquals(6, DescriptorType.REGULAR_FILE.ordinal(), "REGULAR_FILE ordinal should be 6");
     }
 
     @Test
@@ -205,8 +200,7 @@ class DescriptorTypeTest {
       final DescriptorType[] values = DescriptorType.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -279,33 +273,26 @@ class DescriptorTypeTest {
     @DisplayName("values should return array of length 8")
     void valuesShouldReturnArrayOfLengthEight() {
       assertEquals(
-          8,
-          DescriptorType.values().length,
-          "values() should return array with 8 elements");
+          8, DescriptorType.values().length, "values() should return array with 8 elements");
     }
 
     @Test
     @DisplayName("values should contain all constants")
     void valuesShouldContainAllConstants() {
-      final Set<DescriptorType> valueSet =
-          new HashSet<>(Arrays.asList(DescriptorType.values()));
+      final Set<DescriptorType> valueSet = new HashSet<>(Arrays.asList(DescriptorType.values()));
 
       assertTrue(valueSet.contains(DescriptorType.UNKNOWN), "values() should contain UNKNOWN");
       assertTrue(
-          valueSet.contains(DescriptorType.BLOCK_DEVICE),
-          "values() should contain BLOCK_DEVICE");
+          valueSet.contains(DescriptorType.BLOCK_DEVICE), "values() should contain BLOCK_DEVICE");
       assertTrue(
           valueSet.contains(DescriptorType.CHARACTER_DEVICE),
           "values() should contain CHARACTER_DEVICE");
-      assertTrue(
-          valueSet.contains(DescriptorType.DIRECTORY), "values() should contain DIRECTORY");
+      assertTrue(valueSet.contains(DescriptorType.DIRECTORY), "values() should contain DIRECTORY");
       assertTrue(valueSet.contains(DescriptorType.FIFO), "values() should contain FIFO");
       assertTrue(
-          valueSet.contains(DescriptorType.SYMBOLIC_LINK),
-          "values() should contain SYMBOLIC_LINK");
+          valueSet.contains(DescriptorType.SYMBOLIC_LINK), "values() should contain SYMBOLIC_LINK");
       assertTrue(
-          valueSet.contains(DescriptorType.REGULAR_FILE),
-          "values() should contain REGULAR_FILE");
+          valueSet.contains(DescriptorType.REGULAR_FILE), "values() should contain REGULAR_FILE");
       assertTrue(valueSet.contains(DescriptorType.SOCKET), "values() should contain SOCKET");
     }
 
@@ -332,9 +319,7 @@ class DescriptorTypeTest {
     void toStringShouldReturnConstantName() {
       for (final DescriptorType type : DescriptorType.values()) {
         assertEquals(
-            type.name(),
-            type.toString(),
-            "toString() should match name() for " + type.name());
+            type.name(), type.toString(), "toString() should match name() for " + type.name());
       }
     }
 
@@ -342,9 +327,7 @@ class DescriptorTypeTest {
     @DisplayName("toString should return 'UNKNOWN' for UNKNOWN")
     void toStringShouldReturnUnknown() {
       assertEquals(
-          "UNKNOWN",
-          DescriptorType.UNKNOWN.toString(),
-          "toString() should return 'UNKNOWN'");
+          "UNKNOWN", DescriptorType.UNKNOWN.toString(), "toString() should return 'UNKNOWN'");
     }
 
     @Test

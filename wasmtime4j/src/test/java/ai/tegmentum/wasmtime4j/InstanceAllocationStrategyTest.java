@@ -42,14 +42,17 @@ class InstanceAllocationStrategyTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(InstanceAllocationStrategy.class.isEnum(),
+      assertTrue(
+          InstanceAllocationStrategy.class.isEnum(),
           "InstanceAllocationStrategy should be an enum type");
     }
 
     @Test
     @DisplayName("should have exactly 2 values")
     void shouldHaveExactValueCount() {
-      assertEquals(2, InstanceAllocationStrategy.values().length,
+      assertEquals(
+          2,
+          InstanceAllocationStrategy.values().length,
           "InstanceAllocationStrategy should have exactly 2 values");
     }
   }
@@ -61,19 +64,17 @@ class InstanceAllocationStrategyTest {
     @Test
     @DisplayName("should contain ON_DEMAND")
     void shouldContainOnDemand() {
-      assertNotNull(InstanceAllocationStrategy.ON_DEMAND,
-          "ON_DEMAND constant should exist");
-      assertEquals("ON_DEMAND", InstanceAllocationStrategy.ON_DEMAND.name(),
-          "ON_DEMAND name should match");
+      assertNotNull(InstanceAllocationStrategy.ON_DEMAND, "ON_DEMAND constant should exist");
+      assertEquals(
+          "ON_DEMAND", InstanceAllocationStrategy.ON_DEMAND.name(), "ON_DEMAND name should match");
     }
 
     @Test
     @DisplayName("should contain POOLING")
     void shouldContainPooling() {
-      assertNotNull(InstanceAllocationStrategy.POOLING,
-          "POOLING constant should exist");
-      assertEquals("POOLING", InstanceAllocationStrategy.POOLING.name(),
-          "POOLING name should match");
+      assertNotNull(InstanceAllocationStrategy.POOLING, "POOLING constant should exist");
+      assertEquals(
+          "POOLING", InstanceAllocationStrategy.POOLING.name(), "POOLING name should match");
     }
   }
 
@@ -88,7 +89,9 @@ class InstanceAllocationStrategyTest {
       for (final InstanceAllocationStrategy value : InstanceAllocationStrategy.values()) {
         ordinals.add(value.ordinal());
       }
-      assertEquals(InstanceAllocationStrategy.values().length, ordinals.size(),
+      assertEquals(
+          InstanceAllocationStrategy.values().length,
+          ordinals.size(),
           "All ordinals should be unique");
     }
 
@@ -97,8 +100,7 @@ class InstanceAllocationStrategyTest {
     void shouldHaveSequentialOrdinals() {
       final InstanceAllocationStrategy[] values = InstanceAllocationStrategy.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -111,7 +113,9 @@ class InstanceAllocationStrategyTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final InstanceAllocationStrategy value : InstanceAllocationStrategy.values()) {
-        assertEquals(value, InstanceAllocationStrategy.valueOf(value.name()),
+        assertEquals(
+            value,
+            InstanceAllocationStrategy.valueOf(value.name()),
             "valueOf should return " + value.name());
       }
     }
@@ -119,7 +123,8 @@ class InstanceAllocationStrategyTest {
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> InstanceAllocationStrategy.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -145,9 +150,10 @@ class InstanceAllocationStrategyTest {
     @Test
     @DisplayName("should return enum name as toString")
     void shouldReturnEnumNameAsToString() {
-      for (final InstanceAllocationStrategy value :
-          InstanceAllocationStrategy.values()) {
-        assertEquals(value.name(), value.toString(),
+      for (final InstanceAllocationStrategy value : InstanceAllocationStrategy.values()) {
+        assertEquals(
+            value.name(),
+            value.toString(),
             "toString should return the enum name for " + value.name());
       }
     }
@@ -160,8 +166,7 @@ class InstanceAllocationStrategyTest {
     @Test
     @DisplayName("should support switch statement over all values")
     void shouldSupportSwitchStatement() {
-      for (final InstanceAllocationStrategy strategy :
-          InstanceAllocationStrategy.values()) {
+      for (final InstanceAllocationStrategy strategy : InstanceAllocationStrategy.values()) {
         final String result;
         switch (strategy) {
           case ON_DEMAND:
@@ -172,8 +177,7 @@ class InstanceAllocationStrategyTest {
             result = "unknown";
             break;
         }
-        assertEquals(strategy.name(), result,
-            "Switch should handle " + strategy.name());
+        assertEquals(strategy.name(), result, "Switch should handle " + strategy.name());
       }
     }
   }

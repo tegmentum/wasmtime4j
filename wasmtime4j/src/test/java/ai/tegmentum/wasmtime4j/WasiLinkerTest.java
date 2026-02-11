@@ -47,7 +47,6 @@ final class WasiLinkerUtilsTest {
           exception.getMessage(),
           "Exception message should indicate linker was null");
     }
-
   }
 
   @Nested
@@ -67,7 +66,6 @@ final class WasiLinkerUtilsTest {
           exception.getMessage(),
           "Exception message should indicate linker was null for preview2");
     }
-
   }
 
   @Nested

@@ -16,9 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.type.ImportType;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -26,12 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 
 /**
  * Tests for {@link ImportInfo} class.
@@ -71,8 +68,7 @@ class ImportInfoTest {
               true,
               Optional.of("WASI implementation"));
 
-      assertEquals(
-          "wasi_snapshot_preview1", info.getModuleName(), "moduleName should match");
+      assertEquals("wasi_snapshot_preview1", info.getModuleName(), "moduleName should match");
       assertEquals("fd_write", info.getImportName(), "importName should match");
       assertEquals(
           ImportInfo.ImportType.FUNCTION, info.getImportType(), "importType should be FUNCTION");
@@ -141,13 +137,7 @@ class ImportInfoTest {
           NullPointerException.class,
           () ->
               new ImportInfo(
-                  "mod",
-                  "imp",
-                  null,
-                  Optional.empty(),
-                  Instant.now(),
-                  false,
-                  Optional.empty()),
+                  "mod", "imp", null, Optional.empty(), Instant.now(), false, Optional.empty()),
           "null importType should throw NullPointerException");
     }
 
@@ -244,9 +234,7 @@ class ImportInfoTest {
       final ImportInfo info = createDefaultImportInfo();
 
       assertEquals(
-          "env::log",
-          info.getImportIdentifier(),
-          "getImportIdentifier should return 'env::log'");
+          "env::log", info.getImportIdentifier(), "getImportIdentifier should return 'env::log'");
     }
 
     @Test
@@ -279,11 +267,21 @@ class ImportInfoTest {
       final Instant now = Instant.parse("2025-06-15T12:00:00Z");
       final ImportInfo info1 =
           new ImportInfo(
-              "mod", "imp", ImportInfo.ImportType.FUNCTION, Optional.of("sig"), now, true,
+              "mod",
+              "imp",
+              ImportInfo.ImportType.FUNCTION,
+              Optional.of("sig"),
+              now,
+              true,
               Optional.of("src"));
       final ImportInfo info2 =
           new ImportInfo(
-              "mod", "imp", ImportInfo.ImportType.FUNCTION, Optional.of("sig"), now, true,
+              "mod",
+              "imp",
+              ImportInfo.ImportType.FUNCTION,
+              Optional.of("sig"),
+              now,
+              true,
               Optional.of("src"));
 
       assertEquals(info1, info2, "ImportInfo with same values should be equal");
@@ -295,11 +293,21 @@ class ImportInfoTest {
       final Instant now = Instant.now();
       final ImportInfo info1 =
           new ImportInfo(
-              "modA", "imp", ImportInfo.ImportType.FUNCTION, Optional.empty(), now, false,
+              "modA",
+              "imp",
+              ImportInfo.ImportType.FUNCTION,
+              Optional.empty(),
+              now,
+              false,
               Optional.empty());
       final ImportInfo info2 =
           new ImportInfo(
-              "modB", "imp", ImportInfo.ImportType.FUNCTION, Optional.empty(), now, false,
+              "modB",
+              "imp",
+              ImportInfo.ImportType.FUNCTION,
+              Optional.empty(),
+              now,
+              false,
               Optional.empty());
 
       assertNotEquals(info1, info2, "Different moduleName should not be equal");
@@ -311,11 +319,21 @@ class ImportInfoTest {
       final Instant now = Instant.now();
       final ImportInfo info1 =
           new ImportInfo(
-              "mod", "imp", ImportInfo.ImportType.FUNCTION, Optional.empty(), now, false,
+              "mod",
+              "imp",
+              ImportInfo.ImportType.FUNCTION,
+              Optional.empty(),
+              now,
+              false,
               Optional.empty());
       final ImportInfo info2 =
           new ImportInfo(
-              "mod", "imp", ImportInfo.ImportType.MEMORY, Optional.empty(), now, false,
+              "mod",
+              "imp",
+              ImportInfo.ImportType.MEMORY,
+              Optional.empty(),
+              now,
+              false,
               Optional.empty());
 
       assertNotEquals(info1, info2, "Different importType should not be equal");
@@ -343,11 +361,21 @@ class ImportInfoTest {
       final Instant now = Instant.parse("2025-06-15T12:00:00Z");
       final ImportInfo info1 =
           new ImportInfo(
-              "mod", "imp", ImportInfo.ImportType.FUNCTION, Optional.of("sig"), now, true,
+              "mod",
+              "imp",
+              ImportInfo.ImportType.FUNCTION,
+              Optional.of("sig"),
+              now,
+              true,
               Optional.of("src"));
       final ImportInfo info2 =
           new ImportInfo(
-              "mod", "imp", ImportInfo.ImportType.FUNCTION, Optional.of("sig"), now, true,
+              "mod",
+              "imp",
+              ImportInfo.ImportType.FUNCTION,
+              Optional.of("sig"),
+              now,
+              true,
               Optional.of("src"));
 
       assertEquals(
@@ -366,9 +394,7 @@ class ImportInfoTest {
     void toStringShouldContainImportInfoPrefix() {
       final ImportInfo info = createDefaultImportInfo();
 
-      assertTrue(
-          info.toString().contains("ImportInfo{"),
-          "toString should contain 'ImportInfo{'");
+      assertTrue(info.toString().contains("ImportInfo{"), "toString should contain 'ImportInfo{'");
     }
 
     @Test
@@ -376,9 +402,7 @@ class ImportInfoTest {
     void toStringShouldContainImportIdentifier() {
       final ImportInfo info = createDefaultImportInfo();
 
-      assertTrue(
-          info.toString().contains("env::log"),
-          "toString should contain import identifier");
+      assertTrue(info.toString().contains("env::log"), "toString should contain import identifier");
     }
 
     @Test
@@ -386,9 +410,7 @@ class ImportInfoTest {
     void toStringShouldContainType() {
       final ImportInfo info = createDefaultImportInfo();
 
-      assertTrue(
-          info.toString().contains("type=FUNCTION"),
-          "toString should contain import type");
+      assertTrue(info.toString().contains("type=FUNCTION"), "toString should contain import type");
     }
 
     @Test
@@ -397,8 +419,7 @@ class ImportInfoTest {
       final ImportInfo info = createDefaultImportInfo();
 
       assertTrue(
-          info.toString().contains("signature="),
-          "toString should include signature when present");
+          info.toString().contains("signature="), "toString should include signature when present");
     }
 
     @Test
@@ -417,8 +438,7 @@ class ImportInfoTest {
       final ImportInfo info = createDefaultImportInfo();
 
       assertTrue(
-          info.toString().contains("source=host"),
-          "toString should include source when present");
+          info.toString().contains("source=host"), "toString should include source when present");
     }
   }
 }

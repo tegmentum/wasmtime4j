@@ -440,8 +440,7 @@ class WasiFileSystemExceptionTest {
     @DisplayName("Operation suffix absent when operation is empty string")
     void operationSuffixAbsentWhenOperationIsEmptyString() {
       final WasiFileSystemException ex =
-          new WasiFileSystemException(
-              FileSystemErrorType.IO_ERROR, "msg", "/path", "", null, null);
+          new WasiFileSystemException(FileSystemErrorType.IO_ERROR, "msg", "/path", "", null, null);
       assertFalse(
           ex.getMessage().contains("(operation:"),
           "Operation suffix must be absent when empty: " + ex.getMessage());
@@ -649,7 +648,8 @@ class WasiFileSystemExceptionTest {
     void isResourceLimitErrorReturnsFalseForPermissionDenied() {
       final WasiFileSystemException ex =
           new WasiFileSystemException(FileSystemErrorType.PERMISSION_DENIED, "test");
-      assertFalse(ex.isResourceLimitError(), "PERMISSION_DENIED should NOT be resource limit error");
+      assertFalse(
+          ex.isResourceLimitError(), "PERMISSION_DENIED should NOT be resource limit error");
     }
 
     @Test
@@ -816,8 +816,7 @@ class WasiFileSystemExceptionTest {
           new WasiFileSystemException(
               FileSystemErrorType.NOT_FOUND, "Test message", null, "open", null, null);
       assertFalse(ex.getMessage().contains("(path:"), "Should NOT include path suffix when null");
-      assertTrue(
-          ex.getMessage().contains("(operation: open)"), "Should include operation suffix");
+      assertTrue(ex.getMessage().contains("(operation: open)"), "Should include operation suffix");
     }
 
     @Test
@@ -869,8 +868,7 @@ class WasiFileSystemExceptionTest {
       final WasiFileSystemException ex =
           new WasiFileSystemException(
               FileSystemErrorType.NOT_FOUND, "Test message", "/my/path", "read", null, null);
-      assertTrue(
-          ex.getMessage().contains("(operation: read)"), "Should include operation suffix");
+      assertTrue(ex.getMessage().contains("(operation: read)"), "Should include operation suffix");
       assertTrue(ex.getMessage().contains("(path: /my/path)"), "Should include path suffix");
     }
 
@@ -899,8 +897,7 @@ class WasiFileSystemExceptionTest {
           ex.getMessage().contains("path:"),
           "Empty path should be excluded entirely, not included as '(path: )'");
       // But should still include operation
-      assertTrue(
-          ex.getMessage().contains("(operation: read)"), "Should include operation suffix");
+      assertTrue(ex.getMessage().contains("(operation: read)"), "Should include operation suffix");
     }
 
     @Test
@@ -1142,8 +1139,7 @@ class WasiFileSystemExceptionTest {
     void getErrnoCodeReturnsExactValue() {
       final Integer errno = Integer.valueOf(12345);
       final WasiFileSystemException ex =
-          new WasiFileSystemException(
-              FileSystemErrorType.UNKNOWN, "test", null, null, errno, null);
+          new WasiFileSystemException(FileSystemErrorType.UNKNOWN, "test", null, null, errno, null);
       assertEquals(errno, ex.getErrnoCode(), "getErrnoCode should return exact value");
     }
 

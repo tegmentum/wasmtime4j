@@ -16,13 +16,13 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -691,22 +691,26 @@ public final class PanamaFunctionReference implements FunctionReference {
     final MethodHandles.Lookup lookup = MethodHandles.lookup();
 
     return switch (returnType.getName()) {
-      case "float" -> lookup.findStatic(
-          PanamaFunctionReference.class,
-          "convertToFloat",
-          MethodType.methodType(float.class, Object.class));
-      case "int" -> lookup.findStatic(
-          PanamaFunctionReference.class,
-          "convertToInt",
-          MethodType.methodType(int.class, Object.class));
-      case "double" -> lookup.findStatic(
-          PanamaFunctionReference.class,
-          "convertToDouble",
-          MethodType.methodType(double.class, Object.class));
-      case "long" -> lookup.findStatic(
-          PanamaFunctionReference.class,
-          "convertToLong",
-          MethodType.methodType(long.class, Object.class));
+      case "float" ->
+          lookup.findStatic(
+              PanamaFunctionReference.class,
+              "convertToFloat",
+              MethodType.methodType(float.class, Object.class));
+      case "int" ->
+          lookup.findStatic(
+              PanamaFunctionReference.class,
+              "convertToInt",
+              MethodType.methodType(int.class, Object.class));
+      case "double" ->
+          lookup.findStatic(
+              PanamaFunctionReference.class,
+              "convertToDouble",
+              MethodType.methodType(double.class, Object.class));
+      case "long" ->
+          lookup.findStatic(
+              PanamaFunctionReference.class,
+              "convertToLong",
+              MethodType.methodType(long.class, Object.class));
       default -> throw new IllegalArgumentException("Unsupported return type: " + returnType);
     };
   }
@@ -814,8 +818,8 @@ public final class PanamaFunctionReference implements FunctionReference {
       case F64 -> wasmValue.asF64();
       case V128 -> wasmValue.asV128();
       case FUNCREF, EXTERNREF -> wasmValue.asExternref();
-      default -> throw new IllegalArgumentException(
-          "Unsupported value type: " + wasmValue.getType());
+      default ->
+          throw new IllegalArgumentException("Unsupported value type: " + wasmValue.getType());
     };
   }
 

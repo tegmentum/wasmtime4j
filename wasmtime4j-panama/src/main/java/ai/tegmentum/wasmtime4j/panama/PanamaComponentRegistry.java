@@ -244,8 +244,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public Set<Component> resolveDependencies(final Component component)
-      throws WasmException {
+  public Set<Component> resolveDependencies(final Component component) throws WasmException {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
@@ -550,8 +549,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
     // Panama FFI call to unregister component from native registry
   }
 
-  private Set<Component> resolveDependenciesNative(final Component component)
-      throws Exception {
+  private Set<Component> resolveDependenciesNative(final Component component) throws Exception {
     // Panama FFI call to native dependency resolution
     return new HashSet<>(); // Placeholder
   }

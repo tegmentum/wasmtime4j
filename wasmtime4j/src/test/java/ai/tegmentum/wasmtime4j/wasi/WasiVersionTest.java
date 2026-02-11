@@ -107,13 +107,9 @@ class WasiVersionTest {
     @DisplayName("valueOf should return correct constant for each name")
     void valueOfShouldReturnCorrectConstant() {
       assertEquals(
-          WasiVersion.PREVIEW_1,
-          WasiVersion.valueOf("PREVIEW_1"),
-          "Should return PREVIEW_1");
+          WasiVersion.PREVIEW_1, WasiVersion.valueOf("PREVIEW_1"), "Should return PREVIEW_1");
       assertEquals(
-          WasiVersion.PREVIEW_2,
-          WasiVersion.valueOf("PREVIEW_2"),
-          "Should return PREVIEW_2");
+          WasiVersion.PREVIEW_2, WasiVersion.valueOf("PREVIEW_2"), "Should return PREVIEW_2");
     }
 
     @Test
@@ -286,18 +282,14 @@ class WasiVersionTest {
     @DisplayName("getDefault should return PREVIEW_1")
     void getDefaultShouldReturnPreview1() {
       assertSame(
-          WasiVersion.PREVIEW_1,
-          WasiVersion.getDefault(),
-          "getDefault() should return PREVIEW_1");
+          WasiVersion.PREVIEW_1, WasiVersion.getDefault(), "getDefault() should return PREVIEW_1");
     }
 
     @Test
     @DisplayName("getLatest should return PREVIEW_2")
     void getLatestShouldReturnPreview2() {
       assertSame(
-          WasiVersion.PREVIEW_2,
-          WasiVersion.getLatest(),
-          "getLatest() should return PREVIEW_2");
+          WasiVersion.PREVIEW_2, WasiVersion.getLatest(), "getLatest() should return PREVIEW_2");
     }
   }
 

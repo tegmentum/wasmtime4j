@@ -16,9 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.type.ImportType;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -26,6 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
+import ai.tegmentum.wasmtime4j.validation.ImportIssue;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,9 +35,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.validation.ImportInfo;
-import ai.tegmentum.wasmtime4j.validation.ImportIssue;
-import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 
 /**
  * Tests for {@link ImportValidation} class.
@@ -49,8 +46,7 @@ import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 class ImportValidationTest {
 
   private ImportIssue createIssue(final ImportIssue.Severity severity) {
-    return new ImportIssue(
-        severity, ImportIssue.Type.MISSING_IMPORT, "mod", "fn", "Issue message");
+    return new ImportIssue(severity, ImportIssue.Type.MISSING_IMPORT, "mod", "fn", "Issue message");
   }
 
   private ImportInfo createImportInfo(final String moduleName, final String importName) {
@@ -91,12 +87,7 @@ class ImportValidationTest {
     void shouldCreateInstanceWithEmptyLists() {
       final ImportValidation validation =
           new ImportValidation(
-              true,
-              Collections.emptyList(),
-              Collections.emptyList(),
-              0,
-              0,
-              Duration.ZERO);
+              true, Collections.emptyList(), Collections.emptyList(), 0, 0, Duration.ZERO);
 
       assertTrue(validation.isValid(), "isValid should be true");
       assertTrue(validation.getIssues().isEmpty(), "issues should be empty");
@@ -108,9 +99,7 @@ class ImportValidationTest {
     void shouldThrowForNullIssuesList() {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new ImportValidation(
-                  true, null, Collections.emptyList(), 0, 0, Duration.ZERO),
+          () -> new ImportValidation(true, null, Collections.emptyList(), 0, 0, Duration.ZERO),
           "null issues should throw NullPointerException");
     }
 
@@ -119,9 +108,7 @@ class ImportValidationTest {
     void shouldThrowForNullValidatedImportsList() {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new ImportValidation(
-                  true, Collections.emptyList(), null, 0, 0, Duration.ZERO),
+          () -> new ImportValidation(true, Collections.emptyList(), null, 0, 0, Duration.ZERO),
           "null validatedImports should throw NullPointerException");
     }
 
@@ -142,8 +129,7 @@ class ImportValidationTest {
       final List<ImportIssue> issues = new ArrayList<>();
       issues.add(createIssue(ImportIssue.Severity.ERROR));
       final ImportValidation validation =
-          new ImportValidation(
-              false, issues, Collections.emptyList(), 1, 0, Duration.ofMillis(10));
+          new ImportValidation(false, issues, Collections.emptyList(), 1, 0, Duration.ofMillis(10));
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -157,8 +143,7 @@ class ImportValidationTest {
       final List<ImportInfo> imports = new ArrayList<>();
       imports.add(createImportInfo("env", "log"));
       final ImportValidation validation =
-          new ImportValidation(
-              true, Collections.emptyList(), imports, 1, 1, Duration.ofMillis(5));
+          new ImportValidation(true, Collections.emptyList(), imports, 1, 1, Duration.ofMillis(5));
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -257,11 +242,9 @@ class ImportValidationTest {
               createIssue(ImportIssue.Severity.INFO));
 
       final ImportValidation validation =
-          new ImportValidation(
-              false, issues, Collections.emptyList(), 4, 1, Duration.ofMillis(20));
+          new ImportValidation(false, issues, Collections.emptyList(), 4, 1, Duration.ofMillis(20));
 
-      final List<ImportIssue> errors =
-          validation.getIssuesBySeverity(ImportIssue.Severity.ERROR);
+      final List<ImportIssue> errors = validation.getIssuesBySeverity(ImportIssue.Severity.ERROR);
 
       assertEquals(2, errors.size(), "Should have 2 ERROR issues");
     }
@@ -272,8 +255,7 @@ class ImportValidationTest {
       final List<ImportIssue> issues = List.of(createIssue(ImportIssue.Severity.WARNING));
 
       final ImportValidation validation =
-          new ImportValidation(
-              false, issues, Collections.emptyList(), 1, 0, Duration.ZERO);
+          new ImportValidation(false, issues, Collections.emptyList(), 1, 0, Duration.ZERO);
 
       final List<ImportIssue> criticals =
           validation.getIssuesBySeverity(ImportIssue.Severity.CRITICAL);
@@ -308,8 +290,7 @@ class ImportValidationTest {
               createIssue(ImportIssue.Severity.CRITICAL));
 
       final ImportValidation validation =
-          new ImportValidation(
-              false, issues, Collections.emptyList(), 2, 0, Duration.ZERO);
+          new ImportValidation(false, issues, Collections.emptyList(), 2, 0, Duration.ZERO);
 
       assertTrue(validation.hasCriticalIssues(), "hasCriticalIssues should return true");
     }
@@ -319,12 +300,10 @@ class ImportValidationTest {
     void shouldReturnFalseWhenNoCriticalIssues() {
       final List<ImportIssue> issues =
           List.of(
-              createIssue(ImportIssue.Severity.WARNING),
-              createIssue(ImportIssue.Severity.ERROR));
+              createIssue(ImportIssue.Severity.WARNING), createIssue(ImportIssue.Severity.ERROR));
 
       final ImportValidation validation =
-          new ImportValidation(
-              false, issues, Collections.emptyList(), 2, 0, Duration.ZERO);
+          new ImportValidation(false, issues, Collections.emptyList(), 2, 0, Duration.ZERO);
 
       assertFalse(validation.hasCriticalIssues(), "hasCriticalIssues should return false");
     }
@@ -337,8 +316,7 @@ class ImportValidationTest {
               true, Collections.emptyList(), Collections.emptyList(), 0, 0, Duration.ZERO);
 
       assertFalse(
-          validation.hasCriticalIssues(),
-          "hasCriticalIssues should return false for empty issues");
+          validation.hasCriticalIssues(), "hasCriticalIssues should return false for empty issues");
     }
   }
 

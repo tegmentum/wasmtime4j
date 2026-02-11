@@ -44,16 +44,14 @@ class WitTupleTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(WitTuple.class.getModifiers()), "WitTuple should be final");
+      assertTrue(Modifier.isFinal(WitTuple.class.getModifiers()), "WitTuple should be final");
     }
 
     @Test
     @DisplayName("should extend WitValue")
     void shouldExtendWitValue() {
       assertTrue(
-          WitValue.class.isAssignableFrom(WitTuple.class),
-          "WitTuple should extend WitValue");
+          WitValue.class.isAssignableFrom(WitTuple.class), "WitTuple should extend WitValue");
     }
   }
 
@@ -90,10 +88,7 @@ class WitTupleTest {
     @Test
     @DisplayName("builder should create tuple")
     void builderShouldCreateTuple() {
-      final WitTuple tuple = WitTuple.builder()
-          .add(WitS32.of(1))
-          .add(WitS32.of(2))
-          .build();
+      final WitTuple tuple = WitTuple.builder().add(WitS32.of(1)).add(WitS32.of(2)).build();
       assertNotNull(tuple, "Builder should create non-null tuple");
       assertEquals(2, tuple.size(), "Builder tuple size should be 2");
     }
@@ -101,9 +96,7 @@ class WitTupleTest {
     @Test
     @DisplayName("builder with explicit type should create tuple")
     void builderWithExplicitTypeShouldCreateTuple() {
-      final WitTuple tuple = WitTuple.builder()
-          .add(WitType.createS32(), WitS32.of(42))
-          .build();
+      final WitTuple tuple = WitTuple.builder().add(WitType.createS32(), WitS32.of(42)).build();
       assertNotNull(tuple, "Builder with explicit type should create non-null tuple");
       assertEquals(1, tuple.size(), "Tuple size should be 1");
     }
@@ -237,8 +230,7 @@ class WitTupleTest {
     void sameTuplesShouldHaveSameHashCode() {
       final WitTuple t1 = WitTuple.of(WitS32.of(1), WitS32.of(2));
       final WitTuple t2 = WitTuple.of(WitS32.of(1), WitS32.of(2));
-      assertEquals(
-          t1.hashCode(), t2.hashCode(), "Same tuples should have same hash code");
+      assertEquals(t1.hashCode(), t2.hashCode(), "Same tuples should have same hash code");
     }
   }
 

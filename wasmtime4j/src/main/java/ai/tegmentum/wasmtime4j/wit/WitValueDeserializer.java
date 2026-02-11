@@ -624,8 +624,7 @@ public final class WitValueDeserializer {
 
     if (isSome == 0) {
       // Create a placeholder option type - full implementation would need actual WitType
-      return WitOption.none(
-          WitType.option(WitType.createBool()));
+      return WitOption.none(WitType.option(WitType.createBool()));
     } else {
       if (buffer.remaining() < 8) {
         throw new WitValueException(
@@ -651,9 +650,7 @@ public final class WitValueDeserializer {
       final WitValue value = deserialize(discriminator, valueData);
 
       // Create a placeholder option type - full implementation would need actual WitType
-      return WitOption.some(
-          WitType.option(WitType.createBool()),
-          value);
+      return WitOption.some(WitType.option(WitType.createBool()), value);
     }
   }
 
@@ -682,8 +679,7 @@ public final class WitValueDeserializer {
 
     // Create a placeholder result type - full implementation would need actual WitType
     final WitType resultType =
-        WitType.result(
-            java.util.Optional.empty(), java.util.Optional.empty());
+        WitType.result(java.util.Optional.empty(), java.util.Optional.empty());
 
     if (hasValue == 0) {
       return isOk != 0 ? WitResult.ok(resultType) : WitResult.err(resultType);
@@ -768,8 +764,7 @@ public final class WitValueDeserializer {
     }
 
     // Create a placeholder flags type - full implementation would need actual WitType
-    return WitFlags.of(
-        WitType.flags("placeholder", java.util.Arrays.asList()), flagNames);
+    return WitFlags.of(WitType.flags("placeholder", java.util.Arrays.asList()), flagNames);
   }
 
   /**

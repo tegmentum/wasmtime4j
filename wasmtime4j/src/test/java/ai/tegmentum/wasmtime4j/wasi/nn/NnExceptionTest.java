@@ -59,8 +59,7 @@ class NnExceptionTest {
     @Test
     @DisplayName("should have serialVersionUID field")
     void shouldHaveSerialVersionUID() throws NoSuchFieldException {
-      final java.lang.reflect.Field field =
-          NnException.class.getDeclaredField("serialVersionUID");
+      final java.lang.reflect.Field field = NnException.class.getDeclaredField("serialVersionUID");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "serialVersionUID should be private");
       assertTrue(Modifier.isStatic(field.getModifiers()), "serialVersionUID should be static");
       assertTrue(Modifier.isFinal(field.getModifiers()), "serialVersionUID should be final");
@@ -112,9 +111,7 @@ class NnExceptionTest {
           "Message should contain the provided message text");
       assertNull(exception.getCause(), "Cause should be null when not provided");
       assertEquals(
-          errorCode,
-          exception.getErrorCode(),
-          "Error code should match the provided error code");
+          errorCode, exception.getErrorCode(), "Error code should match the provided error code");
     }
 
     @Test
@@ -129,9 +126,7 @@ class NnExceptionTest {
           exception.getMessage().contains(message),
           "Message should contain the provided message text");
       assertEquals(
-          errorCode,
-          exception.getErrorCode(),
-          "Error code should match the provided error code");
+          errorCode, exception.getErrorCode(), "Error code should match the provided error code");
       assertSame(cause, exception.getCause(), "Cause should match the provided cause");
     }
   }
@@ -216,8 +211,7 @@ class NnExceptionTest {
               NnErrorCode.INVALID_ARGUMENT, "Tensor dimensions do not match model input shape");
 
       assertTrue(
-          exception.getMessage().contains("Tensor"),
-          "Message should contain 'Tensor' keyword");
+          exception.getMessage().contains("Tensor"), "Message should contain 'Tensor' keyword");
       assertTrue(
           exception.getMessage().contains("dimensions"),
           "Message should contain 'dimensions' keyword");
@@ -230,8 +224,7 @@ class NnExceptionTest {
           new NnException(NnErrorCode.NOT_FOUND, "Model 'resnet50' not found in registry");
 
       assertTrue(
-          exception.getMessage().contains("Model"),
-          "Message should contain 'Model' keyword");
+          exception.getMessage().contains("Model"), "Message should contain 'Model' keyword");
       assertTrue(
           exception.getMessage().contains("not found"),
           "Message should contain 'not found' keyword");
@@ -241,8 +234,7 @@ class NnExceptionTest {
     @DisplayName("should handle security violation error message")
     void shouldHandleSecurityViolationErrorMessage() {
       final NnException exception =
-          new NnException(
-              NnErrorCode.SECURITY, "Access denied to GPU device for untrusted module");
+          new NnException(NnErrorCode.SECURITY, "Access denied to GPU device for untrusted module");
 
       assertTrue(
           exception.getMessage().contains("Access denied"),
@@ -287,10 +279,7 @@ class NnExceptionTest {
     void timeoutShouldCreateCorrectException() {
       final NnException exception = NnException.timeout("Inference exceeded 30s limit");
 
-      assertEquals(
-          NnErrorCode.TIMEOUT,
-          exception.getErrorCode(),
-          "Error code should be TIMEOUT");
+      assertEquals(NnErrorCode.TIMEOUT, exception.getErrorCode(), "Error code should be TIMEOUT");
       assertTrue(
           exception.getMessage().contains("Inference exceeded 30s limit"),
           "Message should contain the provided message");
@@ -327,7 +316,8 @@ class NnExceptionTest {
     }
 
     @Test
-    @DisplayName("unsupportedOperation should create exception with UNSUPPORTED_OPERATION error code")
+    @DisplayName(
+        "unsupportedOperation should create exception with UNSUPPORTED_OPERATION error code")
     void unsupportedOperationShouldCreateCorrectException() {
       final NnException exception =
           NnException.unsupportedOperation("Quantization not supported on this backend");
@@ -347,9 +337,7 @@ class NnExceptionTest {
       final NnException exception = NnException.tooLarge("Model exceeds 4GB memory limit");
 
       assertEquals(
-          NnErrorCode.TOO_LARGE,
-          exception.getErrorCode(),
-          "Error code should be TOO_LARGE");
+          NnErrorCode.TOO_LARGE, exception.getErrorCode(), "Error code should be TOO_LARGE");
       assertTrue(
           exception.getMessage().contains("Model exceeds"),
           "Message should contain the provided message");
@@ -361,9 +349,7 @@ class NnExceptionTest {
       final NnException exception = NnException.notFound("Model registry entry missing");
 
       assertEquals(
-          NnErrorCode.NOT_FOUND,
-          exception.getErrorCode(),
-          "Error code should be NOT_FOUND");
+          NnErrorCode.NOT_FOUND, exception.getErrorCode(), "Error code should be NOT_FOUND");
       assertTrue(
           exception.getMessage().contains("Model registry"),
           "Message should contain the provided message");
@@ -374,10 +360,7 @@ class NnExceptionTest {
     void securityShouldCreateCorrectException() {
       final NnException exception = NnException.security("Untrusted model source");
 
-      assertEquals(
-          NnErrorCode.SECURITY,
-          exception.getErrorCode(),
-          "Error code should be SECURITY");
+      assertEquals(NnErrorCode.SECURITY, exception.getErrorCode(), "Error code should be SECURITY");
       assertTrue(
           exception.getMessage().contains("Untrusted model"),
           "Message should contain the provided message");
@@ -405,8 +388,7 @@ class NnExceptionTest {
     @Test
     @DisplayName("isInvalidArgument should return true only for INVALID_ARGUMENT")
     void isInvalidArgumentShouldReturnTrueOnlyForInvalidArgument() {
-      final NnException exception =
-          new NnException(NnErrorCode.INVALID_ARGUMENT, "Bad argument");
+      final NnException exception = new NnException(NnErrorCode.INVALID_ARGUMENT, "Bad argument");
 
       assertTrue(exception.isInvalidArgument(), "isInvalidArgument should return true");
       assertFalse(exception.isInvalidEncoding(), "isInvalidEncoding should return false");
@@ -421,8 +403,7 @@ class NnExceptionTest {
     @Test
     @DisplayName("isInvalidEncoding should return true only for INVALID_ENCODING")
     void isInvalidEncodingShouldReturnTrueOnlyForInvalidEncoding() {
-      final NnException exception =
-          new NnException(NnErrorCode.INVALID_ENCODING, "Bad encoding");
+      final NnException exception = new NnException(NnErrorCode.INVALID_ENCODING, "Bad encoding");
 
       assertFalse(exception.isInvalidArgument(), "isInvalidArgument should return false");
       assertTrue(exception.isInvalidEncoding(), "isInvalidEncoding should return true");
@@ -452,8 +433,7 @@ class NnExceptionTest {
     @Test
     @DisplayName("isRuntimeError should return true only for RUNTIME_ERROR")
     void isRuntimeErrorShouldReturnTrueOnlyForRuntimeError() {
-      final NnException exception =
-          new NnException(NnErrorCode.RUNTIME_ERROR, "Runtime failure");
+      final NnException exception = new NnException(NnErrorCode.RUNTIME_ERROR, "Runtime failure");
 
       assertFalse(exception.isInvalidArgument(), "isInvalidArgument should return false");
       assertFalse(exception.isInvalidEncoding(), "isInvalidEncoding should return false");
@@ -547,8 +527,7 @@ class NnExceptionTest {
     @Test
     @DisplayName("should prefix message with WASI name for INVALID_ARGUMENT error code")
     void shouldPrefixMessageWithWasiNameForInvalidArgument() {
-      final NnException exception =
-          new NnException(NnErrorCode.INVALID_ARGUMENT, "Bad input");
+      final NnException exception = new NnException(NnErrorCode.INVALID_ARGUMENT, "Bad input");
 
       assertTrue(
           exception.getMessage().contains("[invalid-argument]"),
@@ -561,8 +540,7 @@ class NnExceptionTest {
     @Test
     @DisplayName("should prefix message with WASI name for RUNTIME_ERROR error code")
     void shouldPrefixMessageWithWasiNameForRuntimeError() {
-      final NnException exception =
-          new NnException(NnErrorCode.RUNTIME_ERROR, "Execution failed");
+      final NnException exception = new NnException(NnErrorCode.RUNTIME_ERROR, "Execution failed");
 
       assertTrue(
           exception.getMessage().contains("[runtime-error]"),
@@ -575,8 +553,7 @@ class NnExceptionTest {
     @Test
     @DisplayName("should prefix message with WASI name for NOT_FOUND error code")
     void shouldPrefixMessageWithWasiNameForNotFound() {
-      final NnException exception =
-          new NnException(NnErrorCode.NOT_FOUND, "Resource missing");
+      final NnException exception = new NnException(NnErrorCode.NOT_FOUND, "Resource missing");
 
       assertTrue(
           exception.getMessage().contains("[not-found]"),

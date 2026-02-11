@@ -377,7 +377,8 @@ class JniModuleTest {
     void shouldReturnEmptyOptionalForNullGlobalName() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final Optional<ai.tegmentum.wasmtime4j.type.GlobalType> globalType = module.getGlobalType(null);
+      final Optional<ai.tegmentum.wasmtime4j.type.GlobalType> globalType =
+          module.getGlobalType(null);
 
       assertNotNull(globalType, "Optional should not be null");
       assertFalse(globalType.isPresent(), "Should return empty optional for null name");
@@ -393,7 +394,8 @@ class JniModuleTest {
     void shouldReturnEmptyOptionalForNullMemoryName() {
       final JniModule module = new JniModule(VALID_HANDLE, testEngine);
 
-      final Optional<ai.tegmentum.wasmtime4j.type.MemoryType> memoryType = module.getMemoryType(null);
+      final Optional<ai.tegmentum.wasmtime4j.type.MemoryType> memoryType =
+          module.getMemoryType(null);
 
       assertNotNull(memoryType, "Optional should not be null");
       assertFalse(memoryType.isPresent(), "Should return empty optional for null name");

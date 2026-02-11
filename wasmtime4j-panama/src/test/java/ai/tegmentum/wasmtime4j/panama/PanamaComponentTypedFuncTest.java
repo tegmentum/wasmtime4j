@@ -615,12 +615,14 @@ class PanamaComponentTypedFuncTest {
     }
 
     @Override
-    public java.util.List<ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor> getParameterTypes() {
+    public java.util.List<ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor>
+        getParameterTypes() {
       return java.util.Collections.emptyList();
     }
 
     @Override
-    public java.util.List<ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor> getResultTypes() {
+    public java.util.List<ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor>
+        getResultTypes() {
       return java.util.Collections.emptyList();
     }
 

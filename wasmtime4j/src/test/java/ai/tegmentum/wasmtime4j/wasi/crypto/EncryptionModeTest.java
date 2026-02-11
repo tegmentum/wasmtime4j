@@ -41,9 +41,7 @@ class EncryptionModeTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          EncryptionMode.class.isEnum(),
-          "EncryptionMode should be an enum type");
+      assertTrue(EncryptionMode.class.isEnum(), "EncryptionMode should be an enum type");
     }
 
     @Test
@@ -132,10 +130,7 @@ class EncryptionModeTest {
       final EncryptionMode[] values = EncryptionMode.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -176,10 +171,7 @@ class EncryptionModeTest {
       final EncryptionMode[] second = EncryptionMode.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 
@@ -192,9 +184,7 @@ class EncryptionModeTest {
     void shouldReturnNameFromToStringForAllValues() {
       for (final EncryptionMode mode : EncryptionMode.values()) {
         assertEquals(
-            mode.name(),
-            mode.toString(),
-            "toString should return name for " + mode.name());
+            mode.name(), mode.toString(), "toString should return name for " + mode.name());
       }
     }
   }
@@ -206,73 +196,50 @@ class EncryptionModeTest {
     @Test
     @DisplayName("should return ECB for ECB")
     void shouldReturnCorrectNameForEcb() {
-      assertEquals(
-          "ECB",
-          EncryptionMode.ECB.getModeName(),
-          "ECB should have mode name ECB");
+      assertEquals("ECB", EncryptionMode.ECB.getModeName(), "ECB should have mode name ECB");
     }
 
     @Test
     @DisplayName("should return CBC for CBC")
     void shouldReturnCorrectNameForCbc() {
-      assertEquals(
-          "CBC",
-          EncryptionMode.CBC.getModeName(),
-          "CBC should have mode name CBC");
+      assertEquals("CBC", EncryptionMode.CBC.getModeName(), "CBC should have mode name CBC");
     }
 
     @Test
     @DisplayName("should return CTR for CTR")
     void shouldReturnCorrectNameForCtr() {
-      assertEquals(
-          "CTR",
-          EncryptionMode.CTR.getModeName(),
-          "CTR should have mode name CTR");
+      assertEquals("CTR", EncryptionMode.CTR.getModeName(), "CTR should have mode name CTR");
     }
 
     @Test
     @DisplayName("should return GCM for GCM")
     void shouldReturnCorrectNameForGcm() {
-      assertEquals(
-          "GCM",
-          EncryptionMode.GCM.getModeName(),
-          "GCM should have mode name GCM");
+      assertEquals("GCM", EncryptionMode.GCM.getModeName(), "GCM should have mode name GCM");
     }
 
     @Test
     @DisplayName("should return CCM for CCM")
     void shouldReturnCorrectNameForCcm() {
-      assertEquals(
-          "CCM",
-          EncryptionMode.CCM.getModeName(),
-          "CCM should have mode name CCM");
+      assertEquals("CCM", EncryptionMode.CCM.getModeName(), "CCM should have mode name CCM");
     }
 
     @Test
     @DisplayName("should return OCB for OCB")
     void shouldReturnCorrectNameForOcb() {
-      assertEquals(
-          "OCB",
-          EncryptionMode.OCB.getModeName(),
-          "OCB should have mode name OCB");
+      assertEquals("OCB", EncryptionMode.OCB.getModeName(), "OCB should have mode name OCB");
     }
 
     @Test
     @DisplayName("should return SIV for SIV")
     void shouldReturnCorrectNameForSiv() {
-      assertEquals(
-          "SIV",
-          EncryptionMode.SIV.getModeName(),
-          "SIV should have mode name SIV");
+      assertEquals("SIV", EncryptionMode.SIV.getModeName(), "SIV should have mode name SIV");
     }
 
     @Test
     @DisplayName("should return GCM-SIV for GCM_SIV")
     void shouldReturnCorrectNameForGcmSiv() {
       assertEquals(
-          "GCM-SIV",
-          EncryptionMode.GCM_SIV.getModeName(),
-          "GCM_SIV should have mode name GCM-SIV");
+          "GCM-SIV", EncryptionMode.GCM_SIV.getModeName(), "GCM_SIV should have mode name GCM-SIV");
     }
   }
 
@@ -283,65 +250,49 @@ class EncryptionModeTest {
     @Test
     @DisplayName("should return false for ECB")
     void shouldReturnFalseForEcb() {
-      assertFalse(
-          EncryptionMode.ECB.requiresIv(),
-          "ECB should not require an IV");
+      assertFalse(EncryptionMode.ECB.requiresIv(), "ECB should not require an IV");
     }
 
     @Test
     @DisplayName("should return true for CBC")
     void shouldReturnTrueForCbc() {
-      assertTrue(
-          EncryptionMode.CBC.requiresIv(),
-          "CBC should require an IV");
+      assertTrue(EncryptionMode.CBC.requiresIv(), "CBC should require an IV");
     }
 
     @Test
     @DisplayName("should return true for CTR")
     void shouldReturnTrueForCtr() {
-      assertTrue(
-          EncryptionMode.CTR.requiresIv(),
-          "CTR should require an IV");
+      assertTrue(EncryptionMode.CTR.requiresIv(), "CTR should require an IV");
     }
 
     @Test
     @DisplayName("should return true for GCM")
     void shouldReturnTrueForGcm() {
-      assertTrue(
-          EncryptionMode.GCM.requiresIv(),
-          "GCM should require an IV");
+      assertTrue(EncryptionMode.GCM.requiresIv(), "GCM should require an IV");
     }
 
     @Test
     @DisplayName("should return true for CCM")
     void shouldReturnTrueForCcm() {
-      assertTrue(
-          EncryptionMode.CCM.requiresIv(),
-          "CCM should require an IV");
+      assertTrue(EncryptionMode.CCM.requiresIv(), "CCM should require an IV");
     }
 
     @Test
     @DisplayName("should return true for OCB")
     void shouldReturnTrueForOcb() {
-      assertTrue(
-          EncryptionMode.OCB.requiresIv(),
-          "OCB should require an IV");
+      assertTrue(EncryptionMode.OCB.requiresIv(), "OCB should require an IV");
     }
 
     @Test
     @DisplayName("should return true for SIV")
     void shouldReturnTrueForSiv() {
-      assertTrue(
-          EncryptionMode.SIV.requiresIv(),
-          "SIV should require an IV");
+      assertTrue(EncryptionMode.SIV.requiresIv(), "SIV should require an IV");
     }
 
     @Test
     @DisplayName("should return true for GCM_SIV")
     void shouldReturnTrueForGcmSiv() {
-      assertTrue(
-          EncryptionMode.GCM_SIV.requiresIv(),
-          "GCM_SIV should require an IV");
+      assertTrue(EncryptionMode.GCM_SIV.requiresIv(), "GCM_SIV should require an IV");
     }
   }
 
@@ -353,64 +304,52 @@ class EncryptionModeTest {
     @DisplayName("should return false for ECB")
     void shouldReturnFalseForEcb() {
       assertFalse(
-          EncryptionMode.ECB.providesAuthentication(),
-          "ECB should not provide authentication");
+          EncryptionMode.ECB.providesAuthentication(), "ECB should not provide authentication");
     }
 
     @Test
     @DisplayName("should return false for CBC")
     void shouldReturnFalseForCbc() {
       assertFalse(
-          EncryptionMode.CBC.providesAuthentication(),
-          "CBC should not provide authentication");
+          EncryptionMode.CBC.providesAuthentication(), "CBC should not provide authentication");
     }
 
     @Test
     @DisplayName("should return false for CTR")
     void shouldReturnFalseForCtr() {
       assertFalse(
-          EncryptionMode.CTR.providesAuthentication(),
-          "CTR should not provide authentication");
+          EncryptionMode.CTR.providesAuthentication(), "CTR should not provide authentication");
     }
 
     @Test
     @DisplayName("should return true for GCM")
     void shouldReturnTrueForGcm() {
-      assertTrue(
-          EncryptionMode.GCM.providesAuthentication(),
-          "GCM should provide authentication");
+      assertTrue(EncryptionMode.GCM.providesAuthentication(), "GCM should provide authentication");
     }
 
     @Test
     @DisplayName("should return true for CCM")
     void shouldReturnTrueForCcm() {
-      assertTrue(
-          EncryptionMode.CCM.providesAuthentication(),
-          "CCM should provide authentication");
+      assertTrue(EncryptionMode.CCM.providesAuthentication(), "CCM should provide authentication");
     }
 
     @Test
     @DisplayName("should return true for OCB")
     void shouldReturnTrueForOcb() {
-      assertTrue(
-          EncryptionMode.OCB.providesAuthentication(),
-          "OCB should provide authentication");
+      assertTrue(EncryptionMode.OCB.providesAuthentication(), "OCB should provide authentication");
     }
 
     @Test
     @DisplayName("should return true for SIV")
     void shouldReturnTrueForSiv() {
-      assertTrue(
-          EncryptionMode.SIV.providesAuthentication(),
-          "SIV should provide authentication");
+      assertTrue(EncryptionMode.SIV.providesAuthentication(), "SIV should provide authentication");
     }
 
     @Test
     @DisplayName("should return true for GCM_SIV")
     void shouldReturnTrueForGcmSiv() {
       assertTrue(
-          EncryptionMode.GCM_SIV.providesAuthentication(),
-          "GCM_SIV should provide authentication");
+          EncryptionMode.GCM_SIV.providesAuthentication(), "GCM_SIV should provide authentication");
     }
   }
 }

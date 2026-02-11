@@ -91,8 +91,7 @@ class NnExecutionTargetTest {
     void ordinalsShouldBeUnique() {
       final Set<Integer> ordinals = new HashSet<>();
       for (final NnExecutionTarget target : NnExecutionTarget.values()) {
-        assertTrue(
-            ordinals.add(target.ordinal()), "Ordinal should be unique: " + target.ordinal());
+        assertTrue(ordinals.add(target.ordinal()), "Ordinal should be unique: " + target.ordinal());
       }
     }
 
@@ -113,18 +112,9 @@ class NnExecutionTargetTest {
     @Test
     @DisplayName("valueOf should return correct constant for each name")
     void valueOfShouldReturnCorrectConstant() {
-      assertEquals(
-          NnExecutionTarget.CPU,
-          NnExecutionTarget.valueOf("CPU"),
-          "Should return CPU");
-      assertEquals(
-          NnExecutionTarget.GPU,
-          NnExecutionTarget.valueOf("GPU"),
-          "Should return GPU");
-      assertEquals(
-          NnExecutionTarget.TPU,
-          NnExecutionTarget.valueOf("TPU"),
-          "Should return TPU");
+      assertEquals(NnExecutionTarget.CPU, NnExecutionTarget.valueOf("CPU"), "Should return CPU");
+      assertEquals(NnExecutionTarget.GPU, NnExecutionTarget.valueOf("GPU"), "Should return GPU");
+      assertEquals(NnExecutionTarget.TPU, NnExecutionTarget.valueOf("TPU"), "Should return TPU");
     }
 
     @Test
@@ -220,17 +210,11 @@ class NnExecutionTargetTest {
     @DisplayName("should resolve valid wasi names to correct constants")
     void shouldResolveValidWasiNames() {
       assertEquals(
-          NnExecutionTarget.CPU,
-          NnExecutionTarget.fromWasiName("cpu"),
-          "Should resolve 'cpu'");
+          NnExecutionTarget.CPU, NnExecutionTarget.fromWasiName("cpu"), "Should resolve 'cpu'");
       assertEquals(
-          NnExecutionTarget.GPU,
-          NnExecutionTarget.fromWasiName("gpu"),
-          "Should resolve 'gpu'");
+          NnExecutionTarget.GPU, NnExecutionTarget.fromWasiName("gpu"), "Should resolve 'gpu'");
       assertEquals(
-          NnExecutionTarget.TPU,
-          NnExecutionTarget.fromWasiName("tpu"),
-          "Should resolve 'tpu'");
+          NnExecutionTarget.TPU, NnExecutionTarget.fromWasiName("tpu"), "Should resolve 'tpu'");
     }
 
     @Test

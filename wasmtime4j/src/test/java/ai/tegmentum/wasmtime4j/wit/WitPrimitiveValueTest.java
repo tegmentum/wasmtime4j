@@ -197,7 +197,8 @@ class WitPrimitiveValueTest {
     @Test
     @DisplayName("WitBool should cache TRUE and FALSE constants")
     void witBoolShouldCacheConstants() {
-      assertSame(WitBool.of(true), WitBool.of(true), "WitBool.of(true) should return same instance");
+      assertSame(
+          WitBool.of(true), WitBool.of(true), "WitBool.of(true) should return same instance");
       assertSame(
           WitBool.of(false), WitBool.of(false), "WitBool.of(false) should return same instance");
     }
@@ -431,13 +432,9 @@ class WitPrimitiveValueTest {
     @DisplayName("WitChar should reject surrogate codepoints")
     void witCharShouldRejectSurrogates() {
       assertThrows(
-          WitRangeException.class,
-          () -> WitChar.of(0xD800),
-          "Should reject low surrogate 0xD800");
+          WitRangeException.class, () -> WitChar.of(0xD800), "Should reject low surrogate 0xD800");
       assertThrows(
-          WitRangeException.class,
-          () -> WitChar.of(0xDFFF),
-          "Should reject high surrogate 0xDFFF");
+          WitRangeException.class, () -> WitChar.of(0xDFFF), "Should reject high surrogate 0xDFFF");
     }
 
     @Test
@@ -448,9 +445,7 @@ class WitPrimitiveValueTest {
           () -> WitChar.of(0x110000),
           "Should reject codepoint above U+10FFFF");
       assertThrows(
-          WitRangeException.class,
-          () -> WitChar.of(-1),
-          "Should reject negative codepoint");
+          WitRangeException.class, () -> WitChar.of(-1), "Should reject negative codepoint");
     }
 
     @Test
@@ -488,9 +483,7 @@ class WitPrimitiveValueTest {
     @DisplayName("WitString should reject null")
     void witStringShouldRejectNull() {
       assertThrows(
-          WitMarshallingException.class,
-          () -> WitString.of(null),
-          "Should reject null string");
+          WitMarshallingException.class, () -> WitString.of(null), "Should reject null string");
     }
 
     @Test
@@ -689,12 +682,16 @@ class WitPrimitiveValueTest {
       assertEquals(nan.hashCode(), nan.hashCode(), "NaN hashCode should be consistent");
 
       final WitFloat32 posInf = WitFloat32.of(Float.POSITIVE_INFINITY);
-      assertEquals(posInf.hashCode(), posInf.hashCode(), "POSITIVE_INFINITY hashCode should be consistent");
+      assertEquals(
+          posInf.hashCode(), posInf.hashCode(), "POSITIVE_INFINITY hashCode should be consistent");
 
       // Note: -0.0f and 0.0f have different bit representations, so different hashCode
       final WitFloat32 negZero = WitFloat32.of(-0.0f);
       final WitFloat32 posZero = WitFloat32.of(0.0f);
-      assertNotEquals(negZero.hashCode(), posZero.hashCode(), "-0.0f and 0.0f have different bit representations");
+      assertNotEquals(
+          negZero.hashCode(),
+          posZero.hashCode(),
+          "-0.0f and 0.0f have different bit representations");
     }
 
     @Test
@@ -706,7 +703,10 @@ class WitPrimitiveValueTest {
       // Note: -0.0 and 0.0 have different bit representations, so different hashCode
       final WitFloat64 negZero = WitFloat64.of(-0.0);
       final WitFloat64 posZero = WitFloat64.of(0.0);
-      assertNotEquals(negZero.hashCode(), posZero.hashCode(), "-0.0 and 0.0 have different bit representations");
+      assertNotEquals(
+          negZero.hashCode(),
+          posZero.hashCode(),
+          "-0.0 and 0.0 have different bit representations");
     }
   }
 
@@ -727,8 +727,10 @@ class WitPrimitiveValueTest {
     @Test
     @DisplayName("WitS16 should handle all boundary values")
     void witS16ShouldHandleAllBoundaryValues() {
-      assertEquals(Short.MIN_VALUE, WitS16.of(Short.MIN_VALUE).getValue(), "Should handle MIN_VALUE");
-      assertEquals(Short.MAX_VALUE, WitS16.of(Short.MAX_VALUE).getValue(), "Should handle MAX_VALUE");
+      assertEquals(
+          Short.MIN_VALUE, WitS16.of(Short.MIN_VALUE).getValue(), "Should handle MIN_VALUE");
+      assertEquals(
+          Short.MAX_VALUE, WitS16.of(Short.MAX_VALUE).getValue(), "Should handle MAX_VALUE");
       assertEquals((short) 0, WitS16.of((short) 0).getValue(), "Should handle 0");
       assertEquals((short) -1, WitS16.of((short) -1).getValue(), "Should handle -1");
       assertEquals((short) 1, WitS16.of((short) 1).getValue(), "Should handle 1");
@@ -750,7 +752,8 @@ class WitPrimitiveValueTest {
       assertEquals(0, WitU16.of((short) 0).toUnsignedInt(), "Should handle 0");
       assertEquals(1, WitU16.of((short) 1).toUnsignedInt(), "Should handle 1");
       assertEquals(32767, WitU16.of((short) 32767).toUnsignedInt(), "Should handle 32767");
-      assertEquals(32768, WitU16.of((short) -32768).toUnsignedInt(), "Should handle 32768 (as -32768)");
+      assertEquals(
+          32768, WitU16.of((short) -32768).toUnsignedInt(), "Should handle 32768 (as -32768)");
       assertEquals(65535, WitU16.of((short) -1).toUnsignedInt(), "Should handle 65535 (as -1)");
     }
 
@@ -759,8 +762,10 @@ class WitPrimitiveValueTest {
     void witU32ToUnsignedLongShouldHandleAllBoundaryValues() {
       assertEquals(0L, WitU32.of(0).toUnsignedLong(), "Should handle 0");
       assertEquals(1L, WitU32.of(1).toUnsignedLong(), "Should handle 1");
-      assertEquals(2147483647L, WitU32.of(Integer.MAX_VALUE).toUnsignedLong(), "Should handle MAX_VALUE");
-      assertEquals(2147483648L, WitU32.of(Integer.MIN_VALUE).toUnsignedLong(), "Should handle 2147483648");
+      assertEquals(
+          2147483647L, WitU32.of(Integer.MAX_VALUE).toUnsignedLong(), "Should handle MAX_VALUE");
+      assertEquals(
+          2147483648L, WitU32.of(Integer.MIN_VALUE).toUnsignedLong(), "Should handle 2147483648");
       assertEquals(4294967295L, WitU32.of(-1).toUnsignedLong(), "Should handle max u32");
     }
   }

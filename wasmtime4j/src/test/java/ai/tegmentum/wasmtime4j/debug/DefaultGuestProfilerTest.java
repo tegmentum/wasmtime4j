@@ -120,9 +120,7 @@ class DefaultGuestProfilerTest {
     void stopShouldThrowIfNotProfiling() {
       final DefaultGuestProfiler profiler = new DefaultGuestProfiler(stubStore);
       assertThrows(
-          IllegalStateException.class,
-          profiler::stop,
-          "stop() should throw if not profiling");
+          IllegalStateException.class, profiler::stop, "stop() should throw if not profiling");
     }
   }
 
@@ -178,9 +176,7 @@ class DefaultGuestProfilerTest {
       profiler.start();
       profiler.stop();
       final ProfileData data = profiler.getProfileData();
-      assertTrue(
-          data.getTotalDuration().toNanos() >= 0,
-          "Duration should be non-negative");
+      assertTrue(data.getTotalDuration().toNanos() >= 0, "Duration should be non-negative");
     }
   }
 
@@ -247,18 +243,15 @@ class DefaultGuestProfilerTest {
     @Test
     @DisplayName("GuestProfiler.create with config should return DefaultGuestProfiler")
     void guestProfilerCreateWithConfigShouldReturnDefaultGuestProfiler() throws WasmException {
-      final ProfilerConfig config = ProfilerConfig.builder()
-          .trackFunctionCalls(true)
-          .trackStackDepth(false)
-          .build();
+      final ProfilerConfig config =
+          ProfilerConfig.builder().trackFunctionCalls(true).trackStackDepth(false).build();
       final GuestProfiler profiler = GuestProfiler.create(stubStore, config);
-      assertNotNull(profiler, "GuestProfiler.create(store, config) should return non-null profiler");
+      assertNotNull(
+          profiler, "GuestProfiler.create(store, config) should return non-null profiler");
     }
   }
 
-  /**
-   * Creates a minimal Store proxy for testing DefaultGuestProfiler without native runtime.
-   */
+  /** Creates a minimal Store proxy for testing DefaultGuestProfiler without native runtime. */
   private static Store createStubStore() {
     return (Store)
         java.lang.reflect.Proxy.newProxyInstance(

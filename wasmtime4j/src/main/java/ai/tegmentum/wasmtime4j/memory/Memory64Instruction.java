@@ -2,8 +2,6 @@ package ai.tegmentum.wasmtime4j.memory;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
 
-import ai.tegmentum.wasmtime4j.Store;
-
 /**
  * Represents WebAssembly memory64 proposal instructions for 64-bit memory operations.
  *

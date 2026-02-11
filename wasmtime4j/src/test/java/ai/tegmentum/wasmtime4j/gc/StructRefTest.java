@@ -44,15 +44,13 @@ class StructRefTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(StructRef.class.getModifiers()), "StructRef should be final");
+      assertTrue(Modifier.isFinal(StructRef.class.getModifiers()), "StructRef should be final");
     }
 
     @Test
     @DisplayName("should implement GcRef interface")
     void shouldImplementGcRef() {
-      assertTrue(
-          GcRef.class.isAssignableFrom(StructRef.class), "StructRef should implement GcRef");
+      assertTrue(GcRef.class.isAssignableFrom(StructRef.class), "StructRef should implement GcRef");
     }
   }
 
@@ -192,8 +190,7 @@ class StructRefTest {
     void eachStructRefShouldHaveUniqueId() {
       final StructRef ref1 = StructRef.nullRef();
       final StructRef ref2 = StructRef.nullRef();
-      assertNotEquals(
-          ref1.getId(), ref2.getId(), "Each StructRef should have a unique ID");
+      assertNotEquals(ref1.getId(), ref2.getId(), "Each StructRef should have a unique ID");
     }
   }
 
@@ -233,8 +230,7 @@ class StructRefTest {
     void twoNullRefsShouldHaveSameHashCode() {
       final StructRef ref1 = StructRef.nullRef();
       final StructRef ref2 = StructRef.nullRef();
-      assertEquals(
-          ref1.hashCode(), ref2.hashCode(), "Two null refs should have same hash code");
+      assertEquals(ref1.hashCode(), ref2.hashCode(), "Two null refs should have same hash code");
     }
   }
 

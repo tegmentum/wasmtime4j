@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -34,8 +32,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link MarshalingConfiguration} class.
  *
- * <p>MarshalingConfiguration provides settings for complex parameter marshaling including thresholds,
- * memory alignment, circular reference detection, type validation, and performance optimizations.
+ * <p>MarshalingConfiguration provides settings for complex parameter marshaling including
+ * thresholds, memory alignment, circular reference detection, type validation, and performance
+ * optimizations.
  */
 @DisplayName("MarshalingConfiguration Tests")
 class MarshalingConfigurationTest {
@@ -59,16 +58,18 @@ class MarshalingConfigurationTest {
     @DisplayName("should expose public constants")
     void shouldExposePublicConstants() {
       assertEquals(
-          512, MarshalingConfiguration.DEFAULT_VALUE_THRESHOLD,
+          512,
+          MarshalingConfiguration.DEFAULT_VALUE_THRESHOLD,
           "DEFAULT_VALUE_THRESHOLD should be 512");
       assertEquals(
-          2048, MarshalingConfiguration.DEFAULT_HYBRID_THRESHOLD,
+          2048,
+          MarshalingConfiguration.DEFAULT_HYBRID_THRESHOLD,
           "DEFAULT_HYBRID_THRESHOLD should be 2048");
       assertEquals(
-          100, MarshalingConfiguration.DEFAULT_MAX_DEPTH,
-          "DEFAULT_MAX_DEPTH should be 100");
+          100, MarshalingConfiguration.DEFAULT_MAX_DEPTH, "DEFAULT_MAX_DEPTH should be 100");
       assertEquals(
-          8, MarshalingConfiguration.DEFAULT_MEMORY_ALIGNMENT,
+          8,
+          MarshalingConfiguration.DEFAULT_MEMORY_ALIGNMENT,
           "DEFAULT_MEMORY_ALIGNMENT should be 8");
     }
   }
@@ -102,9 +103,7 @@ class MarshalingConfigurationTest {
       assertTrue(
           config.isCircularReferenceDetectionEnabled(),
           "Circular reference detection should be enabled by default");
-      assertTrue(
-          config.isTypeValidationEnabled(),
-          "Type validation should be enabled by default");
+      assertTrue(config.isTypeValidationEnabled(), "Type validation should be enabled by default");
       assertFalse(
           config.arePerformanceOptimizationsEnabled(),
           "Performance optimizations should be disabled by default");
@@ -122,10 +121,10 @@ class MarshalingConfigurationTest {
 
       assertNotNull(config, "performanceOptimized should not return null");
       assertEquals(
-          1024, config.getValueMarshalingThreshold(),
-          "Performance value threshold should be 1024");
+          1024, config.getValueMarshalingThreshold(), "Performance value threshold should be 1024");
       assertEquals(
-          4096, config.getHybridMarshalingThreshold(),
+          4096,
+          config.getHybridMarshalingThreshold(),
           "Performance hybrid threshold should be 4096");
       assertTrue(
           config.arePerformanceOptimizationsEnabled(),
@@ -147,20 +146,13 @@ class MarshalingConfigurationTest {
 
       assertNotNull(config, "safetyOptimized should not return null");
       assertEquals(
-          256, config.getValueMarshalingThreshold(),
-          "Safety value threshold should be 256");
+          256, config.getValueMarshalingThreshold(), "Safety value threshold should be 256");
       assertEquals(
-          1024, config.getHybridMarshalingThreshold(),
-          "Safety hybrid threshold should be 1024");
-      assertEquals(
-          50, config.getMaxObjectGraphDepth(),
-          "Safety max depth should be 50");
+          1024, config.getHybridMarshalingThreshold(), "Safety hybrid threshold should be 1024");
+      assertEquals(50, config.getMaxObjectGraphDepth(), "Safety max depth should be 50");
       assertTrue(
-          config.isCircularReferenceDetectionEnabled(),
-          "Circular ref detection should be enabled");
-      assertTrue(
-          config.isTypeValidationEnabled(),
-          "Type validation should be enabled");
+          config.isCircularReferenceDetectionEnabled(), "Circular ref detection should be enabled");
+      assertTrue(config.isTypeValidationEnabled(), "Type validation should be enabled");
     }
   }
 
@@ -171,46 +163,38 @@ class MarshalingConfigurationTest {
     @Test
     @DisplayName("should set value marshaling threshold")
     void shouldSetValueMarshalingThreshold() {
-      final MarshalingConfiguration config = MarshalingConfiguration.builder()
-          .withValueMarshalingThreshold(100)
-          .build();
+      final MarshalingConfiguration config =
+          MarshalingConfiguration.builder().withValueMarshalingThreshold(100).build();
 
-      assertEquals(
-          100, config.getValueMarshalingThreshold(),
-          "Value threshold should be 100");
+      assertEquals(100, config.getValueMarshalingThreshold(), "Value threshold should be 100");
     }
 
     @Test
     @DisplayName("should set hybrid marshaling threshold")
     void shouldSetHybridMarshalingThreshold() {
-      final MarshalingConfiguration config = MarshalingConfiguration.builder()
-          .withValueMarshalingThreshold(100)
-          .withHybridMarshalingThreshold(500)
-          .build();
+      final MarshalingConfiguration config =
+          MarshalingConfiguration.builder()
+              .withValueMarshalingThreshold(100)
+              .withHybridMarshalingThreshold(500)
+              .build();
 
-      assertEquals(
-          500, config.getHybridMarshalingThreshold(),
-          "Hybrid threshold should be 500");
+      assertEquals(500, config.getHybridMarshalingThreshold(), "Hybrid threshold should be 500");
     }
 
     @Test
     @DisplayName("should set max object graph depth")
     void shouldSetMaxObjectGraphDepth() {
-      final MarshalingConfiguration config = MarshalingConfiguration.builder()
-          .withMaxObjectGraphDepth(200)
-          .build();
+      final MarshalingConfiguration config =
+          MarshalingConfiguration.builder().withMaxObjectGraphDepth(200).build();
 
-      assertEquals(
-          200, config.getMaxObjectGraphDepth(),
-          "Max depth should be 200");
+      assertEquals(200, config.getMaxObjectGraphDepth(), "Max depth should be 200");
     }
 
     @Test
     @DisplayName("should set memory alignment as power of 2")
     void shouldSetMemoryAlignment() {
-      final MarshalingConfiguration config = MarshalingConfiguration.builder()
-          .withMemoryAlignment(16)
-          .build();
+      final MarshalingConfiguration config =
+          MarshalingConfiguration.builder().withMemoryAlignment(16).build();
 
       assertEquals(16, config.getMemoryAlignment(), "Memory alignment should be 16");
     }
@@ -218,9 +202,8 @@ class MarshalingConfigurationTest {
     @Test
     @DisplayName("should toggle circular reference detection")
     void shouldToggleCircularReferenceDetection() {
-      final MarshalingConfiguration config = MarshalingConfiguration.builder()
-          .withCircularReferenceDetection(false)
-          .build();
+      final MarshalingConfiguration config =
+          MarshalingConfiguration.builder().withCircularReferenceDetection(false).build();
 
       assertFalse(
           config.isCircularReferenceDetectionEnabled(),
@@ -230,9 +213,8 @@ class MarshalingConfigurationTest {
     @Test
     @DisplayName("should toggle type validation")
     void shouldToggleTypeValidation() {
-      final MarshalingConfiguration config = MarshalingConfiguration.builder()
-          .withTypeValidation(false)
-          .build();
+      final MarshalingConfiguration config =
+          MarshalingConfiguration.builder().withTypeValidation(false).build();
 
       assertFalse(config.isTypeValidationEnabled(), "Type validation should be disabled");
     }
@@ -240,9 +222,8 @@ class MarshalingConfigurationTest {
     @Test
     @DisplayName("should toggle performance optimizations")
     void shouldTogglePerformanceOptimizations() {
-      final MarshalingConfiguration config = MarshalingConfiguration.builder()
-          .withPerformanceOptimizations(true)
-          .build();
+      final MarshalingConfiguration config =
+          MarshalingConfiguration.builder().withPerformanceOptimizations(true).build();
 
       assertTrue(
           config.arePerformanceOptimizationsEnabled(),
@@ -295,10 +276,11 @@ class MarshalingConfigurationTest {
     void shouldRejectHybridNotGreaterThanValue() {
       assertThrows(
           IllegalStateException.class,
-          () -> MarshalingConfiguration.builder()
-              .withValueMarshalingThreshold(1000)
-              .withHybridMarshalingThreshold(500)
-              .build(),
+          () ->
+              MarshalingConfiguration.builder()
+                  .withValueMarshalingThreshold(1000)
+                  .withHybridMarshalingThreshold(500)
+                  .build(),
           "Hybrid threshold <= value threshold should throw on build");
     }
   }
@@ -315,8 +297,7 @@ class MarshalingConfigurationTest {
 
       assertEquals(config1, config2, "Default configs should be equal");
       assertEquals(
-          config1.hashCode(), config2.hashCode(),
-          "Equal objects should have same hashCode");
+          config1.hashCode(), config2.hashCode(), "Equal objects should have same hashCode");
     }
 
     @Test
@@ -340,9 +321,7 @@ class MarshalingConfigurationTest {
       final String result = config.toString();
 
       assertNotNull(result, "toString should not return null");
-      assertTrue(
-          result.contains("MarshalingConfiguration"),
-          "toString should contain class name");
+      assertTrue(result.contains("MarshalingConfiguration"), "toString should contain class name");
       assertTrue(result.contains("512"), "toString should contain value threshold");
       assertTrue(result.contains("2048"), "toString should contain hybrid threshold");
     }

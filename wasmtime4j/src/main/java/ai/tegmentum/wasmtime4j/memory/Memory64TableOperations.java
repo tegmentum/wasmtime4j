@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.memory;
 
 import ai.tegmentum.wasmtime4j.WasmTable;
-
 import ai.tegmentum.wasmtime4j.WasmValue;
 
 /**

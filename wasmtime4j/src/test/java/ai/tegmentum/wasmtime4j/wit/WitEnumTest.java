@@ -42,23 +42,19 @@ class WitEnumTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(WitEnum.class.getModifiers()), "WitEnum should be final");
+      assertTrue(Modifier.isFinal(WitEnum.class.getModifiers()), "WitEnum should be final");
     }
 
     @Test
     @DisplayName("should extend WitValue")
     void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitEnum.class),
-          "WitEnum should extend WitValue");
+      assertTrue(WitValue.class.isAssignableFrom(WitEnum.class), "WitEnum should extend WitValue");
     }
 
     @Test
     @DisplayName("should have of factory method")
     void shouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod(
-          "of", WitType.class, String.class);
+      final Method method = WitEnum.class.getMethod("of", WitType.class, String.class);
       assertNotNull(method, "Should have of(WitType, String) method");
       assertEquals(WitEnum.class, method.getReturnType(), "Should return WitEnum");
     }
@@ -68,8 +64,7 @@ class WitEnumTest {
     void shouldHaveGetDiscriminantMethod() throws NoSuchMethodException {
       final Method method = WitEnum.class.getMethod("getDiscriminant");
       assertNotNull(method, "Should have getDiscriminant() method");
-      assertEquals(
-          String.class, method.getReturnType(), "getDiscriminant should return String");
+      assertEquals(String.class, method.getReturnType(), "getDiscriminant should return String");
     }
   }
 
@@ -80,8 +75,8 @@ class WitEnumTest {
     @Test
     @DisplayName("of with null discriminant should throw IllegalArgumentException")
     void ofWithNullDiscriminantShouldThrow() {
-      final var enumType = WitType.enumType(
-          "color", java.util.Arrays.asList("red", "green", "blue"));
+      final var enumType =
+          WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       assertThrows(
           IllegalArgumentException.class,
           () -> WitEnum.of(enumType, null),
@@ -91,8 +86,8 @@ class WitEnumTest {
     @Test
     @DisplayName("of with empty discriminant should throw IllegalArgumentException")
     void ofWithEmptyDiscriminantShouldThrow() {
-      final var enumType = WitType.enumType(
-          "color", java.util.Arrays.asList("red", "green", "blue"));
+      final var enumType =
+          WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       assertThrows(
           IllegalArgumentException.class,
           () -> WitEnum.of(enumType, ""),

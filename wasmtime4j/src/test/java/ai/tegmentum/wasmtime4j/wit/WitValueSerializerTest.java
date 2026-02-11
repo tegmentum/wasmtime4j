@@ -524,8 +524,8 @@ final class WitValueSerializerTest {
   @DisplayName("Get type discriminator for variant")
   void testGetTypeDiscriminatorVariant() throws WitValueException {
     final WitType variantType =
-        WitType.variant("result",
-            java.util.Map.of("success", java.util.Optional.of(WitType.createS32())));
+        WitType.variant(
+            "result", java.util.Map.of("success", java.util.Optional.of(WitType.createS32())));
     final WitVariant value = WitVariant.of(variantType, "success", WitS32.of(42));
     assertEquals(
         12, WitValueSerializer.getTypeDiscriminator(value), "Variant discriminator should be 12");
@@ -534,8 +534,7 @@ final class WitValueSerializerTest {
   @Test
   @DisplayName("Get type discriminator for option")
   void testGetTypeDiscriminatorOption() throws WitValueException {
-    final WitType optionType =
-        WitType.option(WitType.createS32());
+    final WitType optionType = WitType.option(WitType.createS32());
     final WitOption value = WitOption.some(optionType, WitS32.of(42));
     assertEquals(
         14, WitValueSerializer.getTypeDiscriminator(value), "Option discriminator should be 14");
@@ -661,8 +660,8 @@ final class WitValueSerializerTest {
   @DisplayName("Serialize variant to binary format")
   void testSerializeVariant() throws WitValueException {
     final WitType variantType =
-        WitType.variant("opt",
-            java.util.Map.of("some", java.util.Optional.of(WitType.createS32())));
+        WitType.variant(
+            "opt", java.util.Map.of("some", java.util.Optional.of(WitType.createS32())));
     final WitVariant value = WitVariant.of(variantType, "some", WitS32.of(42));
     final byte[] result = WitValueSerializer.serialize(value);
 
@@ -673,8 +672,7 @@ final class WitValueSerializerTest {
   @Test
   @DisplayName("Serialize option some to binary format")
   void testSerializeOptionSome() throws WitValueException {
-    final WitType optionType =
-        WitType.option(WitType.createS32());
+    final WitType optionType = WitType.option(WitType.createS32());
     final WitOption value = WitOption.some(optionType, WitS32.of(42));
     final byte[] result = WitValueSerializer.serialize(value);
 
@@ -685,8 +683,7 @@ final class WitValueSerializerTest {
   @Test
   @DisplayName("Serialize option none to binary format")
   void testSerializeOptionNone() throws WitValueException {
-    final WitType optionType =
-        WitType.option(WitType.createS32());
+    final WitType optionType = WitType.option(WitType.createS32());
     final WitOption value = WitOption.none(optionType);
     final byte[] result = WitValueSerializer.serialize(value);
 
@@ -739,14 +736,12 @@ final class WitValueSerializerTest {
     assertTrue(result.length > 4, "Single element list should have count + element data");
   }
 
-
   // ============== Option exact byte verification tests ==============
 
   @Test
   @DisplayName("Serialize option some - verify exact some byte value is 1")
   void testSerializeOptionSomeExactByte() throws WitValueException {
-    final WitType optionType =
-        WitType.option(WitType.createS32());
+    final WitType optionType = WitType.option(WitType.createS32());
     final WitOption value = WitOption.some(optionType, WitS32.of(42));
     final byte[] result = WitValueSerializer.serialize(value);
 
@@ -757,8 +752,7 @@ final class WitValueSerializerTest {
   @Test
   @DisplayName("Serialize option none - verify exact none byte value is 0")
   void testSerializeOptionNoneExactByte() throws WitValueException {
-    final WitType optionType =
-        WitType.option(WitType.createS32());
+    final WitType optionType = WitType.option(WitType.createS32());
     final WitOption value = WitOption.none(optionType);
     final byte[] result = WitValueSerializer.serialize(value);
 
@@ -784,8 +778,8 @@ final class WitValueSerializerTest {
   @DisplayName("Serialize variant with payload - verify has_payload byte is 1")
   void testSerializeVariantWithPayloadExactByte() throws WitValueException {
     final WitType variantType =
-        WitType.variant("opt",
-            java.util.Map.of("some", java.util.Optional.of(WitType.createS32())));
+        WitType.variant(
+            "opt", java.util.Map.of("some", java.util.Optional.of(WitType.createS32())));
     final WitVariant value = WitVariant.of(variantType, "some", WitS32.of(42));
     final byte[] result = WitValueSerializer.serialize(value);
 
@@ -802,8 +796,7 @@ final class WitValueSerializerTest {
   @DisplayName("Serialize variant without payload - verify has_payload byte is 0")
   void testSerializeVariantWithoutPayloadExactByte() throws WitValueException {
     final WitType variantType =
-        WitType.variant("status",
-            java.util.Map.of("none", java.util.Optional.empty()));
+        WitType.variant("status", java.util.Map.of("none", java.util.Optional.empty()));
     final WitVariant value = WitVariant.of(variantType, "none", null);
     final byte[] result = WitValueSerializer.serialize(value);
 

@@ -16,56 +16,15 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCapability;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibilityResult;
-import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
-import ai.tegmentum.wasmtime4j.component.ComponentEngine;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentFeature;
-import ai.tegmentum.wasmtime4j.component.ComponentFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentId;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
-import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleManager;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentLinker;
-import ai.tegmentum.wasmtime4j.component.ComponentLinkInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentResult;
-import ai.tegmentum.wasmtime4j.component.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.component.ComponentSpecification;
-import ai.tegmentum.wasmtime4j.component.ComponentStateTransitionConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentType;
-import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
-import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentVal;
-import ai.tegmentum.wasmtime4j.component.ComponentValFactory;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVariant;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.component.ComponentType;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ComponentValFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -265,8 +224,7 @@ final class ComponentValFactoryTest {
     @Test
     @DisplayName("should create list value")
     void shouldCreateList() {
-      final List<ComponentVal> elements =
-          List.of(factory.createS32(1), factory.createS32(2));
+      final List<ComponentVal> elements = List.of(factory.createS32(1), factory.createS32(2));
       final ComponentVal val = factory.createList(elements);
       assertTrue(val.isList(), "Value should be list type");
       assertEquals(2, val.asList().size(), "List should have 2 elements");
@@ -408,9 +366,7 @@ final class ComponentValFactoryTest {
           factory.createString("test").getType(),
           "String value should have STRING type");
       assertEquals(
-          ComponentType.S32,
-          factory.createS32(0).getType(),
-          "S32 value should have S32 type");
+          ComponentType.S32, factory.createS32(0).getType(), "S32 value should have S32 type");
     }
   }
 }

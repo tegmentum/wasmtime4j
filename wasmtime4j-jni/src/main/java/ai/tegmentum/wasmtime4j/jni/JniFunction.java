@@ -1,16 +1,16 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniTypeConverter;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -267,8 +267,7 @@ public final class JniFunction extends JniResource
 
       // Convert native results back to WasmValue array
       final WasmValue[] results =
-          JniTypeConverter.nativeResultsToWasmValues(
-              nativeResults, functionType.getReturnTypes());
+          JniTypeConverter.nativeResultsToWasmValues(nativeResults, functionType.getReturnTypes());
 
       // Cache result for frequently called functions
       if (shouldCacheResult(currentCall)) {

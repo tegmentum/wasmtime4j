@@ -294,7 +294,8 @@ class ResourceExceptionTest {
       final ResourceException exception = new ResourceException("Error message", cause);
 
       // cleanupRecommended should be false, not true
-      assertFalse(exception.isCleanupRecommended(),
+      assertFalse(
+          exception.isCleanupRecommended(),
           "Message+cause constructor should set cleanupRecommended to false, not true");
     }
 
@@ -303,7 +304,8 @@ class ResourceExceptionTest {
     void messageOnlyConstructorShouldSetCleanupRecommendedToFalse() {
       final ResourceException exception = new ResourceException("Error message");
 
-      assertFalse(exception.isCleanupRecommended(),
+      assertFalse(
+          exception.isCleanupRecommended(),
           "Message-only constructor should set cleanupRecommended to false");
     }
   }
@@ -322,11 +324,12 @@ class ResourceExceptionTest {
       final String description = exception.getResourceErrorDescription();
 
       // Should contain type but NOT id (since resourceId is null)
-      assertTrue(description.contains("[type: memory]"),
-          "Description should contain type section");
-      assertFalse(description.contains("[id:"),
+      assertTrue(description.contains("[type: memory]"), "Description should contain type section");
+      assertFalse(
+          description.contains("[id:"),
           "Description should NOT contain id section when resourceId is null");
-      assertFalse(description.contains("null"),
+      assertFalse(
+          description.contains("null"),
           "Description should not contain 'null' as literal text for id");
     }
 
@@ -341,11 +344,10 @@ class ResourceExceptionTest {
       final String description = exception.getResourceErrorDescription();
 
       // Should contain type and id but NOT cleanup (since cleanupRecommended is false)
-      assertTrue(description.contains("[type: handle]"),
-          "Description should contain type section");
-      assertTrue(description.contains("[id: h1]"),
-          "Description should contain id section");
-      assertFalse(description.contains("cleanup recommended"),
+      assertTrue(description.contains("[type: handle]"), "Description should contain type section");
+      assertTrue(description.contains("[id: h1]"), "Description should contain id section");
+      assertFalse(
+          description.contains("cleanup recommended"),
           "Description should NOT contain 'cleanup recommended' when cleanupRecommended is false");
     }
 
@@ -358,7 +360,9 @@ class ResourceExceptionTest {
       final String description = exception.getResourceErrorDescription();
 
       // Should only contain "Resource error" without any brackets
-      assertEquals("Resource error", description,
+      assertEquals(
+          "Resource error",
+          description,
           "Description should be exactly 'Resource error' when all fields are null/false");
     }
 
@@ -371,11 +375,10 @@ class ResourceExceptionTest {
       final String description = exception.getResourceErrorDescription();
 
       // Should contain all three sections
-      assertTrue(description.contains("[type: file]"),
-          "Description should contain type section");
-      assertTrue(description.contains("[id: f123]"),
-          "Description should contain id section");
-      assertTrue(description.contains("[cleanup recommended]"),
+      assertTrue(description.contains("[type: file]"), "Description should contain type section");
+      assertTrue(description.contains("[id: f123]"), "Description should contain id section");
+      assertTrue(
+          description.contains("[cleanup recommended]"),
           "Description should contain cleanup section");
     }
   }

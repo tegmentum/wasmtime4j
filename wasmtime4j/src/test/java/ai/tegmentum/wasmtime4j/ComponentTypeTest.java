@@ -16,56 +16,13 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCapability;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibilityResult;
-import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
-import ai.tegmentum.wasmtime4j.component.ComponentEngine;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentFeature;
-import ai.tegmentum.wasmtime4j.component.ComponentFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentId;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
-import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleManager;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentLinker;
-import ai.tegmentum.wasmtime4j.component.ComponentLinkInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentResult;
-import ai.tegmentum.wasmtime4j.component.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.component.ComponentSpecification;
-import ai.tegmentum.wasmtime4j.component.ComponentStateTransitionConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentType;
-import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
-import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentVal;
-import ai.tegmentum.wasmtime4j.component.ComponentValFactory;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVariant;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.component.ComponentType;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -75,9 +32,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link ComponentType}.
  *
- * <p>Verifies enum structure, constants, boolean classification methods (isPrimitive,
- * isInteger, isSigned, isUnsigned, isFloat, isCompound, isResource), and the
- * mutual exclusivity of type categories.
+ * <p>Verifies enum structure, constants, boolean classification methods (isPrimitive, isInteger,
+ * isSigned, isUnsigned, isFloat, isCompound, isResource), and the mutual exclusivity of type
+ * categories.
  */
 @DisplayName("ComponentType Tests")
 class ComponentTypeTest {
@@ -95,8 +52,8 @@ class ComponentTypeTest {
     @Test
     @DisplayName("should have exactly 23 values")
     void shouldHaveExactValueCount() {
-      assertEquals(23, ComponentType.values().length,
-          "ComponentType should have exactly 23 values");
+      assertEquals(
+          23, ComponentType.values().length, "ComponentType should have exactly 23 values");
     }
   }
 
@@ -181,8 +138,7 @@ class ComponentTypeTest {
       assertFalse(ComponentType.LIST.isPrimitive(), "LIST should not be primitive");
       assertFalse(ComponentType.RECORD.isPrimitive(), "RECORD should not be primitive");
       assertFalse(ComponentType.TUPLE.isPrimitive(), "TUPLE should not be primitive");
-      assertFalse(ComponentType.VARIANT.isPrimitive(),
-          "VARIANT should not be primitive");
+      assertFalse(ComponentType.VARIANT.isPrimitive(), "VARIANT should not be primitive");
       assertFalse(ComponentType.ENUM.isPrimitive(), "ENUM should not be primitive");
       assertFalse(ComponentType.OPTION.isPrimitive(), "OPTION should not be primitive");
       assertFalse(ComponentType.RESULT.isPrimitive(), "RESULT should not be primitive");
@@ -373,8 +329,11 @@ class ComponentTypeTest {
         if (type.isResource()) {
           categoryCount++;
         }
-        assertEquals(1, categoryCount,
-            type.name() + " should belong to exactly one top-level category "
+        assertEquals(
+            1,
+            categoryCount,
+            type.name()
+                + " should belong to exactly one top-level category "
                 + "(primitive/compound/resource)");
       }
     }
@@ -383,7 +342,8 @@ class ComponentTypeTest {
     @DisplayName("signed and unsigned should be mutually exclusive")
     void signedAndUnsignedShouldBeMutuallyExclusive() {
       for (final ComponentType type : ComponentType.values()) {
-        assertFalse(type.isSigned() && type.isUnsigned(),
+        assertFalse(
+            type.isSigned() && type.isUnsigned(),
             type.name() + " should not be both signed and unsigned");
       }
     }
@@ -393,7 +353,8 @@ class ComponentTypeTest {
     void allIntegersShouldBeSignedOrUnsigned() {
       for (final ComponentType type : ComponentType.values()) {
         if (type.isInteger()) {
-          assertTrue(type.isSigned() || type.isUnsigned(),
+          assertTrue(
+              type.isSigned() || type.isUnsigned(),
               type.name() + " integer should be either signed or unsigned");
         }
       }
@@ -408,15 +369,16 @@ class ComponentTypeTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final ComponentType value : ComponentType.values()) {
-        assertEquals(value, ComponentType.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, ComponentType.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> ComponentType.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -433,8 +395,7 @@ class ComponentTypeTest {
       for (final ComponentType value : ComponentType.values()) {
         ordinals.add(value.ordinal());
       }
-      assertEquals(ComponentType.values().length, ordinals.size(),
-          "All ordinals should be unique");
+      assertEquals(ComponentType.values().length, ordinals.size(), "All ordinals should be unique");
     }
 
     @Test
@@ -442,8 +403,7 @@ class ComponentTypeTest {
     void shouldHaveSequentialOrdinals() {
       final ComponentType[] values = ComponentType.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }

@@ -40,9 +40,7 @@ class CryptoKeyTypeTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          CryptoKeyType.class.isEnum(),
-          "CryptoKeyType should be an enum type");
+      assertTrue(CryptoKeyType.class.isEnum(), "CryptoKeyType should be an enum type");
     }
 
     @Test
@@ -107,10 +105,7 @@ class CryptoKeyTypeTest {
       final CryptoKeyType[] values = CryptoKeyType.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -151,10 +146,7 @@ class CryptoKeyTypeTest {
       final CryptoKeyType[] second = CryptoKeyType.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 

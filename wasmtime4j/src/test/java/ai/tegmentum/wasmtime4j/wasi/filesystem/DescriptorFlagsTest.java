@@ -92,8 +92,7 @@ class DescriptorFlagsTest {
       final DescriptorFlags flag = DescriptorFlags.FILE_INTEGRITY_SYNC;
 
       assertNotNull(flag, "FILE_INTEGRITY_SYNC should not be null");
-      assertEquals(
-          "FILE_INTEGRITY_SYNC", flag.name(), "Name should be FILE_INTEGRITY_SYNC");
+      assertEquals("FILE_INTEGRITY_SYNC", flag.name(), "Name should be FILE_INTEGRITY_SYNC");
     }
 
     @Test
@@ -102,8 +101,7 @@ class DescriptorFlagsTest {
       final DescriptorFlags flag = DescriptorFlags.DATA_INTEGRITY_SYNC;
 
       assertNotNull(flag, "DATA_INTEGRITY_SYNC should not be null");
-      assertEquals(
-          "DATA_INTEGRITY_SYNC", flag.name(), "Name should be DATA_INTEGRITY_SYNC");
+      assertEquals("DATA_INTEGRITY_SYNC", flag.name(), "Name should be DATA_INTEGRITY_SYNC");
     }
 
     @Test
@@ -112,8 +110,7 @@ class DescriptorFlagsTest {
       final DescriptorFlags flag = DescriptorFlags.REQUESTED_WRITE_SYNC;
 
       assertNotNull(flag, "REQUESTED_WRITE_SYNC should not be null");
-      assertEquals(
-          "REQUESTED_WRITE_SYNC", flag.name(), "Name should be REQUESTED_WRITE_SYNC");
+      assertEquals("REQUESTED_WRITE_SYNC", flag.name(), "Name should be REQUESTED_WRITE_SYNC");
     }
 
     @Test
@@ -173,9 +170,7 @@ class DescriptorFlagsTest {
     @DisplayName("MUTATE_DIRECTORY should have ordinal 5")
     void mutateDirectoryShouldHaveOrdinalFive() {
       assertEquals(
-          5,
-          DescriptorFlags.MUTATE_DIRECTORY.ordinal(),
-          "MUTATE_DIRECTORY ordinal should be 5");
+          5, DescriptorFlags.MUTATE_DIRECTORY.ordinal(), "MUTATE_DIRECTORY ordinal should be 5");
     }
 
     @Test
@@ -184,8 +179,7 @@ class DescriptorFlagsTest {
       final DescriptorFlags[] values = DescriptorFlags.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -275,16 +269,13 @@ class DescriptorFlagsTest {
     @DisplayName("values should return array of length 6")
     void valuesShouldReturnArrayOfLengthSix() {
       assertEquals(
-          6,
-          DescriptorFlags.values().length,
-          "values() should return array with 6 elements");
+          6, DescriptorFlags.values().length, "values() should return array with 6 elements");
     }
 
     @Test
     @DisplayName("values should contain all constants")
     void valuesShouldContainAllConstants() {
-      final Set<DescriptorFlags> valueSet =
-          new HashSet<>(Arrays.asList(DescriptorFlags.values()));
+      final Set<DescriptorFlags> valueSet = new HashSet<>(Arrays.asList(DescriptorFlags.values()));
 
       assertTrue(valueSet.contains(DescriptorFlags.READ), "values() should contain READ");
       assertTrue(valueSet.contains(DescriptorFlags.WRITE), "values() should contain WRITE");
@@ -329,8 +320,7 @@ class DescriptorFlagsTest {
     @Test
     @DisplayName("toString should return constant name for WRITE")
     void toStringShouldReturnNameForWrite() {
-      assertEquals(
-          "WRITE", DescriptorFlags.WRITE.toString(), "toString() should return 'WRITE'");
+      assertEquals("WRITE", DescriptorFlags.WRITE.toString(), "toString() should return 'WRITE'");
     }
 
     @Test
@@ -347,9 +337,7 @@ class DescriptorFlagsTest {
     void toStringShouldMatchNameForAllConstants() {
       for (final DescriptorFlags flag : DescriptorFlags.values()) {
         assertEquals(
-            flag.name(),
-            flag.toString(),
-            "toString() should match name() for " + flag.name());
+            flag.name(), flag.toString(), "toString() should match name() for " + flag.name());
       }
     }
   }
@@ -397,8 +385,7 @@ class DescriptorFlagsTest {
     @DisplayName("of should deduplicate flags")
     void ofShouldDeduplicateFlags() {
       final Set<DescriptorFlags> flags =
-          DescriptorFlags.of(
-              DescriptorFlags.READ, DescriptorFlags.READ, DescriptorFlags.WRITE);
+          DescriptorFlags.of(DescriptorFlags.READ, DescriptorFlags.READ, DescriptorFlags.WRITE);
 
       assertEquals(2, flags.size(), "Set should deduplicate repeated flags");
     }

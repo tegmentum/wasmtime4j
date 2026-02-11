@@ -56,8 +56,7 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("EXCEPTION_HANDLING should have correct system property")
     void exceptionHandlingShouldHaveCorrectSystemProperty() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
       assertEquals(
           "wasmtime4j.experimental.exceptions",
           feature.getSystemProperty(),
@@ -67,8 +66,7 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("ADVANCED_SIMD should have correct system property")
     void advancedSimdShouldHaveCorrectSystemProperty() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.ADVANCED_SIMD;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.ADVANCED_SIMD;
       assertEquals(
           "wasmtime4j.experimental.simd",
           feature.getSystemProperty(),
@@ -78,8 +76,7 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("MULTI_VALUE should have correct system property")
     void multiValueShouldHaveCorrectSystemProperty() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.MULTI_VALUE;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.MULTI_VALUE;
       assertEquals(
           "wasmtime4j.experimental.multivalue",
           feature.getSystemProperty(),
@@ -100,8 +97,7 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("RELAXED_SIMD should have correct system property")
     void relaxedSimdShouldHaveCorrectSystemProperty() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.RELAXED_SIMD;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.RELAXED_SIMD;
       assertEquals(
           "wasmtime4j.experimental.relaxed_simd",
           feature.getSystemProperty(),
@@ -146,11 +142,9 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("enableFeature should enable a disabled feature")
     void enableFeatureShouldEnableDisabledFeature() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
       assertFalse(
-          ExperimentalFeatures.isFeatureEnabled(feature),
-          "Feature should be disabled initially");
+          ExperimentalFeatures.isFeatureEnabled(feature), "Feature should be disabled initially");
       ExperimentalFeatures.enableFeature(feature);
       assertTrue(
           ExperimentalFeatures.isFeatureEnabled(feature),
@@ -160,8 +154,7 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("disableFeature should disable an enabled feature")
     void disableFeatureShouldDisableEnabledFeature() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.ADVANCED_SIMD;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.ADVANCED_SIMD;
       ExperimentalFeatures.enableFeature(feature);
       assertTrue(
           ExperimentalFeatures.isFeatureEnabled(feature),
@@ -198,22 +191,18 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("isFeatureEnabled should return false for disabled features")
     void isFeatureEnabledShouldReturnFalseForDisabledFeatures() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.MULTI_VALUE;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.MULTI_VALUE;
       assertFalse(
-          ExperimentalFeatures.isFeatureEnabled(feature),
-          "Disabled feature should return false");
+          ExperimentalFeatures.isFeatureEnabled(feature), "Disabled feature should return false");
     }
 
     @Test
     @DisplayName("isFeatureEnabled should return true for enabled features")
     void isFeatureEnabledShouldReturnTrueForEnabledFeatures() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.MULTI_VALUE;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.MULTI_VALUE;
       ExperimentalFeatures.enableFeature(feature);
       assertTrue(
-          ExperimentalFeatures.isFeatureEnabled(feature),
-          "Enabled feature should return true");
+          ExperimentalFeatures.isFeatureEnabled(feature), "Enabled feature should return true");
     }
 
     @Test
@@ -233,8 +222,7 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("getEnabledFeatures should return empty set when none enabled")
     void getEnabledFeaturesShouldReturnEmptySetWhenNoneEnabled() {
-      final Set<ExperimentalFeatures.Feature> enabled =
-          ExperimentalFeatures.getEnabledFeatures();
+      final Set<ExperimentalFeatures.Feature> enabled = ExperimentalFeatures.getEnabledFeatures();
       assertNotNull(enabled, "getEnabledFeatures should not return null");
       assertTrue(enabled.isEmpty(), "No features should be enabled by default");
     }
@@ -245,8 +233,7 @@ class ExperimentalFeaturesTest {
       ExperimentalFeatures.enableFeature(ExperimentalFeatures.Feature.EXCEPTION_HANDLING);
       ExperimentalFeatures.enableFeature(ExperimentalFeatures.Feature.RELAXED_SIMD);
 
-      final Set<ExperimentalFeatures.Feature> enabled =
-          ExperimentalFeatures.getEnabledFeatures();
+      final Set<ExperimentalFeatures.Feature> enabled = ExperimentalFeatures.getEnabledFeatures();
       assertEquals(2, enabled.size(), "Should have exactly 2 enabled features");
       assertTrue(
           enabled.contains(ExperimentalFeatures.Feature.EXCEPTION_HANDLING),
@@ -291,26 +278,22 @@ class ExperimentalFeaturesTest {
       ExperimentalFeatures.enableFeature(ExperimentalFeatures.Feature.MULTI_VALUE);
 
       assertTrue(
-          ExperimentalFeatures.hasEnabledFeatures(),
-          "Features should be enabled before reset");
+          ExperimentalFeatures.hasEnabledFeatures(), "Features should be enabled before reset");
 
       ExperimentalFeatures.reset();
 
       assertFalse(
-          ExperimentalFeatures.hasEnabledFeatures(),
-          "No features should be enabled after reset");
+          ExperimentalFeatures.hasEnabledFeatures(), "No features should be enabled after reset");
     }
 
     @Test
     @DisplayName("reset should allow re-enabling features")
     void resetShouldAllowReEnablingFeatures() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
       ExperimentalFeatures.enableFeature(feature);
       ExperimentalFeatures.reset();
       assertFalse(
-          ExperimentalFeatures.isFeatureEnabled(feature),
-          "Feature should be disabled after reset");
+          ExperimentalFeatures.isFeatureEnabled(feature), "Feature should be disabled after reset");
 
       ExperimentalFeatures.enableFeature(feature);
       assertTrue(
@@ -326,8 +309,7 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("validateFeatureSupport should throw for disabled feature")
     void validateFeatureSupportShouldThrowForDisabledFeature() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
       final UnsupportedOperationException ex =
           assertThrows(
               UnsupportedOperationException.class,
@@ -342,8 +324,7 @@ class ExperimentalFeaturesTest {
     @Test
     @DisplayName("validateFeatureSupport should not throw for enabled feature")
     void validateFeatureSupportShouldNotThrowForEnabledFeature() {
-      final ExperimentalFeatures.Feature feature =
-          ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
+      final ExperimentalFeatures.Feature feature = ExperimentalFeatures.Feature.EXCEPTION_HANDLING;
       ExperimentalFeatures.enableFeature(feature);
       assertDoesNotThrow(
           () -> ExperimentalFeatures.validateFeatureSupport(feature),

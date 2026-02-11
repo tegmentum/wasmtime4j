@@ -54,9 +54,7 @@ class WasiHttpFactoryTest {
     void constructorShouldBePrivate() throws NoSuchMethodException {
       final Constructor<WasiHttpFactory> constructor =
           WasiHttpFactory.class.getDeclaredConstructor();
-      assertTrue(
-          Modifier.isPrivate(constructor.getModifiers()),
-          "Constructor should be private");
+      assertTrue(Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
     }
 
     @Test
@@ -81,8 +79,7 @@ class WasiHttpFactoryTest {
       // In test environment without native implementations, this should be false
       // but the method itself should not throw
       assertFalse(
-          available,
-          "isAvailable should return false when no implementation is on classpath");
+          available, "isAvailable should return false when no implementation is on classpath");
     }
 
     @Test
@@ -110,8 +107,7 @@ class WasiHttpFactoryTest {
     void getImplementationNameShouldReturnNoneWhenNoImpl() {
       final String name = WasiHttpFactory.getImplementationName();
       assertEquals(
-          "None", name,
-          "Implementation name should be 'None' when no implementation is available");
+          "None", name, "Implementation name should be 'None' when no implementation is available");
     }
 
     @Test
@@ -128,9 +124,7 @@ class WasiHttpFactoryTest {
     void getImplementationNameShouldBeConsistent() {
       final String first = WasiHttpFactory.getImplementationName();
       final String second = WasiHttpFactory.getImplementationName();
-      assertEquals(
-          first, second,
-          "getImplementationName should return consistent results");
+      assertEquals(first, second, "getImplementationName should return consistent results");
     }
   }
 
@@ -158,9 +152,7 @@ class WasiHttpFactoryTest {
       final boolean available = WasiHttpFactory.isAvailable();
       final String name = WasiHttpFactory.getImplementationName();
       if (!available) {
-        assertEquals(
-            "None", name,
-            "When isAvailable is false, implementation name should be None");
+        assertEquals("None", name, "When isAvailable is false, implementation name should be None");
       } else {
         assertTrue(
             "Panama".equals(name) || "JNI".equals(name),

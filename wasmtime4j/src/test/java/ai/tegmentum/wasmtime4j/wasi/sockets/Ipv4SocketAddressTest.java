@@ -40,8 +40,7 @@ class Ipv4SocketAddressTest {
     @Test
     @DisplayName("should create with valid port and address")
     void shouldCreateWithValidPortAndAddress() {
-      final Ipv4Address addr =
-          new Ipv4Address(new byte[]{(byte) 192, (byte) 168, 1, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, 1});
       final Ipv4SocketAddress sockAddr = new Ipv4SocketAddress(8080, addr);
       assertEquals(8080, sockAddr.getPort(), "Port should be 8080");
       assertEquals(addr, sockAddr.getAddress(), "Address should match");
@@ -50,7 +49,7 @@ class Ipv4SocketAddressTest {
     @Test
     @DisplayName("should accept port 0")
     void shouldAcceptPortZero() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{127, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
       final Ipv4SocketAddress sockAddr = new Ipv4SocketAddress(0, addr);
       assertEquals(0, sockAddr.getPort(), "Port 0 should be accepted");
     }
@@ -58,7 +57,7 @@ class Ipv4SocketAddressTest {
     @Test
     @DisplayName("should accept port 65535")
     void shouldAcceptPort65535() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{127, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
       final Ipv4SocketAddress sockAddr = new Ipv4SocketAddress(65535, addr);
       assertEquals(65535, sockAddr.getPort(), "Port 65535 should be accepted");
     }
@@ -66,7 +65,7 @@ class Ipv4SocketAddressTest {
     @Test
     @DisplayName("should throw for negative port")
     void shouldThrowForNegativePort() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{127, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
       assertThrows(
           IllegalArgumentException.class,
           () -> new Ipv4SocketAddress(-1, addr),
@@ -76,7 +75,7 @@ class Ipv4SocketAddressTest {
     @Test
     @DisplayName("should throw for port exceeding 65535")
     void shouldThrowForExcessivePort() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{127, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {127, 0, 0, 1});
       assertThrows(
           IllegalArgumentException.class,
           () -> new Ipv4SocketAddress(65536, addr),
@@ -100,19 +99,18 @@ class Ipv4SocketAddressTest {
     @Test
     @DisplayName("same port and address should be equal")
     void samePortAndAddressShouldBeEqual() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{10, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {10, 0, 0, 1});
       final Ipv4SocketAddress sa1 = new Ipv4SocketAddress(443, addr);
       final Ipv4SocketAddress sa2 = new Ipv4SocketAddress(443, addr);
       assertEquals(sa1, sa2, "Same port and address should be equal");
       assertEquals(
-          sa1.hashCode(), sa2.hashCode(),
-          "Same port and address should have same hashCode");
+          sa1.hashCode(), sa2.hashCode(), "Same port and address should have same hashCode");
     }
 
     @Test
     @DisplayName("different ports should not be equal")
     void differentPortsShouldNotBeEqual() {
-      final Ipv4Address addr = new Ipv4Address(new byte[]{10, 0, 0, 1});
+      final Ipv4Address addr = new Ipv4Address(new byte[] {10, 0, 0, 1});
       final Ipv4SocketAddress sa1 = new Ipv4SocketAddress(80, addr);
       final Ipv4SocketAddress sa2 = new Ipv4SocketAddress(443, addr);
       assertNotEquals(sa1, sa2, "Different ports should not be equal");
@@ -122,9 +120,9 @@ class Ipv4SocketAddressTest {
     @DisplayName("different addresses should not be equal")
     void differentAddressesShouldNotBeEqual() {
       final Ipv4SocketAddress sa1 =
-          new Ipv4SocketAddress(80, new Ipv4Address(new byte[]{10, 0, 0, 1}));
+          new Ipv4SocketAddress(80, new Ipv4Address(new byte[] {10, 0, 0, 1}));
       final Ipv4SocketAddress sa2 =
-          new Ipv4SocketAddress(80, new Ipv4Address(new byte[]{10, 0, 0, 2}));
+          new Ipv4SocketAddress(80, new Ipv4Address(new byte[] {10, 0, 0, 2}));
       assertNotEquals(sa1, sa2, "Different addresses should not be equal");
     }
 
@@ -132,7 +130,7 @@ class Ipv4SocketAddressTest {
     @DisplayName("should not equal null")
     void shouldNotEqualNull() {
       final Ipv4SocketAddress sa =
-          new Ipv4SocketAddress(80, new Ipv4Address(new byte[]{127, 0, 0, 1}));
+          new Ipv4SocketAddress(80, new Ipv4Address(new byte[] {127, 0, 0, 1}));
       assertNotEquals(null, sa, "Should not equal null");
     }
 
@@ -140,7 +138,7 @@ class Ipv4SocketAddressTest {
     @DisplayName("should equal itself")
     void shouldEqualItself() {
       final Ipv4SocketAddress sa =
-          new Ipv4SocketAddress(80, new Ipv4Address(new byte[]{127, 0, 0, 1}));
+          new Ipv4SocketAddress(80, new Ipv4Address(new byte[] {127, 0, 0, 1}));
       assertEquals(sa, sa, "Should equal itself");
     }
   }
@@ -153,31 +151,24 @@ class Ipv4SocketAddressTest {
     @DisplayName("toString should format as addr:port")
     void toStringShouldFormatAsAddrPort() {
       final Ipv4SocketAddress sa =
-          new Ipv4SocketAddress(
-              8080, new Ipv4Address(new byte[]{(byte) 192, (byte) 168, 1, 1}));
-      assertEquals(
-          "192.168.1.1:8080", sa.toString(),
-          "toString should format as addr:port");
+          new Ipv4SocketAddress(8080, new Ipv4Address(new byte[] {(byte) 192, (byte) 168, 1, 1}));
+      assertEquals("192.168.1.1:8080", sa.toString(), "toString should format as addr:port");
     }
 
     @Test
     @DisplayName("toString should handle port 0")
     void toStringShouldHandlePortZero() {
       final Ipv4SocketAddress sa =
-          new Ipv4SocketAddress(0, new Ipv4Address(new byte[]{0, 0, 0, 0}));
-      assertEquals(
-          "0.0.0.0:0", sa.toString(),
-          "toString should handle port 0");
+          new Ipv4SocketAddress(0, new Ipv4Address(new byte[] {0, 0, 0, 0}));
+      assertEquals("0.0.0.0:0", sa.toString(), "toString should handle port 0");
     }
 
     @Test
     @DisplayName("toString should handle max port")
     void toStringShouldHandleMaxPort() {
       final Ipv4SocketAddress sa =
-          new Ipv4SocketAddress(65535, new Ipv4Address(new byte[]{127, 0, 0, 1}));
-      assertEquals(
-          "127.0.0.1:65535", sa.toString(),
-          "toString should handle max port 65535");
+          new Ipv4SocketAddress(65535, new Ipv4Address(new byte[] {127, 0, 0, 1}));
+      assertEquals("127.0.0.1:65535", sa.toString(), "toString should handle max port 65535");
     }
   }
 }

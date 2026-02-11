@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.Test;
 import ai.tegmentum.wasmtime4j.metadata.CustomSection;
 import ai.tegmentum.wasmtime4j.metadata.CustomSectionType;
+import org.junit.jupiter.api.Test;
 
 /** Tests for CustomSection functionality. */
 final class CustomSectionTest {

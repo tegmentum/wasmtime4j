@@ -45,16 +45,14 @@ class WitResultTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(WitResult.class.getModifiers()), "WitResult should be final");
+      assertTrue(Modifier.isFinal(WitResult.class.getModifiers()), "WitResult should be final");
     }
 
     @Test
     @DisplayName("should extend WitValue")
     void shouldExtendWitValue() {
       assertTrue(
-          WitValue.class.isAssignableFrom(WitResult.class),
-          "WitResult should extend WitValue");
+          WitValue.class.isAssignableFrom(WitResult.class), "WitResult should extend WitValue");
     }
 
     @Test
@@ -62,8 +60,7 @@ class WitResultTest {
     void shouldHaveIsOkMethod() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("isOk");
       assertNotNull(method, "Should have isOk() method");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isOk should return boolean");
+      assertEquals(boolean.class, method.getReturnType(), "isOk should return boolean");
     }
 
     @Test
@@ -71,8 +68,7 @@ class WitResultTest {
     void shouldHaveIsErrMethod() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("isErr");
       assertNotNull(method, "Should have isErr() method");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isErr should return boolean");
+      assertEquals(boolean.class, method.getReturnType(), "isErr should return boolean");
     }
 
     @Test
@@ -80,8 +76,7 @@ class WitResultTest {
     void shouldHaveGetOkMethod() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("getOk");
       assertNotNull(method, "Should have getOk() method");
-      assertEquals(
-          Optional.class, method.getReturnType(), "getOk should return Optional");
+      assertEquals(Optional.class, method.getReturnType(), "getOk should return Optional");
     }
 
     @Test
@@ -89,8 +84,7 @@ class WitResultTest {
     void shouldHaveGetErrMethod() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("getErr");
       assertNotNull(method, "Should have getErr() method");
-      assertEquals(
-          Optional.class, method.getReturnType(), "getErr should return Optional");
+      assertEquals(Optional.class, method.getReturnType(), "getErr should return Optional");
     }
 
     @Test
@@ -98,8 +92,7 @@ class WitResultTest {
     void shouldHaveGetValueMethod() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("getValue");
       assertNotNull(method, "Should have getValue() method");
-      assertEquals(
-          Optional.class, method.getReturnType(), "getValue should return Optional");
+      assertEquals(Optional.class, method.getReturnType(), "getValue should return Optional");
     }
   }
 
@@ -112,8 +105,7 @@ class WitResultTest {
     void shouldHaveOkMethodWithValue() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("ok", WitType.class, WitValue.class);
       assertNotNull(method, "Should have ok(WitType, WitValue) method");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "ok method should be static");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "ok method should be static");
     }
 
     @Test
@@ -121,8 +113,7 @@ class WitResultTest {
     void shouldHaveOkMethodWithoutValue() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("ok", WitType.class);
       assertNotNull(method, "Should have ok(WitType) method");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "ok method should be static");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "ok method should be static");
     }
 
     @Test
@@ -130,8 +121,7 @@ class WitResultTest {
     void shouldHaveErrMethodWithValue() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("err", WitType.class, WitValue.class);
       assertNotNull(method, "Should have err(WitType, WitValue) method");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "err method should be static");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "err method should be static");
     }
 
     @Test
@@ -139,8 +129,7 @@ class WitResultTest {
     void shouldHaveErrMethodWithoutValue() throws NoSuchMethodException {
       final Method method = WitResult.class.getMethod("err", WitType.class);
       assertNotNull(method, "Should have err(WitType) method");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()), "err method should be static");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "err method should be static");
     }
 
     @Test
@@ -188,8 +177,7 @@ class WitResultTest {
       final WitType resultType = WitType.result(Optional.empty(), Optional.empty());
       final WitResult result = WitResult.ok(resultType);
       assertEquals(
-          Optional.empty(), result.getOk(),
-          "ok result without payload getOk should be empty");
+          Optional.empty(), result.getOk(), "ok result without payload getOk should be empty");
     }
 
     @Test
@@ -197,9 +185,7 @@ class WitResultTest {
     void errResultGetOkShouldReturnEmpty() {
       final WitType resultType = WitType.result(Optional.empty(), Optional.empty());
       final WitResult result = WitResult.err(resultType);
-      assertEquals(
-          Optional.empty(), result.getOk(),
-          "err result getOk should return empty");
+      assertEquals(Optional.empty(), result.getOk(), "err result getOk should return empty");
     }
   }
 
@@ -227,9 +213,7 @@ class WitResultTest {
       final WitType rt = WitType.result(Optional.empty(), Optional.empty());
       final WitResult r1 = WitResult.ok(rt);
       final WitResult r2 = WitResult.ok(rt);
-      assertEquals(
-          r1.hashCode(), r2.hashCode(),
-          "Same results should have same hash code");
+      assertEquals(r1.hashCode(), r2.hashCode(), "Same results should have same hash code");
     }
   }
 
@@ -287,8 +271,7 @@ class WitResultTest {
       final WitType rt = WitType.result(Optional.empty(), Optional.empty());
       final WitResult result = WitResult.ok(rt);
       // This kills mutation: isErr() returning isOk instead of !isOk
-      assertEquals(!result.isOk(), result.isErr(),
-          "isErr() must be exactly the inverse of isOk()");
+      assertEquals(!result.isOk(), result.isErr(), "isErr() must be exactly the inverse of isOk()");
     }
 
     @Test
@@ -297,8 +280,7 @@ class WitResultTest {
       final WitType rt = WitType.result(Optional.empty(), Optional.empty());
       final WitResult result = WitResult.err(rt);
       // This kills mutation: isErr() returning isOk instead of !isOk
-      assertEquals(!result.isOk(), result.isErr(),
-          "isErr() must be exactly the inverse of isOk()");
+      assertEquals(!result.isOk(), result.isErr(), "isErr() must be exactly the inverse of isOk()");
     }
   }
 
@@ -313,8 +295,8 @@ class WitResultTest {
       final WitResult result = WitResult.ok(rt);
 
       // For no-payload ok, getOk returns the empty value (which is empty)
-      assertFalse(result.getOk().isPresent(),
-          "ok result without payload getOk() returns empty optional");
+      assertFalse(
+          result.getOk().isPresent(), "ok result without payload getOk() returns empty optional");
     }
 
     @Test
@@ -334,7 +316,8 @@ class WitResultTest {
       final WitResult result = WitResult.err(rt);
 
       // For no-payload err, getErr returns the empty value (which is empty)
-      assertFalse(result.getErr().isPresent(),
+      assertFalse(
+          result.getErr().isPresent(),
           "err result without payload getErr() returns empty optional");
     }
 
@@ -375,8 +358,8 @@ class WitResultTest {
       final WitType rt = WitType.result(Optional.empty(), Optional.empty());
       final WitResult result = WitResult.ok(rt);
 
-      assertFalse(result.getValue().isPresent(),
-          "ok result without payload getValue() should be empty");
+      assertFalse(
+          result.getValue().isPresent(), "ok result without payload getValue() should be empty");
     }
 
     @Test
@@ -385,8 +368,8 @@ class WitResultTest {
       final WitType rt = WitType.result(Optional.empty(), Optional.empty());
       final WitResult result = WitResult.err(rt);
 
-      assertFalse(result.getValue().isPresent(),
-          "err result without payload getValue() should be empty");
+      assertFalse(
+          result.getValue().isPresent(), "err result without payload getValue() should be empty");
     }
 
     @Test
@@ -397,10 +380,11 @@ class WitResultTest {
       final WitResult errResult = WitResult.err(rt);
 
       // Both should return empty, but the isOk flag must differ
-      assertEquals(okResult.getValue(), errResult.getValue(),
+      assertEquals(
+          okResult.getValue(),
+          errResult.getValue(),
           "Both should have empty getValue when no payload");
-      assertNotEquals(okResult.isOk(), errResult.isOk(),
-          "But isOk flag must be different");
+      assertNotEquals(okResult.isOk(), errResult.isOk(), "But isOk flag must be different");
     }
   }
 
@@ -416,8 +400,8 @@ class WitResultTest {
       final WitResult errResult = WitResult.err(rt);
 
       // This kills mutation: equals ignoring isOk field
-      assertNotEquals(okResult, errResult,
-          "ok and err results must not be equal even with same empty payload");
+      assertNotEquals(
+          okResult, errResult, "ok and err results must not be equal even with same empty payload");
     }
 
     @Test

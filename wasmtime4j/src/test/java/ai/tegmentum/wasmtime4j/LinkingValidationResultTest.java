@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.validation.LinkingValidationResult;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.validation.LinkingValidationResult;
 
 /**
  * Tests for {@link LinkingValidationResult} class.
@@ -64,8 +64,8 @@ class LinkingValidationResultTest {
           new LinkingValidationResult(true, "All imports satisfied");
 
       assertTrue(result.isValid(), "Result should be valid");
-      assertEquals("All imports satisfied", result.getDetails(),
-          "Details should match constructor value");
+      assertEquals(
+          "All imports satisfied", result.getDetails(), "Details should match constructor value");
     }
 
     @Test
@@ -75,7 +75,9 @@ class LinkingValidationResultTest {
           new LinkingValidationResult(false, "Missing import: env.memory");
 
       assertFalse(result.isValid(), "Result should not be valid");
-      assertEquals("Missing import: env.memory", result.getDetails(),
+      assertEquals(
+          "Missing import: env.memory",
+          result.getDetails(),
           "Details should match constructor value");
     }
 
@@ -84,8 +86,7 @@ class LinkingValidationResultTest {
     void shouldCoalesceNullDetailsToEmptyString() {
       final LinkingValidationResult result = new LinkingValidationResult(true, null);
 
-      assertEquals("", result.getDetails(),
-          "Null details should be coalesced to empty string");
+      assertEquals("", result.getDetails(), "Null details should be coalesced to empty string");
     }
 
     @Test
@@ -93,8 +94,7 @@ class LinkingValidationResultTest {
     void shouldPreserveEmptyStringDetails() {
       final LinkingValidationResult result = new LinkingValidationResult(true, "");
 
-      assertEquals("", result.getDetails(),
-          "Empty string details should be preserved");
+      assertEquals("", result.getDetails(), "Empty string details should be preserved");
     }
   }
 
@@ -110,8 +110,7 @@ class LinkingValidationResultTest {
 
       assertNotNull(result, "Valid result should not be null");
       assertTrue(result.isValid(), "Result from valid() should be valid");
-      assertEquals("Linking configuration is correct", result.getDetails(),
-          "Details should match");
+      assertEquals("Linking configuration is correct", result.getDetails(), "Details should match");
     }
 
     @Test
@@ -120,8 +119,7 @@ class LinkingValidationResultTest {
       final LinkingValidationResult result = LinkingValidationResult.valid(null);
 
       assertTrue(result.isValid(), "Result should be valid");
-      assertEquals("", result.getDetails(),
-          "Null details should be coalesced to empty string");
+      assertEquals("", result.getDetails(), "Null details should be coalesced to empty string");
     }
   }
 
@@ -137,8 +135,7 @@ class LinkingValidationResultTest {
 
       assertNotNull(result, "Invalid result should not be null");
       assertFalse(result.isValid(), "Result from invalid() should not be valid");
-      assertEquals("Missing function: start", result.getDetails(),
-          "Details should match");
+      assertEquals("Missing function: start", result.getDetails(), "Details should match");
     }
 
     @Test
@@ -147,8 +144,7 @@ class LinkingValidationResultTest {
       final LinkingValidationResult result = LinkingValidationResult.invalid(null);
 
       assertFalse(result.isValid(), "Result should not be valid");
-      assertEquals("", result.getDetails(),
-          "Null details should be coalesced to empty string");
+      assertEquals("", result.getDetails(), "Null details should be coalesced to empty string");
     }
   }
 
@@ -159,8 +155,7 @@ class LinkingValidationResultTest {
     @Test
     @DisplayName("isValid should return true for valid constructor")
     void isValidShouldReturnTrueForValidConstructor() {
-      final LinkingValidationResult result =
-          new LinkingValidationResult(true, "details");
+      final LinkingValidationResult result = new LinkingValidationResult(true, "details");
 
       assertTrue(result.isValid(), "isValid should return true");
     }
@@ -168,8 +163,7 @@ class LinkingValidationResultTest {
     @Test
     @DisplayName("isValid should return false for invalid constructor")
     void isValidShouldReturnFalseForInvalidConstructor() {
-      final LinkingValidationResult result =
-          new LinkingValidationResult(false, "details");
+      final LinkingValidationResult result = new LinkingValidationResult(false, "details");
 
       assertFalse(result.isValid(), "isValid should return false");
     }
@@ -180,7 +174,9 @@ class LinkingValidationResultTest {
       final LinkingValidationResult result =
           new LinkingValidationResult(true, "All 5 imports resolved successfully");
 
-      assertEquals("All 5 imports resolved successfully", result.getDetails(),
+      assertEquals(
+          "All 5 imports resolved successfully",
+          result.getDetails(),
           "Details should match constructor value");
     }
   }
@@ -192,21 +188,19 @@ class LinkingValidationResultTest {
     @Test
     @DisplayName("toString should contain LinkingValidationResult prefix")
     void toStringShouldContainPrefix() {
-      final LinkingValidationResult result =
-          new LinkingValidationResult(true, "OK");
+      final LinkingValidationResult result = new LinkingValidationResult(true, "OK");
 
-      assertTrue(result.toString().startsWith("LinkingValidationResult{"),
+      assertTrue(
+          result.toString().startsWith("LinkingValidationResult{"),
           "toString should start with 'LinkingValidationResult{'");
     }
 
     @Test
     @DisplayName("toString should contain valid status")
     void toStringShouldContainValidStatus() {
-      final LinkingValidationResult result =
-          new LinkingValidationResult(true, "OK");
+      final LinkingValidationResult result = new LinkingValidationResult(true, "OK");
 
-      assertTrue(result.toString().contains("valid=true"),
-          "toString should contain valid=true");
+      assertTrue(result.toString().contains("valid=true"), "toString should contain valid=true");
     }
 
     @Test
@@ -215,17 +209,18 @@ class LinkingValidationResultTest {
       final LinkingValidationResult result =
           new LinkingValidationResult(false, "Missing memory import");
 
-      assertTrue(result.toString().contains("Missing memory import"),
+      assertTrue(
+          result.toString().contains("Missing memory import"),
           "toString should contain the details string");
     }
 
     @Test
     @DisplayName("toString should show false for invalid result")
     void toStringShouldShowFalseForInvalidResult() {
-      final LinkingValidationResult result =
-          LinkingValidationResult.invalid("Error");
+      final LinkingValidationResult result = LinkingValidationResult.invalid("Error");
 
-      assertTrue(result.toString().contains("valid=false"),
+      assertTrue(
+          result.toString().contains("valid=false"),
           "toString should contain valid=false for invalid result");
     }
   }

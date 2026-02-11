@@ -16,54 +16,15 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCapability;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibilityResult;
-import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
-import ai.tegmentum.wasmtime4j.component.ComponentEngine;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentFeature;
-import ai.tegmentum.wasmtime4j.component.ComponentFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentId;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
-import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleManager;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentLinker;
-import ai.tegmentum.wasmtime4j.component.ComponentLinkInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentResult;
-import ai.tegmentum.wasmtime4j.component.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.component.ComponentSpecification;
-import ai.tegmentum.wasmtime4j.component.ComponentStateTransitionConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentType;
-import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
-import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentVal;
-import ai.tegmentum.wasmtime4j.component.ComponentValFactory;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVariant;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentEngine;
+import ai.tegmentum.wasmtime4j.component.ComponentInstance;
+import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
+import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
@@ -133,8 +94,7 @@ class ComponentEngineTest {
     void shouldHaveCompileComponentWithBytesMethod() throws NoSuchMethodException {
       Method method = ComponentEngine.class.getMethod("compileComponent", byte[].class);
       assertNotNull(method, "compileComponent(byte[]) method should exist");
-      assertEquals(
-          Component.class, method.getReturnType(), "Return type should be Component");
+      assertEquals(Component.class, method.getReturnType(), "Return type should be Component");
       assertEquals(1, method.getParameterCount(), "compileComponent should have 1 parameter");
       assertEquals(byte[].class, method.getParameterTypes()[0], "Parameter should be byte[]");
     }
@@ -154,8 +114,7 @@ class ComponentEngineTest {
       Method method =
           ComponentEngine.class.getMethod("compileComponent", byte[].class, String.class);
       assertNotNull(method, "compileComponent(byte[], String) method should exist");
-      assertEquals(
-          Component.class, method.getReturnType(), "Return type should be Component");
+      assertEquals(Component.class, method.getReturnType(), "Return type should be Component");
       assertEquals(2, method.getParameterCount(), "compileComponent should have 2 parameters");
       assertEquals(byte[].class, method.getParameterTypes()[0], "First parameter should be byte[]");
       assertEquals(
@@ -186,8 +145,7 @@ class ComponentEngineTest {
     void shouldHaveLinkComponentsMethod() throws NoSuchMethodException {
       Method method = ComponentEngine.class.getMethod("linkComponents", List.class);
       assertNotNull(method, "linkComponents method should exist");
-      assertEquals(
-          Component.class, method.getReturnType(), "Return type should be Component");
+      assertEquals(Component.class, method.getReturnType(), "Return type should be Component");
       assertEquals(1, method.getParameterCount(), "linkComponents should have 1 parameter");
     }
 
@@ -203,8 +161,7 @@ class ComponentEngineTest {
         assertEquals(List.class, paramType.getRawType(), "Raw type should be List");
         Type[] typeArgs = paramType.getActualTypeArguments();
         assertEquals(1, typeArgs.length, "List should have one type argument");
-        assertEquals(
-            Component.class, typeArgs[0], "List type argument should be Component");
+        assertEquals(Component.class, typeArgs[0], "List type argument should be Component");
       }
     }
 
@@ -230,8 +187,7 @@ class ComponentEngineTest {
     @DisplayName("should have checkCompatibility method")
     void shouldHaveCheckCompatibilityMethod() throws NoSuchMethodException {
       Method method =
-          ComponentEngine.class.getMethod(
-              "checkCompatibility", Component.class, Component.class);
+          ComponentEngine.class.getMethod("checkCompatibility", Component.class, Component.class);
       assertNotNull(method, "checkCompatibility method should exist");
       assertEquals(
           WitCompatibilityResult.class,
@@ -239,21 +195,16 @@ class ComponentEngineTest {
           "Return type should be WitCompatibilityResult");
       assertEquals(2, method.getParameterCount(), "checkCompatibility should have 2 parameters");
       assertEquals(
-          Component.class,
-          method.getParameterTypes()[0],
-          "First parameter should be Component");
+          Component.class, method.getParameterTypes()[0], "First parameter should be Component");
       assertEquals(
-          Component.class,
-          method.getParameterTypes()[1],
-          "Second parameter should be Component");
+          Component.class, method.getParameterTypes()[1], "Second parameter should be Component");
     }
 
     @Test
     @DisplayName("checkCompatibility should not throw checked exceptions")
     void checkCompatibilityShouldNotThrowCheckedExceptions() throws NoSuchMethodException {
       Method method =
-          ComponentEngine.class.getMethod(
-              "checkCompatibility", Component.class, Component.class);
+          ComponentEngine.class.getMethod("checkCompatibility", Component.class, Component.class);
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(
           0, exceptionTypes.length, "checkCompatibility should not declare checked exceptions");
@@ -330,9 +281,7 @@ class ComponentEngineTest {
           "Return type should be ComponentInstance");
       assertEquals(2, method.getParameterCount(), "createInstance should have 2 parameters");
       assertEquals(
-          Component.class,
-          method.getParameterTypes()[0],
-          "First parameter should be Component");
+          Component.class, method.getParameterTypes()[0], "First parameter should be Component");
       assertEquals(Store.class, method.getParameterTypes()[1], "Second parameter should be Store");
     }
 
@@ -359,9 +308,7 @@ class ComponentEngineTest {
           "Return type should be ComponentInstance");
       assertEquals(3, method.getParameterCount(), "createInstance should have 3 parameters");
       assertEquals(
-          Component.class,
-          method.getParameterTypes()[0],
-          "First parameter should be Component");
+          Component.class, method.getParameterTypes()[0], "First parameter should be Component");
       assertEquals(Store.class, method.getParameterTypes()[1], "Second parameter should be Store");
       assertEquals(List.class, method.getParameterTypes()[2], "Third parameter should be List");
     }
@@ -396,10 +343,7 @@ class ComponentEngineTest {
           method.getReturnType(),
           "Return type should be ComponentValidationResult");
       assertEquals(1, method.getParameterCount(), "validateComponent should have 1 parameter");
-      assertEquals(
-          Component.class,
-          method.getParameterTypes()[0],
-          "Parameter should be Component");
+      assertEquals(Component.class, method.getParameterTypes()[0], "Parameter should be Component");
     }
 
     @Test
@@ -625,8 +569,7 @@ class ComponentEngineTest {
         assertEquals(List.class, paramType.getRawType(), "Raw type should be List");
         Type[] typeArgs = paramType.getActualTypeArguments();
         assertEquals(1, typeArgs.length, "List should have one type argument");
-        assertEquals(
-            Component.class, typeArgs[0], "List type argument should be Component");
+        assertEquals(Component.class, typeArgs[0], "List type argument should be Component");
       }
     }
 

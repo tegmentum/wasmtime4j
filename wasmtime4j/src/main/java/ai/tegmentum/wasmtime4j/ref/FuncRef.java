@@ -16,11 +16,11 @@
 
 package ai.tegmentum.wasmtime4j.ref;
 
-import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;

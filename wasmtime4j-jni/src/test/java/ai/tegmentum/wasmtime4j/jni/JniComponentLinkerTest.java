@@ -37,9 +37,9 @@ import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -383,8 +383,7 @@ class JniComponentLinkerTest {
     @DisplayName("Should throw on null store")
     void testLinkComponentNullStore() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.linkComponent(null, new MockComponent()));
+          IllegalArgumentException.class, () -> linker.linkComponent(null, new MockComponent()));
     }
 
     @Test
@@ -403,8 +402,7 @@ class JniComponentLinkerTest {
     @DisplayName("Should throw on null store")
     void testInstantiateNullStore() {
       assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.instantiate(null, new MockComponent()));
+          IllegalArgumentException.class, () -> linker.instantiate(null, new MockComponent()));
     }
 
     @Test

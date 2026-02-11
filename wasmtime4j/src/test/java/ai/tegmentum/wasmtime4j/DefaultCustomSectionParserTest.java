@@ -16,28 +16,25 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.func.Function;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import ai.tegmentum.wasmtime4j.metadata.CustomSection;
-import ai.tegmentum.wasmtime4j.metadata.CustomSectionParser;
 import ai.tegmentum.wasmtime4j.metadata.CustomSectionType;
 import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult;
 import ai.tegmentum.wasmtime4j.metadata.DefaultCustomSectionParser;
 import ai.tegmentum.wasmtime4j.metadata.NameSection;
 import ai.tegmentum.wasmtime4j.metadata.ProducersSection;
 import ai.tegmentum.wasmtime4j.metadata.TargetFeaturesSection;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /** Tests for {@link DefaultCustomSectionParser} custom section parsing. */
 @DisplayName("DefaultCustomSectionParser")
@@ -65,8 +62,7 @@ final class DefaultCustomSectionParserTest {
     @DisplayName("should support target_features section")
     void shouldSupportTargetFeaturesSection() {
       assertTrue(
-          parser.supports("target_features"),
-          "Parser should support 'target_features' section");
+          parser.supports("target_features"), "Parser should support 'target_features' section");
     }
 
     @Test
@@ -92,15 +88,15 @@ final class DefaultCustomSectionParserTest {
   final class GetSupportedTypesTests {
 
     @Test
-    @DisplayName("should return supported types including NAME, PRODUCERS, TARGET_FEATURES, UNKNOWN")
+    @DisplayName(
+        "should return supported types including NAME, PRODUCERS, TARGET_FEATURES, UNKNOWN")
     void shouldReturnSupportedTypes() {
       final Set<CustomSectionType> types = parser.getSupportedTypes();
       assertNotNull(types, "Supported types should not be null");
       assertTrue(types.contains(CustomSectionType.NAME), "Should support NAME type");
       assertTrue(types.contains(CustomSectionType.PRODUCERS), "Should support PRODUCERS type");
       assertTrue(
-          types.contains(CustomSectionType.TARGET_FEATURES),
-          "Should support TARGET_FEATURES type");
+          types.contains(CustomSectionType.TARGET_FEATURES), "Should support TARGET_FEATURES type");
       assertTrue(types.contains(CustomSectionType.UNKNOWN), "Should support UNKNOWN type");
     }
   }
@@ -157,8 +153,7 @@ final class DefaultCustomSectionParserTest {
       final byte[] data = new byte[] {0x00, 0x05, 0x04, 0x74, 0x65, 0x73, 0x74};
       final Optional<NameSection> result = parser.parseNameSection(data);
       assertTrue(result.isPresent(), "Should parse name section with module name");
-      assertTrue(
-          result.get().getModuleName().isPresent(), "Module name should be present");
+      assertTrue(result.get().getModuleName().isPresent(), "Module name should be present");
       assertEquals("test", result.get().getModuleName().get(), "Module name should be 'test'");
     }
 
@@ -169,8 +164,7 @@ final class DefaultCustomSectionParserTest {
       //   then pairs of (index=ULEB128, name_len=ULEB128, name_bytes)
       // Function names: {0: "add"}
       // type=1, size=6, count=1, idx=0, name_len=3, "add"
-      final byte[] data =
-          new byte[] {0x01, 0x06, 0x01, 0x00, 0x03, 0x61, 0x64, 0x64};
+      final byte[] data = new byte[] {0x01, 0x06, 0x01, 0x00, 0x03, 0x61, 0x64, 0x64};
       final Optional<NameSection> result = parser.parseNameSection(data);
       assertTrue(result.isPresent(), "Should parse name section with function names");
       final Map<Integer, String> funcNames = result.get().getFunctionNames();
@@ -216,29 +210,21 @@ final class DefaultCustomSectionParserTest {
       //   field_name_len=ULEB128, field_name, entry_count=ULEB128,
       //     name_len=ULEB128, name, version_len=ULEB128, version
       // field_count=1, field="language", entries=[("Rust", "1.70")]
-      final byte[] data =
-          buildProducersData("language", "Rust", "1.70");
+      final byte[] data = buildProducersData("language", "Rust", "1.70");
       final Optional<ProducersSection> result = parser.parseProducersSection(data);
       assertTrue(result.isPresent(), "Should parse producers section");
+      assertEquals(1, result.get().getLanguages().size(), "Should have 1 language entry");
       assertEquals(
-          1, result.get().getLanguages().size(), "Should have 1 language entry");
-      assertEquals(
-          "Rust",
-          result.get().getLanguages().get(0).getName(),
-          "Language name should be Rust");
+          "Rust", result.get().getLanguages().get(0).getName(), "Language name should be Rust");
     }
 
     @Test
     @DisplayName("should parse producers section with processed-by field")
     void shouldParseProcessedByField() {
-      final byte[] data =
-          buildProducersData("processed-by", "clang", "15.0");
+      final byte[] data = buildProducersData("processed-by", "clang", "15.0");
       final Optional<ProducersSection> result = parser.parseProducersSection(data);
       assertTrue(result.isPresent(), "Should parse producers section");
-      assertEquals(
-          1,
-          result.get().getProcessedBy().size(),
-          "Should have 1 processed-by entry");
+      assertEquals(1, result.get().getProcessedBy().size(), "Should have 1 processed-by entry");
     }
 
     @Test
@@ -270,8 +256,8 @@ final class DefaultCustomSectionParserTest {
     }
 
     /**
-     * Builds binary data for a producers section with one field and one entry.
-     * Format: field_count(1), field_name, entry_count(1), entry_name, entry_version
+     * Builds binary data for a producers section with one field and one entry. Format:
+     * field_count(1), field_name, entry_count(1), entry_name, entry_version
      */
     private byte[] buildProducersData(
         final String fieldName, final String entryName, final String entryVersion) {
@@ -282,11 +268,7 @@ final class DefaultCustomSectionParserTest {
       // field_count=1 + field_name_len + field_name + entry_count=1
       // + entry_name_len + entry_name + version_len + version
       final int totalSize =
-          1
-              + 1 + fieldNameBytes.length
-              + 1
-              + 1 + entryNameBytes.length
-              + 1 + versionBytes.length;
+          1 + 1 + fieldNameBytes.length + 1 + 1 + entryNameBytes.length + 1 + versionBytes.length;
       final byte[] data = new byte[totalSize];
       int offset = 0;
 
@@ -314,7 +296,8 @@ final class DefaultCustomSectionParserTest {
     void shouldParseRequiredFeature() {
       // Binary format: feature_count=ULEB128, prefix_byte, name_len=ULEB128, name_bytes
       // '+' = 0x2B for REQUIRED
-      final byte[] featureName = "mutable-globals".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final byte[] featureName =
+          "mutable-globals".getBytes(java.nio.charset.StandardCharsets.UTF_8);
       final byte[] data = new byte[1 + 1 + 1 + featureName.length];
       int offset = 0;
       data[offset++] = 0x01; // feature_count = 1
@@ -325,9 +308,7 @@ final class DefaultCustomSectionParserTest {
       final Optional<TargetFeaturesSection> result = parser.parseTargetFeaturesSection(data);
       assertTrue(result.isPresent(), "Should parse target features section");
       assertEquals(1, result.get().getFeatures().size(), "Should have 1 feature");
-      assertTrue(
-          result.get().getFeatures().get(0).isRequired(),
-          "Feature should be REQUIRED");
+      assertTrue(result.get().getFeatures().get(0).isRequired(), "Feature should be REQUIRED");
       assertEquals(
           "mutable-globals",
           result.get().getFeatures().get(0).getName(),
@@ -348,8 +329,7 @@ final class DefaultCustomSectionParserTest {
 
       final Optional<TargetFeaturesSection> result = parser.parseTargetFeaturesSection(data);
       assertTrue(result.isPresent(), "Should parse target features section");
-      assertTrue(
-          result.get().getFeatures().get(0).isUsed(), "Feature should be USED");
+      assertTrue(result.get().getFeatures().get(0).isUsed(), "Feature should be USED");
     }
 
     @Test
@@ -366,8 +346,7 @@ final class DefaultCustomSectionParserTest {
 
       final Optional<TargetFeaturesSection> result = parser.parseTargetFeaturesSection(data);
       assertTrue(result.isPresent(), "Should parse target features section");
-      assertTrue(
-          result.get().getFeatures().get(0).isDisabled(), "Feature should be DISABLED");
+      assertTrue(result.get().getFeatures().get(0).isDisabled(), "Feature should be DISABLED");
     }
 
     @Test
@@ -396,8 +375,7 @@ final class DefaultCustomSectionParserTest {
     @Test
     @DisplayName("should validate empty section with warning")
     void shouldValidateEmptySectionWithWarning() {
-      final CustomSectionValidationResult result =
-          parser.validateSection("name", new byte[0]);
+      final CustomSectionValidationResult result = parser.validateSection("name", new byte[0]);
       assertTrue(result.hasIssues(), "Empty section should produce issues");
     }
 
@@ -472,8 +450,7 @@ final class DefaultCustomSectionParserTest {
     @Test
     @DisplayName("should create name section from NameSection object")
     void shouldCreateNameSectionFromObject() {
-      final NameSection nameSection =
-          NameSection.builder().setModuleName("myModule").build();
+      final NameSection nameSection = NameSection.builder().setModuleName("myModule").build();
       final Optional<CustomSection> result =
           parser.createCustomSection("name", CustomSectionType.NAME, nameSection);
       assertTrue(result.isPresent(), "Should create custom section from NameSection");
@@ -488,8 +465,7 @@ final class DefaultCustomSectionParserTest {
               .addLanguage(new ProducersSection.ProducerEntry("Rust", "1.70.0"))
               .build();
       final Optional<CustomSection> result =
-          parser.createCustomSection(
-              "producers", CustomSectionType.PRODUCERS, producersSection);
+          parser.createCustomSection("producers", CustomSectionType.PRODUCERS, producersSection);
       assertTrue(result.isPresent(), "Should create custom section from ProducersSection");
     }
 
@@ -497,9 +473,7 @@ final class DefaultCustomSectionParserTest {
     @DisplayName("should create target features section from TargetFeaturesSection object")
     void shouldCreateTargetFeaturesSectionFromObject() {
       final TargetFeaturesSection targetSection =
-          TargetFeaturesSection.builder()
-              .addRequiredFeature("mutable-globals")
-              .build();
+          TargetFeaturesSection.builder().addRequiredFeature("mutable-globals").build();
       final Optional<CustomSection> result =
           parser.createCustomSection(
               "target_features", CustomSectionType.TARGET_FEATURES, targetSection);
@@ -546,8 +520,7 @@ final class DefaultCustomSectionParserTest {
     @Test
     @DisplayName("should roundtrip name section with module name")
     void shouldRoundtripNameSection() {
-      final NameSection original =
-          NameSection.builder().setModuleName("myModule").build();
+      final NameSection original = NameSection.builder().setModuleName("myModule").build();
       final Optional<byte[]> serialized = parser.serializeNameSection(original);
       assertTrue(serialized.isPresent(), "Should serialize name section");
 
@@ -564,18 +537,14 @@ final class DefaultCustomSectionParserTest {
     @DisplayName("should roundtrip name section with function names")
     void shouldRoundtripFunctionNames() {
       final NameSection original =
-          NameSection.builder()
-              .setFunctionNames(Map.of(0, "add", 1, "sub"))
-              .build();
+          NameSection.builder().setFunctionNames(Map.of(0, "add", 1, "sub")).build();
       final Optional<byte[]> serialized = parser.serializeNameSection(original);
       assertTrue(serialized.isPresent(), "Should serialize name section with function names");
 
       final Optional<NameSection> parsed = parser.parseNameSection(serialized.get());
       assertTrue(parsed.isPresent(), "Should parse serialized name section");
       assertEquals(
-          2,
-          parsed.get().getFunctionNames().size(),
-          "Parsed section should have 2 function names");
+          2, parsed.get().getFunctionNames().size(), "Parsed section should have 2 function names");
     }
 
     @Test
@@ -589,17 +558,11 @@ final class DefaultCustomSectionParserTest {
       final Optional<byte[]> serialized = parser.serializeProducersSection(original);
       assertTrue(serialized.isPresent(), "Should serialize producers section");
 
-      final Optional<ProducersSection> parsed =
-          parser.parseProducersSection(serialized.get());
+      final Optional<ProducersSection> parsed = parser.parseProducersSection(serialized.get());
       assertTrue(parsed.isPresent(), "Should parse serialized producers section");
+      assertEquals(1, parsed.get().getLanguages().size(), "Parsed section should have 1 language");
       assertEquals(
-          1,
-          parsed.get().getLanguages().size(),
-          "Parsed section should have 1 language");
-      assertEquals(
-          1,
-          parsed.get().getProcessedBy().size(),
-          "Parsed section should have 1 processedBy");
+          1, parsed.get().getProcessedBy().size(), "Parsed section should have 1 processedBy");
     }
 
     @Test
@@ -611,26 +574,19 @@ final class DefaultCustomSectionParserTest {
               .addUsedFeature("sign-ext")
               .addDisabledFeature("threads")
               .build();
-      final Optional<byte[]> serialized =
-          parser.serializeTargetFeaturesSection(original);
+      final Optional<byte[]> serialized = parser.serializeTargetFeaturesSection(original);
       assertTrue(serialized.isPresent(), "Should serialize target features section");
 
       final Optional<TargetFeaturesSection> parsed =
           parser.parseTargetFeaturesSection(serialized.get());
       assertTrue(parsed.isPresent(), "Should parse serialized target features section");
-      assertEquals(
-          3,
-          parsed.get().getFeatures().size(),
-          "Parsed section should have 3 features");
+      assertEquals(3, parsed.get().getFeatures().size(), "Parsed section should have 3 features");
       assertTrue(
           parsed.get().isFeatureRequired("mutable-globals"),
           "mutable-globals should be required after roundtrip");
+      assertTrue(parsed.get().isFeatureUsed("sign-ext"), "sign-ext should be used after roundtrip");
       assertTrue(
-          parsed.get().isFeatureUsed("sign-ext"),
-          "sign-ext should be used after roundtrip");
-      assertTrue(
-          parsed.get().isFeatureDisabled("threads"),
-          "threads should be disabled after roundtrip");
+          parsed.get().isFeatureDisabled("threads"), "threads should be disabled after roundtrip");
     }
   }
 }

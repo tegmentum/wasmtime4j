@@ -40,9 +40,7 @@ class SignatureAlgorithmTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          SignatureAlgorithm.class.isEnum(),
-          "SignatureAlgorithm should be an enum type");
+      assertTrue(SignatureAlgorithm.class.isEnum(), "SignatureAlgorithm should be an enum type");
     }
 
     @Test
@@ -61,81 +59,62 @@ class SignatureAlgorithmTest {
     @Test
     @DisplayName("should have RSA_PKCS1_SHA256 value")
     void shouldHaveRsaPkcs1Sha256Value() {
-      assertNotNull(
-          SignatureAlgorithm.RSA_PKCS1_SHA256,
-          "RSA_PKCS1_SHA256 should not be null");
+      assertNotNull(SignatureAlgorithm.RSA_PKCS1_SHA256, "RSA_PKCS1_SHA256 should not be null");
     }
 
     @Test
     @DisplayName("should have RSA_PKCS1_SHA384 value")
     void shouldHaveRsaPkcs1Sha384Value() {
-      assertNotNull(
-          SignatureAlgorithm.RSA_PKCS1_SHA384,
-          "RSA_PKCS1_SHA384 should not be null");
+      assertNotNull(SignatureAlgorithm.RSA_PKCS1_SHA384, "RSA_PKCS1_SHA384 should not be null");
     }
 
     @Test
     @DisplayName("should have RSA_PKCS1_SHA512 value")
     void shouldHaveRsaPkcs1Sha512Value() {
-      assertNotNull(
-          SignatureAlgorithm.RSA_PKCS1_SHA512,
-          "RSA_PKCS1_SHA512 should not be null");
+      assertNotNull(SignatureAlgorithm.RSA_PKCS1_SHA512, "RSA_PKCS1_SHA512 should not be null");
     }
 
     @Test
     @DisplayName("should have RSA_PSS_SHA256 value")
     void shouldHaveRsaPssSha256Value() {
-      assertNotNull(
-          SignatureAlgorithm.RSA_PSS_SHA256,
-          "RSA_PSS_SHA256 should not be null");
+      assertNotNull(SignatureAlgorithm.RSA_PSS_SHA256, "RSA_PSS_SHA256 should not be null");
     }
 
     @Test
     @DisplayName("should have RSA_PSS_SHA384 value")
     void shouldHaveRsaPssSha384Value() {
-      assertNotNull(
-          SignatureAlgorithm.RSA_PSS_SHA384,
-          "RSA_PSS_SHA384 should not be null");
+      assertNotNull(SignatureAlgorithm.RSA_PSS_SHA384, "RSA_PSS_SHA384 should not be null");
     }
 
     @Test
     @DisplayName("should have RSA_PSS_SHA512 value")
     void shouldHaveRsaPssSha512Value() {
-      assertNotNull(
-          SignatureAlgorithm.RSA_PSS_SHA512,
-          "RSA_PSS_SHA512 should not be null");
+      assertNotNull(SignatureAlgorithm.RSA_PSS_SHA512, "RSA_PSS_SHA512 should not be null");
     }
 
     @Test
     @DisplayName("should have ECDSA_P256_SHA256 value")
     void shouldHaveEcdsaP256Sha256Value() {
-      assertNotNull(
-          SignatureAlgorithm.ECDSA_P256_SHA256,
-          "ECDSA_P256_SHA256 should not be null");
+      assertNotNull(SignatureAlgorithm.ECDSA_P256_SHA256, "ECDSA_P256_SHA256 should not be null");
     }
 
     @Test
     @DisplayName("should have ECDSA_P384_SHA384 value")
     void shouldHaveEcdsaP384Sha384Value() {
-      assertNotNull(
-          SignatureAlgorithm.ECDSA_P384_SHA384,
-          "ECDSA_P384_SHA384 should not be null");
+      assertNotNull(SignatureAlgorithm.ECDSA_P384_SHA384, "ECDSA_P384_SHA384 should not be null");
     }
 
     @Test
     @DisplayName("should have ECDSA_P521_SHA512 value")
     void shouldHaveEcdsaP521Sha512Value() {
-      assertNotNull(
-          SignatureAlgorithm.ECDSA_P521_SHA512,
-          "ECDSA_P521_SHA512 should not be null");
+      assertNotNull(SignatureAlgorithm.ECDSA_P521_SHA512, "ECDSA_P521_SHA512 should not be null");
     }
 
     @Test
     @DisplayName("should have ECDSA_SECP256K1_SHA256 value")
     void shouldHaveEcdsaSecp256k1Sha256Value() {
       assertNotNull(
-          SignatureAlgorithm.ECDSA_SECP256K1_SHA256,
-          "ECDSA_SECP256K1_SHA256 should not be null");
+          SignatureAlgorithm.ECDSA_SECP256K1_SHA256, "ECDSA_SECP256K1_SHA256 should not be null");
     }
 
     @Test
@@ -175,10 +154,7 @@ class SignatureAlgorithmTest {
       final SignatureAlgorithm[] values = SignatureAlgorithm.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -219,10 +195,7 @@ class SignatureAlgorithmTest {
       final SignatureAlgorithm[] second = SignatureAlgorithm.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 
@@ -453,18 +426,13 @@ class SignatureAlgorithmTest {
     @DisplayName("should return 256 for ED25519")
     void shouldReturnCorrectKeySizeForEd25519() {
       assertEquals(
-          256,
-          SignatureAlgorithm.ED25519.getKeySize(),
-          "ED25519 should have key size 256");
+          256, SignatureAlgorithm.ED25519.getKeySize(), "ED25519 should have key size 256");
     }
 
     @Test
     @DisplayName("should return 448 for ED448")
     void shouldReturnCorrectKeySizeForEd448() {
-      assertEquals(
-          448,
-          SignatureAlgorithm.ED448.getKeySize(),
-          "ED448 should have key size 448");
+      assertEquals(448, SignatureAlgorithm.ED448.getKeySize(), "ED448 should have key size 448");
     }
   }
 }

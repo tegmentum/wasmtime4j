@@ -1,8 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Tag;
-
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 
 /**
  * Represents a WebAssembly exception reference.

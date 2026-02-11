@@ -50,8 +50,7 @@ class EqRefTest {
     @Test
     @DisplayName("should implement GcRef interface")
     void shouldImplementGcRef() {
-      assertTrue(
-          GcRef.class.isAssignableFrom(EqRef.class), "EqRef should implement GcRef");
+      assertTrue(GcRef.class.isAssignableFrom(EqRef.class), "EqRef should implement GcRef");
     }
   }
 
@@ -79,9 +78,7 @@ class EqRefTest {
     void nullRefShouldHaveEqRefReferenceType() {
       final EqRef ref = EqRef.nullRef();
       assertEquals(
-          GcReferenceType.EQ_REF,
-          ref.getReferenceType(),
-          "Reference type should be EQ_REF");
+          GcReferenceType.EQ_REF, ref.getReferenceType(), "Reference type should be EQ_REF");
     }
 
     @Test
@@ -248,8 +245,7 @@ class EqRefTest {
     void twoNullRefsShouldHaveSameHashCode() {
       final EqRef ref1 = EqRef.nullRef();
       final EqRef ref2 = EqRef.nullRef();
-      assertEquals(
-          ref1.hashCode(), ref2.hashCode(), "Two null refs should have same hash code");
+      assertEquals(ref1.hashCode(), ref2.hashCode(), "Two null refs should have same hash code");
     }
   }
 

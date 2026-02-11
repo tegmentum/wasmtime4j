@@ -16,17 +16,14 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.func.FunctionInfo;
-
-import ai.tegmentum.wasmtime4j.type.FuncType;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.func.FunctionInfo;
+import ai.tegmentum.wasmtime4j.type.FuncType;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -91,8 +88,7 @@ class FunctionInfoTest {
     @Test
     @DisplayName("should create instance for locally defined function")
     void shouldCreateInstanceForLocalFunction() {
-      final FuncType type =
-          new TestFuncType(Collections.emptyList(), List.of(WasmValueType.I64));
+      final FuncType type = new TestFuncType(Collections.emptyList(), List.of(WasmValueType.I64));
       final FunctionInfo info = new FunctionInfo(5, "compute", type, false);
 
       assertEquals(5, info.getIndex(), "index should be 5");
@@ -104,8 +100,7 @@ class FunctionInfoTest {
     @Test
     @DisplayName("should allow null name for unnamed functions")
     void shouldAllowNullName() {
-      final FuncType type =
-          new TestFuncType(Collections.emptyList(), Collections.emptyList());
+      final FuncType type = new TestFuncType(Collections.emptyList(), Collections.emptyList());
       final FunctionInfo info = new FunctionInfo(10, null, type, false);
 
       assertNull(info.getName(), "name should be null for unnamed functions");

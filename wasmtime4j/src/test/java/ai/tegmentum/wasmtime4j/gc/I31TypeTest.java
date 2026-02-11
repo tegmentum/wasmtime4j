@@ -50,9 +50,7 @@ class I31TypeTest {
     @DisplayName("should not be instantiable")
     void shouldNotBeInstantiable() throws NoSuchMethodException {
       final var constructor = I31Type.class.getDeclaredConstructor();
-      assertTrue(
-          Modifier.isPrivate(constructor.getModifiers()),
-          "Constructor should be private");
+      assertTrue(Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
     }
   }
 
@@ -105,16 +103,14 @@ class I31TypeTest {
     @DisplayName("value below MIN_VALUE should be invalid")
     void valueBelowMinShouldBeInvalid() {
       assertFalse(
-          I31Type.isValidValue(I31Type.MIN_VALUE - 1),
-          "Value below MIN_VALUE should be invalid");
+          I31Type.isValidValue(I31Type.MIN_VALUE - 1), "Value below MIN_VALUE should be invalid");
     }
 
     @Test
     @DisplayName("value above MAX_VALUE should be invalid")
     void valueAboveMaxShouldBeInvalid() {
       assertFalse(
-          I31Type.isValidValue(I31Type.MAX_VALUE + 1),
-          "Value above MAX_VALUE should be invalid");
+          I31Type.isValidValue(I31Type.MAX_VALUE + 1), "Value above MAX_VALUE should be invalid");
     }
 
     @Test
@@ -126,9 +122,7 @@ class I31TypeTest {
     @Test
     @DisplayName("long value above range should be invalid")
     void longValueAboveRangeShouldBeInvalid() {
-      assertFalse(
-          I31Type.isValidValue(Long.MAX_VALUE),
-          "Long.MAX_VALUE should be invalid for I31");
+      assertFalse(I31Type.isValidValue(Long.MAX_VALUE), "Long.MAX_VALUE should be invalid for I31");
     }
   }
 
@@ -221,28 +215,19 @@ class I31TypeTest {
     @Test
     @DisplayName("getMinValue should return MIN_VALUE")
     void getMinValueShouldReturnMinValue() {
-      assertEquals(
-          I31Type.MIN_VALUE,
-          I31Type.getMinValue(),
-          "getMinValue should return MIN_VALUE");
+      assertEquals(I31Type.MIN_VALUE, I31Type.getMinValue(), "getMinValue should return MIN_VALUE");
     }
 
     @Test
     @DisplayName("getMaxValue should return MAX_VALUE")
     void getMaxValueShouldReturnMaxValue() {
-      assertEquals(
-          I31Type.MAX_VALUE,
-          I31Type.getMaxValue(),
-          "getMaxValue should return MAX_VALUE");
+      assertEquals(I31Type.MAX_VALUE, I31Type.getMaxValue(), "getMaxValue should return MAX_VALUE");
     }
 
     @Test
     @DisplayName("getBitWidth should return BIT_WIDTH")
     void getBitWidthShouldReturnBitWidth() {
-      assertEquals(
-          I31Type.BIT_WIDTH,
-          I31Type.getBitWidth(),
-          "getBitWidth should return BIT_WIDTH");
+      assertEquals(I31Type.BIT_WIDTH, I31Type.getBitWidth(), "getBitWidth should return BIT_WIDTH");
     }
 
     @Test
@@ -251,11 +236,9 @@ class I31TypeTest {
       final String range = I31Type.getRange();
       assertNotNull(range, "getRange should not return null");
       assertTrue(
-          range.contains(String.valueOf(I31Type.MIN_VALUE)),
-          "Range should contain MIN_VALUE");
+          range.contains(String.valueOf(I31Type.MIN_VALUE)), "Range should contain MIN_VALUE");
       assertTrue(
-          range.contains(String.valueOf(I31Type.MAX_VALUE)),
-          "Range should contain MAX_VALUE");
+          range.contains(String.valueOf(I31Type.MAX_VALUE)), "Range should contain MAX_VALUE");
     }
   }
 
@@ -278,9 +261,7 @@ class I31TypeTest {
     @Test
     @DisplayName("compare should return negative for smaller first value")
     void compareShouldReturnNegativeForSmaller() {
-      assertTrue(
-          I31Type.compare(10, 20) < 0,
-          "compare(10, 20) should be negative");
+      assertTrue(I31Type.compare(10, 20) < 0, "compare(10, 20) should be negative");
     }
 
     @Test
@@ -292,9 +273,7 @@ class I31TypeTest {
     @Test
     @DisplayName("compare should return positive for larger first value")
     void compareShouldReturnPositiveForLarger() {
-      assertTrue(
-          I31Type.compare(20, 10) > 0,
-          "compare(20, 10) should be positive");
+      assertTrue(I31Type.compare(20, 10) > 0, "compare(20, 10) should be positive");
     }
   }
 
@@ -400,9 +379,7 @@ class I31TypeTest {
     void sameValuesShouldHaveSameHashCode() {
       final I31Type.I31Value v1 = I31Type.I31Value.of(42);
       final I31Type.I31Value v2 = I31Type.I31Value.of(42);
-      assertEquals(
-          v1.hashCode(), v2.hashCode(),
-          "Same value I31Values should have same hashCode");
+      assertEquals(v1.hashCode(), v2.hashCode(), "Same value I31Values should have same hashCode");
     }
 
     @Test

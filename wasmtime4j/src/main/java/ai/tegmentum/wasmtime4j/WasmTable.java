@@ -1,7 +1,5 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Table;
-
 import ai.tegmentum.wasmtime4j.type.TableType;
 
 /**

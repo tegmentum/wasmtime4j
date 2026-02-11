@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.gc;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -32,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link GcValue} abstract class.
  *
- * <p>GcValue represents any value that can be stored in GC objects including primitive types, packed
- * types, and reference types. Tests exercise concrete subclass behavior via factory methods.
+ * <p>GcValue represents any value that can be stored in GC objects including primitive types,
+ * packed types, and reference types. Tests exercise concrete subclass behavior via factory methods.
  */
 @DisplayName("GcValue Tests")
 class GcValueTest {
@@ -45,8 +44,7 @@ class GcValueTest {
     @Test
     @DisplayName("should be abstract")
     void shouldBeAbstract() {
-      assertTrue(
-          Modifier.isAbstract(GcValue.class.getModifiers()), "GcValue should be abstract");
+      assertTrue(Modifier.isAbstract(GcValue.class.getModifiers()), "GcValue should be abstract");
     }
 
     @Test

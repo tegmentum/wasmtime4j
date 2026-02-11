@@ -51,8 +51,7 @@ class AnyRefTest {
     @Test
     @DisplayName("should implement GcRef interface")
     void shouldImplementGcRef() {
-      assertTrue(
-          GcRef.class.isAssignableFrom(AnyRef.class), "AnyRef should implement GcRef");
+      assertTrue(GcRef.class.isAssignableFrom(AnyRef.class), "AnyRef should implement GcRef");
     }
   }
 
@@ -80,9 +79,7 @@ class AnyRefTest {
     void nullRefShouldHaveAnyRefReferenceType() {
       final AnyRef ref = AnyRef.nullRef();
       assertEquals(
-          GcReferenceType.ANY_REF,
-          ref.getReferenceType(),
-          "Reference type should be ANY_REF");
+          GcReferenceType.ANY_REF, ref.getReferenceType(), "Reference type should be ANY_REF");
     }
 
     @Test
@@ -239,8 +236,7 @@ class AnyRefTest {
     void twoNullRefsShouldHaveSameHashCode() {
       final AnyRef ref1 = AnyRef.nullRef();
       final AnyRef ref2 = AnyRef.nullRef();
-      assertEquals(
-          ref1.hashCode(), ref2.hashCode(), "Two null refs should have same hash code");
+      assertEquals(ref1.hashCode(), ref2.hashCode(), "Two null refs should have same hash code");
     }
   }
 

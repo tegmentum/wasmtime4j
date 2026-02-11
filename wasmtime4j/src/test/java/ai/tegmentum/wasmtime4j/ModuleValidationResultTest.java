@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.validation.ModuleValidationResult;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +31,6 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.validation.ModuleValidationResult;
 
 /**
  * Tests for {@link ModuleValidationResult} class.
@@ -88,23 +88,23 @@ class ModuleValidationResultTest {
     @Test
     @DisplayName("should throw IllegalArgumentException for null errors list")
     void shouldThrowIaeForNullErrors() {
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> new ModuleValidationResult(false, null, Collections.emptyList()),
-          "Null errors list should throw IllegalArgumentException");
-      assertTrue(exception.getMessage().contains("null"),
-          "Exception message should mention null");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> new ModuleValidationResult(false, null, Collections.emptyList()),
+              "Null errors list should throw IllegalArgumentException");
+      assertTrue(exception.getMessage().contains("null"), "Exception message should mention null");
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for null warnings list")
     void shouldThrowIaeForNullWarnings() {
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> new ModuleValidationResult(true, Collections.emptyList(), null),
-          "Null warnings list should throw IllegalArgumentException");
-      assertTrue(exception.getMessage().contains("null"),
-          "Exception message should mention null");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> new ModuleValidationResult(true, Collections.emptyList(), null),
+              "Null warnings list should throw IllegalArgumentException");
+      assertTrue(exception.getMessage().contains("null"), "Exception message should mention null");
     }
 
     @Test
@@ -160,12 +160,9 @@ class ModuleValidationResultTest {
 
       assertFalse(result.isValid(), "Failure result should not be valid");
       assertEquals(2, result.getErrors().size(), "Failure result should have 2 errors");
-      assertEquals("Invalid magic number", result.getErrors().get(0),
-          "First error should match");
-      assertEquals("Unsupported version", result.getErrors().get(1),
-          "Second error should match");
-      assertTrue(result.getWarnings().isEmpty(),
-          "Failure result should have no warnings");
+      assertEquals("Invalid magic number", result.getErrors().get(0), "First error should match");
+      assertEquals("Unsupported version", result.getErrors().get(1), "Second error should match");
+      assertTrue(result.getWarnings().isEmpty(), "Failure result should have no warnings");
     }
 
     @Test
@@ -178,8 +175,8 @@ class ModuleValidationResultTest {
       assertTrue(result.isValid(), "Result should be valid");
       assertTrue(result.getErrors().isEmpty(), "Should have no errors");
       assertEquals(2, result.getWarnings().size(), "Should have 2 warnings");
-      assertEquals("Deprecated feature used", result.getWarnings().get(0),
-          "First warning should match");
+      assertEquals(
+          "Deprecated feature used", result.getWarnings().get(0), "First warning should match");
     }
   }
 
@@ -190,8 +187,7 @@ class ModuleValidationResultTest {
     @Test
     @DisplayName("hasErrors should return true when errors exist")
     void hasErrorsShouldReturnTrueWhenErrorsExist() {
-      final ModuleValidationResult result =
-          ModuleValidationResult.failure(List.of("Some error"));
+      final ModuleValidationResult result = ModuleValidationResult.failure(List.of("Some error"));
 
       assertTrue(result.hasErrors(), "hasErrors should return true when errors exist");
     }
@@ -245,8 +241,7 @@ class ModuleValidationResultTest {
       final ModuleValidationResult result2 =
           new ModuleValidationResult(false, Collections.emptyList(), Collections.emptyList());
 
-      assertNotEquals(result1, result2,
-          "Results with different validity should not be equal");
+      assertNotEquals(result1, result2, "Results with different validity should not be equal");
     }
 
     @Test
@@ -257,8 +252,7 @@ class ModuleValidationResultTest {
       final ModuleValidationResult result2 =
           new ModuleValidationResult(false, List.of("Error B"), Collections.emptyList());
 
-      assertNotEquals(result1, result2,
-          "Results with different errors should not be equal");
+      assertNotEquals(result1, result2, "Results with different errors should not be equal");
     }
 
     @Test
@@ -283,8 +277,8 @@ class ModuleValidationResultTest {
       final ModuleValidationResult result1 = ModuleValidationResult.success();
       final ModuleValidationResult result2 = ModuleValidationResult.success();
 
-      assertEquals(result1.hashCode(), result2.hashCode(),
-          "Equal objects should have equal hash codes");
+      assertEquals(
+          result1.hashCode(), result2.hashCode(), "Equal objects should have equal hash codes");
     }
   }
 
@@ -297,7 +291,8 @@ class ModuleValidationResultTest {
     void toStringShouldContainValidStatus() {
       final ModuleValidationResult result = ModuleValidationResult.success();
 
-      assertTrue(result.toString().contains("valid=true"),
+      assertTrue(
+          result.toString().contains("valid=true"),
           "toString should contain valid=true for success");
     }
 
@@ -328,7 +323,8 @@ class ModuleValidationResultTest {
     void toStringShouldStartWithPrefix() {
       final ModuleValidationResult result = ModuleValidationResult.success();
 
-      assertTrue(result.toString().startsWith("ModuleValidationResult{"),
+      assertTrue(
+          result.toString().startsWith("ModuleValidationResult{"),
           "toString should start with 'ModuleValidationResult{'");
     }
   }

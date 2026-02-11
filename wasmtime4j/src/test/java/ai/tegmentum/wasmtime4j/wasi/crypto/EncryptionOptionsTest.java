@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for the {@link EncryptionOptions} class.
  *
- * <p>Verifies builder construction, field accessors, defaults, defensive copies on byte arrays,
- * and mode configuration.
+ * <p>Verifies builder construction, field accessors, defaults, defensive copies on byte arrays, and
+ * mode configuration.
  */
 @DisplayName("EncryptionOptions Tests")
 class EncryptionOptionsTest {
@@ -56,32 +56,26 @@ class EncryptionOptionsTest {
       assertArrayEquals(iv, options.getIv().get(), "IV should match original");
       assertTrue(options.getAdditionalData().isPresent(), "Additional data should be present");
       assertArrayEquals(aad, options.getAdditionalData().get(), "Additional data should match");
-      assertFalse(
-          options.useHardwareAcceleration(),
-          "Hardware acceleration should be disabled");
+      assertFalse(options.useHardwareAcceleration(), "Hardware acceleration should be disabled");
     }
 
     @Test
     @DisplayName("should build with only mode (defaults)")
     void shouldBuildWithOnlyMode() {
-      final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.CBC).build();
+      final EncryptionOptions options = EncryptionOptions.builder(EncryptionMode.CBC).build();
 
       assertEquals(EncryptionMode.CBC, options.getMode(), "Mode should be CBC");
       assertFalse(options.getIv().isPresent(), "IV should not be present by default");
       assertFalse(
           options.getAdditionalData().isPresent(),
           "Additional data should not be present by default");
-      assertTrue(
-          options.useHardwareAcceleration(),
-          "Hardware acceleration should default to true");
+      assertTrue(options.useHardwareAcceleration(), "Hardware acceleration should default to true");
     }
 
     @Test
     @DisplayName("should support ECB mode (no IV)")
     void shouldSupportEcbMode() {
-      final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.ECB).build();
+      final EncryptionOptions options = EncryptionOptions.builder(EncryptionMode.ECB).build();
       assertEquals(EncryptionMode.ECB, options.getMode(), "Mode should be ECB");
       assertFalse(options.getIv().isPresent(), "ECB should not require IV");
     }
@@ -90,8 +84,7 @@ class EncryptionOptionsTest {
     @DisplayName("should support all AEAD modes")
     void shouldSupportAllAeadModes() {
       for (final EncryptionMode mode : EncryptionMode.values()) {
-        final EncryptionOptions options =
-            EncryptionOptions.builder(mode).build();
+        final EncryptionOptions options = EncryptionOptions.builder(mode).build();
         assertEquals(mode, options.getMode(), "Mode should match: " + mode);
       }
     }
@@ -106,16 +99,12 @@ class EncryptionOptionsTest {
     void shouldDefensivelyCopyIvOnConstruction() {
       final byte[] iv = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
       final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.GCM)
-              .iv(iv)
-              .build();
+          EncryptionOptions.builder(EncryptionMode.GCM).iv(iv).build();
 
       iv[0] = 99;
       final Optional<byte[]> storedIv = options.getIv();
       assertTrue(storedIv.isPresent(), "IV should be present");
-      assertEquals(
-          1, storedIv.get()[0],
-          "Modifying original IV should not affect stored IV");
+      assertEquals(1, storedIv.get()[0], "Modifying original IV should not affect stored IV");
     }
 
     @Test
@@ -123,16 +112,12 @@ class EncryptionOptionsTest {
     void shouldDefensivelyCopyIvOnRetrieval() {
       final byte[] iv = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
       final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.GCM)
-              .iv(iv)
-              .build();
+          EncryptionOptions.builder(EncryptionMode.GCM).iv(iv).build();
 
       final byte[] retrieved1 = options.getIv().get();
       retrieved1[0] = 99;
       final byte[] retrieved2 = options.getIv().get();
-      assertEquals(
-          1, retrieved2[0],
-          "Modifying retrieved IV should not affect stored IV");
+      assertEquals(1, retrieved2[0], "Modifying retrieved IV should not affect stored IV");
     }
 
     @Test
@@ -140,16 +125,12 @@ class EncryptionOptionsTest {
     void shouldDefensivelyCopyAdditionalDataOnConstruction() {
       final byte[] aad = {0x41, 0x42, 0x43};
       final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.GCM)
-              .additionalData(aad)
-              .build();
+          EncryptionOptions.builder(EncryptionMode.GCM).additionalData(aad).build();
 
       aad[0] = 99;
       final Optional<byte[]> storedAad = options.getAdditionalData();
       assertTrue(storedAad.isPresent(), "Additional data should be present");
-      assertEquals(
-          0x41, storedAad.get()[0],
-          "Modifying original AAD should not affect stored AAD");
+      assertEquals(0x41, storedAad.get()[0], "Modifying original AAD should not affect stored AAD");
     }
 
     @Test
@@ -157,16 +138,12 @@ class EncryptionOptionsTest {
     void shouldDefensivelyCopyAdditionalDataOnRetrieval() {
       final byte[] aad = {0x41, 0x42, 0x43};
       final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.GCM)
-              .additionalData(aad)
-              .build();
+          EncryptionOptions.builder(EncryptionMode.GCM).additionalData(aad).build();
 
       final byte[] retrieved1 = options.getAdditionalData().get();
       retrieved1[0] = 99;
       final byte[] retrieved2 = options.getAdditionalData().get();
-      assertEquals(
-          0x41, retrieved2[0],
-          "Modifying retrieved AAD should not affect stored AAD");
+      assertEquals(0x41, retrieved2[0], "Modifying retrieved AAD should not affect stored AAD");
     }
 
     @Test
@@ -177,9 +154,7 @@ class EncryptionOptionsTest {
           EncryptionOptions.builder(EncryptionMode.CTR).iv(iv);
       iv[0] = 99;
       final EncryptionOptions options = builder.build();
-      assertEquals(
-          1, options.getIv().get()[0],
-          "Builder should defensively copy IV input");
+      assertEquals(1, options.getIv().get()[0], "Builder should defensively copy IV input");
     }
   }
 
@@ -191,9 +166,7 @@ class EncryptionOptionsTest {
     @DisplayName("should accept null IV in builder")
     void shouldAcceptNullIvInBuilder() {
       final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.ECB)
-              .iv(null)
-              .build();
+          EncryptionOptions.builder(EncryptionMode.ECB).iv(null).build();
       assertFalse(options.getIv().isPresent(), "Null IV should result in empty Optional");
     }
 
@@ -201,9 +174,7 @@ class EncryptionOptionsTest {
     @DisplayName("should accept null additional data in builder")
     void shouldAcceptNullAdditionalDataInBuilder() {
       final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.GCM)
-              .additionalData(null)
-              .build();
+          EncryptionOptions.builder(EncryptionMode.GCM).additionalData(null).build();
       assertFalse(
           options.getAdditionalData().isPresent(),
           "Null additional data should result in empty Optional");
@@ -217,23 +188,16 @@ class EncryptionOptionsTest {
     @Test
     @DisplayName("hardware acceleration should default to true")
     void hardwareAccelerationShouldDefaultToTrue() {
-      final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.GCM).build();
-      assertTrue(
-          options.useHardwareAcceleration(),
-          "Hardware acceleration should default to true");
+      final EncryptionOptions options = EncryptionOptions.builder(EncryptionMode.GCM).build();
+      assertTrue(options.useHardwareAcceleration(), "Hardware acceleration should default to true");
     }
 
     @Test
     @DisplayName("should disable hardware acceleration")
     void shouldDisableHardwareAcceleration() {
       final EncryptionOptions options =
-          EncryptionOptions.builder(EncryptionMode.GCM)
-              .useHardwareAcceleration(false)
-              .build();
-      assertFalse(
-          options.useHardwareAcceleration(),
-          "Hardware acceleration should be disabled");
+          EncryptionOptions.builder(EncryptionMode.GCM).useHardwareAcceleration(false).build();
+      assertFalse(options.useHardwareAcceleration(), "Hardware acceleration should be disabled");
     }
   }
 }

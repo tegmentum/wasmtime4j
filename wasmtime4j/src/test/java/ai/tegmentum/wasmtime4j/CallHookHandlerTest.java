@@ -16,15 +16,13 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.func.CallHookHandler;
-
-import ai.tegmentum.wasmtime4j.func.CallHook;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.TrapException;
+import ai.tegmentum.wasmtime4j.func.CallHook;
+import ai.tegmentum.wasmtime4j.func.CallHookHandler;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;

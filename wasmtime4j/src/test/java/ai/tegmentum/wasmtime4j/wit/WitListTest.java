@@ -44,16 +44,13 @@ class WitListTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(WitList.class.getModifiers()), "WitList should be final");
+      assertTrue(Modifier.isFinal(WitList.class.getModifiers()), "WitList should be final");
     }
 
     @Test
     @DisplayName("should extend WitValue")
     void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitList.class),
-          "WitList should extend WitValue");
+      assertTrue(WitValue.class.isAssignableFrom(WitList.class), "WitList should extend WitValue");
     }
   }
 
@@ -90,10 +87,8 @@ class WitListTest {
     @Test
     @DisplayName("builder should create list")
     void builderShouldCreateList() {
-      final WitList list = WitList.builder(WitType.createS32())
-          .add(WitS32.of(1))
-          .add(WitS32.of(2))
-          .build();
+      final WitList list =
+          WitList.builder(WitType.createS32()).add(WitS32.of(1)).add(WitS32.of(2)).build();
       assertNotNull(list, "Builder should create non-null list");
       assertEquals(2, list.size(), "Builder list size should be 2");
     }
@@ -208,8 +203,7 @@ class WitListTest {
     void sameListsShouldHaveSameHashCode() {
       final WitList l1 = WitList.of(WitS32.of(1), WitS32.of(2));
       final WitList l2 = WitList.of(WitS32.of(1), WitS32.of(2));
-      assertEquals(
-          l1.hashCode(), l2.hashCode(), "Same lists should have same hash code");
+      assertEquals(l1.hashCode(), l2.hashCode(), "Same lists should have same hash code");
     }
   }
 

@@ -307,7 +307,8 @@ class NnTensorTest {
 
       dims[0] = 99;
       assertArrayEquals(
-          new int[]{3}, tensor.getDimensions(),
+          new int[] {3},
+          tensor.getDimensions(),
           "Modifying original dimensions should not affect tensor");
     }
 
@@ -321,7 +322,8 @@ class NnTensorTest {
       final int[] retrieved = tensor.getDimensions();
       retrieved[0] = 99;
       assertArrayEquals(
-          new int[]{3}, tensor.getDimensions(),
+          new int[] {3},
+          tensor.getDimensions(),
           "Modifying retrieved dimensions should not affect tensor");
     }
 
@@ -333,9 +335,7 @@ class NnTensorTest {
       final NnTensor tensor = NnTensor.fromByteArray(dims, data);
 
       data[0] = 99;
-      assertEquals(
-          1, tensor.getData()[0],
-          "Modifying original data should not affect tensor");
+      assertEquals(1, tensor.getData()[0], "Modifying original data should not affect tensor");
     }
 
     @Test
@@ -347,9 +347,7 @@ class NnTensorTest {
 
       final byte[] retrieved = tensor.getData();
       retrieved[0] = 99;
-      assertEquals(
-          1, tensor.getData()[0],
-          "Modifying retrieved data should not affect tensor");
+      assertEquals(1, tensor.getData()[0], "Modifying retrieved data should not affect tensor");
     }
   }
 
@@ -419,16 +417,15 @@ class NnTensorTest {
       final NnTensor t2 = NnTensor.fromFloatArray(dims, data);
       assertEquals(t1, t2, "Tensors with same values should be equal");
       assertEquals(
-          t1.hashCode(), t2.hashCode(),
-          "Tensors with same values should have same hashCode");
+          t1.hashCode(), t2.hashCode(), "Tensors with same values should have same hashCode");
     }
 
     @Test
     @DisplayName("tensors with different data should not be equal")
     void differentDataShouldNotBeEqual() {
       final int[] dims = {2};
-      final NnTensor t1 = NnTensor.fromFloatArray(dims, new float[]{1.0f, 2.0f});
-      final NnTensor t2 = NnTensor.fromFloatArray(dims, new float[]{3.0f, 4.0f});
+      final NnTensor t1 = NnTensor.fromFloatArray(dims, new float[] {1.0f, 2.0f});
+      final NnTensor t2 = NnTensor.fromFloatArray(dims, new float[] {3.0f, 4.0f});
       assertNotEquals(t1, t2, "Tensors with different data should not be equal");
     }
 
@@ -445,7 +442,7 @@ class NnTensorTest {
     @Test
     @DisplayName("should not equal null")
     void shouldNotEqualNull() {
-      final NnTensor tensor = NnTensor.fromFloatArray(new int[]{1}, new float[]{1.0f});
+      final NnTensor tensor = NnTensor.fromFloatArray(new int[] {1}, new float[] {1.0f});
       assertNotEquals(null, tensor, "Tensor should not equal null");
     }
   }
@@ -461,32 +458,26 @@ class NnTensorTest {
       final float[] data = new float[6];
       final NnTensor tensor = NnTensor.fromFloatArray(dims, data);
       final String result = tensor.toString();
-      assertTrue(
-          result.contains("FP32"), "toString should contain type: " + result);
-      assertTrue(
-          result.contains("[2, 3]"), "toString should contain dimensions: " + result);
+      assertTrue(result.contains("FP32"), "toString should contain type: " + result);
+      assertTrue(result.contains("[2, 3]"), "toString should contain dimensions: " + result);
     }
 
     @Test
     @DisplayName("toString should contain name when named")
     void toStringShouldContainNameWhenNamed() {
       final NnTensor tensor =
-          NnTensor.fromFloatArray("myTensor", new int[]{1}, new float[]{1.0f});
+          NnTensor.fromFloatArray("myTensor", new int[] {1}, new float[] {1.0f});
       final String result = tensor.toString();
-      assertTrue(
-          result.contains("myTensor"),
-          "toString should contain name: " + result);
+      assertTrue(result.contains("myTensor"), "toString should contain name: " + result);
     }
 
     @Test
     @DisplayName("toString should contain NnTensor")
     void toStringShouldContainClassName() {
-      final NnTensor tensor = NnTensor.fromFloatArray(new int[]{1}, new float[]{1.0f});
+      final NnTensor tensor = NnTensor.fromFloatArray(new int[] {1}, new float[] {1.0f});
       final String result = tensor.toString();
       assertNotNull(result, "toString should not be null");
-      assertTrue(
-          result.contains("NnTensor"),
-          "toString should contain class name: " + result);
+      assertTrue(result.contains("NnTensor"), "toString should contain class name: " + result);
     }
   }
 }

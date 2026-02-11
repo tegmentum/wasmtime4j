@@ -16,12 +16,12 @@
 
 package ai.tegmentum.wasmtime4j.panama.adapter;
 
-import ai.tegmentum.wasmtime4j.func.Function;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.Function;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

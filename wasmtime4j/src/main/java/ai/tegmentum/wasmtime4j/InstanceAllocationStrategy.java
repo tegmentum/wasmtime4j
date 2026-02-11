@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
 /**
  * Defines the strategy for allocating WebAssembly instances.
  *

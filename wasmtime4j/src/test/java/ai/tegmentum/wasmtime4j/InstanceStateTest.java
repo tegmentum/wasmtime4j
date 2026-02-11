@@ -48,8 +48,7 @@ class InstanceStateTest {
     @Test
     @DisplayName("should have exactly 7 values")
     void shouldHaveExactValueCount() {
-      assertEquals(7, InstanceState.values().length,
-          "InstanceState should have exactly 7 values");
+      assertEquals(7, InstanceState.values().length, "InstanceState should have exactly 7 values");
     }
   }
 
@@ -111,8 +110,7 @@ class InstanceStateTest {
       for (final InstanceState value : InstanceState.values()) {
         ordinals.add(value.ordinal());
       }
-      assertEquals(InstanceState.values().length, ordinals.size(),
-          "All ordinals should be unique");
+      assertEquals(InstanceState.values().length, ordinals.size(), "All ordinals should be unique");
     }
 
     @Test
@@ -120,8 +118,7 @@ class InstanceStateTest {
     void shouldHaveSequentialOrdinals() {
       final InstanceState[] values = InstanceState.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -134,15 +131,16 @@ class InstanceStateTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final InstanceState value : InstanceState.values()) {
-        assertEquals(value, InstanceState.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, InstanceState.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> InstanceState.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -169,7 +167,9 @@ class InstanceStateTest {
     @DisplayName("should return enum name as toString")
     void shouldReturnEnumNameAsToString() {
       for (final InstanceState value : InstanceState.values()) {
-        assertEquals(value.name(), value.toString(),
+        assertEquals(
+            value.name(),
+            value.toString(),
             "toString should return the enum name for " + value.name());
       }
     }

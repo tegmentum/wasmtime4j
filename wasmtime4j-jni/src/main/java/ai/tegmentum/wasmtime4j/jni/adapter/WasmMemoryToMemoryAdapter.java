@@ -16,9 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.jni.adapter;
 
-import ai.tegmentum.wasmtime4j.memory.Memory;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.memory.Memory;
 import java.nio.ByteBuffer;
 
 /**

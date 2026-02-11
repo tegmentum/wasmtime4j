@@ -621,7 +621,8 @@ class WasiConfigurationExceptionTest {
     void testFormatResourceIdentifierNullParameter() {
       // Test with non-null configurationArea but null parameter
       final WasiConfigurationException exception =
-          new WasiConfigurationException("Error", WasiConfigurationException.ConfigurationArea.SYSTEM);
+          new WasiConfigurationException(
+              "Error", WasiConfigurationException.ConfigurationArea.SYSTEM);
 
       // formatResourceIdentifier(SYSTEM, null) should return "system"
       assertEquals("system", exception.getResource());

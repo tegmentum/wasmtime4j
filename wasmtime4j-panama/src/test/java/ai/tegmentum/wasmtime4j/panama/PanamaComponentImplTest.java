@@ -299,7 +299,6 @@ class PanamaComponentImplTest {
           method.getReturnType(),
           "Should return PanamaComponentEngine");
     }
-
   }
 
   @Nested

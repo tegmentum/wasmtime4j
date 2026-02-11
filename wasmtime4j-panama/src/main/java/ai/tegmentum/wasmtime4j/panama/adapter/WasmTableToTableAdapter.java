@@ -16,11 +16,11 @@
 
 package ai.tegmentum.wasmtime4j.panama.adapter;
 
-import ai.tegmentum.wasmtime4j.memory.Table;
-import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.memory.Table;
+import ai.tegmentum.wasmtime4j.type.TableType;
 import java.util.concurrent.CompletableFuture;
 
 /**

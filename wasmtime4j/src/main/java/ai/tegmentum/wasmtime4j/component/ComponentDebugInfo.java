@@ -1,7 +1,5 @@
 package ai.tegmentum.wasmtime4j.component;
 
-import ai.tegmentum.wasmtime4j.component.ExecutionState;
-
 /**
  * Component debug information interface for WebAssembly components.
  *

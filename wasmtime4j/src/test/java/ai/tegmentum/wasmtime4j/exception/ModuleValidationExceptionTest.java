@@ -403,11 +403,9 @@ class ModuleValidationExceptionTest {
       };
 
       for (ValidationErrorType type : nonStructuralTypes) {
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         assertFalse(
-            exception.isStructuralError(),
-            type.name() + " should NOT be a structural error");
+            exception.isStructuralError(), type.name() + " should NOT be a structural error");
       }
     }
 
@@ -416,8 +414,7 @@ class ModuleValidationExceptionTest {
     void shouldHaveExactly4StructuralErrorTypes() {
       int structuralCount = 0;
       for (ValidationErrorType type : ValidationErrorType.values()) {
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         if (exception.isStructuralError()) {
           structuralCount++;
         }
@@ -425,8 +422,8 @@ class ModuleValidationExceptionTest {
       assertEquals(
           4,
           structuralCount,
-          "Should have exactly 4 structural error types: "
-              + "INVALID_MAGIC_NUMBER, MALFORMED_MODULE, INVALID_DATA_SEGMENT, INVALID_ELEMENT_SEGMENT");
+          "Should have exactly 4 structural error types: INVALID_MAGIC_NUMBER, MALFORMED_MODULE,"
+              + " INVALID_DATA_SEGMENT, INVALID_ELEMENT_SEGMENT");
     }
 
     @Test
@@ -456,8 +453,7 @@ class ModuleValidationExceptionTest {
       };
 
       for (ValidationErrorType type : nonTypeErrors) {
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         assertFalse(exception.isTypeError(), type.name() + " should NOT be a type error");
       }
     }
@@ -467,8 +463,7 @@ class ModuleValidationExceptionTest {
     void shouldHaveExactly3TypeErrorTypes() {
       int typeErrorCount = 0;
       for (ValidationErrorType type : ValidationErrorType.values()) {
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         if (exception.isTypeError()) {
           typeErrorCount++;
         }
@@ -486,8 +481,7 @@ class ModuleValidationExceptionTest {
       for (ValidationErrorType type : ValidationErrorType.values()) {
         if (type != ValidationErrorType.INVALID_IMPORT
             && type != ValidationErrorType.INVALID_EXPORT) {
-          final ModuleValidationException exception =
-              new ModuleValidationException(type, "Error");
+          final ModuleValidationException exception = new ModuleValidationException(type, "Error");
           assertFalse(
               exception.isImportExportError(),
               type.name() + " should NOT be an import/export error");
@@ -500,8 +494,7 @@ class ModuleValidationExceptionTest {
     void shouldHaveExactly2ImportExportErrorTypes() {
       int count = 0;
       for (ValidationErrorType type : ValidationErrorType.values()) {
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         if (exception.isImportExportError()) {
           count++;
         }
@@ -515,10 +508,8 @@ class ModuleValidationExceptionTest {
       for (ValidationErrorType type : ValidationErrorType.values()) {
         if (type != ValidationErrorType.INVALID_MEMORY_DEFINITION
             && type != ValidationErrorType.INVALID_MEMORY_OPERATION) {
-          final ModuleValidationException exception =
-              new ModuleValidationException(type, "Error");
-          assertFalse(
-              exception.isMemoryError(), type.name() + " should NOT be a memory error");
+          final ModuleValidationException exception = new ModuleValidationException(type, "Error");
+          assertFalse(exception.isMemoryError(), type.name() + " should NOT be a memory error");
         }
       }
     }
@@ -528,8 +519,7 @@ class ModuleValidationExceptionTest {
     void shouldHaveExactly2MemoryErrorTypes() {
       int count = 0;
       for (ValidationErrorType type : ValidationErrorType.values()) {
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         if (exception.isMemoryError()) {
           count++;
         }
@@ -543,10 +533,8 @@ class ModuleValidationExceptionTest {
       for (ValidationErrorType type : ValidationErrorType.values()) {
         if (type != ValidationErrorType.UNSUPPORTED_FEATURE
             && type != ValidationErrorType.LIMIT_EXCEEDED) {
-          final ModuleValidationException exception =
-              new ModuleValidationException(type, "Error");
-          assertFalse(
-              exception.isFeatureError(), type.name() + " should NOT be a feature error");
+          final ModuleValidationException exception = new ModuleValidationException(type, "Error");
+          assertFalse(exception.isFeatureError(), type.name() + " should NOT be a feature error");
         }
       }
     }
@@ -556,8 +544,7 @@ class ModuleValidationExceptionTest {
     void shouldHaveExactly2FeatureErrorTypes() {
       int count = 0;
       for (ValidationErrorType type : ValidationErrorType.values()) {
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         if (exception.isFeatureError()) {
           count++;
         }
@@ -685,8 +672,7 @@ class ModuleValidationExceptionTest {
     void allErrorTypesShouldHaveDistinctRecoverySuggestions() {
       final java.util.Set<String> suggestions = new java.util.HashSet<>();
       for (ValidationErrorType type : ValidationErrorType.values()) {
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         final String suggestion = exception.getRecoverySuggestion();
         assertNotNull(suggestion, type.name() + " should have a recovery suggestion");
         assertFalse(suggestion.isEmpty(), type.name() + " should have non-empty suggestion");
@@ -735,12 +721,10 @@ class ModuleValidationExceptionTest {
           ValidationErrorType.LIMIT_EXCEEDED, new String[] {"complexity", "smaller"});
       expectedKeywords.put(ValidationErrorType.UNKNOWN, new String[] {"specification"});
 
-      for (java.util.Map.Entry<ValidationErrorType, String[]> entry :
-          expectedKeywords.entrySet()) {
+      for (java.util.Map.Entry<ValidationErrorType, String[]> entry : expectedKeywords.entrySet()) {
         final ValidationErrorType type = entry.getKey();
         final String[] keywords = entry.getValue();
-        final ModuleValidationException exception =
-            new ModuleValidationException(type, "Error");
+        final ModuleValidationException exception = new ModuleValidationException(type, "Error");
         final String suggestion = exception.getRecoverySuggestion().toLowerCase();
 
         boolean hasKeyword = false;
@@ -774,9 +758,7 @@ class ModuleValidationExceptionTest {
             new ModuleValidationException(
                 ValidationErrorType.UNKNOWN, "Error", section, null, null);
         assertEquals(
-            section,
-            exception.getModuleSection(),
-            "getModuleSection should return: " + section);
+            section, exception.getModuleSection(), "getModuleSection should return: " + section);
       }
     }
 
@@ -786,12 +768,8 @@ class ModuleValidationExceptionTest {
       final Integer[] testOffsets = {null, 0, 1, 100, 1024, Integer.MAX_VALUE};
       for (Integer offset : testOffsets) {
         final ModuleValidationException exception =
-            new ModuleValidationException(
-                ValidationErrorType.UNKNOWN, "Error", null, offset, null);
-        assertEquals(
-            offset,
-            exception.getByteOffset(),
-            "getByteOffset should return: " + offset);
+            new ModuleValidationException(ValidationErrorType.UNKNOWN, "Error", null, offset, null);
+        assertEquals(offset, exception.getByteOffset(), "getByteOffset should return: " + offset);
       }
     }
 
@@ -804,9 +782,7 @@ class ModuleValidationExceptionTest {
           ValidationErrorType.UNKNOWN,
           exception.getErrorType(),
           "getErrorType should return UNKNOWN when null was passed to constructor");
-      assertFalse(
-          exception.getErrorType() == null,
-          "getErrorType should never return null");
+      assertFalse(exception.getErrorType() == null, "getErrorType should never return null");
     }
   }
 }

@@ -74,11 +74,10 @@ class KeyValueEntryTest {
       final KeyValueEntry entry = KeyValueEntry.builder("key", value).build();
 
       assertEquals("key", entry.getKey(), "Key should be 'key'");
-      assertArrayEquals(new byte[]{42}, entry.getValue(), "Value should match");
+      assertArrayEquals(new byte[] {42}, entry.getValue(), "Value should match");
       assertEquals(1L, entry.getVersion(), "Default version should be 1");
       assertFalse(entry.getCreatedAt().isPresent(), "CreatedAt should not be present by default");
-      assertFalse(
-          entry.getModifiedAt().isPresent(), "ModifiedAt should not be present by default");
+      assertFalse(entry.getModifiedAt().isPresent(), "ModifiedAt should not be present by default");
       assertFalse(entry.getExpiresAt().isPresent(), "ExpiresAt should not be present by default");
     }
 
@@ -92,7 +91,7 @@ class KeyValueEntryTest {
     @Test
     @DisplayName("should build with null key")
     void shouldBuildWithNullKey() {
-      final KeyValueEntry entry = KeyValueEntry.builder(null, new byte[]{1}).build();
+      final KeyValueEntry entry = KeyValueEntry.builder(null, new byte[] {1}).build();
       assertNull(entry.getKey(), "Key should be null");
     }
   }
@@ -108,9 +107,7 @@ class KeyValueEntryTest {
       final KeyValueEntry entry = KeyValueEntry.builder("key", value).build();
 
       value[0] = 99;
-      assertEquals(
-          1, entry.getValue()[0],
-          "Modifying original value should not affect entry");
+      assertEquals(1, entry.getValue()[0], "Modifying original value should not affect entry");
     }
 
     @Test
@@ -121,9 +118,7 @@ class KeyValueEntryTest {
 
       final byte[] retrieved = entry.getValue();
       retrieved[0] = 99;
-      assertEquals(
-          1, entry.getValue()[0],
-          "Modifying retrieved value should not affect entry");
+      assertEquals(1, entry.getValue()[0], "Modifying retrieved value should not affect entry");
     }
 
     @Test
@@ -134,8 +129,7 @@ class KeyValueEntryTest {
       value[0] = 99;
       final KeyValueEntry entry = builder.build();
       assertEquals(
-          10, entry.getValue()[0],
-          "Builder should defensively copy value from constructor");
+          10, entry.getValue()[0], "Builder should defensively copy value from constructor");
     }
   }
 
@@ -148,9 +142,7 @@ class KeyValueEntryTest {
     void isExpiredShouldReturnTrueForPastExpiration() {
       final Instant pastExpiry = Instant.parse("2020-01-01T00:00:00Z");
       final KeyValueEntry entry =
-          KeyValueEntry.builder("key", new byte[]{1})
-              .expiresAt(pastExpiry)
-              .build();
+          KeyValueEntry.builder("key", new byte[] {1}).expiresAt(pastExpiry).build();
       assertTrue(entry.isExpired(), "Entry with past expiration should be expired");
     }
 
@@ -159,16 +151,14 @@ class KeyValueEntryTest {
     void isExpiredShouldReturnFalseForFutureExpiration() {
       final Instant futureExpiry = Instant.parse("2099-12-31T23:59:59Z");
       final KeyValueEntry entry =
-          KeyValueEntry.builder("key", new byte[]{1})
-              .expiresAt(futureExpiry)
-              .build();
+          KeyValueEntry.builder("key", new byte[] {1}).expiresAt(futureExpiry).build();
       assertFalse(entry.isExpired(), "Entry with future expiration should not be expired");
     }
 
     @Test
     @DisplayName("isExpired should return false when no expiration set")
     void isExpiredShouldReturnFalseWhenNoExpiration() {
-      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[]{1}).build();
+      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[] {1}).build();
       assertFalse(entry.isExpired(), "Entry without expiration should not be expired");
     }
   }
@@ -180,55 +170,50 @@ class KeyValueEntryTest {
     @Test
     @DisplayName("entries with same key and version should be equal")
     void sameKeyAndVersionShouldBeEqual() {
-      final KeyValueEntry entry1 =
-          KeyValueEntry.builder("key", new byte[]{1}).version(1).build();
-      final KeyValueEntry entry2 =
-          KeyValueEntry.builder("key", new byte[]{99}).version(1).build();
+      final KeyValueEntry entry1 = KeyValueEntry.builder("key", new byte[] {1}).version(1).build();
+      final KeyValueEntry entry2 = KeyValueEntry.builder("key", new byte[] {99}).version(1).build();
 
       assertEquals(entry1, entry2, "Entries with same key and version should be equal");
       assertEquals(
-          entry1.hashCode(), entry2.hashCode(),
+          entry1.hashCode(),
+          entry2.hashCode(),
           "Entries with same key and version should have same hashCode");
     }
 
     @Test
     @DisplayName("entries with different keys should not be equal")
     void differentKeysShouldNotBeEqual() {
-      final KeyValueEntry entry1 =
-          KeyValueEntry.builder("key1", new byte[]{1}).build();
-      final KeyValueEntry entry2 =
-          KeyValueEntry.builder("key2", new byte[]{1}).build();
+      final KeyValueEntry entry1 = KeyValueEntry.builder("key1", new byte[] {1}).build();
+      final KeyValueEntry entry2 = KeyValueEntry.builder("key2", new byte[] {1}).build();
       assertNotEquals(entry1, entry2, "Entries with different keys should not be equal");
     }
 
     @Test
     @DisplayName("entries with different versions should not be equal")
     void differentVersionsShouldNotBeEqual() {
-      final KeyValueEntry entry1 =
-          KeyValueEntry.builder("key", new byte[]{1}).version(1).build();
-      final KeyValueEntry entry2 =
-          KeyValueEntry.builder("key", new byte[]{1}).version(2).build();
+      final KeyValueEntry entry1 = KeyValueEntry.builder("key", new byte[] {1}).version(1).build();
+      final KeyValueEntry entry2 = KeyValueEntry.builder("key", new byte[] {1}).version(2).build();
       assertNotEquals(entry1, entry2, "Entries with different versions should not be equal");
     }
 
     @Test
     @DisplayName("should not equal null")
     void shouldNotEqualNull() {
-      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[]{1}).build();
+      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[] {1}).build();
       assertNotEquals(null, entry, "Entry should not equal null");
     }
 
     @Test
     @DisplayName("should not equal different type")
     void shouldNotEqualDifferentType() {
-      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[]{1}).build();
+      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[] {1}).build();
       assertNotEquals("key", entry, "Entry should not equal a String");
     }
 
     @Test
     @DisplayName("should equal itself")
     void shouldEqualItself() {
-      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[]{1}).build();
+      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[] {1}).build();
       assertEquals(entry, entry, "Entry should equal itself");
     }
   }
@@ -240,25 +225,18 @@ class KeyValueEntryTest {
     @Test
     @DisplayName("toString should contain key and version")
     void toStringShouldContainKeyAndVersion() {
-      final KeyValueEntry entry =
-          KeyValueEntry.builder("myKey", new byte[]{1}).version(3).build();
+      final KeyValueEntry entry = KeyValueEntry.builder("myKey", new byte[] {1}).version(3).build();
       final String result = entry.toString();
-      assertTrue(
-          result.contains("myKey"),
-          "toString should contain key: " + result);
-      assertTrue(
-          result.contains("3"),
-          "toString should contain version: " + result);
+      assertTrue(result.contains("myKey"), "toString should contain key: " + result);
+      assertTrue(result.contains("3"), "toString should contain version: " + result);
     }
 
     @Test
     @DisplayName("toString should contain KeyValueEntry")
     void toStringShouldContainClassName() {
-      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[]{}).build();
+      final KeyValueEntry entry = KeyValueEntry.builder("key", new byte[] {}).build();
       final String result = entry.toString();
-      assertTrue(
-          result.contains("KeyValueEntry"),
-          "toString should contain class name: " + result);
+      assertTrue(result.contains("KeyValueEntry"), "toString should contain class name: " + result);
     }
   }
 }

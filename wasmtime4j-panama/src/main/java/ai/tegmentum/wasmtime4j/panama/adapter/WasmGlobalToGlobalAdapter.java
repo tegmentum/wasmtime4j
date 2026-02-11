@@ -16,11 +16,11 @@
 
 package ai.tegmentum.wasmtime4j.panama.adapter;
 
-import ai.tegmentum.wasmtime4j.memory.Global;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.memory.Global;
 
 /**
  * Adapter class that wraps a WasmGlobal instance to implement the Global interface.

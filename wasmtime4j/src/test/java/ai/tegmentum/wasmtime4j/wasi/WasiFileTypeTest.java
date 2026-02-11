@@ -70,8 +70,7 @@ class WasiFileTypeTest {
     @DisplayName("should have BLOCK_DEVICE value")
     void shouldHaveBlockDeviceValue() {
       assertNotNull(WasiFileType.BLOCK_DEVICE, "BLOCK_DEVICE should exist");
-      assertEquals(
-          "BLOCK_DEVICE", WasiFileType.BLOCK_DEVICE.name(), "Name should be BLOCK_DEVICE");
+      assertEquals("BLOCK_DEVICE", WasiFileType.BLOCK_DEVICE.name(), "Name should be BLOCK_DEVICE");
     }
 
     @Test
@@ -95,8 +94,7 @@ class WasiFileTypeTest {
     @DisplayName("should have REGULAR_FILE value")
     void shouldHaveRegularFileValue() {
       assertNotNull(WasiFileType.REGULAR_FILE, "REGULAR_FILE should exist");
-      assertEquals(
-          "REGULAR_FILE", WasiFileType.REGULAR_FILE.name(), "Name should be REGULAR_FILE");
+      assertEquals("REGULAR_FILE", WasiFileType.REGULAR_FILE.name(), "Name should be REGULAR_FILE");
     }
 
     @Test
@@ -111,8 +109,7 @@ class WasiFileTypeTest {
     @DisplayName("should have SOCKET_DGRAM value")
     void shouldHaveSocketDgramValue() {
       assertNotNull(WasiFileType.SOCKET_DGRAM, "SOCKET_DGRAM should exist");
-      assertEquals(
-          "SOCKET_DGRAM", WasiFileType.SOCKET_DGRAM.name(), "Name should be SOCKET_DGRAM");
+      assertEquals("SOCKET_DGRAM", WasiFileType.SOCKET_DGRAM.name(), "Name should be SOCKET_DGRAM");
     }
 
     @Test
@@ -154,8 +151,7 @@ class WasiFileTypeTest {
     @Test
     @DisplayName("valueOf should return correct constant for each name")
     void valueOfShouldReturnCorrectConstant() {
-      assertEquals(
-          WasiFileType.UNKNOWN, WasiFileType.valueOf("UNKNOWN"), "Should return UNKNOWN");
+      assertEquals(WasiFileType.UNKNOWN, WasiFileType.valueOf("UNKNOWN"), "Should return UNKNOWN");
       assertEquals(
           WasiFileType.BLOCK_DEVICE,
           WasiFileType.valueOf("BLOCK_DEVICE"),
@@ -297,21 +293,13 @@ class WasiFileTypeTest {
       assertEquals(
           WasiFileType.DIRECTORY, WasiFileType.fromValue(3), "Value 3 should be DIRECTORY");
       assertEquals(
-          WasiFileType.REGULAR_FILE,
-          WasiFileType.fromValue(4),
-          "Value 4 should be REGULAR_FILE");
+          WasiFileType.REGULAR_FILE, WasiFileType.fromValue(4), "Value 4 should be REGULAR_FILE");
       assertEquals(
-          WasiFileType.SOCKET_STREAM,
-          WasiFileType.fromValue(5),
-          "Value 5 should be SOCKET_STREAM");
+          WasiFileType.SOCKET_STREAM, WasiFileType.fromValue(5), "Value 5 should be SOCKET_STREAM");
       assertEquals(
-          WasiFileType.SOCKET_DGRAM,
-          WasiFileType.fromValue(6),
-          "Value 6 should be SOCKET_DGRAM");
+          WasiFileType.SOCKET_DGRAM, WasiFileType.fromValue(6), "Value 6 should be SOCKET_DGRAM");
       assertEquals(
-          WasiFileType.SYMBOLIC_LINK,
-          WasiFileType.fromValue(7),
-          "Value 7 should be SYMBOLIC_LINK");
+          WasiFileType.SYMBOLIC_LINK, WasiFileType.fromValue(7), "Value 7 should be SYMBOLIC_LINK");
     }
 
     @Test
@@ -340,13 +328,10 @@ class WasiFileTypeTest {
     @DisplayName("isRegularFile should return true only for REGULAR_FILE")
     void isRegularFileShouldReturnTrueOnlyForRegularFile() {
       assertTrue(
-          WasiFileType.REGULAR_FILE.isRegularFile(),
-          "REGULAR_FILE.isRegularFile() should be true");
+          WasiFileType.REGULAR_FILE.isRegularFile(), "REGULAR_FILE.isRegularFile() should be true");
       for (final WasiFileType type : WasiFileType.values()) {
         if (type != WasiFileType.REGULAR_FILE) {
-          assertFalse(
-              type.isRegularFile(),
-              type + ".isRegularFile() should be false");
+          assertFalse(type.isRegularFile(), type + ".isRegularFile() should be false");
         }
       }
     }
@@ -354,12 +339,10 @@ class WasiFileTypeTest {
     @Test
     @DisplayName("isDirectory should return true only for DIRECTORY")
     void isDirectoryShouldReturnTrueOnlyForDirectory() {
-      assertTrue(
-          WasiFileType.DIRECTORY.isDirectory(), "DIRECTORY.isDirectory() should be true");
+      assertTrue(WasiFileType.DIRECTORY.isDirectory(), "DIRECTORY.isDirectory() should be true");
       for (final WasiFileType type : WasiFileType.values()) {
         if (type != WasiFileType.DIRECTORY) {
-          assertFalse(
-              type.isDirectory(), type + ".isDirectory() should be false");
+          assertFalse(type.isDirectory(), type + ".isDirectory() should be false");
         }
       }
     }
@@ -372,9 +355,7 @@ class WasiFileTypeTest {
           "SYMBOLIC_LINK.isSymbolicLink() should be true");
       for (final WasiFileType type : WasiFileType.values()) {
         if (type != WasiFileType.SYMBOLIC_LINK) {
-          assertFalse(
-              type.isSymbolicLink(),
-              type + ".isSymbolicLink() should be false");
+          assertFalse(type.isSymbolicLink(), type + ".isSymbolicLink() should be false");
         }
       }
     }
@@ -382,19 +363,15 @@ class WasiFileTypeTest {
     @Test
     @DisplayName("isDevice should return true only for BLOCK_DEVICE and CHARACTER_DEVICE")
     void isDeviceShouldReturnTrueOnlyForDeviceTypes() {
+      assertTrue(WasiFileType.BLOCK_DEVICE.isDevice(), "BLOCK_DEVICE.isDevice() should be true");
       assertTrue(
-          WasiFileType.BLOCK_DEVICE.isDevice(), "BLOCK_DEVICE.isDevice() should be true");
-      assertTrue(
-          WasiFileType.CHARACTER_DEVICE.isDevice(),
-          "CHARACTER_DEVICE.isDevice() should be true");
+          WasiFileType.CHARACTER_DEVICE.isDevice(), "CHARACTER_DEVICE.isDevice() should be true");
       assertFalse(WasiFileType.UNKNOWN.isDevice(), "UNKNOWN.isDevice() should be false");
       assertFalse(WasiFileType.DIRECTORY.isDevice(), "DIRECTORY.isDevice() should be false");
-      assertFalse(
-          WasiFileType.REGULAR_FILE.isDevice(), "REGULAR_FILE.isDevice() should be false");
+      assertFalse(WasiFileType.REGULAR_FILE.isDevice(), "REGULAR_FILE.isDevice() should be false");
       assertFalse(
           WasiFileType.SOCKET_STREAM.isDevice(), "SOCKET_STREAM.isDevice() should be false");
-      assertFalse(
-          WasiFileType.SOCKET_DGRAM.isDevice(), "SOCKET_DGRAM.isDevice() should be false");
+      assertFalse(WasiFileType.SOCKET_DGRAM.isDevice(), "SOCKET_DGRAM.isDevice() should be false");
       assertFalse(
           WasiFileType.SYMBOLIC_LINK.isDevice(), "SYMBOLIC_LINK.isDevice() should be false");
     }
@@ -402,19 +379,14 @@ class WasiFileTypeTest {
     @Test
     @DisplayName("isSocket should return true only for SOCKET_STREAM and SOCKET_DGRAM")
     void isSocketShouldReturnTrueOnlyForSocketTypes() {
-      assertTrue(
-          WasiFileType.SOCKET_STREAM.isSocket(), "SOCKET_STREAM.isSocket() should be true");
-      assertTrue(
-          WasiFileType.SOCKET_DGRAM.isSocket(), "SOCKET_DGRAM.isSocket() should be true");
+      assertTrue(WasiFileType.SOCKET_STREAM.isSocket(), "SOCKET_STREAM.isSocket() should be true");
+      assertTrue(WasiFileType.SOCKET_DGRAM.isSocket(), "SOCKET_DGRAM.isSocket() should be true");
       assertFalse(WasiFileType.UNKNOWN.isSocket(), "UNKNOWN.isSocket() should be false");
+      assertFalse(WasiFileType.BLOCK_DEVICE.isSocket(), "BLOCK_DEVICE.isSocket() should be false");
       assertFalse(
-          WasiFileType.BLOCK_DEVICE.isSocket(), "BLOCK_DEVICE.isSocket() should be false");
-      assertFalse(
-          WasiFileType.CHARACTER_DEVICE.isSocket(),
-          "CHARACTER_DEVICE.isSocket() should be false");
+          WasiFileType.CHARACTER_DEVICE.isSocket(), "CHARACTER_DEVICE.isSocket() should be false");
       assertFalse(WasiFileType.DIRECTORY.isSocket(), "DIRECTORY.isSocket() should be false");
-      assertFalse(
-          WasiFileType.REGULAR_FILE.isSocket(), "REGULAR_FILE.isSocket() should be false");
+      assertFalse(WasiFileType.REGULAR_FILE.isSocket(), "REGULAR_FILE.isSocket() should be false");
       assertFalse(
           WasiFileType.SYMBOLIC_LINK.isSocket(), "SYMBOLIC_LINK.isSocket() should be false");
     }
@@ -423,8 +395,7 @@ class WasiFileTypeTest {
     @DisplayName("isSpecialFile should return true for devices and sockets")
     void isSpecialFileShouldReturnTrueForDevicesAndSockets() {
       assertTrue(
-          WasiFileType.BLOCK_DEVICE.isSpecialFile(),
-          "BLOCK_DEVICE.isSpecialFile() should be true");
+          WasiFileType.BLOCK_DEVICE.isSpecialFile(), "BLOCK_DEVICE.isSpecialFile() should be true");
       assertTrue(
           WasiFileType.CHARACTER_DEVICE.isSpecialFile(),
           "CHARACTER_DEVICE.isSpecialFile() should be true");
@@ -432,10 +403,8 @@ class WasiFileTypeTest {
           WasiFileType.SOCKET_STREAM.isSpecialFile(),
           "SOCKET_STREAM.isSpecialFile() should be true");
       assertTrue(
-          WasiFileType.SOCKET_DGRAM.isSpecialFile(),
-          "SOCKET_DGRAM.isSpecialFile() should be true");
-      assertFalse(
-          WasiFileType.UNKNOWN.isSpecialFile(), "UNKNOWN.isSpecialFile() should be false");
+          WasiFileType.SOCKET_DGRAM.isSpecialFile(), "SOCKET_DGRAM.isSpecialFile() should be true");
+      assertFalse(WasiFileType.UNKNOWN.isSpecialFile(), "UNKNOWN.isSpecialFile() should be false");
       assertFalse(
           WasiFileType.DIRECTORY.isSpecialFile(), "DIRECTORY.isSpecialFile() should be false");
       assertFalse(

@@ -52,9 +52,7 @@ class WasiProcessIdTest {
     void constructorShouldBePrivate() throws NoSuchMethodException {
       final Constructor<WasiProcessId> constructor =
           WasiProcessId.class.getDeclaredConstructor(long.class);
-      assertTrue(
-          Modifier.isPrivate(constructor.getModifiers()),
-          "Constructor should be private");
+      assertTrue(Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
     }
   }
 
@@ -125,7 +123,8 @@ class WasiProcessIdTest {
       final WasiProcessId pid1 = WasiProcessId.of(100);
       final WasiProcessId pid2 = WasiProcessId.of(100);
       assertEquals(
-          pid1.hashCode(), pid2.hashCode(),
+          pid1.hashCode(),
+          pid2.hashCode(),
           "Process IDs with same value should have same hashCode");
     }
 
@@ -168,8 +167,7 @@ class WasiProcessIdTest {
     void toStringShouldContainIdValue() {
       final WasiProcessId pid = WasiProcessId.of(42);
       final String result = pid.toString();
-      assertTrue(
-          result.contains("42"), "toString should contain the ID value: " + result);
+      assertTrue(result.contains("42"), "toString should contain the ID value: " + result);
     }
 
     @Test
@@ -178,17 +176,14 @@ class WasiProcessIdTest {
       final WasiProcessId pid = WasiProcessId.of(0);
       final String result = pid.toString();
       assertTrue(
-          result.contains("WasiProcessId"),
-          "toString should contain the class name: " + result);
+          result.contains("WasiProcessId"), "toString should contain the class name: " + result);
     }
 
     @Test
     @DisplayName("toString should match expected format")
     void toStringShouldMatchExpectedFormat() {
       final WasiProcessId pid = WasiProcessId.of(99);
-      assertEquals(
-          "WasiProcessId{id=99}", pid.toString(),
-          "toString should match expected format");
+      assertEquals("WasiProcessId{id=99}", pid.toString(), "toString should match expected format");
     }
   }
 }

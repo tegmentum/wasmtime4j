@@ -231,7 +231,8 @@ class WitBoolTest {
 
       // FALSE.toJava() must return exactly false, not true
       assertFalse(WitBool.FALSE.toJava(), "FALSE.toJava() must be exactly false");
-      assertEquals(Boolean.FALSE, WitBool.FALSE.toJava(), "FALSE.toJava() must equal Boolean.FALSE");
+      assertEquals(
+          Boolean.FALSE, WitBool.FALSE.toJava(), "FALSE.toJava() must equal Boolean.FALSE");
     }
 
     @Test
@@ -254,7 +255,9 @@ class WitBoolTest {
       assertFalse(WitBool.FALSE.equals(WitBool.TRUE), "FALSE must not equal TRUE");
 
       // Their values must be different
-      assertNotEquals(WitBool.TRUE.getValue(), WitBool.FALSE.getValue(),
+      assertNotEquals(
+          WitBool.TRUE.getValue(),
+          WitBool.FALSE.getValue(),
           "TRUE.getValue() must differ from FALSE.getValue()");
     }
 

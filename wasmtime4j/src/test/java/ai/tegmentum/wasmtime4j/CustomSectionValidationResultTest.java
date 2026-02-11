@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult;
 import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult.ValidationIssue;
 import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult.ValidationIssueType;
 import java.lang.reflect.Modifier;
@@ -30,8 +31,6 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.metadata.CustomSection;
-import ai.tegmentum.wasmtime4j.metadata.CustomSectionValidationResult;
 
 /**
  * Tests for {@link CustomSectionValidationResult} class.
@@ -80,7 +79,9 @@ class CustomSectionValidationResultTest {
     void successShouldReturnDefaultSummary() {
       final CustomSectionValidationResult result = CustomSectionValidationResult.success();
 
-      assertEquals("All custom sections are valid", result.getSummary(),
+      assertEquals(
+          "All custom sections are valid",
+          result.getSummary(),
           "Default summary for success should indicate all valid");
     }
   }
@@ -92,8 +93,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("successWithWarnings should create valid result with warnings")
     void successWithWarningsShouldCreateValidResultWithWarnings() {
-      final List<ValidationIssue> warnings = List.of(
-          ValidationIssue.warning("name", "Section name is very long"));
+      final List<ValidationIssue> warnings =
+          List.of(ValidationIssue.warning("name", "Section name is very long"));
 
       final CustomSectionValidationResult result =
           CustomSectionValidationResult.successWithWarnings(warnings);
@@ -121,11 +122,10 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("failure with errors only should create invalid result")
     void failureWithErrorsOnlyShouldCreateInvalidResult() {
-      final List<ValidationIssue> errors = List.of(
-          ValidationIssue.error("debug", "Invalid debug section format"));
+      final List<ValidationIssue> errors =
+          List.of(ValidationIssue.error("debug", "Invalid debug section format"));
 
-      final CustomSectionValidationResult result =
-          CustomSectionValidationResult.failure(errors);
+      final CustomSectionValidationResult result = CustomSectionValidationResult.failure(errors);
 
       assertFalse(result.isValid(), "Failure result should not be valid");
       assertEquals(1, result.getErrors().size(), "Should have 1 error");
@@ -135,10 +135,10 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("failure with errors and warnings should create invalid result")
     void failureWithErrorsAndWarningsShouldCreateInvalidResult() {
-      final List<ValidationIssue> errors = List.of(
-          ValidationIssue.error("producers", "Malformed producers section"));
-      final List<ValidationIssue> warnings = List.of(
-          ValidationIssue.warning("name", "Empty name section"));
+      final List<ValidationIssue> errors =
+          List.of(ValidationIssue.error("producers", "Malformed producers section"));
+      final List<ValidationIssue> warnings =
+          List.of(ValidationIssue.warning("name", "Empty name section"));
 
       final CustomSectionValidationResult result =
           CustomSectionValidationResult.failure(errors, warnings);
@@ -188,8 +188,7 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("failure with two lists should throw IAE for null warnings")
     void failureWithTwoListsShouldThrowIaeForNullWarnings() {
-      final List<ValidationIssue> errors = List.of(
-          ValidationIssue.error("test", "test error"));
+      final List<ValidationIssue> errors = List.of(ValidationIssue.error("test", "test error"));
 
       assertThrows(
           IllegalArgumentException.class,
@@ -205,8 +204,7 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("builder should create valid result when no errors added")
     void builderShouldCreateValidResultWhenNoErrors() {
-      final CustomSectionValidationResult result =
-          CustomSectionValidationResult.builder().build();
+      final CustomSectionValidationResult result = CustomSectionValidationResult.builder().build();
 
       assertTrue(result.isValid(), "Builder with no errors should produce valid result");
     }
@@ -214,39 +212,41 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("builder should create invalid result when errors added")
     void builderShouldCreateInvalidResultWhenErrorsAdded() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError(ValidationIssue.error("test", "Test error"))
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder()
+              .addError(ValidationIssue.error("test", "Test error"))
+              .build();
 
-      assertFalse(result.isValid(),
-          "Builder with errors should produce invalid result");
+      assertFalse(result.isValid(), "Builder with errors should produce invalid result");
     }
 
     @Test
     @DisplayName("builder addError with section and message should work")
     void builderAddErrorWithSectionAndMessageShouldWork() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("debug", "Invalid format")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addError("debug", "Invalid format").build();
 
       assertFalse(result.isValid(), "Result should not be valid");
       assertEquals(1, result.getErrors().size(), "Should have 1 error");
-      assertEquals("debug", result.getErrors().get(0).getSectionName(),
+      assertEquals(
+          "debug",
+          result.getErrors().get(0).getSectionName(),
           "Error section name should be 'debug'");
-      assertEquals("Invalid format", result.getErrors().get(0).getMessage(),
-          "Error message should match");
+      assertEquals(
+          "Invalid format", result.getErrors().get(0).getMessage(), "Error message should match");
     }
 
     @Test
     @DisplayName("builder addWarning with section and message should work")
     void builderAddWarningWithSectionAndMessageShouldWork() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addWarning("name", "Section is large")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addWarning("name", "Section is large").build();
 
       assertTrue(result.isValid(), "Result should still be valid with only warnings");
       assertEquals(1, result.getWarnings().size(), "Should have 1 warning");
-      assertEquals("name", result.getWarnings().get(0).getSectionName(),
+      assertEquals(
+          "name",
+          result.getWarnings().get(0).getSectionName(),
           "Warning section name should be 'name'");
     }
 
@@ -271,24 +271,24 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("builder setSummary should set custom summary")
     void builderSetSummaryShouldSetCustomSummary() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .setSummary("Custom validation summary")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().setSummary("Custom validation summary").build();
 
-      assertEquals("Custom validation summary", result.getSummary(),
+      assertEquals(
+          "Custom validation summary",
+          result.getSummary(),
           "Summary should match the custom value");
     }
 
     @Test
     @DisplayName("builder setErrors should replace errors list")
     void builderSetErrorsShouldReplaceErrorsList() {
-      final List<ValidationIssue> errors = List.of(
-          ValidationIssue.error("sec1", "Error 1"),
-          ValidationIssue.error("sec2", "Error 2"));
+      final List<ValidationIssue> errors =
+          List.of(
+              ValidationIssue.error("sec1", "Error 1"), ValidationIssue.error("sec2", "Error 2"));
 
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .setErrors(errors)
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().setErrors(errors).build();
 
       assertEquals(2, result.getErrors().size(), "Should have 2 errors");
     }
@@ -296,14 +296,14 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("builder setWarnings should replace warnings list")
     void builderSetWarningsShouldReplaceWarningsList() {
-      final List<ValidationIssue> warnings = List.of(
-          ValidationIssue.warning("sec1", "Warn 1"),
-          ValidationIssue.warning("sec2", "Warn 2"),
-          ValidationIssue.warning("sec3", "Warn 3"));
+      final List<ValidationIssue> warnings =
+          List.of(
+              ValidationIssue.warning("sec1", "Warn 1"),
+              ValidationIssue.warning("sec2", "Warn 2"),
+              ValidationIssue.warning("sec3", "Warn 3"));
 
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .setWarnings(warnings)
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().setWarnings(warnings).build();
 
       assertEquals(3, result.getWarnings().size(), "Should have 3 warnings");
     }
@@ -324,9 +324,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("hasIssues should return true when only warnings present")
     void hasIssuesShouldReturnTrueWhenOnlyWarnings() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addWarning("test", "Warning msg")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addWarning("test", "Warning msg").build();
 
       assertTrue(result.hasIssues(), "Should have issues when warnings present");
     }
@@ -334,23 +333,24 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("getIssueCount should return sum of errors and warnings")
     void getIssueCountShouldReturnSum() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("sec1", "Error 1")
-          .addError("sec2", "Error 2")
-          .addWarning("sec3", "Warn 1")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder()
+              .addError("sec1", "Error 1")
+              .addError("sec2", "Error 2")
+              .addWarning("sec3", "Warn 1")
+              .build();
 
-      assertEquals(3, result.getIssueCount(),
-          "Issue count should be 3 (2 errors + 1 warning)");
+      assertEquals(3, result.getIssueCount(), "Issue count should be 3 (2 errors + 1 warning)");
     }
 
     @Test
     @DisplayName("getAllIssues should combine errors and warnings")
     void getAllIssuesShouldCombineErrorsAndWarnings() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("sec1", "Error 1")
-          .addWarning("sec2", "Warn 1")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder()
+              .addError("sec1", "Error 1")
+              .addWarning("sec2", "Warn 1")
+              .build();
 
       final List<ValidationIssue> allIssues = result.getAllIssues();
 
@@ -360,9 +360,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("getAllIssues should return immutable list")
     void getAllIssuesShouldReturnImmutableList() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("sec1", "Error 1")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addError("sec1", "Error 1").build();
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -373,30 +372,29 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("getIssuesForSection should filter by section name")
     void getIssuesForSectionShouldFilterBySectionName() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("debug", "Debug error 1")
-          .addError("debug", "Debug error 2")
-          .addError("name", "Name error")
-          .addWarning("debug", "Debug warning")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder()
+              .addError("debug", "Debug error 1")
+              .addError("debug", "Debug error 2")
+              .addError("name", "Name error")
+              .addWarning("debug", "Debug warning")
+              .build();
 
       final List<ValidationIssue> debugIssues = result.getIssuesForSection("debug");
 
-      assertEquals(3, debugIssues.size(),
-          "Should have 3 issues for 'debug' section (2 errors + 1 warning)");
+      assertEquals(
+          3, debugIssues.size(), "Should have 3 issues for 'debug' section (2 errors + 1 warning)");
     }
 
     @Test
     @DisplayName("getIssuesForSection should return empty list for unknown section")
     void getIssuesForSectionShouldReturnEmptyForUnknownSection() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("debug", "Error")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addError("debug", "Error").build();
 
       final List<ValidationIssue> issues = result.getIssuesForSection("nonexistent");
 
-      assertTrue(issues.isEmpty(),
-          "Should return empty list for unknown section");
+      assertTrue(issues.isEmpty(), "Should return empty list for unknown section");
     }
 
     @Test
@@ -418,9 +416,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("getSummary should generate default for valid with warnings")
     void getSummaryShouldGenerateDefaultForValidWithWarnings() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addWarning("test", "Some warning")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addWarning("test", "Some warning").build();
 
       final String summary = result.getSummary();
 
@@ -431,9 +428,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("getSummary should generate default for invalid result")
     void getSummaryShouldGenerateDefaultForInvalidResult() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("test", "Some error")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addError("test", "Some error").build();
 
       final String summary = result.getSummary();
 
@@ -443,12 +439,11 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("getSummary should return custom summary when set")
     void getSummaryShouldReturnCustomSummaryWhenSet() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .setSummary("My custom summary")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().setSummary("My custom summary").build();
 
-      assertEquals("My custom summary", result.getSummary(),
-          "Should return custom summary when set");
+      assertEquals(
+          "My custom summary", result.getSummary(), "Should return custom summary when set");
     }
   }
 
@@ -459,9 +454,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("getErrors should return immutable list")
     void getErrorsShouldReturnImmutableList() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("sec", "Error")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addError("sec", "Error").build();
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -472,9 +466,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("getWarnings should return immutable list")
     void getWarningsShouldReturnImmutableList() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addWarning("sec", "Warning")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder().addWarning("sec", "Warning").build();
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -492,7 +485,8 @@ class CustomSectionValidationResultTest {
     void toStringShouldContainPrefix() {
       final CustomSectionValidationResult result = CustomSectionValidationResult.success();
 
-      assertTrue(result.toString().startsWith("CustomSectionValidationResult{"),
+      assertTrue(
+          result.toString().startsWith("CustomSectionValidationResult{"),
           "toString should start with 'CustomSectionValidationResult{'");
     }
 
@@ -501,17 +495,19 @@ class CustomSectionValidationResultTest {
     void toStringShouldContainValidStatus() {
       final CustomSectionValidationResult result = CustomSectionValidationResult.success();
 
-      assertTrue(result.toString().contains("valid=true"),
+      assertTrue(
+          result.toString().contains("valid=true"),
           "toString should contain valid=true for success");
     }
 
     @Test
     @DisplayName("toString should contain error and warning counts")
     void toStringShouldContainCounts() {
-      final CustomSectionValidationResult result = CustomSectionValidationResult.builder()
-          .addError("sec", "Error")
-          .addWarning("sec", "Warn")
-          .build();
+      final CustomSectionValidationResult result =
+          CustomSectionValidationResult.builder()
+              .addError("sec", "Error")
+              .addWarning("sec", "Warn")
+              .build();
 
       final String str = result.toString();
 
@@ -527,8 +523,9 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("should create error issue with all fields")
     void shouldCreateErrorIssueWithAllFields() {
-      final ValidationIssue issue = new ValidationIssue(
-          ValidationIssueType.ERROR, "debug", "Invalid format", "Expected version 1");
+      final ValidationIssue issue =
+          new ValidationIssue(
+              ValidationIssueType.ERROR, "debug", "Invalid format", "Expected version 1");
 
       assertEquals(ValidationIssueType.ERROR, issue.getType(), "Type should be ERROR");
       assertEquals("debug", issue.getSectionName(), "Section name should be 'debug'");
@@ -541,8 +538,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("should create warning issue with all fields")
     void shouldCreateWarningIssueWithAllFields() {
-      final ValidationIssue issue = new ValidationIssue(
-          ValidationIssueType.WARNING, "name", "Large section", null);
+      final ValidationIssue issue =
+          new ValidationIssue(ValidationIssueType.WARNING, "name", "Large section", null);
 
       assertEquals(ValidationIssueType.WARNING, issue.getType(), "Type should be WARNING");
       assertEquals("name", issue.getSectionName(), "Section name should be 'name'");
@@ -579,8 +576,8 @@ class CustomSectionValidationResultTest {
     void warningFactoryShouldCreateWarningTypeIssue() {
       final ValidationIssue issue = ValidationIssue.warning("test", "test warning");
 
-      assertEquals(ValidationIssueType.WARNING, issue.getType(),
-          "Factory should create WARNING type");
+      assertEquals(
+          ValidationIssueType.WARNING, issue.getType(), "Factory should create WARNING type");
       assertEquals("test", issue.getSectionName(), "Section name should match");
       assertEquals("test warning", issue.getMessage(), "Message should match");
     }
@@ -615,8 +612,8 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("toString should contain type section and message")
     void toStringShouldContainTypeAndSectionAndMessage() {
-      final ValidationIssue issue = new ValidationIssue(
-          ValidationIssueType.ERROR, "debug", "Bad format", "Details here");
+      final ValidationIssue issue =
+          new ValidationIssue(ValidationIssueType.ERROR, "debug", "Bad format", "Details here");
 
       final String str = issue.toString();
 
@@ -656,8 +653,8 @@ class CustomSectionValidationResultTest {
       final ValidationIssue issue2 =
           new ValidationIssue(ValidationIssueType.ERROR, "debug", "Bad format", null);
 
-      assertEquals(issue1.hashCode(), issue2.hashCode(),
-          "Equal issues should have equal hash codes");
+      assertEquals(
+          issue1.hashCode(), issue2.hashCode(), "Equal issues should have equal hash codes");
     }
   }
 
@@ -676,14 +673,18 @@ class CustomSectionValidationResultTest {
     @Test
     @DisplayName("should have ERROR value")
     void shouldHaveErrorValue() {
-      assertEquals(ValidationIssueType.ERROR, ValidationIssueType.valueOf("ERROR"),
+      assertEquals(
+          ValidationIssueType.ERROR,
+          ValidationIssueType.valueOf("ERROR"),
           "Should have ERROR value");
     }
 
     @Test
     @DisplayName("should have WARNING value")
     void shouldHaveWarningValue() {
-      assertEquals(ValidationIssueType.WARNING, ValidationIssueType.valueOf("WARNING"),
+      assertEquals(
+          ValidationIssueType.WARNING,
+          ValidationIssueType.valueOf("WARNING"),
           "Should have WARNING value");
     }
   }

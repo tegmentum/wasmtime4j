@@ -399,11 +399,7 @@ class MarshalingExceptionTest {
     void memoryLayoutShouldNotBeRecoverable() {
       final MarshalingException exception =
           new MarshalingException(
-              "Memory layout error",
-              OperationType.MEMORY_LAYOUT,
-              "Struct",
-              256,
-              "Check alignment");
+              "Memory layout error", OperationType.MEMORY_LAYOUT, "Struct", 256, "Check alignment");
 
       assertFalse(exception.isRecoverable(), "MEMORY_LAYOUT should not be recoverable");
     }
@@ -469,8 +465,7 @@ class MarshalingExceptionTest {
             new MarshalingException("Test", type, "Type", -1, "Hint");
         // Should not throw - just verify it returns a boolean
         boolean result = exception.isRecoverable();
-        assertNotNull(
-            Boolean.valueOf(result), "isRecoverable should return a value for " + type);
+        assertNotNull(Boolean.valueOf(result), "isRecoverable should return a value for " + type);
       }
     }
   }
@@ -526,8 +521,7 @@ class MarshalingExceptionTest {
 
       final String[] strategies = exception.getRetryStrategies();
       assertEquals(3, strategies.length, "OBJECT_GRAPH_TRAVERSAL should have 3 strategies");
-      assertEquals(
-          "Reduce object graph depth", strategies[0], "First strategy should match");
+      assertEquals("Reduce object graph depth", strategies[0], "First strategy should match");
       assertEquals(
           "Break complex objects into simpler parts",
           strategies[1],
@@ -538,20 +532,14 @@ class MarshalingExceptionTest {
     @Test
     @DisplayName("CIRCULAR_REFERENCE_DETECTION should have specific retry strategies")
     void circularReferenceDetectionShouldHaveSpecificStrategies() {
-      final MarshalingException exception =
-          MarshalingException.circularReferenceDetected("Node");
+      final MarshalingException exception = MarshalingException.circularReferenceDetected("Node");
 
       final String[] strategies = exception.getRetryStrategies();
+      assertEquals(3, strategies.length, "CIRCULAR_REFERENCE_DETECTION should have 3 strategies");
       assertEquals(
-          3, strategies.length, "CIRCULAR_REFERENCE_DETECTION should have 3 strategies");
+          "Disable circular reference detection", strategies[0], "First strategy should match");
       assertEquals(
-          "Disable circular reference detection",
-          strategies[0],
-          "First strategy should match");
-      assertEquals(
-          "Break circular references manually",
-          strategies[1],
-          "Second strategy should match");
+          "Break circular references manually", strategies[1], "Second strategy should match");
       assertEquals(
           "Use object references instead of embedded objects",
           strategies[2],
@@ -566,10 +554,8 @@ class MarshalingExceptionTest {
 
       final String[] strategies = exception.getRetryStrategies();
       assertEquals(3, strategies.length, "STRATEGY_SELECTION should have 3 strategies");
-      assertEquals(
-          "Use memory-based marshaling", strategies[0], "First strategy should match");
-      assertEquals(
-          "Enable streaming marshaling", strategies[1], "Second strategy should match");
+      assertEquals("Use memory-based marshaling", strategies[0], "First strategy should match");
+      assertEquals("Enable streaming marshaling", strategies[1], "Second strategy should match");
       assertEquals(
           "Break object into smaller chunks", strategies[2], "Third strategy should match");
     }
@@ -584,12 +570,9 @@ class MarshalingExceptionTest {
       final String[] strategies = exception.getRetryStrategies();
       assertEquals(3, strategies.length, "ARRAY_MARSHALING should have 3 strategies");
       assertEquals("Use smaller data structures", strategies[0], "First strategy should match");
+      assertEquals("Enable memory-based marshaling", strategies[1], "Second strategy should match");
       assertEquals(
-          "Enable memory-based marshaling", strategies[1], "Second strategy should match");
-      assertEquals(
-          "Use lazy loading for large collections",
-          strategies[2],
-          "Third strategy should match");
+          "Use lazy loading for large collections", strategies[2], "Third strategy should match");
     }
 
     @Test
@@ -642,11 +625,7 @@ class MarshalingExceptionTest {
     void memoryLayoutShouldHaveEmptyStrategies() {
       final MarshalingException exception =
           new MarshalingException(
-              "Layout error",
-              OperationType.MEMORY_LAYOUT,
-              "Struct",
-              256,
-              "Check alignment");
+              "Layout error", OperationType.MEMORY_LAYOUT, "Struct", 256, "Check alignment");
 
       final String[] strategies = exception.getRetryStrategies();
       assertEquals(0, strategies.length, "MEMORY_LAYOUT should have empty strategies");
@@ -724,8 +703,7 @@ class MarshalingExceptionTest {
     @DisplayName("Message should not include type section when objectTypeName is empty")
     void messageShouldNotIncludeTypeWhenEmpty() {
       final MarshalingException exception =
-          new MarshalingException(
-              "Error message", OperationType.SERIALIZATION, "", -1, "Hint");
+          new MarshalingException("Error message", OperationType.SERIALIZATION, "", -1, "Hint");
 
       assertFalse(
           exception.getMessage().contains("[Type:"),
@@ -739,8 +717,7 @@ class MarshalingExceptionTest {
     @DisplayName("Message should not include type section when objectTypeName is null")
     void messageShouldNotIncludeTypeWhenNull() {
       final MarshalingException exception =
-          new MarshalingException(
-              "Error message", OperationType.SERIALIZATION, null, -1, "Hint");
+          new MarshalingException("Error message", OperationType.SERIALIZATION, null, -1, "Hint");
 
       assertFalse(
           exception.getMessage().contains("[Type:"),
@@ -763,8 +740,7 @@ class MarshalingExceptionTest {
     @DisplayName("Message should not include size section when estimatedSize is negative")
     void messageShouldNotIncludeSizeWhenNegative() {
       final MarshalingException exception =
-          new MarshalingException(
-              "Error message", OperationType.SERIALIZATION, "Type", -1, "Hint");
+          new MarshalingException("Error message", OperationType.SERIALIZATION, "Type", -1, "Hint");
 
       assertFalse(
           exception.getMessage().contains("[Size:"),
@@ -775,8 +751,7 @@ class MarshalingExceptionTest {
     @DisplayName("Message should not include hint section when recoveryHint is empty")
     void messageShouldNotIncludeHintWhenEmpty() {
       final MarshalingException exception =
-          new MarshalingException(
-              "Error message", OperationType.SERIALIZATION, "Type", -1, "");
+          new MarshalingException("Error message", OperationType.SERIALIZATION, "Type", -1, "");
 
       assertFalse(
           exception.getMessage().contains("[Hint:"),
@@ -787,8 +762,7 @@ class MarshalingExceptionTest {
     @DisplayName("Message should not include hint section when recoveryHint is null")
     void messageShouldNotIncludeHintWhenNull() {
       final MarshalingException exception =
-          new MarshalingException(
-              "Error message", OperationType.SERIALIZATION, "Type", -1, null);
+          new MarshalingException("Error message", OperationType.SERIALIZATION, "Type", -1, null);
 
       assertFalse(
           exception.getMessage().contains("[Hint:"),
@@ -812,11 +786,7 @@ class MarshalingExceptionTest {
     void messageWithAllValidFieldsShouldContainAllSections() {
       final MarshalingException exception =
           new MarshalingException(
-              "Full error",
-              OperationType.TYPE_CONVERSION,
-              "MyClass",
-              1024,
-              "Try again");
+              "Full error", OperationType.TYPE_CONVERSION, "MyClass", 1024, "Try again");
 
       final String message = exception.getMessage();
       assertTrue(message.contains("Full error"), "Message should contain base message");
@@ -833,11 +803,7 @@ class MarshalingExceptionTest {
     void messageSectionsShouldAppearInCorrectOrder() {
       final MarshalingException exception =
           new MarshalingException(
-              "Order test",
-              OperationType.SERIALIZATION,
-              "TypeName",
-              512,
-              "Recovery hint");
+              "Order test", OperationType.SERIALIZATION, "TypeName", 512, "Recovery hint");
 
       final String message = exception.getMessage();
       final int operationIndex = message.indexOf("[Operation:");
@@ -845,9 +811,7 @@ class MarshalingExceptionTest {
       final int sizeIndex = message.indexOf("[Size:");
       final int hintIndex = message.indexOf("[Hint:");
 
-      assertTrue(
-          operationIndex < typeIndex,
-          "Operation section should appear before type section");
+      assertTrue(operationIndex < typeIndex, "Operation section should appear before type section");
       assertTrue(typeIndex < sizeIndex, "Type section should appear before size section");
       assertTrue(sizeIndex < hintIndex, "Size section should appear before hint section");
     }
@@ -863,12 +827,7 @@ class MarshalingExceptionTest {
       final Throwable cause = new IllegalArgumentException("Root cause");
       final MarshalingException exception =
           new MarshalingException(
-              "Error with cause",
-              cause,
-              OperationType.TYPE_CONVERSION,
-              "Type",
-              100,
-              "Hint");
+              "Error with cause", cause, OperationType.TYPE_CONVERSION, "Type", 100, "Hint");
 
       assertSame(cause, exception.getCause(), "Cause should be stored properly");
     }
@@ -879,19 +838,10 @@ class MarshalingExceptionTest {
       final Throwable cause = new RuntimeException("Cause");
       final MarshalingException withCause =
           new MarshalingException(
-              "Same message",
-              cause,
-              OperationType.SERIALIZATION,
-              "SameType",
-              256,
-              "Same hint");
+              "Same message", cause, OperationType.SERIALIZATION, "SameType", 256, "Same hint");
       final MarshalingException withoutCause =
           new MarshalingException(
-              "Same message",
-              OperationType.SERIALIZATION,
-              "SameType",
-              256,
-              "Same hint");
+              "Same message", OperationType.SERIALIZATION, "SameType", 256, "Same hint");
 
       assertEquals(
           withoutCause.getMessage(),
@@ -903,8 +853,7 @@ class MarshalingExceptionTest {
     @DisplayName("Constructor with null cause should not throw")
     void constructorWithNullCauseShouldNotThrow() {
       final MarshalingException exception =
-          new MarshalingException(
-              "Error", null, OperationType.DESERIALIZATION, "Type", -1, "Hint");
+          new MarshalingException("Error", null, OperationType.DESERIALIZATION, "Type", -1, "Hint");
 
       assertNotNull(exception, "Exception should be created with null cause");
       // null is a valid operationType parameter, not cause
@@ -921,10 +870,7 @@ class MarshalingExceptionTest {
       for (OperationType type : OperationType.values()) {
         final MarshalingException exception =
             new MarshalingException("Test", type, "Type", -1, "Hint");
-        assertEquals(
-            type,
-            exception.getOperationType(),
-            "getOperationType should return " + type);
+        assertEquals(type, exception.getOperationType(), "getOperationType should return " + type);
       }
     }
 
@@ -936,9 +882,7 @@ class MarshalingExceptionTest {
         final MarshalingException exception =
             new MarshalingException("Test", OperationType.SERIALIZATION, name, -1, "Hint");
         assertEquals(
-            name,
-            exception.getObjectTypeName(),
-            "getObjectTypeName should return: " + name);
+            name, exception.getObjectTypeName(), "getObjectTypeName should return: " + name);
       }
     }
 
@@ -949,10 +893,7 @@ class MarshalingExceptionTest {
       for (long size : testSizes) {
         final MarshalingException exception =
             new MarshalingException("Test", OperationType.MEMORY_ALLOCATION, "Type", size, "Hint");
-        assertEquals(
-            size,
-            exception.getEstimatedSize(),
-            "getEstimatedSize should return: " + size);
+        assertEquals(size, exception.getEstimatedSize(), "getEstimatedSize should return: " + size);
       }
     }
 
@@ -963,10 +904,7 @@ class MarshalingExceptionTest {
       for (String hint : testHints) {
         final MarshalingException exception =
             new MarshalingException("Test", OperationType.SERIALIZATION, "Type", -1, hint);
-        assertEquals(
-            hint,
-            exception.getRecoveryHint(),
-            "getRecoveryHint should return: " + hint);
+        assertEquals(hint, exception.getRecoveryHint(), "getRecoveryHint should return: " + hint);
       }
     }
   }
@@ -1024,8 +962,7 @@ class MarshalingExceptionTest {
     @Test
     @DisplayName("circularReferenceDetected should set estimatedSize to -1 (unknown)")
     void circularReferenceDetectedShouldSetEstimatedSizeToNegativeOne() {
-      final MarshalingException exception =
-          MarshalingException.circularReferenceDetected("Node");
+      final MarshalingException exception = MarshalingException.circularReferenceDetected("Node");
 
       assertEquals(
           -1,
@@ -1067,7 +1004,8 @@ class MarshalingExceptionTest {
 
       // arrayMarshalingFailure passes the array size
       final MarshalingException arrayException =
-          MarshalingException.arrayMarshalingFailure("int[]", 500, new java.lang.RuntimeException());
+          MarshalingException.arrayMarshalingFailure(
+              "int[]", 500, new java.lang.RuntimeException());
       assertEquals(
           500,
           arrayException.getEstimatedSize(),
@@ -1075,7 +1013,8 @@ class MarshalingExceptionTest {
 
       // collectionMarshalingFailure passes the collection size
       final MarshalingException collException =
-          MarshalingException.collectionMarshalingFailure("List", 750, new java.lang.RuntimeException());
+          MarshalingException.collectionMarshalingFailure(
+              "List", 750, new java.lang.RuntimeException());
       assertEquals(
           750,
           collException.getEstimatedSize(),
@@ -1085,9 +1024,7 @@ class MarshalingExceptionTest {
       final MarshalingException largeException =
           MarshalingException.objectTooLarge("LargeObject", 5000, 1000);
       assertEquals(
-          5000,
-          largeException.getEstimatedSize(),
-          "objectTooLarge should use actual size");
+          5000, largeException.getEstimatedSize(), "objectTooLarge should use actual size");
     }
   }
 
@@ -1118,8 +1055,7 @@ class MarshalingExceptionTest {
     @DisplayName("objectTooLarge should use actualSize as first format argument")
     void objectTooLargeShouldUseActualSizeAsFirstArgument() {
       // Test with different values to ensure we're checking the right positions
-      final MarshalingException exception =
-          MarshalingException.objectTooLarge("Type", 12345, 500);
+      final MarshalingException exception = MarshalingException.objectTooLarge("Type", 12345, 500);
 
       final String message = exception.getMessage();
       // The pattern "Object size (12345 bytes)" proves actualSize is first argument
@@ -1131,8 +1067,7 @@ class MarshalingExceptionTest {
     @Test
     @DisplayName("objectTooLarge should use maxAllowedSize as second format argument")
     void objectTooLargeShouldUseMaxAllowedSizeAsSecondArgument() {
-      final MarshalingException exception =
-          MarshalingException.objectTooLarge("Type", 10000, 2500);
+      final MarshalingException exception = MarshalingException.objectTooLarge("Type", 10000, 2500);
 
       final String message = exception.getMessage();
       // The pattern "maximum allowed (2500 bytes)" proves maxAllowedSize is second argument
@@ -1145,8 +1080,7 @@ class MarshalingExceptionTest {
     @DisplayName("objectTooLarge format arguments should not be swapped")
     void objectTooLargeFormatArgumentsShouldNotBeSwapped() {
       // Use distinct values that would produce different messages if swapped
-      final MarshalingException exception =
-          MarshalingException.objectTooLarge("Type", 9999, 1111);
+      final MarshalingException exception = MarshalingException.objectTooLarge("Type", 9999, 1111);
 
       final String message = exception.getMessage();
       // Correct format: "Object size (9999 bytes) exceeds maximum allowed (1111 bytes)"
@@ -1163,8 +1097,7 @@ class MarshalingExceptionTest {
     @DisplayName("objectTooLarge with equal values should still work correctly")
     void objectTooLargeWithEqualValuesShouldWork() {
       // Edge case: when actualSize equals maxAllowedSize
-      final MarshalingException exception =
-          MarshalingException.objectTooLarge("Type", 1000, 1000);
+      final MarshalingException exception = MarshalingException.objectTooLarge("Type", 1000, 1000);
 
       final String message = exception.getMessage();
       // Should have "1000" twice in the message

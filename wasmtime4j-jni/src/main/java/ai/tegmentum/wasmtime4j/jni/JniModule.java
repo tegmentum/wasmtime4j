@@ -1,9 +1,9 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.ImportType;
-import ai.tegmentum.wasmtime4j.Module;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +82,8 @@ public class JniModule implements Module {
 
   @Override
   public ai.tegmentum.wasmtime4j.Instance instantiate(
-      final ai.tegmentum.wasmtime4j.Store store, final ai.tegmentum.wasmtime4j.validation.ImportMap imports)
+      final ai.tegmentum.wasmtime4j.Store store,
+      final ai.tegmentum.wasmtime4j.validation.ImportMap imports)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
@@ -430,7 +431,8 @@ public class JniModule implements Module {
     }
 
     final long startTime = System.nanoTime();
-    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues =
+        new java.util.ArrayList<>();
     final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> validatedImports =
         new java.util.ArrayList<>();
     final java.util.Map<String, java.util.Map<String, Object>> importsMap = imports.getImports();

@@ -16,27 +16,27 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.component.ComponentEngine;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.config.StoreLimits;
-import ai.tegmentum.wasmtime4j.memory.Tag;
-import ai.tegmentum.wasmtime4j.type.TagType;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.component.ComponentEngine;
+import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
+import ai.tegmentum.wasmtime4j.config.Serializer;
+import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.TagType;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
+import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import java.io.IOException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -289,8 +289,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
-  public <T> ai.tegmentum.wasmtime4j.component.ComponentLinker<T> createComponentLinker(final Engine engine)
-      throws WasmException {
+  public <T> ai.tegmentum.wasmtime4j.component.ComponentLinker<T> createComponentLinker(
+      final Engine engine) throws WasmException {
     PanamaValidation.requireNonNull(engine, "engine");
     ensureNotClosed();
 

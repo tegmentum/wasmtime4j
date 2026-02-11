@@ -74,9 +74,7 @@ class NoneRefTest {
     void getValueTypeShouldReturnAnyref() {
       final NoneRef noneRef = NoneRef.getInstance();
       assertEquals(
-          WasmValueType.ANYREF,
-          noneRef.getValueType(),
-          "NoneRef value type should be ANYREF");
+          WasmValueType.ANYREF, noneRef.getValueType(), "NoneRef value type should be ANYREF");
     }
 
     @Test
@@ -116,159 +114,154 @@ class NoneRefTest {
     @DisplayName("should be subtype of itself")
     void shouldBeSubtypeOfItself() {
       final NoneRef noneRef = NoneRef.getInstance();
-      assertTrue(
-          noneRef.isSubtypeOf(noneRef),
-          "NoneRef should be a subtype of itself");
+      assertTrue(noneRef.isSubtypeOf(noneRef), "NoneRef should be a subtype of itself");
     }
 
     @Test
     @DisplayName("should be subtype of ANYREF heap type")
     void shouldBeSubtypeOfAnyrefHeapType() {
       final NoneRef noneRef = NoneRef.getInstance();
-      final HeapType anyType = new HeapType() {
-        @Override
-        public WasmValueType getValueType() {
-          return WasmValueType.ANYREF;
-        }
+      final HeapType anyType =
+          new HeapType() {
+            @Override
+            public WasmValueType getValueType() {
+              return WasmValueType.ANYREF;
+            }
 
-        @Override
-        public boolean isNullable() {
-          return false;
-        }
+            @Override
+            public boolean isNullable() {
+              return false;
+            }
 
-        @Override
-        public boolean isSubtypeOf(final HeapType other) {
-          return false;
-        }
+            @Override
+            public boolean isSubtypeOf(final HeapType other) {
+              return false;
+            }
 
-        @Override
-        public String getTypeName() {
-          return "any";
-        }
-      };
-      assertTrue(
-          noneRef.isSubtypeOf(anyType),
-          "NoneRef should be a subtype of ANYREF heap type");
+            @Override
+            public String getTypeName() {
+              return "any";
+            }
+          };
+      assertTrue(noneRef.isSubtypeOf(anyType), "NoneRef should be a subtype of ANYREF heap type");
     }
 
     @Test
     @DisplayName("should be subtype of EQREF heap type")
     void shouldBeSubtypeOfEqrefHeapType() {
       final NoneRef noneRef = NoneRef.getInstance();
-      final HeapType eqType = new HeapType() {
-        @Override
-        public WasmValueType getValueType() {
-          return WasmValueType.EQREF;
-        }
+      final HeapType eqType =
+          new HeapType() {
+            @Override
+            public WasmValueType getValueType() {
+              return WasmValueType.EQREF;
+            }
 
-        @Override
-        public boolean isNullable() {
-          return false;
-        }
+            @Override
+            public boolean isNullable() {
+              return false;
+            }
 
-        @Override
-        public boolean isSubtypeOf(final HeapType other) {
-          return false;
-        }
+            @Override
+            public boolean isSubtypeOf(final HeapType other) {
+              return false;
+            }
 
-        @Override
-        public String getTypeName() {
-          return "eq";
-        }
-      };
-      assertTrue(
-          noneRef.isSubtypeOf(eqType),
-          "NoneRef should be a subtype of EQREF heap type");
+            @Override
+            public String getTypeName() {
+              return "eq";
+            }
+          };
+      assertTrue(noneRef.isSubtypeOf(eqType), "NoneRef should be a subtype of EQREF heap type");
     }
 
     @Test
     @DisplayName("should be subtype of I31REF heap type")
     void shouldBeSubtypeOfI31refHeapType() {
       final NoneRef noneRef = NoneRef.getInstance();
-      final HeapType i31Type = new HeapType() {
-        @Override
-        public WasmValueType getValueType() {
-          return WasmValueType.I31REF;
-        }
+      final HeapType i31Type =
+          new HeapType() {
+            @Override
+            public WasmValueType getValueType() {
+              return WasmValueType.I31REF;
+            }
 
-        @Override
-        public boolean isNullable() {
-          return false;
-        }
+            @Override
+            public boolean isNullable() {
+              return false;
+            }
 
-        @Override
-        public boolean isSubtypeOf(final HeapType other) {
-          return false;
-        }
+            @Override
+            public boolean isSubtypeOf(final HeapType other) {
+              return false;
+            }
 
-        @Override
-        public String getTypeName() {
-          return "i31";
-        }
-      };
-      assertTrue(
-          noneRef.isSubtypeOf(i31Type),
-          "NoneRef should be a subtype of I31REF heap type");
+            @Override
+            public String getTypeName() {
+              return "i31";
+            }
+          };
+      assertTrue(noneRef.isSubtypeOf(i31Type), "NoneRef should be a subtype of I31REF heap type");
     }
 
     @Test
     @DisplayName("should be subtype of STRUCTREF heap type")
     void shouldBeSubtypeOfStructrefHeapType() {
       final NoneRef noneRef = NoneRef.getInstance();
-      final HeapType structType = new HeapType() {
-        @Override
-        public WasmValueType getValueType() {
-          return WasmValueType.STRUCTREF;
-        }
+      final HeapType structType =
+          new HeapType() {
+            @Override
+            public WasmValueType getValueType() {
+              return WasmValueType.STRUCTREF;
+            }
 
-        @Override
-        public boolean isNullable() {
-          return false;
-        }
+            @Override
+            public boolean isNullable() {
+              return false;
+            }
 
-        @Override
-        public boolean isSubtypeOf(final HeapType other) {
-          return false;
-        }
+            @Override
+            public boolean isSubtypeOf(final HeapType other) {
+              return false;
+            }
 
-        @Override
-        public String getTypeName() {
-          return "struct";
-        }
-      };
+            @Override
+            public String getTypeName() {
+              return "struct";
+            }
+          };
       assertTrue(
-          noneRef.isSubtypeOf(structType),
-          "NoneRef should be a subtype of STRUCTREF heap type");
+          noneRef.isSubtypeOf(structType), "NoneRef should be a subtype of STRUCTREF heap type");
     }
 
     @Test
     @DisplayName("should be subtype of ARRAYREF heap type")
     void shouldBeSubtypeOfArrayrefHeapType() {
       final NoneRef noneRef = NoneRef.getInstance();
-      final HeapType arrayType = new HeapType() {
-        @Override
-        public WasmValueType getValueType() {
-          return WasmValueType.ARRAYREF;
-        }
+      final HeapType arrayType =
+          new HeapType() {
+            @Override
+            public WasmValueType getValueType() {
+              return WasmValueType.ARRAYREF;
+            }
 
-        @Override
-        public boolean isNullable() {
-          return false;
-        }
+            @Override
+            public boolean isNullable() {
+              return false;
+            }
 
-        @Override
-        public boolean isSubtypeOf(final HeapType other) {
-          return false;
-        }
+            @Override
+            public boolean isSubtypeOf(final HeapType other) {
+              return false;
+            }
 
-        @Override
-        public String getTypeName() {
-          return "array";
-        }
-      };
+            @Override
+            public String getTypeName() {
+              return "array";
+            }
+          };
       assertTrue(
-          noneRef.isSubtypeOf(arrayType),
-          "NoneRef should be a subtype of ARRAYREF heap type");
+          noneRef.isSubtypeOf(arrayType), "NoneRef should be a subtype of ARRAYREF heap type");
     }
 
     @Test
@@ -346,9 +339,7 @@ class NoneRefTest {
     @DisplayName("should implement HeapType interface")
     void shouldImplementHeapTypeInterface() {
       final NoneRef noneRef = NoneRef.getInstance();
-      assertTrue(
-          noneRef instanceof HeapType,
-          "NoneRef should implement HeapType interface");
+      assertTrue(noneRef instanceof HeapType, "NoneRef should implement HeapType interface");
     }
 
     @Test
@@ -365,9 +356,7 @@ class NoneRefTest {
       final NoneRef noneRef = NoneRef.getInstance();
       final HeapType nonNullable = noneRef.asNonNullable();
       assertSame(
-          noneRef,
-          nonNullable,
-          "asNonNullable should return the same instance for bottom types");
+          noneRef, nonNullable, "asNonNullable should return the same instance for bottom types");
     }
   }
 }

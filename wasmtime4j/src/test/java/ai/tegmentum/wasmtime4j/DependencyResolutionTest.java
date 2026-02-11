@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.util.Collections;
@@ -30,7 +31,6 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 
 /**
  * Tests for {@link DependencyResolution} class.
@@ -67,10 +67,16 @@ class DependencyResolutionTest {
     void shouldRejectNullInstantiationOrder() {
       assertThrows(
           NullPointerException.class,
-          () -> new DependencyResolution(
-              null, Collections.emptyList(), false,
-              Collections.emptyList(), 0, 0,
-              Duration.ofMillis(10), true),
+          () ->
+              new DependencyResolution(
+                  null,
+                  Collections.emptyList(),
+                  false,
+                  Collections.emptyList(),
+                  0,
+                  0,
+                  Duration.ofMillis(10),
+                  true),
           "Null instantiationOrder should throw NullPointerException");
     }
 
@@ -79,10 +85,16 @@ class DependencyResolutionTest {
     void shouldRejectNullDependencies() {
       assertThrows(
           NullPointerException.class,
-          () -> new DependencyResolution(
-              Collections.emptyList(), null, false,
-              Collections.emptyList(), 0, 0,
-              Duration.ofMillis(10), true),
+          () ->
+              new DependencyResolution(
+                  Collections.emptyList(),
+                  null,
+                  false,
+                  Collections.emptyList(),
+                  0,
+                  0,
+                  Duration.ofMillis(10),
+                  true),
           "Null dependencies should throw NullPointerException");
     }
 
@@ -91,10 +103,16 @@ class DependencyResolutionTest {
     void shouldRejectNullCircularChains() {
       assertThrows(
           NullPointerException.class,
-          () -> new DependencyResolution(
-              Collections.emptyList(), Collections.emptyList(), false,
-              null, 0, 0,
-              Duration.ofMillis(10), true),
+          () ->
+              new DependencyResolution(
+                  Collections.emptyList(),
+                  Collections.emptyList(),
+                  false,
+                  null,
+                  0,
+                  0,
+                  Duration.ofMillis(10),
+                  true),
           "Null circularDependencyChains should throw NullPointerException");
     }
 
@@ -103,10 +121,16 @@ class DependencyResolutionTest {
     void shouldRejectNullAnalysisTime() {
       assertThrows(
           NullPointerException.class,
-          () -> new DependencyResolution(
-              Collections.emptyList(), Collections.emptyList(), false,
-              Collections.emptyList(), 0, 0,
-              null, true),
+          () ->
+              new DependencyResolution(
+                  Collections.emptyList(),
+                  Collections.emptyList(),
+                  false,
+                  Collections.emptyList(),
+                  0,
+                  0,
+                  null,
+                  true),
           "Null analysisTime should throw NullPointerException");
     }
   }
@@ -118,28 +142,27 @@ class DependencyResolutionTest {
     @Test
     @DisplayName("should create successful resolution with empty collections")
     void shouldCreateSuccessfulResolutionWithEmptyCollections() {
-      final DependencyResolution resolution = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          0,
-          0,
-          Duration.ofMillis(5),
-          true);
+      final DependencyResolution resolution =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              0,
+              0,
+              Duration.ofMillis(5),
+              true);
 
       assertNotNull(resolution, "Resolution should not be null");
       assertTrue(resolution.getInstantiationOrder().isEmpty(), "Order should be empty");
       assertTrue(resolution.getDependencies().isEmpty(), "Dependencies should be empty");
       assertFalse(resolution.hasCircularDependencies(), "Should have no circular deps");
       assertTrue(
-          resolution.getCircularDependencyChains().isEmpty(),
-          "Circular chains should be empty");
+          resolution.getCircularDependencyChains().isEmpty(), "Circular chains should be empty");
       assertEquals(0, resolution.getTotalModules(), "totalModules should be 0");
       assertEquals(0, resolution.getResolvedDependencies(), "resolvedDependencies should be 0");
       assertEquals(
-          Duration.ofMillis(5), resolution.getAnalysisTime(),
-          "analysisTime should be 5ms");
+          Duration.ofMillis(5), resolution.getAnalysisTime(), "analysisTime should be 5ms");
       assertTrue(resolution.isResolutionSuccessful(), "Resolution should be successful");
     }
   }
@@ -152,27 +175,26 @@ class DependencyResolutionTest {
     @DisplayName("should represent circular dependencies")
     void shouldRepresentCircularDependencies() {
       final List<String> chains = List.of("A -> B -> C -> A");
-      final DependencyResolution resolution = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          true,
-          chains,
-          3,
-          1,
-          Duration.ofMillis(50),
-          false);
+      final DependencyResolution resolution =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              true,
+              chains,
+              3,
+              1,
+              Duration.ofMillis(50),
+              false);
 
       assertTrue(resolution.hasCircularDependencies(), "Should have circular deps");
       assertEquals(
-          1, resolution.getCircularDependencyChains().size(),
-          "Should have 1 circular chain");
+          1, resolution.getCircularDependencyChains().size(), "Should have 1 circular chain");
       assertEquals(
-          "A -> B -> C -> A", resolution.getCircularDependencyChains().get(0),
+          "A -> B -> C -> A",
+          resolution.getCircularDependencyChains().get(0),
           "Chain should match");
       assertEquals(3, resolution.getTotalModules(), "totalModules should be 3");
-      assertFalse(
-          resolution.isResolutionSuccessful(),
-          "Resolution should not be successful");
+      assertFalse(resolution.isResolutionSuccessful(), "Resolution should not be successful");
     }
   }
 
@@ -183,19 +205,19 @@ class DependencyResolutionTest {
     @Test
     @DisplayName("should return 100% for empty dependencies")
     void shouldReturn100ForEmptyDependencies() {
-      final DependencyResolution resolution = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          0,
-          0,
-          Duration.ofMillis(1),
-          true);
+      final DependencyResolution resolution =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              0,
+              0,
+              Duration.ofMillis(1),
+              true);
 
       assertEquals(
-          100.0, resolution.getResolutionRate(), 0.001,
-          "Empty dependencies should give 100% rate");
+          100.0, resolution.getResolutionRate(), 0.001, "Empty dependencies should give 100% rate");
     }
   }
 
@@ -206,15 +228,16 @@ class DependencyResolutionTest {
     @Test
     @DisplayName("getInstantiationOrder should return unmodifiable list")
     void getInstantiationOrderShouldBeUnmodifiable() {
-      final DependencyResolution resolution = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          0,
-          0,
-          Duration.ofMillis(1),
-          true);
+      final DependencyResolution resolution =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              0,
+              0,
+              Duration.ofMillis(1),
+              true);
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -225,15 +248,16 @@ class DependencyResolutionTest {
     @Test
     @DisplayName("getDependencies should return unmodifiable list")
     void getDependenciesShouldBeUnmodifiable() {
-      final DependencyResolution resolution = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          0,
-          0,
-          Duration.ofMillis(1),
-          true);
+      final DependencyResolution resolution =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              0,
+              0,
+              Duration.ofMillis(1),
+              true);
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -244,15 +268,16 @@ class DependencyResolutionTest {
     @Test
     @DisplayName("getCircularDependencyChains should return unmodifiable list")
     void getCircularChainsShouldBeUnmodifiable() {
-      final DependencyResolution resolution = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          0,
-          0,
-          Duration.ofMillis(1),
-          true);
+      final DependencyResolution resolution =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              0,
+              0,
+              Duration.ofMillis(1),
+              true);
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -268,52 +293,54 @@ class DependencyResolutionTest {
     @Test
     @DisplayName("equal resolutions should be equal")
     void equalResolutionsShouldBeEqual() {
-      final DependencyResolution res1 = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          5,
-          3,
-          Duration.ofMillis(10),
-          true);
-      final DependencyResolution res2 = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          5,
-          3,
-          Duration.ofMillis(10),
-          true);
+      final DependencyResolution res1 =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              5,
+              3,
+              Duration.ofMillis(10),
+              true);
+      final DependencyResolution res2 =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              5,
+              3,
+              Duration.ofMillis(10),
+              true);
 
       assertEquals(res1, res2, "Identical resolutions should be equal");
-      assertEquals(
-          res1.hashCode(), res2.hashCode(),
-          "Equal objects should have same hashCode");
+      assertEquals(res1.hashCode(), res2.hashCode(), "Equal objects should have same hashCode");
     }
 
     @Test
     @DisplayName("different resolutions should not be equal")
     void differentResolutionsShouldNotBeEqual() {
-      final DependencyResolution res1 = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          5,
-          3,
-          Duration.ofMillis(10),
-          true);
-      final DependencyResolution res2 = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          true,
-          List.of("A -> B -> A"),
-          5,
-          2,
-          Duration.ofMillis(10),
-          false);
+      final DependencyResolution res1 =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              5,
+              3,
+              Duration.ofMillis(10),
+              true);
+      final DependencyResolution res2 =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              true,
+              List.of("A -> B -> A"),
+              5,
+              2,
+              Duration.ofMillis(10),
+              false);
 
       assertNotEquals(res1, res2, "Different resolutions should not be equal");
     }
@@ -326,15 +353,16 @@ class DependencyResolutionTest {
     @Test
     @DisplayName("toString should contain key information")
     void toStringShouldContainKeyInfo() {
-      final DependencyResolution resolution = new DependencyResolution(
-          Collections.emptyList(),
-          Collections.emptyList(),
-          false,
-          Collections.emptyList(),
-          3,
-          2,
-          Duration.ofMillis(50),
-          true);
+      final DependencyResolution resolution =
+          new DependencyResolution(
+              Collections.emptyList(),
+              Collections.emptyList(),
+              false,
+              Collections.emptyList(),
+              3,
+              2,
+              Duration.ofMillis(50),
+              true);
 
       final String result = resolution.toString();
       assertNotNull(result, "toString should not return null");

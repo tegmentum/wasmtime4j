@@ -49,16 +49,14 @@ class WitFlagsTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(WitFlags.class.getModifiers()), "WitFlags should be final");
+      assertTrue(Modifier.isFinal(WitFlags.class.getModifiers()), "WitFlags should be final");
     }
 
     @Test
     @DisplayName("should extend WitValue")
     void shouldExtendWitValue() {
       assertTrue(
-          WitValue.class.isAssignableFrom(WitFlags.class),
-          "WitFlags should extend WitValue");
+          WitValue.class.isAssignableFrom(WitFlags.class), "WitFlags should extend WitValue");
     }
   }
 
@@ -98,10 +96,7 @@ class WitFlagsTest {
     @DisplayName("builder should create flags")
     void builderShouldCreateFlags() {
       final WitType ft = createFlagsType();
-      final WitFlags flags = WitFlags.builder(ft)
-          .set("read")
-          .set("execute")
-          .build();
+      final WitFlags flags = WitFlags.builder(ft).set("read").set("execute").build();
       assertNotNull(flags, "Builder should create non-null flags");
       assertEquals(2, flags.size(), "Builder flags size should be 2");
     }
@@ -110,9 +105,7 @@ class WitFlagsTest {
     @DisplayName("builder setAll should set multiple flags")
     void builderSetAllShouldSetMultiple() {
       final WitType ft = createFlagsType();
-      final WitFlags flags = WitFlags.builder(ft)
-          .setAll("read", "write", "execute")
-          .build();
+      final WitFlags flags = WitFlags.builder(ft).setAll("read", "write", "execute").build();
       assertEquals(3, flags.size(), "setAll should set all three flags");
     }
 
@@ -208,9 +201,7 @@ class WitFlagsTest {
       final WitType ft = createFlagsType();
       final WitFlags f1 = WitFlags.of(ft, "read", "write");
       final WitFlags f2 = WitFlags.of(ft, "read", "write");
-      assertEquals(
-          f1.hashCode(), f2.hashCode(),
-          "Same flags should have same hash code");
+      assertEquals(f1.hashCode(), f2.hashCode(), "Same flags should have same hash code");
     }
   }
 

@@ -152,7 +152,8 @@ class TimezoneDisplayTest {
       final TimezoneDisplay tz1 = new TimezoneDisplay(-28800, "PST", false);
       final TimezoneDisplay tz2 = new TimezoneDisplay(-28800, "PST", false);
       assertEquals(
-          tz1.hashCode(), tz2.hashCode(),
+          tz1.hashCode(),
+          tz2.hashCode(),
           "TimezoneDisplays with same values should have same hashCode");
     }
 
@@ -204,15 +205,9 @@ class TimezoneDisplayTest {
     void toStringShouldContainAllFields() {
       final TimezoneDisplay tz = new TimezoneDisplay(-28800, "PST", false);
       final String result = tz.toString();
-      assertTrue(
-          result.contains("-28800"),
-          "toString should contain offset: " + result);
-      assertTrue(
-          result.contains("PST"),
-          "toString should contain name: " + result);
-      assertTrue(
-          result.contains("false"),
-          "toString should contain DST status: " + result);
+      assertTrue(result.contains("-28800"), "toString should contain offset: " + result);
+      assertTrue(result.contains("PST"), "toString should contain name: " + result);
+      assertTrue(result.contains("false"), "toString should contain DST status: " + result);
     }
 
     @Test
@@ -221,8 +216,7 @@ class TimezoneDisplayTest {
       final TimezoneDisplay tz = new TimezoneDisplay(0, "UTC", false);
       final String result = tz.toString();
       assertTrue(
-          result.contains("TimezoneDisplay"),
-          "toString should contain class name: " + result);
+          result.contains("TimezoneDisplay"), "toString should contain class name: " + result);
     }
   }
 }

@@ -250,8 +250,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
   }
 
   @Override
-  public Set<Component> resolveDependencies(final Component component)
-      throws WasmException {
+  public Set<Component> resolveDependencies(final Component component) throws WasmException {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }

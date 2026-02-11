@@ -129,8 +129,7 @@ class DateTimeTest {
       final DateTime dt1 = new DateTime(100L, 500);
       final DateTime dt2 = new DateTime(100L, 500);
       assertEquals(
-          dt1.hashCode(), dt2.hashCode(),
-          "DateTimes with same values should have same hashCode");
+          dt1.hashCode(), dt2.hashCode(), "DateTimes with same values should have same hashCode");
     }
 
     @Test
@@ -180,12 +179,8 @@ class DateTimeTest {
     void toStringShouldContainValues() {
       final DateTime dt = new DateTime(1706745600L, 500_000_000);
       final String result = dt.toString();
-      assertTrue(
-          result.contains("1706745600"),
-          "toString should contain seconds: " + result);
-      assertTrue(
-          result.contains("500000000"),
-          "toString should contain nanoseconds: " + result);
+      assertTrue(result.contains("1706745600"), "toString should contain seconds: " + result);
+      assertTrue(result.contains("500000000"), "toString should contain nanoseconds: " + result);
     }
 
     @Test
@@ -193,7 +188,8 @@ class DateTimeTest {
     void toStringShouldMatchExpectedFormat() {
       final DateTime dt = new DateTime(10L, 20);
       assertEquals(
-          "DateTime{seconds=10, nanoseconds=20}", dt.toString(),
+          "DateTime{seconds=10, nanoseconds=20}",
+          dt.toString(),
           "toString should match expected format");
     }
   }

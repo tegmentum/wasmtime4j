@@ -16,19 +16,19 @@
 
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Export;
-import ai.tegmentum.wasmtime4j.func.Function;
-import ai.tegmentum.wasmtime4j.memory.Global;
-import ai.tegmentum.wasmtime4j.memory.Memory;
 import ai.tegmentum.wasmtime4j.ModuleExport;
-import ai.tegmentum.wasmtime4j.memory.Table;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.Caller;
+import ai.tegmentum.wasmtime4j.func.Function;
 import ai.tegmentum.wasmtime4j.jni.adapter.WasmFunctionToFunctionAdapter;
 import ai.tegmentum.wasmtime4j.jni.adapter.WasmGlobalToGlobalAdapter;
 import ai.tegmentum.wasmtime4j.jni.adapter.WasmMemoryToMemoryAdapter;
 import ai.tegmentum.wasmtime4j.jni.adapter.WasmTableToTableAdapter;
+import ai.tegmentum.wasmtime4j.memory.Global;
+import ai.tegmentum.wasmtime4j.memory.Memory;
+import ai.tegmentum.wasmtime4j.memory.Table;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;

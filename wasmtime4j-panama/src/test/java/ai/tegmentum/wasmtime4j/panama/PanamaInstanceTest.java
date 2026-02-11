@@ -942,7 +942,8 @@ class PanamaInstanceTest {
     @Test
     @DisplayName("PreInstantiationStatistics should have builder method")
     void preInstantiationStatisticsShouldHaveBuilderMethod() throws NoSuchMethodException {
-      final Class<?> statsClass = ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.class;
+      final Class<?> statsClass =
+          ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.class;
       final Method method = statsClass.getMethod("builder");
       assertThat(method).isNotNull();
     }
@@ -971,7 +972,9 @@ class PanamaInstanceTest {
     @DisplayName("PreInstantiationStatistics builder should support instancesCreated")
     void preInstantiationStatisticsBuilderShouldSupportInstancesCreated() {
       final ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics stats =
-          ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder().instancesCreated(5L).build();
+          ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder()
+              .instancesCreated(5L)
+              .build();
       assertThat(stats).isNotNull();
     }
 

@@ -51,8 +51,7 @@ class NnTensorTypeTest {
     @Test
     @DisplayName("NnTensorType should have exactly 7 values")
     void shouldHaveExactlySevenValues() {
-      assertEquals(
-          7, NnTensorType.values().length, "Should have exactly 7 tensor type values");
+      assertEquals(7, NnTensorType.values().length, "Should have exactly 7 tensor type values");
     }
   }
 
@@ -307,9 +306,7 @@ class NnTensorTypeTest {
           NnTensorType.BF16.calculateByteSize(new int[] {2, 3}),
           "BF16 {2,3} should be 2*2*3=12");
       assertEquals(
-          6L,
-          NnTensorType.U8.calculateByteSize(new int[] {2, 3}),
-          "U8 {2,3} should be 1*2*3=6");
+          6L, NnTensorType.U8.calculateByteSize(new int[] {2, 3}), "U8 {2,3} should be 1*2*3=6");
       assertEquals(
           24L,
           NnTensorType.I32.calculateByteSize(new int[] {2, 3}),
@@ -324,9 +321,7 @@ class NnTensorTypeTest {
     @DisplayName("should return 0 for null dimensions")
     void shouldReturnZeroForNullDimensions() {
       assertEquals(
-          0L,
-          NnTensorType.FP32.calculateByteSize(null),
-          "Should return 0 for null dimensions");
+          0L, NnTensorType.FP32.calculateByteSize(null), "Should return 0 for null dimensions");
     }
 
     @Test
@@ -359,19 +354,13 @@ class NnTensorTypeTest {
     @Test
     @DisplayName("should resolve valid wasi names to correct constants")
     void shouldResolveValidWasiNames() {
-      assertEquals(
-          NnTensorType.FP16, NnTensorType.fromWasiName("fp16"), "Should resolve 'fp16'");
-      assertEquals(
-          NnTensorType.FP32, NnTensorType.fromWasiName("fp32"), "Should resolve 'fp32'");
-      assertEquals(
-          NnTensorType.FP64, NnTensorType.fromWasiName("fp64"), "Should resolve 'fp64'");
-      assertEquals(
-          NnTensorType.BF16, NnTensorType.fromWasiName("bf16"), "Should resolve 'bf16'");
+      assertEquals(NnTensorType.FP16, NnTensorType.fromWasiName("fp16"), "Should resolve 'fp16'");
+      assertEquals(NnTensorType.FP32, NnTensorType.fromWasiName("fp32"), "Should resolve 'fp32'");
+      assertEquals(NnTensorType.FP64, NnTensorType.fromWasiName("fp64"), "Should resolve 'fp64'");
+      assertEquals(NnTensorType.BF16, NnTensorType.fromWasiName("bf16"), "Should resolve 'bf16'");
       assertEquals(NnTensorType.U8, NnTensorType.fromWasiName("u8"), "Should resolve 'u8'");
-      assertEquals(
-          NnTensorType.I32, NnTensorType.fromWasiName("i32"), "Should resolve 'i32'");
-      assertEquals(
-          NnTensorType.I64, NnTensorType.fromWasiName("i64"), "Should resolve 'i64'");
+      assertEquals(NnTensorType.I32, NnTensorType.fromWasiName("i32"), "Should resolve 'i32'");
+      assertEquals(NnTensorType.I64, NnTensorType.fromWasiName("i64"), "Should resolve 'i64'");
     }
 
     @Test

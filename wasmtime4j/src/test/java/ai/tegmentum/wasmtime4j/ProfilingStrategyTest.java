@@ -21,13 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
 
 /**
  * Tests for the {@link ProfilingStrategy} enum.
@@ -97,8 +97,7 @@ class ProfilingStrategyTest {
     void shouldHaveSequentialOrdinals() {
       final ProfilingStrategy[] values = ProfilingStrategy.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
 
@@ -218,9 +217,7 @@ class ProfilingStrategyTest {
           ProfilingStrategy.NONE.compareTo(ProfilingStrategy.JIT_DUMP) != 0,
           "Different enums should be different");
       assertEquals(
-          0,
-          ProfilingStrategy.NONE.compareTo(ProfilingStrategy.NONE),
-          "Same enum should be equal");
+          0, ProfilingStrategy.NONE.compareTo(ProfilingStrategy.NONE), "Same enum should be equal");
     }
   }
 }

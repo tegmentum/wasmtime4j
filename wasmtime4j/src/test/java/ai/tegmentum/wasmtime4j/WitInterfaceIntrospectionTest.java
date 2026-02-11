@@ -16,12 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.func.FunctionInfo;
-
-import ai.tegmentum.wasmtime4j.type.ExportType;
-import ai.tegmentum.wasmtime4j.type.ImportType;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,7 +31,6 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 
 /**
  * Tests for the {@link WitInterfaceIntrospection} interface.

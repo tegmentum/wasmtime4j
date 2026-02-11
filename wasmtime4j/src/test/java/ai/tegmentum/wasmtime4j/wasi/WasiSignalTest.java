@@ -103,8 +103,7 @@ class WasiSignalTest {
     void ordinalsShouldBeUnique() {
       final Set<Integer> ordinals = new HashSet<>();
       for (final WasiSignal signal : WasiSignal.values()) {
-        assertTrue(
-            ordinals.add(signal.ordinal()), "Ordinal should be unique: " + signal.ordinal());
+        assertTrue(ordinals.add(signal.ordinal()), "Ordinal should be unique: " + signal.ordinal());
       }
     }
 
@@ -125,18 +124,12 @@ class WasiSignalTest {
     @Test
     @DisplayName("valueOf should return correct constant for representative names")
     void valueOfShouldReturnCorrectConstant() {
-      assertEquals(
-          WasiSignal.SIGHUP, WasiSignal.valueOf("SIGHUP"), "Should return SIGHUP");
-      assertEquals(
-          WasiSignal.SIGINT, WasiSignal.valueOf("SIGINT"), "Should return SIGINT");
-      assertEquals(
-          WasiSignal.SIGQUIT, WasiSignal.valueOf("SIGQUIT"), "Should return SIGQUIT");
-      assertEquals(
-          WasiSignal.SIGKILL, WasiSignal.valueOf("SIGKILL"), "Should return SIGKILL");
-      assertEquals(
-          WasiSignal.SIGTERM, WasiSignal.valueOf("SIGTERM"), "Should return SIGTERM");
-      assertEquals(
-          WasiSignal.SIGSYS, WasiSignal.valueOf("SIGSYS"), "Should return SIGSYS");
+      assertEquals(WasiSignal.SIGHUP, WasiSignal.valueOf("SIGHUP"), "Should return SIGHUP");
+      assertEquals(WasiSignal.SIGINT, WasiSignal.valueOf("SIGINT"), "Should return SIGINT");
+      assertEquals(WasiSignal.SIGQUIT, WasiSignal.valueOf("SIGQUIT"), "Should return SIGQUIT");
+      assertEquals(WasiSignal.SIGKILL, WasiSignal.valueOf("SIGKILL"), "Should return SIGKILL");
+      assertEquals(WasiSignal.SIGTERM, WasiSignal.valueOf("SIGTERM"), "Should return SIGTERM");
+      assertEquals(WasiSignal.SIGSYS, WasiSignal.valueOf("SIGSYS"), "Should return SIGSYS");
     }
 
     @Test
@@ -472,7 +465,9 @@ class WasiSignalTest {
         final int code = signal.getCode();
         final WasiSignal resolved = WasiSignal.fromCode(code);
         assertSame(
-            signal, resolved, "Round-trip should preserve signal: " + signal + " (code=" + code + ")");
+            signal,
+            resolved,
+            "Round-trip should preserve signal: " + signal + " (code=" + code + ")");
       }
     }
   }

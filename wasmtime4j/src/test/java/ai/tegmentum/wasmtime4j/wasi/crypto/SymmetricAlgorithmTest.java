@@ -40,9 +40,7 @@ class SymmetricAlgorithmTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          SymmetricAlgorithm.class.isEnum(),
-          "SymmetricAlgorithm should be an enum type");
+      assertTrue(SymmetricAlgorithm.class.isEnum(), "SymmetricAlgorithm should be an enum type");
     }
 
     @Test
@@ -97,9 +95,7 @@ class SymmetricAlgorithmTest {
     @Test
     @DisplayName("should have XCHACHA20_POLY1305 value")
     void shouldHaveXChaCha20Poly1305Value() {
-      assertNotNull(
-          SymmetricAlgorithm.XCHACHA20_POLY1305,
-          "XCHACHA20_POLY1305 should not be null");
+      assertNotNull(SymmetricAlgorithm.XCHACHA20_POLY1305, "XCHACHA20_POLY1305 should not be null");
     }
   }
 
@@ -127,10 +123,7 @@ class SymmetricAlgorithmTest {
       final SymmetricAlgorithm[] values = SymmetricAlgorithm.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -171,10 +164,7 @@ class SymmetricAlgorithmTest {
       final SymmetricAlgorithm[] second = SymmetricAlgorithm.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 
@@ -270,45 +260,35 @@ class SymmetricAlgorithmTest {
     @DisplayName("should return 128 for AES_128")
     void shouldReturnCorrectKeySizeForAes128() {
       assertEquals(
-          128,
-          SymmetricAlgorithm.AES_128.getKeySize(),
-          "AES_128 should have key size 128");
+          128, SymmetricAlgorithm.AES_128.getKeySize(), "AES_128 should have key size 128");
     }
 
     @Test
     @DisplayName("should return 192 for AES_192")
     void shouldReturnCorrectKeySizeForAes192() {
       assertEquals(
-          192,
-          SymmetricAlgorithm.AES_192.getKeySize(),
-          "AES_192 should have key size 192");
+          192, SymmetricAlgorithm.AES_192.getKeySize(), "AES_192 should have key size 192");
     }
 
     @Test
     @DisplayName("should return 256 for AES_256")
     void shouldReturnCorrectKeySizeForAes256() {
       assertEquals(
-          256,
-          SymmetricAlgorithm.AES_256.getKeySize(),
-          "AES_256 should have key size 256");
+          256, SymmetricAlgorithm.AES_256.getKeySize(), "AES_256 should have key size 256");
     }
 
     @Test
     @DisplayName("should return 256 for CHACHA20")
     void shouldReturnCorrectKeySizeForChaCha20() {
       assertEquals(
-          256,
-          SymmetricAlgorithm.CHACHA20.getKeySize(),
-          "CHACHA20 should have key size 256");
+          256, SymmetricAlgorithm.CHACHA20.getKeySize(), "CHACHA20 should have key size 256");
     }
 
     @Test
     @DisplayName("should return 256 for XCHACHA20")
     void shouldReturnCorrectKeySizeForXChaCha20() {
       assertEquals(
-          256,
-          SymmetricAlgorithm.XCHACHA20.getKeySize(),
-          "XCHACHA20 should have key size 256");
+          256, SymmetricAlgorithm.XCHACHA20.getKeySize(), "XCHACHA20 should have key size 256");
     }
 
     @Test

@@ -301,7 +301,8 @@ class TrapExceptionTest {
           new TrapException(TrapException.TrapType.INTEGER_DIVISION_BY_ZERO, "msg").isMemoryError(),
           "INTEGER_DIVISION_BY_ZERO should not be memory error");
       assertFalse(
-          new TrapException(TrapException.TrapType.BAD_CONVERSION_TO_INTEGER, "msg").isMemoryError(),
+          new TrapException(TrapException.TrapType.BAD_CONVERSION_TO_INTEGER, "msg")
+              .isMemoryError(),
           "BAD_CONVERSION_TO_INTEGER should not be memory error");
       assertFalse(
           new TrapException(TrapException.TrapType.INDIRECT_CALL_TO_NULL, "msg").isMemoryError(),
@@ -346,7 +347,8 @@ class TrapExceptionTest {
           new TrapException(TrapException.TrapType.STACK_OVERFLOW, "msg").isArithmeticError(),
           "STACK_OVERFLOW should not be arithmetic error");
       assertFalse(
-          new TrapException(TrapException.TrapType.INDIRECT_CALL_TO_NULL, "msg").isArithmeticError(),
+          new TrapException(TrapException.TrapType.INDIRECT_CALL_TO_NULL, "msg")
+              .isArithmeticError(),
           "INDIRECT_CALL_TO_NULL should not be arithmetic error");
       assertFalse(
           new TrapException(TrapException.TrapType.BAD_SIGNATURE, "msg").isArithmeticError(),
@@ -380,7 +382,8 @@ class TrapExceptionTest {
     void isControlFlowErrorShouldReturnFalseForNonControlFlowTraps() {
       // Test all trap types that should NOT be control flow errors
       assertFalse(
-          new TrapException(TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "msg").isControlFlowError(),
+          new TrapException(TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "msg")
+              .isControlFlowError(),
           "MEMORY_OUT_OF_BOUNDS should not be control flow error");
       assertFalse(
           new TrapException(TrapException.TrapType.HEAP_MISALIGNED, "msg").isControlFlowError(),
@@ -417,7 +420,8 @@ class TrapExceptionTest {
     }
 
     @Test
-    @DisplayName("isResourceExhaustionError should return false for all non-resource-exhaustion trap types")
+    @DisplayName(
+        "isResourceExhaustionError should return false for all non-resource-exhaustion trap types")
     void isResourceExhaustionErrorShouldReturnFalseForNonResourceExhaustionTraps() {
       // Test all trap types that should NOT be resource exhaustion errors
       assertFalse(
@@ -486,7 +490,8 @@ class TrapExceptionTest {
           new TrapException(TrapException.TrapType.INTEGER_DIVISION_BY_ZERO, "msg").isBoundsError(),
           "INTEGER_DIVISION_BY_ZERO should not be bounds error");
       assertFalse(
-          new TrapException(TrapException.TrapType.BAD_CONVERSION_TO_INTEGER, "msg").isBoundsError(),
+          new TrapException(TrapException.TrapType.BAD_CONVERSION_TO_INTEGER, "msg")
+              .isBoundsError(),
           "BAD_CONVERSION_TO_INTEGER should not be bounds error");
       assertFalse(
           new TrapException(TrapException.TrapType.INDIRECT_CALL_TO_NULL, "msg").isBoundsError(),
@@ -563,8 +568,7 @@ class TrapExceptionTest {
       assertTrue(indirectNull.isControlFlowError(), "First branch: INDIRECT_CALL_TO_NULL");
 
       // Test second condition: trapType == TrapType.BAD_SIGNATURE
-      final TrapException badSig =
-          new TrapException(TrapException.TrapType.BAD_SIGNATURE, "test");
+      final TrapException badSig = new TrapException(TrapException.TrapType.BAD_SIGNATURE, "test");
       assertTrue(badSig.isControlFlowError(), "Second branch: BAD_SIGNATURE");
 
       // Test third condition: trapType == TrapType.UNREACHABLE_CODE_REACHED
@@ -584,17 +588,14 @@ class TrapExceptionTest {
       // Test first condition: trapType == TrapType.STACK_OVERFLOW
       final TrapException stackOverflow =
           new TrapException(TrapException.TrapType.STACK_OVERFLOW, "test");
-      assertTrue(
-          stackOverflow.isResourceExhaustionError(), "First branch: STACK_OVERFLOW");
+      assertTrue(stackOverflow.isResourceExhaustionError(), "First branch: STACK_OVERFLOW");
 
       // Test second condition: trapType == TrapType.OUT_OF_FUEL
-      final TrapException outOfFuel =
-          new TrapException(TrapException.TrapType.OUT_OF_FUEL, "test");
+      final TrapException outOfFuel = new TrapException(TrapException.TrapType.OUT_OF_FUEL, "test");
       assertTrue(outOfFuel.isResourceExhaustionError(), "Second branch: OUT_OF_FUEL");
 
       // Test third condition: trapType == TrapType.INTERRUPT
-      final TrapException interrupt =
-          new TrapException(TrapException.TrapType.INTERRUPT, "test");
+      final TrapException interrupt = new TrapException(TrapException.TrapType.INTERRUPT, "test");
       assertTrue(interrupt.isResourceExhaustionError(), "Third branch: INTERRUPT");
     }
 
@@ -643,10 +644,8 @@ class TrapExceptionTest {
           new TrapException(TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "test");
       assertTrue(memOob.isMemoryError(), "MEMORY_OUT_OF_BOUNDS should be memory error");
       assertTrue(memOob.isBoundsError(), "MEMORY_OUT_OF_BOUNDS should be bounds error");
-      assertFalse(
-          memOob.isArithmeticError(), "MEMORY_OUT_OF_BOUNDS should not be arithmetic");
-      assertFalse(
-          memOob.isControlFlowError(), "MEMORY_OUT_OF_BOUNDS should not be control flow");
+      assertFalse(memOob.isArithmeticError(), "MEMORY_OUT_OF_BOUNDS should not be arithmetic");
+      assertFalse(memOob.isControlFlowError(), "MEMORY_OUT_OF_BOUNDS should not be control flow");
       assertFalse(
           memOob.isResourceExhaustionError(),
           "MEMORY_OUT_OF_BOUNDS should not be resource exhaustion");

@@ -378,7 +378,8 @@ class MultiValueExceptionTest {
 
       // The first condition (expectedCount >= 0) must be evaluated
       // If mutated to true, this would incorrectly return true
-      assertFalse(exception.hasCountInfo(),
+      assertFalse(
+          exception.hasCountInfo(),
           "hasCountInfo should return false when expectedCount is -1, even if actualCount >= 0");
     }
 
@@ -391,7 +392,8 @@ class MultiValueExceptionTest {
       assertEquals(5, exception.getExpectedCount(), "Expected count should be 5");
       assertEquals(-1, exception.getActualCount(), "Actual count should be -1");
 
-      assertFalse(exception.hasCountInfo(),
+      assertFalse(
+          exception.hasCountInfo(),
           "hasCountInfo should return false when actualCount is -1, even if expectedCount >= 0");
     }
 
@@ -426,10 +428,12 @@ class MultiValueExceptionTest {
       // This kills line 260 mutation: Substituted -1 with 0 for expectedCount
       final MultiValueException exception = MultiValueException.invalidValueArray("testOp");
 
-      assertEquals(-1, exception.getExpectedCount(),
+      assertEquals(
+          -1,
+          exception.getExpectedCount(),
           "invalidValueArray should set expectedCount to -1, not 0");
-      assertFalse(exception.hasCountInfo(),
-          "hasCountInfo should be false since expectedCount is -1");
+      assertFalse(
+          exception.hasCountInfo(), "hasCountInfo should be false since expectedCount is -1");
     }
 
     @Test
@@ -438,10 +442,9 @@ class MultiValueExceptionTest {
       // This kills line 260 mutation: Substituted -1 with 0 for actualCount
       final MultiValueException exception = MultiValueException.invalidValueArray("testOp");
 
-      assertEquals(-1, exception.getActualCount(),
-          "invalidValueArray should set actualCount to -1, not 0");
-      assertFalse(exception.hasCountInfo(),
-          "hasCountInfo should be false since actualCount is -1");
+      assertEquals(
+          -1, exception.getActualCount(), "invalidValueArray should set actualCount to -1, not 0");
+      assertFalse(exception.hasCountInfo(), "hasCountInfo should be false since actualCount is -1");
     }
 
     @Test
@@ -452,7 +455,9 @@ class MultiValueExceptionTest {
       final MultiValueException exception =
           MultiValueException.marshalingError("marshal", 10, cause);
 
-      assertEquals(-1, exception.getExpectedCount(),
+      assertEquals(
+          -1,
+          exception.getExpectedCount(),
           "marshalingError should set expectedCount to -1, not 0");
     }
 
@@ -464,23 +469,30 @@ class MultiValueExceptionTest {
       final MultiValueException exception =
           MultiValueException.marshalingError("marshal", 42, cause);
 
-      assertEquals(42, exception.getActualCount(),
+      assertEquals(
+          42,
+          exception.getActualCount(),
           "marshalingError should set actualCount to the valueCount parameter (42)");
-      assertEquals("marshal", exception.getOperation(),
-          "marshalingError should set operation correctly");
+      assertEquals(
+          "marshal", exception.getOperation(), "marshalingError should set operation correctly");
     }
 
     @Test
-    @DisplayName("limitExceeded should map parameters correctly: expected=maxAllowed, actual=actualCount")
+    @DisplayName(
+        "limitExceeded should map parameters correctly: expected=maxAllowed, actual=actualCount")
     void limitExceededShouldMapParametersCorrectly() {
       // This kills mutations that swap the constructor argument indices
       // limitExceeded(actualCount=100, maxAllowed=50) should create:
       // expectedCount=50 (maxAllowed), actualCount=100 (actualCount param)
       final MultiValueException exception = MultiValueException.limitExceeded(100, 50);
 
-      assertEquals(50, exception.getExpectedCount(),
+      assertEquals(
+          50,
+          exception.getExpectedCount(),
           "limitExceeded should set expectedCount to maxAllowed (50), not actualCount");
-      assertEquals(100, exception.getActualCount(),
+      assertEquals(
+          100,
+          exception.getActualCount(),
           "limitExceeded should set actualCount to actualCount param (100), not maxAllowed");
     }
 
@@ -491,10 +503,9 @@ class MultiValueExceptionTest {
       final MultiValueException exception = MultiValueException.limitExceeded(999, 111);
 
       // If arguments were swapped, expected would be 999 and actual would be 111
-      assertEquals(111, exception.getExpectedCount(),
-          "expectedCount should be maxAllowed (111)");
-      assertEquals(999, exception.getActualCount(),
-          "actualCount should be actualCount param (999)");
+      assertEquals(111, exception.getExpectedCount(), "expectedCount should be maxAllowed (111)");
+      assertEquals(
+          999, exception.getActualCount(), "actualCount should be actualCount param (999)");
     }
   }
 
@@ -514,7 +525,8 @@ class MultiValueExceptionTest {
 
       assertTrue(expectedIndex >= 0, "Message should contain expected value 111");
       assertTrue(actualIndex >= 0, "Message should contain actual value 999");
-      assertTrue(expectedIndex < actualIndex,
+      assertTrue(
+          expectedIndex < actualIndex,
           "Expected value should appear before actual value in message: " + message);
     }
 
@@ -531,14 +543,15 @@ class MultiValueExceptionTest {
       final int actualIndex = message.indexOf("999");
 
       assertTrue(operationIndex >= 0, "Message should contain operation");
-      assertTrue(operationIndex < expectedIndex,
+      assertTrue(
+          operationIndex < expectedIndex,
           "Operation should appear before expected count: " + message);
-      assertTrue(expectedIndex < actualIndex,
-          "Expected should appear before actual: " + message);
+      assertTrue(expectedIndex < actualIndex, "Expected should appear before actual: " + message);
     }
 
     @Test
-    @DisplayName("typeValidationError format should have index, expected type, actual type in order")
+    @DisplayName(
+        "typeValidationError format should have index, expected type, actual type in order")
     void typeValidationErrorFormatShouldHaveCorrectOrder() {
       // Format: "Type validation failed at index %d: expected %s, got %s"
       final MultiValueException exception =
@@ -552,9 +565,10 @@ class MultiValueExceptionTest {
       assertTrue(indexPos >= 0, "Message should contain index");
       assertTrue(expectedTypePos >= 0, "Message should contain expected type");
       assertTrue(actualTypePos >= 0, "Message should contain actual type");
-      assertTrue(indexPos < expectedTypePos,
-          "Index should appear before expected type: " + message);
-      assertTrue(expectedTypePos < actualTypePos,
+      assertTrue(
+          indexPos < expectedTypePos, "Index should appear before expected type: " + message);
+      assertTrue(
+          expectedTypePos < actualTypePos,
           "Expected type should appear before actual type: " + message);
     }
 
@@ -572,8 +586,8 @@ class MultiValueExceptionTest {
 
       assertTrue(operationIndex >= 0, "Message should contain operation");
       assertTrue(countIndex >= 0, "Message should contain value count");
-      assertTrue(operationIndex < countIndex,
-          "Operation should appear before value count: " + message);
+      assertTrue(
+          operationIndex < countIndex, "Operation should appear before value count: " + message);
     }
 
     @Test
@@ -588,7 +602,8 @@ class MultiValueExceptionTest {
 
       assertTrue(actualIndex >= 0, "Message should contain actual count 888");
       assertTrue(maxIndex >= 0, "Message should contain max allowed 222");
-      assertTrue(actualIndex < maxIndex,
+      assertTrue(
+          actualIndex < maxIndex,
           "Actual count should appear before max allowed in message: " + message);
     }
   }
@@ -602,27 +617,24 @@ class MultiValueExceptionTest {
     void marshalingErrorExpectedCountShouldBeMinus1NotValueCount() {
       // This catches if the constructor args are swapped
       final Throwable cause = new RuntimeException("test");
-      final MultiValueException exception =
-          MultiValueException.marshalingError("op", 123, cause);
+      final MultiValueException exception = MultiValueException.marshalingError("op", 123, cause);
 
       // If mutation swapped args, expectedCount would be 123 instead of -1
-      assertEquals(-1, exception.getExpectedCount(),
-          "expectedCount should be -1, not the valueCount (123)");
-      assertEquals(123, exception.getActualCount(),
-          "actualCount should be valueCount (123)");
+      assertEquals(
+          -1, exception.getExpectedCount(), "expectedCount should be -1, not the valueCount (123)");
+      assertEquals(123, exception.getActualCount(), "actualCount should be valueCount (123)");
     }
 
     @Test
     @DisplayName("marshalingError hasCountInfo should return false due to -1 expected")
     void marshalingErrorHasCountInfoShouldReturnFalseDueToMinus1Expected() {
       final Throwable cause = new RuntimeException("test");
-      final MultiValueException exception =
-          MultiValueException.marshalingError("op", 50, cause);
+      final MultiValueException exception = MultiValueException.marshalingError("op", 50, cause);
 
       // expectedCount is -1, so hasCountInfo should be false
       // If -1 was mutated to 0, hasCountInfo would be true
-      assertFalse(exception.hasCountInfo(),
-          "hasCountInfo should be false because expectedCount is -1");
+      assertFalse(
+          exception.hasCountInfo(), "hasCountInfo should be false because expectedCount is -1");
     }
   }
 }

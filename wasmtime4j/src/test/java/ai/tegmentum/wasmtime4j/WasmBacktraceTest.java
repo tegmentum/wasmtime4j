@@ -74,8 +74,7 @@ final class WasmBacktraceTest {
     @Test
     @DisplayName("should return frames in order")
     void shouldReturnFramesInOrder() {
-      final List<FrameInfo> frames =
-          List.of(createFrame(0, "inner"), createFrame(1, "outer"));
+      final List<FrameInfo> frames = List.of(createFrame(0, "inner"), createFrame(1, "outer"));
       final WasmBacktrace backtrace = new WasmBacktrace(frames, false);
       final List<FrameInfo> returned = backtrace.getFrames();
       assertEquals(2, returned.size(), "Should return 2 frames");
@@ -132,8 +131,7 @@ final class WasmBacktraceTest {
     @Test
     @DisplayName("should not be empty when has frames")
     void shouldNotBeEmptyWithFrames() {
-      final WasmBacktrace backtrace =
-          new WasmBacktrace(List.of(createFrame(0, "func")), false);
+      final WasmBacktrace backtrace = new WasmBacktrace(List.of(createFrame(0, "func")), false);
       assertFalse(backtrace.isEmpty(), "Backtrace with frames should not be empty");
     }
   }
@@ -157,20 +155,15 @@ final class WasmBacktraceTest {
       final List<FrameInfo> frames = List.of(createFrame(0, "func"));
       final WasmBacktrace bt1 = new WasmBacktrace(frames, true);
       final WasmBacktrace bt2 = new WasmBacktrace(frames, false);
-      assertFalse(
-          bt1.equals(bt2),
-          "Backtraces with different forceCapture should not be equal");
+      assertFalse(bt1.equals(bt2), "Backtraces with different forceCapture should not be equal");
     }
 
     @Test
     @DisplayName("should not be equal for different frames")
     void shouldNotBeEqualForDifferentFrames() {
-      final WasmBacktrace bt1 =
-          new WasmBacktrace(List.of(createFrame(0, "a")), false);
-      final WasmBacktrace bt2 =
-          new WasmBacktrace(List.of(createFrame(1, "b")), false);
-      assertFalse(
-          bt1.equals(bt2), "Backtraces with different frames should not be equal");
+      final WasmBacktrace bt1 = new WasmBacktrace(List.of(createFrame(0, "a")), false);
+      final WasmBacktrace bt2 = new WasmBacktrace(List.of(createFrame(1, "b")), false);
+      assertFalse(bt1.equals(bt2), "Backtraces with different frames should not be equal");
     }
 
     @Test
@@ -179,8 +172,7 @@ final class WasmBacktraceTest {
       final List<FrameInfo> frames = List.of(createFrame(0, "func"));
       final WasmBacktrace bt1 = new WasmBacktrace(frames, false);
       final WasmBacktrace bt2 = new WasmBacktrace(frames, false);
-      assertEquals(
-          bt1.hashCode(), bt2.hashCode(), "Equal backtraces should have same hashCode");
+      assertEquals(bt1.hashCode(), bt2.hashCode(), "Equal backtraces should have same hashCode");
     }
 
     @Test
@@ -213,12 +205,9 @@ final class WasmBacktraceTest {
     @Test
     @DisplayName("should include frame info for non-empty backtrace")
     void shouldIncludeFrameInfo() {
-      final WasmBacktrace backtrace =
-          new WasmBacktrace(List.of(createFrame(0, "myFunc")), false);
+      final WasmBacktrace backtrace = new WasmBacktrace(List.of(createFrame(0, "myFunc")), false);
       final String str = backtrace.toString();
-      assertTrue(
-          str.contains("WasmBacktrace"),
-          "toString should contain 'WasmBacktrace'");
+      assertTrue(str.contains("WasmBacktrace"), "toString should contain 'WasmBacktrace'");
       assertTrue(str.contains("0:"), "toString should contain frame index '0:'");
     }
   }

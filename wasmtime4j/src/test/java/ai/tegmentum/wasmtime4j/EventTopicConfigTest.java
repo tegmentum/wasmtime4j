@@ -22,11 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.config.EventTopicConfig;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.config.EventTopicConfig;
 
 /**
  * Tests for {@link EventTopicConfig} class.
@@ -89,11 +89,9 @@ class EventTopicConfigTest {
     @Test
     @DisplayName("should create config with all parameters")
     void shouldCreateWithAllParameters() {
-      final EventTopicConfig config = new EventTopicConfig(
-          "orders",
-          500,
-          true,
-          EventTopicConfig.DeliveryGuarantee.EXACTLY_ONCE);
+      final EventTopicConfig config =
+          new EventTopicConfig(
+              "orders", 500, true, EventTopicConfig.DeliveryGuarantee.EXACTLY_ONCE);
 
       assertEquals("orders", config.getTopicName(), "topicName should be 'orders'");
       assertEquals(500, config.getMaxSubscribers(), "maxSubscribers should be 500");
@@ -109,9 +107,9 @@ class EventTopicConfigTest {
     void shouldRejectNullTopicNameInFullConstructor() {
       assertThrows(
           NullPointerException.class,
-          () -> new EventTopicConfig(
-              null, 100, false,
-              EventTopicConfig.DeliveryGuarantee.AT_LEAST_ONCE),
+          () ->
+              new EventTopicConfig(
+                  null, 100, false, EventTopicConfig.DeliveryGuarantee.AT_LEAST_ONCE),
           "Null topicName should throw NullPointerException");
     }
 
@@ -127,11 +125,9 @@ class EventTopicConfigTest {
     @Test
     @DisplayName("should accept AT_MOST_ONCE delivery guarantee")
     void shouldAcceptAtMostOnce() {
-      final EventTopicConfig config = new EventTopicConfig(
-          "fire-and-forget",
-          50,
-          false,
-          EventTopicConfig.DeliveryGuarantee.AT_MOST_ONCE);
+      final EventTopicConfig config =
+          new EventTopicConfig(
+              "fire-and-forget", 50, false, EventTopicConfig.DeliveryGuarantee.AT_MOST_ONCE);
 
       assertEquals(
           EventTopicConfig.DeliveryGuarantee.AT_MOST_ONCE,
@@ -142,11 +138,9 @@ class EventTopicConfigTest {
     @Test
     @DisplayName("should accept zero maxSubscribers")
     void shouldAcceptZeroMaxSubscribers() {
-      final EventTopicConfig config = new EventTopicConfig(
-          "internal",
-          0,
-          false,
-          EventTopicConfig.DeliveryGuarantee.AT_LEAST_ONCE);
+      final EventTopicConfig config =
+          new EventTopicConfig(
+              "internal", 0, false, EventTopicConfig.DeliveryGuarantee.AT_LEAST_ONCE);
 
       assertEquals(0, config.getMaxSubscribers(), "maxSubscribers should be 0");
     }
@@ -163,14 +157,12 @@ class EventTopicConfigTest {
           EventTopicConfig.DeliveryGuarantee.values();
       assertEquals(3, values.length, "DeliveryGuarantee should have 3 values");
       assertNotNull(
-          EventTopicConfig.DeliveryGuarantee.valueOf("AT_MOST_ONCE"),
-          "AT_MOST_ONCE should exist");
+          EventTopicConfig.DeliveryGuarantee.valueOf("AT_MOST_ONCE"), "AT_MOST_ONCE should exist");
       assertNotNull(
           EventTopicConfig.DeliveryGuarantee.valueOf("AT_LEAST_ONCE"),
           "AT_LEAST_ONCE should exist");
       assertNotNull(
-          EventTopicConfig.DeliveryGuarantee.valueOf("EXACTLY_ONCE"),
-          "EXACTLY_ONCE should exist");
+          EventTopicConfig.DeliveryGuarantee.valueOf("EXACTLY_ONCE"), "EXACTLY_ONCE should exist");
     }
   }
 
@@ -181,18 +173,18 @@ class EventTopicConfigTest {
     @Test
     @DisplayName("should create persistent topic with exactly-once guarantee")
     void shouldCreatePersistentExactlyOnce() {
-      final EventTopicConfig config = new EventTopicConfig(
-          "financial-transactions",
-          1000,
-          true,
-          EventTopicConfig.DeliveryGuarantee.EXACTLY_ONCE);
+      final EventTopicConfig config =
+          new EventTopicConfig(
+              "financial-transactions",
+              1000,
+              true,
+              EventTopicConfig.DeliveryGuarantee.EXACTLY_ONCE);
 
       assertEquals(
-          "financial-transactions", config.getTopicName(),
+          "financial-transactions",
+          config.getTopicName(),
           "topicName should be 'financial-transactions'");
-      assertEquals(
-          1000, config.getMaxSubscribers(),
-          "maxSubscribers should be 1000");
+      assertEquals(1000, config.getMaxSubscribers(), "maxSubscribers should be 1000");
       assertTrue(config.isPersistenceEnabled(), "Persistence should be enabled");
       assertEquals(
           EventTopicConfig.DeliveryGuarantee.EXACTLY_ONCE,
@@ -203,11 +195,9 @@ class EventTopicConfigTest {
     @Test
     @DisplayName("should create non-persistent topic with at-most-once guarantee")
     void shouldCreateNonPersistentAtMostOnce() {
-      final EventTopicConfig config = new EventTopicConfig(
-          "metrics",
-          200,
-          false,
-          EventTopicConfig.DeliveryGuarantee.AT_MOST_ONCE);
+      final EventTopicConfig config =
+          new EventTopicConfig(
+              "metrics", 200, false, EventTopicConfig.DeliveryGuarantee.AT_MOST_ONCE);
 
       assertEquals("metrics", config.getTopicName(), "topicName should be 'metrics'");
       assertFalse(config.isPersistenceEnabled(), "Persistence should be disabled");
@@ -220,14 +210,12 @@ class EventTopicConfigTest {
     @Test
     @DisplayName("should handle negative maxSubscribers without validation")
     void shouldHandleNegativeMaxSubscribers() {
-      final EventTopicConfig config = new EventTopicConfig(
-          "test",
-          -1,
-          false,
-          EventTopicConfig.DeliveryGuarantee.AT_LEAST_ONCE);
+      final EventTopicConfig config =
+          new EventTopicConfig("test", -1, false, EventTopicConfig.DeliveryGuarantee.AT_LEAST_ONCE);
 
       assertEquals(
-          -1, config.getMaxSubscribers(),
+          -1,
+          config.getMaxSubscribers(),
           "maxSubscribers should be -1 (no validation in constructor)");
     }
   }

@@ -105,8 +105,8 @@ public interface ComponentEngine extends Engine {
    * @throws WasmException if instance creation or linking fails
    * @throws IllegalArgumentException if any parameter is null
    */
-  ComponentInstance createInstance(
-      Component component, Store store, List<Component> imports) throws WasmException;
+  ComponentInstance createInstance(Component component, Store store, List<Component> imports)
+      throws WasmException;
 
   /**
    * Validates a component without creating an instance.

@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.concurrent.WasmThreadState;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.concurrent.WasmThreadState;
 
 /**
  * Tests for {@link WasmThreadState}.
@@ -43,15 +43,14 @@ class WasmThreadStateTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(WasmThreadState.class.isEnum(),
-          "WasmThreadState should be an enum type");
+      assertTrue(WasmThreadState.class.isEnum(), "WasmThreadState should be an enum type");
     }
 
     @Test
     @DisplayName("should have exactly 9 values")
     void shouldHaveExactValueCount() {
-      assertEquals(9, WasmThreadState.values().length,
-          "WasmThreadState should have exactly 9 values");
+      assertEquals(
+          9, WasmThreadState.values().length, "WasmThreadState should have exactly 9 values");
     }
   }
 
@@ -85,8 +84,8 @@ class WasmThreadStateTest {
       for (final WasmThreadState value : WasmThreadState.values()) {
         ordinals.add(value.ordinal());
       }
-      assertEquals(WasmThreadState.values().length, ordinals.size(),
-          "All ordinals should be unique");
+      assertEquals(
+          WasmThreadState.values().length, ordinals.size(), "All ordinals should be unique");
     }
 
     @Test
@@ -94,8 +93,7 @@ class WasmThreadStateTest {
     void shouldHaveSequentialOrdinals() {
       final WasmThreadState[] values = WasmThreadState.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -108,15 +106,16 @@ class WasmThreadStateTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final WasmThreadState value : WasmThreadState.values()) {
-        assertEquals(value, WasmThreadState.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, WasmThreadState.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> WasmThreadState.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -143,7 +142,9 @@ class WasmThreadStateTest {
     @DisplayName("should return enum name as toString")
     void shouldReturnEnumNameAsToString() {
       for (final WasmThreadState value : WasmThreadState.values()) {
-        assertEquals(value.name(), value.toString(),
+        assertEquals(
+            value.name(),
+            value.toString(),
             "toString should return the enum name for " + value.name());
       }
     }

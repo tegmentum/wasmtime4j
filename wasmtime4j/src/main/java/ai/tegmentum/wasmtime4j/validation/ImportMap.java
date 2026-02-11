@@ -1,10 +1,9 @@
 package ai.tegmentum.wasmtime4j.validation;
 
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
-import ai.tegmentum.wasmtime4j.WasmGlobal;
-import ai.tegmentum.wasmtime4j.WasmFunction;
-
 import java.util.Map;
 import java.util.Optional;
 

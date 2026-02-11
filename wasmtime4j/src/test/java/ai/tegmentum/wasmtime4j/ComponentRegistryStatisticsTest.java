@@ -16,55 +16,12 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCapability;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibilityResult;
-import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
-import ai.tegmentum.wasmtime4j.component.ComponentEngine;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentFeature;
-import ai.tegmentum.wasmtime4j.component.ComponentFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentId;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
-import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleManager;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentLinker;
-import ai.tegmentum.wasmtime4j.component.ComponentLinkInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentResult;
-import ai.tegmentum.wasmtime4j.component.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.component.ComponentSpecification;
-import ai.tegmentum.wasmtime4j.component.ComponentStateTransitionConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentType;
-import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
-import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentVal;
-import ai.tegmentum.wasmtime4j.component.ComponentValFactory;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVariant;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
 import java.lang.reflect.Modifier;
 import java.time.Instant;
 import java.util.Map;
@@ -122,9 +79,7 @@ class ComponentRegistryStatisticsTest {
       assertEquals(0L, stats.getTotalMemoryUsage(), "Default totalMemoryUsage should be 0");
       assertEquals(0L, stats.getAverageComponentSize(), "Default averageComponentSize should be 0");
       assertEquals(0L, stats.getTotalRegistrations(), "Default totalRegistrations should be 0");
-      assertEquals(
-          0L, stats.getTotalUnregistrations(),
-          "Default totalUnregistrations should be 0");
+      assertEquals(0L, stats.getTotalUnregistrations(), "Default totalUnregistrations should be 0");
       assertEquals(0.0, stats.getAverageQueryTime(), 0.001, "Default averageQueryTime should be 0");
       assertEquals(0L, stats.getTotalQueries(), "Default totalQueries should be 0");
     }
@@ -135,14 +90,10 @@ class ComponentRegistryStatisticsTest {
       final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder().build();
 
       assertTrue(
-          stats.getAvailableInterfaces().isEmpty(),
-          "Default availableInterfaces should be empty");
+          stats.getAvailableInterfaces().isEmpty(), "Default availableInterfaces should be empty");
       assertTrue(
-          stats.getComponentsByAuthor().isEmpty(),
-          "Default componentsByAuthor should be empty");
-      assertTrue(
-          stats.getComponentsByTag().isEmpty(),
-          "Default componentsByTag should be empty");
+          stats.getComponentsByAuthor().isEmpty(), "Default componentsByAuthor should be empty");
+      assertTrue(stats.getComponentsByTag().isEmpty(), "Default componentsByTag should be empty");
     }
 
     @Test
@@ -162,9 +113,8 @@ class ComponentRegistryStatisticsTest {
     @Test
     @DisplayName("should set totalComponents")
     void shouldSetTotalComponents() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .totalComponents(15)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder().totalComponents(15).build();
 
       assertEquals(15, stats.getTotalComponents(), "totalComponents should be 15");
     }
@@ -172,10 +122,8 @@ class ComponentRegistryStatisticsTest {
     @Test
     @DisplayName("should set activeComponents and inactiveComponents")
     void shouldSetActiveAndInactiveComponents() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .activeComponents(10)
-          .inactiveComponents(5)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder().activeComponents(10).inactiveComponents(5).build();
 
       assertEquals(10, stats.getActiveComponents(), "activeComponents should be 10");
       assertEquals(5, stats.getInactiveComponents(), "inactiveComponents should be 5");
@@ -184,51 +132,42 @@ class ComponentRegistryStatisticsTest {
     @Test
     @DisplayName("should set totalMemoryUsage and averageComponentSize")
     void shouldSetMemoryMetrics() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .totalMemoryUsage(1024 * 1024L)
-          .averageComponentSize(10240L)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder()
+              .totalMemoryUsage(1024 * 1024L)
+              .averageComponentSize(10240L)
+              .build();
 
-      assertEquals(
-          1024 * 1024L, stats.getTotalMemoryUsage(),
-          "totalMemoryUsage should be 1 MB");
-      assertEquals(
-          10240L, stats.getAverageComponentSize(),
-          "averageComponentSize should be 10240");
+      assertEquals(1024 * 1024L, stats.getTotalMemoryUsage(), "totalMemoryUsage should be 1 MB");
+      assertEquals(10240L, stats.getAverageComponentSize(), "averageComponentSize should be 10240");
     }
 
     @Test
     @DisplayName("should set availableInterfaces")
     void shouldSetAvailableInterfaces() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .availableInterfaces(Set.of("wasi:http", "wasi:filesystem"))
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder()
+              .availableInterfaces(Set.of("wasi:http", "wasi:filesystem"))
+              .build();
 
-      assertEquals(
-          2, stats.getAvailableInterfaces().size(),
-          "Should have 2 available interfaces");
+      assertEquals(2, stats.getAvailableInterfaces().size(), "Should have 2 available interfaces");
       assertTrue(
-          stats.getAvailableInterfaces().contains("wasi:http"),
-          "Should contain 'wasi:http'");
+          stats.getAvailableInterfaces().contains("wasi:http"), "Should contain 'wasi:http'");
     }
 
     @Test
     @DisplayName("should set componentsByAuthor and componentsByTag")
     void shouldSetBreakdownMaps() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .componentsByAuthor(Map.of("alice", 3, "bob", 2))
-          .componentsByTag(Map.of("networking", 4, "storage", 1))
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder()
+              .componentsByAuthor(Map.of("alice", 3, "bob", 2))
+              .componentsByTag(Map.of("networking", 4, "storage", 1))
+              .build();
 
       assertEquals(
-          2, stats.getComponentsByAuthor().size(),
-          "componentsByAuthor should have 2 entries");
-      assertEquals(
-          3, stats.getComponentsByAuthor().get("alice"),
-          "Alice should have 3 components");
-      assertEquals(
-          2, stats.getComponentsByTag().size(),
-          "componentsByTag should have 2 entries");
+          2, stats.getComponentsByAuthor().size(), "componentsByAuthor should have 2 entries");
+      assertEquals(3, stats.getComponentsByAuthor().get("alice"), "Alice should have 3 components");
+      assertEquals(2, stats.getComponentsByTag().size(), "componentsByTag should have 2 entries");
     }
 
     @Test
@@ -237,10 +176,11 @@ class ComponentRegistryStatisticsTest {
       final Instant regTime = Instant.parse("2025-01-15T10:00:00Z");
       final Instant unregTime = Instant.parse("2025-01-15T11:00:00Z");
 
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .lastRegistration(regTime)
-          .lastUnregistration(unregTime)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder()
+              .lastRegistration(regTime)
+              .lastUnregistration(unregTime)
+              .build();
 
       assertEquals(regTime, stats.getLastRegistration(), "lastRegistration should match");
       assertEquals(unregTime, stats.getLastUnregistration(), "lastUnregistration should match");
@@ -249,10 +189,11 @@ class ComponentRegistryStatisticsTest {
     @Test
     @DisplayName("should set registration and unregistration counts")
     void shouldSetRegistrationCounts() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .totalRegistrations(100L)
-          .totalUnregistrations(20L)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder()
+              .totalRegistrations(100L)
+              .totalUnregistrations(20L)
+              .build();
 
       assertEquals(100L, stats.getTotalRegistrations(), "totalRegistrations should be 100");
       assertEquals(20L, stats.getTotalUnregistrations(), "totalUnregistrations should be 20");
@@ -261,14 +202,10 @@ class ComponentRegistryStatisticsTest {
     @Test
     @DisplayName("should set query metrics")
     void shouldSetQueryMetrics() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .averageQueryTime(5.5)
-          .totalQueries(1000L)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder().averageQueryTime(5.5).totalQueries(1000L).build();
 
-      assertEquals(
-          5.5, stats.getAverageQueryTime(), 0.001,
-          "averageQueryTime should be 5.5");
+      assertEquals(5.5, stats.getAverageQueryTime(), 0.001, "averageQueryTime should be 5.5");
       assertEquals(1000L, stats.getTotalQueries(), "totalQueries should be 1000");
     }
   }
@@ -281,22 +218,23 @@ class ComponentRegistryStatisticsTest {
     @DisplayName("should support full method chaining")
     void shouldSupportFullChaining() {
       final Instant now = Instant.now();
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .totalComponents(20)
-          .activeComponents(15)
-          .inactiveComponents(5)
-          .totalMemoryUsage(2048L)
-          .averageComponentSize(102L)
-          .availableInterfaces(Set.of("iface1"))
-          .componentsByAuthor(Map.of("author1", 10))
-          .componentsByTag(Map.of("tag1", 5))
-          .lastRegistration(now)
-          .lastUnregistration(now)
-          .totalRegistrations(50L)
-          .totalUnregistrations(10L)
-          .averageQueryTime(2.3)
-          .totalQueries(500L)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder()
+              .totalComponents(20)
+              .activeComponents(15)
+              .inactiveComponents(5)
+              .totalMemoryUsage(2048L)
+              .averageComponentSize(102L)
+              .availableInterfaces(Set.of("iface1"))
+              .componentsByAuthor(Map.of("author1", 10))
+              .componentsByTag(Map.of("tag1", 5))
+              .lastRegistration(now)
+              .lastUnregistration(now)
+              .totalRegistrations(50L)
+              .totalUnregistrations(10L)
+              .averageQueryTime(2.3)
+              .totalQueries(500L)
+              .build();
 
       assertEquals(20, stats.getTotalComponents(), "totalComponents should be 20");
       assertEquals(15, stats.getActiveComponents(), "activeComponents should be 15");
@@ -313,9 +251,8 @@ class ComponentRegistryStatisticsTest {
     @Test
     @DisplayName("should handle null availableInterfaces as empty set")
     void shouldHandleNullAvailableInterfaces() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .availableInterfaces(null)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder().availableInterfaces(null).build();
 
       assertTrue(
           stats.getAvailableInterfaces().isEmpty(),
@@ -325,9 +262,8 @@ class ComponentRegistryStatisticsTest {
     @Test
     @DisplayName("should handle null componentsByAuthor as empty map")
     void shouldHandleNullComponentsByAuthor() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .componentsByAuthor(null)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder().componentsByAuthor(null).build();
 
       assertTrue(
           stats.getComponentsByAuthor().isEmpty(),
@@ -337,13 +273,11 @@ class ComponentRegistryStatisticsTest {
     @Test
     @DisplayName("should handle null componentsByTag as empty map")
     void shouldHandleNullComponentsByTag() {
-      final ComponentRegistryStatistics stats = ComponentRegistryStatistics.builder()
-          .componentsByTag(null)
-          .build();
+      final ComponentRegistryStatistics stats =
+          ComponentRegistryStatistics.builder().componentsByTag(null).build();
 
       assertTrue(
-          stats.getComponentsByTag().isEmpty(),
-          "Null componentsByTag should become empty map");
+          stats.getComponentsByTag().isEmpty(), "Null componentsByTag should become empty map");
     }
   }
 }

@@ -171,8 +171,7 @@ class NnErrorCodeTest {
           NnErrorCode.INVALID_ENCODING,
           NnErrorCode.valueOf("INVALID_ENCODING"),
           "Should return INVALID_ENCODING");
-      assertEquals(
-          NnErrorCode.TIMEOUT, NnErrorCode.valueOf("TIMEOUT"), "Should return TIMEOUT");
+      assertEquals(NnErrorCode.TIMEOUT, NnErrorCode.valueOf("TIMEOUT"), "Should return TIMEOUT");
       assertEquals(
           NnErrorCode.RUNTIME_ERROR,
           NnErrorCode.valueOf("RUNTIME_ERROR"),
@@ -185,10 +184,8 @@ class NnErrorCodeTest {
           NnErrorCode.TOO_LARGE, NnErrorCode.valueOf("TOO_LARGE"), "Should return TOO_LARGE");
       assertEquals(
           NnErrorCode.NOT_FOUND, NnErrorCode.valueOf("NOT_FOUND"), "Should return NOT_FOUND");
-      assertEquals(
-          NnErrorCode.SECURITY, NnErrorCode.valueOf("SECURITY"), "Should return SECURITY");
-      assertEquals(
-          NnErrorCode.UNKNOWN, NnErrorCode.valueOf("UNKNOWN"), "Should return UNKNOWN");
+      assertEquals(NnErrorCode.SECURITY, NnErrorCode.valueOf("SECURITY"), "Should return SECURITY");
+      assertEquals(NnErrorCode.UNKNOWN, NnErrorCode.valueOf("UNKNOWN"), "Should return UNKNOWN");
     }
 
     @Test
@@ -211,8 +208,10 @@ class NnErrorCodeTest {
       final NnErrorCode[] values = NnErrorCode.values();
       final Set<NnErrorCode> valueSet = new HashSet<>(Arrays.asList(values));
 
-      assertTrue(valueSet.contains(NnErrorCode.INVALID_ARGUMENT), "Should contain INVALID_ARGUMENT");
-      assertTrue(valueSet.contains(NnErrorCode.INVALID_ENCODING), "Should contain INVALID_ENCODING");
+      assertTrue(
+          valueSet.contains(NnErrorCode.INVALID_ARGUMENT), "Should contain INVALID_ARGUMENT");
+      assertTrue(
+          valueSet.contains(NnErrorCode.INVALID_ENCODING), "Should contain INVALID_ENCODING");
       assertTrue(valueSet.contains(NnErrorCode.TIMEOUT), "Should contain TIMEOUT");
       assertTrue(valueSet.contains(NnErrorCode.RUNTIME_ERROR), "Should contain RUNTIME_ERROR");
       assertTrue(
@@ -261,9 +260,7 @@ class NnErrorCodeTest {
     @DisplayName("TIMEOUT should have wasi name 'timeout'")
     void timeoutShouldHaveCorrectWasiName() {
       assertEquals(
-          "timeout",
-          NnErrorCode.TIMEOUT.getWasiName(),
-          "TIMEOUT wasi name should be 'timeout'");
+          "timeout", NnErrorCode.TIMEOUT.getWasiName(), "TIMEOUT wasi name should be 'timeout'");
     }
 
     @Test
@@ -315,9 +312,7 @@ class NnErrorCodeTest {
     @DisplayName("UNKNOWN should have wasi name 'unknown'")
     void unknownShouldHaveCorrectWasiName() {
       assertEquals(
-          "unknown",
-          NnErrorCode.UNKNOWN.getWasiName(),
-          "UNKNOWN wasi name should be 'unknown'");
+          "unknown", NnErrorCode.UNKNOWN.getWasiName(), "UNKNOWN wasi name should be 'unknown'");
     }
   }
 
@@ -330,9 +325,7 @@ class NnErrorCodeTest {
     void eachConstantShouldHaveNonEmptyDescription() {
       for (final NnErrorCode code : NnErrorCode.values()) {
         assertNotNull(code.getDescription(), "Description should not be null for " + code);
-        assertFalse(
-            code.getDescription().isEmpty(),
-            "Description should not be empty for " + code);
+        assertFalse(code.getDescription().isEmpty(), "Description should not be empty for " + code);
       }
     }
   }
@@ -353,9 +346,7 @@ class NnErrorCodeTest {
           NnErrorCode.fromWasiName("invalid-encoding"),
           "Should resolve 'invalid-encoding'");
       assertEquals(
-          NnErrorCode.TIMEOUT,
-          NnErrorCode.fromWasiName("timeout"),
-          "Should resolve 'timeout'");
+          NnErrorCode.TIMEOUT, NnErrorCode.fromWasiName("timeout"), "Should resolve 'timeout'");
       assertEquals(
           NnErrorCode.RUNTIME_ERROR,
           NnErrorCode.fromWasiName("runtime-error"),
@@ -373,13 +364,9 @@ class NnErrorCodeTest {
           NnErrorCode.fromWasiName("not-found"),
           "Should resolve 'not-found'");
       assertEquals(
-          NnErrorCode.SECURITY,
-          NnErrorCode.fromWasiName("security"),
-          "Should resolve 'security'");
+          NnErrorCode.SECURITY, NnErrorCode.fromWasiName("security"), "Should resolve 'security'");
       assertEquals(
-          NnErrorCode.UNKNOWN,
-          NnErrorCode.fromWasiName("unknown"),
-          "Should resolve 'unknown'");
+          NnErrorCode.UNKNOWN, NnErrorCode.fromWasiName("unknown"), "Should resolve 'unknown'");
     }
 
     @Test

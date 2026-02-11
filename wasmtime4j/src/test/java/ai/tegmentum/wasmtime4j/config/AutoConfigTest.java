@@ -7,8 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.config.profiles.PerformanceProfile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -149,13 +147,10 @@ class AutoConfigTest {
 
     // Development workloads should prefer debugging-friendly profile
     assertEquals(
-        PerformanceProfile.DEBUG,
-        profile,
-        "Development workload should prefer debug profile");
+        PerformanceProfile.DEBUG, profile, "Development workload should prefer debug profile");
 
     // Should enable debug information
-    assertTrue(
-        config.isGenerateDebugInfo(), "Debug profile should enable debug information");
+    assertTrue(config.isGenerateDebugInfo(), "Debug profile should enable debug information");
   }
 
   @Test
@@ -463,8 +458,7 @@ class AutoConfigTest {
 
     // Batch processing should prefer performance optimization
     assertTrue(
-        profile == PerformanceProfile.MAXIMUM_PERFORMANCE
-            || profile == PerformanceProfile.BALANCED,
+        profile == PerformanceProfile.MAXIMUM_PERFORMANCE || profile == PerformanceProfile.BALANCED,
         "Batch processing should use maximum performance or balanced profile");
 
     // Should prefer speed optimization

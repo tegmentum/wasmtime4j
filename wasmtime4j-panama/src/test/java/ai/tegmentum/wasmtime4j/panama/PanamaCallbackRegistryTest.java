@@ -23,15 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncHostFunction;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackHandle;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackMetrics;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

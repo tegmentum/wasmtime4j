@@ -531,9 +531,7 @@ class ModuleInstantiationExceptionTest {
       for (InstantiationErrorType type : nonImportTypes) {
         final ModuleInstantiationException exception =
             new ModuleInstantiationException(type, "Error");
-        assertFalse(
-            exception.isImportError(),
-            type.name() + " should NOT be an import error");
+        assertFalse(exception.isImportError(), type.name() + " should NOT be an import error");
       }
     }
 
@@ -551,9 +549,9 @@ class ModuleInstantiationExceptionTest {
       assertEquals(
           7,
           count,
-          "Should have exactly 7 import error types: MISSING_IMPORT, IMPORT_TYPE_MISMATCH, "
-              + "FUNCTION_SIGNATURE_MISMATCH, MEMORY_IMPORT_INCOMPATIBLE, TABLE_IMPORT_INCOMPATIBLE, "
-              + "GLOBAL_IMPORT_MISMATCH, IMPORT_RESOLUTION_FAILED");
+          "Should have exactly 7 import error types: MISSING_IMPORT, IMPORT_TYPE_MISMATCH,"
+              + " FUNCTION_SIGNATURE_MISMATCH, MEMORY_IMPORT_INCOMPATIBLE,"
+              + " TABLE_IMPORT_INCOMPATIBLE, GLOBAL_IMPORT_MISMATCH, IMPORT_RESOLUTION_FAILED");
     }
 
     @Test
@@ -566,9 +564,7 @@ class ModuleInstantiationExceptionTest {
             && type != InstantiationErrorType.TIMEOUT) {
           final ModuleInstantiationException exception =
               new ModuleInstantiationException(type, "Error");
-          assertFalse(
-              exception.isResourceError(),
-              type.name() + " should NOT be a resource error");
+          assertFalse(exception.isResourceError(), type.name() + " should NOT be a resource error");
         }
       }
     }
@@ -856,7 +852,8 @@ class ModuleInstantiationExceptionTest {
       expectedKeywords.put(
           InstantiationErrorType.IMPORT_TYPE_MISMATCH, new String[] {"import", "type"});
       expectedKeywords.put(
-          InstantiationErrorType.FUNCTION_SIGNATURE_MISMATCH, new String[] {"function", "signature"});
+          InstantiationErrorType.FUNCTION_SIGNATURE_MISMATCH,
+          new String[] {"function", "signature"});
       expectedKeywords.put(
           InstantiationErrorType.MEMORY_IMPORT_INCOMPATIBLE, new String[] {"memory", "limit"});
       expectedKeywords.put(
@@ -877,8 +874,7 @@ class ModuleInstantiationExceptionTest {
           InstantiationErrorType.GLOBAL_INIT_FAILED, new String[] {"global", "initializer"});
       expectedKeywords.put(
           InstantiationErrorType.RESOURCE_LIMIT_EXCEEDED, new String[] {"resource", "limit"});
-      expectedKeywords.put(
-          InstantiationErrorType.TIMEOUT, new String[] {"timeout", "optimize"});
+      expectedKeywords.put(InstantiationErrorType.TIMEOUT, new String[] {"timeout", "optimize"});
       expectedKeywords.put(
           InstantiationErrorType.MULTIPLE_MEMORIES_UNSUPPORTED, new String[] {"memory", "multi"});
       expectedKeywords.put(
@@ -935,10 +931,7 @@ class ModuleInstantiationExceptionTest {
                 name,
                 null,
                 null);
-        assertEquals(
-            name,
-            exception.getImportName(),
-            "getImportName should return: " + name);
+        assertEquals(name, exception.getImportName(), "getImportName should return: " + name);
       }
     }
 
@@ -955,10 +948,7 @@ class ModuleInstantiationExceptionTest {
                 null,
                 name,
                 null);
-        assertEquals(
-            name,
-            exception.getModuleName(),
-            "getModuleName should return: " + name);
+        assertEquals(name, exception.getModuleName(), "getModuleName should return: " + name);
       }
     }
 
@@ -992,16 +982,8 @@ class ModuleInstantiationExceptionTest {
       for (InstantiationPhase phase : InstantiationPhase.values()) {
         final ModuleInstantiationException exception =
             new ModuleInstantiationException(
-                InstantiationErrorType.UNKNOWN,
-                "Error",
-                phase,
-                null,
-                null,
-                null);
-        assertEquals(
-            phase,
-            exception.getPhase(),
-            "getPhase should return: " + phase);
+                InstantiationErrorType.UNKNOWN, "Error", phase, null, null, null);
+        assertEquals(phase, exception.getPhase(), "getPhase should return: " + phase);
       }
     }
   }

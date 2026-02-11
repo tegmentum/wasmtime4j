@@ -2,8 +2,6 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -13,6 +11,8 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,8 +33,8 @@ public class JniLinker<T> implements Linker<T> {
   private final Engine engine;
   private volatile boolean closed = false;
   private final Set<String> imports = new HashSet<>();
-  private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo> importRegistry =
-      new java.util.concurrent.ConcurrentHashMap<>();
+  private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo>
+      importRegistry = new java.util.concurrent.ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = new HashSet<>();
 
   /**
@@ -401,7 +401,8 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImports(final Module... modules) {
+  public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImports(
+      final Module... modules) {
     if (modules == null) {
       throw new IllegalArgumentException("Modules cannot be null");
     }
@@ -412,7 +413,8 @@ public class JniLinker<T> implements Linker<T> {
 
     final long startTime = System.nanoTime();
 
-    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues =
+        new java.util.ArrayList<>();
     final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> validatedImports =
         new java.util.ArrayList<>();
 
@@ -421,7 +423,8 @@ public class JniLinker<T> implements Linker<T> {
 
     // Validate each module's imports
     for (final Module module : modules) {
-      final java.util.List<ai.tegmentum.wasmtime4j.type.ImportType> moduleImports = module.getImports();
+      final java.util.List<ai.tegmentum.wasmtime4j.type.ImportType> moduleImports =
+          module.getImports();
       totalImports += moduleImports.size();
 
       for (final ai.tegmentum.wasmtime4j.type.ImportType importType : moduleImports) {
@@ -504,8 +507,8 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.config.DependencyResolution resolveDependencies(final Module... modules)
-      throws WasmException {
+  public ai.tegmentum.wasmtime4j.config.DependencyResolution resolveDependencies(
+      final Module... modules) throws WasmException {
     if (modules == null) {
       throw new IllegalArgumentException("Modules cannot be null");
     }
@@ -607,8 +610,8 @@ public class JniLinker<T> implements Linker<T> {
    * @param importType the import type
    * @return the corresponding dependency type
    */
-  private ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType mapImportTypeToDependencyType(
-      final ai.tegmentum.wasmtime4j.type.ImportType importType) {
+  private ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType
+      mapImportTypeToDependencyType(final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     // For now, we infer from the import type string
     // A more robust implementation would use actual type inspection
     return ai.tegmentum.wasmtime4j.config.DependencyEdge.DependencyType.FUNCTION;
@@ -1457,7 +1460,8 @@ public class JniLinker<T> implements Linker<T> {
    * @param extern the extern to get the type from
    * @return the import type
    */
-  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType getExternImportType(final Extern extern) {
+  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType getExternImportType(
+      final Extern extern) {
     if (extern instanceof JniExternFunc) {
       return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
     } else if (extern instanceof JniExternTable) {

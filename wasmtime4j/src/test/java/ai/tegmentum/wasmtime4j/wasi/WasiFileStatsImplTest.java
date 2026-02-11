@@ -62,7 +62,8 @@ class WasiFileStatsImplTest {
 
       assertEquals(1L, stats.getDevice(), "Device should be 1");
       assertEquals(2L, stats.getInode(), "Inode should be 2");
-      assertEquals(WasiFileType.REGULAR_FILE, stats.getFileType(), "FileType should be REGULAR_FILE");
+      assertEquals(
+          WasiFileType.REGULAR_FILE, stats.getFileType(), "FileType should be REGULAR_FILE");
       assertEquals(3L, stats.getLinkCount(), "LinkCount should be 3");
       assertEquals(4096L, stats.getSize(), "Size should be 4096");
       assertEquals(now, stats.getAccessTime(), "AccessTime should match");
@@ -76,13 +77,12 @@ class WasiFileStatsImplTest {
     @DisplayName("should build with minimal fields and default permissions for file")
     void shouldBuildWithMinimalFieldsForFile() {
       final WasiFileStats stats =
-          WasiFileStats.builder()
-              .fileType(WasiFileType.REGULAR_FILE)
-              .build();
+          WasiFileStats.builder().fileType(WasiFileType.REGULAR_FILE).build();
 
       assertEquals(0L, stats.getDevice(), "Device should default to 0");
       assertEquals(0L, stats.getInode(), "Inode should default to 0");
-      assertEquals(WasiFileType.REGULAR_FILE, stats.getFileType(), "FileType should be REGULAR_FILE");
+      assertEquals(
+          WasiFileType.REGULAR_FILE, stats.getFileType(), "FileType should be REGULAR_FILE");
       assertEquals(1L, stats.getLinkCount(), "LinkCount should default to 1");
       assertEquals(0L, stats.getSize(), "Size should default to 0");
       assertNull(stats.getAccessTime(), "AccessTime should be null by default");
@@ -91,21 +91,16 @@ class WasiFileStatsImplTest {
       assertNull(stats.getCreationTime(), "CreationTime should be null by default");
       assertNotNull(stats.getPermissions(), "Default permissions should be applied for file");
       assertEquals(
-          0644, stats.getPermissions().getMode(),
-          "Default file permissions should be 0644");
+          0644, stats.getPermissions().getMode(), "Default file permissions should be 0644");
     }
 
     @Test
     @DisplayName("should apply default directory permissions when no permissions set")
     void shouldApplyDefaultDirectoryPermissions() {
-      final WasiFileStats stats =
-          WasiFileStats.builder()
-              .fileType(WasiFileType.DIRECTORY)
-              .build();
+      final WasiFileStats stats = WasiFileStats.builder().fileType(WasiFileType.DIRECTORY).build();
 
       assertEquals(
-          0755, stats.getPermissions().getMode(),
-          "Default directory permissions should be 0755");
+          0755, stats.getPermissions().getMode(), "Default directory permissions should be 0755");
     }
 
     @Test
@@ -113,9 +108,7 @@ class WasiFileStatsImplTest {
     void shouldThrowWhenFileTypeNotSet() {
       final WasiFileStats.Builder builder = WasiFileStats.builder();
       assertThrows(
-          IllegalStateException.class,
-          builder::build,
-          "Should throw when fileType is not set");
+          IllegalStateException.class, builder::build, "Should throw when fileType is not set");
     }
 
     @Test
@@ -163,10 +156,7 @@ class WasiFileStatsImplTest {
     @DisplayName("should accept zero link count")
     void shouldAcceptZeroLinkCount() {
       final WasiFileStats stats =
-          WasiFileStats.builder()
-              .fileType(WasiFileType.REGULAR_FILE)
-              .linkCount(0)
-              .build();
+          WasiFileStats.builder().fileType(WasiFileType.REGULAR_FILE).linkCount(0).build();
       assertEquals(0L, stats.getLinkCount(), "Link count should be 0");
     }
 
@@ -174,10 +164,7 @@ class WasiFileStatsImplTest {
     @DisplayName("should accept zero size")
     void shouldAcceptZeroSize() {
       final WasiFileStats stats =
-          WasiFileStats.builder()
-              .fileType(WasiFileType.REGULAR_FILE)
-              .size(0)
-              .build();
+          WasiFileStats.builder().fileType(WasiFileType.REGULAR_FILE).size(0).build();
       assertEquals(0L, stats.getSize(), "Size should be 0");
     }
   }
@@ -190,19 +177,14 @@ class WasiFileStatsImplTest {
     @DisplayName("isFile should return true for REGULAR_FILE")
     void isFileShouldReturnTrueForRegularFile() {
       final WasiFileStats stats =
-          WasiFileStats.builder()
-              .fileType(WasiFileType.REGULAR_FILE)
-              .build();
+          WasiFileStats.builder().fileType(WasiFileType.REGULAR_FILE).build();
       assertTrue(stats.isFile(), "isFile should be true for REGULAR_FILE");
     }
 
     @Test
     @DisplayName("isDirectory should return true for DIRECTORY")
     void isDirectoryShouldReturnTrueForDirectory() {
-      final WasiFileStats stats =
-          WasiFileStats.builder()
-              .fileType(WasiFileType.DIRECTORY)
-              .build();
+      final WasiFileStats stats = WasiFileStats.builder().fileType(WasiFileType.DIRECTORY).build();
       assertTrue(stats.isDirectory(), "isDirectory should be true for DIRECTORY");
     }
 
@@ -210,9 +192,7 @@ class WasiFileStatsImplTest {
     @DisplayName("isSymbolicLink should return true for SYMBOLIC_LINK")
     void isSymbolicLinkShouldReturnTrueForSymbolicLink() {
       final WasiFileStats stats =
-          WasiFileStats.builder()
-              .fileType(WasiFileType.SYMBOLIC_LINK)
-              .build();
+          WasiFileStats.builder().fileType(WasiFileType.SYMBOLIC_LINK).build();
       assertTrue(stats.isSymbolicLink(), "isSymbolicLink should be true for SYMBOLIC_LINK");
     }
 
@@ -220,9 +200,7 @@ class WasiFileStatsImplTest {
     @DisplayName("isSpecialFile should return true for BLOCK_DEVICE")
     void isSpecialFileShouldReturnTrueForBlockDevice() {
       final WasiFileStats stats =
-          WasiFileStats.builder()
-              .fileType(WasiFileType.BLOCK_DEVICE)
-              .build();
+          WasiFileStats.builder().fileType(WasiFileType.BLOCK_DEVICE).build();
       assertTrue(stats.isSpecialFile(), "isSpecialFile should be true for BLOCK_DEVICE");
     }
   }
@@ -238,21 +216,34 @@ class WasiFileStatsImplTest {
       final WasiPermissions permissions = WasiPermissions.of(0644);
       final WasiFileStats stats1 =
           WasiFileStats.builder()
-              .device(1L).inode(2L).fileType(WasiFileType.REGULAR_FILE)
-              .linkCount(1).size(100).accessTime(now).modificationTime(now)
-              .statusChangeTime(now).creationTime(now).permissions(permissions)
+              .device(1L)
+              .inode(2L)
+              .fileType(WasiFileType.REGULAR_FILE)
+              .linkCount(1)
+              .size(100)
+              .accessTime(now)
+              .modificationTime(now)
+              .statusChangeTime(now)
+              .creationTime(now)
+              .permissions(permissions)
               .build();
       final WasiFileStats stats2 =
           WasiFileStats.builder()
-              .device(1L).inode(2L).fileType(WasiFileType.REGULAR_FILE)
-              .linkCount(1).size(100).accessTime(now).modificationTime(now)
-              .statusChangeTime(now).creationTime(now).permissions(permissions)
+              .device(1L)
+              .inode(2L)
+              .fileType(WasiFileType.REGULAR_FILE)
+              .linkCount(1)
+              .size(100)
+              .accessTime(now)
+              .modificationTime(now)
+              .statusChangeTime(now)
+              .creationTime(now)
+              .permissions(permissions)
               .build();
 
       assertEquals(stats1, stats2, "Stats with same values should be equal");
       assertEquals(
-          stats1.hashCode(), stats2.hashCode(),
-          "Stats with same values should have same hashCode");
+          stats1.hashCode(), stats2.hashCode(), "Stats with same values should have same hashCode");
     }
 
     @Test
@@ -270,8 +261,7 @@ class WasiFileStatsImplTest {
     void statsWithDifferentFileTypesShouldNotBeEqual() {
       final WasiFileStats stats1 =
           WasiFileStats.builder().fileType(WasiFileType.REGULAR_FILE).build();
-      final WasiFileStats stats2 =
-          WasiFileStats.builder().fileType(WasiFileType.DIRECTORY).build();
+      final WasiFileStats stats2 = WasiFileStats.builder().fileType(WasiFileType.DIRECTORY).build();
       assertNotEquals(stats1, stats2, "Stats with different file types should not be equal");
     }
 
@@ -294,12 +284,8 @@ class WasiFileStatsImplTest {
       final WasiFileStats stats =
           WasiFileStats.builder().fileType(WasiFileType.REGULAR_FILE).size(1024).build();
       final String result = stats.toString();
-      assertTrue(
-          result.contains("REGULAR_FILE"),
-          "toString should contain file type: " + result);
-      assertTrue(
-          result.contains("1024"),
-          "toString should contain size: " + result);
+      assertTrue(result.contains("REGULAR_FILE"), "toString should contain file type: " + result);
+      assertTrue(result.contains("1024"), "toString should contain size: " + result);
     }
   }
 }

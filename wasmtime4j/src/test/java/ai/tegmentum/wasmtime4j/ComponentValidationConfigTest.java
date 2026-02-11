@@ -16,55 +16,12 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCapability;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibilityResult;
-import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
-import ai.tegmentum.wasmtime4j.component.ComponentEngine;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentFeature;
-import ai.tegmentum.wasmtime4j.component.ComponentFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentId;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
-import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleManager;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentLinker;
-import ai.tegmentum.wasmtime4j.component.ComponentLinkInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentResult;
-import ai.tegmentum.wasmtime4j.component.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.component.ComponentSpecification;
-import ai.tegmentum.wasmtime4j.component.ComponentStateTransitionConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentType;
-import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
-import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentVal;
-import ai.tegmentum.wasmtime4j.component.ComponentValFactory;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVariant;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -105,9 +62,7 @@ class ComponentValidationConfigTest {
     @DisplayName("should have static defaultConfig() method")
     void shouldHaveStaticDefaultConfigMethod() throws NoSuchMethodException {
       final var method = ComponentValidationConfig.class.getMethod("defaultConfig");
-      assertTrue(
-          Modifier.isStatic(method.getModifiers()),
-          "defaultConfig() should be static");
+      assertTrue(Modifier.isStatic(method.getModifiers()), "defaultConfig() should be static");
     }
   }
 
@@ -124,13 +79,10 @@ class ComponentValidationConfigTest {
       assertTrue(config.isValidateSecurity(), "Default validateSecurity should be true");
       assertTrue(config.isValidatePerformance(), "Default validatePerformance should be true");
       assertTrue(config.isValidateInterfaces(), "Default validateInterfaces should be true");
-      assertTrue(
-          config.isValidateDependencies(),
-          "Default validateDependencies should be true");
+      assertTrue(config.isValidateDependencies(), "Default validateDependencies should be true");
       assertFalse(config.isStrictMode(), "Default strictMode should be false");
       assertEquals(
-          30000L, config.getMaxValidationTimeMs(),
-          "Default maxValidationTimeMs should be 30000");
+          30000L, config.getMaxValidationTimeMs(), "Default maxValidationTimeMs should be 30000");
     }
   }
 
@@ -141,9 +93,8 @@ class ComponentValidationConfigTest {
     @Test
     @DisplayName("should disable security validation")
     void shouldDisableSecurityValidation() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .validateSecurity(false)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder().validateSecurity(false).build();
 
       assertFalse(config.isValidateSecurity(), "validateSecurity should be false");
     }
@@ -151,9 +102,8 @@ class ComponentValidationConfigTest {
     @Test
     @DisplayName("should disable performance validation")
     void shouldDisablePerformanceValidation() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .validatePerformance(false)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder().validatePerformance(false).build();
 
       assertFalse(config.isValidatePerformance(), "validatePerformance should be false");
     }
@@ -161,9 +111,8 @@ class ComponentValidationConfigTest {
     @Test
     @DisplayName("should disable interface validation")
     void shouldDisableInterfaceValidation() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .validateInterfaces(false)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder().validateInterfaces(false).build();
 
       assertFalse(config.isValidateInterfaces(), "validateInterfaces should be false");
     }
@@ -171,9 +120,8 @@ class ComponentValidationConfigTest {
     @Test
     @DisplayName("should disable dependency validation")
     void shouldDisableDependencyValidation() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .validateDependencies(false)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder().validateDependencies(false).build();
 
       assertFalse(config.isValidateDependencies(), "validateDependencies should be false");
     }
@@ -181,9 +129,8 @@ class ComponentValidationConfigTest {
     @Test
     @DisplayName("should enable strict mode")
     void shouldEnableStrictMode() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .strictMode(true)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder().strictMode(true).build();
 
       assertTrue(config.isStrictMode(), "strictMode should be true");
     }
@@ -191,26 +138,24 @@ class ComponentValidationConfigTest {
     @Test
     @DisplayName("should set maxValidationTimeMs")
     void shouldSetMaxValidationTime() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .maxValidationTimeMs(60000L)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder().maxValidationTimeMs(60000L).build();
 
-      assertEquals(
-          60000L, config.getMaxValidationTimeMs(),
-          "maxValidationTimeMs should be 60000");
+      assertEquals(60000L, config.getMaxValidationTimeMs(), "maxValidationTimeMs should be 60000");
     }
 
     @Test
     @DisplayName("should support full method chaining")
     void shouldSupportFullChaining() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .validateSecurity(true)
-          .validatePerformance(false)
-          .validateInterfaces(true)
-          .validateDependencies(false)
-          .strictMode(true)
-          .maxValidationTimeMs(10000L)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder()
+              .validateSecurity(true)
+              .validatePerformance(false)
+              .validateInterfaces(true)
+              .validateDependencies(false)
+              .strictMode(true)
+              .maxValidationTimeMs(10000L)
+              .build();
 
       assertTrue(config.isValidateSecurity(), "security validation should be enabled");
       assertFalse(config.isValidatePerformance(), "performance validation should be disabled");
@@ -228,9 +173,8 @@ class ComponentValidationConfigTest {
     @Test
     @DisplayName("should accept zero maxValidationTimeMs")
     void shouldAcceptZeroMaxTime() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .maxValidationTimeMs(0L)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder().maxValidationTimeMs(0L).build();
 
       assertEquals(0L, config.getMaxValidationTimeMs(), "Zero maxValidationTimeMs should be 0");
     }
@@ -238,24 +182,22 @@ class ComponentValidationConfigTest {
     @Test
     @DisplayName("should accept very large maxValidationTimeMs")
     void shouldAcceptLargeMaxTime() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .maxValidationTimeMs(Long.MAX_VALUE)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder().maxValidationTimeMs(Long.MAX_VALUE).build();
 
-      assertEquals(
-          Long.MAX_VALUE, config.getMaxValidationTimeMs(),
-          "Should accept Long.MAX_VALUE");
+      assertEquals(Long.MAX_VALUE, config.getMaxValidationTimeMs(), "Should accept Long.MAX_VALUE");
     }
 
     @Test
     @DisplayName("should allow disabling all validations")
     void shouldAllowDisablingAllValidations() {
-      final ComponentValidationConfig config = ComponentValidationConfig.builder()
-          .validateSecurity(false)
-          .validatePerformance(false)
-          .validateInterfaces(false)
-          .validateDependencies(false)
-          .build();
+      final ComponentValidationConfig config =
+          ComponentValidationConfig.builder()
+              .validateSecurity(false)
+              .validatePerformance(false)
+              .validateInterfaces(false)
+              .validateDependencies(false)
+              .build();
 
       assertFalse(config.isValidateSecurity(), "Security should be disabled");
       assertFalse(config.isValidatePerformance(), "Performance should be disabled");

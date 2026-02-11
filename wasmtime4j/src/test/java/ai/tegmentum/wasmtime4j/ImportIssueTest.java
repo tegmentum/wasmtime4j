@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -25,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.validation.ImportIssue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.validation.ImportIssue;
 
 /**
  * Tests for {@link ImportIssue} class.
@@ -57,8 +55,7 @@ class ImportIssueTest {
               "Memory(1, 5)");
 
       assertEquals(ImportIssue.Severity.ERROR, issue.getSeverity(), "severity should be ERROR");
-      assertEquals(
-          ImportIssue.Type.TYPE_MISMATCH, issue.getType(), "type should be TYPE_MISMATCH");
+      assertEquals(ImportIssue.Type.TYPE_MISMATCH, issue.getType(), "type should be TYPE_MISMATCH");
       assertEquals("env", issue.getModuleName(), "moduleName should be 'env'");
       assertEquals("memory", issue.getImportName(), "importName should be 'memory'");
       assertEquals("Memory type mismatch", issue.getMessage(), "message should match");
@@ -107,8 +104,7 @@ class ImportIssueTest {
           "type should be CIRCULAR_DEPENDENCY");
       assertEquals("moduleA", issue.getModuleName(), "moduleName should match");
       assertEquals("funcB", issue.getImportName(), "importName should match");
-      assertEquals(
-          "Circular dependency detected", issue.getMessage(), "message should match");
+      assertEquals("Circular dependency detected", issue.getMessage(), "message should match");
       assertNull(issue.getExpectedType(), "expectedType should be null");
       assertNull(issue.getActualType(), "actualType should be null");
     }
@@ -123,9 +119,7 @@ class ImportIssueTest {
     void shouldThrowForNullSeverity() {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new ImportIssue(
-                  null, ImportIssue.Type.MISSING_IMPORT, "mod", "fn", "msg"),
+          () -> new ImportIssue(null, ImportIssue.Type.MISSING_IMPORT, "mod", "fn", "msg"),
           "null severity should throw NullPointerException");
     }
 
@@ -134,9 +128,7 @@ class ImportIssueTest {
     void shouldThrowForNullType() {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new ImportIssue(
-                  ImportIssue.Severity.ERROR, null, "mod", "fn", "msg"),
+          () -> new ImportIssue(ImportIssue.Severity.ERROR, null, "mod", "fn", "msg"),
           "null type should throw NullPointerException");
     }
 
@@ -281,18 +273,10 @@ class ImportIssueTest {
     void equalsShouldReturnFalseForDifferentSeverity() {
       final ImportIssue issue1 =
           new ImportIssue(
-              ImportIssue.Severity.ERROR,
-              ImportIssue.Type.MISSING_IMPORT,
-              "mod",
-              "fn",
-              "msg");
+              ImportIssue.Severity.ERROR, ImportIssue.Type.MISSING_IMPORT, "mod", "fn", "msg");
       final ImportIssue issue2 =
           new ImportIssue(
-              ImportIssue.Severity.WARNING,
-              ImportIssue.Type.MISSING_IMPORT,
-              "mod",
-              "fn",
-              "msg");
+              ImportIssue.Severity.WARNING, ImportIssue.Type.MISSING_IMPORT, "mod", "fn", "msg");
 
       assertNotEquals(issue1, issue2, "Different severity should not be equal");
     }
@@ -302,18 +286,10 @@ class ImportIssueTest {
     void equalsShouldReturnFalseForDifferentType() {
       final ImportIssue issue1 =
           new ImportIssue(
-              ImportIssue.Severity.ERROR,
-              ImportIssue.Type.MISSING_IMPORT,
-              "mod",
-              "fn",
-              "msg");
+              ImportIssue.Severity.ERROR, ImportIssue.Type.MISSING_IMPORT, "mod", "fn", "msg");
       final ImportIssue issue2 =
           new ImportIssue(
-              ImportIssue.Severity.ERROR,
-              ImportIssue.Type.TYPE_MISMATCH,
-              "mod",
-              "fn",
-              "msg");
+              ImportIssue.Severity.ERROR, ImportIssue.Type.TYPE_MISMATCH, "mod", "fn", "msg");
 
       assertNotEquals(issue1, issue2, "Different type should not be equal");
     }
@@ -402,8 +378,7 @@ class ImportIssueTest {
       final String result = issue.toString();
 
       assertTrue(result.contains("env::log"), "toString should contain import identifier");
-      assertTrue(
-          result.contains("Signature does not match"), "toString should contain message");
+      assertTrue(result.contains("Signature does not match"), "toString should contain message");
     }
 
     @Test
@@ -430,11 +405,7 @@ class ImportIssueTest {
     void toStringShouldNotIncludeExpectedActualWhenNull() {
       final ImportIssue issue =
           new ImportIssue(
-              ImportIssue.Severity.INFO,
-              ImportIssue.Type.MISSING_IMPORT,
-              "mod",
-              "fn",
-              "Missing");
+              ImportIssue.Severity.INFO, ImportIssue.Type.MISSING_IMPORT, "mod", "fn", "Missing");
 
       final String result = issue.toString();
 

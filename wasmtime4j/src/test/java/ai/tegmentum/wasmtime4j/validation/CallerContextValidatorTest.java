@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -126,17 +125,14 @@ class CallerContextValidatorTest {
           config.validateBasicFunctionality,
           "Basic config should enable basic functionality validation");
       assertFalse(
-          config.validateExportAccess,
-          "Basic config should disable export access validation");
+          config.validateExportAccess, "Basic config should disable export access validation");
       assertFalse(
-          config.validateFuelOperations,
-          "Basic config should disable fuel operations validation");
+          config.validateFuelOperations, "Basic config should disable fuel operations validation");
       assertFalse(
           config.validateEpochOperations,
           "Basic config should disable epoch operations validation");
       assertFalse(
-          config.validateErrorHandling,
-          "Basic config should disable error handling validation");
+          config.validateErrorHandling, "Basic config should disable error handling validation");
     }
   }
 
@@ -327,14 +323,9 @@ class CallerContextValidatorTest {
       result.addError("e1");
       final String summary = result.createSummary();
       assertTrue(
-          summary.contains("Successes: 2"),
-          "Summary should show 2 successes, got: " + summary);
-      assertTrue(
-          summary.contains("Warnings: 1"),
-          "Summary should show 1 warning, got: " + summary);
-      assertTrue(
-          summary.contains("Errors: 1"),
-          "Summary should show 1 error, got: " + summary);
+          summary.contains("Successes: 2"), "Summary should show 2 successes, got: " + summary);
+      assertTrue(summary.contains("Warnings: 1"), "Summary should show 1 warning, got: " + summary);
+      assertTrue(summary.contains("Errors: 1"), "Summary should show 1 error, got: " + summary);
     }
 
     @Test
@@ -404,9 +395,7 @@ class CallerContextValidatorTest {
       // Error handling - null parameter rejection
       when(mockCaller.hasExport(null)).thenThrow(new IllegalArgumentException("null not allowed"));
       when(mockCaller.getMemory(null)).thenThrow(new IllegalArgumentException("null not allowed"));
-      doThrow(new IllegalArgumentException("negative fuel"))
-          .when(mockCaller)
-          .addFuel(-100);
+      doThrow(new IllegalArgumentException("negative fuel")).when(mockCaller).addFuel(-100);
 
       final ValidationConfig config = CallerContextValidator.createComprehensiveConfig();
       final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
@@ -767,7 +756,8 @@ class CallerContextValidatorTest {
   class SuccessCountVerificationTests {
 
     @Test
-    @DisplayName("validateFuelOperations should add multiple success messages when working correctly")
+    @DisplayName(
+        "validateFuelOperations should add multiple success messages when working correctly")
     @SuppressWarnings("unchecked")
     void validateFuelOperationsShouldAddMultipleSuccessMessages() {
       final Caller<String> mockCaller = mock(Caller.class);
@@ -853,9 +843,13 @@ class CallerContextValidatorTest {
       // Verify export access successes
       long exportSuccesses =
           result.getSuccesses().stream()
-              .filter(s -> s.toLowerCase().contains("export") || s.toLowerCase().contains("memory")
-                  || s.toLowerCase().contains("function") || s.toLowerCase().contains("global")
-                  || s.toLowerCase().contains("table"))
+              .filter(
+                  s ->
+                      s.toLowerCase().contains("export")
+                          || s.toLowerCase().contains("memory")
+                          || s.toLowerCase().contains("function")
+                          || s.toLowerCase().contains("global")
+                          || s.toLowerCase().contains("table"))
               .count();
       assertTrue(
           exportSuccesses >= 2,
@@ -875,9 +869,7 @@ class CallerContextValidatorTest {
       when(mockCaller.data()).thenReturn("test");
       when(mockCaller.fuelConsumed()).thenReturn(Optional.of(0L));
       // Initial: 500, after: exactly 600 (= 500 + 100)
-      when(mockCaller.fuelRemaining())
-          .thenReturn(Optional.of(500L))
-          .thenReturn(Optional.of(600L));
+      when(mockCaller.fuelRemaining()).thenReturn(Optional.of(500L)).thenReturn(Optional.of(600L));
 
       final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
       final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
@@ -896,9 +888,7 @@ class CallerContextValidatorTest {
       when(mockCaller.data()).thenReturn("test");
       when(mockCaller.fuelConsumed()).thenReturn(Optional.of(0L));
       // Initial: 500, after: 599 (= 500 + 99, less than 500 + 100)
-      when(mockCaller.fuelRemaining())
-          .thenReturn(Optional.of(500L))
-          .thenReturn(Optional.of(599L));
+      when(mockCaller.fuelRemaining()).thenReturn(Optional.of(500L)).thenReturn(Optional.of(599L));
 
       final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
       final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
@@ -917,9 +907,7 @@ class CallerContextValidatorTest {
       when(mockCaller.data()).thenReturn("test");
       when(mockCaller.fuelConsumed()).thenReturn(Optional.of(0L));
       // Initial: 0, after: exactly 100 (= 0 + 100)
-      when(mockCaller.fuelRemaining())
-          .thenReturn(Optional.of(0L))
-          .thenReturn(Optional.of(100L));
+      when(mockCaller.fuelRemaining()).thenReturn(Optional.of(0L)).thenReturn(Optional.of(100L));
 
       final ValidationConfig config = new ValidationConfig(true, false, true, false, false);
       final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
@@ -1033,8 +1021,7 @@ class CallerContextValidatorTest {
       final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
 
       assertTrue(
-          result.getSuccesses().stream()
-              .anyMatch(s -> s.toLowerCase().contains("memory")),
+          result.getSuccesses().stream().anyMatch(s -> s.toLowerCase().contains("memory")),
           "Should add success for memory access: " + result.getSuccesses());
     }
 
@@ -1055,8 +1042,7 @@ class CallerContextValidatorTest {
       final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
 
       assertTrue(
-          result.getWarnings().stream()
-              .anyMatch(w -> w.toLowerCase().contains("memory")),
+          result.getWarnings().stream().anyMatch(w -> w.toLowerCase().contains("memory")),
           "Should add warning for failed memory access: " + result.getWarnings());
     }
   }

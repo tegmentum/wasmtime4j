@@ -1,14 +1,10 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
-import ai.tegmentum.wasmtime4j.type.MemoryType;
-
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.testing.RequiresWasmRuntime;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

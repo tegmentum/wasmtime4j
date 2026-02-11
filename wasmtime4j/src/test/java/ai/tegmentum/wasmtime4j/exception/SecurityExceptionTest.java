@@ -883,7 +883,11 @@ class SecurityExceptionTest {
     void descriptionWithAllFieldsShouldIncludeAllSections() {
       final SecurityException ex =
           new SecurityException(
-              "Error", "test-policy", "test-action", "test-resource", SecurityContext.HOST_FUNCTION);
+              "Error",
+              "test-policy",
+              "test-action",
+              "test-resource",
+              SecurityContext.HOST_FUNCTION);
       final String desc = ex.getSecurityViolationDescription();
       assertTrue(desc.contains("[context:"), "Should include context section");
       assertTrue(desc.contains("[policy: test-policy]"), "Should include policy section");

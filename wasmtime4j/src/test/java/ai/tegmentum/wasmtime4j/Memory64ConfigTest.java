@@ -16,10 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.MemoryAddressingMode;
-
-import ai.tegmentum.wasmtime4j.memory.Memory64Config;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -27,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.memory.Memory64Config;
+import ai.tegmentum.wasmtime4j.memory.MemoryAddressingMode;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -55,7 +53,8 @@ class Memory64ConfigTest {
       assertFalse(config.getMaximumPages().isPresent(), "Default maximumPages should be empty");
       assertFalse(config.isShared(), "Default isShared should be false");
       assertEquals(
-          MemoryAddressingMode.MEMORY32, config.getAddressingMode(),
+          MemoryAddressingMode.MEMORY32,
+          config.getAddressingMode(),
           "Default addressing mode should be MEMORY32");
       assertFalse(config.isAutoGrowthAllowed(), "Default autoGrowth should be false");
       assertEquals(1.5, config.getGrowthFactor(), 0.001, "Default growthFactor should be 1.5");
@@ -70,9 +69,7 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("should set maximumPages")
     void shouldSetMaximumPages() {
-      final Memory64Config config = Memory64Config.builder(10)
-          .maximumPages(100L)
-          .build();
+      final Memory64Config config = Memory64Config.builder(10).maximumPages(100L).build();
 
       assertTrue(config.getMaximumPages().isPresent(), "maximumPages should be present");
       assertEquals(100L, config.getMaximumPages().get(), "maximumPages should be 100");
@@ -81,9 +78,7 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("should set shared flag")
     void shouldSetSharedFlag() {
-      final Memory64Config config = Memory64Config.builder(0)
-          .shared()
-          .build();
+      final Memory64Config config = Memory64Config.builder(0).shared().build();
 
       assertTrue(config.isShared(), "isShared should be true");
     }
@@ -91,12 +86,11 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("should set 64-bit addressing")
     void shouldSet64BitAddressing() {
-      final Memory64Config config = Memory64Config.builder(0)
-          .addressing64Bit()
-          .build();
+      final Memory64Config config = Memory64Config.builder(0).addressing64Bit().build();
 
       assertEquals(
-          MemoryAddressingMode.MEMORY64, config.getAddressingMode(),
+          MemoryAddressingMode.MEMORY64,
+          config.getAddressingMode(),
           "Addressing mode should be MEMORY64");
       assertTrue(config.is64BitAddressing(), "is64BitAddressing should return true");
     }
@@ -104,12 +98,11 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("should set 32-bit addressing")
     void shouldSet32BitAddressing() {
-      final Memory64Config config = Memory64Config.builder(0)
-          .addressing32Bit()
-          .build();
+      final Memory64Config config = Memory64Config.builder(0).addressing32Bit().build();
 
       assertEquals(
-          MemoryAddressingMode.MEMORY32, config.getAddressingMode(),
+          MemoryAddressingMode.MEMORY32,
+          config.getAddressingMode(),
           "Addressing mode should be MEMORY32");
       assertFalse(config.is64BitAddressing(), "is64BitAddressing should return false");
     }
@@ -117,9 +110,7 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("should configure auto growth with factor")
     void shouldConfigureAutoGrowth() {
-      final Memory64Config config = Memory64Config.builder(10)
-          .autoGrowth(true, 2.0)
-          .build();
+      final Memory64Config config = Memory64Config.builder(10).autoGrowth(true, 2.0).build();
 
       assertTrue(config.isAutoGrowthAllowed(), "autoGrowth should be enabled");
       assertEquals(2.0, config.getGrowthFactor(), 0.001, "growthFactor should be 2.0");
@@ -128,9 +119,7 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("should set growth limit")
     void shouldSetGrowthLimit() {
-      final Memory64Config config = Memory64Config.builder(10)
-          .growthLimit(500L)
-          .build();
+      final Memory64Config config = Memory64Config.builder(10).growthLimit(500L).build();
 
       assertEquals(500L, config.getGrowthLimitPages(), "growthLimitPages should be 500");
     }
@@ -138,9 +127,7 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("should set debug name")
     void shouldSetDebugName() {
-      final Memory64Config config = Memory64Config.builder(0)
-          .debugName("test-memory")
-          .build();
+      final Memory64Config config = Memory64Config.builder(0).debugName("test-memory").build();
 
       assertTrue(config.getDebugName().isPresent(), "debugName should be present");
       assertEquals("test-memory", config.getDebugName().get(), "debugName should match");
@@ -149,10 +136,8 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("should allow unlimited growth via unlimitedGrowth()")
     void shouldAllowUnlimitedGrowth() {
-      final Memory64Config config = Memory64Config.builder(10)
-          .maximumPages(100L)
-          .unlimitedGrowth()
-          .build();
+      final Memory64Config config =
+          Memory64Config.builder(10).maximumPages(100L).unlimitedGrowth().build();
 
       assertFalse(
           config.getMaximumPages().isPresent(),
@@ -211,16 +196,13 @@ class Memory64ConfigTest {
       final Memory64Config config = Memory64Config.builder(10).build();
 
       assertEquals(
-          10L * 65536L, config.getMinimumSizeBytes(),
-          "minimumSizeBytes should be 10 * 64KB");
+          10L * 65536L, config.getMinimumSizeBytes(), "minimumSizeBytes should be 10 * 64KB");
     }
 
     @Test
     @DisplayName("getMaximumSizeBytes should return pages times 64KB when set")
     void getMaximumSizeBytesShouldComputeCorrectly() {
-      final Memory64Config config = Memory64Config.builder(1)
-          .maximumPages(100L)
-          .build();
+      final Memory64Config config = Memory64Config.builder(1).maximumPages(100L).build();
 
       final Optional<Long> maxBytes = config.getMaximumSizeBytes();
       assertTrue(maxBytes.isPresent(), "maxSizeBytes should be present");
@@ -233,16 +215,13 @@ class Memory64ConfigTest {
       final Memory64Config config = Memory64Config.builder(0).build();
 
       assertFalse(
-          config.getMaximumSizeBytes().isPresent(),
-          "maxSizeBytes should be empty when no maximum");
+          config.getMaximumSizeBytes().isPresent(), "maxSizeBytes should be empty when no maximum");
     }
 
     @Test
     @DisplayName("isWithinLimits should validate page count")
     void isWithinLimitsShouldValidatePageCount() {
-      final Memory64Config config = Memory64Config.builder(5)
-          .maximumPages(20L)
-          .build();
+      final Memory64Config config = Memory64Config.builder(5).maximumPages(20L).build();
 
       assertFalse(config.isWithinLimits(3L), "3 pages should be below minimum 5");
       assertTrue(config.isWithinLimits(5L), "5 pages should be within limits");
@@ -254,25 +233,19 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("isWithinSizeLimits should reject non-page-aligned sizes")
     void isWithinSizeLimitsShouldRejectNonAligned() {
-      final Memory64Config config = Memory64Config.builder(1)
-          .maximumPages(10L)
-          .build();
+      final Memory64Config config = Memory64Config.builder(1).maximumPages(10L).build();
 
       assertFalse(
-          config.isWithinSizeLimits(100L),
-          "Non-page-aligned size should not be within limits");
+          config.isWithinSizeLimits(100L), "Non-page-aligned size should not be within limits");
     }
 
     @Test
     @DisplayName("isWithinSizeLimits should accept page-aligned sizes within range")
     void isWithinSizeLimitsShouldAcceptAligned() {
-      final Memory64Config config = Memory64Config.builder(1)
-          .maximumPages(10L)
-          .build();
+      final Memory64Config config = Memory64Config.builder(1).maximumPages(10L).build();
 
       assertTrue(
-          config.isWithinSizeLimits(5L * 65536L),
-          "Page-aligned size within range should be valid");
+          config.isWithinSizeLimits(5L * 65536L), "Page-aligned size within range should be valid");
     }
   }
 
@@ -293,11 +266,12 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("calculateGrowthSize should compute growth when enabled")
     void shouldComputeGrowthWhenEnabled() {
-      final Memory64Config config = Memory64Config.builder(10)
-          .autoGrowth(true, 2.0)
-          .maximumPages(100L)
-          .growthLimit(100L)
-          .build();
+      final Memory64Config config =
+          Memory64Config.builder(10)
+              .autoGrowth(true, 2.0)
+              .maximumPages(100L)
+              .growthLimit(100L)
+              .build();
 
       final Optional<Long> result = config.calculateGrowthSize(10L);
       assertTrue(result.isPresent(), "Growth should be calculated");
@@ -315,7 +289,8 @@ class Memory64ConfigTest {
       final Memory64Config config = Memory64Config.createDefault64Bit(10);
 
       assertEquals(
-          MemoryAddressingMode.MEMORY64, config.getAddressingMode(),
+          MemoryAddressingMode.MEMORY64,
+          config.getAddressingMode(),
           "Should use 64-bit addressing");
       assertEquals(10L, config.getMinimumPages(), "minimumPages should be 10");
       assertTrue(config.getDebugName().isPresent(), "debugName should be set");
@@ -327,11 +302,11 @@ class Memory64ConfigTest {
       final Memory64Config config = Memory64Config.createDefault32Bit(1);
 
       assertEquals(
-          MemoryAddressingMode.MEMORY32, config.getAddressingMode(),
+          MemoryAddressingMode.MEMORY32,
+          config.getAddressingMode(),
           "Should use 32-bit addressing");
       assertTrue(
-          config.getMaximumPages().isPresent(),
-          "32-bit config should have maximum pages set");
+          config.getMaximumPages().isPresent(), "32-bit config should have maximum pages set");
     }
 
     @Test
@@ -351,19 +326,14 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("equal configs should be equal")
     void equalConfigsShouldBeEqual() {
-      final Memory64Config config1 = Memory64Config.builder(10)
-          .maximumPages(100L)
-          .addressing64Bit()
-          .build();
-      final Memory64Config config2 = Memory64Config.builder(10)
-          .maximumPages(100L)
-          .addressing64Bit()
-          .build();
+      final Memory64Config config1 =
+          Memory64Config.builder(10).maximumPages(100L).addressing64Bit().build();
+      final Memory64Config config2 =
+          Memory64Config.builder(10).maximumPages(100L).addressing64Bit().build();
 
       assertEquals(config1, config2, "Identical configs should be equal");
       assertEquals(
-          config1.hashCode(), config2.hashCode(),
-          "Equal objects should have same hashCode");
+          config1.hashCode(), config2.hashCode(), "Equal objects should have same hashCode");
     }
 
     @Test
@@ -383,11 +353,8 @@ class Memory64ConfigTest {
     @Test
     @DisplayName("toString should contain key information")
     void toStringShouldContainKeyInfo() {
-      final Memory64Config config = Memory64Config.builder(10)
-          .maximumPages(100L)
-          .addressing64Bit()
-          .debugName("test")
-          .build();
+      final Memory64Config config =
+          Memory64Config.builder(10).maximumPages(100L).addressing64Bit().debugName("test").build();
 
       final String result = config.toString();
       assertNotNull(result, "toString should not return null");

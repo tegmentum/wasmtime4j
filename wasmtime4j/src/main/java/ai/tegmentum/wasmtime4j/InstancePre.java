@@ -1,13 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.io.Closeable;
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
+import java.io.Closeable;
 
 /**
  * A pre-instantiated WebAssembly module optimized for fast instantiation.

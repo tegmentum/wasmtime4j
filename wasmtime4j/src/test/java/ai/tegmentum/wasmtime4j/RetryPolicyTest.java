@@ -21,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.execution.RetryPolicy;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.execution.RetryPolicy;
 
 /**
  * Tests for {@link RetryPolicy}.
@@ -49,8 +49,7 @@ class RetryPolicyTest {
     @Test
     @DisplayName("should have exactly 5 values")
     void shouldHaveExactValueCount() {
-      assertEquals(5, RetryPolicy.values().length,
-          "RetryPolicy should have exactly 5 values");
+      assertEquals(5, RetryPolicy.values().length, "RetryPolicy should have exactly 5 values");
     }
   }
 
@@ -73,14 +72,14 @@ class RetryPolicyTest {
     @Test
     @DisplayName("should contain EXPONENTIAL_BACKOFF")
     void shouldContainExponentialBackoff() {
-      assertNotNull(RetryPolicy.EXPONENTIAL_BACKOFF,
-          "EXPONENTIAL_BACKOFF constant should exist");
+      assertNotNull(RetryPolicy.EXPONENTIAL_BACKOFF, "EXPONENTIAL_BACKOFF constant should exist");
     }
 
     @Test
     @DisplayName("should contain EXPONENTIAL_BACKOFF_WITH_JITTER")
     void shouldContainExponentialBackoffWithJitter() {
-      assertNotNull(RetryPolicy.EXPONENTIAL_BACKOFF_WITH_JITTER,
+      assertNotNull(
+          RetryPolicy.EXPONENTIAL_BACKOFF_WITH_JITTER,
           "EXPONENTIAL_BACKOFF_WITH_JITTER constant should exist");
     }
 
@@ -102,8 +101,7 @@ class RetryPolicyTest {
       for (final RetryPolicy value : RetryPolicy.values()) {
         ordinals.add(value.ordinal());
       }
-      assertEquals(RetryPolicy.values().length, ordinals.size(),
-          "All ordinals should be unique");
+      assertEquals(RetryPolicy.values().length, ordinals.size(), "All ordinals should be unique");
     }
 
     @Test
@@ -111,8 +109,7 @@ class RetryPolicyTest {
     void shouldHaveSequentialOrdinals() {
       final RetryPolicy[] values = RetryPolicy.values();
       for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(),
-            "Ordinal of " + values[i].name() + " should be " + i);
+        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
       }
     }
   }
@@ -125,15 +122,16 @@ class RetryPolicyTest {
     @DisplayName("should resolve all constants via valueOf")
     void shouldResolveAllConstantsViaValueOf() {
       for (final RetryPolicy value : RetryPolicy.values()) {
-        assertEquals(value, RetryPolicy.valueOf(value.name()),
-            "valueOf should return " + value.name());
+        assertEquals(
+            value, RetryPolicy.valueOf(value.name()), "valueOf should return " + value.name());
       }
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for invalid name")
     void shouldThrowForInvalidName() {
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> RetryPolicy.valueOf("INVALID_CONSTANT"),
           "valueOf with invalid name should throw IllegalArgumentException");
     }
@@ -160,7 +158,9 @@ class RetryPolicyTest {
     @DisplayName("should return enum name as toString")
     void shouldReturnEnumNameAsToString() {
       for (final RetryPolicy value : RetryPolicy.values()) {
-        assertEquals(value.name(), value.toString(),
+        assertEquals(
+            value.name(),
+            value.toString(),
             "toString should return the enum name for " + value.name());
       }
     }

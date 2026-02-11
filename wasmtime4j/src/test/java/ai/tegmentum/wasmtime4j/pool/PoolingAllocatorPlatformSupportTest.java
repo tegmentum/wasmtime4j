@@ -34,10 +34,8 @@ import org.junit.jupiter.api.Test;
 @DisplayName("PoolingAllocatorPlatformSupport Tests")
 class PoolingAllocatorPlatformSupportTest {
 
-  private static final String OS_NAME =
-      System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-  private static final String OS_ARCH =
-      System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
+  private static final String OS_NAME = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+  private static final String OS_ARCH = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
 
   @Nested
   @DisplayName("Utility Class Structure Tests")
@@ -47,8 +45,7 @@ class PoolingAllocatorPlatformSupportTest {
     @DisplayName("class should be final")
     void classShouldBeFinal() {
       assertTrue(
-          java.lang.reflect.Modifier.isFinal(
-              PoolingAllocatorPlatformSupport.class.getModifiers()),
+          java.lang.reflect.Modifier.isFinal(PoolingAllocatorPlatformSupport.class.getModifiers()),
           "PoolingAllocatorPlatformSupport should be a final class");
     }
 
@@ -79,7 +76,11 @@ class PoolingAllocatorPlatformSupportTest {
       assertTrue(
           count <= 1,
           "At most one OS detection should be true, got linux="
-              + linux + ", windows=" + windows + ", macos=" + macos);
+              + linux
+              + ", windows="
+              + windows
+              + ", macos="
+              + macos);
     }
 
     @Test
@@ -142,9 +143,7 @@ class PoolingAllocatorPlatformSupportTest {
     void atMostOneArchShouldBeDetected() {
       final boolean x86 = PoolingAllocatorPlatformSupport.isX86_64();
       final boolean arm = PoolingAllocatorPlatformSupport.isArm64();
-      assertFalse(
-          x86 && arm,
-          "Cannot be both x86_64 and arm64 simultaneously");
+      assertFalse(x86 && arm, "Cannot be both x86_64 and arm64 simultaneously");
     }
   }
 
@@ -156,8 +155,7 @@ class PoolingAllocatorPlatformSupportTest {
     @DisplayName("areMemoryProtectionKeysAvailable should require Linux and x86_64")
     void areMemoryProtectionKeysAvailableShouldRequireLinuxAndX8664() {
       final boolean expected =
-          PoolingAllocatorPlatformSupport.isLinux()
-              && PoolingAllocatorPlatformSupport.isX86_64();
+          PoolingAllocatorPlatformSupport.isLinux() && PoolingAllocatorPlatformSupport.isX86_64();
       assertEquals(
           expected,
           PoolingAllocatorPlatformSupport.areMemoryProtectionKeysAvailable(),

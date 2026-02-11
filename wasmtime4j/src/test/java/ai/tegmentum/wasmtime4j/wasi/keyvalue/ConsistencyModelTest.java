@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for ConsistencyModel enum.
  *
- * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage for
- * WASI key-value consistency models.
+ * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage
+ * for WASI key-value consistency models.
  */
 @DisplayName("ConsistencyModel Tests")
 class ConsistencyModelTest {
@@ -52,8 +52,7 @@ class ConsistencyModelTest {
     @Test
     @DisplayName("should be a valid enum type")
     void shouldBeValidEnumType() {
-      assertTrue(
-          ConsistencyModel.class.isEnum(), "ConsistencyModel should be an enum type");
+      assertTrue(ConsistencyModel.class.isEnum(), "ConsistencyModel should be an enum type");
     }
 
     @Test
@@ -167,15 +166,13 @@ class ConsistencyModelTest {
     @Test
     @DisplayName("SEQUENTIAL should have ordinal 3")
     void sequentialShouldHaveOrdinalThree() {
-      assertEquals(
-          3, ConsistencyModel.SEQUENTIAL.ordinal(), "SEQUENTIAL ordinal should be 3");
+      assertEquals(3, ConsistencyModel.SEQUENTIAL.ordinal(), "SEQUENTIAL ordinal should be 3");
     }
 
     @Test
     @DisplayName("LINEARIZABLE should have ordinal 4")
     void linearizableShouldHaveOrdinalFour() {
-      assertEquals(
-          4, ConsistencyModel.LINEARIZABLE.ordinal(), "LINEARIZABLE ordinal should be 4");
+      assertEquals(4, ConsistencyModel.LINEARIZABLE.ordinal(), "LINEARIZABLE ordinal should be 4");
     }
 
     @Test
@@ -195,9 +192,7 @@ class ConsistencyModelTest {
     @DisplayName("MONOTONIC_WRITE should have ordinal 7")
     void monotonicWriteShouldHaveOrdinalSeven() {
       assertEquals(
-          7,
-          ConsistencyModel.MONOTONIC_WRITE.ordinal(),
-          "MONOTONIC_WRITE ordinal should be 7");
+          7, ConsistencyModel.MONOTONIC_WRITE.ordinal(), "MONOTONIC_WRITE ordinal should be 7");
     }
 
     @Test
@@ -206,8 +201,7 @@ class ConsistencyModelTest {
       final ConsistencyModel[] values = ConsistencyModel.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -280,9 +274,7 @@ class ConsistencyModelTest {
     @DisplayName("values should return array of length 8")
     void valuesShouldReturnArrayOfLengthEight() {
       assertEquals(
-          8,
-          ConsistencyModel.values().length,
-          "values() should return array with 8 elements");
+          8, ConsistencyModel.values().length, "values() should return array with 8 elements");
     }
 
     @Test
@@ -291,21 +283,14 @@ class ConsistencyModelTest {
       final Set<ConsistencyModel> valueSet =
           new HashSet<>(Arrays.asList(ConsistencyModel.values()));
 
+      assertTrue(valueSet.contains(ConsistencyModel.EVENTUAL), "values() should contain EVENTUAL");
+      assertTrue(valueSet.contains(ConsistencyModel.STRONG), "values() should contain STRONG");
+      assertTrue(valueSet.contains(ConsistencyModel.CAUSAL), "values() should contain CAUSAL");
       assertTrue(
-          valueSet.contains(ConsistencyModel.EVENTUAL),
-          "values() should contain EVENTUAL");
+          valueSet.contains(ConsistencyModel.SEQUENTIAL), "values() should contain SEQUENTIAL");
       assertTrue(
-          valueSet.contains(ConsistencyModel.STRONG), "values() should contain STRONG");
-      assertTrue(
-          valueSet.contains(ConsistencyModel.CAUSAL), "values() should contain CAUSAL");
-      assertTrue(
-          valueSet.contains(ConsistencyModel.SEQUENTIAL),
-          "values() should contain SEQUENTIAL");
-      assertTrue(
-          valueSet.contains(ConsistencyModel.LINEARIZABLE),
-          "values() should contain LINEARIZABLE");
-      assertTrue(
-          valueSet.contains(ConsistencyModel.SESSION), "values() should contain SESSION");
+          valueSet.contains(ConsistencyModel.LINEARIZABLE), "values() should contain LINEARIZABLE");
+      assertTrue(valueSet.contains(ConsistencyModel.SESSION), "values() should contain SESSION");
       assertTrue(
           valueSet.contains(ConsistencyModel.MONOTONIC_READ),
           "values() should contain MONOTONIC_READ");
@@ -337,9 +322,7 @@ class ConsistencyModelTest {
     void toStringShouldMatchNameForAllConstants() {
       for (final ConsistencyModel model : ConsistencyModel.values()) {
         assertEquals(
-            model.name(),
-            model.toString(),
-            "toString() should match name() for " + model.name());
+            model.name(), model.toString(), "toString() should match name() for " + model.name());
       }
     }
 
@@ -347,9 +330,7 @@ class ConsistencyModelTest {
     @DisplayName("toString should return 'EVENTUAL' for EVENTUAL")
     void toStringShouldReturnEventual() {
       assertEquals(
-          "EVENTUAL",
-          ConsistencyModel.EVENTUAL.toString(),
-          "toString() should return 'EVENTUAL'");
+          "EVENTUAL", ConsistencyModel.EVENTUAL.toString(), "toString() should return 'EVENTUAL'");
     }
 
     @Test

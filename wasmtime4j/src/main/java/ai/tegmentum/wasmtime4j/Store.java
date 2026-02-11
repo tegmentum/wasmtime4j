@@ -1,36 +1,24 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.memory.Memory;
-
-import ai.tegmentum.wasmtime4j.memory.Global;
-
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
-
-import ai.tegmentum.wasmtime4j.func.Function;
-
-import ai.tegmentum.wasmtime4j.func.CallHookHandler;
-
-import ai.tegmentum.wasmtime4j.func.CallHook;
-
-import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
-
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-
 import ai.tegmentum.wasmtime4j.concurrent.Accessor;
 import ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask;
 import ai.tegmentum.wasmtime4j.concurrent.JoinHandle;
 import ai.tegmentum.wasmtime4j.concurrent.SpawnableTask;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
+import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.debug.DebugFrame;
 import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.func.CallHook;
+import ai.tegmentum.wasmtime4j.func.CallHookHandler;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.config.StoreLimits;
 
 /**
  * Represents a WebAssembly store.

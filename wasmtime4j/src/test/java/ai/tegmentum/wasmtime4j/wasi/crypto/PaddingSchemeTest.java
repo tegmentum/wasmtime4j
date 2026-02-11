@@ -40,9 +40,7 @@ class PaddingSchemeTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          PaddingScheme.class.isEnum(),
-          "PaddingScheme should be an enum type");
+      assertTrue(PaddingScheme.class.isEnum(), "PaddingScheme should be an enum type");
     }
 
     @Test
@@ -125,10 +123,7 @@ class PaddingSchemeTest {
       final PaddingScheme[] values = PaddingScheme.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -169,10 +164,7 @@ class PaddingSchemeTest {
       final PaddingScheme[] second = PaddingScheme.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 
@@ -185,9 +177,7 @@ class PaddingSchemeTest {
     void shouldReturnNameFromToStringForAllValues() {
       for (final PaddingScheme scheme : PaddingScheme.values()) {
         assertEquals(
-            scheme.name(),
-            scheme.toString(),
-            "toString should return name for " + scheme.name());
+            scheme.name(), scheme.toString(), "toString should return name for " + scheme.name());
       }
     }
   }
@@ -199,10 +189,7 @@ class PaddingSchemeTest {
     @Test
     @DisplayName("should return None for NONE")
     void shouldReturnCorrectNameForNone() {
-      assertEquals(
-          "None",
-          PaddingScheme.NONE.getSchemeName(),
-          "NONE should have scheme name None");
+      assertEquals("None", PaddingScheme.NONE.getSchemeName(), "NONE should have scheme name None");
     }
 
     @Test
@@ -253,10 +240,7 @@ class PaddingSchemeTest {
     @Test
     @DisplayName("should return PSS for PSS")
     void shouldReturnCorrectNameForPss() {
-      assertEquals(
-          "PSS",
-          PaddingScheme.PSS.getSchemeName(),
-          "PSS should have scheme name PSS");
+      assertEquals("PSS", PaddingScheme.PSS.getSchemeName(), "PSS should have scheme name PSS");
     }
   }
 }

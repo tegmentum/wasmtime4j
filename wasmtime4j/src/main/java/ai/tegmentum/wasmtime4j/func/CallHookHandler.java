@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.func;
 
 import ai.tegmentum.wasmtime4j.Store;
-
 import ai.tegmentum.wasmtime4j.exception.TrapException;
 
 /**

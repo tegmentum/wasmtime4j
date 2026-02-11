@@ -95,9 +95,7 @@ class V128Test {
       final V128 v = V128.fromInts(1, 2, 3, 4);
       final int[] ints = v.getAsInts();
       assertArrayEquals(
-          new int[] {1, 2, 3, 4},
-          ints,
-          "fromInts should produce correct integer lanes");
+          new int[] {1, 2, 3, 4}, ints, "fromInts should produce correct integer lanes");
     }
 
     @Test
@@ -194,9 +192,7 @@ class V128Test {
       final V128 v = V128.fromLongs(100L, 200L);
       final long[] longs = v.getAsLongs();
       assertArrayEquals(
-          new long[] {100L, 200L},
-          longs,
-          "fromLongs should produce correct long lanes");
+          new long[] {100L, 200L}, longs, "fromLongs should produce correct long lanes");
     }
 
     @Test
@@ -267,10 +263,7 @@ class V128Test {
     void zeroShouldCreateAllZerosVector() {
       final V128 v = V128.zero();
       final int[] ints = v.getAsInts();
-      assertArrayEquals(
-          new int[] {0, 0, 0, 0},
-          ints,
-          "zero() should produce all-zero lanes");
+      assertArrayEquals(new int[] {0, 0, 0, 0}, ints, "zero() should produce all-zero lanes");
     }
 
     @Test
@@ -279,9 +272,7 @@ class V128Test {
       final V128 v = V128.splatInt(42);
       final int[] ints = v.getAsInts();
       assertArrayEquals(
-          new int[] {42, 42, 42, 42},
-          ints,
-          "splatInt should fill all lanes with the given value");
+          new int[] {42, 42, 42, 42}, ints, "splatInt should fill all lanes with the given value");
     }
 
     @Test
@@ -427,9 +418,7 @@ class V128Test {
       bytes[0] = (byte) 0xFF;
       final byte[] bytesAgain = v.getBytes();
       assertEquals(
-          originalByte,
-          bytesAgain[0],
-          "Mutating getBytes() result should not affect the V128");
+          originalByte, bytesAgain[0], "Mutating getBytes() result should not affect the V128");
     }
 
     @Test
@@ -464,7 +453,8 @@ class V128Test {
       final V128 original = V128.fromInts(10, 20, 30, 40);
       final SimdVector sv = original.toSimdVector(SimdLane.I32X4);
       final V128 roundTripped = V128.fromSimdVector(sv);
-      assertEquals(original, roundTripped, "Round-tripping through SimdVector should preserve data");
+      assertEquals(
+          original, roundTripped, "Round-tripping through SimdVector should preserve data");
     }
 
     @Test
@@ -531,9 +521,7 @@ class V128Test {
       final String str = v.toString();
       assertNotNull(str, "toString should not return null");
       assertEquals(
-          "V128[i32x4: 1, 2, 3, 4]",
-          str,
-          "toString should format as V128[i32x4: a, b, c, d]");
+          "V128[i32x4: 1, 2, 3, 4]", str, "toString should format as V128[i32x4: a, b, c, d]");
     }
 
     @Test
@@ -542,10 +530,7 @@ class V128Test {
       final V128 v = V128.zero();
       final String hex = v.toHexString();
       assertEquals(32, hex.length(), "Hex string should be 32 characters (2 per byte)");
-      assertEquals(
-          "00000000000000000000000000000000",
-          hex,
-          "Zero vector hex should be all zeros");
+      assertEquals("00000000000000000000000000000000", hex, "Zero vector hex should be all zeros");
     }
 
     @Test

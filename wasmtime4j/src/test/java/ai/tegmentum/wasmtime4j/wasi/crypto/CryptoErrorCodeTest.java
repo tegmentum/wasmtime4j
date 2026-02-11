@@ -40,9 +40,7 @@ class CryptoErrorCodeTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          CryptoErrorCode.class.isEnum(),
-          "CryptoErrorCode should be an enum type");
+      assertTrue(CryptoErrorCode.class.isEnum(), "CryptoErrorCode should be an enum type");
     }
 
     @Test
@@ -68,16 +66,14 @@ class CryptoErrorCodeTest {
     @DisplayName("should have UNSUPPORTED_ALGORITHM value")
     void shouldHaveUnsupportedAlgorithmValue() {
       assertNotNull(
-          CryptoErrorCode.UNSUPPORTED_ALGORITHM,
-          "UNSUPPORTED_ALGORITHM should not be null");
+          CryptoErrorCode.UNSUPPORTED_ALGORITHM, "UNSUPPORTED_ALGORITHM should not be null");
     }
 
     @Test
     @DisplayName("should have UNSUPPORTED_OPERATION value")
     void shouldHaveUnsupportedOperationValue() {
       assertNotNull(
-          CryptoErrorCode.UNSUPPORTED_OPERATION,
-          "UNSUPPORTED_OPERATION should not be null");
+          CryptoErrorCode.UNSUPPORTED_OPERATION, "UNSUPPORTED_OPERATION should not be null");
     }
 
     @Test
@@ -126,8 +122,7 @@ class CryptoErrorCodeTest {
     @DisplayName("should have AUTHENTICATION_FAILED value")
     void shouldHaveAuthenticationFailedValue() {
       assertNotNull(
-          CryptoErrorCode.AUTHENTICATION_FAILED,
-          "AUTHENTICATION_FAILED should not be null");
+          CryptoErrorCode.AUTHENTICATION_FAILED, "AUTHENTICATION_FAILED should not be null");
     }
 
     @Test
@@ -146,8 +141,7 @@ class CryptoErrorCodeTest {
     @DisplayName("should have KEY_GENERATION_FAILED value")
     void shouldHaveKeyGenerationFailedValue() {
       assertNotNull(
-          CryptoErrorCode.KEY_GENERATION_FAILED,
-          "KEY_GENERATION_FAILED should not be null");
+          CryptoErrorCode.KEY_GENERATION_FAILED, "KEY_GENERATION_FAILED should not be null");
     }
 
     @Test
@@ -160,8 +154,7 @@ class CryptoErrorCodeTest {
     @DisplayName("should have HARDWARE_UNAVAILABLE value")
     void shouldHaveHardwareUnavailableValue() {
       assertNotNull(
-          CryptoErrorCode.HARDWARE_UNAVAILABLE,
-          "HARDWARE_UNAVAILABLE should not be null");
+          CryptoErrorCode.HARDWARE_UNAVAILABLE, "HARDWARE_UNAVAILABLE should not be null");
     }
 
     @Test
@@ -213,10 +206,7 @@ class CryptoErrorCodeTest {
       final CryptoErrorCode[] values = CryptoErrorCode.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -257,10 +247,7 @@ class CryptoErrorCodeTest {
       final CryptoErrorCode[] second = CryptoErrorCode.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 
@@ -273,9 +260,7 @@ class CryptoErrorCodeTest {
     void shouldReturnNameFromToStringForAllValues() {
       for (final CryptoErrorCode code : CryptoErrorCode.values()) {
         assertEquals(
-            code.name(),
-            code.toString(),
-            "toString should return name for " + code.name());
+            code.name(), code.toString(), "toString should return name for " + code.name());
       }
     }
   }

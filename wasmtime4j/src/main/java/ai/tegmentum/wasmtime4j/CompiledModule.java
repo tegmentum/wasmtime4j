@@ -16,10 +16,10 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.List;
 import java.util.Optional;
-import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 
 /**
  * Provides low-level access to compiled WebAssembly module data.

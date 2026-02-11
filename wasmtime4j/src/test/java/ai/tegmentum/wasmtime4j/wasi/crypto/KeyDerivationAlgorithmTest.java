@@ -41,8 +41,7 @@ class KeyDerivationAlgorithmTest {
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
       assertTrue(
-          KeyDerivationAlgorithm.class.isEnum(),
-          "KeyDerivationAlgorithm should be an enum type");
+          KeyDerivationAlgorithm.class.isEnum(), "KeyDerivationAlgorithm should be an enum type");
     }
 
     @Test
@@ -50,8 +49,7 @@ class KeyDerivationAlgorithmTest {
     void shouldHaveExactlyTenEnumValues() {
       final KeyDerivationAlgorithm[] values = KeyDerivationAlgorithm.values();
 
-      assertEquals(
-          10, values.length, "KeyDerivationAlgorithm should have exactly 10 enum values");
+      assertEquals(10, values.length, "KeyDerivationAlgorithm should have exactly 10 enum values");
     }
   }
 
@@ -81,24 +79,21 @@ class KeyDerivationAlgorithmTest {
     @DisplayName("should have PBKDF2_HMAC_SHA256 value")
     void shouldHavePbkdf2HmacSha256Value() {
       assertNotNull(
-          KeyDerivationAlgorithm.PBKDF2_HMAC_SHA256,
-          "PBKDF2_HMAC_SHA256 should not be null");
+          KeyDerivationAlgorithm.PBKDF2_HMAC_SHA256, "PBKDF2_HMAC_SHA256 should not be null");
     }
 
     @Test
     @DisplayName("should have PBKDF2_HMAC_SHA384 value")
     void shouldHavePbkdf2HmacSha384Value() {
       assertNotNull(
-          KeyDerivationAlgorithm.PBKDF2_HMAC_SHA384,
-          "PBKDF2_HMAC_SHA384 should not be null");
+          KeyDerivationAlgorithm.PBKDF2_HMAC_SHA384, "PBKDF2_HMAC_SHA384 should not be null");
     }
 
     @Test
     @DisplayName("should have PBKDF2_HMAC_SHA512 value")
     void shouldHavePbkdf2HmacSha512Value() {
       assertNotNull(
-          KeyDerivationAlgorithm.PBKDF2_HMAC_SHA512,
-          "PBKDF2_HMAC_SHA512 should not be null");
+          KeyDerivationAlgorithm.PBKDF2_HMAC_SHA512, "PBKDF2_HMAC_SHA512 should not be null");
     }
 
     @Test
@@ -150,10 +145,7 @@ class KeyDerivationAlgorithmTest {
       final KeyDerivationAlgorithm[] values = KeyDerivationAlgorithm.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -194,10 +186,7 @@ class KeyDerivationAlgorithmTest {
       final KeyDerivationAlgorithm[] second = KeyDerivationAlgorithm.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 

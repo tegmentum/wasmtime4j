@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for IpAddressFamily enum.
  *
- * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage for
- * WASI socket IP address families.
+ * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage
+ * for WASI socket IP address families.
  */
 @DisplayName("IpAddressFamily Tests")
 class IpAddressFamilyTest {
@@ -52,8 +52,7 @@ class IpAddressFamilyTest {
     @Test
     @DisplayName("should be a valid enum type")
     void shouldBeValidEnumType() {
-      assertTrue(
-          IpAddressFamily.class.isEnum(), "IpAddressFamily should be an enum type");
+      assertTrue(IpAddressFamily.class.isEnum(), "IpAddressFamily should be an enum type");
     }
 
     @Test
@@ -110,8 +109,7 @@ class IpAddressFamilyTest {
       final IpAddressFamily[] values = IpAddressFamily.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -174,16 +172,13 @@ class IpAddressFamilyTest {
     @DisplayName("values should return array of length 2")
     void valuesShouldReturnArrayOfLengthTwo() {
       assertEquals(
-          2,
-          IpAddressFamily.values().length,
-          "values() should return array with 2 elements");
+          2, IpAddressFamily.values().length, "values() should return array with 2 elements");
     }
 
     @Test
     @DisplayName("values should contain all constants")
     void valuesShouldContainAllConstants() {
-      final Set<IpAddressFamily> valueSet =
-          new HashSet<>(Arrays.asList(IpAddressFamily.values()));
+      final Set<IpAddressFamily> valueSet = new HashSet<>(Arrays.asList(IpAddressFamily.values()));
 
       assertTrue(valueSet.contains(IpAddressFamily.IPV4), "values() should contain IPV4");
       assertTrue(valueSet.contains(IpAddressFamily.IPV6), "values() should contain IPV6");
@@ -210,15 +205,13 @@ class IpAddressFamilyTest {
     @Test
     @DisplayName("toString should return 'IPV4' for IPV4")
     void toStringShouldReturnIpv4() {
-      assertEquals(
-          "IPV4", IpAddressFamily.IPV4.toString(), "toString() should return 'IPV4'");
+      assertEquals("IPV4", IpAddressFamily.IPV4.toString(), "toString() should return 'IPV4'");
     }
 
     @Test
     @DisplayName("toString should return 'IPV6' for IPV6")
     void toStringShouldReturnIpv6() {
-      assertEquals(
-          "IPV6", IpAddressFamily.IPV6.toString(), "toString() should return 'IPV6'");
+      assertEquals("IPV6", IpAddressFamily.IPV6.toString(), "toString() should return 'IPV6'");
     }
 
     @Test

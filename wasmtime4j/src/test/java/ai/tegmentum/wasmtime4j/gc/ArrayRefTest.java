@@ -50,8 +50,7 @@ class ArrayRefTest {
     @Test
     @DisplayName("should implement GcRef interface")
     void shouldImplementGcRef() {
-      assertTrue(
-          GcRef.class.isAssignableFrom(ArrayRef.class), "ArrayRef should implement GcRef");
+      assertTrue(GcRef.class.isAssignableFrom(ArrayRef.class), "ArrayRef should implement GcRef");
     }
   }
 
@@ -79,9 +78,7 @@ class ArrayRefTest {
     void nullRefShouldHaveArrayRefReferenceType() {
       final ArrayRef ref = ArrayRef.nullRef();
       assertEquals(
-          GcReferenceType.ARRAY_REF,
-          ref.getReferenceType(),
-          "Reference type should be ARRAY_REF");
+          GcReferenceType.ARRAY_REF, ref.getReferenceType(), "Reference type should be ARRAY_REF");
     }
 
     @Test
@@ -231,8 +228,7 @@ class ArrayRefTest {
     void twoNullRefsShouldHaveSameHashCode() {
       final ArrayRef ref1 = ArrayRef.nullRef();
       final ArrayRef ref2 = ArrayRef.nullRef();
-      assertEquals(
-          ref1.hashCode(), ref2.hashCode(), "Two null refs should have same hash code");
+      assertEquals(ref1.hashCode(), ref2.hashCode(), "Two null refs should have same hash code");
     }
   }
 

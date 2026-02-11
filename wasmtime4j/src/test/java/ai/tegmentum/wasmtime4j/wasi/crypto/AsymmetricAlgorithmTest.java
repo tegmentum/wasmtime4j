@@ -40,9 +40,7 @@ class AsymmetricAlgorithmTest {
     @Test
     @DisplayName("should be an enum type")
     void shouldBeAnEnumType() {
-      assertTrue(
-          AsymmetricAlgorithm.class.isEnum(),
-          "AsymmetricAlgorithm should be an enum type");
+      assertTrue(AsymmetricAlgorithm.class.isEnum(), "AsymmetricAlgorithm should be an enum type");
     }
 
     @Test
@@ -137,10 +135,7 @@ class AsymmetricAlgorithmTest {
       final AsymmetricAlgorithm[] values = AsymmetricAlgorithm.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i,
-            values[i].ordinal(),
-            "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -181,10 +176,7 @@ class AsymmetricAlgorithmTest {
       final AsymmetricAlgorithm[] second = AsymmetricAlgorithm.values();
 
       assertNotSame(first, second, "values() should return a new array on each call");
-      assertArrayEquals(
-          first,
-          second,
-          "values() arrays should contain the same elements");
+      assertArrayEquals(first, second, "values() arrays should contain the same elements");
     }
   }
 
@@ -298,72 +290,54 @@ class AsymmetricAlgorithmTest {
     @DisplayName("should return 2048 for RSA_2048")
     void shouldReturnCorrectKeySizeForRsa2048() {
       assertEquals(
-          2048,
-          AsymmetricAlgorithm.RSA_2048.getKeySize(),
-          "RSA_2048 should have key size 2048");
+          2048, AsymmetricAlgorithm.RSA_2048.getKeySize(), "RSA_2048 should have key size 2048");
     }
 
     @Test
     @DisplayName("should return 3072 for RSA_3072")
     void shouldReturnCorrectKeySizeForRsa3072() {
       assertEquals(
-          3072,
-          AsymmetricAlgorithm.RSA_3072.getKeySize(),
-          "RSA_3072 should have key size 3072");
+          3072, AsymmetricAlgorithm.RSA_3072.getKeySize(), "RSA_3072 should have key size 3072");
     }
 
     @Test
     @DisplayName("should return 4096 for RSA_4096")
     void shouldReturnCorrectKeySizeForRsa4096() {
       assertEquals(
-          4096,
-          AsymmetricAlgorithm.RSA_4096.getKeySize(),
-          "RSA_4096 should have key size 4096");
+          4096, AsymmetricAlgorithm.RSA_4096.getKeySize(), "RSA_4096 should have key size 4096");
     }
 
     @Test
     @DisplayName("should return 256 for X25519")
     void shouldReturnCorrectKeySizeForX25519() {
-      assertEquals(
-          256,
-          AsymmetricAlgorithm.X25519.getKeySize(),
-          "X25519 should have key size 256");
+      assertEquals(256, AsymmetricAlgorithm.X25519.getKeySize(), "X25519 should have key size 256");
     }
 
     @Test
     @DisplayName("should return 448 for X448")
     void shouldReturnCorrectKeySizeForX448() {
-      assertEquals(
-          448,
-          AsymmetricAlgorithm.X448.getKeySize(),
-          "X448 should have key size 448");
+      assertEquals(448, AsymmetricAlgorithm.X448.getKeySize(), "X448 should have key size 448");
     }
 
     @Test
     @DisplayName("should return 256 for ECDH_P256")
     void shouldReturnCorrectKeySizeForEcdhP256() {
       assertEquals(
-          256,
-          AsymmetricAlgorithm.ECDH_P256.getKeySize(),
-          "ECDH_P256 should have key size 256");
+          256, AsymmetricAlgorithm.ECDH_P256.getKeySize(), "ECDH_P256 should have key size 256");
     }
 
     @Test
     @DisplayName("should return 384 for ECDH_P384")
     void shouldReturnCorrectKeySizeForEcdhP384() {
       assertEquals(
-          384,
-          AsymmetricAlgorithm.ECDH_P384.getKeySize(),
-          "ECDH_P384 should have key size 384");
+          384, AsymmetricAlgorithm.ECDH_P384.getKeySize(), "ECDH_P384 should have key size 384");
     }
 
     @Test
     @DisplayName("should return 521 for ECDH_P521")
     void shouldReturnCorrectKeySizeForEcdhP521() {
       assertEquals(
-          521,
-          AsymmetricAlgorithm.ECDH_P521.getKeySize(),
-          "ECDH_P521 should have key size 521");
+          521, AsymmetricAlgorithm.ECDH_P521.getKeySize(), "ECDH_P521 should have key size 521");
     }
 
     @Test

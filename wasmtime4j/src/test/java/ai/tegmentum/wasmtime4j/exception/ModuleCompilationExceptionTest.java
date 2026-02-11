@@ -460,11 +460,8 @@ class ModuleCompilationExceptionTest {
       };
 
       for (CompilationErrorType type : nonResourceTypes) {
-        final ModuleCompilationException exception =
-            new ModuleCompilationException(type, "Error");
-        assertFalse(
-            exception.isResourceError(),
-            type.name() + " should NOT be a resource error");
+        final ModuleCompilationException exception = new ModuleCompilationException(type, "Error");
+        assertFalse(exception.isResourceError(), type.name() + " should NOT be a resource error");
       }
     }
 
@@ -473,8 +470,7 @@ class ModuleCompilationExceptionTest {
     void shouldHaveExactly3ResourceErrorTypes() {
       int count = 0;
       for (CompilationErrorType type : CompilationErrorType.values()) {
-        final ModuleCompilationException exception =
-            new ModuleCompilationException(type, "Error");
+        final ModuleCompilationException exception = new ModuleCompilationException(type, "Error");
         if (exception.isResourceError()) {
           count++;
         }
@@ -482,7 +478,8 @@ class ModuleCompilationExceptionTest {
       assertEquals(
           3,
           count,
-          "Should have exactly 3 resource error types: OUT_OF_MEMORY, TIMEOUT, RESOURCE_LIMIT_EXCEEDED");
+          "Should have exactly 3 resource error types: OUT_OF_MEMORY, TIMEOUT,"
+              + " RESOURCE_LIMIT_EXCEEDED");
     }
 
     @Test
@@ -502,11 +499,9 @@ class ModuleCompilationExceptionTest {
       };
 
       for (CompilationErrorType type : nonComplexityTypes) {
-        final ModuleCompilationException exception =
-            new ModuleCompilationException(type, "Error");
+        final ModuleCompilationException exception = new ModuleCompilationException(type, "Error");
         assertFalse(
-            exception.isComplexityError(),
-            type.name() + " should NOT be a complexity error");
+            exception.isComplexityError(), type.name() + " should NOT be a complexity error");
       }
     }
 
@@ -515,8 +510,7 @@ class ModuleCompilationExceptionTest {
     void shouldHaveExactly3ComplexityErrorTypes() {
       int count = 0;
       for (CompilationErrorType type : CompilationErrorType.values()) {
-        final ModuleCompilationException exception =
-            new ModuleCompilationException(type, "Error");
+        final ModuleCompilationException exception = new ModuleCompilationException(type, "Error");
         if (exception.isComplexityError()) {
           count++;
         }
@@ -537,9 +531,7 @@ class ModuleCompilationExceptionTest {
             && type != CompilationErrorType.FEATURE_CONFIGURATION_ERROR) {
           final ModuleCompilationException exception =
               new ModuleCompilationException(type, "Error");
-          assertFalse(
-              exception.isFeatureError(),
-              type.name() + " should NOT be a feature error");
+          assertFalse(exception.isFeatureError(), type.name() + " should NOT be a feature error");
         }
       }
     }
@@ -549,8 +541,7 @@ class ModuleCompilationExceptionTest {
     void shouldHaveExactly3FeatureErrorTypes() {
       int count = 0;
       for (CompilationErrorType type : CompilationErrorType.values()) {
-        final ModuleCompilationException exception =
-            new ModuleCompilationException(type, "Error");
+        final ModuleCompilationException exception = new ModuleCompilationException(type, "Error");
         if (exception.isFeatureError()) {
           count++;
         }
@@ -572,8 +563,7 @@ class ModuleCompilationExceptionTest {
           final ModuleCompilationException exception =
               new ModuleCompilationException(type, "Error");
           assertFalse(
-              exception.isInternalError(),
-              type.name() + " should NOT be an internal error");
+              exception.isInternalError(), type.name() + " should NOT be an internal error");
         }
       }
     }
@@ -583,8 +573,7 @@ class ModuleCompilationExceptionTest {
     void shouldHaveExactly3InternalErrorTypes() {
       int count = 0;
       for (CompilationErrorType type : CompilationErrorType.values()) {
-        final ModuleCompilationException exception =
-            new ModuleCompilationException(type, "Error");
+        final ModuleCompilationException exception = new ModuleCompilationException(type, "Error");
         if (exception.isInternalError()) {
           count++;
         }
@@ -705,14 +694,10 @@ class ModuleCompilationExceptionTest {
               null);
 
       final String message = exception.getMessage();
-      assertTrue(
-          message.contains("[REGISTER_ALLOCATION_FAILED]"),
-          "Should contain error type");
+      assertTrue(message.contains("[REGISTER_ALLOCATION_FAILED]"), "Should contain error type");
       assertTrue(message.contains("Test error"), "Should contain base message");
       assertTrue(message.contains("(phase: Register Allocation)"), "Should contain phase");
-      assertTrue(
-          message.contains("(function: complex_func)"),
-          "Should contain function name");
+      assertTrue(message.contains("(function: complex_func)"), "Should contain function name");
     }
 
     @Test
@@ -748,8 +733,7 @@ class ModuleCompilationExceptionTest {
     void allErrorTypesShouldHaveDistinctRecoverySuggestions() {
       final java.util.Set<String> suggestions = new java.util.HashSet<>();
       for (CompilationErrorType type : CompilationErrorType.values()) {
-        final ModuleCompilationException exception =
-            new ModuleCompilationException(type, "Error");
+        final ModuleCompilationException exception = new ModuleCompilationException(type, "Error");
         final String suggestion = exception.getRecoverySuggestion();
         assertNotNull(suggestion, type.name() + " should have a recovery suggestion");
         assertFalse(suggestion.isEmpty(), type.name() + " should have non-empty suggestion");
@@ -822,7 +806,8 @@ class ModuleCompilationExceptionTest {
       expectedKeywords.put(
           CompilationErrorType.OPTIMIZATION_FAILED, new String[] {"optimization", "disable"});
       expectedKeywords.put(
-          CompilationErrorType.REGISTER_ALLOCATION_FAILED, new String[] {"complexity", "optimization"});
+          CompilationErrorType.REGISTER_ALLOCATION_FAILED,
+          new String[] {"complexity", "optimization"});
       expectedKeywords.put(
           CompilationErrorType.CFG_CONSTRUCTION_FAILED, new String[] {"control flow", "simplify"});
       expectedKeywords.put(
@@ -832,7 +817,8 @@ class ModuleCompilationExceptionTest {
       expectedKeywords.put(
           CompilationErrorType.RESOURCE_LIMIT_EXCEEDED, new String[] {"limit", "size"});
       expectedKeywords.put(
-          CompilationErrorType.FEATURE_CONFIGURATION_ERROR, new String[] {"configuration", "feature"});
+          CompilationErrorType.FEATURE_CONFIGURATION_ERROR,
+          new String[] {"configuration", "feature"});
       expectedKeywords.put(
           CompilationErrorType.UNKNOWN, new String[] {"complexity", "configuration"});
 
@@ -840,8 +826,7 @@ class ModuleCompilationExceptionTest {
           expectedKeywords.entrySet()) {
         final CompilationErrorType type = entry.getKey();
         final String[] keywords = entry.getValue();
-        final ModuleCompilationException exception =
-            new ModuleCompilationException(type, "Error");
+        final ModuleCompilationException exception = new ModuleCompilationException(type, "Error");
         final String suggestion = exception.getRecoverySuggestion().toLowerCase();
 
         boolean hasKeyword = false;
@@ -873,16 +858,8 @@ class ModuleCompilationExceptionTest {
       for (String name : testNames) {
         final ModuleCompilationException exception =
             new ModuleCompilationException(
-                CompilationErrorType.UNKNOWN,
-                "Error",
-                CompilationPhase.UNKNOWN,
-                name,
-                null,
-                null);
-        assertEquals(
-            name,
-            exception.getFunctionName(),
-            "getFunctionName should return: " + name);
+                CompilationErrorType.UNKNOWN, "Error", CompilationPhase.UNKNOWN, name, null, null);
+        assertEquals(name, exception.getFunctionName(), "getFunctionName should return: " + name);
       }
     }
 
@@ -893,16 +870,9 @@ class ModuleCompilationExceptionTest {
       for (Integer index : testIndices) {
         final ModuleCompilationException exception =
             new ModuleCompilationException(
-                CompilationErrorType.UNKNOWN,
-                "Error",
-                CompilationPhase.UNKNOWN,
-                null,
-                index,
-                null);
+                CompilationErrorType.UNKNOWN, "Error", CompilationPhase.UNKNOWN, null, index, null);
         assertEquals(
-            index,
-            exception.getFunctionIndex(),
-            "getFunctionIndex should return: " + index);
+            index, exception.getFunctionIndex(), "getFunctionIndex should return: " + index);
       }
     }
 
@@ -922,8 +892,7 @@ class ModuleCompilationExceptionTest {
     @DisplayName("getErrorType should return UNKNOWN when null is passed")
     void getErrorTypeShouldReturnUnknownWhenNullPassed() {
       final ModuleCompilationException exception =
-          new ModuleCompilationException(
-              null, "Error", CompilationPhase.UNKNOWN, null, null, null);
+          new ModuleCompilationException(null, "Error", CompilationPhase.UNKNOWN, null, null, null);
       assertEquals(
           CompilationErrorType.UNKNOWN,
           exception.getErrorType(),

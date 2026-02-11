@@ -16,10 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.type.TagType;
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -27,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.TagType;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,8 +38,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("DefaultTagType Tests")
 class DefaultTagTypeTest {
 
-  private FunctionType createFuncType(
-      final WasmValueType[] params, final WasmValueType[] returns) {
+  private FunctionType createFuncType(final WasmValueType[] params, final WasmValueType[] returns) {
     return new FunctionType(params, returns);
   }
 
@@ -146,8 +143,7 @@ class DefaultTagTypeTest {
     @Test
     @DisplayName("should not equal null")
     void shouldNotEqualNull() {
-      final FunctionType funcType =
-          createFuncType(new WasmValueType[] {}, new WasmValueType[] {});
+      final FunctionType funcType = createFuncType(new WasmValueType[] {}, new WasmValueType[] {});
       final DefaultTagType tagType = new DefaultTagType(funcType);
       assertNotEquals(null, tagType, "DefaultTagType should not equal null");
     }
@@ -155,8 +151,7 @@ class DefaultTagTypeTest {
     @Test
     @DisplayName("should not equal different type")
     void shouldNotEqualDifferentType() {
-      final FunctionType funcType =
-          createFuncType(new WasmValueType[] {}, new WasmValueType[] {});
+      final FunctionType funcType = createFuncType(new WasmValueType[] {}, new WasmValueType[] {});
       final DefaultTagType tagType = new DefaultTagType(funcType);
       assertNotEquals("not a tag", tagType, "DefaultTagType should not equal String");
     }

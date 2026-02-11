@@ -93,9 +93,7 @@ class NnGraphEncodingTest {
     void shouldHaveTensorflowliteValue() {
       assertNotNull(NnGraphEncoding.TENSORFLOWLITE, "TENSORFLOWLITE should exist");
       assertEquals(
-          "TENSORFLOWLITE",
-          NnGraphEncoding.TENSORFLOWLITE.name(),
-          "Name should be TENSORFLOWLITE");
+          "TENSORFLOWLITE", NnGraphEncoding.TENSORFLOWLITE.name(), "Name should be TENSORFLOWLITE");
     }
 
     @Test
@@ -123,8 +121,7 @@ class NnGraphEncodingTest {
       final Set<Integer> ordinals = new HashSet<>();
       for (final NnGraphEncoding encoding : NnGraphEncoding.values()) {
         assertTrue(
-            ordinals.add(encoding.ordinal()),
-            "Ordinal should be unique: " + encoding.ordinal());
+            ordinals.add(encoding.ordinal()), "Ordinal should be unique: " + encoding.ordinal());
       }
     }
 
@@ -146,25 +143,19 @@ class NnGraphEncodingTest {
     @DisplayName("valueOf should return correct constant for each name")
     void valueOfShouldReturnCorrectConstant() {
       assertEquals(
-          NnGraphEncoding.OPENVINO,
-          NnGraphEncoding.valueOf("OPENVINO"),
-          "Should return OPENVINO");
-      assertEquals(
-          NnGraphEncoding.ONNX, NnGraphEncoding.valueOf("ONNX"), "Should return ONNX");
+          NnGraphEncoding.OPENVINO, NnGraphEncoding.valueOf("OPENVINO"), "Should return OPENVINO");
+      assertEquals(NnGraphEncoding.ONNX, NnGraphEncoding.valueOf("ONNX"), "Should return ONNX");
       assertEquals(
           NnGraphEncoding.TENSORFLOW,
           NnGraphEncoding.valueOf("TENSORFLOW"),
           "Should return TENSORFLOW");
       assertEquals(
-          NnGraphEncoding.PYTORCH,
-          NnGraphEncoding.valueOf("PYTORCH"),
-          "Should return PYTORCH");
+          NnGraphEncoding.PYTORCH, NnGraphEncoding.valueOf("PYTORCH"), "Should return PYTORCH");
       assertEquals(
           NnGraphEncoding.TENSORFLOWLITE,
           NnGraphEncoding.valueOf("TENSORFLOWLITE"),
           "Should return TENSORFLOWLITE");
-      assertEquals(
-          NnGraphEncoding.GGML, NnGraphEncoding.valueOf("GGML"), "Should return GGML");
+      assertEquals(NnGraphEncoding.GGML, NnGraphEncoding.valueOf("GGML"), "Should return GGML");
       assertEquals(
           NnGraphEncoding.AUTODETECT,
           NnGraphEncoding.valueOf("AUTODETECT"),
@@ -228,8 +219,7 @@ class NnGraphEncodingTest {
     @Test
     @DisplayName("ONNX should have wasi name 'onnx'")
     void onnxShouldHaveCorrectWasiName() {
-      assertEquals(
-          "onnx", NnGraphEncoding.ONNX.getWasiName(), "ONNX wasi name should be 'onnx'");
+      assertEquals("onnx", NnGraphEncoding.ONNX.getWasiName(), "ONNX wasi name should be 'onnx'");
     }
 
     @Test
@@ -262,8 +252,7 @@ class NnGraphEncodingTest {
     @Test
     @DisplayName("GGML should have wasi name 'ggml'")
     void ggmlShouldHaveCorrectWasiName() {
-      assertEquals(
-          "ggml", NnGraphEncoding.GGML.getWasiName(), "GGML wasi name should be 'ggml'");
+      assertEquals("ggml", NnGraphEncoding.GGML.getWasiName(), "GGML wasi name should be 'ggml'");
     }
 
     @Test
@@ -352,9 +341,7 @@ class NnGraphEncodingTest {
           NnGraphEncoding.fromWasiName("openvino"),
           "Should resolve 'openvino'");
       assertEquals(
-          NnGraphEncoding.ONNX,
-          NnGraphEncoding.fromWasiName("onnx"),
-          "Should resolve 'onnx'");
+          NnGraphEncoding.ONNX, NnGraphEncoding.fromWasiName("onnx"), "Should resolve 'onnx'");
       assertEquals(
           NnGraphEncoding.TENSORFLOW,
           NnGraphEncoding.fromWasiName("tensorflow"),
@@ -368,9 +355,7 @@ class NnGraphEncodingTest {
           NnGraphEncoding.fromWasiName("tensorflowlite"),
           "Should resolve 'tensorflowlite'");
       assertEquals(
-          NnGraphEncoding.GGML,
-          NnGraphEncoding.fromWasiName("ggml"),
-          "Should resolve 'ggml'");
+          NnGraphEncoding.GGML, NnGraphEncoding.fromWasiName("ggml"), "Should resolve 'ggml'");
       assertEquals(
           NnGraphEncoding.AUTODETECT,
           NnGraphEncoding.fromWasiName("autodetect"),

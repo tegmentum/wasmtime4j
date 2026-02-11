@@ -58,8 +58,7 @@ class WasiProcessConfigTest {
 
       assertEquals("/bin/echo", config.getProgram(), "Program should be /bin/echo");
       assertEquals(
-          Arrays.asList("Hello", "World"), config.getArguments(),
-          "Arguments should match");
+          Arrays.asList("Hello", "World"), config.getArguments(), "Arguments should match");
       assertEquals("/usr/bin", config.getEnvironment().get("PATH"), "PATH env var should match");
       assertEquals("/tmp", config.getWorkingDirectory(), "Working directory should be /tmp");
     }
@@ -67,10 +66,7 @@ class WasiProcessConfigTest {
     @Test
     @DisplayName("should build with only program set")
     void shouldBuildWithOnlyProgramSet() {
-      final WasiProcessConfig config =
-          WasiProcessConfig.builder()
-              .setProgram("/bin/ls")
-              .build();
+      final WasiProcessConfig config = WasiProcessConfig.builder().setProgram("/bin/ls").build();
 
       assertEquals("/bin/ls", config.getProgram(), "Program should be /bin/ls");
       assertTrue(config.getArguments().isEmpty(), "Arguments should be empty");
@@ -84,9 +80,7 @@ class WasiProcessConfigTest {
     void shouldThrowWhenProgramNotSet() {
       final WasiProcessConfig.Builder builder = WasiProcessConfig.builder();
       assertThrows(
-          IllegalStateException.class,
-          builder::build,
-          "Should throw when program is not set");
+          IllegalStateException.class, builder::build, "Should throw when program is not set");
     }
 
     @Test
@@ -186,10 +180,7 @@ class WasiProcessConfigTest {
     @DisplayName("getArguments should return immutable list")
     void getArgumentsShouldReturnImmutableList() {
       final WasiProcessConfig config =
-          WasiProcessConfig.builder()
-              .setProgram("/bin/echo")
-              .addArgument("arg1")
-              .build();
+          WasiProcessConfig.builder().setProgram("/bin/echo").addArgument("arg1").build();
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -293,17 +284,13 @@ class WasiProcessConfigTest {
 
       final WasiProcessConfig copy = original.toBuilder().build();
 
+      assertEquals(original.getProgram(), copy.getProgram(), "Program should be copied");
+      assertEquals(original.getArguments(), copy.getArguments(), "Arguments should be copied");
       assertEquals(
-          original.getProgram(), copy.getProgram(),
-          "Program should be copied");
+          original.getEnvironment(), copy.getEnvironment(), "Environment should be copied");
       assertEquals(
-          original.getArguments(), copy.getArguments(),
-          "Arguments should be copied");
-      assertEquals(
-          original.getEnvironment(), copy.getEnvironment(),
-          "Environment should be copied");
-      assertEquals(
-          original.getWorkingDirectory(), copy.getWorkingDirectory(),
+          original.getWorkingDirectory(),
+          copy.getWorkingDirectory(),
           "Working directory should be copied");
     }
 
@@ -311,15 +298,10 @@ class WasiProcessConfigTest {
     @DisplayName("toBuilder should allow modifications")
     void toBuilderShouldAllowModifications() {
       final WasiProcessConfig original =
-          WasiProcessConfig.builder()
-              .setProgram("/bin/echo")
-              .build();
+          WasiProcessConfig.builder().setProgram("/bin/echo").build();
 
       final WasiProcessConfig modified =
-          original.toBuilder()
-              .setProgram("/bin/cat")
-              .addArgument("file.txt")
-              .build();
+          original.toBuilder().setProgram("/bin/cat").addArgument("file.txt").build();
 
       assertEquals("/bin/cat", modified.getProgram(), "Modified program should be /bin/cat");
       assertEquals(1, modified.getArguments().size(), "Modified should have 1 argument");
@@ -335,15 +317,11 @@ class WasiProcessConfigTest {
     void shouldDefensivelyCopyArgumentsList() {
       final List<String> mutableArgs = new ArrayList<>(Arrays.asList("a", "b"));
       final WasiProcessConfig config =
-          WasiProcessConfig.builder()
-              .setProgram("/bin/echo")
-              .setArguments(mutableArgs)
-              .build();
+          WasiProcessConfig.builder().setProgram("/bin/echo").setArguments(mutableArgs).build();
 
       mutableArgs.add("c");
       assertEquals(
-          2, config.getArguments().size(),
-          "Modifying original list should not affect config");
+          2, config.getArguments().size(), "Modifying original list should not affect config");
     }
 
     @Test
@@ -352,15 +330,11 @@ class WasiProcessConfigTest {
       final Map<String, String> mutableEnv = new HashMap<>();
       mutableEnv.put("KEY", "val");
       final WasiProcessConfig config =
-          WasiProcessConfig.builder()
-              .setProgram("/bin/echo")
-              .setEnvironment(mutableEnv)
-              .build();
+          WasiProcessConfig.builder().setProgram("/bin/echo").setEnvironment(mutableEnv).build();
 
       mutableEnv.put("NEW_KEY", "new_val");
       assertEquals(
-          1, config.getEnvironment().size(),
-          "Modifying original map should not affect config");
+          1, config.getEnvironment().size(), "Modifying original map should not affect config");
     }
   }
 

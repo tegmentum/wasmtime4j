@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for KeyValueErrorCode enum.
  *
- * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage for
- * WASI key-value error codes.
+ * <p>Verifies enum constants, ordinals, valueOf, values, toString, and switch statement coverage
+ * for WASI key-value error codes.
  */
 @DisplayName("KeyValueErrorCode Tests")
 class KeyValueErrorCodeTest {
@@ -52,8 +52,7 @@ class KeyValueErrorCodeTest {
     @Test
     @DisplayName("should be a valid enum type")
     void shouldBeValidEnumType() {
-      assertTrue(
-          KeyValueErrorCode.class.isEnum(), "KeyValueErrorCode should be an enum type");
+      assertTrue(KeyValueErrorCode.class.isEnum(), "KeyValueErrorCode should be an enum type");
     }
 
     @Test
@@ -129,8 +128,7 @@ class KeyValueErrorCodeTest {
       final KeyValueErrorCode code = KeyValueErrorCode.TRANSACTION_CONFLICT;
 
       assertNotNull(code, "TRANSACTION_CONFLICT should not be null");
-      assertEquals(
-          "TRANSACTION_CONFLICT", code.name(), "Name should be TRANSACTION_CONFLICT");
+      assertEquals("TRANSACTION_CONFLICT", code.name(), "Name should be TRANSACTION_CONFLICT");
     }
 
     @Test
@@ -139,8 +137,7 @@ class KeyValueErrorCodeTest {
       final KeyValueErrorCode code = KeyValueErrorCode.TRANSACTION_TIMEOUT;
 
       assertNotNull(code, "TRANSACTION_TIMEOUT should not be null");
-      assertEquals(
-          "TRANSACTION_TIMEOUT", code.name(), "Name should be TRANSACTION_TIMEOUT");
+      assertEquals("TRANSACTION_TIMEOUT", code.name(), "Name should be TRANSACTION_TIMEOUT");
     }
 
     @Test
@@ -194,8 +191,7 @@ class KeyValueErrorCodeTest {
       final KeyValueErrorCode code = KeyValueErrorCode.CONSISTENCY_VIOLATION;
 
       assertNotNull(code, "CONSISTENCY_VIOLATION should not be null");
-      assertEquals(
-          "CONSISTENCY_VIOLATION", code.name(), "Name should be CONSISTENCY_VIOLATION");
+      assertEquals("CONSISTENCY_VIOLATION", code.name(), "Name should be CONSISTENCY_VIOLATION");
     }
 
     @Test
@@ -204,8 +200,7 @@ class KeyValueErrorCodeTest {
       final KeyValueErrorCode code = KeyValueErrorCode.REPLICATION_FAILED;
 
       assertNotNull(code, "REPLICATION_FAILED should not be null");
-      assertEquals(
-          "REPLICATION_FAILED", code.name(), "Name should be REPLICATION_FAILED");
+      assertEquals("REPLICATION_FAILED", code.name(), "Name should be REPLICATION_FAILED");
     }
 
     @Test
@@ -239,9 +234,7 @@ class KeyValueErrorCodeTest {
     @DisplayName("INTERNAL_ERROR should have ordinal 15")
     void internalErrorShouldHaveOrdinalFifteen() {
       assertEquals(
-          15,
-          KeyValueErrorCode.INTERNAL_ERROR.ordinal(),
-          "INTERNAL_ERROR ordinal should be 15");
+          15, KeyValueErrorCode.INTERNAL_ERROR.ordinal(), "INTERNAL_ERROR ordinal should be 15");
     }
 
     @Test
@@ -250,8 +243,7 @@ class KeyValueErrorCodeTest {
       final KeyValueErrorCode[] values = KeyValueErrorCode.values();
 
       for (int i = 0; i < values.length; i++) {
-        assertEquals(
-            i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
+        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
       }
     }
   }
@@ -356,9 +348,7 @@ class KeyValueErrorCodeTest {
     @DisplayName("values should return array of length 16")
     void valuesShouldReturnArrayOfLengthSixteen() {
       assertEquals(
-          16,
-          KeyValueErrorCode.values().length,
-          "values() should return array with 16 elements");
+          16, KeyValueErrorCode.values().length, "values() should return array with 16 elements");
     }
 
     @Test
@@ -367,17 +357,14 @@ class KeyValueErrorCodeTest {
       final Set<KeyValueErrorCode> valueSet =
           new HashSet<>(Arrays.asList(KeyValueErrorCode.values()));
 
-      assertTrue(
-          valueSet.contains(KeyValueErrorCode.UNKNOWN), "values() should contain UNKNOWN");
+      assertTrue(valueSet.contains(KeyValueErrorCode.UNKNOWN), "values() should contain UNKNOWN");
       assertTrue(
           valueSet.contains(KeyValueErrorCode.KEY_NOT_FOUND),
           "values() should contain KEY_NOT_FOUND");
       assertTrue(
-          valueSet.contains(KeyValueErrorCode.KEY_EXISTS),
-          "values() should contain KEY_EXISTS");
+          valueSet.contains(KeyValueErrorCode.KEY_EXISTS), "values() should contain KEY_EXISTS");
       assertTrue(
-          valueSet.contains(KeyValueErrorCode.INVALID_KEY),
-          "values() should contain INVALID_KEY");
+          valueSet.contains(KeyValueErrorCode.INVALID_KEY), "values() should contain INVALID_KEY");
       assertTrue(
           valueSet.contains(KeyValueErrorCode.INVALID_VALUE),
           "values() should contain INVALID_VALUE");
@@ -391,8 +378,7 @@ class KeyValueErrorCodeTest {
           valueSet.contains(KeyValueErrorCode.TRANSACTION_TIMEOUT),
           "values() should contain TRANSACTION_TIMEOUT");
       assertTrue(
-          valueSet.contains(KeyValueErrorCode.CAS_FAILED),
-          "values() should contain CAS_FAILED");
+          valueSet.contains(KeyValueErrorCode.CAS_FAILED), "values() should contain CAS_FAILED");
       assertTrue(
           valueSet.contains(KeyValueErrorCode.NOT_PERMITTED),
           "values() should contain NOT_PERMITTED");
@@ -400,11 +386,8 @@ class KeyValueErrorCodeTest {
           valueSet.contains(KeyValueErrorCode.CONNECTION_FAILED),
           "values() should contain CONNECTION_FAILED");
       assertTrue(
-          valueSet.contains(KeyValueErrorCode.READ_ONLY),
-          "values() should contain READ_ONLY");
-      assertTrue(
-          valueSet.contains(KeyValueErrorCode.TIMEOUT),
-          "values() should contain TIMEOUT");
+          valueSet.contains(KeyValueErrorCode.READ_ONLY), "values() should contain READ_ONLY");
+      assertTrue(valueSet.contains(KeyValueErrorCode.TIMEOUT), "values() should contain TIMEOUT");
       assertTrue(
           valueSet.contains(KeyValueErrorCode.CONSISTENCY_VIOLATION),
           "values() should contain CONSISTENCY_VIOLATION");
@@ -439,9 +422,7 @@ class KeyValueErrorCodeTest {
     void toStringShouldMatchNameForAllConstants() {
       for (final KeyValueErrorCode code : KeyValueErrorCode.values()) {
         assertEquals(
-            code.name(),
-            code.toString(),
-            "toString() should match name() for " + code.name());
+            code.name(), code.toString(), "toString() should match name() for " + code.name());
       }
     }
 
@@ -449,9 +430,7 @@ class KeyValueErrorCodeTest {
     @DisplayName("toString should return 'UNKNOWN' for UNKNOWN")
     void toStringShouldReturnUnknown() {
       assertEquals(
-          "UNKNOWN",
-          KeyValueErrorCode.UNKNOWN.toString(),
-          "toString() should return 'UNKNOWN'");
+          "UNKNOWN", KeyValueErrorCode.UNKNOWN.toString(), "toString() should return 'UNKNOWN'");
     }
 
     @Test

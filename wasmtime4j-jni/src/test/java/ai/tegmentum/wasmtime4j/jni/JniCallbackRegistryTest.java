@@ -19,12 +19,12 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncHostFunction;
-import ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackHandle;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncHostFunction;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackHandle;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -258,7 +258,8 @@ class JniCallbackRegistryTest {
 
   @Test
   void testGetMetricsReturnsNonNull() {
-    final ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackMetrics metrics = registry.getMetrics();
+    final ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackMetrics metrics =
+        registry.getMetrics();
 
     assertThat(metrics).isNotNull();
     assertThat(metrics.getTotalInvocations()).isEqualTo(0);

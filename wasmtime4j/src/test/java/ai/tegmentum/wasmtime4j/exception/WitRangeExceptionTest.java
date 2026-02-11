@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.wit.WitType;
 import ai.tegmentum.wasmtime4j.exception.WitValueException.ErrorCode;
+import ai.tegmentum.wasmtime4j.wit.WitType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -395,7 +395,8 @@ class WitRangeExceptionTest {
     @DisplayName("signedOverflow message should format with comma-separated bounds")
     void signedOverflowMessageShouldFormatWithCommaSeparatedBounds() {
       final WitRangeException exception =
-          WitRangeException.signedOverflow(WitType.createS32(), 3000000000L, -2147483648L, 2147483647L);
+          WitRangeException.signedOverflow(
+              WitType.createS32(), 3000000000L, -2147483648L, 2147483647L);
 
       final String message = exception.getMessage();
 
@@ -447,7 +448,8 @@ class WitRangeExceptionTest {
 
       assertNotNull(exception.getMessage(), "Message should not be null");
       assertTrue(
-          exception.getMessage().contains("Infinity") || exception.getMessage().contains("-Infinity"),
+          exception.getMessage().contains("Infinity")
+              || exception.getMessage().contains("-Infinity"),
           "Message should contain infinity representation");
     }
   }
@@ -586,8 +588,7 @@ class WitRangeExceptionTest {
           WitRangeException.invalidFloatingPoint(WitType.createFloat64(), Double.NaN);
 
       assertTrue(
-          exception.getMessage().startsWith("Invalid"),
-          "Message should start with 'Invalid'");
+          exception.getMessage().startsWith("Invalid"), "Message should start with 'Invalid'");
     }
 
     @Test
@@ -645,8 +646,7 @@ class WitRangeExceptionTest {
       // If condition was replaced with true, range would be shown even with nulls
       // The format would try to format null values
       assertFalse(
-          exception.getMessage().contains("Valid range"),
-          "Should NOT show range when min is null");
+          exception.getMessage().contains("Valid range"), "Should NOT show range when min is null");
       assertFalse(
           exception.getMessage().contains(" to "),
           "Should NOT contain ' to ' when range not shown");
@@ -656,16 +656,14 @@ class WitRangeExceptionTest {
     @DisplayName("getMessage should NOT show range when only max is null")
     void getMessageShouldNotShowRangeWhenOnlyMaxIsNull() {
       // Constructor that sets type and value but not range
-      final WitRangeException exception =
-          new WitRangeException("Error", WitType.createU8(), 300);
+      final WitRangeException exception = new WitRangeException("Error", WitType.createU8(), 300);
 
       assertNull(exception.getMinValue(), "Min should be null");
       assertNull(exception.getMaxValue(), "Max should be null");
 
       // If condition was replaced with true, range would be shown even with nulls
       assertFalse(
-          exception.getMessage().contains("Valid range"),
-          "Should NOT show range when max is null");
+          exception.getMessage().contains("Valid range"), "Should NOT show range when max is null");
     }
 
     @Test
@@ -683,8 +681,7 @@ class WitRangeExceptionTest {
           exception.getMessage().contains("Valid range"),
           "SHOULD show range when both are non-null");
       assertTrue(
-          exception.getMessage().contains(" to "),
-          "SHOULD contain ' to ' when range is shown");
+          exception.getMessage().contains(" to "), "SHOULD contain ' to ' when range is shown");
     }
 
     @Test
@@ -706,9 +703,7 @@ class WitRangeExceptionTest {
       assertFalse(
           withoutBounds.getMessage().contains("Valid range"),
           "Without bounds should not have range");
-      assertTrue(
-          withBounds.getMessage().contains("Valid range"),
-          "With bounds should have range");
+      assertTrue(withBounds.getMessage().contains("Valid range"), "With bounds should have range");
     }
   }
 
@@ -727,7 +722,8 @@ class WitRangeExceptionTest {
       final String message = exception.getMessage();
 
       // Verify "Value 300" appears (value is first arg)
-      assertTrue(message.startsWith("Value 300 "),
+      assertTrue(
+          message.startsWith("Value 300 "),
           "Message should start with 'Value 300 ' - value is first format arg: " + message);
     }
 
@@ -743,8 +739,11 @@ class WitRangeExceptionTest {
 
       // The base format ends with ": 255" before parent class appends additional info
       // Look for ": 255 " (with space after, before [Expected type...])
-      assertTrue(message.contains(": 255 ") || message.contains(": 255["),
-          "Message should contain ': 255' followed by space or bracket - maxValue is third format arg: " + message);
+      assertTrue(
+          message.contains(": 255 ") || message.contains(": 255["),
+          "Message should contain ': 255' followed by space or bracket - maxValue is third format"
+              + " arg: "
+              + message);
     }
 
     @Test
@@ -758,8 +757,10 @@ class WitRangeExceptionTest {
       final String message = exception.getMessage();
 
       // Verify "Negative value -42 " appears (value is first arg after "Negative value ")
-      assertTrue(message.startsWith("Negative value -42 "),
-          "Message should start with 'Negative value -42 ' - value is first format arg: " + message);
+      assertTrue(
+          message.startsWith("Negative value -42 "),
+          "Message should start with 'Negative value -42 ' - value is first format arg: "
+              + message);
     }
 
     @Test
@@ -768,8 +769,7 @@ class WitRangeExceptionTest {
       // Format: "Negative value %d not allowed for unsigned %s"
       // Type should appear after "unsigned" in the message
       final WitType type = WitType.createU64();
-      final WitRangeException exception =
-          WitRangeException.negativeUnsigned(type, -100);
+      final WitRangeException exception = WitRangeException.negativeUnsigned(type, -100);
 
       final String message = exception.getMessage();
 
@@ -780,8 +780,11 @@ class WitRangeExceptionTest {
       final int typeEndIndex = message.indexOf(" [Expected type");
       assertTrue(typeEndIndex > unsignedIndex, "Should have '[Expected type' after unsigned");
 
-      final String typeInMessage = message.substring(unsignedIndex + "unsigned ".length(), typeEndIndex);
-      assertEquals(type.toString(), typeInMessage,
+      final String typeInMessage =
+          message.substring(unsignedIndex + "unsigned ".length(), typeEndIndex);
+      assertEquals(
+          type.toString(),
+          typeInMessage,
           "Type should appear between 'unsigned ' and ' [Expected type': " + message);
     }
 
@@ -796,7 +799,8 @@ class WitRangeExceptionTest {
       final String message = exception.getMessage();
 
       // Verify "Value 200 " appears at start
-      assertTrue(message.startsWith("Value 200 "),
+      assertTrue(
+          message.startsWith("Value 200 "),
           "Message should start with 'Value 200 ' - value is first format arg: " + message);
     }
 
@@ -812,7 +816,8 @@ class WitRangeExceptionTest {
 
       // The base message (before [Valid range]) should contain [-32768, 32767]
       // Note: The format puts min before max
-      assertTrue(message.contains("[-32768, 32767]"),
+      assertTrue(
+          message.contains("[-32768, 32767]"),
           "Message should contain '[-32768, 32767]' with min before max: " + message);
     }
 
@@ -822,8 +827,7 @@ class WitRangeExceptionTest {
       // Format: "Invalid floating-point value for %s: %f"
       // Args: type (arg 0), value (arg 1)
       final WitType type = WitType.createFloat32();
-      final WitRangeException exception =
-          WitRangeException.invalidFloatingPoint(type, Double.NaN);
+      final WitRangeException exception = WitRangeException.invalidFloatingPoint(type, Double.NaN);
 
       final String message = exception.getMessage();
 
@@ -832,7 +836,9 @@ class WitRangeExceptionTest {
       final int colonIndex = message.indexOf(":", forIndex);
       final String extractedType = message.substring(forIndex + 5, colonIndex);
 
-      assertEquals(type.toString(), extractedType,
+      assertEquals(
+          type.toString(),
+          extractedType,
           "Type should appear between 'for ' and ':' - type is first format arg: " + message);
     }
 
@@ -851,7 +857,8 @@ class WitRangeExceptionTest {
       final String afterColon = message.substring(colonIndex + 1).trim();
 
       // Infinity formats as "Infinity"
-      assertTrue(afterColon.contains("Infinity"),
+      assertTrue(
+          afterColon.contains("Infinity"),
           "Value should appear after ':' - value is second format arg: " + message);
     }
 
@@ -899,7 +906,8 @@ class WitRangeExceptionTest {
 
       assertTrue(value12345Index >= 0, "Message should contain 12345");
       assertTrue(value65535Index >= 0, "Message should contain 65535");
-      assertTrue(value12345Index < value65535Index,
+      assertTrue(
+          value12345Index < value65535Index,
           "Value 12345 should appear before maxValue 65535: " + message);
     }
 
@@ -921,12 +929,14 @@ class WitRangeExceptionTest {
       assertTrue(minus50000Index >= 0, "Message should contain -50000");
 
       // Value should come first
-      assertTrue(value99999Index < minus50000Index,
+      assertTrue(
+          value99999Index < minus50000Index,
           "Value 99999 should appear before min -50000: " + message);
 
       // In the bracket part, min should come before max
       // [-50000, 50000]
-      assertTrue(message.contains("[-50000, 50000]"),
+      assertTrue(
+          message.contains("[-50000, 50000]"),
           "Bounds should be in order [-50000, 50000]: " + message);
     }
   }

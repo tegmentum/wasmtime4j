@@ -395,8 +395,7 @@ class RuntimeExceptionTest {
     @Test
     @DisplayName("isTrapError returns false for RESOURCE_EXHAUSTED")
     void isTrapErrorReturnsFalseForResourceExhausted() {
-      final RuntimeException ex =
-          new RuntimeException(RuntimeErrorType.RESOURCE_EXHAUSTED, "test");
+      final RuntimeException ex = new RuntimeException(RuntimeErrorType.RESOURCE_EXHAUSTED, "test");
       assertFalse(ex.isTrapError(), "RESOURCE_EXHAUSTED should NOT be trap error");
     }
 
@@ -451,8 +450,7 @@ class RuntimeExceptionTest {
     @Test
     @DisplayName("isFunctionError returns false for RESOURCE_EXHAUSTED")
     void isFunctionErrorReturnsFalseForResourceExhausted() {
-      final RuntimeException ex =
-          new RuntimeException(RuntimeErrorType.RESOURCE_EXHAUSTED, "test");
+      final RuntimeException ex = new RuntimeException(RuntimeErrorType.RESOURCE_EXHAUSTED, "test");
       assertFalse(ex.isFunctionError(), "RESOURCE_EXHAUSTED should NOT be function error");
     }
 
@@ -508,8 +506,7 @@ class RuntimeExceptionTest {
     @Test
     @DisplayName("isMemoryError returns false for RESOURCE_EXHAUSTED")
     void isMemoryErrorReturnsFalseForResourceExhausted() {
-      final RuntimeException ex =
-          new RuntimeException(RuntimeErrorType.RESOURCE_EXHAUSTED, "test");
+      final RuntimeException ex = new RuntimeException(RuntimeErrorType.RESOURCE_EXHAUSTED, "test");
       assertFalse(ex.isMemoryError(), "RESOURCE_EXHAUSTED should NOT be memory error");
     }
 
@@ -613,7 +610,9 @@ class RuntimeExceptionTest {
         }
       }
       assertEquals(
-          2, count, "Should have exactly 2 function error types "
+          2,
+          count,
+          "Should have exactly 2 function error types "
               + "(FUNCTION_EXECUTION_FAILED, HOST_FUNCTION_FAILED)");
     }
 
@@ -628,8 +627,9 @@ class RuntimeExceptionTest {
         }
       }
       assertEquals(
-          2, count, "Should have exactly 2 memory error types "
-              + "(MEMORY_ACCESS_VIOLATION, STACK_ERROR)");
+          2,
+          count,
+          "Should have exactly 2 memory error types " + "(MEMORY_ACCESS_VIOLATION, STACK_ERROR)");
     }
 
     @Test
@@ -659,8 +659,7 @@ class RuntimeExceptionTest {
       assertFalse(
           ex.getMessage().contains("(function:"),
           "Message should NOT contain function suffix when functionName is null");
-      assertTrue(
-          ex.getMessage().contains("[TRAP]"), "Message should contain error type prefix");
+      assertTrue(ex.getMessage().contains("[TRAP]"), "Message should contain error type prefix");
       assertTrue(
           ex.getMessage().contains("Test message"), "Message should contain the message text");
     }
@@ -701,9 +700,7 @@ class RuntimeExceptionTest {
           "Message should NOT have bracket prefix when null errorType is passed to formatMessage");
       // But the field itself is normalized to UNKNOWN
       assertEquals(
-          RuntimeErrorType.UNKNOWN,
-          ex.getErrorType(),
-          "Error type field should be UNKNOWN");
+          RuntimeErrorType.UNKNOWN, ex.getErrorType(), "Error type field should be UNKNOWN");
     }
 
     @Test
@@ -798,12 +795,10 @@ class RuntimeExceptionTest {
     @Test
     @DisplayName("RESOURCE_EXHAUSTED suggestion should mention resource")
     void resourceExhaustedSuggestion() {
-      final RuntimeException ex =
-          new RuntimeException(RuntimeErrorType.RESOURCE_EXHAUSTED, "test");
+      final RuntimeException ex = new RuntimeException(RuntimeErrorType.RESOURCE_EXHAUSTED, "test");
       assertTrue(
           ex.getRecoverySuggestion().contains("resource"),
-          "RESOURCE_EXHAUSTED suggestion should mention 'resource': "
-              + ex.getRecoverySuggestion());
+          "RESOURCE_EXHAUSTED suggestion should mention 'resource': " + ex.getRecoverySuggestion());
     }
 
     @Test
@@ -890,8 +885,7 @@ class RuntimeExceptionTest {
     @Test
     @DisplayName("getCause returns null when not provided")
     void getCauseReturnsNullWhenNotProvided() {
-      final RuntimeException ex =
-          new RuntimeException(RuntimeErrorType.TRAP, "test", "func", null);
+      final RuntimeException ex = new RuntimeException(RuntimeErrorType.TRAP, "test", "func", null);
       assertNull(ex.getCause(), "getCause should return null when not provided");
     }
   }

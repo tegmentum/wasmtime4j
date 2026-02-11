@@ -61,8 +61,7 @@ public final class WitInterfaceLinker {
    * @return the linking result
    * @throws WasmException if linking fails
    */
-  public ComponentLinkResult linkComponents(final List<Component> components)
-      throws WasmException {
+  public ComponentLinkResult linkComponents(final List<Component> components) throws WasmException {
     Objects.requireNonNull(components, "components");
     if (components.isEmpty()) {
       throw new IllegalArgumentException("Components list cannot be empty");

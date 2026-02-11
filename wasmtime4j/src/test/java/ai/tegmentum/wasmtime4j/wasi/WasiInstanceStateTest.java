@@ -98,8 +98,7 @@ class WasiInstanceStateTest {
     @DisplayName("should have TERMINATED value")
     void shouldHaveTerminatedValue() {
       assertNotNull(WasiInstanceState.TERMINATED, "TERMINATED should exist");
-      assertEquals(
-          "TERMINATED", WasiInstanceState.TERMINATED.name(), "Name should be TERMINATED");
+      assertEquals("TERMINATED", WasiInstanceState.TERMINATED.name(), "Name should be TERMINATED");
     }
 
     @Test
@@ -126,8 +125,7 @@ class WasiInstanceStateTest {
     void ordinalsShouldBeUnique() {
       final Set<Integer> ordinals = new HashSet<>();
       for (final WasiInstanceState state : WasiInstanceState.values()) {
-        assertTrue(
-            ordinals.add(state.ordinal()), "Ordinal should be unique: " + state.ordinal());
+        assertTrue(ordinals.add(state.ordinal()), "Ordinal should be unique: " + state.ordinal());
       }
     }
 
@@ -149,21 +147,15 @@ class WasiInstanceStateTest {
     @DisplayName("valueOf should return correct constant for each name")
     void valueOfShouldReturnCorrectConstant() {
       assertEquals(
-          WasiInstanceState.CREATED,
-          WasiInstanceState.valueOf("CREATED"),
-          "Should return CREATED");
+          WasiInstanceState.CREATED, WasiInstanceState.valueOf("CREATED"), "Should return CREATED");
       assertEquals(
-          WasiInstanceState.RUNNING,
-          WasiInstanceState.valueOf("RUNNING"),
-          "Should return RUNNING");
+          WasiInstanceState.RUNNING, WasiInstanceState.valueOf("RUNNING"), "Should return RUNNING");
       assertEquals(
           WasiInstanceState.SUSPENDED,
           WasiInstanceState.valueOf("SUSPENDED"),
           "Should return SUSPENDED");
       assertEquals(
-          WasiInstanceState.WAITING,
-          WasiInstanceState.valueOf("WAITING"),
-          "Should return WAITING");
+          WasiInstanceState.WAITING, WasiInstanceState.valueOf("WAITING"), "Should return WAITING");
       assertEquals(
           WasiInstanceState.COMPLETED,
           WasiInstanceState.valueOf("COMPLETED"),
@@ -226,18 +218,12 @@ class WasiInstanceStateTest {
     @Test
     @DisplayName("isActive should return true for CREATED, RUNNING, SUSPENDED, WAITING, COMPLETED")
     void isActiveShouldReturnTrueForActiveStates() {
-      assertTrue(
-          WasiInstanceState.CREATED.isActive(), "CREATED.isActive() should be true");
-      assertTrue(
-          WasiInstanceState.RUNNING.isActive(), "RUNNING.isActive() should be true");
-      assertTrue(
-          WasiInstanceState.SUSPENDED.isActive(), "SUSPENDED.isActive() should be true");
-      assertTrue(
-          WasiInstanceState.WAITING.isActive(), "WAITING.isActive() should be true");
-      assertTrue(
-          WasiInstanceState.COMPLETED.isActive(), "COMPLETED.isActive() should be true");
-      assertFalse(
-          WasiInstanceState.TERMINATED.isActive(), "TERMINATED.isActive() should be false");
+      assertTrue(WasiInstanceState.CREATED.isActive(), "CREATED.isActive() should be true");
+      assertTrue(WasiInstanceState.RUNNING.isActive(), "RUNNING.isActive() should be true");
+      assertTrue(WasiInstanceState.SUSPENDED.isActive(), "SUSPENDED.isActive() should be true");
+      assertTrue(WasiInstanceState.WAITING.isActive(), "WAITING.isActive() should be true");
+      assertTrue(WasiInstanceState.COMPLETED.isActive(), "COMPLETED.isActive() should be true");
+      assertFalse(WasiInstanceState.TERMINATED.isActive(), "TERMINATED.isActive() should be false");
       assertFalse(WasiInstanceState.ERROR.isActive(), "ERROR.isActive() should be false");
       assertFalse(WasiInstanceState.CLOSED.isActive(), "CLOSED.isActive() should be false");
     }
@@ -249,14 +235,11 @@ class WasiInstanceStateTest {
           WasiInstanceState.TERMINATED.isTerminal(), "TERMINATED.isTerminal() should be true");
       assertTrue(WasiInstanceState.ERROR.isTerminal(), "ERROR.isTerminal() should be true");
       assertTrue(WasiInstanceState.CLOSED.isTerminal(), "CLOSED.isTerminal() should be true");
-      assertFalse(
-          WasiInstanceState.CREATED.isTerminal(), "CREATED.isTerminal() should be false");
-      assertFalse(
-          WasiInstanceState.RUNNING.isTerminal(), "RUNNING.isTerminal() should be false");
+      assertFalse(WasiInstanceState.CREATED.isTerminal(), "CREATED.isTerminal() should be false");
+      assertFalse(WasiInstanceState.RUNNING.isTerminal(), "RUNNING.isTerminal() should be false");
       assertFalse(
           WasiInstanceState.SUSPENDED.isTerminal(), "SUSPENDED.isTerminal() should be false");
-      assertFalse(
-          WasiInstanceState.WAITING.isTerminal(), "WAITING.isTerminal() should be false");
+      assertFalse(WasiInstanceState.WAITING.isTerminal(), "WAITING.isTerminal() should be false");
       assertFalse(
           WasiInstanceState.COMPLETED.isTerminal(), "COMPLETED.isTerminal() should be false");
     }
@@ -264,16 +247,12 @@ class WasiInstanceStateTest {
     @Test
     @DisplayName("isCallable should return true for CREATED, COMPLETED")
     void isCallableShouldReturnTrueForCallableStates() {
-      assertTrue(
-          WasiInstanceState.CREATED.isCallable(), "CREATED.isCallable() should be true");
-      assertTrue(
-          WasiInstanceState.COMPLETED.isCallable(), "COMPLETED.isCallable() should be true");
-      assertFalse(
-          WasiInstanceState.RUNNING.isCallable(), "RUNNING.isCallable() should be false");
+      assertTrue(WasiInstanceState.CREATED.isCallable(), "CREATED.isCallable() should be true");
+      assertTrue(WasiInstanceState.COMPLETED.isCallable(), "COMPLETED.isCallable() should be true");
+      assertFalse(WasiInstanceState.RUNNING.isCallable(), "RUNNING.isCallable() should be false");
       assertFalse(
           WasiInstanceState.SUSPENDED.isCallable(), "SUSPENDED.isCallable() should be false");
-      assertFalse(
-          WasiInstanceState.WAITING.isCallable(), "WAITING.isCallable() should be false");
+      assertFalse(WasiInstanceState.WAITING.isCallable(), "WAITING.isCallable() should be false");
       assertFalse(
           WasiInstanceState.TERMINATED.isCallable(), "TERMINATED.isCallable() should be false");
       assertFalse(WasiInstanceState.ERROR.isCallable(), "ERROR.isCallable() should be false");
@@ -290,16 +269,13 @@ class WasiInstanceStateTest {
       assertFalse(
           WasiInstanceState.CREATED.isSuspendable(), "CREATED.isSuspendable() should be false");
       assertFalse(
-          WasiInstanceState.SUSPENDED.isSuspendable(),
-          "SUSPENDED.isSuspendable() should be false");
+          WasiInstanceState.SUSPENDED.isSuspendable(), "SUSPENDED.isSuspendable() should be false");
       assertFalse(
-          WasiInstanceState.COMPLETED.isSuspendable(),
-          "COMPLETED.isSuspendable() should be false");
+          WasiInstanceState.COMPLETED.isSuspendable(), "COMPLETED.isSuspendable() should be false");
       assertFalse(
           WasiInstanceState.TERMINATED.isSuspendable(),
           "TERMINATED.isSuspendable() should be false");
-      assertFalse(
-          WasiInstanceState.ERROR.isSuspendable(), "ERROR.isSuspendable() should be false");
+      assertFalse(WasiInstanceState.ERROR.isSuspendable(), "ERROR.isSuspendable() should be false");
       assertFalse(
           WasiInstanceState.CLOSED.isSuspendable(), "CLOSED.isSuspendable() should be false");
     }
@@ -311,8 +287,7 @@ class WasiInstanceStateTest {
           WasiInstanceState.SUSPENDED.isResumable(), "SUSPENDED.isResumable() should be true");
       for (final WasiInstanceState state : WasiInstanceState.values()) {
         if (state != WasiInstanceState.SUSPENDED) {
-          assertFalse(
-              state.isResumable(), state + ".isResumable() should be false");
+          assertFalse(state.isResumable(), state + ".isResumable() should be false");
         }
       }
     }
@@ -328,8 +303,7 @@ class WasiInstanceStateTest {
       for (final WasiInstanceState state : WasiInstanceState.values()) {
         assertNotNull(state.getDescription(), "Description should not be null for " + state);
         assertFalse(
-            state.getDescription().isEmpty(),
-            "Description should not be empty for " + state);
+            state.getDescription().isEmpty(), "Description should not be empty for " + state);
       }
     }
   }

@@ -12,9 +12,9 @@ import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -174,8 +174,7 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
-  public Set<Component> resolveDependencies(final ComponentRegistry registry)
-      throws WasmException {
+  public Set<Component> resolveDependencies(final ComponentRegistry registry) throws WasmException {
     if (registry == null) {
       throw new IllegalArgumentException("registry cannot be null");
     }
@@ -185,8 +184,7 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
-  public ComponentCompatibility checkCompatibility(final Component other)
-      throws WasmException {
+  public ComponentCompatibility checkCompatibility(final Component other) throws WasmException {
     if (other == null) {
       throw new IllegalArgumentException("other cannot be null");
     }
@@ -243,8 +241,7 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
-  public WitCompatibilityResult checkWitCompatibility(final Component other)
-      throws WasmException {
+  public WitCompatibilityResult checkWitCompatibility(final Component other) throws WasmException {
     if (other == null) {
       throw new IllegalArgumentException("other cannot be null");
     }

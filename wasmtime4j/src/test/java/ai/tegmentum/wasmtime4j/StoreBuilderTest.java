@@ -22,11 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import ai.tegmentum.wasmtime4j.config.StoreLimits;
 
 /**
  * Tests for {@link StoreBuilder} class.
@@ -45,11 +45,9 @@ class StoreBuilderTest {
     @DisplayName("should be public final class")
     void shouldBePublicFinalClass() {
       assertTrue(
-          Modifier.isPublic(StoreBuilder.class.getModifiers()),
-          "StoreBuilder should be public");
+          Modifier.isPublic(StoreBuilder.class.getModifiers()), "StoreBuilder should be public");
       assertTrue(
-          Modifier.isFinal(StoreBuilder.class.getModifiers()),
-          "StoreBuilder should be final");
+          Modifier.isFinal(StoreBuilder.class.getModifiers()), "StoreBuilder should be final");
     }
 
     @Test
@@ -68,10 +66,11 @@ class StoreBuilderTest {
     @Test
     @DisplayName("should reject null engine")
     void shouldRejectNullEngine() {
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> new StoreBuilder<>(null),
-          "Null engine should throw IllegalArgumentException");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> new StoreBuilder<>(null),
+              "Null engine should throw IllegalArgumentException");
       assertTrue(
           exception.getMessage().toLowerCase().contains("null"),
           "Message should mention null: " + exception.getMessage());
@@ -113,8 +112,7 @@ class StoreBuilderTest {
 
       assertNotNull(result, "withEpochDeadline should return the builder");
       assertEquals(
-          100L, builder.getEpochDeadline(),
-          "getEpochDeadline should return the set value");
+          100L, builder.getEpochDeadline(), "getEpochDeadline should return the set value");
     }
 
     @Test
@@ -127,9 +125,7 @@ class StoreBuilderTest {
 
       assertNotNull(result, "withLimits should return the builder");
       assertNotNull(builder.getLimits(), "getLimits should return non-null limits");
-      assertEquals(
-          1024L, builder.getLimits().getMemorySize(),
-          "Limits memorySize should be 1024");
+      assertEquals(1024L, builder.getLimits().getMemorySize(), "Limits memorySize should be 1024");
     }
   }
 
@@ -143,10 +139,11 @@ class StoreBuilderTest {
       final Engine engine = createMockEngine();
       final StoreBuilder<Object> builder = new StoreBuilder<>(engine);
 
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withFuel(-1L),
-          "Negative fuel should throw IllegalArgumentException");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> builder.withFuel(-1L),
+              "Negative fuel should throw IllegalArgumentException");
       assertTrue(
           exception.getMessage().toLowerCase().contains("negative"),
           "Message should mention negative: " + exception.getMessage());
@@ -158,10 +155,11 @@ class StoreBuilderTest {
       final Engine engine = createMockEngine();
       final StoreBuilder<Object> builder = new StoreBuilder<>(engine);
 
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withEpochDeadline(-1L),
-          "Negative epochDeadline should throw IllegalArgumentException");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> builder.withEpochDeadline(-1L),
+              "Negative epochDeadline should throw IllegalArgumentException");
       assertTrue(
           exception.getMessage().toLowerCase().contains("negative"),
           "Message should mention negative: " + exception.getMessage());
@@ -173,10 +171,11 @@ class StoreBuilderTest {
       final Engine engine = createMockEngine();
       final StoreBuilder<Object> builder = new StoreBuilder<>(engine);
 
-      final IllegalArgumentException exception = assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withLimits(null),
-          "Null limits should throw IllegalArgumentException");
+      final IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> builder.withLimits(null),
+              "Null limits should throw IllegalArgumentException");
       assertTrue(
           exception.getMessage().toLowerCase().contains("null"),
           "Message should mention null: " + exception.getMessage());
@@ -264,9 +263,7 @@ class StoreBuilderTest {
       final StoreBuilder<Object> builder = new StoreBuilder<>(engine);
       builder.withFuel(Long.MAX_VALUE);
 
-      assertEquals(
-          Long.MAX_VALUE, builder.getFuel(),
-          "Long.MAX_VALUE fuel should be accepted");
+      assertEquals(Long.MAX_VALUE, builder.getFuel(), "Long.MAX_VALUE fuel should be accepted");
     }
   }
 
@@ -275,17 +272,18 @@ class StoreBuilderTest {
    * requiring a real native engine for builder configuration tests.
    */
   private Engine createMockEngine() {
-    return (Engine) java.lang.reflect.Proxy.newProxyInstance(
-        Engine.class.getClassLoader(),
-        new Class<?>[] {Engine.class},
-        (proxy, method, args) -> {
-          if ("isFuelEnabled".equals(method.getName())) {
-            return false;
-          }
-          if ("isEpochInterruptionEnabled".equals(method.getName())) {
-            return false;
-          }
-          return null;
-        });
+    return (Engine)
+        java.lang.reflect.Proxy.newProxyInstance(
+            Engine.class.getClassLoader(),
+            new Class<?>[] {Engine.class},
+            (proxy, method, args) -> {
+              if ("isFuelEnabled".equals(method.getName())) {
+                return false;
+              }
+              if ("isEpochInterruptionEnabled".equals(method.getName())) {
+                return false;
+              }
+              return null;
+            });
   }
 }

@@ -130,7 +130,8 @@ public enum WasiFileOperation {
           CREATE_LINK,
           SET_TIMES,
           TRUNCATE,
-          SYNC -> true;
+          SYNC ->
+          true;
       default -> false;
     };
   }
@@ -158,7 +159,8 @@ public enum WasiFileOperation {
           CHANGE_PERMISSIONS,
           CREATE_LINK,
           SET_TIMES,
-          TRUNCATE -> true;
+          TRUNCATE ->
+          true;
       default -> false;
     };
   }

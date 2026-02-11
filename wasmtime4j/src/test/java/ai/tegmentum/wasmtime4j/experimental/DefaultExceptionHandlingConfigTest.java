@@ -50,28 +50,21 @@ class DefaultExceptionHandlingConfigTest {
     @DisplayName("default nestedTryCatch should be true")
     void defaultNestedTryCatchShouldBeTrue() {
       final DefaultExceptionHandlingConfig config = DefaultExceptionHandlingConfig.getDefault();
-      assertTrue(
-          config.isNestedTryCatchEnabled(),
-          "Default nestedTryCatch should be true");
+      assertTrue(config.isNestedTryCatchEnabled(), "Default nestedTryCatch should be true");
     }
 
     @Test
     @DisplayName("default exceptionUnwinding should be true")
     void defaultExceptionUnwindingShouldBeTrue() {
       final DefaultExceptionHandlingConfig config = DefaultExceptionHandlingConfig.getDefault();
-      assertTrue(
-          config.isExceptionUnwindingEnabled(),
-          "Default exceptionUnwinding should be true");
+      assertTrue(config.isExceptionUnwindingEnabled(), "Default exceptionUnwinding should be true");
     }
 
     @Test
     @DisplayName("default maxUnwindDepth should be 1000")
     void defaultMaxUnwindDepthShouldBe1000() {
       final DefaultExceptionHandlingConfig config = DefaultExceptionHandlingConfig.getDefault();
-      assertEquals(
-          1000,
-          config.getMaxUnwindDepth(),
-          "Default maxUnwindDepth should be 1000");
+      assertEquals(1000, config.getMaxUnwindDepth(), "Default maxUnwindDepth should be 1000");
     }
 
     @Test
@@ -88,17 +81,14 @@ class DefaultExceptionHandlingConfigTest {
     void defaultTypeValidationShouldBeTrue() {
       final DefaultExceptionHandlingConfig config = DefaultExceptionHandlingConfig.getDefault();
       assertTrue(
-          config.isExceptionTypeValidationEnabled(),
-          "Default typeValidation should be true");
+          config.isExceptionTypeValidationEnabled(), "Default typeValidation should be true");
     }
 
     @Test
     @DisplayName("default stackTraces should be true")
     void defaultStackTracesShouldBeTrue() {
       final DefaultExceptionHandlingConfig config = DefaultExceptionHandlingConfig.getDefault();
-      assertTrue(
-          config.isStackTracesEnabled(),
-          "Default stackTraces should be true");
+      assertTrue(config.isStackTracesEnabled(), "Default stackTraces should be true");
     }
 
     @Test
@@ -106,17 +96,14 @@ class DefaultExceptionHandlingConfigTest {
     void defaultExceptionPropagationShouldBeTrue() {
       final DefaultExceptionHandlingConfig config = DefaultExceptionHandlingConfig.getDefault();
       assertTrue(
-          config.isExceptionPropagationEnabled(),
-          "Default exceptionPropagation should be true");
+          config.isExceptionPropagationEnabled(), "Default exceptionPropagation should be true");
     }
 
     @Test
     @DisplayName("default gcIntegration should be false")
     void defaultGcIntegrationShouldBeFalse() {
       final DefaultExceptionHandlingConfig config = DefaultExceptionHandlingConfig.getDefault();
-      assertFalse(
-          config.isGcIntegrationEnabled(),
-          "Default gcIntegration should be false");
+      assertFalse(config.isGcIntegrationEnabled(), "Default gcIntegration should be false");
     }
   }
 
@@ -138,8 +125,7 @@ class DefaultExceptionHandlingConfigTest {
       final DefaultExceptionHandlingConfig config =
           DefaultExceptionHandlingConfig.builder().nestedTryCatch(false).build();
       assertFalse(
-          config.isNestedTryCatchEnabled(),
-          "nestedTryCatch should be disabled when set to false");
+          config.isNestedTryCatchEnabled(), "nestedTryCatch should be disabled when set to false");
     }
 
     @Test
@@ -157,10 +143,7 @@ class DefaultExceptionHandlingConfigTest {
     void builderShouldAllowSettingCustomMaxUnwindDepth() {
       final DefaultExceptionHandlingConfig config =
           DefaultExceptionHandlingConfig.builder().maxUnwindDepth(500).build();
-      assertEquals(
-          500,
-          config.getMaxUnwindDepth(),
-          "maxUnwindDepth should be 500 when set to 500");
+      assertEquals(500, config.getMaxUnwindDepth(), "maxUnwindDepth should be 500 when set to 500");
     }
 
     @Test
@@ -179,10 +162,7 @@ class DefaultExceptionHandlingConfigTest {
     void builderShouldAllowZeroMaxUnwindDepth() {
       final DefaultExceptionHandlingConfig config =
           DefaultExceptionHandlingConfig.builder().maxUnwindDepth(0).build();
-      assertEquals(
-          0,
-          config.getMaxUnwindDepth(),
-          "maxUnwindDepth should be 0 when set to 0");
+      assertEquals(0, config.getMaxUnwindDepth(), "maxUnwindDepth should be 0 when set to 0");
     }
 
     @Test
@@ -201,8 +181,7 @@ class DefaultExceptionHandlingConfigTest {
       final DefaultExceptionHandlingConfig config =
           DefaultExceptionHandlingConfig.builder().stackTraces(false).build();
       assertFalse(
-          config.isStackTracesEnabled(),
-          "stackTraces should be disabled when set to false");
+          config.isStackTracesEnabled(), "stackTraces should be disabled when set to false");
     }
 
     @Test
@@ -221,8 +200,7 @@ class DefaultExceptionHandlingConfigTest {
       final DefaultExceptionHandlingConfig config =
           DefaultExceptionHandlingConfig.builder().gcIntegration(true).build();
       assertTrue(
-          config.isGcIntegrationEnabled(),
-          "gcIntegration should be enabled when set to true");
+          config.isGcIntegrationEnabled(), "gcIntegration should be enabled when set to true");
     }
 
     @Test

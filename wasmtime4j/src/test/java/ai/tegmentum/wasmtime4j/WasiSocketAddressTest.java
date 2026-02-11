@@ -167,8 +167,7 @@ final class WasiSocketAddressTest {
     @Test
     @DisplayName("should convert IPv4 to InetSocketAddress")
     void shouldConvertIpv4ToInetSocketAddress() {
-      final WasiSocketAddress wasiAddr =
-          WasiSocketAddress.ipv4(new byte[] {127, 0, 0, 1}, 9090);
+      final WasiSocketAddress wasiAddr = WasiSocketAddress.ipv4(new byte[] {127, 0, 0, 1}, 9090);
       final InetSocketAddress inetAddr = wasiAddr.toInetSocketAddress();
       assertNotNull(inetAddr, "Converted InetSocketAddress should not be null");
       assertEquals(9090, inetAddr.getPort(), "Port should match after conversion");
@@ -200,10 +199,8 @@ final class WasiSocketAddressTest {
     @Test
     @DisplayName("should be equal for same address and port")
     void shouldBeEqualForSameAddressAndPort() {
-      final WasiSocketAddress addr1 =
-          WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 80);
-      final WasiSocketAddress addr2 =
-          WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 80);
+      final WasiSocketAddress addr1 = WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 80);
+      final WasiSocketAddress addr2 = WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 80);
       assertEquals(addr1, addr2, "Same address and port should be equal");
       assertEquals(addr1.hashCode(), addr2.hashCode(), "Hash codes should match");
     }
@@ -211,20 +208,16 @@ final class WasiSocketAddressTest {
     @Test
     @DisplayName("should not be equal for different ports")
     void shouldNotBeEqualForDifferentPorts() {
-      final WasiSocketAddress addr1 =
-          WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 80);
-      final WasiSocketAddress addr2 =
-          WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 443);
+      final WasiSocketAddress addr1 = WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 80);
+      final WasiSocketAddress addr2 = WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 443);
       assertNotEquals(addr1, addr2, "Different ports should not be equal");
     }
 
     @Test
     @DisplayName("should not be equal for different addresses")
     void shouldNotBeEqualForDifferentAddresses() {
-      final WasiSocketAddress addr1 =
-          WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 80);
-      final WasiSocketAddress addr2 =
-          WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 2}, 80);
+      final WasiSocketAddress addr1 = WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 1}, 80);
+      final WasiSocketAddress addr2 = WasiSocketAddress.ipv4(new byte[] {10, 0, 0, 2}, 80);
       assertNotEquals(addr1, addr2, "Different addresses should not be equal");
     }
   }

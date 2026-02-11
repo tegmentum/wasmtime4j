@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.type;
-import ai.tegmentum.wasmtime4j.WasmValueType;
 
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.util.Objects;
 
 /**

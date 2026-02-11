@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.type;
 
 import ai.tegmentum.wasmtime4j.DefaultTagType;
-import ai.tegmentum.wasmtime4j.WasmValueType;
 
 /**
  * Represents the type of a WebAssembly exception tag.

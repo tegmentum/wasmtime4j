@@ -56,10 +56,7 @@ class SyncToAsyncLimiterAdapterTest {
     @Test
     @DisplayName("getId should delegate to underlying limiter")
     void getIdShouldDelegateToUnderlyingLimiter() {
-      assertEquals(
-          delegate.getId(),
-          adapter.getId(),
-          "getId should return the delegate's ID");
+      assertEquals(delegate.getId(), adapter.getId(), "getId should return the delegate's ID");
     }
 
     @Test
@@ -208,9 +205,7 @@ class SyncToAsyncLimiterAdapterTest {
     }
   }
 
-  /**
-   * Stub ResourceLimiter for testing the adapter without native runtime.
-   */
+  /** Stub ResourceLimiter for testing the adapter without native runtime. */
   private static final class StubResourceLimiter implements ResourceLimiter {
     boolean resetStatsCalled = false;
     boolean closeCalled = false;

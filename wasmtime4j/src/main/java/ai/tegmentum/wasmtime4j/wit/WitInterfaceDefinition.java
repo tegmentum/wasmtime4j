@@ -1,5 +1,4 @@
 package ai.tegmentum.wasmtime4j.wit;
-import ai.tegmentum.wasmtime4j.component.Component;
 
 import java.util.List;
 import java.util.Set;

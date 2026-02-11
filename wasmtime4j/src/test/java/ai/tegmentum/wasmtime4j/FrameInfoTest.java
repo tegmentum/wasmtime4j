@@ -111,7 +111,8 @@ class FrameInfoTest {
     void getFuncNameShouldReturnEmptyForNullName() {
       final FrameInfo info = new FrameInfo(0, null, null, null, null, null);
 
-      assertEquals(Optional.empty(), info.getFuncName(), "getFuncName should return empty Optional");
+      assertEquals(
+          Optional.empty(), info.getFuncName(), "getFuncName should return empty Optional");
     }
 
     @Test
@@ -131,9 +132,7 @@ class FrameInfoTest {
       final FrameInfo info = new FrameInfo(0, null, null, null, null, null);
 
       assertEquals(
-          Optional.empty(),
-          info.getModuleOffset(),
-          "getModuleOffset should return empty Optional");
+          Optional.empty(), info.getModuleOffset(), "getModuleOffset should return empty Optional");
     }
 
     @Test
@@ -263,7 +262,9 @@ class FrameInfoTest {
       final FrameInfo info2 = new FrameInfo(1, null, "fn", 10, 5, Collections.emptyList());
 
       assertEquals(
-          info1.hashCode(), info2.hashCode(), "Equal FrameInfo instances should have same hashCode");
+          info1.hashCode(),
+          info2.hashCode(),
+          "Equal FrameInfo instances should have same hashCode");
     }
   }
 

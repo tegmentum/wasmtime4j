@@ -111,8 +111,7 @@ final class WasiDirectoryPermissionsTest {
     @Test
     @DisplayName("should build with only read permission")
     void shouldBuildWithOnlyRead() {
-      final WasiDirectoryPermissions perms =
-          WasiDirectoryPermissions.builder().allowRead().build();
+      final WasiDirectoryPermissions perms = WasiDirectoryPermissions.builder().allowRead().build();
       assertTrue(perms.canRead(), "Should allow read");
       assertFalse(perms.canWrite(), "Should deny write when only read is set");
       assertFalse(perms.canCreate(), "Should deny create when only read is set");
@@ -131,11 +130,7 @@ final class WasiDirectoryPermissionsTest {
     @DisplayName("should build with selective permissions")
     void shouldBuildWithSelectivePermissions() {
       final WasiDirectoryPermissions perms =
-          WasiDirectoryPermissions.builder()
-              .allowRead()
-              .allowCreate()
-              .allowTraverse()
-              .build();
+          WasiDirectoryPermissions.builder().allowRead().allowCreate().allowTraverse().build();
       assertTrue(perms.canRead(), "Should allow read");
       assertTrue(perms.canCreate(), "Should allow create");
       assertTrue(perms.canTraverse(), "Should allow traverse");

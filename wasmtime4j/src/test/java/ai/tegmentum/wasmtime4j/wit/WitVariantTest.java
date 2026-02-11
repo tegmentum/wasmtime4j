@@ -55,16 +55,14 @@ class WitVariantTest {
     @Test
     @DisplayName("should be a final class")
     void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(WitVariant.class.getModifiers()), "WitVariant should be final");
+      assertTrue(Modifier.isFinal(WitVariant.class.getModifiers()), "WitVariant should be final");
     }
 
     @Test
     @DisplayName("should extend WitValue")
     void shouldExtendWitValue() {
       assertTrue(
-          WitValue.class.isAssignableFrom(WitVariant.class),
-          "WitVariant should extend WitValue");
+          WitValue.class.isAssignableFrom(WitVariant.class), "WitVariant should extend WitValue");
     }
 
     @Test
@@ -72,8 +70,7 @@ class WitVariantTest {
     void shouldHaveGetCaseNameMethod() throws NoSuchMethodException {
       final Method method = WitVariant.class.getMethod("getCaseName");
       assertNotNull(method, "Should have getCaseName() method");
-      assertEquals(
-          String.class, method.getReturnType(), "getCaseName should return String");
+      assertEquals(String.class, method.getReturnType(), "getCaseName should return String");
     }
 
     @Test
@@ -81,8 +78,7 @@ class WitVariantTest {
     void shouldHaveGetPayloadMethod() throws NoSuchMethodException {
       final Method method = WitVariant.class.getMethod("getPayload");
       assertNotNull(method, "Should have getPayload() method");
-      assertEquals(
-          Optional.class, method.getReturnType(), "getPayload should return Optional");
+      assertEquals(Optional.class, method.getReturnType(), "getPayload should return Optional");
     }
 
     @Test
@@ -90,8 +86,7 @@ class WitVariantTest {
     void shouldHaveHasPayloadMethod() throws NoSuchMethodException {
       final Method method = WitVariant.class.getMethod("hasPayload");
       assertNotNull(method, "Should have hasPayload() method");
-      assertEquals(
-          boolean.class, method.getReturnType(), "hasPayload should return boolean");
+      assertEquals(boolean.class, method.getReturnType(), "hasPayload should return boolean");
     }
   }
 
@@ -149,12 +144,8 @@ class WitVariantTest {
     void getPayloadShouldReturnValueForCaseWithPayload() {
       final WitType vt = createVariantType();
       final WitVariant variant = WitVariant.of(vt, "success", WitS32.of(42));
-      assertTrue(
-          variant.getPayload().isPresent(),
-          "getPayload should return present Optional");
-      assertEquals(
-          WitS32.of(42), variant.getPayload().get(),
-          "Payload should be WitS32(42)");
+      assertTrue(variant.getPayload().isPresent(), "getPayload should return present Optional");
+      assertEquals(WitS32.of(42), variant.getPayload().get(), "Payload should be WitS32(42)");
     }
 
     @Test
@@ -201,9 +192,7 @@ class WitVariantTest {
       final WitType vt = createVariantType();
       final WitVariant v1 = WitVariant.of(vt, "pending");
       final WitVariant v2 = WitVariant.of(vt, "pending");
-      assertEquals(
-          v1.hashCode(), v2.hashCode(),
-          "Same variants should have same hash code");
+      assertEquals(v1.hashCode(), v2.hashCode(), "Same variants should have same hash code");
     }
   }
 
@@ -226,9 +215,7 @@ class WitVariantTest {
     void toStringShouldContainCaseName() {
       final WitType vt = createVariantType();
       final WitVariant variant = WitVariant.of(vt, "pending");
-      assertTrue(
-          variant.toString().contains("pending"),
-          "toString should contain the case name");
+      assertTrue(variant.toString().contains("pending"), "toString should contain the case name");
     }
   }
 
@@ -274,14 +261,13 @@ class WitVariantTest {
       final WitVariant withPayload = WitVariant.of(vt, "success", WitS32.of(42));
       assertTrue(withPayload.getPayload().isPresent(), "getPayload() with payload must be present");
       assertEquals(
-          WitS32.of(42),
-          withPayload.getPayload().get(),
-          "getPayload() must contain correct value");
+          WitS32.of(42), withPayload.getPayload().get(), "getPayload() must contain correct value");
 
       // Variant without payload getPayload() must return empty Optional
       final WitVariant noPayload = WitVariant.of(vt, "pending");
       assertFalse(noPayload.getPayload().isPresent(), "getPayload() without payload must be empty");
-      assertTrue(noPayload.getPayload().isEmpty(), "getPayload() must be empty for no-payload case");
+      assertTrue(
+          noPayload.getPayload().isEmpty(), "getPayload() must be empty for no-payload case");
     }
 
     @Test

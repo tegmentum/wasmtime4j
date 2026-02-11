@@ -16,13 +16,13 @@
 
 package ai.tegmentum.wasmtime4j.panama.util;
 
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.MemoryLayouts;
 import ai.tegmentum.wasmtime4j.panama.PanamaFunctionReference;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
