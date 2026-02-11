@@ -7,11 +7,11 @@
 
     <parent>
         <groupId>ai.tegmentum</groupId>
-        <artifactId>wasmtime4j-parent</artifactId>
+        <artifactId>wasmtime4j-tests</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>wasmtime4j-stress-tests</artifactId>
+    <artifactId>wasmtime4j-tests-stress</artifactId>
     <packaging>jar</packaging>
 
     <name>Wasmtime4j Stress Tests</name>

@@ -121,10 +121,8 @@
         <module>wasmtime4j-tests</module>
         <module>wasmtime4j-wasmtime-tests</module>
         <module>wasmtime4j-benchmarks</module>
-        <module>wasmtime4j-fuzz</module>
         <module>wasmtime4j-bindgen</module>
         <module>wasmtime4j-coverage-report</module>
-        <module>wasmtime4j-stress-tests</module>
     </modules>
 
     <dependencyManagement>
