@@ -4,16 +4,6 @@ import ai.tegmentum.wasmtime4j.Component;
 import ai.tegmentum.wasmtime4j.ComponentEngine;
 import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.ComponentEngineDebugInfo;
-import ai.tegmentum.wasmtime4j.ComponentEngineHealth;
-import ai.tegmentum.wasmtime4j.ComponentEngineHealthCheckConfig;
-import ai.tegmentum.wasmtime4j.ComponentEngineHealthCheckResult;
-import ai.tegmentum.wasmtime4j.ComponentEngineOptimizationConfig;
-import ai.tegmentum.wasmtime4j.ComponentEngineOptimizationResult;
-import ai.tegmentum.wasmtime4j.ComponentEngineResourceLimits;
-import ai.tegmentum.wasmtime4j.ComponentEngineResourceUsage;
-import ai.tegmentum.wasmtime4j.ComponentEngineStatistics;
-import ai.tegmentum.wasmtime4j.ComponentGarbageCollectionConfig;
-import ai.tegmentum.wasmtime4j.ComponentGarbageCollectionResult;
 import ai.tegmentum.wasmtime4j.ComponentInstance;
 import ai.tegmentum.wasmtime4j.ComponentLoadConfig;
 import ai.tegmentum.wasmtime4j.ComponentMetadata;
@@ -642,40 +632,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     return Optional.of(10); // Configurable limit
   }
 
-  // Resource Management
-
-  /**
-   * Retrieves current resource usage information for the component engine.
-   *
-   * @return resource usage statistics including active instances count
-   */
-  public ComponentEngineResourceUsage getResourceUsage() {
-    ensureNotClosed();
-
-    try {
-      final int activeInstances = nativeEngine.getActiveInstancesCount();
-      return new ComponentEngineResourceUsage(activeInstances, 0, 0, 0);
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to get resource usage: " + e.getMessage());
-      return new ComponentEngineResourceUsage(0, 0, 0, 0);
-    }
-  }
-
-  /**
-   * Sets global resource limits for the component engine.
-   *
-   * @param limits the resource limits to apply
-   * @throws WasmException if the limits cannot be set
-   */
-  public void setGlobalResourceLimits(final ComponentEngineResourceLimits limits)
-      throws WasmException {
-    JniValidation.requireNonNull(limits, "limits");
-    ensureNotClosed();
-
-    // Store limits for future use
-    LOGGER.fine("Global resource limits set for engine: " + engineId);
-  }
-
   /**
    * Returns the number of active component instances managed by this engine.
    *
@@ -708,87 +664,13 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  /**
-   * Performs garbage collection on component instances based on the provided configuration.
-   *
-   * @param gcConfig the garbage collection configuration
-   * @return a future containing the garbage collection results
-   * @throws WasmException if garbage collection cannot be initiated
-   */
-  public CompletableFuture<ComponentGarbageCollectionResult> performGarbageCollection(
-      final ComponentGarbageCollectionConfig gcConfig) throws WasmException {
-    JniValidation.requireNonNull(gcConfig, "gcConfig");
-    ensureNotClosed();
-
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            final int cleanedUp = cleanupInactiveInstances();
-            return new JniComponentGarbageCollectionResult(cleanedUp, 0, 0);
-          } catch (final Exception e) {
-            throw new RuntimeException("Garbage collection failed", e);
-          }
-        });
-  }
-
-  /**
-   * Optimizes engine performance based on the provided configuration.
-   *
-   * @param optimizationConfig the optimization configuration
-   * @return a future containing the optimization results
-   * @throws WasmException if optimization cannot be initiated
-   */
-  public CompletableFuture<ComponentEngineOptimizationResult> optimizePerformance(
-      final ComponentEngineOptimizationConfig optimizationConfig) throws WasmException {
-    JniValidation.requireNonNull(optimizationConfig, "optimizationConfig");
-    ensureNotClosed();
-
-    return CompletableFuture.completedFuture(
-        new JniComponentEngineOptimizationResult(true, "No optimizations performed"));
-  }
-
-  // Health and Diagnostics
-
-  /**
-   * Retrieves the current health status of the component engine.
-   *
-   * @return the health status information
-   */
-  public ComponentEngineHealth getHealth() {
-    final boolean isHealthy = !isClosed() && nativeEngine.isValid();
-    return new JniComponentEngineHealth(
-        isHealthy, "Engine status: " + (isHealthy ? "healthy" : "unhealthy"));
-  }
-
-  /**
-   * Performs a comprehensive health check on the component engine.
-   *
-   * @param healthCheckConfig the health check configuration
-   * @return the health check results
-   * @throws WasmException if the health check cannot be performed
-   */
-  public ComponentEngineHealthCheckResult performHealthCheck(
-      final ComponentEngineHealthCheckConfig healthCheckConfig) throws WasmException {
-    JniValidation.requireNonNull(healthCheckConfig, "healthCheckConfig");
-    ensureNotClosed();
-
-    final boolean healthy = isValid();
-    return new JniComponentEngineHealthCheckResult(
-        healthy, healthy ? "All checks passed" : "Engine is not valid");
-  }
-
-  public ComponentEngineStatistics getStatistics() {
-    final int activeInstances = getActiveInstancesCount();
-    return new JniComponentEngineStatistics(activeInstances, 0, 0, 0);
-  }
-
   @Override
   public boolean isValid() {
     return !isClosed() && nativeEngine.isValid();
   }
 
   public ComponentEngineDebugInfo getDebugInfo() {
-    return new JniComponentEngineDebugInfo(engineId, config, getResourceUsage());
+    return new JniComponentEngineDebugInfo(engineId, config);
   }
 
   @Override
@@ -835,179 +717,11 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   private native int nativeDetectPrecompiled(long engineHandle, byte[] bytes);
 
-  // Implementation classes for result interfaces
-
-  private static final class JniComponentGarbageCollectionResult
-      implements ComponentGarbageCollectionResult {
-    private final long objectsCollected;
-    private final long memoryReclaimed;
-    private final long duration;
-
-    JniComponentGarbageCollectionResult(
-        final long objectsCollected, final long memoryReclaimed, final long duration) {
-      this.objectsCollected = objectsCollected;
-      this.memoryReclaimed = memoryReclaimed;
-      this.duration = duration;
-    }
-
-    @Override
-    public String getStatus() {
-      return objectsCollected > 0 ? "SUCCESS" : "PARTIAL";
-    }
-
-    @Override
-    public long getMemoryReclaimed() {
-      return memoryReclaimed;
-    }
-
-    @Override
-    public long getDuration() {
-      return duration;
-    }
-
-    @Override
-    public long getObjectsCollected() {
-      return objectsCollected;
-    }
-  }
-
-  private static final class JniComponentEngineOptimizationResult
-      implements ComponentEngineOptimizationResult {
-    private final String status;
-    private final String message;
-
-    JniComponentEngineOptimizationResult(final boolean success, final String message) {
-      this.status = success ? "SUCCESS" : "FAILED";
-      this.message = message;
-    }
-
-    @Override
-    public String getStatus() {
-      return status;
-    }
-
-    @Override
-    public String getMessage() {
-      return message;
-    }
-
-    @Override
-    public String getMetrics() {
-      return "";
-    }
-
-    @Override
-    public long getDuration() {
-      return 0;
-    }
-  }
-
-  private static final class JniComponentEngineHealth implements ComponentEngineHealth {
-    private final boolean healthy;
-    private final String status;
-    private final long timestamp;
-
-    JniComponentEngineHealth(final boolean healthy, final String status) {
-      this.healthy = healthy;
-      this.status = status;
-      this.timestamp = System.currentTimeMillis();
-    }
-
-    @Override
-    public String getHealthStatus() {
-      return status;
-    }
-
-    @Override
-    public boolean isHealthy() {
-      return healthy;
-    }
-
-    @Override
-    public long getLastHealthCheckTime() {
-      return timestamp;
-    }
-  }
-
-  private static final class JniComponentEngineHealthCheckResult
-      implements ComponentEngineHealthCheckResult {
-    private final String status;
-    private final String message;
-    private final long timestamp;
-
-    JniComponentEngineHealthCheckResult(final boolean healthy, final String message) {
-      this.status = healthy ? "HEALTHY" : "UNHEALTHY";
-      this.message = message;
-      this.timestamp = System.currentTimeMillis();
-    }
-
-    @Override
-    public String getStatus() {
-      return status;
-    }
-
-    @Override
-    public String getMessage() {
-      return message;
-    }
-
-    @Override
-    public long getTimestamp() {
-      return timestamp;
-    }
-
-    @Override
-    public long getDuration() {
-      return 0;
-    }
-  }
-
-  private static final class JniComponentEngineStatistics implements ComponentEngineStatistics {
-    private final long componentCount;
-    private final long instanceCount;
-    private final long memoryUsage;
-    private final long uptime;
-
-    JniComponentEngineStatistics(
-        final long componentCount,
-        final long instanceCount,
-        final long memoryUsage,
-        final long uptime) {
-      this.componentCount = componentCount;
-      this.instanceCount = instanceCount;
-      this.memoryUsage = memoryUsage;
-      this.uptime = uptime;
-    }
-
-    @Override
-    public long getComponentCount() {
-      return componentCount;
-    }
-
-    @Override
-    public long getInstanceCount() {
-      return instanceCount;
-    }
-
-    @Override
-    public long getMemoryUsage() {
-      return memoryUsage;
-    }
-
-    @Override
-    public long getUptime() {
-      return uptime;
-    }
-  }
-
   private static final class JniComponentEngineDebugInfo implements ComponentEngineDebugInfo {
     private final String debugLevel;
     private final boolean debugEnabled;
 
-    JniComponentEngineDebugInfo(
-        final String engineId,
-        final ComponentEngineConfig config,
-        final ComponentEngineResourceUsage resourceUsage) {
+    JniComponentEngineDebugInfo(final String engineId, final ComponentEngineConfig config) {
       this.debugLevel = "INFO";
       this.debugEnabled = false;
     }
