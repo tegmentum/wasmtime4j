@@ -226,13 +226,8 @@ public final class JniFunction extends JniResource
     JniValidation.requireNonNull(params, "parameters");
     ensureNotClosed();
 
-    // Start performance monitoring
-    final long startTime =
-        ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor.startOperation(
-            "function_call", name);
-
     try {
-      // Increment call count for performance monitoring
+      // Increment call count
       final long currentCall = callCount.incrementAndGet();
 
       // Hot path optimization for frequently called functions
@@ -260,15 +255,8 @@ public final class JniFunction extends JniResource
         return cached.result.clone();
       }
 
-      // Use optimized parameter marshalling
-      Object[] nativeParams;
-      try {
-        nativeParams =
-            ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.marshalParameters(params);
-      } catch (final Exception e) {
-        // Fallback to traditional marshalling
-        nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
-      }
+      // Marshal parameters
+      final Object[] nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
 
       // Call native function with store context
       final Object[] nativeResults =
@@ -278,17 +266,9 @@ public final class JniFunction extends JniResource
       }
 
       // Convert native results back to WasmValue array
-      WasmValue[] results;
-      try {
-        results =
-            ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.unmarshalResults(
-                nativeResults, functionType.getReturnTypes());
-      } catch (final Exception e) {
-        // Fallback to traditional unmarshalling
-        results =
-            JniTypeConverter.nativeResultsToWasmValues(
-                nativeResults, functionType.getReturnTypes());
-      }
+      final WasmValue[] results =
+          JniTypeConverter.nativeResultsToWasmValues(
+              nativeResults, functionType.getReturnTypes());
 
       // Cache result for frequently called functions
       if (shouldCacheResult(currentCall)) {
@@ -302,9 +282,6 @@ public final class JniFunction extends JniResource
       throw new WasmException("Native function call failed for '" + name + "'", e);
     } catch (final Exception e) {
       throw new WasmException("Unexpected error calling function '" + name + "'", e);
-    } finally {
-      ai.tegmentum.wasmtime4j.jni.performance.PerformanceMonitor.endOperation(
-          "function_call", startTime);
     }
   }
 
@@ -634,7 +611,7 @@ public final class JniFunction extends JniResource
       throws WasmException {
     try {
       // Use fast marshalling for known parameter types
-      Object[] nativeParams;
+      final Object[] nativeParams;
       if (params.length <= 4) {
         // For small parameter sets, use direct conversion
         nativeParams = new Object[params.length];
@@ -642,9 +619,8 @@ public final class JniFunction extends JniResource
           nativeParams[i] = convertValueDirect(params[i]);
         }
       } else {
-        // Use optimized marshalling for larger sets
-        nativeParams =
-            ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.marshalParameters(params);
+        // Use standard marshalling for larger sets
+        nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
       }
 
       // Direct native call without additional overhead
@@ -654,8 +630,8 @@ public final class JniFunction extends JniResource
         throw new WasmException("Native function call returned null for '" + name + "'");
       }
 
-      // Fast result conversion
-      return ai.tegmentum.wasmtime4j.jni.performance.OptimizedMarshalling.unmarshalResults(
+      // Convert results
+      return JniTypeConverter.nativeResultsToWasmValues(
           nativeResults, functionType.getReturnTypes());
 
     } catch (final Exception e) {

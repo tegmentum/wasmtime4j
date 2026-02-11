@@ -21,13 +21,6 @@
     </Or>
   </Match>
 
-  <!-- Suppress singleton getter not synchronized warning in PanamaOptimizationEngine -->
-  <!-- Double-checked locking with explicit Lock is safe and performant -->
-  <Match>
-    <Bug pattern="SING_SINGLETON_GETTER_NOT_SYNCHRONIZED"/>
-    <Class name="ai.tegmentum.wasmtime4j.panama.performance.PanamaOptimizationEngine"/>
-  </Match>
-
   <!-- Suppress overridable method call in PanamaResource constructor -->
   <!-- getClass() is final and cannot be overridden, this is a false positive -->
   <Match>

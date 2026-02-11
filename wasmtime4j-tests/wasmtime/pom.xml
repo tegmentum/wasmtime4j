@@ -7,11 +7,11 @@
 
     <parent>
         <groupId>ai.tegmentum</groupId>
-        <artifactId>wasmtime4j-parent</artifactId>
+        <artifactId>wasmtime4j-tests</artifactId>
         <version>${revision}</version>
     </parent>
 
-    <artifactId>wasmtime4j-wasmtime-tests</artifactId>
+    <artifactId>wasmtime4j-tests-wasmtime</artifactId>
     <packaging>jar</packaging>
 
     <name>Wasmtime4j Wasmtime Behavior Tests</name>
@@ -31,7 +31,7 @@
         </dependency>
         <dependency>
             <groupId>ai.tegmentum</groupId>
-            <artifactId>wasmtime4j-tests</artifactId>
+            <artifactId>wasmtime4j-tests-integration</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>

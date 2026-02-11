@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
-import ai.tegmentum.wasmtime4j.panama.performance.PanamaPerformanceMonitor;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -96,8 +95,6 @@ public final class PanamaBatchProcessor {
     this.ownsArena = false;
     this.executor = ForkJoinPool.commonPool();
 
-    PanamaPerformanceMonitor.recordArenaAllocation(arena, 1024); // Estimated usage
-
     LOGGER.fine("Created Panama batch processor with provided arena");
   }
 
@@ -110,8 +107,6 @@ public final class PanamaBatchProcessor {
     this.batchArena = Arena.ofShared(); // Shared arena for batch operations
     this.ownsArena = true;
     this.executor = ForkJoinPool.commonPool();
-
-    PanamaPerformanceMonitor.recordArenaAllocation(batchArena, arenaSize);
 
     LOGGER.fine("Created Panama batch processor with shared arena of size " + arenaSize);
   }
@@ -147,46 +142,39 @@ public final class PanamaBatchProcessor {
           "Batch size too large: " + batchSize + " > " + MAX_BATCH_SIZE);
     }
 
-    final long startTime = PanamaPerformanceMonitor.startOperation("panama_batch_process");
     final long batchStartTime = System.nanoTime();
 
-    try {
-      final List<T> inputList = new ArrayList<>(inputs);
-      final List<R> results = new ArrayList<>(inputList.size());
+    final List<T> inputList = new ArrayList<>(inputs);
+    final List<R> results = new ArrayList<>(inputList.size());
 
-      LOGGER.fine(
-          () ->
-              String.format(
-                  "Processing Panama batch: %d inputs, batch_size=%d",
-                  inputList.size(), batchSize));
+    LOGGER.fine(
+        () ->
+            String.format(
+                "Processing Panama batch: %d inputs, batch_size=%d", inputList.size(), batchSize));
 
-      // Process in batches
-      for (int start = 0; start < inputList.size(); start += batchSize) {
-        final int end = Math.min(start + batchSize, inputList.size());
-        final List<T> batch = inputList.subList(start, end);
+    // Process in batches
+    for (int start = 0; start < inputList.size(); start += batchSize) {
+      final int end = Math.min(start + batchSize, inputList.size());
+      final List<T> batch = inputList.subList(start, end);
 
-        // Process batch using Panama optimizations
-        final List<R> batchResults = processBatchChunk(batch, operation);
-        results.addAll(batchResults);
+      // Process batch using Panama optimizations
+      final List<R> batchResults = processBatchChunk(batch, operation);
+      results.addAll(batchResults);
 
-        totalBatches.incrementAndGet();
-        totalOperations.addAndGet(batch.size());
-      }
-
-      final long batchDuration = System.nanoTime() - batchStartTime;
-      totalBatchTimeNs.addAndGet(batchDuration);
-
-      LOGGER.fine(
-          () ->
-              String.format(
-                  "Completed Panama batch processing: %d operations in %.2fms",
-                  results.size(), batchDuration / 1_000_000.0));
-
-      return results;
-
-    } finally {
-      PanamaPerformanceMonitor.endOperation("panama_batch_process", startTime);
+      totalBatches.incrementAndGet();
+      totalOperations.addAndGet(batch.size());
     }
+
+    final long batchDuration = System.nanoTime() - batchStartTime;
+    totalBatchTimeNs.addAndGet(batchDuration);
+
+    LOGGER.fine(
+        () ->
+            String.format(
+                "Completed Panama batch processing: %d operations in %.2fms",
+                results.size(), batchDuration / 1_000_000.0));
+
+    return results;
   }
 
   /**
@@ -249,10 +237,7 @@ public final class PanamaBatchProcessor {
       return new MemorySegment[0];
     }
 
-    final long startTime = PanamaPerformanceMonitor.startOperation("panama_native_batch_process");
     try (Arena tempArena = Arena.ofConfined()) {
-      PanamaPerformanceMonitor.recordArenaAllocation(tempArena, (long) parameters.length * 64);
-
       LOGGER.fine(
           () -> String.format("Processing Panama native batch: %d parameters", parameters.length));
 
@@ -273,16 +258,11 @@ public final class PanamaBatchProcessor {
           final MemorySegment result = tempArena.allocate(64); // Assume 64-byte result
           // MethodHandle call would go here: nativeFunction.invoke(parameters[i], result);
           results[i] = result;
-
-          PanamaPerformanceMonitor.recordMethodHandleCall("batch_native_operation");
         } catch (Throwable e) {
           LOGGER.warning("Failed to process batch item " + i + ": " + e.getMessage());
           results[i] = null;
         }
       }
-
-      // Track zero-copy operations for the batch
-      PanamaPerformanceMonitor.recordZeroCopyOperation();
 
       totalBatches.incrementAndGet();
       totalOperations.addAndGet(parameters.length);
@@ -291,9 +271,6 @@ public final class PanamaBatchProcessor {
           () -> String.format("Completed Panama native batch: %d operations", parameters.length));
 
       return results;
-
-    } finally {
-      PanamaPerformanceMonitor.endOperation("panama_native_batch_process", startTime);
     }
   }
 

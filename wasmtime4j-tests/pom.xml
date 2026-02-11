@@ -21,5 +21,6 @@
         <module>integration</module>
         <module>fuzz</module>
         <module>stress</module>
+        <module>wasmtime</module>
     </modules>
 </project>

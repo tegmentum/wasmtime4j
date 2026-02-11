@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
-import ai.tegmentum.wasmtime4j.panama.performance.PanamaPerformanceMonitor;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.concurrent.CompletableFuture;
@@ -181,37 +180,31 @@ public final class PanamaConcurrencyManager {
   public <T> T execute(final java.util.concurrent.Callable<T> operation) throws Exception {
     PanamaValidation.requireNonNull(operation, "operation");
 
-    final long startTime = PanamaPerformanceMonitor.startOperation("panama_concurrent_execute");
     final long waitStartTime = System.nanoTime();
 
+    // Acquire concurrency permit
+    concurrencySemaphore.acquire();
+    final long waitTime = System.nanoTime() - waitStartTime;
+    totalWaitTimeNs.addAndGet(waitTime);
+
     try {
-      // Acquire concurrency permit
-      concurrencySemaphore.acquire();
-      final long waitTime = System.nanoTime() - waitStartTime;
-      totalWaitTimeNs.addAndGet(waitTime);
+      totalOperations.incrementAndGet();
+      final long currentConcurrent = concurrentOperations.incrementAndGet();
 
-      try {
-        totalOperations.incrementAndGet();
-        final long currentConcurrent = concurrentOperations.incrementAndGet();
+      // Track max concurrency reached
+      maxConcurrencyReached.updateAndGet(current -> Math.max(current, currentConcurrent));
 
-        // Track max concurrency reached
-        maxConcurrencyReached.updateAndGet(current -> Math.max(current, currentConcurrent));
+      LOGGER.fine(
+          () ->
+              String.format(
+                  "Executing Panama concurrent operation (active: %d)", currentConcurrent));
 
-        LOGGER.fine(
-            () ->
-                String.format(
-                    "Executing Panama concurrent operation (active: %d)", currentConcurrent));
-
-        // Execute the operation
-        return operation.call();
-
-      } finally {
-        concurrentOperations.decrementAndGet();
-      }
+      // Execute the operation
+      return operation.call();
 
     } finally {
+      concurrentOperations.decrementAndGet();
       concurrencySemaphore.release();
-      PanamaPerformanceMonitor.endOperation("panama_concurrent_execute", startTime);
     }
   }
 
@@ -251,28 +244,21 @@ public final class PanamaConcurrencyManager {
 
     final ReadWriteLock lock =
         resourceLocks.computeIfAbsent(resourceId, k -> new ReentrantReadWriteLock(true));
-    final long startTime =
-        PanamaPerformanceMonitor.startOperation("panama_concurrent_execute_with_lock");
     final long lockStartTime = System.nanoTime();
 
+    lock.writeLock().lock();
+    final long lockWaitTime = System.nanoTime() - lockStartTime;
+    totalWaitTimeNs.addAndGet(lockWaitTime);
+
+    if (lockWaitTime > 1_000_000) { // More than 1ms wait indicates contention
+      lockContentions.incrementAndGet();
+    }
+
     try {
-      lock.writeLock().lock();
-      final long lockWaitTime = System.nanoTime() - lockStartTime;
-      totalWaitTimeNs.addAndGet(lockWaitTime);
-
-      if (lockWaitTime > 1_000_000) { // More than 1ms wait indicates contention
-        lockContentions.incrementAndGet();
-      }
-
-      try {
-        LOGGER.fine(() -> String.format("Acquired lock for resource: %s", resourceId));
-        return execute(operation);
-      } finally {
-        lock.writeLock().unlock();
-      }
-
+      LOGGER.fine(() -> String.format("Acquired lock for resource: %s", resourceId));
+      return execute(operation);
     } finally {
-      PanamaPerformanceMonitor.endOperation("panama_concurrent_execute_with_lock", startTime);
+      lock.writeLock().unlock();
     }
   }
 
@@ -291,20 +277,13 @@ public final class PanamaConcurrencyManager {
 
     final ReadWriteLock lock =
         resourceLocks.computeIfAbsent(resourceId, k -> new ReentrantReadWriteLock(true));
-    final long startTime =
-        PanamaPerformanceMonitor.startOperation("panama_concurrent_execute_with_read_lock");
 
+    lock.readLock().lock();
     try {
-      lock.readLock().lock();
-      try {
-        LOGGER.fine(() -> String.format("Acquired read lock for resource: %s", resourceId));
-        return execute(operation);
-      } finally {
-        lock.readLock().unlock();
-      }
-
+      LOGGER.fine(() -> String.format("Acquired read lock for resource: %s", resourceId));
+      return execute(operation);
     } finally {
-      PanamaPerformanceMonitor.endOperation("panama_concurrent_execute_with_read_lock", startTime);
+      lock.readLock().unlock();
     }
   }
 
@@ -325,8 +304,6 @@ public final class PanamaConcurrencyManager {
       throw new IllegalStateException("Arena is already closed");
     }
 
-    final long startTime =
-        PanamaPerformanceMonitor.startOperation("panama_concurrent_execute_with_arena");
     final ArenaInfo arenaInfo = arenaInfoMap.computeIfAbsent(arena, ArenaInfo::new);
 
     try {
@@ -339,13 +316,10 @@ public final class PanamaConcurrencyManager {
                   "Executing operation with arena (active ops: %d)",
                   arenaInfo.activeOperations.get()));
 
-      PanamaPerformanceMonitor.recordArenaAllocation(arena, 0); // Track usage
-
       return execute(operation);
 
     } finally {
       arenaInfo.decrementOperations();
-      PanamaPerformanceMonitor.endOperation("panama_concurrent_execute_with_arena", startTime);
     }
   }
 
@@ -366,12 +340,7 @@ public final class PanamaConcurrencyManager {
     // Use segment identity as lock key
     final String segmentId = "segment_" + System.identityHashCode(segment);
 
-    return executeWithLock(
-        segmentId,
-        () -> {
-          PanamaPerformanceMonitor.recordMemorySegmentAllocation(null, segment);
-          return operation.call();
-        });
+    return executeWithLock(segmentId, operation);
   }
 
   /**
