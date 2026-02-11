@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentFunc;
-import ai.tegmentum.wasmtime4j.ComponentTypedFunc;
+import ai.tegmentum.wasmtime4j.component.ComponentFunc;
+import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -615,24 +615,24 @@ class PanamaComponentTypedFuncTest {
     }
 
     @Override
-    public java.util.List<ai.tegmentum.wasmtime4j.ComponentTypeDescriptor> getParameterTypes() {
+    public java.util.List<ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor> getParameterTypes() {
       return java.util.Collections.emptyList();
     }
 
     @Override
-    public java.util.List<ai.tegmentum.wasmtime4j.ComponentTypeDescriptor> getResultTypes() {
+    public java.util.List<ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor> getResultTypes() {
       return java.util.Collections.emptyList();
     }
 
     @Override
-    public java.util.List<ai.tegmentum.wasmtime4j.ComponentVal> call(
-        final ai.tegmentum.wasmtime4j.ComponentVal... args) {
+    public java.util.List<ai.tegmentum.wasmtime4j.component.ComponentVal> call(
+        final ai.tegmentum.wasmtime4j.component.ComponentVal... args) {
       return java.util.Collections.emptyList();
     }
 
     @Override
-    public java.util.List<ai.tegmentum.wasmtime4j.ComponentVal> call(
-        final java.util.List<ai.tegmentum.wasmtime4j.ComponentVal> args) {
+    public java.util.List<ai.tegmentum.wasmtime4j.component.ComponentVal> call(
+        final java.util.List<ai.tegmentum.wasmtime4j.component.ComponentVal> args) {
       return java.util.Collections.emptyList();
     }
 

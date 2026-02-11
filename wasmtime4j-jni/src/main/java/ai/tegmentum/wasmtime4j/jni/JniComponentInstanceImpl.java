@@ -1,11 +1,11 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.Component;
-import ai.tegmentum.wasmtime4j.ComponentFunction;
-import ai.tegmentum.wasmtime4j.ComponentInstance;
-import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
+import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentFunction;
+import ai.tegmentum.wasmtime4j.component.ComponentInstance;
+import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;

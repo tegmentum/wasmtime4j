@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.HashMap;
 import java.util.List;

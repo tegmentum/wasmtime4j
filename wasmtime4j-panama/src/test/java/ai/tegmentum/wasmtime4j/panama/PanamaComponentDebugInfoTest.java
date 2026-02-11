@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentDebugInfo;
+import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
 import ai.tegmentum.wasmtime4j.ExecutionState;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;

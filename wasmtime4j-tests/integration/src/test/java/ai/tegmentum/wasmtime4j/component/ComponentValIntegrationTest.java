@@ -22,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentResult;
-import ai.tegmentum.wasmtime4j.ComponentVal;
-import ai.tegmentum.wasmtime4j.ComponentVariant;
+import ai.tegmentum.wasmtime4j.component.ComponentResult;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ComponentVariant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;

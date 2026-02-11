@@ -22,21 +22,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.ComponentDependencyGraph;
-import ai.tegmentum.wasmtime4j.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.ComponentImportValidation;
-import ai.tegmentum.wasmtime4j.ComponentInstance;
-import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.ComponentVal;
-import ai.tegmentum.wasmtime4j.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.ComponentVersion;
+import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
+import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
+import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
+import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
+import ai.tegmentum.wasmtime4j.component.ComponentInstance;
+import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
+import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
+import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
+import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -470,7 +470,7 @@ class JniComponentLinkerTest {
   }
 
   /** Mock Component for testing parameter validation. */
-  private static class MockComponent implements ai.tegmentum.wasmtime4j.Component {
+  private static class MockComponent implements ai.tegmentum.wasmtime4j.component.Component {
 
     @Override
     public String getId() {
@@ -528,14 +528,14 @@ class JniComponentLinkerTest {
     }
 
     @Override
-    public Set<ai.tegmentum.wasmtime4j.Component> resolveDependencies(
+    public Set<ai.tegmentum.wasmtime4j.component.Component> resolveDependencies(
         final ComponentRegistry registry) {
       return Collections.emptySet();
     }
 
     @Override
     public ComponentCompatibility checkCompatibility(
-        final ai.tegmentum.wasmtime4j.Component other) {
+        final ai.tegmentum.wasmtime4j.component.Component other) {
       return null;
     }
 
@@ -546,7 +546,7 @@ class JniComponentLinkerTest {
 
     @Override
     public WitCompatibilityResult checkWitCompatibility(
-        final ai.tegmentum.wasmtime4j.Component other) {
+        final ai.tegmentum.wasmtime4j.component.Component other) {
       return null;
     }
 

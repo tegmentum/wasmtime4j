@@ -537,18 +537,18 @@ class JniWasmRuntimeTest {
       Method method = clazz.getMethod("createComponentEngine");
 
       assertThat(method.getReturnType().getName())
-          .isEqualTo("ai.tegmentum.wasmtime4j.ComponentEngine");
+          .isEqualTo("ai.tegmentum.wasmtime4j.component.ComponentEngine");
     }
 
     @Test
     @DisplayName("should have createComponentEngine method with config")
     void shouldHaveCreateComponentEngineWithConfigMethod() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
-      Class<?> configClass = Class.forName("ai.tegmentum.wasmtime4j.ComponentEngineConfig");
+      Class<?> configClass = Class.forName("ai.tegmentum.wasmtime4j.component.ComponentEngineConfig");
       Method method = clazz.getMethod("createComponentEngine", configClass);
 
       assertThat(method.getReturnType().getName())
-          .isEqualTo("ai.tegmentum.wasmtime4j.ComponentEngine");
+          .isEqualTo("ai.tegmentum.wasmtime4j.component.ComponentEngine");
     }
 
     @Test
@@ -559,7 +559,7 @@ class JniWasmRuntimeTest {
       Method method = clazz.getMethod("createComponentLinker", engineClass);
 
       assertThat(method.getReturnType().getName())
-          .isEqualTo("ai.tegmentum.wasmtime4j.ComponentLinker");
+          .isEqualTo("ai.tegmentum.wasmtime4j.component.ComponentLinker");
     }
 
     @Test

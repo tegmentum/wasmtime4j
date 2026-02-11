@@ -16,12 +16,12 @@
 
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.Component;
-import ai.tegmentum.wasmtime4j.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.ComponentRegistryStatistics;
-import ai.tegmentum.wasmtime4j.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.ComponentVersion;
+import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
+import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
+import ai.tegmentum.wasmtime4j.component.ComponentSearchCriteria;
+import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
+import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -323,7 +323,7 @@ public final class JniComponentRegistry implements ComponentRegistry {
 
       // Check for version compatibility
       for (final Component dependency : dependencies) {
-        final ai.tegmentum.wasmtime4j.ComponentCompatibility compatibility =
+        final ai.tegmentum.wasmtime4j.component.ComponentCompatibility compatibility =
             component.checkCompatibility(dependency);
         if (!compatibility.isCompatible()) {
           warnings.add(

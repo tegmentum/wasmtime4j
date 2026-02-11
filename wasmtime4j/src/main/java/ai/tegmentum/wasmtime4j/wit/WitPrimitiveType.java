@@ -15,7 +15,7 @@
  */
 
 package ai.tegmentum.wasmtime4j.wit;
-import ai.tegmentum.wasmtime4j.Component;
+import ai.tegmentum.wasmtime4j.component.Component;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;

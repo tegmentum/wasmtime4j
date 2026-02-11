@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentResourceHandle;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
 import ai.tegmentum.wasmtime4j.wit.WitResourceManager;
 import ai.tegmentum.wasmtime4j.exception.ResourceException;
 import java.util.ArrayList;

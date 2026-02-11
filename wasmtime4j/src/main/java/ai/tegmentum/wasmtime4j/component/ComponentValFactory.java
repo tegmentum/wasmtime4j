@@ -1,0 +1,562 @@
+/*
+ * Copyright 2024 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ai.tegmentum.wasmtime4j.component;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.Set;
+
+/**
+ * Factory for creating Component Model values.
+ *
+ * <p>This factory is used by the {@link ComponentVal} static factory methods. The actual
+ * implementation is provided by the runtime (JNI or Panama) via service provider interface.
+ *
+ * @since 1.0.0
+ */
+public abstract class ComponentValFactory {
+
+  /** The singleton instance of the factory. */
+  public static final ComponentValFactory INSTANCE = loadFactory();
+
+  private static ComponentValFactory loadFactory() {
+    // Try to load from ServiceLoader first
+    final ServiceLoader<ComponentValFactory> loader = ServiceLoader.load(ComponentValFactory.class);
+
+    final Iterator<ComponentValFactory> iterator = loader.iterator();
+    if (iterator.hasNext()) {
+      return iterator.next();
+    }
+
+    // Fall back to default implementation
+    return new DefaultImpl();
+  }
+
+  /** Creates a boolean component value. */
+  public abstract ComponentVal createBool(boolean value);
+
+  /** Creates a signed 8-bit integer component value. */
+  public abstract ComponentVal createS8(byte value);
+
+  /** Creates a signed 16-bit integer component value. */
+  public abstract ComponentVal createS16(short value);
+
+  /** Creates a signed 32-bit integer component value. */
+  public abstract ComponentVal createS32(int value);
+
+  /** Creates a signed 64-bit integer component value. */
+  public abstract ComponentVal createS64(long value);
+
+  /** Creates an unsigned 8-bit integer component value. */
+  public abstract ComponentVal createU8(short value);
+
+  /** Creates an unsigned 16-bit integer component value. */
+  public abstract ComponentVal createU16(int value);
+
+  /** Creates an unsigned 32-bit integer component value. */
+  public abstract ComponentVal createU32(long value);
+
+  /** Creates an unsigned 64-bit integer component value. */
+  public abstract ComponentVal createU64(long value);
+
+  /** Creates a 32-bit float component value. */
+  public abstract ComponentVal createF32(float value);
+
+  /** Creates a 64-bit float component value. */
+  public abstract ComponentVal createF64(double value);
+
+  /** Creates a Unicode character component value. */
+  public abstract ComponentVal createChar(char value);
+
+  /** Creates a string component value. */
+  public abstract ComponentVal createString(String value);
+
+  /** Creates a list component value. */
+  public abstract ComponentVal createList(List<ComponentVal> elements);
+
+  /** Creates a record component value. */
+  public abstract ComponentVal createRecord(Map<String, ComponentVal> fields);
+
+  /** Creates a tuple component value. */
+  public abstract ComponentVal createTuple(List<ComponentVal> elements);
+
+  /** Creates a variant component value. */
+  public abstract ComponentVal createVariant(String caseName, ComponentVal payload);
+
+  /** Creates an enum component value. */
+  public abstract ComponentVal createEnum(String caseName);
+
+  /** Creates a some (present) option component value. */
+  public abstract ComponentVal createSome(ComponentVal value);
+
+  /** Creates a none (absent) option component value. */
+  public abstract ComponentVal createNone();
+
+  /** Creates an ok result component value. */
+  public abstract ComponentVal createOk(ComponentVal value);
+
+  /** Creates an err result component value. */
+  public abstract ComponentVal createErr(ComponentVal error);
+
+  /** Creates a flags component value. */
+  public abstract ComponentVal createFlags(Set<String> enabledFlags);
+
+  /** Default implementation of ComponentValFactory using simple Java objects. */
+  static final class DefaultImpl extends ComponentValFactory {
+
+    @Override
+    public ComponentVal createBool(final boolean value) {
+      return new SimpleVal(ComponentType.BOOL, value);
+    }
+
+    @Override
+    public ComponentVal createS8(final byte value) {
+      return new SimpleVal(ComponentType.S8, value);
+    }
+
+    @Override
+    public ComponentVal createS16(final short value) {
+      return new SimpleVal(ComponentType.S16, value);
+    }
+
+    @Override
+    public ComponentVal createS32(final int value) {
+      return new SimpleVal(ComponentType.S32, value);
+    }
+
+    @Override
+    public ComponentVal createS64(final long value) {
+      return new SimpleVal(ComponentType.S64, value);
+    }
+
+    @Override
+    public ComponentVal createU8(final short value) {
+      if (value < 0 || value > 255) {
+        throw new IllegalArgumentException("u8 value out of range: " + value);
+      }
+      return new SimpleVal(ComponentType.U8, value);
+    }
+
+    @Override
+    public ComponentVal createU16(final int value) {
+      if (value < 0 || value > 65535) {
+        throw new IllegalArgumentException("u16 value out of range: " + value);
+      }
+      return new SimpleVal(ComponentType.U16, value);
+    }
+
+    @Override
+    public ComponentVal createU32(final long value) {
+      if (value < 0 || value > 4294967295L) {
+        throw new IllegalArgumentException("u32 value out of range: " + value);
+      }
+      return new SimpleVal(ComponentType.U32, value);
+    }
+
+    @Override
+    public ComponentVal createU64(final long value) {
+      return new SimpleVal(ComponentType.U64, value);
+    }
+
+    @Override
+    public ComponentVal createF32(final float value) {
+      return new SimpleVal(ComponentType.F32, value);
+    }
+
+    @Override
+    public ComponentVal createF64(final double value) {
+      return new SimpleVal(ComponentType.F64, value);
+    }
+
+    @Override
+    public ComponentVal createChar(final char value) {
+      return new SimpleVal(ComponentType.CHAR, value);
+    }
+
+    @Override
+    public ComponentVal createString(final String value) {
+      if (value == null) {
+        throw new IllegalArgumentException("String value cannot be null");
+      }
+      return new SimpleVal(ComponentType.STRING, value);
+    }
+
+    @Override
+    public ComponentVal createList(final List<ComponentVal> elements) {
+      if (elements == null) {
+        throw new IllegalArgumentException("List elements cannot be null");
+      }
+      return new SimpleVal(ComponentType.LIST, List.copyOf(elements));
+    }
+
+    @Override
+    public ComponentVal createRecord(final Map<String, ComponentVal> fields) {
+      if (fields == null) {
+        throw new IllegalArgumentException("Record fields cannot be null");
+      }
+      return new SimpleVal(ComponentType.RECORD, Map.copyOf(fields));
+    }
+
+    @Override
+    public ComponentVal createTuple(final List<ComponentVal> elements) {
+      if (elements == null) {
+        throw new IllegalArgumentException("Tuple elements cannot be null");
+      }
+      return new SimpleVal(ComponentType.TUPLE, List.copyOf(elements));
+    }
+
+    @Override
+    public ComponentVal createVariant(final String caseName, final ComponentVal payload) {
+      if (caseName == null) {
+        throw new IllegalArgumentException("Variant case name cannot be null");
+      }
+      return new SimpleVal(ComponentType.VARIANT, ComponentVariant.of(caseName, payload));
+    }
+
+    @Override
+    public ComponentVal createEnum(final String caseName) {
+      if (caseName == null) {
+        throw new IllegalArgumentException("Enum case name cannot be null");
+      }
+      return new SimpleVal(ComponentType.ENUM, caseName);
+    }
+
+    @Override
+    public ComponentVal createSome(final ComponentVal value) {
+      if (value == null) {
+        throw new IllegalArgumentException("Option some value cannot be null");
+      }
+      return new SimpleVal(ComponentType.OPTION, Optional.of(value));
+    }
+
+    @Override
+    public ComponentVal createNone() {
+      return new SimpleVal(ComponentType.OPTION, Optional.empty());
+    }
+
+    @Override
+    public ComponentVal createOk(final ComponentVal value) {
+      return new SimpleVal(ComponentType.RESULT, ComponentResult.ok(value));
+    }
+
+    @Override
+    public ComponentVal createErr(final ComponentVal error) {
+      return new SimpleVal(ComponentType.RESULT, ComponentResult.err(error));
+    }
+
+    @Override
+    public ComponentVal createFlags(final Set<String> enabledFlags) {
+      if (enabledFlags == null) {
+        throw new IllegalArgumentException("Flags cannot be null");
+      }
+      return new SimpleVal(ComponentType.FLAGS, Set.copyOf(enabledFlags));
+    }
+  }
+
+  /** Simple implementation of ComponentVal for the default factory. */
+  @SuppressWarnings("unchecked")
+  static final class SimpleVal implements ComponentVal {
+    private final ComponentType type;
+    private final Object value;
+
+    SimpleVal(final ComponentType type, final Object value) {
+      this.type = type;
+      this.value = value;
+    }
+
+    @Override
+    public ComponentType getType() {
+      return type;
+    }
+
+    @Override
+    public boolean isBool() {
+      return type == ComponentType.BOOL;
+    }
+
+    @Override
+    public boolean isS8() {
+      return type == ComponentType.S8;
+    }
+
+    @Override
+    public boolean isS16() {
+      return type == ComponentType.S16;
+    }
+
+    @Override
+    public boolean isS32() {
+      return type == ComponentType.S32;
+    }
+
+    @Override
+    public boolean isS64() {
+      return type == ComponentType.S64;
+    }
+
+    @Override
+    public boolean isU8() {
+      return type == ComponentType.U8;
+    }
+
+    @Override
+    public boolean isU16() {
+      return type == ComponentType.U16;
+    }
+
+    @Override
+    public boolean isU32() {
+      return type == ComponentType.U32;
+    }
+
+    @Override
+    public boolean isU64() {
+      return type == ComponentType.U64;
+    }
+
+    @Override
+    public boolean isF32() {
+      return type == ComponentType.F32;
+    }
+
+    @Override
+    public boolean isF64() {
+      return type == ComponentType.F64;
+    }
+
+    @Override
+    public boolean isChar() {
+      return type == ComponentType.CHAR;
+    }
+
+    @Override
+    public boolean isString() {
+      return type == ComponentType.STRING;
+    }
+
+    @Override
+    public boolean isList() {
+      return type == ComponentType.LIST;
+    }
+
+    @Override
+    public boolean isRecord() {
+      return type == ComponentType.RECORD;
+    }
+
+    @Override
+    public boolean isTuple() {
+      return type == ComponentType.TUPLE;
+    }
+
+    @Override
+    public boolean isVariant() {
+      return type == ComponentType.VARIANT;
+    }
+
+    @Override
+    public boolean isEnum() {
+      return type == ComponentType.ENUM;
+    }
+
+    @Override
+    public boolean isOption() {
+      return type == ComponentType.OPTION;
+    }
+
+    @Override
+    public boolean isResult() {
+      return type == ComponentType.RESULT;
+    }
+
+    @Override
+    public boolean isFlags() {
+      return type == ComponentType.FLAGS;
+    }
+
+    @Override
+    public boolean isResource() {
+      return type == ComponentType.OWN || type == ComponentType.BORROW;
+    }
+
+    @Override
+    public boolean asBool() {
+      checkType(ComponentType.BOOL);
+      return (Boolean) value;
+    }
+
+    @Override
+    public byte asS8() {
+      checkType(ComponentType.S8);
+      return (Byte) value;
+    }
+
+    @Override
+    public short asS16() {
+      checkType(ComponentType.S16);
+      return (Short) value;
+    }
+
+    @Override
+    public int asS32() {
+      checkType(ComponentType.S32);
+      return (Integer) value;
+    }
+
+    @Override
+    public long asS64() {
+      checkType(ComponentType.S64);
+      return (Long) value;
+    }
+
+    @Override
+    public short asU8() {
+      checkType(ComponentType.U8);
+      return (Short) value;
+    }
+
+    @Override
+    public int asU16() {
+      checkType(ComponentType.U16);
+      return (Integer) value;
+    }
+
+    @Override
+    public long asU32() {
+      checkType(ComponentType.U32);
+      return (Long) value;
+    }
+
+    @Override
+    public long asU64() {
+      checkType(ComponentType.U64);
+      return (Long) value;
+    }
+
+    @Override
+    public float asF32() {
+      checkType(ComponentType.F32);
+      return (Float) value;
+    }
+
+    @Override
+    public double asF64() {
+      checkType(ComponentType.F64);
+      return (Double) value;
+    }
+
+    @Override
+    public char asChar() {
+      checkType(ComponentType.CHAR);
+      return (Character) value;
+    }
+
+    @Override
+    public String asString() {
+      checkType(ComponentType.STRING);
+      return (String) value;
+    }
+
+    @Override
+    public List<ComponentVal> asList() {
+      checkType(ComponentType.LIST);
+      return (List<ComponentVal>) value;
+    }
+
+    @Override
+    public Map<String, ComponentVal> asRecord() {
+      checkType(ComponentType.RECORD);
+      return (Map<String, ComponentVal>) value;
+    }
+
+    @Override
+    public List<ComponentVal> asTuple() {
+      checkType(ComponentType.TUPLE);
+      return (List<ComponentVal>) value;
+    }
+
+    @Override
+    public ComponentVariant asVariant() {
+      checkType(ComponentType.VARIANT);
+      return (ComponentVariant) value;
+    }
+
+    @Override
+    public String asEnum() {
+      checkType(ComponentType.ENUM);
+      return (String) value;
+    }
+
+    @Override
+    public Optional<ComponentVal> asSome() {
+      checkType(ComponentType.OPTION);
+      return (Optional<ComponentVal>) value;
+    }
+
+    @Override
+    public ComponentResult asResult() {
+      checkType(ComponentType.RESULT);
+      return (ComponentResult) value;
+    }
+
+    @Override
+    public Set<String> asFlags() {
+      checkType(ComponentType.FLAGS);
+      return (Set<String>) value;
+    }
+
+    @Override
+    public ComponentResourceHandle asResource() {
+      if (type != ComponentType.OWN && type != ComponentType.BORROW) {
+        throw new IllegalStateException("Not a resource type: " + type);
+      }
+      return (ComponentResourceHandle) value;
+    }
+
+    private void checkType(final ComponentType expected) {
+      if (type != expected) {
+        throw new IllegalStateException("Expected " + expected + " but was " + type);
+      }
+    }
+
+    @Override
+    public String toString() {
+      return type.name().toLowerCase(Locale.ROOT) + "(" + value + ")";
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof SimpleVal)) {
+        return false;
+      }
+      final SimpleVal other = (SimpleVal) obj;
+      return type == other.type && java.util.Objects.equals(value, other.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return java.util.Objects.hash(type, value);
+    }
+  }
+}

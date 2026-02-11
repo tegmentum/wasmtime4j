@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.ComponentDebugInfo;
+import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
 import ai.tegmentum.wasmtime4j.ExecutionState;
 import java.util.Collections;
 import java.util.List;

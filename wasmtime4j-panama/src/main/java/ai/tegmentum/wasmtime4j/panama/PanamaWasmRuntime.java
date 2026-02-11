@@ -16,8 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.ComponentEngine;
-import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentEngine;
+import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.FunctionType;
@@ -289,7 +289,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
-  public <T> ai.tegmentum.wasmtime4j.ComponentLinker<T> createComponentLinker(final Engine engine)
+  public <T> ai.tegmentum.wasmtime4j.component.ComponentLinker<T> createComponentLinker(final Engine engine)
       throws WasmException {
     PanamaValidation.requireNonNull(engine, "engine");
     ensureNotClosed();

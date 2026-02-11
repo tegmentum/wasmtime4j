@@ -1,11 +1,11 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Component;
-import ai.tegmentum.wasmtime4j.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.ComponentRegistryStatistics;
-import ai.tegmentum.wasmtime4j.ComponentSearchCriteria;
-import ai.tegmentum.wasmtime4j.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.ComponentVersion;
+import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
+import ai.tegmentum.wasmtime4j.component.ComponentRegistryStatistics;
+import ai.tegmentum.wasmtime4j.component.ComponentSearchCriteria;
+import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
+import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaExceptionMapper;
 import java.util.ArrayList;
@@ -562,7 +562,7 @@ public final class PanamaComponentRegistry implements ComponentRegistry {
     return false; // Placeholder
   }
 
-  private ai.tegmentum.wasmtime4j.ComponentCompatibility checkCompatibilityNative(
+  private ai.tegmentum.wasmtime4j.component.ComponentCompatibility checkCompatibilityNative(
       final Component source, final Component target) throws Exception {
     // Panama FFI call to native compatibility checking
     return source.checkCompatibility(target); // Placeholder

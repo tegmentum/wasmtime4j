@@ -20,11 +20,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.Component;
-import ai.tegmentum.wasmtime4j.ComponentInstance;
-import ai.tegmentum.wasmtime4j.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.ComponentResourceUsage;
+import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentInstance;
+import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.ComponentResourceHandle;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
 import java.util.Objects;
 
 /**

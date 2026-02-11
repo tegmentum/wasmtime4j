@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ComponentEngine;
-import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentEngine;
+import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -638,7 +638,7 @@ class PanamaWasmRuntimeTest {
       final Engine engine = runtime.createEngine();
       resources.add(engine);
 
-      final ai.tegmentum.wasmtime4j.ComponentLinker<?> componentLinker =
+      final ai.tegmentum.wasmtime4j.component.ComponentLinker<?> componentLinker =
           runtime.createComponentLinker(engine);
       resources.add(componentLinker);
       assertNotNull(componentLinker, "Component linker should not be null");

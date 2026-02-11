@@ -790,13 +790,13 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.ComponentEngine createComponentEngine() throws WasmException {
-    return createComponentEngine(new ai.tegmentum.wasmtime4j.ComponentEngineConfig());
+  public ai.tegmentum.wasmtime4j.component.ComponentEngine createComponentEngine() throws WasmException {
+    return createComponentEngine(new ai.tegmentum.wasmtime4j.component.ComponentEngineConfig());
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.ComponentEngine createComponentEngine(
-      final ai.tegmentum.wasmtime4j.ComponentEngineConfig config) throws WasmException {
+  public ai.tegmentum.wasmtime4j.component.ComponentEngine createComponentEngine(
+      final ai.tegmentum.wasmtime4j.component.ComponentEngineConfig config) throws WasmException {
     if (config == null) {
       throw new IllegalArgumentException("Component engine config cannot be null");
     }
@@ -1006,7 +1006,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public <T> ai.tegmentum.wasmtime4j.ComponentLinker<T> createComponentLinker(final Engine engine)
+  public <T> ai.tegmentum.wasmtime4j.component.ComponentLinker<T> createComponentLinker(final Engine engine)
       throws WasmException {
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");

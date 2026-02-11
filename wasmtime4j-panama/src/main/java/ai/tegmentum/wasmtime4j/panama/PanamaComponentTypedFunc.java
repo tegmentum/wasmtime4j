@@ -16,9 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.ComponentFunc;
-import ai.tegmentum.wasmtime4j.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ComponentFunc;
+import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.List;
 import java.util.logging.Level;

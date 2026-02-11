@@ -16,9 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.ComponentFunc;
-import ai.tegmentum.wasmtime4j.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ComponentFunc;
+import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import java.util.List;

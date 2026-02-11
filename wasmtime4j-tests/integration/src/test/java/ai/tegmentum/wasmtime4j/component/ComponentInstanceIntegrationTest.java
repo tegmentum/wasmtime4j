@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.Component;
-import ai.tegmentum.wasmtime4j.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.ComponentInstance;
+import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
 import java.io.ByteArrayOutputStream;
@@ -315,7 +315,7 @@ public final class ComponentInstanceIntegrationTest {
       final ComponentInstance instance = component.instantiate();
       resources.add(instance);
 
-      final ai.tegmentum.wasmtime4j.ComponentInstanceState state = instance.getState();
+      final ai.tegmentum.wasmtime4j.component.ComponentInstanceState state = instance.getState();
       assertNotNull(state, "Instance state should not be null");
 
       LOGGER.info("Instance state: " + state);

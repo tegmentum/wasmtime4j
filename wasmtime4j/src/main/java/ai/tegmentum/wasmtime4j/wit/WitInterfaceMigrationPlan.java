@@ -1,5 +1,5 @@
 package ai.tegmentum.wasmtime4j.wit;
-import ai.tegmentum.wasmtime4j.Component;
+import ai.tegmentum.wasmtime4j.component.Component;
 
 /**
  * WIT interface migration plan interface for WebAssembly components.
