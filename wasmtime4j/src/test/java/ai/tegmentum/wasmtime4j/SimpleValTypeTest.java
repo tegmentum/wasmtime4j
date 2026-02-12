@@ -66,15 +66,11 @@ class SimpleValTypeTest {
     }
 
     @Test
-    @DisplayName("should be package-private")
-    void shouldBePackagePrivate() {
+    @DisplayName("should be public")
+    void shouldBePublic() {
       Class<?> clazz = getSimpleValTypeClass();
       int modifiers = clazz.getModifiers();
-      assertTrue(
-          !Modifier.isPublic(modifiers)
-              && !Modifier.isProtected(modifiers)
-              && !Modifier.isPrivate(modifiers),
-          "SimpleValType should be package-private");
+      assertTrue(Modifier.isPublic(modifiers), "SimpleValType should be public");
     }
 
     @Test

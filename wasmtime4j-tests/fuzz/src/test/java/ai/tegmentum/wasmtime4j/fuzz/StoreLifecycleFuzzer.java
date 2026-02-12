@@ -17,11 +17,11 @@
 package ai.tegmentum.wasmtime4j.fuzz;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
@@ -160,7 +160,7 @@ public class StoreLifecycleFuzzer {
             // Expected: double close
           }
         }
-        default -> { }
+        default -> {}
       }
     } catch (WasmException e) {
       // Expected

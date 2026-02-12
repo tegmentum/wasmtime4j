@@ -614,13 +614,13 @@ class ComponentLinkerInterfaceTest {
   class IntegrationTests {
 
     @Test
-    @DisplayName("ComponentLinker should be in ai.tegmentum.wasmtime4j package")
+    @DisplayName("ComponentLinker should be in ai.tegmentum.wasmtime4j.component package")
     void shouldBeInCorrectPackage() {
       String packageName = ComponentLinker.class.getPackage().getName();
       assertEquals(
-          "ai.tegmentum.wasmtime4j",
+          "ai.tegmentum.wasmtime4j.component",
           packageName,
-          "ComponentLinker should be in ai.tegmentum.wasmtime4j package");
+          "ComponentLinker should be in ai.tegmentum.wasmtime4j.component package");
     }
 
     @Test

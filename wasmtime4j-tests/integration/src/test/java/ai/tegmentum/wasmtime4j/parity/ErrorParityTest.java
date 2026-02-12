@@ -39,7 +39,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Cross-runtime parity tests for error conditions. Verifies that JNI and Panama produce identical
  * exception types for the same error scenarios (invalid WAT, missing imports, type mismatches,
- * out-of-bounds memory access, stack overflow, unreachable, division by zero, invalid module bytes).
+ * out-of-bounds memory access, stack overflow, unreachable, division by zero, invalid module
+ * bytes).
  *
  * @since 1.0.0
  */
@@ -141,21 +142,25 @@ class ErrorParityTest {
 
       final String invalidWat = "(module (func (export \"bad\") (result i32) i32.add))";
 
-      final ExceptionInfo jniError = captureException(() -> {
-        try {
-          jniRuntime.compileModuleWat(jniEngine, invalidWat);
-        } catch (final Exception e) {
-          throw new RuntimeException(e);
-        }
-      });
+      final ExceptionInfo jniError =
+          captureException(
+              () -> {
+                try {
+                  jniRuntime.compileModuleWat(jniEngine, invalidWat);
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
-      final ExceptionInfo panamaError = captureException(() -> {
-        try {
-          panamaRuntime.compileModuleWat(panamaEngine, invalidWat);
-        } catch (final Exception e) {
-          throw new RuntimeException(e);
-        }
-      });
+      final ExceptionInfo panamaError =
+          captureException(
+              () -> {
+                try {
+                  panamaRuntime.compileModuleWat(panamaEngine, invalidWat);
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
       LOGGER.info("JNI error: " + jniError);
       LOGGER.info("Panama error: " + panamaError);
@@ -175,21 +180,25 @@ class ErrorParityTest {
       final byte[] invalidBytes =
           new byte[] {0x00, 0x61, 0x73, 0x6D, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
 
-      final ExceptionInfo jniError = captureException(() -> {
-        try {
-          jniRuntime.compileModule(jniEngine, invalidBytes);
-        } catch (final Exception e) {
-          throw new RuntimeException(e);
-        }
-      });
+      final ExceptionInfo jniError =
+          captureException(
+              () -> {
+                try {
+                  jniRuntime.compileModule(jniEngine, invalidBytes);
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
-      final ExceptionInfo panamaError = captureException(() -> {
-        try {
-          panamaRuntime.compileModule(panamaEngine, invalidBytes);
-        } catch (final Exception e) {
-          throw new RuntimeException(e);
-        }
-      });
+      final ExceptionInfo panamaError =
+          captureException(
+              () -> {
+                try {
+                  panamaRuntime.compileModule(panamaEngine, invalidBytes);
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
       LOGGER.info("JNI error: " + jniError);
       LOGGER.info("Panama error: " + panamaError);
@@ -225,21 +234,25 @@ class ErrorParityTest {
       final Store jniStore = jniRuntime.createStore(jniEngine);
       final Store panamaStore = panamaRuntime.createStore(panamaEngine);
 
-      final ExceptionInfo jniError = captureException(() -> {
-        try {
-          jniModule.instantiate(jniStore);
-        } catch (final Exception e) {
-          throw new RuntimeException(e);
-        }
-      });
+      final ExceptionInfo jniError =
+          captureException(
+              () -> {
+                try {
+                  jniModule.instantiate(jniStore);
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
-      final ExceptionInfo panamaError = captureException(() -> {
-        try {
-          panamaModule.instantiate(panamaStore);
-        } catch (final Exception e) {
-          throw new RuntimeException(e);
-        }
-      });
+      final ExceptionInfo panamaError =
+          captureException(
+              () -> {
+                try {
+                  panamaModule.instantiate(panamaStore);
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
       LOGGER.info("JNI error: " + jniError);
       LOGGER.info("Panama error: " + panamaError);
@@ -272,10 +285,9 @@ class ErrorParityTest {
             (func (export "trap") unreachable))
           """;
 
-      final ExceptionInfo jniError = executeAndCaptureException(
-          jniRuntime, jniEngine, wat, "trap");
-      final ExceptionInfo panamaError = executeAndCaptureException(
-          panamaRuntime, panamaEngine, wat, "trap");
+      final ExceptionInfo jniError = executeAndCaptureException(jniRuntime, jniEngine, wat, "trap");
+      final ExceptionInfo panamaError =
+          executeAndCaptureException(panamaRuntime, panamaEngine, wat, "trap");
 
       LOGGER.info("JNI error: " + jniError);
       LOGGER.info("Panama error: " + panamaError);
@@ -301,10 +313,9 @@ class ErrorParityTest {
               i32.load))
           """;
 
-      final ExceptionInfo jniError = executeAndCaptureException(
-          jniRuntime, jniEngine, wat, "oob");
-      final ExceptionInfo panamaError = executeAndCaptureException(
-          panamaRuntime, panamaEngine, wat, "oob");
+      final ExceptionInfo jniError = executeAndCaptureException(jniRuntime, jniEngine, wat, "oob");
+      final ExceptionInfo panamaError =
+          executeAndCaptureException(panamaRuntime, panamaEngine, wat, "oob");
 
       LOGGER.info("JNI error: " + jniError);
       LOGGER.info("Panama error: " + panamaError);
@@ -328,10 +339,10 @@ class ErrorParityTest {
               call $recurse))
           """;
 
-      final ExceptionInfo jniError = executeAndCaptureException(
-          jniRuntime, jniEngine, wat, "recurse");
-      final ExceptionInfo panamaError = executeAndCaptureException(
-          panamaRuntime, panamaEngine, wat, "recurse");
+      final ExceptionInfo jniError =
+          executeAndCaptureException(jniRuntime, jniEngine, wat, "recurse");
+      final ExceptionInfo panamaError =
+          executeAndCaptureException(panamaRuntime, panamaEngine, wat, "recurse");
 
       LOGGER.info("JNI error: " + jniError);
       LOGGER.info("Panama error: " + panamaError);
@@ -357,10 +368,10 @@ class ErrorParityTest {
               i32.div_s))
           """;
 
-      final ExceptionInfo jniError = executeAndCaptureException(
-          jniRuntime, jniEngine, wat, "div_zero");
-      final ExceptionInfo panamaError = executeAndCaptureException(
-          panamaRuntime, panamaEngine, wat, "div_zero");
+      final ExceptionInfo jniError =
+          executeAndCaptureException(jniRuntime, jniEngine, wat, "div_zero");
+      final ExceptionInfo panamaError =
+          executeAndCaptureException(panamaRuntime, panamaEngine, wat, "div_zero");
 
       LOGGER.info("JNI error: " + jniError);
       LOGGER.info("Panama error: " + panamaError);
@@ -382,18 +393,19 @@ class ErrorParityTest {
       final String wat,
       final String functionName,
       final WasmValue... args) {
-    return captureException(() -> {
-      try {
-        final Module module = runtime.compileModuleWat(engine, wat);
-        final Store store = runtime.createStore(engine);
-        final Instance instance = module.instantiate(store);
-        instance.callFunction(functionName, args);
-        instance.close();
-        store.close();
-        module.close();
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    return captureException(
+        () -> {
+          try {
+            final Module module = runtime.compileModuleWat(engine, wat);
+            final Store store = runtime.createStore(engine);
+            final Instance instance = module.instantiate(store);
+            instance.callFunction(functionName, args);
+            instance.close();
+            store.close();
+            module.close();
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 }

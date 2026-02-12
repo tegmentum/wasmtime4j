@@ -45,15 +45,15 @@ public class GlobalFuzzer {
   /** A module with mutable and immutable globals of various types. */
   private static final String GLOBALS_MODULE_WAT =
       """
-        (module
-            (global $g_i32_mut (export "g_i32_mut") (mut i32) (i32.const 0))
-            (global $g_i64_mut (export "g_i64_mut") (mut i64) (i64.const 0))
-            (global $g_f32_mut (export "g_f32_mut") (mut f32) (f32.const 0.0))
-            (global $g_f64_mut (export "g_f64_mut") (mut f64) (f64.const 0.0))
-            (global $g_i32_const (export "g_i32_const") i32 (i32.const 42))
-            (global $g_i64_const (export "g_i64_const") i64 (i64.const 100))
-        )
-        """;
+      (module
+          (global $g_i32_mut (export "g_i32_mut") (mut i32) (i32.const 0))
+          (global $g_i64_mut (export "g_i64_mut") (mut i64) (i64.const 0))
+          (global $g_f32_mut (export "g_f32_mut") (mut f32) (f32.const 0.0))
+          (global $g_f64_mut (export "g_f64_mut") (mut f64) (f64.const 0.0))
+          (global $g_i32_const (export "g_i32_const") i32 (i32.const 42))
+          (global $g_i64_const (export "g_i64_const") i64 (i64.const 100))
+      )
+      """;
 
   /** List of mutable global names. */
   private static final String[] MUTABLE_GLOBALS = {

@@ -26,10 +26,10 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -40,20 +40,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests {@link Instance#getTag(String)}, {@link WasmFunction#callAsync(WasmValue...)},
- * and {@link WasmFunction#matchesType(WasmValueType[], WasmValueType[])}.
+ * Tests {@link Instance#getTag(String)}, {@link WasmFunction#callAsync(WasmValue...)}, and {@link
+ * WasmFunction#matchesType(WasmValueType[], WasmValueType[])}.
  *
  * @since 1.0.0
  */
 @DisplayName("Instance Tag and Async Tests")
 public class InstanceTagAndAsyncTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(InstanceTagAndAsyncTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(InstanceTagAndAsyncTest.class.getName());
 
-  /**
-   * Simple WAT module with an add function for async and type matching tests.
-   */
+  /** Simple WAT module with an add function for async and type matching tests. */
   private static final String WAT =
       """
       (module
@@ -80,8 +77,7 @@ public class InstanceTagAndAsyncTest extends DualRuntimeTest {
       try {
         final Optional<Tag> tagOpt = instance.getTag("x");
 
-        assertFalse(tagOpt.isPresent(),
-            "getTag('x') should return empty on module without tags");
+        assertFalse(tagOpt.isPresent(), "getTag('x') should return empty on module without tags");
         LOGGER.info("[" + runtime + "] getTag('x') present: " + tagOpt.isPresent());
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] getTag not supported: " + e.getMessage());
@@ -119,15 +115,23 @@ public class InstanceTagAndAsyncTest extends DualRuntimeTest {
           assertNotNull(tagOpt.get(), "Tag should not be null");
           LOGGER.info("[" + runtime + "] getTag('my_tag') found tag");
         } else {
-          LOGGER.info("[" + runtime + "] getTag('my_tag') returned empty "
-              + "(tag may not be recognized as an export)");
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] getTag('my_tag') returned empty "
+                  + "(tag may not be recognized as an export)");
         }
 
         instance.close();
         module.close();
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] Exception handling WAT not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Exception handling WAT not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -178,22 +182,34 @@ public class InstanceTagAndAsyncTest extends DualRuntimeTest {
 
       try {
         // add expects (i32, i32), passing (i64) should fail
-        final CompletableFuture<WasmValue[]> future =
-            addFunc.callAsync(WasmValue.i64(999));
+        final CompletableFuture<WasmValue[]> future = addFunc.callAsync(WasmValue.i64(999));
         // If the future completes, check if it threw an exception
         try {
           future.get();
-          LOGGER.info("[" + runtime + "] callAsync with wrong params did not throw "
-              + "(runtime may be lenient)");
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] callAsync with wrong params did not throw "
+                  + "(runtime may be lenient)");
         } catch (final Exception e) {
-          LOGGER.info("[" + runtime + "] callAsync with wrong params threw on get: "
-              + e.getClass().getName() + " - " + e.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] callAsync with wrong params threw on get: "
+                  + e.getClass().getName()
+                  + " - "
+                  + e.getMessage());
         }
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] callAsync not supported: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] callAsync with wrong params threw immediately: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callAsync with wrong params threw immediately: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -215,12 +231,12 @@ public class InstanceTagAndAsyncTest extends DualRuntimeTest {
       final WasmFunction addFunc = instance.getFunction("add").get();
 
       try {
-        final boolean matches = addFunc.matchesType(
-            new WasmValueType[]{WasmValueType.I32, WasmValueType.I32},
-            new WasmValueType[]{WasmValueType.I32});
+        final boolean matches =
+            addFunc.matchesType(
+                new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+                new WasmValueType[] {WasmValueType.I32});
 
-        assertTrue(matches,
-            "add(i32, i32) -> i32 should match type {I32, I32} -> {I32}");
+        assertTrue(matches, "add(i32, i32) -> i32 should match type {I32, I32} -> {I32}");
         LOGGER.info("[" + runtime + "] matchesType(I32,I32 -> I32) = " + matches);
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] matchesType not supported: " + e.getMessage());

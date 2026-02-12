@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -32,7 +30,9 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -67,10 +67,10 @@ public class TryWithResourcesTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (func (export "add") (param i32 i32) (result i32)
-              local.get 0 local.get 1 i32.add))
-          """);
+              (module
+                (func (export "add") (param i32 i32) (result i32)
+                  local.get 0 local.get 1 i32.add))
+              """);
       LOGGER.info("[" + runtime + "] Module compiled");
 
       try (Store store = engine.createStore()) {
@@ -102,11 +102,11 @@ public class TryWithResourcesTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (import "env" "missing_func" (func (result i32)))
-            (func (export "call_it") (result i32)
-              call 0))
-          """);
+              (module
+                (import "env" "missing_func" (func (result i32)))
+                (func (export "call_it") (result i32)
+                  call 0))
+              """);
 
       try (Store store = engine.createStore()) {
         LOGGER.info("[" + runtime + "] Attempting to instantiate module with missing import");
@@ -135,10 +135,10 @@ public class TryWithResourcesTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (func (export "trap")
-              unreachable))
-          """);
+              (module
+                (func (export "trap")
+                  unreachable))
+              """);
 
       try (Store store = engine.createStore()) {
         final Instance instance = module.instantiate(store);
@@ -149,8 +149,12 @@ public class TryWithResourcesTest extends DualRuntimeTest {
           fail("Function should have trapped");
         } catch (final Exception e) {
           LOGGER.info(
-              "[" + runtime + "] Expected trap: " + e.getClass().getSimpleName()
-                  + " - " + e.getMessage());
+              "["
+                  + runtime
+                  + "] Expected trap: "
+                  + e.getClass().getSimpleName()
+                  + " - "
+                  + e.getMessage());
         }
 
         // Instance should still be closeable after trap
@@ -174,10 +178,10 @@ public class TryWithResourcesTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (func (export "get_val") (result i32)
-              i32.const 99))
-          """);
+              (module
+                (func (export "get_val") (result i32)
+                  i32.const 99))
+              """);
 
       try (Store store1 = engine.createStore();
           Store store2 = engine.createStore();
@@ -224,11 +228,11 @@ public class TryWithResourcesTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (import "env" "get_val" (func (result i32)))
-            (func (export "call_host") (result i32)
-              call 0))
-          """);
+              (module
+                (import "env" "get_val" (func (result i32)))
+                (func (export "call_host") (result i32)
+                  call 0))
+              """);
 
       try (Linker<Void> linker = Linker.create(engine)) {
         linker.defineHostFunction(
@@ -265,10 +269,10 @@ public class TryWithResourcesTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (func (export "check") (param i32) (result i32)
-              local.get 0))
-          """);
+              (module
+                (func (export "check") (param i32) (result i32)
+                  local.get 0))
+              """);
 
       try (Store store = engine.createStore()) {
         final Instance instance = module.instantiate(store);

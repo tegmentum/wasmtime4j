@@ -34,9 +34,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests {@link WasmTable} bulk operations via the Java API:
- * {@link WasmTable#fill(int, int, Object)}, {@link WasmTable#copy(int, int, int)},
- * {@link WasmTable#init(int, int, int, int)}, and
+ * Tests {@link WasmTable} bulk operations via the Java API: {@link WasmTable#fill(int, int,
+ * Object)}, {@link WasmTable#copy(int, int, int)}, {@link WasmTable#init(int, int, int, int)}, and
  * {@link WasmTable#dropElementSegment(int)}.
  *
  * @since 1.0.0
@@ -44,12 +43,11 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Table Bulk Operations Tests")
 public class TableBulkOperationsTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(TableBulkOperationsTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TableBulkOperationsTest.class.getName());
 
   /**
-   * WAT module with a funcref table (size 5), two functions returning 100/200,
-   * and a passive element segment. Exports setup, call_at, and the table itself.
+   * WAT module with a funcref table (size 5), two functions returning 100/200, and a passive
+   * element segment. Exports setup, call_at, and the table itself.
    */
   private static final String WAT =
       """
@@ -99,11 +97,21 @@ public class TableBulkOperationsTest extends DualRuntimeTest {
         }
         LOGGER.info("[" + runtime + "] Table fill with null completed for indices 0-2");
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] table.fill not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.fill not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] table.fill threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.fill threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -136,18 +144,31 @@ public class TableBulkOperationsTest extends DualRuntimeTest {
         final WasmValue[] r3 = instance.callFunction("call_at", WasmValue.i32(3));
         final WasmValue[] r4 = instance.callFunction("call_at", WasmValue.i32(4));
 
-        assertEquals(100, r3[0].asInt(),
-            "Table[3] should call f1 returning 100 after copy");
-        assertEquals(200, r4[0].asInt(),
-            "Table[4] should call f2 returning 200 after copy");
-        LOGGER.info("[" + runtime + "] Intra-table copy verified: tab[3]="
-            + r3[0].asInt() + ", tab[4]=" + r4[0].asInt());
+        assertEquals(100, r3[0].asInt(), "Table[3] should call f1 returning 100 after copy");
+        assertEquals(200, r4[0].asInt(), "Table[4] should call f2 returning 200 after copy");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Intra-table copy verified: tab[3]="
+                + r3[0].asInt()
+                + ", tab[4]="
+                + r4[0].asInt());
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] table.copy not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.copy not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] table.copy threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.copy threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -173,11 +194,21 @@ public class TableBulkOperationsTest extends DualRuntimeTest {
         table.copy(0, 0, 0);
         LOGGER.info("[" + runtime + "] Zero-count table copy succeeded as no-op");
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] table.copy not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.copy not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] table.copy(0,0,0) threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.copy(0,0,0) threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -206,18 +237,25 @@ public class TableBulkOperationsTest extends DualRuntimeTest {
         final WasmValue[] r0 = instance.callFunction("call_at", WasmValue.i32(0));
         final WasmValue[] r1 = instance.callFunction("call_at", WasmValue.i32(1));
 
-        assertEquals(100, r0[0].asInt(),
-            "Table[0] should call f1 returning 100 after init");
-        assertEquals(200, r1[0].asInt(),
-            "Table[1] should call f2 returning 200 after init");
-        LOGGER.info("[" + runtime + "] Table init verified: tab[0]="
-            + r0[0].asInt() + ", tab[1]=" + r1[0].asInt());
+        assertEquals(100, r0[0].asInt(), "Table[0] should call f1 returning 100 after init");
+        assertEquals(200, r1[0].asInt(), "Table[1] should call f2 returning 200 after init");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Table init verified: tab[0]="
+                + r0[0].asInt()
+                + ", tab[1]="
+                + r1[0].asInt());
       } catch (final UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] table.init via Java API not supported: "
-            + e.getMessage());
+        LOGGER.info("[" + runtime + "] table.init via Java API not supported: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] table.init threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.init threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -242,11 +280,16 @@ public class TableBulkOperationsTest extends DualRuntimeTest {
         table.dropElementSegment(0);
         LOGGER.info("[" + runtime + "] dropElementSegment(0) succeeded");
       } catch (final UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] dropElementSegment not supported via Java API: "
-            + e.getMessage());
+        LOGGER.info(
+            "[" + runtime + "] dropElementSegment not supported via Java API: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] dropElementSegment threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] dropElementSegment threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -268,7 +311,8 @@ public class TableBulkOperationsTest extends DualRuntimeTest {
       final WasmTable table = instance.getTable("tab").get();
 
       // Table has 5 entries; filling 100 entries from index 0 should fail
-      assertThrows(Exception.class,
+      assertThrows(
+          Exception.class,
           () -> table.fill(0, 100, null),
           "Filling beyond table size should throw");
       LOGGER.info("[" + runtime + "] Table fill out of bounds threw as expected");
@@ -296,11 +340,21 @@ public class TableBulkOperationsTest extends DualRuntimeTest {
         table.copy(0, 0, 100);
         LOGGER.info("[" + runtime + "] Table copy out of bounds did not throw");
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] table.copy not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.copy not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] Table copy out of bounds threw as expected: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Table copy out of bounds threw as expected: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -335,19 +389,29 @@ public class TableBulkOperationsTest extends DualRuntimeTest {
           // Verify each filled slot via call_indirect
           for (int i = 2; i < 5; i++) {
             final WasmValue[] result = instance.callFunction("call_at", WasmValue.i32(i));
-            assertEquals(100, result[0].asInt(),
-                "Table[" + i + "] should call f1 returning 100 after fill");
+            assertEquals(
+                100, result[0].asInt(), "Table[" + i + "] should call f1 returning 100 after fill");
           }
           LOGGER.info("[" + runtime + "] Table fill with funcRef verified for indices 2-4");
         } else {
           LOGGER.info("[" + runtime + "] table.get(0) returned null, skipping fill test");
         }
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] table.fill with funcRef not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table.fill with funcRef not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] table fill with funcRef threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] table fill with funcRef threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();

@@ -22,13 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExnRef;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.memory.Tag;
-import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.TagType;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,9 +36,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Store exception handling APIs: {@link Store#throwException(ExnRef)},
- * {@link Store#takePendingException()}, {@link Store#hasPendingException()}, and related types
- * {@link Tag}, {@link TagType}, {@link ExnRef}.
+ * Tests Store exception handling APIs: {@link Store#throwException(ExnRef)}, {@link
+ * Store#takePendingException()}, {@link Store#hasPendingException()}, and related types {@link
+ * Tag}, {@link TagType}, {@link ExnRef}.
  *
  * <p>Extends coverage beyond existing {@code ExceptionHandlingIntegrationTest} by testing the
  * Store-level exception management APIs directly.
@@ -50,8 +50,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Store Exception Handling Tests")
 public class StoreExceptionHandlingTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(StoreExceptionHandlingTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(StoreExceptionHandlingTest.class.getName());
 
   @AfterEach
   void cleanup() {
@@ -73,8 +72,13 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
         assertFalse(hasPending, "Fresh store should not have pending exception");
         LOGGER.info("[" + runtime + "] hasPendingException on fresh store: " + hasPending);
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] hasPendingException not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] hasPendingException not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -90,17 +94,22 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
         Store store = engine.createStore()) {
 
       try {
-        final FunctionType payloadType = FunctionType.of(
-            new WasmValueType[]{WasmValueType.I32}, new WasmValueType[]{});
+        final FunctionType payloadType =
+            FunctionType.of(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
         final TagType tagType = TagType.create(payloadType);
         final Tag tag = Tag.create(store, tagType);
 
         assertNotNull(tag, "Tag should not be null");
-        LOGGER.info("[" + runtime + "] Tag created with i32 payload, handle="
-            + tag.getNativeHandle());
+        LOGGER.info(
+            "[" + runtime + "] Tag created with i32 payload, handle=" + tag.getNativeHandle());
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] Tag creation not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Tag creation not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -116,8 +125,8 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
         Store store = engine.createStore()) {
 
       try {
-        final FunctionType originalType = FunctionType.of(
-            new WasmValueType[]{WasmValueType.I32}, new WasmValueType[]{});
+        final FunctionType originalType =
+            FunctionType.of(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
         final TagType tagType = TagType.create(originalType);
         final Tag tag = Tag.create(store, tagType);
 
@@ -126,12 +135,22 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
 
         final FunctionType retrievedFt = retrieved.getFunctionType();
         assertNotNull(retrievedFt, "Retrieved FunctionType should not be null");
-        LOGGER.info("[" + runtime + "] Tag.getType returned FunctionType with "
-            + retrievedFt.getParamCount() + " params, "
-            + retrievedFt.getReturnCount() + " returns");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Tag.getType returned FunctionType with "
+                + retrievedFt.getParamCount()
+                + " params, "
+                + retrievedFt.getReturnCount()
+                + " returns");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] Tag.getType not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Tag.getType not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -147,17 +166,23 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
         Store store = engine.createStore()) {
 
       try {
-        final FunctionType payloadType = FunctionType.of(
-            new WasmValueType[]{WasmValueType.I32, WasmValueType.I64, WasmValueType.F64},
-            new WasmValueType[]{});
+        final FunctionType payloadType =
+            FunctionType.of(
+                new WasmValueType[] {WasmValueType.I32, WasmValueType.I64, WasmValueType.F64},
+                new WasmValueType[] {});
         final TagType tagType = TagType.create(payloadType);
         final Tag tag = Tag.create(store, tagType);
 
         assertNotNull(tag, "Tag with multi-payload should not be null");
         LOGGER.info("[" + runtime + "] Tag created with (i32, i64, f64) payload");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] Tag creation not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Tag creation not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -173,16 +198,21 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
         Store store = engine.createStore()) {
 
       try {
-        final FunctionType emptyType = FunctionType.of(
-            new WasmValueType[]{}, new WasmValueType[]{});
+        final FunctionType emptyType =
+            FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {});
         final TagType tagType = TagType.create(emptyType);
         final Tag tag = Tag.create(store, tagType);
 
         assertNotNull(tag, "Tag with empty payload should not be null");
         LOGGER.info("[" + runtime + "] Tag created with empty payload");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] Tag creation not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Tag creation not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -198,8 +228,8 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
         Store store = engine.createStore()) {
 
       try {
-        final FunctionType payloadType = FunctionType.of(
-            new WasmValueType[]{WasmValueType.I32}, new WasmValueType[]{});
+        final FunctionType payloadType =
+            FunctionType.of(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
         final TagType tagType = TagType.create(payloadType);
         final Tag tag = Tag.create(store, tagType);
 
@@ -214,18 +244,28 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
           if (store.hasPendingException()) {
             final ExnRef pending = store.takePendingException();
             LOGGER.info("[" + runtime + "] takePendingException returned: " + pending);
-            assertFalse(store.hasPendingException(),
-                "After take, should not have pending exception");
+            assertFalse(
+                store.hasPendingException(), "After take, should not have pending exception");
           }
         } catch (final UnsupportedOperationException e) {
           LOGGER.info("[" + runtime + "] throwException not supported: " + e.getMessage());
         } catch (final UnsatisfiedLinkError | Exception e) {
-          LOGGER.info("[" + runtime + "] throwException threw: "
-              + e.getClass().getName() + " - " + e.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] throwException threw: "
+                  + e.getClass().getName()
+                  + " - "
+                  + e.getMessage());
         }
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] Exception handling not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Exception handling not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -245,8 +285,13 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
         assertNull(pending, "takePendingException on fresh store should return null");
         LOGGER.info("[" + runtime + "] takePendingException returned null as expected");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] takePendingException not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] takePendingException not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }

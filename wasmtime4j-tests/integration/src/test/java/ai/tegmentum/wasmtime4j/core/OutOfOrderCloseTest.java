@@ -131,9 +131,9 @@ public class OutOfOrderCloseTest extends DualRuntimeTest {
     final Module module =
         engine.compileWat(
             """
-        (module
-          (func (export "noop")))
-        """);
+            (module
+              (func (export "noop")))
+            """);
     final Store store = engine.createStore();
     final Linker<Void> linker = Linker.create(engine);
     final Instance instance = linker.instantiate(store, module);

@@ -5,11 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -30,9 +30,7 @@ public class AddressReuseStressTest {
   private static final Logger LOGGER = Logger.getLogger(AddressReuseStressTest.class.getName());
 
   private static final String SIMPLE_WAT =
-      "(module\n"
-          + "  (func (export \"get42\") (result i32) i32.const 42)\n"
-          + ")";
+      "(module\n" + "  (func (export \"get42\") (result i32) i32.const 42)\n" + ")";
 
   private static final String SHARED_MEMORY_WAT =
       "(module\n"
@@ -141,11 +139,9 @@ public class AddressReuseStressTest {
               Instance instance = module.instantiate(store)) {
             assertNotNull(instance, "Shared memory instance should work after address reuse");
             assertTrue(
-                instance.getFunction("load").isPresent(),
-                "load function should be accessible");
+                instance.getFunction("load").isPresent(), "load function should be accessible");
             assertTrue(
-                instance.getFunction("store").isPresent(),
-                "store function should be accessible");
+                instance.getFunction("store").isPresent(), "store function should be accessible");
           }
         },
         "Shared memory with atomics should work after address reuse cycles");
@@ -214,8 +210,7 @@ public class AddressReuseStressTest {
         Instance instance = module.instantiate(store)) {
       assertNotNull(instance, "Final instance should be valid");
       assertTrue(
-          instance.getFunction("get42").isPresent(),
-          "Final function export should be accessible");
+          instance.getFunction("get42").isPresent(), "Final function export should be accessible");
     }
 
     LOGGER.info("interleaveResourceTypes completed successfully");

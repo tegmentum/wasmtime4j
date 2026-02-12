@@ -17,9 +17,6 @@
 package ai.tegmentum.wasmtime4j.wasmtime.framework;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -27,7 +24,10 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

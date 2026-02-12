@@ -80,8 +80,8 @@ public class SerializationFuzzer {
         return;
       }
 
-      final byte[] corrupted = applyMutation(serialized, mutationType, mutationOffset, mutationByte,
-          data);
+      final byte[] corrupted =
+          applyMutation(serialized, mutationType, mutationOffset, mutationByte, data);
 
       try (Module deserialized = Module.deserialize(engine, corrupted)) {
         // If deserialization succeeds on corrupted data, that's fine too
@@ -207,8 +207,12 @@ public class SerializationFuzzer {
    * @param data fuzz data for additional bytes if needed
    * @return the mutated byte array
    */
-  private byte[] applyMutation(final byte[] original, final int mutationType, final int offset,
-      final byte mutationByte, final FuzzedDataProvider data) {
+  private byte[] applyMutation(
+      final byte[] original,
+      final int mutationType,
+      final int offset,
+      final byte mutationByte,
+      final FuzzedDataProvider data) {
     switch (mutationType) {
       case 0 -> {
         // Bit flip at offset

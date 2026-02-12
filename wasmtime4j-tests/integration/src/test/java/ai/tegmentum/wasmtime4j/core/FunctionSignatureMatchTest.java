@@ -27,15 +27,15 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("WasmFunction.matchesType() Tests")
 public class FunctionSignatureMatchTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(FunctionSignatureMatchTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(FunctionSignatureMatchTest.class.getName());
 
-  private static final String WAT = "(module\n"
-      + "  (func (export \"add\") (param i32 i32) (result i32)\n"
-      + "    local.get 0 local.get 1 i32.add)\n"
-      + "  (func (export \"nop\"))\n"
-      + "  (func (export \"id64\") (param i64) (result i64)\n"
-      + "    local.get 0))";
+  private static final String WAT =
+      "(module\n"
+          + "  (func (export \"add\") (param i32 i32) (result i32)\n"
+          + "    local.get 0 local.get 1 i32.add)\n"
+          + "  (func (export \"nop\"))\n"
+          + "  (func (export \"id64\") (param i64) (result i64)\n"
+          + "    local.get 0))";
 
   @AfterEach
   void cleanup() {
@@ -57,11 +57,11 @@ public class FunctionSignatureMatchTest extends DualRuntimeTest {
       final WasmFunction add = instance.getFunction("add").orElse(null);
       assertNotNull(add, "add export must exist");
 
-      final boolean matches = add.matchesType(
-          new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
-      assertTrue(matches,
-          "matchesType should return true for exact signature (i32,i32)->i32");
+      final boolean matches =
+          add.matchesType(
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+              new WasmValueType[] {WasmValueType.I32});
+      assertTrue(matches, "matchesType should return true for exact signature (i32,i32)->i32");
       LOGGER.info("[" + runtime + "] matchesType(i32,i32->i32)=" + matches);
     }
   }
@@ -81,11 +81,11 @@ public class FunctionSignatureMatchTest extends DualRuntimeTest {
       final WasmFunction add = instance.getFunction("add").orElse(null);
       assertNotNull(add, "add export must exist");
 
-      final boolean matches = add.matchesType(
-          new WasmValueType[] {WasmValueType.I64, WasmValueType.I64},
-          new WasmValueType[] {WasmValueType.I32});
-      assertFalse(matches,
-          "matchesType should return false for wrong param types (i64,i64)->i32");
+      final boolean matches =
+          add.matchesType(
+              new WasmValueType[] {WasmValueType.I64, WasmValueType.I64},
+              new WasmValueType[] {WasmValueType.I32});
+      assertFalse(matches, "matchesType should return false for wrong param types (i64,i64)->i32");
       LOGGER.info("[" + runtime + "] matchesType(i64,i64->i32)=" + matches);
     }
   }
@@ -105,11 +105,11 @@ public class FunctionSignatureMatchTest extends DualRuntimeTest {
       final WasmFunction add = instance.getFunction("add").orElse(null);
       assertNotNull(add, "add export must exist");
 
-      final boolean matches = add.matchesType(
-          new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I64});
-      assertFalse(matches,
-          "matchesType should return false for wrong result type (i32,i32)->i64");
+      final boolean matches =
+          add.matchesType(
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+              new WasmValueType[] {WasmValueType.I64});
+      assertFalse(matches, "matchesType should return false for wrong result type (i32,i32)->i64");
       LOGGER.info("[" + runtime + "] matchesType(i32,i32->i64)=" + matches);
     }
   }
@@ -129,11 +129,8 @@ public class FunctionSignatureMatchTest extends DualRuntimeTest {
       final WasmFunction nop = instance.getFunction("nop").orElse(null);
       assertNotNull(nop, "nop export must exist");
 
-      final boolean matches = nop.matchesType(
-          new WasmValueType[0],
-          new WasmValueType[0]);
-      assertTrue(matches,
-          "matchesType should return true for void()->void on nop function");
+      final boolean matches = nop.matchesType(new WasmValueType[0], new WasmValueType[0]);
+      assertTrue(matches, "matchesType should return true for void()->void on nop function");
       LOGGER.info("[" + runtime + "] matchesType(()->void)=" + matches);
     }
   }
@@ -153,10 +150,11 @@ public class FunctionSignatureMatchTest extends DualRuntimeTest {
       final WasmFunction add = instance.getFunction("add").orElse(null);
       assertNotNull(add, "add export must exist");
 
-      final boolean matches = add.matchesType(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
-      assertFalse(matches,
+      final boolean matches =
+          add.matchesType(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+      assertFalse(
+          matches,
           "matchesType should return false for wrong arity (i32)->i32 on (i32,i32)->i32 func");
       LOGGER.info("[" + runtime + "] matchesType(i32->i32) on add=" + matches);
     }

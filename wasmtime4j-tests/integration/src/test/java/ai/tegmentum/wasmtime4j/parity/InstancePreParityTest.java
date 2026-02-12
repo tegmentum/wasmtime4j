@@ -52,8 +52,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("InstancePre Parity Tests")
 class InstancePreParityTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(InstancePreParityTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(InstancePreParityTest.class.getName());
 
   private static final String WAT =
       """
@@ -145,8 +144,8 @@ class InstancePreParityTest {
     }
   }
 
-  private void testInstancePreCreatesValid(final Engine engine,
-      final String runtimeName) throws Exception {
+  private void testInstancePreCreatesValid(final Engine engine, final String runtimeName)
+      throws Exception {
     final Module module = engine.compileWat(WAT);
     try (Linker<Void> linker = Linker.create(engine)) {
       try {
@@ -158,8 +157,13 @@ class InstancePreParityTest {
 
         pre.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtimeName + "] instantiatePre not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtimeName
+                + "] instantiatePre not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
     module.close();
@@ -178,8 +182,7 @@ class InstancePreParityTest {
     }
   }
 
-  private void testGetModule(final Engine engine,
-      final String runtimeName) throws Exception {
+  private void testGetModule(final Engine engine, final String runtimeName) throws Exception {
     final Module module = engine.compileWat(WAT);
     try (Linker<Void> linker = Linker.create(engine)) {
       try {
@@ -191,8 +194,8 @@ class InstancePreParityTest {
 
         pre.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtimeName + "] instantiatePre not available: "
-            + e.getClass().getName());
+        LOGGER.info(
+            "[" + runtimeName + "] instantiatePre not available: " + e.getClass().getName());
       }
     }
     module.close();
@@ -211,8 +214,7 @@ class InstancePreParityTest {
     }
   }
 
-  private void testGetEngine(final Engine engine,
-      final String runtimeName) throws Exception {
+  private void testGetEngine(final Engine engine, final String runtimeName) throws Exception {
     final Module module = engine.compileWat(WAT);
     try (Linker<Void> linker = Linker.create(engine)) {
       try {
@@ -224,8 +226,8 @@ class InstancePreParityTest {
 
         pre.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtimeName + "] instantiatePre not available: "
-            + e.getClass().getName());
+        LOGGER.info(
+            "[" + runtimeName + "] instantiatePre not available: " + e.getClass().getName());
       }
     }
     module.close();
@@ -244,8 +246,7 @@ class InstancePreParityTest {
     }
   }
 
-  private void testMultipleStores(final Engine engine,
-      final String runtimeName) throws Exception {
+  private void testMultipleStores(final Engine engine, final String runtimeName) throws Exception {
     final Module module = engine.compileWat(WAT);
     try (Linker<Void> linker = Linker.create(engine)) {
       try {
@@ -269,8 +270,13 @@ class InstancePreParityTest {
         }
         pre.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtimeName + "] instantiatePre not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtimeName
+                + "] instantiatePre not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
     module.close();
@@ -289,8 +295,7 @@ class InstancePreParityTest {
     }
   }
 
-  private void testInstanceCount(final Engine engine,
-      final String runtimeName) throws Exception {
+  private void testInstanceCount(final Engine engine, final String runtimeName) throws Exception {
     final Module module = engine.compileWat(WAT);
     try (Linker<Void> linker = Linker.create(engine)) {
       try {
@@ -302,7 +307,8 @@ class InstancePreParityTest {
           final Instance instance = pre.instantiate(store);
           final long afterCount = pre.getInstanceCount();
 
-          assertTrue(afterCount >= initialCount,
+          assertTrue(
+              afterCount >= initialCount,
               runtimeName + ": Instance count should not decrease after instantiate");
           LOGGER.info("[" + runtimeName + "] After instantiate count: " + afterCount);
 
@@ -310,8 +316,13 @@ class InstancePreParityTest {
         }
         pre.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtimeName + "] instantiatePre not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtimeName
+                + "] instantiatePre not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
     module.close();
@@ -330,8 +341,7 @@ class InstancePreParityTest {
     }
   }
 
-  private void testCloseInvalid(final Engine engine,
-      final String runtimeName) throws Exception {
+  private void testCloseInvalid(final Engine engine, final String runtimeName) throws Exception {
     final Module module = engine.compileWat(WAT);
     try (Linker<Void> linker = Linker.create(engine)) {
       try {
@@ -339,12 +349,16 @@ class InstancePreParityTest {
         assertTrue(pre.isValid(), runtimeName + ": InstancePre should be valid before close");
 
         pre.close();
-        assertFalse(pre.isValid(),
-            runtimeName + ": InstancePre should be invalid after close");
+        assertFalse(pre.isValid(), runtimeName + ": InstancePre should be invalid after close");
         LOGGER.info("[" + runtimeName + "] InstancePre.isValid after close: " + pre.isValid());
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtimeName + "] instantiatePre not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtimeName
+                + "] instantiatePre not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
     module.close();
@@ -363,8 +377,8 @@ class InstancePreParityTest {
     }
   }
 
-  private void testInstancesSurviveClose(final Engine engine,
-      final String runtimeName) throws Exception {
+  private void testInstancesSurviveClose(final Engine engine, final String runtimeName)
+      throws Exception {
     final Module module = engine.compileWat(WAT);
     try (Linker<Void> linker = Linker.create(engine);
         Store store = engine.createStore()) {
@@ -377,15 +391,22 @@ class InstancePreParityTest {
 
         // Instance should still work
         final WasmValue[] result = instance.callFunction("answer");
-        assertEquals(42, result[0].asInt(),
+        assertEquals(
+            42,
+            result[0].asInt(),
             runtimeName + ": Instance should still work after InstancePre.close");
-        LOGGER.info("[" + runtimeName + "] Instance works after InstancePre.close: "
-            + result[0].asInt());
+        LOGGER.info(
+            "[" + runtimeName + "] Instance works after InstancePre.close: " + result[0].asInt());
 
         instance.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtimeName + "] instantiatePre not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtimeName
+                + "] instantiatePre not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
     module.close();
@@ -415,7 +436,9 @@ class InstancePreParityTest {
           final WasmValue[] jniAnswer = jniInstance.callFunction("answer");
           final WasmValue[] panamaAnswer = panamaInstance.callFunction("answer");
 
-          assertEquals(jniAnswer[0].asInt(), panamaAnswer[0].asInt(),
+          assertEquals(
+              jniAnswer[0].asInt(),
+              panamaAnswer[0].asInt(),
               "JNI and Panama should return same answer()");
 
           final WasmValue[] jniAdd =
@@ -423,11 +446,16 @@ class InstancePreParityTest {
           final WasmValue[] panamaAdd =
               panamaInstance.callFunction("add", WasmValue.i32(10), WasmValue.i32(20));
 
-          assertEquals(jniAdd[0].asInt(), panamaAdd[0].asInt(),
+          assertEquals(
+              jniAdd[0].asInt(),
+              panamaAdd[0].asInt(),
               "JNI and Panama should return same add(10, 20)");
 
-          LOGGER.info("Parity verified: answer()="
-              + jniAnswer[0].asInt() + ", add(10,20)=" + jniAdd[0].asInt());
+          LOGGER.info(
+              "Parity verified: answer()="
+                  + jniAnswer[0].asInt()
+                  + ", add(10,20)="
+                  + jniAdd[0].asInt());
 
           jniInstance.close();
           panamaInstance.close();
@@ -436,8 +464,11 @@ class InstancePreParityTest {
         jniPre.close();
         panamaPre.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[Parity] instantiatePre not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "[Parity] instantiatePre not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
 

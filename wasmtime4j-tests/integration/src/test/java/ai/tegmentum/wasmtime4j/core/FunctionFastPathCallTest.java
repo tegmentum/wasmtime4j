@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -46,8 +45,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Function Fast-Path Call Tests")
 public class FunctionFastPathCallTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(FunctionFastPathCallTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(FunctionFastPathCallTest.class.getName());
 
   private static final String WAT =
       """
@@ -119,8 +117,13 @@ public class FunctionFastPathCallTest extends DualRuntimeTest {
         constI32.callVoid();
         LOGGER.info("[" + runtime + "] callVoid did not throw (runtime returns empty results)");
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] callVoid threw as expected: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callVoid threw as expected: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -198,8 +201,7 @@ public class FunctionFastPathCallTest extends DualRuntimeTest {
 
       final long result = identityI64.callI64ToI64(Long.MAX_VALUE);
 
-      assertEquals(Long.MAX_VALUE, result,
-          "identity_i64(MAX_VALUE) should return MAX_VALUE");
+      assertEquals(Long.MAX_VALUE, result, "identity_i64(MAX_VALUE) should return MAX_VALUE");
       LOGGER.info("[" + runtime + "] callI64ToI64(MAX_VALUE) = " + result);
 
       instance.close();
@@ -225,8 +227,7 @@ public class FunctionFastPathCallTest extends DualRuntimeTest {
 
       final double result = identityF64.callF64ToF64(3.14159);
 
-      assertEquals(3.14159, result, 1e-10,
-          "identity_f64(3.14159) should return 3.14159");
+      assertEquals(3.14159, result, 1e-10, "identity_f64(3.14159) should return 3.14159");
       LOGGER.info("[" + runtime + "] callF64ToF64(3.14159) = " + result);
 
       instance.close();
@@ -280,11 +281,20 @@ public class FunctionFastPathCallTest extends DualRuntimeTest {
       // values). Panama's call() returns based on empty FunctionType, so behavior differs.
       try {
         final int result = returnsTwo.callToI32();
-        LOGGER.info("[" + runtime + "] callToI32 on multi-return returned: " + result
-            + " (runtime did not detect multi-return)");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callToI32 on multi-return returned: "
+                + result
+                + " (runtime did not detect multi-return)");
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] callToI32 on multi-return threw as expected: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callToI32 on multi-return threw as expected: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -313,11 +323,20 @@ public class FunctionFastPathCallTest extends DualRuntimeTest {
       // truncated value.
       try {
         final int result = identityI64.callI32ToI32(42);
-        LOGGER.info("[" + runtime + "] callI32ToI32 on i64 function returned: " + result
-            + " (runtime did not validate type mismatch)");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callI32ToI32 on i64 function returned: "
+                + result
+                + " (runtime did not validate type mismatch)");
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] callI32ToI32 on i64 function threw as expected: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callI32ToI32 on i64 function threw as expected: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();

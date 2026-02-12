@@ -2,9 +2,9 @@ package ai.tegmentum.wasmtime4j.wasmtime.generated.hostfuncs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
@@ -41,23 +41,23 @@ public final class CallImportManyArgsTest {
 
     final String wat =
         """
-        (module
-          (import "host" "validate" (func (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)))
-          (func (export "run")
-            i32.const 1
-            i32.const 2
-            i32.const 3
-            i32.const 4
-            i32.const 5
-            i32.const 6
-            i32.const 7
-            i32.const 8
-            i32.const 9
-            i32.const 10
-            call 0
-          )
-        )
-    """;
+            (module
+              (import "host" "validate" (func (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)))
+              (func (export "run")
+                i32.const 1
+                i32.const 2
+                i32.const 3
+                i32.const 4
+                i32.const 5
+                i32.const 6
+                i32.const 7
+                i32.const 8
+                i32.const 9
+                i32.const 10
+                call 0
+              )
+            )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       // Define the function type for host function with 10 i32 parameters and no returns

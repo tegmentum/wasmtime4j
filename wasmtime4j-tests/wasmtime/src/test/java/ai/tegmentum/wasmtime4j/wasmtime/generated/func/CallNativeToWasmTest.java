@@ -29,14 +29,14 @@ public final class CallNativeToWasmTest {
 
     final String wat =
         """
-        (module
-                    (func (export "run") (result i32 i32 i32)
-                        i32.const 42
-                        i32.const 420
-                        i32.const 4200
-                    )
-                  )
-    """;
+            (module
+                        (func (export "run") (result i32 i32 i32)
+                            i32.const 42
+                            i32.const 420
+                            i32.const 4200
+                        )
+                      )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       // Compile and instantiate module

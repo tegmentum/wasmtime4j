@@ -1,9 +1,9 @@
 package ai.tegmentum.wasmtime4j.wasmtime.generated.traps;
 
-import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.DisplayName;
@@ -36,17 +36,17 @@ public final class RustCatchPanicImportTest {
 
     final String wat =
         """
-        (module $a
-          (import "" "panic" (func $panic))
-          (import "" "catch panic" (func $catch_panic))
-          (func (export "panic") call $panic)
-          (func (export "run")
-            call $catch_panic
-            call $catch_panic
-            unreachable
-          )
-        )
-    """;
+            (module $a
+              (import "" "panic" (func $panic))
+              (import "" "catch panic" (func $catch_panic))
+              (func (export "panic") call $panic)
+              (func (export "run")
+                call $catch_panic
+                call $catch_panic
+                unreachable
+              )
+            )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       final FunctionType funcType =

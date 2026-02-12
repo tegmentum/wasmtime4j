@@ -51,38 +51,38 @@ public final class CallWasmManyArgsTest {
 
     final String wat =
         """
-        (module
-          (func (export "run") (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)
-            i32.const 1
-            local.get 0
-            i32.ne
-            if
-              unreachable
-            end
+            (module
+              (func (export "run") (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)
+                i32.const 1
+                local.get 0
+                i32.ne
+                if
+                  unreachable
+                end
 
-            i32.const 10
-            local.get 9
-            i32.ne
-            if
-              unreachable
-            end
-          )
+                i32.const 10
+                local.get 9
+                i32.ne
+                if
+                  unreachable
+                end
+              )
 
-          (func (export "test")
-            i32.const 1
-            i32.const 2
-            i32.const 3
-            i32.const 4
-            i32.const 5
-            i32.const 6
-            i32.const 7
-            i32.const 8
-            i32.const 9
-            i32.const 10
-            call 0
-          )
-        )
-    """;
+              (func (export "test")
+                i32.const 1
+                i32.const 2
+                i32.const 3
+                i32.const 4
+                i32.const 5
+                i32.const 6
+                i32.const 7
+                i32.const 8
+                i32.const 9
+                i32.const 10
+                call 0
+              )
+            )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       runner.compileAndInstantiate(wat);

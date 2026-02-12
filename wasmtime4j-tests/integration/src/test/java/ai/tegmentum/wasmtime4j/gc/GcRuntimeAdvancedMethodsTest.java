@@ -133,10 +133,7 @@ public class GcRuntimeAdvancedMethodsTest {
       LOGGER.info("Testing getRuntimeType with array instance");
 
       final ArrayType intArrayType =
-          ArrayType.builder("RtTypeArrayTest")
-              .elementType(FieldType.i32())
-              .mutable(true)
-              .build();
+          ArrayType.builder("RtTypeArrayTest").elementType(FieldType.i32()).mutable(true).build();
 
       gcRuntime.registerArrayType(intArrayType);
       final ArrayInstance array =
@@ -214,22 +211,17 @@ public class GcRuntimeAdvancedMethodsTest {
       LOGGER.info("Testing createVariableLengthArray with base length and flexible elements");
 
       final ArrayType arrayType =
-          ArrayType.builder("VarLenArrayTest")
-              .elementType(FieldType.i32())
-              .mutable(true)
-              .build();
+          ArrayType.builder("VarLenArrayTest").elementType(FieldType.i32()).mutable(true).build();
 
       try {
         gcRuntime.registerArrayType(arrayType);
 
         final int baseLength = 3;
-        final List<GcValue> flexibleElements =
-            Arrays.asList(GcValue.i32(100), GcValue.i32(200));
+        final List<GcValue> flexibleElements = Arrays.asList(GcValue.i32(100), GcValue.i32(200));
 
         final ArrayInstance array =
             gcRuntime.createVariableLengthArray(arrayType, baseLength, flexibleElements);
-        assertNotNull(
-            array, "createVariableLengthArray should return a non-null ArrayInstance");
+        assertNotNull(array, "createVariableLengthArray should return a non-null ArrayInstance");
 
         LOGGER.info(
             "Variable-length array created successfully with baseLength="
@@ -256,22 +248,17 @@ public class GcRuntimeAdvancedMethodsTest {
       LOGGER.info("Testing createVariableLengthArray with baseLength=0");
 
       final ArrayType arrayType =
-          ArrayType.builder("ZeroLenArrayTest")
-              .elementType(FieldType.i32())
-              .mutable(true)
-              .build();
+          ArrayType.builder("ZeroLenArrayTest").elementType(FieldType.i32()).mutable(true).build();
 
       try {
         gcRuntime.registerArrayType(arrayType);
         final ArrayInstance array =
-            gcRuntime.createVariableLengthArray(
-                arrayType, 0, Arrays.asList(GcValue.i32(1)));
+            gcRuntime.createVariableLengthArray(arrayType, 0, Arrays.asList(GcValue.i32(1)));
         assertNotNull(array, "Zero base-length array should be created if implementation allows");
         LOGGER.info("Zero base-length array created successfully");
       } catch (final GcException e) {
         // Zero base length may be rejected, or native binding may fail
-        LOGGER.info(
-            "Zero base-length array creation failed (expected): " + e.getMessage());
+        LOGGER.info("Zero base-length array creation failed (expected): " + e.getMessage());
         assertNotNull(e.getMessage(), "Exception should have a descriptive message");
       }
     }
@@ -299,12 +286,10 @@ public class GcRuntimeAdvancedMethodsTest {
       } catch (final GcException e) {
         // Implementation may not fully support recursive types yet
         LOGGER.info(
-            "registerRecursiveType threw GcException (may be unsupported): "
-                + e.getMessage());
+            "registerRecursiveType threw GcException (may be unsupported): " + e.getMessage());
         assertNotNull(e.getMessage(), "Exception should have a message");
       } catch (final UnsupportedOperationException e) {
-        LOGGER.info(
-            "registerRecursiveType not yet implemented: " + e.getMessage());
+        LOGGER.info("registerRecursiveType not yet implemented: " + e.getMessage());
       }
     }
   }
@@ -340,12 +325,10 @@ public class GcRuntimeAdvancedMethodsTest {
       } catch (final GcException e) {
         // Implementation may not fully support type hierarchies yet
         LOGGER.info(
-            "createTypeHierarchy threw GcException (may be unsupported): "
-                + e.getMessage());
+            "createTypeHierarchy threw GcException (may be unsupported): " + e.getMessage());
         assertNotNull(e.getMessage(), "Exception should have a message");
       } catch (final UnsupportedOperationException e) {
-        LOGGER.info(
-            "createTypeHierarchy not yet implemented: " + e.getMessage());
+        LOGGER.info("createTypeHierarchy not yet implemented: " + e.getMessage());
       }
     }
   }
@@ -360,20 +343,18 @@ public class GcRuntimeAdvancedMethodsTest {
       LOGGER.info("Testing registerFinalizationCallback with a valid object and callback");
 
       final StructType type =
-          StructType.builder("FinalizableStruct")
-              .addField("value", FieldType.i32(), true)
-              .build();
+          StructType.builder("FinalizableStruct").addField("value", FieldType.i32(), true).build();
 
       gcRuntime.registerStructType(type);
-      final StructInstance obj =
-          gcRuntime.createStruct(type, Arrays.asList(GcValue.i32(42)));
+      final StructInstance obj = gcRuntime.createStruct(type, Arrays.asList(GcValue.i32(42)));
       assertNotNull(obj, "Struct should be created for finalization test");
 
       final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
-      final Runnable callback = () -> {
-        callbackInvoked.set(true);
-        LOGGER.info("Finalization callback invoked");
-      };
+      final Runnable callback =
+          () -> {
+            callbackInvoked.set(true);
+            LOGGER.info("Finalization callback invoked");
+          };
 
       assertDoesNotThrow(
           () -> gcRuntime.registerFinalizationCallback(obj, callback),
@@ -388,13 +369,10 @@ public class GcRuntimeAdvancedMethodsTest {
       LOGGER.info("Testing registerFinalizationCallback with null callback");
 
       final StructType type =
-          StructType.builder("NullCallbackStruct")
-              .addField("value", FieldType.i32(), true)
-              .build();
+          StructType.builder("NullCallbackStruct").addField("value", FieldType.i32(), true).build();
 
       gcRuntime.registerStructType(type);
-      final StructInstance obj =
-          gcRuntime.createStruct(type, Arrays.asList(GcValue.i32(1)));
+      final StructInstance obj = gcRuntime.createStruct(type, Arrays.asList(GcValue.i32(1)));
       assertNotNull(obj, "Struct should be created");
 
       assertThrows(

@@ -36,8 +36,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link Instance#setImports(Map)}, {@link Instance#getCreatedAtMicros()}, and
- * {@link Instance#getMetadataExportCount()}.
+ * Tests for {@link Instance#setImports(Map)}, {@link Instance#getCreatedAtMicros()}, and {@link
+ * Instance#getMetadataExportCount()}.
  *
  * <p>Verifies instance metadata timestamps, export count metadata, and the unsupported setImports
  * operation.
@@ -161,8 +161,8 @@ public class InstanceMetadataTest extends DualRuntimeTest {
 
       LOGGER.info("[" + runtime + "] firstCall: " + firstCall);
       LOGGER.info("[" + runtime + "] secondCall: " + secondCall);
-      LOGGER.info("[" + runtime + "] exportNames: "
-          + java.util.Arrays.toString(instance.getExportNames()));
+      LOGGER.info(
+          "[" + runtime + "] exportNames: " + java.util.Arrays.toString(instance.getExportNames()));
 
       assertEquals(firstCall, secondCall, "metadataExportCount should be consistent across calls");
       // Value may be 0 if metadata exports are distinct from regular exports
@@ -206,10 +206,11 @@ public class InstanceMetadataTest extends DualRuntimeTest {
         Instance instance = module.instantiate(store)) {
 
       // Should throw either IllegalArgumentException or UnsupportedOperationException
-      final Exception thrown = assertThrows(
-          Exception.class,
-          () -> instance.setImports(null),
-          "setImports(null) should throw an exception");
+      final Exception thrown =
+          assertThrows(
+              Exception.class,
+              () -> instance.setImports(null),
+              "setImports(null) should throw an exception");
 
       assertNotNull(thrown, "Exception should not be null");
       assertTrue(
@@ -218,8 +219,13 @@ public class InstanceMetadataTest extends DualRuntimeTest {
           "Should be IllegalArgumentException or UnsupportedOperationException, was: "
               + thrown.getClass().getName());
 
-      LOGGER.info("[" + runtime + "] Threw " + thrown.getClass().getSimpleName()
-          + ": " + thrown.getMessage());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] Threw "
+              + thrown.getClass().getSimpleName()
+              + ": "
+              + thrown.getMessage());
     }
   }
 }

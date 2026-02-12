@@ -16,17 +16,16 @@
 
 package ai.tegmentum.wasmtime4j.core;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstanceAllocationStrategy;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
@@ -43,8 +42,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Engine Pooling Allocator Metrics Tests")
 public class EnginePoolingMetricsTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(EnginePoolingMetricsTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(EnginePoolingMetricsTest.class.getName());
 
   private static final String SIMPLE_WAT =
       """
@@ -67,8 +65,7 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
     try (Engine engine = Engine.create()) {
       final PoolStatistics metrics = engine.getPoolingAllocatorMetrics();
 
-      assertNull(metrics,
-          "Default engine (no pooling) should return null metrics");
+      assertNull(metrics, "Default engine (no pooling) should return null metrics");
       LOGGER.info("[" + runtime + "] Default engine getPoolingAllocatorMetrics = " + metrics);
     }
   }
@@ -81,29 +78,41 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing pooling engine metrics");
 
     try {
-      final EngineConfig config = Engine.builder()
-          .setAllocationStrategy(InstanceAllocationStrategy.POOLING);
+      final EngineConfig config =
+          Engine.builder().setAllocationStrategy(InstanceAllocationStrategy.POOLING);
 
       try (Engine engine = Engine.create(config)) {
         final PoolStatistics metrics = engine.getPoolingAllocatorMetrics();
 
         // Metrics may be null if the default impl is not overridden
         if (metrics != null) {
-          LOGGER.info("[" + runtime + "] Pooling metrics: allocated="
-              + metrics.getInstancesAllocated()
-              + " reused=" + metrics.getInstancesReused()
-              + " created=" + metrics.getInstancesCreated());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Pooling metrics: allocated="
+                  + metrics.getInstancesAllocated()
+                  + " reused="
+                  + metrics.getInstancesReused()
+                  + " created="
+                  + metrics.getInstancesCreated());
         } else {
-          LOGGER.info("[" + runtime + "] Pooling engine returned null metrics "
-              + "(default impl may not be overridden)");
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Pooling engine returned null metrics "
+                  + "(default impl may not be overridden)");
         }
       }
     } catch (final UnsupportedOperationException e) {
-      LOGGER.info("[" + runtime + "] Pooling allocation not supported: "
-          + e.getMessage());
+      LOGGER.info("[" + runtime + "] Pooling allocation not supported: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.info("[" + runtime + "] Pooling engine creation failed: "
-          + e.getClass().getName() + " - " + e.getMessage());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] Pooling engine creation failed: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -115,38 +124,43 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing pool statistics non-negative values");
 
     try {
-      final EngineConfig config = Engine.builder()
-          .setAllocationStrategy(InstanceAllocationStrategy.POOLING);
+      final EngineConfig config =
+          Engine.builder().setAllocationStrategy(InstanceAllocationStrategy.POOLING);
 
       try (Engine engine = Engine.create(config)) {
         final PoolStatistics metrics = engine.getPoolingAllocatorMetrics();
 
         if (metrics != null) {
-          assertTrue(metrics.getInstancesAllocated() >= 0,
-              "Instances allocated should be non-negative");
-          assertTrue(metrics.getInstancesReused() >= 0,
-              "Instances reused should be non-negative");
-          assertTrue(metrics.getInstancesCreated() >= 0,
-              "Instances created should be non-negative");
-          assertTrue(metrics.getMemoryPoolsAllocated() >= 0,
+          assertTrue(
+              metrics.getInstancesAllocated() >= 0, "Instances allocated should be non-negative");
+          assertTrue(metrics.getInstancesReused() >= 0, "Instances reused should be non-negative");
+          assertTrue(
+              metrics.getInstancesCreated() >= 0, "Instances created should be non-negative");
+          assertTrue(
+              metrics.getMemoryPoolsAllocated() >= 0,
               "Memory pools allocated should be non-negative");
-          assertTrue(metrics.getStackPoolsAllocated() >= 0,
+          assertTrue(
+              metrics.getStackPoolsAllocated() >= 0,
               "Stack pools allocated should be non-negative");
-          assertTrue(metrics.getAllocationFailures() >= 0,
-              "Allocation failures should be non-negative");
-          assertTrue(metrics.getCurrentMemoryUsage() >= 0,
-              "Current memory usage should be non-negative");
+          assertTrue(
+              metrics.getAllocationFailures() >= 0, "Allocation failures should be non-negative");
+          assertTrue(
+              metrics.getCurrentMemoryUsage() >= 0, "Current memory usage should be non-negative");
           LOGGER.info("[" + runtime + "] All pool statistics are non-negative");
         } else {
           LOGGER.info("[" + runtime + "] Pool metrics returned null despite pooling config");
         }
       }
     } catch (final UnsupportedOperationException e) {
-      LOGGER.info("[" + runtime + "] Pooling allocation not supported: "
-          + e.getMessage());
+      LOGGER.info("[" + runtime + "] Pooling allocation not supported: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.info("[" + runtime + "] Pooling engine creation failed: "
-          + e.getClass().getName() + " - " + e.getMessage());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] Pooling engine creation failed: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -158,8 +172,8 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing pool statistics after instantiation");
 
     try {
-      final EngineConfig config = Engine.builder()
-          .setAllocationStrategy(InstanceAllocationStrategy.POOLING);
+      final EngineConfig config =
+          Engine.builder().setAllocationStrategy(InstanceAllocationStrategy.POOLING);
 
       try (Engine engine = Engine.create(config)) {
         final Module module = engine.compileWat(SIMPLE_WAT);
@@ -178,11 +192,17 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
         // Check metrics after
         final PoolStatistics after = engine.getPoolingAllocatorMetrics();
         if (after != null && before != null) {
-          LOGGER.info("[" + runtime + "] Pool metrics before: allocated="
-              + allocatedBefore + ", after: allocated="
-              + after.getInstancesAllocated()
-              + " created=" + after.getInstancesCreated());
-          assertTrue(after.getInstancesCreated() >= 0,
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Pool metrics before: allocated="
+                  + allocatedBefore
+                  + ", after: allocated="
+                  + after.getInstancesAllocated()
+                  + " created="
+                  + after.getInstancesCreated());
+          assertTrue(
+              after.getInstancesCreated() >= 0,
               "Instances created should be non-negative after instantiation");
         } else {
           LOGGER.info("[" + runtime + "] Pool metrics unavailable for comparison");
@@ -191,11 +211,15 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
         module.close();
       }
     } catch (final UnsupportedOperationException e) {
-      LOGGER.info("[" + runtime + "] Pooling allocation not supported: "
-          + e.getMessage());
+      LOGGER.info("[" + runtime + "] Pooling allocation not supported: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.info("[" + runtime + "] Pooling engine test failed: "
-          + e.getClass().getName() + " - " + e.getMessage());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] Pooling engine test failed: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 }

@@ -61,8 +61,7 @@ public class V128ValuePassingTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing v128 API creation");
 
     // Create v128 from byte array
-    final byte[] inputBytes =
-        new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    final byte[] inputBytes = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     final WasmValue byteValue = WasmValue.v128(inputBytes);
     assertNotNull(byteValue, "v128 from bytes should not be null");
     assertEquals(WasmValueType.V128, byteValue.getType(), "Type should be V128");
@@ -100,18 +99,11 @@ public class V128ValuePassingTest extends DualRuntimeTest {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing v128 byte length validation");
 
+    assertThrows(Exception.class, () -> WasmValue.v128(new byte[0]), "0 bytes should be rejected");
     assertThrows(
-        Exception.class,
-        () -> WasmValue.v128(new byte[0]),
-        "0 bytes should be rejected");
+        Exception.class, () -> WasmValue.v128(new byte[15]), "15 bytes should be rejected");
     assertThrows(
-        Exception.class,
-        () -> WasmValue.v128(new byte[15]),
-        "15 bytes should be rejected");
-    assertThrows(
-        Exception.class,
-        () -> WasmValue.v128(new byte[17]),
-        "17 bytes should be rejected");
+        Exception.class, () -> WasmValue.v128(new byte[17]), "17 bytes should be rejected");
     LOGGER.info("[" + runtime + "] v128 byte length validation works");
   }
 
@@ -228,11 +220,16 @@ public class V128ValuePassingTest extends DualRuntimeTest {
       final WasmValue input = WasmValue.v128(new byte[16]);
       try {
         final WasmValue[] result = instance.callFunction("identity", input);
-        LOGGER.info("[" + runtime + "] v128 pass-through succeeded, result type: "
-            + result[0].getType());
+        LOGGER.info(
+            "[" + runtime + "] v128 pass-through succeeded, result type: " + result[0].getType());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] v128 pass-through threw (expected on some runtimes): "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] v128 pass-through threw (expected on some runtimes): "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
         assertNotNull(e.getMessage(), "Exception should have a message");
       }
 

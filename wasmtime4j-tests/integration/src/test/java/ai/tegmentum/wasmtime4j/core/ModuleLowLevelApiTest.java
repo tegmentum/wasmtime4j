@@ -35,21 +35,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Module low-level APIs: {@link Module#getCustomSections()},
- * {@link Module#resourcesRequired()}, {@link Module#getCompiledModule()},
- * {@link Module#imageRange()}, and {@link Module#deserializeRaw(Engine, long, long)}.
+ * Tests Module low-level APIs: {@link Module#getCustomSections()}, {@link
+ * Module#resourcesRequired()}, {@link Module#getCompiledModule()}, {@link Module#imageRange()}, and
+ * {@link Module#deserializeRaw(Engine, long, long)}.
  *
  * @since 1.0.0
  */
 @DisplayName("Module Low-Level API Tests")
 public class ModuleLowLevelApiTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ModuleLowLevelApiTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleLowLevelApiTest.class.getName());
 
-  /**
-   * WAT module with memory, table, global, and function to exercise resourcesRequired.
-   */
+  /** WAT module with memory, table, global, and function to exercise resourcesRequired. */
   private static final String RICH_WAT =
       """
       (module
@@ -88,12 +85,23 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
         assertNotNull(sections, "Custom sections map should not be null");
         LOGGER.info("[" + runtime + "] Custom sections: " + sections.size() + " entries");
         for (final Map.Entry<String, byte[]> entry : sections.entrySet()) {
-          LOGGER.info("[" + runtime + "]   Section '" + entry.getKey()
-              + "': " + entry.getValue().length + " bytes");
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "]   Section '"
+                  + entry.getKey()
+                  + "': "
+                  + entry.getValue().length
+                  + " bytes");
         }
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] getCustomSections not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getCustomSections not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       module.close();
@@ -113,16 +121,26 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
       final ResourcesRequired res = module.resourcesRequired();
 
       assertNotNull(res, "ResourcesRequired should not be null");
-      assertTrue(res.getMinimumMemoryBytes() > 0,
+      assertTrue(
+          res.getMinimumMemoryBytes() > 0,
           "Module with 1-page memory should have minimumMemoryBytes > 0");
       assertEquals(1, res.getNumMemories(), "Module should have 1 memory");
-      LOGGER.info("[" + runtime + "] ResourcesRequired:"
-          + " minMem=" + res.getMinimumMemoryBytes()
-          + " maxMem=" + res.getMaximumMemoryBytes()
-          + " numMemories=" + res.getNumMemories()
-          + " numTables=" + res.getNumTables()
-          + " numGlobals=" + res.getNumGlobals()
-          + " numFunctions=" + res.getNumFunctions());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] ResourcesRequired:"
+              + " minMem="
+              + res.getMinimumMemoryBytes()
+              + " maxMem="
+              + res.getMaximumMemoryBytes()
+              + " numMemories="
+              + res.getNumMemories()
+              + " numTables="
+              + res.getNumTables()
+              + " numGlobals="
+              + res.getNumGlobals()
+              + " numFunctions="
+              + res.getNumFunctions());
 
       module.close();
     }
@@ -142,10 +160,16 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
 
       // 4 pages * 64KB = 262144 bytes
       final long expectedMax = 4L * 65536L;
-      assertEquals(expectedMax, res.getMaximumMemoryBytes(),
-          "Max memory should be 4 pages (262144 bytes)");
-      LOGGER.info("[" + runtime + "] Max memory: " + res.getMaximumMemoryBytes()
-          + " bytes (expected " + expectedMax + ")");
+      assertEquals(
+          expectedMax, res.getMaximumMemoryBytes(), "Max memory should be 4 pages (262144 bytes)");
+      LOGGER.info(
+          "["
+              + runtime
+              + "] Max memory: "
+              + res.getMaximumMemoryBytes()
+              + " bytes (expected "
+              + expectedMax
+              + ")");
 
       module.close();
     }
@@ -166,8 +190,13 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
         assertNotNull(compiledOpt, "getCompiledModule should not return null");
         LOGGER.info("[" + runtime + "] getCompiledModule present: " + compiledOpt.isPresent());
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] getCompiledModule not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getCompiledModule not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       module.close();
@@ -189,8 +218,13 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
         assertNotNull(rangeOpt, "imageRange should not return null");
         LOGGER.info("[" + runtime + "] imageRange present: " + rangeOpt.isPresent());
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] imageRange not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] imageRange not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       module.close();
@@ -209,11 +243,19 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
         Module.deserializeRaw(engine, 0L, 0L);
         LOGGER.info("[" + runtime + "] deserializeRaw succeeded unexpectedly");
       } catch (final UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] deserializeRaw threw UnsupportedOperationException: "
-            + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] deserializeRaw threw UnsupportedOperationException: "
+                + e.getMessage());
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] deserializeRaw threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] deserializeRaw threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -233,11 +275,18 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
       assertNotNull(res, "ResourcesRequired should not be null for empty module");
       assertEquals(0, res.getNumMemories(), "Empty module should have 0 memories");
       assertEquals(0, res.getNumTables(), "Empty module should have 0 tables");
-      LOGGER.info("[" + runtime + "] Empty module resources:"
-          + " numMemories=" + res.getNumMemories()
-          + " numTables=" + res.getNumTables()
-          + " numGlobals=" + res.getNumGlobals()
-          + " numFunctions=" + res.getNumFunctions());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] Empty module resources:"
+              + " numMemories="
+              + res.getNumMemories()
+              + " numTables="
+              + res.getNumTables()
+              + " numGlobals="
+              + res.getNumGlobals()
+              + " numFunctions="
+              + res.getNumFunctions());
 
       module.close();
     }
@@ -256,21 +305,29 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
       final ResourcesRequired res = module.resourcesRequired();
 
       assertNotNull(res, "ResourcesRequired should not be null");
-      assertTrue(res.getMinimumTableElements() >= 2,
+      assertTrue(
+          res.getMinimumTableElements() >= 2,
           "Module with table of min 2 should report minimumTableElements >= 2, got: "
               + res.getMinimumTableElements());
-      assertEquals(1, res.getNumTables(),
-          "Module should have 1 table");
-      assertEquals(1, res.getNumGlobals(),
-          "Module should have 1 global");
-      assertTrue(res.getNumFunctions() >= 1,
+      assertEquals(1, res.getNumTables(), "Module should have 1 table");
+      assertEquals(1, res.getNumGlobals(), "Module should have 1 global");
+      assertTrue(
+          res.getNumFunctions() >= 1,
           "Module should have at least 1 function, got: " + res.getNumFunctions());
-      LOGGER.info("[" + runtime + "] ResourcesRequired fields:"
-          + " minTableElements=" + res.getMinimumTableElements()
-          + " maxTableElements=" + res.getMaximumTableElements()
-          + " numTables=" + res.getNumTables()
-          + " numGlobals=" + res.getNumGlobals()
-          + " numFunctions=" + res.getNumFunctions());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] ResourcesRequired fields:"
+              + " minTableElements="
+              + res.getMinimumTableElements()
+              + " maxTableElements="
+              + res.getMaximumTableElements()
+              + " numTables="
+              + res.getNumTables()
+              + " numGlobals="
+              + res.getNumGlobals()
+              + " numFunctions="
+              + res.getNumFunctions());
 
       module.close();
     }
@@ -290,15 +347,23 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
 
       assertNotNull(res, "ResourcesRequired should not be null");
       assertEquals(1, res.getNumMemories(), "Module should have 1 memory");
-      assertTrue(res.getMinimumMemoryBytes() > 0,
+      assertTrue(
+          res.getMinimumMemoryBytes() > 0,
           "Module with 1-page memory should have minimumMemoryBytes > 0");
-      LOGGER.info("[" + runtime + "] Unbounded memory resources:"
-          + " minMem=" + res.getMinimumMemoryBytes()
-          + " maxMem=" + res.getMaximumMemoryBytes()
-          + " numMemories=" + res.getNumMemories());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] Unbounded memory resources:"
+              + " minMem="
+              + res.getMinimumMemoryBytes()
+              + " maxMem="
+              + res.getMaximumMemoryBytes()
+              + " numMemories="
+              + res.getNumMemories());
       // Unbounded memory should have max == -1 or a very large value
       // The exact value depends on Wasmtime's behavior; log it for debugging
-      assertTrue(res.getMaximumMemoryBytes() == -1
+      assertTrue(
+          res.getMaximumMemoryBytes() == -1
               || res.getMaximumMemoryBytes() > res.getMinimumMemoryBytes(),
           "Unbounded memory should have max == -1 or max > min, got max="
               + res.getMaximumMemoryBytes());
@@ -317,8 +382,7 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
     try (Engine engine = Engine.create()) {
       final Module module = engine.compileWat(RICH_WAT);
 
-      assertTrue(module.isSerializable(),
-          "Module should be serializable by default");
+      assertTrue(module.isSerializable(), "Module should be serializable by default");
       LOGGER.info("[" + runtime + "] isSerializable: " + module.isSerializable());
 
       module.close();

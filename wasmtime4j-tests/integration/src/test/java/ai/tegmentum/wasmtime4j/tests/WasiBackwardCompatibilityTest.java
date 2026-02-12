@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Linker;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.wasi.WasiContext;
+import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,7 +82,8 @@ public class WasiBackwardCompatibilityTest {
     assertNotNull(linker, "Preview 1 linker should be created");
 
     // Verify traditional WASI imports are present
-    assertTrue(WasiLinkerUtils.hasWasiImports(linker), "Linker should have traditional WASI imports");
+    assertTrue(
+        WasiLinkerUtils.hasWasiImports(linker), "Linker should have traditional WASI imports");
 
     LOGGER.info("Successfully created WASI Preview 1 linker");
   }
@@ -307,7 +308,8 @@ public class WasiBackwardCompatibilityTest {
 
     // Both should have their respective imports
     assertTrue(
-        WasiLinkerUtils.hasWasiImports(preview1Linker), "Preview 1 linker should have WASI imports");
+        WasiLinkerUtils.hasWasiImports(preview1Linker),
+        "Preview 1 linker should have WASI imports");
     assertTrue(
         WasiLinkerUtils.hasWasiPreview2Imports(preview2Linker),
         "Preview 2 linker should have WASI Preview 2 imports");

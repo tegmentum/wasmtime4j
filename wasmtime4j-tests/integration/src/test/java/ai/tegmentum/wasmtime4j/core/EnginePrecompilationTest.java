@@ -37,16 +37,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Engine precompilation APIs: {@link Engine#precompileModule(byte[])},
- * {@link Engine#detectPrecompiled(byte[])}, and {@link Engine#precompileCompatibilityHash()}.
+ * Tests Engine precompilation APIs: {@link Engine#precompileModule(byte[])}, {@link
+ * Engine#detectPrecompiled(byte[])}, and {@link Engine#precompileCompatibilityHash()}.
  *
  * @since 1.0.0
  */
 @DisplayName("Engine Precompilation Tests")
 public class EnginePrecompilationTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(EnginePrecompilationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(EnginePrecompilationTest.class.getName());
 
   private static final String ADD_WAT =
       """
@@ -93,14 +92,20 @@ public class EnginePrecompilationTest extends DualRuntimeTest {
       try {
         final Precompiled detected = engine.detectPrecompiled(serialized);
 
-        assertNotNull(detected,
-            "detectPrecompiled should not return null for precompiled bytes");
-        assertEquals(Precompiled.MODULE, detected,
+        assertNotNull(detected, "detectPrecompiled should not return null for precompiled bytes");
+        assertEquals(
+            Precompiled.MODULE,
+            detected,
             "detectPrecompiled should return MODULE for serialized module");
         LOGGER.info("[" + runtime + "] detectPrecompiled returned: " + detected);
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] detectPrecompiled not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] detectPrecompiled not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       module.close();
@@ -153,8 +158,13 @@ public class EnginePrecompilationTest extends DualRuntimeTest {
         assertNull(detected, "detectPrecompiled should return null for garbage bytes");
         LOGGER.info("[" + runtime + "] detectPrecompiled on garbage returned null as expected");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] detectPrecompiled not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] detectPrecompiled not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -168,20 +178,24 @@ public class EnginePrecompilationTest extends DualRuntimeTest {
 
     // Minimal valid WASM binary for (module)
     final byte[] rawWasmBytes = {
-        0x00, 0x61, 0x73, 0x6D, // magic: \0asm
-        0x01, 0x00, 0x00, 0x00  // version: 1
+      0x00, 0x61, 0x73, 0x6D, // magic: \0asm
+      0x01, 0x00, 0x00, 0x00 // version: 1
     };
 
     try (Engine engine = Engine.create()) {
       try {
         final Precompiled detected = engine.detectPrecompiled(rawWasmBytes);
 
-        assertNull(detected,
-            "detectPrecompiled should return null for raw WASM bytes");
+        assertNull(detected, "detectPrecompiled should return null for raw WASM bytes");
         LOGGER.info("[" + runtime + "] detectPrecompiled on raw WASM returned null as expected");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] detectPrecompiled not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] detectPrecompiled not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -199,8 +213,8 @@ public class EnginePrecompilationTest extends DualRuntimeTest {
 
       assertNotNull(hash1, "First hash should not be null");
       assertNotNull(hash2, "Second hash should not be null");
-      assertArrayEquals(hash1, hash2,
-          "Two calls to precompileCompatibilityHash should return same bytes");
+      assertArrayEquals(
+          hash1, hash2, "Two calls to precompileCompatibilityHash should return same bytes");
       LOGGER.info("[" + runtime + "] Hash length: " + hash1.length + " bytes, consistent: true");
     }
   }
@@ -208,8 +222,7 @@ public class EnginePrecompilationTest extends DualRuntimeTest {
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("precompileCompatibilityHash same for same config")
-  void precompileCompatibilityHashSameForSameConfig(
-      final RuntimeType runtime) throws Exception {
+  void precompileCompatibilityHashSameForSameConfig(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing precompileCompatibilityHash for same config");
 
@@ -221,8 +234,8 @@ public class EnginePrecompilationTest extends DualRuntimeTest {
 
       assertNotNull(hash1, "Engine 1 hash should not be null");
       assertNotNull(hash2, "Engine 2 hash should not be null");
-      assertArrayEquals(hash1, hash2,
-          "Engines with same config should have same compatibility hash");
+      assertArrayEquals(
+          hash1, hash2, "Engines with same config should have same compatibility hash");
       LOGGER.info("[" + runtime + "] Same-config engines have matching hashes");
     }
   }

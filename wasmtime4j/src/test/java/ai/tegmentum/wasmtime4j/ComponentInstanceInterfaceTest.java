@@ -469,13 +469,13 @@ class ComponentInstanceInterfaceTest {
   class IntegrationTests {
 
     @Test
-    @DisplayName("ComponentInstance should be in ai.tegmentum.wasmtime4j package")
+    @DisplayName("ComponentInstance should be in ai.tegmentum.wasmtime4j.component package")
     void shouldBeInCorrectPackage() {
       String packageName = ComponentInstance.class.getPackage().getName();
       assertEquals(
-          "ai.tegmentum.wasmtime4j",
+          "ai.tegmentum.wasmtime4j.component",
           packageName,
-          "ComponentInstance should be in ai.tegmentum.wasmtime4j package");
+          "ComponentInstance should be in ai.tegmentum.wasmtime4j.component package");
     }
 
     @Test

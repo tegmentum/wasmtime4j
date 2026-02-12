@@ -13,12 +13,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.concurrent.WasmThread;
 import ai.tegmentum.wasmtime4j.concurrent.WasmThreadLocalStorage;
 import ai.tegmentum.wasmtime4j.concurrent.WasmThreadState;
 import ai.tegmentum.wasmtime4j.concurrent.WasmThreadStatistics;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;

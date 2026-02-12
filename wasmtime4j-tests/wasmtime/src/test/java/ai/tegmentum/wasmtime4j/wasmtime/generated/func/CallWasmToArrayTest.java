@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.wasmtime.generated.func;
 
-import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,13 +30,13 @@ public final class CallWasmToArrayTest {
 
     final String wat =
         """
-        (module
-                    (import "host" "array" (func (result i32 i32 i32)))
-                    (func (export "run") (result i32 i32 i32)
-                        call 0
-                    )
-                  )
-    """;
+            (module
+                        (import "host" "array" (func (result i32 i32 i32)))
+                        (func (export "run") (result i32 i32 i32)
+                            call 0
+                        )
+                      )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       // Define host function that returns (1, 2, 3)

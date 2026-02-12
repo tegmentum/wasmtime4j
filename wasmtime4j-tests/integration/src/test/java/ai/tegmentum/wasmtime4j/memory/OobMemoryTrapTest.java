@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.memory;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -197,8 +196,7 @@ public class OobMemoryTrapTest extends DualRuntimeTest {
       // i32.store at 65533 writes bytes 65533-65536 (one byte past end)
       assertThrows(
           Exception.class,
-          () ->
-              instance.callFunction("store_i32", WasmValue.i32(65533), WasmValue.i32(42)),
+          () -> instance.callFunction("store_i32", WasmValue.i32(65533), WasmValue.i32(42)),
           "i32.store at 65533 (extends past boundary) should trap");
       LOGGER.info("[" + runtime + "] Store past boundary trapped as expected");
 

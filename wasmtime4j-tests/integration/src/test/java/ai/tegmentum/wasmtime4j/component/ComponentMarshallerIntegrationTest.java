@@ -23,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.wit.WitType;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
+import ai.tegmentum.wasmtime4j.wit.WitType;
 import java.lang.foreign.Arena;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;

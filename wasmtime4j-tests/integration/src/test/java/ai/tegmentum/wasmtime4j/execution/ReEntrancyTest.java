@@ -17,13 +17,9 @@
 package ai.tegmentum.wasmtime4j.execution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -31,7 +27,9 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -153,13 +151,7 @@ public class ReEntrancyTest extends DualRuntimeTest {
               params -> {
                 final int value = params[0].asInt();
                 final int newSum = accumulator.addAndGet(value);
-                LOGGER.info(
-                    "["
-                        + runtime
-                        + "] add_to_sum("
-                        + value
-                        + ") -> sum="
-                        + newSum);
+                LOGGER.info("[" + runtime + "] add_to_sum(" + value + ") -> sum=" + newSum);
                 return WasmValue.i32(newSum);
               }));
 
@@ -201,8 +193,7 @@ public class ReEntrancyTest extends DualRuntimeTest {
           "fail",
           FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32}),
           params -> {
-            throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-                "Intentional host failure");
+            throw new ai.tegmentum.wasmtime4j.exception.WasmException("Intentional host failure");
           });
 
       final Module module = engine.compileWat(wat);

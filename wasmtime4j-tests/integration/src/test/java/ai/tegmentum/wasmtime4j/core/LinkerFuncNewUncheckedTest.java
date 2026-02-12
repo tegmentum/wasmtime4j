@@ -20,8 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -29,7 +27,9 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,8 +46,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Linker.funcNewUnchecked Tests")
 public class LinkerFuncNewUncheckedTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(LinkerFuncNewUncheckedTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(LinkerFuncNewUncheckedTest.class.getName());
 
   @AfterEach
   void cleanup() {
@@ -69,16 +68,18 @@ public class LinkerFuncNewUncheckedTest extends DualRuntimeTest {
             local.get 0 local.get 1 call $add))
         """;
 
-    final FunctionType addType = FunctionType.of(
-        new WasmValueType[]{WasmValueType.I32, WasmValueType.I32},
-        new WasmValueType[]{WasmValueType.I32});
+    final FunctionType addType =
+        FunctionType.of(
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+            new WasmValueType[] {WasmValueType.I32});
 
-    final HostFunction addImpl = params -> {
-      final int a = params[0].asInt();
-      final int b = params[1].asInt();
-      LOGGER.fine("unchecked_add called with " + a + " + " + b);
-      return new WasmValue[]{WasmValue.i32(a + b)};
-    };
+    final HostFunction addImpl =
+        params -> {
+          final int a = params[0].asInt();
+          final int b = params[1].asInt();
+          LOGGER.fine("unchecked_add called with " + a + " + " + b);
+          return new WasmValue[] {WasmValue.i32(a + b)};
+        };
 
     try (Engine engine = Engine.create();
         Store store = engine.createStore();
@@ -117,16 +118,18 @@ public class LinkerFuncNewUncheckedTest extends DualRuntimeTest {
             local.get 0 local.get 1 call $swap))
         """;
 
-    final FunctionType swapType = FunctionType.of(
-        new WasmValueType[]{WasmValueType.I32, WasmValueType.I64},
-        new WasmValueType[]{WasmValueType.I64, WasmValueType.I32});
+    final FunctionType swapType =
+        FunctionType.of(
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I64},
+            new WasmValueType[] {WasmValueType.I64, WasmValueType.I32});
 
-    final HostFunction swapImpl = params -> {
-      final int first = params[0].asInt();
-      final long second = params[1].asLong();
-      LOGGER.fine("swap called with " + first + ", " + second);
-      return new WasmValue[]{WasmValue.i64(second), WasmValue.i32(first)};
-    };
+    final HostFunction swapImpl =
+        params -> {
+          final int first = params[0].asInt();
+          final long second = params[1].asLong();
+          LOGGER.fine("swap called with " + first + ", " + second);
+          return new WasmValue[] {WasmValue.i64(second), WasmValue.i32(first)};
+        };
 
     try (Engine engine = Engine.create();
         Store store = engine.createStore();
@@ -144,8 +147,14 @@ public class LinkerFuncNewUncheckedTest extends DualRuntimeTest {
       assertEquals(2, result.length, "Should have exactly 2 results");
       assertEquals(100L, result[0].asLong(), "First result should be 100 (swapped i64)");
       assertEquals(42, result[1].asInt(), "Second result should be 42 (swapped i32)");
-      LOGGER.info("[" + runtime + "] funcNewUnchecked swap(42, 100) = ("
-          + result[0].asLong() + ", " + result[1].asInt() + ")");
+      LOGGER.info(
+          "["
+              + runtime
+              + "] funcNewUnchecked swap(42, 100) = ("
+              + result[0].asLong()
+              + ", "
+              + result[1].asInt()
+              + ")");
 
       instance.close();
       module.close();
@@ -167,14 +176,14 @@ public class LinkerFuncNewUncheckedTest extends DualRuntimeTest {
             call $get))
         """;
 
-    final FunctionType getType = FunctionType.of(
-        new WasmValueType[]{},
-        new WasmValueType[]{WasmValueType.I32});
+    final FunctionType getType =
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
 
-    final HostFunction getImpl = params -> {
-      LOGGER.fine("get_answer called with " + params.length + " params");
-      return new WasmValue[]{WasmValue.i32(42)};
-    };
+    final HostFunction getImpl =
+        params -> {
+          LOGGER.fine("get_answer called with " + params.length + " params");
+          return new WasmValue[] {WasmValue.i32(42)};
+        };
 
     try (Engine engine = Engine.create();
         Store store = engine.createStore();
@@ -212,12 +221,10 @@ public class LinkerFuncNewUncheckedTest extends DualRuntimeTest {
             call $get))
         """;
 
-    final FunctionType bigType = FunctionType.of(
-        new WasmValueType[]{},
-        new WasmValueType[]{WasmValueType.I64});
+    final FunctionType bigType =
+        FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I64});
 
-    final HostFunction bigImpl = params ->
-        new WasmValue[]{WasmValue.i64(Long.MAX_VALUE)};
+    final HostFunction bigImpl = params -> new WasmValue[] {WasmValue.i64(Long.MAX_VALUE)};
 
     try (Engine engine = Engine.create();
         Store store = engine.createStore();
@@ -232,8 +239,7 @@ public class LinkerFuncNewUncheckedTest extends DualRuntimeTest {
 
       assertNotNull(result, "Result should not be null");
       assertEquals(1, result.length, "Should have exactly 1 result");
-      assertEquals(Long.MAX_VALUE, result[0].asLong(),
-          "get_big should return Long.MAX_VALUE");
+      assertEquals(Long.MAX_VALUE, result[0].asLong(), "get_big should return Long.MAX_VALUE");
       LOGGER.info("[" + runtime + "] funcNewUnchecked call_big() = " + result[0].asLong());
 
       instance.close();

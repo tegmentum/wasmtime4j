@@ -30,17 +30,17 @@ public class MemoryFuzzer {
   /** A test module that exports memory. */
   private static final String MEMORY_MODULE_WAT =
       """
-        (module
-            (memory (export "memory") 1 10)
-            (func (export "load_i32") (param i32) (result i32)
-                local.get 0
-                i32.load)
-            (func (export "store_i32") (param i32 i32)
-                local.get 0
-                local.get 1
-                i32.store)
-        )
-        """;
+      (module
+          (memory (export "memory") 1 10)
+          (func (export "load_i32") (param i32) (result i32)
+              local.get 0
+              i32.load)
+          (func (export "store_i32") (param i32 i32)
+              local.get 0
+              local.get 1
+              i32.store)
+      )
+      """;
 
   /** Page size in bytes (64KB). */
   private static final int PAGE_SIZE = 65536;

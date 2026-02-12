@@ -224,7 +224,8 @@ public class BasicTypesTest {
   @Test
   @DisplayName("No parameters, no return")
   public void testNoParamsNoReturn() throws Exception {
-    final String wat = """
+    final String wat =
+        """
         (module
           (func (export "noop"))
         )

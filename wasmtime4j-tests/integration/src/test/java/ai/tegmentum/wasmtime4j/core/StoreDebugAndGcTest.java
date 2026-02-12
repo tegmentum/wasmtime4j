@@ -22,8 +22,8 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.debug.DebugFrame;
-import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.debug.DebugHandler;
+import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -34,20 +34,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Store debug and GC APIs: {@link Store#gcAsync()}, {@link Store#gc()},
- * {@link Store#debugFrames()}, {@link Store#captureBacktrace()},
- * {@link Store#forceCaptureBacktrace()}, {@link Store#setDebugHandler(DebugHandler)}.
+ * Tests Store debug and GC APIs: {@link Store#gcAsync()}, {@link Store#gc()}, {@link
+ * Store#debugFrames()}, {@link Store#captureBacktrace()}, {@link Store#forceCaptureBacktrace()},
+ * {@link Store#setDebugHandler(DebugHandler)}.
  *
- * <p>Some features require specific engine configurations (e.g., GC support, debug mode). Tests
- * use try/catch to gracefully handle UnsupportedOperationException for features not available.
+ * <p>Some features require specific engine configurations (e.g., GC support, debug mode). Tests use
+ * try/catch to gracefully handle UnsupportedOperationException for features not available.
  *
  * @since 1.0.0
  */
 @DisplayName("Store Debug and GC Tests")
 public class StoreDebugAndGcTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(StoreDebugAndGcTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(StoreDebugAndGcTest.class.getName());
 
   @AfterEach
   void cleanup() {
@@ -70,8 +69,13 @@ public class StoreDebugAndGcTest extends DualRuntimeTest {
         future.get();
         LOGGER.info("[" + runtime + "] gcAsync completed successfully");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] gcAsync not available: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] gcAsync not available: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -91,8 +95,13 @@ public class StoreDebugAndGcTest extends DualRuntimeTest {
         assertNotNull(frames, "debugFrames should not return null");
         LOGGER.info("[" + runtime + "] debugFrames returned " + frames.size() + " frames");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] debugFrames not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] debugFrames not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -110,12 +119,21 @@ public class StoreDebugAndGcTest extends DualRuntimeTest {
       try {
         final WasmBacktrace backtrace = store.captureBacktrace();
         assertNotNull(backtrace, "captureBacktrace should not return null");
-        LOGGER.info("[" + runtime + "] captureBacktrace returned "
-            + backtrace.getFrameCount() + " frames, isEmpty="
-            + backtrace.isEmpty());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] captureBacktrace returned "
+                + backtrace.getFrameCount()
+                + " frames, isEmpty="
+                + backtrace.isEmpty());
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] captureBacktrace not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] captureBacktrace not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -133,12 +151,21 @@ public class StoreDebugAndGcTest extends DualRuntimeTest {
       try {
         final WasmBacktrace backtrace = store.forceCaptureBacktrace();
         assertNotNull(backtrace, "forceCaptureBacktrace should not return null");
-        LOGGER.info("[" + runtime + "] forceCaptureBacktrace returned "
-            + backtrace.getFrameCount() + " frames, forceCapture="
-            + backtrace.isForceCapture());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] forceCaptureBacktrace returned "
+                + backtrace.getFrameCount()
+                + " frames, forceCapture="
+                + backtrace.isForceCapture());
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] forceCaptureBacktrace not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] forceCaptureBacktrace not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -157,8 +184,13 @@ public class StoreDebugAndGcTest extends DualRuntimeTest {
         store.setDebugHandler(null);
         LOGGER.info("[" + runtime + "] setDebugHandler(null) completed without crash");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] setDebugHandler not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] setDebugHandler not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -181,8 +213,13 @@ public class StoreDebugAndGcTest extends DualRuntimeTest {
         store.clearDebugHandler();
         LOGGER.info("[" + runtime + "] clearDebugHandler succeeded");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] setDebugHandler not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] setDebugHandler not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -201,8 +238,13 @@ public class StoreDebugAndGcTest extends DualRuntimeTest {
         store.gc();
         LOGGER.info("[" + runtime + "] gc() completed without error");
       } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info("[" + runtime + "] gc() not supported: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] gc() not supported: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }

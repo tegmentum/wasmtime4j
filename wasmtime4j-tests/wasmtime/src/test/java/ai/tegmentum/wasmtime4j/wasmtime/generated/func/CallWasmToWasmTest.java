@@ -32,17 +32,17 @@ public final class CallWasmToWasmTest {
 
     final String wat =
         """
-        (module
-          (func (result i32 i32 i32)
-            i32.const 1
-            i32.const 2
-            i32.const 3
-          )
-          (func (export "run") (result i32 i32 i32)
-            call 0
-          )
-        )
-    """;
+            (module
+              (func (result i32 i32 i32)
+                i32.const 1
+                i32.const 2
+                i32.const 3
+              )
+              (func (export "run") (result i32 i32 i32)
+                call 0
+              )
+            )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       runner.compileAndInstantiate(wat);

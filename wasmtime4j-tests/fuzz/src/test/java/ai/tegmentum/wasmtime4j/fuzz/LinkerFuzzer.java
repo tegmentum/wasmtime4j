@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.fuzz;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -25,6 +24,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
 
@@ -47,26 +47,26 @@ public class LinkerFuzzer {
   /** A module that imports a function. */
   private static final String IMPORT_MODULE_WAT =
       """
-        (module
-            (import "env" "host_func" (func $host_func (param i32) (result i32)))
-            (func (export "call_host") (param i32) (result i32)
-                local.get 0
-                call $host_func)
-        )
-        """;
+      (module
+          (import "env" "host_func" (func $host_func (param i32) (result i32)))
+          (func (export "call_host") (param i32) (result i32)
+              local.get 0
+              call $host_func)
+      )
+      """;
 
   /** A simple module without imports for testing linking. */
   private static final String SIMPLE_MODULE_WAT =
       """
-        (module
-            (func (export "add") (param i32 i32) (result i32)
-                local.get 0
-                local.get 1
-                i32.add)
-            (func (export "identity") (param i64) (result i64)
-                local.get 0)
-        )
-        """;
+      (module
+          (func (export "add") (param i32 i32) (result i32)
+              local.get 0
+              local.get 1
+              i32.add)
+          (func (export "identity") (param i64) (result i64)
+              local.get 0)
+      )
+      """;
 
   /**
    * Fuzz test for defining host functions with fuzzed parameters.

@@ -24,8 +24,6 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.type.TableType;
-import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.util.Optional;
 import java.util.logging.Logger;

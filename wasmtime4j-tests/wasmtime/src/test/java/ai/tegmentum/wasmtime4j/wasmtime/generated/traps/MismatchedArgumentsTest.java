@@ -25,10 +25,10 @@ public final class MismatchedArgumentsTest {
 
     final String wat =
         """
-        (module $a
-          (func (export "foo") (param i32))
-        )
-    """;
+            (module $a
+              (func (export "foo") (param i32))
+            )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       runner.compileAndInstantiate(wat);

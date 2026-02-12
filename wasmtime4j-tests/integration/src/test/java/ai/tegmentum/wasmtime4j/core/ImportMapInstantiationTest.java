@@ -6,9 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
@@ -16,7 +13,10 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,19 +27,18 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * Tests for {@link ImportMap} creation and module instantiation with imports.
  *
  * <p>Covers {@link ImportMap#empty()}, {@link ImportMap#addFunction(String, String, WasmFunction)},
- * {@link ImportMap#contains(String, String)}, and
- * {@link Module#instantiate(Store, ImportMap)}.
+ * {@link ImportMap#contains(String, String)}, and {@link Module#instantiate(Store, ImportMap)}.
  */
 @DisplayName("ImportMap Instantiation Tests")
 public class ImportMapInstantiationTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ImportMapInstantiationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ImportMapInstantiationTest.class.getName());
 
   /** Module that imports env.get_val (no params, returns i32) and re-exports via call_it. */
-  private static final String WAT_WITH_IMPORT = "(module\n"
-      + "  (import \"env\" \"get_val\" (func (result i32)))\n"
-      + "  (func (export \"call_it\") (result i32) call 0))";
+  private static final String WAT_WITH_IMPORT =
+      "(module\n"
+          + "  (import \"env\" \"get_val\" (func (result i32)))\n"
+          + "  (func (export \"call_it\") (result i32) call 0))";
 
   @AfterEach
   void cleanup() {
@@ -56,15 +55,21 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
     try {
       final ImportMap importMap = ImportMap.empty();
       assertNotNull(importMap, "ImportMap.empty() must return non-null");
-      LOGGER.info("[" + runtime + "] ImportMap.empty() returned: " + importMap.getClass().getName());
+      LOGGER.info(
+          "[" + runtime + "] ImportMap.empty() returned: " + importMap.getClass().getName());
 
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] ImportMap.empty() not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -80,9 +85,8 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
         Module module = engine.compileWat(WAT_WITH_IMPORT)) {
 
       // Create host function that returns 777
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0],
-          new WasmValueType[] {WasmValueType.I32});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
       final HostFunction hostImpl = (params) -> new WasmValue[] {WasmValue.i32(777)};
       final WasmFunction hostFunc = store.createHostFunction("get_val", funcType, hostImpl);
       assertNotNull(hostFunc, "Host function must not be null");
@@ -101,19 +105,22 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
 
         final WasmValue[] results = callIt.call();
         assertNotNull(results, "call_it must return results");
-        assertEquals(777, results[0].asI32(),
-            "call_it should return 777 from host function");
+        assertEquals(777, results[0].asI32(), "call_it should return 777 from host function");
         LOGGER.info("[" + runtime + "] call_it() returned " + results[0].asI32());
       }
 
     } catch (final UnsupportedOperationException e) {
-      LOGGER.warning("[" + runtime + "] ImportMap instantiation not supported: "
-          + e.getMessage());
+      LOGGER.warning("[" + runtime + "] ImportMap instantiation not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -132,13 +139,21 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
 
       try {
         try (Instance inst = module.instantiate(store, emptyMap)) {
-          LOGGER.warning("[" + runtime
-              + "] Instantiation with missing import did not throw (unexpected), "
-              + "instance valid=" + inst.isValid());
+          LOGGER.warning(
+              "["
+                  + runtime
+                  + "] Instantiation with missing import did not throw (unexpected), "
+                  + "instance valid="
+                  + inst.isValid());
         }
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] Correctly threw on missing import: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Correctly threw on missing import: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
     } catch (final UnsupportedOperationException e) {
@@ -146,8 +161,13 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -161,16 +181,17 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
     try (Engine engine = Engine.create();
         Store store = engine.createStore()) {
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0],
-          new WasmValueType[] {WasmValueType.I32});
-      final WasmFunction hostFunc = store.createHostFunction(
-          "get_val", funcType, (params) -> new WasmValue[] {WasmValue.i32(1)});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+      final WasmFunction hostFunc =
+          store.createHostFunction(
+              "get_val", funcType, (params) -> new WasmValue[] {WasmValue.i32(1)});
 
       final ImportMap importMap = ImportMap.empty();
       importMap.addFunction("env", "get_val", hostFunc);
 
-      assertTrue(importMap.contains("env", "get_val"),
+      assertTrue(
+          importMap.contains("env", "get_val"),
           "ImportMap.contains should return true for added function");
       LOGGER.info("[" + runtime + "] contains(env, get_val) = true");
 
@@ -179,8 +200,13 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -194,7 +220,8 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
     try {
       final ImportMap importMap = ImportMap.empty();
 
-      assertFalse(importMap.contains("env", "nope"),
+      assertFalse(
+          importMap.contains("env", "nope"),
           "ImportMap.contains should return false for non-existent entry");
       LOGGER.info("[" + runtime + "] contains(env, nope) = false");
 
@@ -203,8 +230,13 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 }

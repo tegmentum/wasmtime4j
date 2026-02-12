@@ -179,7 +179,11 @@ public class ResourceLifecycleStressTest {
         }
 
         LOGGER.info(
-            "Batch " + (batch + 1) + ": Created " + batchSize + " resource sets, closing in"
+            "Batch "
+                + (batch + 1)
+                + ": Created "
+                + batchSize
+                + " resource sets, closing in"
                 + " shuffled order");
 
         // Close instances in shuffled order

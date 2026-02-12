@@ -17,9 +17,9 @@
 package ai.tegmentum.wasmtime4j.fuzz;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
@@ -129,8 +129,8 @@ public class EngineConfigFuzzer {
   /**
    * Sets memory reservation, memory guard size, and instance pool size with fuzzed extreme values.
    *
-   * <p>Values include 0, negatives, and very large numbers. Engine creation should either succeed or
-   * throw cleanly.
+   * <p>Values include 0, negatives, and very large numbers. Engine creation should either succeed
+   * or throw cleanly.
    *
    * @param data fuzzed data provider
    */
@@ -241,7 +241,8 @@ public class EngineConfigFuzzer {
   }
 
   /**
-   * Creates multiple engines with different random configs and compiles the same WAT module on each.
+   * Creates multiple engines with different random configs and compiles the same WAT module on
+   * each.
    *
    * <p>Verifies all succeed or throw consistently. Tests config isolation between engines.
    *

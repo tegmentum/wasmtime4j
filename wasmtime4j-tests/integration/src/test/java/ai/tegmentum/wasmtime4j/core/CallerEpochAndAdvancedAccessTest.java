@@ -17,15 +17,10 @@
 package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Export;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -35,8 +30,12 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.Caller;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -167,7 +166,8 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
       }
     }
 
-    assertTrue(hasDeadlineResult.get(),
+    assertTrue(
+        hasDeadlineResult.get(),
         "hasEpochDeadline() should return true when epoch deadline is set on store");
     LOGGER.info("[" + runtime + "] Verified: hasEpochDeadline() = true");
   }
@@ -215,9 +215,11 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
     }
 
     assertNotNull(epochResult.get(), "epochDeadline() result should not be null");
-    assertTrue(epochResult.get().isPresent(),
+    assertTrue(
+        epochResult.get().isPresent(),
         "epochDeadline() should return a value when epoch interruption is enabled");
-    assertTrue(epochResult.get().get() > 0,
+    assertTrue(
+        epochResult.get().get() > 0,
         "epochDeadline() value should be > 0, got: " + epochResult.get().get());
     LOGGER.info("[" + runtime + "] Verified: epochDeadline() = " + epochResult.get().get());
   }
@@ -229,8 +231,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
   @DisplayName("Caller.getExportByModuleExport finds memory export")
   void callerGetExportByModuleExportFindsMemory(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime
-        + "] Testing Caller.getExportByModuleExport() for memory export");
+    LOGGER.info("[" + runtime + "] Testing Caller.getExportByModuleExport() for memory export");
 
     final AtomicReference<Optional<Export>> exportResult = new AtomicReference<>();
     final AtomicReference<ModuleExport> usedModuleExport = new AtomicReference<>();
@@ -241,11 +242,16 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
               final ModuleExport me = usedModuleExport.get();
               if (me != null) {
                 exportResult.set(caller.getExportByModuleExport(me));
-                LOGGER.info("[" + runtime + "] Caller.getExportByModuleExport("
-                    + me + "): " + exportResult.get());
+                LOGGER.info(
+                    "["
+                        + runtime
+                        + "] Caller.getExportByModuleExport("
+                        + me
+                        + "): "
+                        + exportResult.get());
               } else {
-                LOGGER.warning("[" + runtime
-                    + "] No ModuleExport was set before host function call");
+                LOGGER.warning(
+                    "[" + runtime + "] No ModuleExport was set before host function call");
                 exportResult.set(Optional.empty());
               }
               return new WasmValue[] {WasmValue.i32(42)};
@@ -266,8 +272,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
           break;
         }
       }
-      assertNotNull(memoryExport,
-          "WAT module should have a 'memory' export in getModuleExports()");
+      assertNotNull(memoryExport, "WAT module should have a 'memory' export in getModuleExports()");
       usedModuleExport.set(memoryExport);
 
       linker.defineHostFunction("env", "host_fn", HOST_FN_TYPE, hostFn);
@@ -288,12 +293,15 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
       }
     }
 
-    assertNotNull(exportResult.get(),
-        "getExportByModuleExport() result should not be null");
-    assertTrue(exportResult.get().isPresent(),
+    assertNotNull(exportResult.get(), "getExportByModuleExport() result should not be null");
+    assertTrue(
+        exportResult.get().isPresent(),
         "getExportByModuleExport() should find the 'memory' export");
-    LOGGER.info("[" + runtime + "] Verified: getExportByModuleExport() found memory export: "
-        + exportResult.get().get());
+    LOGGER.info(
+        "["
+            + runtime
+            + "] Verified: getExportByModuleExport() found memory export: "
+            + exportResult.get().get());
   }
 
   @ParameterizedTest
@@ -301,8 +309,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
   @DisplayName("Caller.getExportByModuleExport with null throws IllegalArgumentException")
   void callerGetExportByModuleExportNullThrows(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime
-        + "] Testing Caller.getExportByModuleExport(null) throws");
+    LOGGER.info("[" + runtime + "] Testing Caller.getExportByModuleExport(null) throws");
 
     final AtomicBoolean threwException = new AtomicBoolean(false);
     final AtomicReference<Exception> caughtException = new AtomicReference<>();
@@ -315,9 +322,13 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
               } catch (final IllegalArgumentException | NullPointerException e) {
                 threwException.set(true);
                 caughtException.set(e);
-                LOGGER.info("[" + runtime
-                    + "] getExportByModuleExport(null) threw: "
-                    + e.getClass().getSimpleName() + " - " + e.getMessage());
+                LOGGER.info(
+                    "["
+                        + runtime
+                        + "] getExportByModuleExport(null) threw: "
+                        + e.getClass().getSimpleName()
+                        + " - "
+                        + e.getMessage());
               }
               return new WasmValue[] {WasmValue.i32(0)};
             });
@@ -345,11 +356,15 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
       }
     }
 
-    assertTrue(threwException.get(),
+    assertTrue(
+        threwException.get(),
         "getExportByModuleExport(null) should throw IllegalArgumentException or "
             + "NullPointerException");
-    LOGGER.info("[" + runtime + "] Verified: null argument correctly rejected with "
-        + caughtException.get().getClass().getSimpleName());
+    LOGGER.info(
+        "["
+            + runtime
+            + "] Verified: null argument correctly rejected with "
+            + caughtException.get().getClass().getSimpleName());
   }
 
   // ========== Fuel Async Yield Interval Tests ==========
@@ -359,8 +374,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
   @DisplayName("Caller.fuelAsyncYieldInterval returns empty by default")
   void callerFuelAsyncYieldIntervalDefaultEmpty(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime
-        + "] Testing Caller.fuelAsyncYieldInterval() default value");
+    LOGGER.info("[" + runtime + "] Testing Caller.fuelAsyncYieldInterval() default value");
 
     final AtomicReference<Optional<Long>> intervalResult = new AtomicReference<>();
 
@@ -368,8 +382,8 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
         HostFunction.multiValueWithCaller(
             (Caller<Void> caller, WasmValue[] params) -> {
               intervalResult.set(caller.fuelAsyncYieldInterval());
-              LOGGER.info("[" + runtime + "] Caller.fuelAsyncYieldInterval(): "
-                  + intervalResult.get());
+              LOGGER.info(
+                  "[" + runtime + "] Caller.fuelAsyncYieldInterval(): " + intervalResult.get());
               return new WasmValue[] {WasmValue.i32(42)};
             });
 
@@ -398,16 +412,18 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
       }
     }
 
-    assertNotNull(intervalResult.get(),
-        "fuelAsyncYieldInterval() result should not be null");
+    assertNotNull(intervalResult.get(), "fuelAsyncYieldInterval() result should not be null");
     if (intervalResult.get().isPresent()) {
-      LOGGER.info("[" + runtime + "] fuelAsyncYieldInterval() returned value: "
-          + intervalResult.get().get() + " (expected 0 or empty)");
-      assertTrue(intervalResult.get().get() >= 0,
-          "fuelAsyncYieldInterval() should be non-negative");
+      LOGGER.info(
+          "["
+              + runtime
+              + "] fuelAsyncYieldInterval() returned value: "
+              + intervalResult.get().get()
+              + " (expected 0 or empty)");
+      assertTrue(
+          intervalResult.get().get() >= 0, "fuelAsyncYieldInterval() should be non-negative");
     } else {
-      LOGGER.info("[" + runtime
-          + "] fuelAsyncYieldInterval() returned empty (no interval set)");
+      LOGGER.info("[" + runtime + "] fuelAsyncYieldInterval() returned empty (no interval set)");
     }
   }
 
@@ -416,8 +432,10 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
   @DisplayName("Caller.setFuelAsyncYieldInterval and read back via fuelAsyncYieldInterval")
   void callerSetFuelAsyncYieldIntervalAndRead(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime
-        + "] Testing Caller.setFuelAsyncYieldInterval() and fuelAsyncYieldInterval()");
+    LOGGER.info(
+        "["
+            + runtime
+            + "] Testing Caller.setFuelAsyncYieldInterval() and fuelAsyncYieldInterval()");
 
     final long targetInterval = 1000L;
     final AtomicReference<Optional<Long>> intervalResult = new AtomicReference<>();
@@ -429,15 +447,27 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
               try {
                 caller.setFuelAsyncYieldInterval(targetInterval);
                 setSucceeded.set(true);
-                LOGGER.info("[" + runtime + "] setFuelAsyncYieldInterval("
-                    + targetInterval + ") succeeded");
+                LOGGER.info(
+                    "["
+                        + runtime
+                        + "] setFuelAsyncYieldInterval("
+                        + targetInterval
+                        + ") succeeded");
               } catch (final WasmException | UnsupportedOperationException e) {
-                LOGGER.info("[" + runtime + "] setFuelAsyncYieldInterval not supported: "
-                    + e.getClass().getSimpleName() + " - " + e.getMessage());
+                LOGGER.info(
+                    "["
+                        + runtime
+                        + "] setFuelAsyncYieldInterval not supported: "
+                        + e.getClass().getSimpleName()
+                        + " - "
+                        + e.getMessage());
               }
               intervalResult.set(caller.fuelAsyncYieldInterval());
-              LOGGER.info("[" + runtime + "] Caller.fuelAsyncYieldInterval() after set: "
-                  + intervalResult.get());
+              LOGGER.info(
+                  "["
+                      + runtime
+                      + "] Caller.fuelAsyncYieldInterval() after set: "
+                      + intervalResult.get());
               return new WasmValue[] {WasmValue.i32(42)};
             });
 
@@ -467,22 +497,29 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
     }
 
     if (setSucceeded.get()) {
-      assertNotNull(intervalResult.get(),
-          "fuelAsyncYieldInterval() should not be null after setting");
+      assertNotNull(
+          intervalResult.get(), "fuelAsyncYieldInterval() should not be null after setting");
       if (intervalResult.get().isPresent()) {
-        assertTrue(intervalResult.get().get() >= targetInterval,
-            "fuelAsyncYieldInterval() should be >= " + targetInterval
-                + " after set, got: " + intervalResult.get().get());
-        LOGGER.info("[" + runtime + "] Verified: round-trip interval = "
-            + intervalResult.get().get());
+        assertTrue(
+            intervalResult.get().get() >= targetInterval,
+            "fuelAsyncYieldInterval() should be >= "
+                + targetInterval
+                + " after set, got: "
+                + intervalResult.get().get());
+        LOGGER.info(
+            "[" + runtime + "] Verified: round-trip interval = " + intervalResult.get().get());
       } else {
-        LOGGER.info("[" + runtime
-            + "] fuelAsyncYieldInterval() returned empty after set (runtime may not "
-            + "report interval via caller)");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] fuelAsyncYieldInterval() returned empty after set (runtime may not "
+                + "report interval via caller)");
       }
     } else {
-      LOGGER.info("[" + runtime
-          + "] setFuelAsyncYieldInterval not supported, skipping round-trip assertion");
+      LOGGER.info(
+          "["
+              + runtime
+              + "] setFuelAsyncYieldInterval not supported, skipping round-trip assertion");
     }
   }
 
@@ -491,8 +528,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
   @DisplayName("Caller.setFuelAsyncYieldInterval with zero disables interval")
   void callerSetFuelAsyncYieldIntervalZeroDisables(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime
-        + "] Testing Caller.setFuelAsyncYieldInterval(0) disables interval");
+    LOGGER.info("[" + runtime + "] Testing Caller.setFuelAsyncYieldInterval(0) disables interval");
 
     final AtomicReference<Optional<Long>> intervalResult = new AtomicReference<>();
     final AtomicBoolean setSucceeded = new AtomicBoolean(false);
@@ -507,12 +543,20 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
                 setSucceeded.set(true);
                 LOGGER.info("[" + runtime + "] setFuelAsyncYieldInterval(0) succeeded");
               } catch (final WasmException | UnsupportedOperationException e) {
-                LOGGER.info("[" + runtime + "] setFuelAsyncYieldInterval not supported: "
-                    + e.getClass().getSimpleName() + " - " + e.getMessage());
+                LOGGER.info(
+                    "["
+                        + runtime
+                        + "] setFuelAsyncYieldInterval not supported: "
+                        + e.getClass().getSimpleName()
+                        + " - "
+                        + e.getMessage());
               }
               intervalResult.set(caller.fuelAsyncYieldInterval());
-              LOGGER.info("[" + runtime + "] Caller.fuelAsyncYieldInterval() after disable: "
-                  + intervalResult.get());
+              LOGGER.info(
+                  "["
+                      + runtime
+                      + "] Caller.fuelAsyncYieldInterval() after disable: "
+                      + intervalResult.get());
               return new WasmValue[] {WasmValue.i32(42)};
             });
 
@@ -542,21 +586,23 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
     }
 
     if (setSucceeded.get()) {
-      assertNotNull(intervalResult.get(),
-          "fuelAsyncYieldInterval() should not be null");
+      assertNotNull(intervalResult.get(), "fuelAsyncYieldInterval() should not be null");
       if (intervalResult.get().isPresent()) {
-        assertTrue(intervalResult.get().get() == 0,
+        assertTrue(
+            intervalResult.get().get() == 0,
             "fuelAsyncYieldInterval() should be 0 after disabling, got: "
                 + intervalResult.get().get());
         LOGGER.info("[" + runtime + "] Verified: interval disabled (0)");
       } else {
-        LOGGER.info("[" + runtime
-            + "] fuelAsyncYieldInterval() returned empty after disabling "
-            + "(runtime-specific)");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] fuelAsyncYieldInterval() returned empty after disabling "
+                + "(runtime-specific)");
       }
     } else {
-      LOGGER.info("[" + runtime
-          + "] setFuelAsyncYieldInterval not supported, skipping disable assertion");
+      LOGGER.info(
+          "[" + runtime + "] setFuelAsyncYieldInterval not supported, skipping disable assertion");
     }
   }
 }

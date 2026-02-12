@@ -19,15 +19,10 @@ package ai.tegmentum.wasmtime4j.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
-import ai.tegmentum.wasmtime4j.type.ExternType;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Linker.LinkerDefinition;
 import ai.tegmentum.wasmtime4j.Module;
@@ -37,7 +32,9 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -47,10 +44,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Linker iteration and lookup methods: {@link Linker#iter()},
- * {@link Linker#getByImport(Store, String, String)},
- * {@link Linker#getDefault(Store, String)}, and
- * {@link Linker#defineName(Store, String, Extern)}.
+ * Tests Linker iteration and lookup methods: {@link Linker#iter()}, {@link
+ * Linker#getByImport(Store, String, String)}, {@link Linker#getDefault(Store, String)}, and {@link
+ * Linker#defineName(Store, String, Extern)}.
  *
  * @since 1.0.0
  */
@@ -60,9 +56,7 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
   private static final Logger LOGGER =
       Logger.getLogger(LinkerIterationAndLookupTest.class.getName());
 
-  /**
-   * WAT module that imports a function from "env" and exports two functions.
-   */
+  /** WAT module that imports a function from "env" and exports two functions. */
   private static final String WAT_WITH_IMPORT =
       """
       (module
@@ -92,20 +86,27 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
     try (Engine engine = Engine.create();
         Linker<?> linker = Linker.create(engine)) {
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
-      final HostFunction hostFunc = (params) ->
-          new WasmValue[]{WasmValue.i32(42)};
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+      final HostFunction hostFunc = (params) -> new WasmValue[] {WasmValue.i32(42)};
       linker.defineHostFunction("env", "host_func", funcType, hostFunc);
 
       final List<LinkerDefinition> defs = collectIter(linker);
 
-      assertTrue(defs.size() >= 1,
-          "iter should contain at least 1 definition, got: " + defs.size());
+      assertTrue(
+          defs.size() >= 1, "iter should contain at least 1 definition, got: " + defs.size());
       LOGGER.info("[" + runtime + "] iter returned " + defs.size() + " definitions");
       for (final LinkerDefinition def : defs) {
-        LOGGER.info("[" + runtime + "]   " + def.getModuleName() + "::"
-            + def.getName() + " [" + def.getType() + "]");
+        LOGGER.info(
+            "["
+                + runtime
+                + "]   "
+                + def.getModuleName()
+                + "::"
+                + def.getName()
+                + " ["
+                + def.getType()
+                + "]");
       }
     }
   }
@@ -120,10 +121,10 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
     try (Engine engine = Engine.create();
         Linker<?> linker = Linker.create(engine)) {
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "host_func", funcType,
-          (params) -> new WasmValue[]{WasmValue.i32(1)});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "host_func", funcType, (params) -> new WasmValue[] {WasmValue.i32(1)});
 
       try {
         linker.enableWasi();
@@ -133,11 +134,15 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
 
       final List<LinkerDefinition> defs = collectIter(linker);
 
-      assertTrue(defs.size() >= 1,
-          "iter should contain at least the host func definition, got: "
-              + defs.size());
-      LOGGER.info("[" + runtime + "] iter returned " + defs.size()
-          + " definitions after WASI enable attempt");
+      assertTrue(
+          defs.size() >= 1,
+          "iter should contain at least the host func definition, got: " + defs.size());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] iter returned "
+              + defs.size()
+              + " definitions after WASI enable attempt");
     }
   }
 
@@ -153,10 +158,9 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
 
       final List<LinkerDefinition> defs = collectIter(linker);
 
-      assertEquals(0, defs.size(),
-          "Empty linker iter should return 0 definitions, got: " + defs.size());
-      LOGGER.info("[" + runtime + "] Empty linker iter returned " + defs.size()
-          + " definitions");
+      assertEquals(
+          0, defs.size(), "Empty linker iter should return 0 definitions, got: " + defs.size());
+      LOGGER.info("[" + runtime + "] Empty linker iter returned " + defs.size() + " definitions");
     }
   }
 
@@ -171,23 +175,32 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<?> linker = Linker.create(engine)) {
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "host_func", funcType,
-          (params) -> new WasmValue[]{WasmValue.i32(42)});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "host_func", funcType, (params) -> new WasmValue[] {WasmValue.i32(42)});
 
       try {
         final Extern ext = linker.getByImport(store, "env", "host_func");
         assertNotNull(ext, "getByImport should find defined function");
-        assertTrue(ext.isFunction(),
-            "Extern type should be FUNC, got: " + ext.getType());
+        assertTrue(ext.isFunction(), "Extern type should be FUNC, got: " + ext.getType());
         LOGGER.info("[" + runtime + "] getByImport found function extern: " + ext.getType());
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] getByImport not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getByImport not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] getByImport threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getByImport threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -205,15 +218,24 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
 
       try {
         final Extern ext = linker.getByImport(store, "env", "nope");
-        assertNull(ext,
-            "getByImport should return null for undefined import");
+        assertNull(ext, "getByImport should return null for undefined import");
         LOGGER.info("[" + runtime + "] getByImport('env', 'nope') returned null as expected");
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] getByImport not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getByImport not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] getByImport threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getByImport threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -235,15 +257,24 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
       try {
         final Extern ext = linker.getByImport(store, "env", "mem");
         assertNotNull(ext, "getByImport should find defined memory");
-        assertTrue(ext.isMemory(),
-            "Extern type should be MEMORY, got: " + ext.getType());
+        assertTrue(ext.isMemory(), "Extern type should be MEMORY, got: " + ext.getType());
         LOGGER.info("[" + runtime + "] getByImport found memory extern: " + ext.getType());
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] getByImport not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getByImport not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] getByImport threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getByImport threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -259,10 +290,10 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<?> linker = Linker.create(engine)) {
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "host_func", funcType,
-          (params) -> new WasmValue[]{WasmValue.i32(1)});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "host_func", funcType, (params) -> new WasmValue[] {WasmValue.i32(1)});
 
       final Module module = engine.compileWat(WAT_WITH_IMPORT);
 
@@ -273,8 +304,13 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
         LOGGER.info("[" + runtime + "] getDefault('mymod') returned: " + defaultFunc);
         // defaultFunc may be null if no default export, which is valid
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] Named instantiation or getDefault threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Named instantiation or getDefault threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       module.close();
@@ -297,11 +333,21 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
         assertNull(result, "getDefault should return null for unknown module");
         LOGGER.info("[" + runtime + "] getDefault('nomod') returned null as expected");
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] getDefault not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getDefault not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] getDefault threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getDefault threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -317,11 +363,11 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<?> linker = Linker.create(engine)) {
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
-      final WasmFunction func = store.createHostFunction(
-          "myFunc", funcType,
-          (params) -> new WasmValue[]{WasmValue.i32(77)});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+      final WasmFunction func =
+          store.createHostFunction(
+              "myFunc", funcType, (params) -> new WasmValue[] {WasmValue.i32(77)});
 
       // defineName requires an Extern; WasmFunction should implement Extern
       if (func instanceof Extern) {
@@ -329,20 +375,19 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
 
         // Verify it is in iter
         final List<LinkerDefinition> defs = collectIter(linker);
-        final boolean found = defs.stream()
-            .anyMatch(d -> "myFunc".equals(d.getName()));
+        final boolean found = defs.stream().anyMatch(d -> "myFunc".equals(d.getName()));
         assertTrue(found, "defineName should make the extern findable via iter");
         LOGGER.info("[" + runtime + "] defineName succeeded, found in iter: " + found);
       } else {
-        LOGGER.info("[" + runtime + "] WasmFunction does not implement Extern, "
-            + "testing overload defineName(name, FunctionType, HostFunction)");
-        linker.defineName("topFunc", funcType,
-            (params) -> new WasmValue[]{WasmValue.i32(77)});
+        LOGGER.info(
+            "["
+                + runtime
+                + "] WasmFunction does not implement Extern, "
+                + "testing overload defineName(name, FunctionType, HostFunction)");
+        linker.defineName("topFunc", funcType, (params) -> new WasmValue[] {WasmValue.i32(77)});
         final List<LinkerDefinition> defs = collectIter(linker);
-        assertTrue(defs.size() >= 1,
-            "defineName overload should add at least 1 definition");
-        LOGGER.info("[" + runtime + "] defineName overload succeeded, iter size: "
-            + defs.size());
+        assertTrue(defs.size() >= 1, "defineName overload should add at least 1 definition");
+        LOGGER.info("[" + runtime + "] defineName overload succeeded, iter size: " + defs.size());
       }
     }
   }
@@ -362,18 +407,26 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
         linker.defineName(store, null, null);
         LOGGER.info("[" + runtime + "] defineName(null, null) did not throw");
       } catch (final NullPointerException | IllegalArgumentException e) {
-        LOGGER.info("[" + runtime + "] defineName(null, null) threw "
-            + e.getClass().getSimpleName() + ": " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] defineName(null, null) threw "
+                + e.getClass().getSimpleName()
+                + ": "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] defineName(null, null) threw "
-            + e.getClass().getName() + ": " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] defineName(null, null) threw "
+                + e.getClass().getName()
+                + ": "
+                + e.getMessage());
       }
     }
   }
 
-  /**
-   * Collects all definitions from {@link Linker#iter()} into a list.
-   */
+  /** Collects all definitions from {@link Linker#iter()} into a list. */
   private List<LinkerDefinition> collectIter(final Linker<?> linker) {
     final List<LinkerDefinition> defs = new ArrayList<>();
     for (final LinkerDefinition def : linker.iter()) {

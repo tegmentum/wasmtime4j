@@ -22,18 +22,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.validation.ImportInfo;
-import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.config.DependencyResolution;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.validation.ImportInfo;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import java.util.List;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -42,8 +42,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link Linker#resolveDependencies(Module...)},
- * {@link Linker#validateImports(Module...)}, and {@link Linker#getImportRegistry()}.
+ * Tests for {@link Linker#resolveDependencies(Module...)}, {@link
+ * Linker#validateImports(Module...)}, and {@link Linker#getImportRegistry()}.
  *
  * <p>Covers dependency resolution ordering, import validation with satisfied and missing imports,
  * and import registry inspection.
@@ -278,13 +278,18 @@ public class LinkerDependencyResolutionTest extends DualRuntimeTest {
       boolean foundEntry = false;
       for (final ImportInfo info : registry) {
         LOGGER.info(
-            "[" + runtime + "] Registry entry: module=" + info.getModuleName()
-                + " name=" + info.getImportName()
-                + " type=" + info.getImportType()
-                + " isHostFunction=" + info.isHostFunction());
+            "["
+                + runtime
+                + "] Registry entry: module="
+                + info.getModuleName()
+                + " name="
+                + info.getImportName()
+                + " type="
+                + info.getImportType()
+                + " isHostFunction="
+                + info.isHostFunction());
 
-        if ("env".equals(info.getModuleName())
-            && "get_val".equals(info.getImportName())) {
+        if ("env".equals(info.getModuleName()) && "get_val".equals(info.getImportName())) {
           foundEntry = true;
           assertEquals(
               ImportInfo.ImportType.FUNCTION,

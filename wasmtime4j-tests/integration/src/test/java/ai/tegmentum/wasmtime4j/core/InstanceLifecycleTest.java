@@ -19,8 +19,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 /**
  * Tests for {@link Instance} lifecycle management methods.
  *
- * <p>Covers {@link Instance#dispose()}, {@link Instance#isDisposed()}, and
- * {@link Instance#cleanup()}. Verifies that instances track disposal state correctly and handle
+ * <p>Covers {@link Instance#dispose()}, {@link Instance#isDisposed()}, and {@link
+ * Instance#cleanup()}. Verifies that instances track disposal state correctly and handle
  * double-dispose gracefully without JVM crashes.
  */
 @DisplayName("Instance Lifecycle Tests")
@@ -28,9 +28,10 @@ public class InstanceLifecycleTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(InstanceLifecycleTest.class.getName());
 
-  private static final String WAT = "(module\n"
-      + "  (func (export \"get42\") (result i32) i32.const 42)\n"
-      + "  (memory (export \"mem\") 1))";
+  private static final String WAT =
+      "(module\n"
+          + "  (func (export \"get42\") (result i32) i32.const 42)\n"
+          + "  (memory (export \"mem\") 1))";
 
   @AfterEach
   void cleanup() {
@@ -50,8 +51,7 @@ public class InstanceLifecycleTest extends DualRuntimeTest {
         Instance instance = module.instantiate(store)) {
 
       assertNotNull(instance, "Instance must not be null");
-      assertFalse(instance.isDisposed(),
-          "Fresh instance should report isDisposed()=false");
+      assertFalse(instance.isDisposed(), "Fresh instance should report isDisposed()=false");
       LOGGER.info("[" + runtime + "] isDisposed()=" + instance.isDisposed());
 
     } catch (final UnsupportedOperationException e) {
@@ -106,8 +106,7 @@ public class InstanceLifecycleTest extends DualRuntimeTest {
 
       instance.dispose();
 
-      assertTrue(instance.isDisposed(),
-          "isDisposed() should return true after dispose()");
+      assertTrue(instance.isDisposed(), "isDisposed() should return true after dispose()");
       LOGGER.info("[" + runtime + "] After dispose: isDisposed()=" + instance.isDisposed());
 
       instance.close();
@@ -165,15 +164,19 @@ public class InstanceLifecycleTest extends DualRuntimeTest {
       // The critical requirement is no JVM crash (SIGABRT/SIGSEGV).
       try {
         final boolean second = instance.dispose();
-        assertFalse(second,
-            "Second dispose() should return false (already disposed)");
+        assertFalse(second, "Second dispose() should return false (already disposed)");
         LOGGER.info("[" + runtime + "] Second dispose()=" + second);
       } catch (final Exception e) {
         // JNI implementation throws JniResourceException for closed handles,
         // which is acceptable defensive behavior — it means the runtime detected
         // the double-dispose and refused to proceed rather than crashing.
-        LOGGER.info("[" + runtime + "] Second dispose() threw (acceptable): "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Second dispose() threw (acceptable): "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();

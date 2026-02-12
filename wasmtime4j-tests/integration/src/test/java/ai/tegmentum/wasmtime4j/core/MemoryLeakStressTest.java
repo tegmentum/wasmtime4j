@@ -92,9 +92,7 @@ public class MemoryLeakStressTest extends DualRuntimeTest {
 
     // Allow some growth but flag significant leaks (>100MB growth for 10K engines is suspicious)
     final long growthMb = (afterMemory - beforeMemory) / (1024 * 1024);
-    assertTrue(
-        growthMb < 100,
-        "Memory growth should be < 100MB, was " + growthMb + "MB");
+    assertTrue(growthMb < 100, "Memory growth should be < 100MB, was " + growthMb + "MB");
     LOGGER.info("[" + runtime + "] Engine stress test completed, growth: " + growthMb + "MB");
   }
 
@@ -122,9 +120,7 @@ public class MemoryLeakStressTest extends DualRuntimeTest {
       final long afterMemory = getUsedMemory();
 
       final long growthMb = (afterMemory - beforeMemory) / (1024 * 1024);
-      assertTrue(
-          growthMb < 100,
-          "Memory growth should be < 100MB, was " + growthMb + "MB");
+      assertTrue(growthMb < 100, "Memory growth should be < 100MB, was " + growthMb + "MB");
       LOGGER.info("[" + runtime + "] Module stress test completed, growth: " + growthMb + "MB");
     }
   }
@@ -134,8 +130,7 @@ public class MemoryLeakStressTest extends DualRuntimeTest {
   @DisplayName("Create and close 10,000 Instance lifecycles without leak")
   void instanceLifecycleStress(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info(
-        "[" + runtime + "] Stress testing Instance lifecycle (" + ITERATIONS + " iter)");
+    LOGGER.info("[" + runtime + "] Stress testing Instance lifecycle (" + ITERATIONS + " iter)");
 
     try (Engine engine = Engine.create()) {
       final Module module = engine.compileWat(SIMPLE_WAT);
@@ -157,11 +152,8 @@ public class MemoryLeakStressTest extends DualRuntimeTest {
       final long afterMemory = getUsedMemory();
 
       final long growthMb = (afterMemory - beforeMemory) / (1024 * 1024);
-      assertTrue(
-          growthMb < 100,
-          "Memory growth should be < 100MB, was " + growthMb + "MB");
-      LOGGER.info(
-          "[" + runtime + "] Instance stress test completed, growth: " + growthMb + "MB");
+      assertTrue(growthMb < 100, "Memory growth should be < 100MB, was " + growthMb + "MB");
+      LOGGER.info("[" + runtime + "] Instance stress test completed, growth: " + growthMb + "MB");
 
       module.close();
     }
@@ -172,8 +164,7 @@ public class MemoryLeakStressTest extends DualRuntimeTest {
   @DisplayName("Compile same module repeatedly without growth")
   void repeatedCompilationStress(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info(
-        "[" + runtime + "] Stress testing repeated compilation (" + ITERATIONS + " iter)");
+    LOGGER.info("[" + runtime + "] Stress testing repeated compilation (" + ITERATIONS + " iter)");
 
     try (Engine engine = Engine.create()) {
       final long beforeMemory = getUsedMemory();
@@ -193,12 +184,13 @@ public class MemoryLeakStressTest extends DualRuntimeTest {
       final long afterMemory = getUsedMemory();
 
       final long growthMb = (afterMemory - beforeMemory) / (1024 * 1024);
-      assertTrue(
-          growthMb < 100,
-          "Memory growth should be < 100MB, was " + growthMb + "MB");
+      assertTrue(growthMb < 100, "Memory growth should be < 100MB, was " + growthMb + "MB");
       LOGGER.info(
-          "[" + runtime + "] Repeated compilation stress test completed, growth: "
-              + growthMb + "MB");
+          "["
+              + runtime
+              + "] Repeated compilation stress test completed, growth: "
+              + growthMb
+              + "MB");
     }
   }
 

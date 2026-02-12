@@ -23,10 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;

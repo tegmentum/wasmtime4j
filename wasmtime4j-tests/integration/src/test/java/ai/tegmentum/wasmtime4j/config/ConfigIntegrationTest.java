@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -59,7 +58,8 @@ public class ConfigIntegrationTest {
       assertEquals(0, OptimizationLevel.NONE.ordinal(), "NONE should have ordinal 0");
       assertEquals(1, OptimizationLevel.SPEED.ordinal(), "SPEED should have ordinal 1");
       assertEquals(2, OptimizationLevel.SIZE.ordinal(), "SIZE should have ordinal 2");
-      assertEquals(3, OptimizationLevel.SPEED_AND_SIZE.ordinal(), "SPEED_AND_SIZE should have ordinal 3");
+      assertEquals(
+          3, OptimizationLevel.SPEED_AND_SIZE.ordinal(), "SPEED_AND_SIZE should have ordinal 3");
 
       LOGGER.info("OptimizationLevel ordinal values verified");
     }

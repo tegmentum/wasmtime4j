@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.wasmtime.generated.func;
 
-import ai.tegmentum.wasmtime4j.FunctionType;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,11 +26,11 @@ public final class TrapImportTest {
 
     final String wat =
         """
-        (module
-                    (import "host" "trap" (func))
-                    (start 0)
-                  )
-    """;
+            (module
+                        (import "host" "trap" (func))
+                        (start 0)
+                      )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       // Define host function that throws an exception (traps)

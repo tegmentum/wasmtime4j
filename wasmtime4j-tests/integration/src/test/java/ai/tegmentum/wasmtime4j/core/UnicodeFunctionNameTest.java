@@ -198,8 +198,7 @@ public class UnicodeFunctionNameTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       assertTrue(instance.hasExport(functionName), "Should find Unicode export");
-      LOGGER.info(
-          "[" + runtime + "] hasExport found Greek function name '" + functionName + "'");
+      LOGGER.info("[" + runtime + "] hasExport found Greek function name '" + functionName + "'");
 
       instance.close();
       module.close();

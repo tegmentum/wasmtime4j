@@ -22,11 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,8 +35,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Tests for {@link FunctionType} validation methods: {@link FunctionType#validateReturnValues},
- * {@link FunctionType#matchesMultiValuePattern}, {@link FunctionType#validateMultiValueLimits},
- * and {@link FunctionType#getMaxValueCount}.
+ * {@link FunctionType#matchesMultiValuePattern}, {@link FunctionType#validateMultiValueLimits}, and
+ * {@link FunctionType#getMaxValueCount}.
  *
  * <p>All methods under test are pure Java with no native calls, but DualRuntimeTest is used for
  * consistency with the project testing pattern.
@@ -46,8 +46,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("FunctionType Validation Tests")
 public class FunctionTypeValidationTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(FunctionTypeValidationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(FunctionTypeValidationTest.class.getName());
 
   @AfterEach
   void cleanup() {
@@ -86,8 +85,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
 
     assertDoesNotThrow(
         () ->
-            funcType.validateReturnValues(
-                new WasmValue[] {WasmValue.i32(10), WasmValue.f64(3.14)}),
+            funcType.validateReturnValues(new WasmValue[] {WasmValue.i32(10), WasmValue.f64(3.14)}),
         "Multi-return [I32, F64] should pass validation");
 
     LOGGER.info("[" + runtime + "] validateReturnValues accepted multi-return [I32, F64]");
@@ -119,8 +117,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing validateReturnValues null array for void function");
 
-    final FunctionType funcType =
-        new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+    final FunctionType funcType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
 
     assertDoesNotThrow(
         () -> funcType.validateReturnValues(null),
@@ -198,8 +195,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
 
     final FunctionType funcType =
         new FunctionType(
-            new WasmValueType[] {WasmValueType.I32},
-            new WasmValueType[] {WasmValueType.F64});
+            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64});
 
     assertTrue(
         funcType.matchesMultiValuePattern(
@@ -218,8 +214,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
 
     final FunctionType funcType =
         new FunctionType(
-            new WasmValueType[] {WasmValueType.I32},
-            new WasmValueType[] {WasmValueType.F64});
+            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64});
 
     assertFalse(
         funcType.matchesMultiValuePattern(
@@ -238,8 +233,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
 
     final FunctionType funcType =
         new FunctionType(
-            new WasmValueType[] {WasmValueType.I32},
-            new WasmValueType[] {WasmValueType.F64});
+            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64});
 
     assertFalse(
         funcType.matchesMultiValuePattern(
@@ -258,8 +252,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
 
     final FunctionType funcType =
         new FunctionType(
-            new WasmValueType[] {WasmValueType.I32},
-            new WasmValueType[] {WasmValueType.F64});
+            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64});
 
     assertFalse(
         funcType.matchesMultiValuePattern(null, new WasmValueType[] {WasmValueType.F64}),
@@ -281,8 +274,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing getMaxValueCount");
 
-    assertEquals(16, FunctionType.getMaxValueCount(),
-        "WebAssembly multi-value limit should be 16");
+    assertEquals(16, FunctionType.getMaxValueCount(), "WebAssembly multi-value limit should be 16");
 
     LOGGER.info("[" + runtime + "] getMaxValueCount returned 16");
   }
@@ -302,8 +294,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
     final FunctionType funcType = new FunctionType(sixteenTypes, sixteenTypes.clone());
 
     assertDoesNotThrow(
-        funcType::validateMultiValueLimits,
-        "16 params + 16 returns should not exceed limits");
+        funcType::validateMultiValueLimits, "16 params + 16 returns should not exceed limits");
 
     LOGGER.info("[" + runtime + "] validateMultiValueLimits passed with 16+16 types");
   }

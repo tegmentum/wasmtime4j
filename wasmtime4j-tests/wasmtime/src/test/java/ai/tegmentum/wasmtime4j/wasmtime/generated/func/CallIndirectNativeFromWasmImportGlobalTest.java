@@ -31,25 +31,25 @@ public final class CallIndirectNativeFromWasmImportGlobalTest extends DualRuntim
     // WAT module that imports a funcref global and calls it indirectly
     final String wat =
         """
-        (module
-          (import "" "" (global funcref))
-          (table 1 1 funcref)
-          (func (export "run") (result i32 i32 i32)
-            i32.const 0
-            global.get 0
-            table.set
-            i32.const 0
-            call_indirect (result i32 i32 i32)
-          )
-        )
-    """;
+            (module
+              (import "" "" (global funcref))
+              (table 1 1 funcref)
+              (func (export "run") (result i32 i32 i32)
+                i32.const 0
+                global.get 0
+                table.set
+                i32.const 0
+                call_indirect (result i32 i32 i32)
+              )
+            )
+        """;
 
     try (final ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner runner =
         new ai.tegmentum.wasmtime4j.wasmtime.framework.WastTestRunner()) {
 
       // Create a host function that returns (10, 20, 30)
-      final ai.tegmentum.wasmtime4j.FunctionType funcType =
-          new ai.tegmentum.wasmtime4j.FunctionType(
+      final ai.tegmentum.wasmtime4j.type.FunctionType funcType =
+          new ai.tegmentum.wasmtime4j.type.FunctionType(
               new ai.tegmentum.wasmtime4j.WasmValueType[] {}, // no params
               new ai.tegmentum.wasmtime4j.WasmValueType[] {
                 ai.tegmentum.wasmtime4j.WasmValueType.I32,
@@ -57,7 +57,7 @@ public final class CallIndirectNativeFromWasmImportGlobalTest extends DualRuntim
                 ai.tegmentum.wasmtime4j.WasmValueType.I32
               });
 
-      final ai.tegmentum.wasmtime4j.HostFunction hostFunc =
+      final ai.tegmentum.wasmtime4j.func.HostFunction hostFunc =
           (args) ->
               new ai.tegmentum.wasmtime4j.WasmValue[] {
                 ai.tegmentum.wasmtime4j.WasmValue.i32(10),
@@ -66,7 +66,7 @@ public final class CallIndirectNativeFromWasmImportGlobalTest extends DualRuntim
               };
 
       // Create a function reference from the host function
-      final ai.tegmentum.wasmtime4j.FunctionReference funcRef =
+      final ai.tegmentum.wasmtime4j.func.FunctionReference funcRef =
           runner.getStore().createFunctionReference(hostFunc, funcType);
 
       // Create a funcref global containing the function reference

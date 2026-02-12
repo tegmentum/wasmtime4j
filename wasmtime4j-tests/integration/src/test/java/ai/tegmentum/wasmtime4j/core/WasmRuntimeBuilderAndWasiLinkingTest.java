@@ -25,11 +25,11 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmRuntimeBuilder;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,9 +40,9 @@ import org.junit.jupiter.api.TestInfo;
 
 /**
  * Tests for {@link WasmRuntime#builder()} and {@link WasmRuntime#addWasiToLinker(Linker,
- * WasiContext)}. The builder is currently a stub that throws {@link
- * UnsupportedOperationException}. The addWasiToLinker method registers WASI snapshot_preview1
- * imports into a linker, enabling WASI module instantiation.
+ * WasiContext)}. The builder is currently a stub that throws {@link UnsupportedOperationException}.
+ * The addWasiToLinker method registers WASI snapshot_preview1 imports into a linker, enabling WASI
+ * module instantiation.
  *
  * @since 1.0.0
  */
@@ -91,7 +91,8 @@ public class WasmRuntimeBuilderAndWasiLinkingTest {
     @Test
     @DisplayName("builder().build() throws UnsupportedOperationException (stub behavior)")
     void builderBuildThrowsUnsupported() {
-      LOGGER.info("Calling WasmRuntime.builder().build() - expecting UnsupportedOperationException");
+      LOGGER.info(
+          "Calling WasmRuntime.builder().build() - expecting UnsupportedOperationException");
 
       final WasmRuntimeBuilder builder = WasmRuntime.builder();
       assertNotNull(builder, "Builder should not be null");
@@ -247,9 +248,7 @@ public class WasmRuntimeBuilderAndWasiLinkingTest {
         runtime.addWasiToLinker(linker, wasiCtx);
 
         final Instance instance = linker.instantiate(store, module);
-        assertNotNull(
-            instance,
-            "Module importing fd_write should instantiate after WASI linking");
+        assertNotNull(instance, "Module importing fd_write should instantiate after WASI linking");
 
         LOGGER.info("Module with fd_write import instantiated successfully via addWasiToLinker");
 
@@ -260,8 +259,8 @@ public class WasmRuntimeBuilderAndWasiLinkingTest {
         } catch (final WasmException e) {
           // fd_write may fail if stdout is not properly configured,
           // but the import resolved successfully which is what we're testing
-          LOGGER.info("fd_write call trapped (expected without full WASI config): "
-              + e.getMessage());
+          LOGGER.info(
+              "fd_write call trapped (expected without full WASI config): " + e.getMessage());
         }
 
         instance.close();

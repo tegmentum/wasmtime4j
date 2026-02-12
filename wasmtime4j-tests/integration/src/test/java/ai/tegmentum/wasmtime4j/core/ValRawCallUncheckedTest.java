@@ -25,11 +25,11 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.type.ValRaw;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.ValRaw;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -47,8 +47,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("ValRaw and callUnchecked Tests")
 public class ValRawCallUncheckedTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ValRawCallUncheckedTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ValRawCallUncheckedTest.class.getName());
 
   private static final String WAT =
       """
@@ -87,8 +86,7 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
       assert funcOpt.isPresent() : "add_i32 export must be present";
       final WasmFunction addI32 = funcOpt.get();
 
-      final ValRaw[] results =
-          addI32.callUnchecked(ValRaw.i32(10), ValRaw.i32(32));
+      final ValRaw[] results = addI32.callUnchecked(ValRaw.i32(10), ValRaw.i32(32));
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have exactly 1 result");
@@ -116,13 +114,11 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
       assert funcOpt.isPresent() : "add_i64 export must be present";
       final WasmFunction addI64 = funcOpt.get();
 
-      final ValRaw[] results =
-          addI64.callUnchecked(ValRaw.i64(Long.MAX_VALUE), ValRaw.i64(0L));
+      final ValRaw[] results = addI64.callUnchecked(ValRaw.i64(Long.MAX_VALUE), ValRaw.i64(0L));
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have exactly 1 result");
-      assertEquals(Long.MAX_VALUE, results[0].asI64(),
-          "MAX_VALUE + 0 should equal MAX_VALUE");
+      assertEquals(Long.MAX_VALUE, results[0].asI64(), "MAX_VALUE + 0 should equal MAX_VALUE");
       LOGGER.info("[" + runtime + "] callUnchecked i64 result: " + results[0].asI64());
 
       instance.close();
@@ -146,13 +142,11 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
       assert funcOpt.isPresent() : "mul_f32 export must be present";
       final WasmFunction mulF32 = funcOpt.get();
 
-      final ValRaw[] results =
-          mulF32.callUnchecked(ValRaw.f32(3.0f), ValRaw.f32(7.0f));
+      final ValRaw[] results = mulF32.callUnchecked(ValRaw.f32(3.0f), ValRaw.f32(7.0f));
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have exactly 1 result");
-      assertEquals(21.0f, results[0].asF32(), 0.001f,
-          "3.0 * 7.0 should equal 21.0");
+      assertEquals(21.0f, results[0].asF32(), 0.001f, "3.0 * 7.0 should equal 21.0");
       LOGGER.info("[" + runtime + "] callUnchecked f32 result: " + results[0].asF32());
 
       instance.close();
@@ -176,13 +170,11 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
       assert funcOpt.isPresent() : "div_f64 export must be present";
       final WasmFunction divF64 = funcOpt.get();
 
-      final ValRaw[] results =
-          divF64.callUnchecked(ValRaw.f64(22.0), ValRaw.f64(7.0));
+      final ValRaw[] results = divF64.callUnchecked(ValRaw.f64(22.0), ValRaw.f64(7.0));
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have exactly 1 result");
-      assertEquals(22.0 / 7.0, results[0].asF64(), 1e-10,
-          "22.0 / 7.0 should be approximately pi");
+      assertEquals(22.0 / 7.0, results[0].asF64(), 1e-10, "22.0 / 7.0 should be approximately pi");
       LOGGER.info("[" + runtime + "] callUnchecked f64 result: " + results[0].asF64());
 
       instance.close();
@@ -206,15 +198,19 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
       assert funcOpt.isPresent() : "multi_return export must be present";
       final WasmFunction multiReturn = funcOpt.get();
 
-      final ValRaw[] results =
-          multiReturn.callUnchecked(ValRaw.i32(42), ValRaw.i64(9999L));
+      final ValRaw[] results = multiReturn.callUnchecked(ValRaw.i32(42), ValRaw.i64(9999L));
 
       assertNotNull(results, "Results should not be null");
       assertEquals(2, results.length, "Should have exactly 2 results");
       assertEquals(42, results[0].asI32(), "First result should be 42");
       assertEquals(9999L, results[1].asI64(), "Second result should be 9999");
-      LOGGER.info("[" + runtime + "] callUnchecked multi-return: "
-          + results[0].asI32() + ", " + results[1].asI64());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] callUnchecked multi-return: "
+              + results[0].asI32()
+              + ", "
+              + results[1].asI64());
 
       instance.close();
       module.close();
@@ -275,8 +271,8 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
     final ValRaw raw = ValRaw.fromWasmValue(original);
     final WasmValue roundTripped = raw.toWasmValue(WasmValueType.I64);
 
-    assertEquals(Long.MIN_VALUE, roundTripped.asLong(),
-        "Round-tripped i64 should be Long.MIN_VALUE");
+    assertEquals(
+        Long.MIN_VALUE, roundTripped.asLong(), "Round-tripped i64 should be Long.MIN_VALUE");
     assertEquals(Long.MIN_VALUE, raw.asI64(), "Raw i64 should be Long.MIN_VALUE");
     LOGGER.info("[" + runtime + "] ValRaw i64 round-trip: " + roundTripped.asLong());
   }
@@ -292,8 +288,7 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
     final ValRaw raw = ValRaw.fromWasmValue(original);
     final WasmValue roundTripped = raw.toWasmValue(WasmValueType.F32);
 
-    assertEquals(3.14f, roundTripped.asFloat(), 0.001f,
-        "Round-tripped f32 should be 3.14");
+    assertEquals(3.14f, roundTripped.asFloat(), 0.001f, "Round-tripped f32 should be 3.14");
     assertEquals(3.14f, raw.asF32(), 0.001f, "Raw f32 should be 3.14");
     LOGGER.info("[" + runtime + "] ValRaw f32 round-trip: " + roundTripped.asFloat());
   }
@@ -309,8 +304,7 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
     final ValRaw raw = ValRaw.fromWasmValue(original);
     final WasmValue roundTripped = raw.toWasmValue(WasmValueType.F64);
 
-    assertEquals(2.718281828, roundTripped.asDouble(), 1e-9,
-        "Round-tripped f64 should be e");
+    assertEquals(2.718281828, roundTripped.asDouble(), 1e-9, "Round-tripped f64 should be e");
     assertEquals(2.718281828, raw.asF64(), 1e-9, "Raw f64 should be e");
     LOGGER.info("[" + runtime + "] ValRaw f64 round-trip: " + roundTripped.asDouble());
   }
@@ -330,9 +324,13 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
     assertEquals(high, v128.asV128High(), "High bits should match");
     assertEquals(low, v128.getLowBits(), "getLowBits should match low");
     assertEquals(high, v128.getHighBits(), "getHighBits should match high");
-    LOGGER.info("[" + runtime + "] ValRaw v128 low=0x"
-        + Long.toHexString(v128.asV128Low()) + " high=0x"
-        + Long.toHexString(v128.asV128High()));
+    LOGGER.info(
+        "["
+            + runtime
+            + "] ValRaw v128 low=0x"
+            + Long.toHexString(v128.asV128Low())
+            + " high=0x"
+            + Long.toHexString(v128.asV128High()));
   }
 
   @ParameterizedTest
@@ -347,8 +345,13 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
 
     assertNotNull(nullFunc, "nullFuncref should not return null");
     assertNotNull(nullExtern, "nullExternref should not return null");
-    LOGGER.info("[" + runtime + "] nullFuncref lowBits=" + nullFunc.getLowBits()
-        + " nullExternref lowBits=" + nullExtern.getLowBits());
+    LOGGER.info(
+        "["
+            + runtime
+            + "] nullFuncref lowBits="
+            + nullFunc.getLowBits()
+            + " nullExternref lowBits="
+            + nullExtern.getLowBits());
   }
 
   @ParameterizedTest
@@ -363,15 +366,13 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
     final ValRaw c = ValRaw.i32(99);
 
     assertEquals(a, b, "ValRaw with same i32 value should be equal");
-    assertEquals(a.hashCode(), b.hashCode(),
-        "Equal ValRaw should have same hashCode");
+    assertEquals(a.hashCode(), b.hashCode(), "Equal ValRaw should have same hashCode");
     assertNotEquals(a, c, "ValRaw with different i32 values should not be equal");
 
     final ValRaw d = ValRaw.i64(42L);
     final ValRaw e = ValRaw.i64(42L);
     assertEquals(d, e, "ValRaw with same i64 value should be equal");
-    assertEquals(d.hashCode(), e.hashCode(),
-        "Equal ValRaw i64 should have same hashCode");
+    assertEquals(d.hashCode(), e.hashCode(), "Equal ValRaw i64 should have same hashCode");
 
     LOGGER.info("[" + runtime + "] ValRaw equals/hashCode contract verified");
   }

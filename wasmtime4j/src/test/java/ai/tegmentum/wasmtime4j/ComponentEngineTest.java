@@ -515,13 +515,13 @@ class ComponentEngineTest {
   class IntegrationTests {
 
     @Test
-    @DisplayName("ComponentEngine should be in ai.tegmentum.wasmtime4j package")
+    @DisplayName("ComponentEngine should be in ai.tegmentum.wasmtime4j.component package")
     void shouldBeInCorrectPackage() {
       String packageName = ComponentEngine.class.getPackage().getName();
       assertEquals(
-          "ai.tegmentum.wasmtime4j",
+          "ai.tegmentum.wasmtime4j.component",
           packageName,
-          "ComponentEngine should be in ai.tegmentum.wasmtime4j package");
+          "ComponentEngine should be in ai.tegmentum.wasmtime4j.component package");
     }
 
     @Test

@@ -47,8 +47,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Memory Data Segment (memory.init / data.drop) Tests")
 public class MemoryDataSegmentTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(MemoryDataSegmentTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(MemoryDataSegmentTest.class.getName());
 
   /**
    * WAT module with two passive data segments and exported functions to init/drop them. Segment 0:
@@ -94,8 +93,7 @@ public class MemoryDataSegmentTest extends DualRuntimeTest {
       final WasmMemory memory = memOpt.get();
 
       // init_seg0(dest=0, src=0, len=5) -- copy all 5 bytes of "Hello" to offset 0
-      instance.callFunction("init_seg0",
-          WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(5));
+      instance.callFunction("init_seg0", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(5));
 
       final byte[] result = new byte[5];
       for (int i = 0; i < 5; i++) {
@@ -127,8 +125,7 @@ public class MemoryDataSegmentTest extends DualRuntimeTest {
       final WasmMemory memory = memOpt.get();
 
       // init_seg0(dest=0, src=2, len=3) -- copy "llo" (3 bytes starting at offset 2 in segment)
-      instance.callFunction("init_seg0",
-          WasmValue.i32(0), WasmValue.i32(2), WasmValue.i32(3));
+      instance.callFunction("init_seg0", WasmValue.i32(0), WasmValue.i32(2), WasmValue.i32(3));
 
       final byte[] result = new byte[3];
       for (int i = 0; i < 3; i++) {
@@ -160,8 +157,7 @@ public class MemoryDataSegmentTest extends DualRuntimeTest {
       final WasmMemory memory = memOpt.get();
 
       // init_seg1(dest=0, src=0, len=10) -- copy all 10 bytes of "World12345"
-      instance.callFunction("init_seg1",
-          WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(10));
+      instance.callFunction("init_seg1", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(10));
 
       final byte[] result = new byte[10];
       for (int i = 0; i < 10; i++) {
@@ -193,9 +189,11 @@ public class MemoryDataSegmentTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] Segment 0 dropped");
 
       // Attempting to init dropped segment should trap
-      assertThrows(Exception.class,
-          () -> instance.callFunction("init_seg0",
-              WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(5)),
+      assertThrows(
+          Exception.class,
+          () ->
+              instance.callFunction(
+                  "init_seg0", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(5)),
           "memory.init on dropped segment should trap");
       LOGGER.info("[" + runtime + "] memory.init on dropped segment trapped as expected");
 
@@ -218,8 +216,9 @@ public class MemoryDataSegmentTest extends DualRuntimeTest {
 
       // init_seg0(dest=0, src=0, len=0) -- zero-length init should succeed
       assertDoesNotThrow(
-          () -> instance.callFunction("init_seg0",
-              WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(0)),
+          () ->
+              instance.callFunction(
+                  "init_seg0", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(0)),
           "Zero-length memory.init should not trap");
       LOGGER.info("[" + runtime + "] Zero-length memory.init succeeded");
 
@@ -241,9 +240,11 @@ public class MemoryDataSegmentTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // init_seg0(dest=0, src=0, len=100) -- segment is only 5 bytes, 100 exceeds bounds
-      assertThrows(Exception.class,
-          () -> instance.callFunction("init_seg0",
-              WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(100)),
+      assertThrows(
+          Exception.class,
+          () ->
+              instance.callFunction(
+                  "init_seg0", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(100)),
           "memory.init with length exceeding segment should trap");
       LOGGER.info("[" + runtime + "] Out-of-bounds memory.init trapped as expected");
 
@@ -282,8 +283,13 @@ public class MemoryDataSegmentTest extends DualRuntimeTest {
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] WasmMemory.init() not supported: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] WasmMemory.init() threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] WasmMemory.init() threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();

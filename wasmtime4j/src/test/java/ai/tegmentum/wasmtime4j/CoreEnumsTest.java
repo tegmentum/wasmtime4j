@@ -334,16 +334,20 @@ class CoreEnumsTest {
   class CrossEnumTests {
 
     @Test
-    @DisplayName("All core enums should be in the same package")
-    void allEnumsShouldBeInSamePackage() {
+    @DisplayName("All core enums should be in their correct packages")
+    void allEnumsShouldBeInCorrectPackages() {
       assertEquals(
-          WasmTypeKind.class.getPackage(),
-          OptimizationLevel.class.getPackage(),
-          "WasmTypeKind and OptimizationLevel should be in same package");
+          "ai.tegmentum.wasmtime4j.type",
+          WasmTypeKind.class.getPackage().getName(),
+          "WasmTypeKind should be in type package");
       assertEquals(
-          OptimizationLevel.class.getPackage(),
-          ProfilingStrategy.class.getPackage(),
-          "OptimizationLevel and ProfilingStrategy should be in same package");
+          "ai.tegmentum.wasmtime4j.config",
+          OptimizationLevel.class.getPackage().getName(),
+          "OptimizationLevel should be in config package");
+      assertEquals(
+          "ai.tegmentum.wasmtime4j.execution",
+          ProfilingStrategy.class.getPackage().getName(),
+          "ProfilingStrategy should be in execution package");
     }
 
     @Test

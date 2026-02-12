@@ -20,8 +20,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 /**
  * Tests for async resource creation APIs on {@link Store}.
  *
- * <p>Covers {@link Store#createTableAsync(WasmValueType, int, int)} and
- * {@link Store#createMemoryAsync(int, int)}.
+ * <p>Covers {@link Store#createTableAsync(WasmValueType, int, int)} and {@link
+ * Store#createMemoryAsync(int, int)}.
  *
  * <p>These APIs may not be fully implemented in the native layer, so all tests are defensively
  * wrapped with appropriate skip logging.
@@ -54,18 +54,28 @@ public class StoreAsyncResourceCreationTest extends DualRuntimeTest {
 
       final WasmTable table = future.get();
       assertNotNull(table, "Resolved WasmTable must not be null");
-      assertTrue(table.getSize() >= 1,
-          "Table initial size should be >= 1, got: " + table.getSize());
-      LOGGER.info("[" + runtime + "] createTableAsync resolved: size=" + table.getSize()
-          + ", type=" + table.getElementType());
+      assertTrue(
+          table.getSize() >= 1, "Table initial size should be >= 1, got: " + table.getSize());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] createTableAsync resolved: size="
+              + table.getSize()
+              + ", type="
+              + table.getElementType());
 
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] createTableAsync not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -85,19 +95,24 @@ public class StoreAsyncResourceCreationTest extends DualRuntimeTest {
 
       final WasmTable table = future.get();
       assertNotNull(table, "Resolved WasmTable must not be null");
-      assertTrue(table.getSize() >= 2,
-          "Table initial size should be >= 2, got: " + table.getSize());
-      LOGGER.info("[" + runtime + "] createTableAsync(EXTERNREF) resolved: size="
-          + table.getSize());
+      assertTrue(
+          table.getSize() >= 2, "Table initial size should be >= 2, got: " + table.getSize());
+      LOGGER.info(
+          "[" + runtime + "] createTableAsync(EXTERNREF) resolved: size=" + table.getSize());
 
     } catch (final UnsupportedOperationException e) {
-      LOGGER.warning("[" + runtime + "] createTableAsync(EXTERNREF) not supported: "
-          + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] createTableAsync(EXTERNREF) not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -117,18 +132,24 @@ public class StoreAsyncResourceCreationTest extends DualRuntimeTest {
 
       final WasmMemory memory = future.get();
       assertNotNull(memory, "Resolved WasmMemory must not be null");
-      assertTrue(memory.getSize() >= 1,
+      assertTrue(
+          memory.getSize() >= 1,
           "Memory initial size should be >= 1 page, got: " + memory.getSize());
-      LOGGER.info("[" + runtime + "] createMemoryAsync resolved: size=" + memory.getSize()
-          + " pages");
+      LOGGER.info(
+          "[" + runtime + "] createMemoryAsync resolved: size=" + memory.getSize() + " pages");
 
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] createMemoryAsync not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -147,18 +168,28 @@ public class StoreAsyncResourceCreationTest extends DualRuntimeTest {
 
       final WasmMemory memory = future.get();
       assertNotNull(memory, "Resolved WasmMemory must not be null");
-      assertTrue(memory.getSize() >= 4,
+      assertTrue(
+          memory.getSize() >= 4,
           "Memory initial size should be >= 4 pages, got: " + memory.getSize());
-      LOGGER.info("[" + runtime + "] createMemoryAsync(4,16) resolved: size="
-          + memory.getSize() + " pages");
+      LOGGER.info(
+          "["
+              + runtime
+              + "] createMemoryAsync(4,16) resolved: size="
+              + memory.getSize()
+              + " pages");
 
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] createMemoryAsync not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -186,19 +217,25 @@ public class StoreAsyncResourceCreationTest extends DualRuntimeTest {
       final byte[] readBack = new byte[4];
       memory.readBytes(0, readBack, 0, readBack.length);
       for (int i = 0; i < data.length; i++) {
-        assertTrue(data[i] == readBack[i],
+        assertTrue(
+            data[i] == readBack[i],
             "Byte at offset " + i + ": expected " + data[i] + " but got " + readBack[i]);
       }
       LOGGER.info("[" + runtime + "] Read/write round-trip verified on async-created memory");
 
     } catch (final UnsupportedOperationException e) {
-      LOGGER.warning("[" + runtime + "] createMemoryAsync or read/write not supported: "
-          + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] createMemoryAsync or read/write not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 }

@@ -46,8 +46,8 @@ import org.junit.jupiter.api.Disabled;
  *   <li>Store close races during function execution
  * </ul>
  *
- * <p>Engine is thread-safe. Store is NOT thread-safe. Module is immutable and shareable. Instance is
- * Store-bound. Each test validates that no JVM crash occurs under concurrent access.
+ * <p>Engine is thread-safe. Store is NOT thread-safe. Module is immutable and shareable. Instance
+ * is Store-bound. Each test validates that no JVM crash occurs under concurrent access.
  *
  * @since 1.0.0
  */
@@ -261,7 +261,8 @@ public class ConcurrentAccessFuzzer {
    *
    * @param data fuzzed data provider
    */
-  @Disabled("Race condition tests require operation-level locking - is_closed flag alone has race window")
+  @Disabled(
+      "Race condition tests require operation-level locking - is_closed flag alone has race window")
   @FuzzTest
   public void fuzzEngineCloseRace(final FuzzedDataProvider data) {
     final int threadCount = data.consumeInt(2, 6);
@@ -342,7 +343,8 @@ public class ConcurrentAccessFuzzer {
    *
    * @param data fuzzed data provider
    */
-  @Disabled("Race condition tests require operation-level locking - is_closed flag alone has race window")
+  @Disabled(
+      "Race condition tests require operation-level locking - is_closed flag alone has race window")
   @FuzzTest
   public void fuzzStoreCloseRace(final FuzzedDataProvider data) {
     final int callCount = data.consumeInt(1, 10);

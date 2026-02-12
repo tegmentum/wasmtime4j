@@ -39,13 +39,9 @@ public class WasiLinkageStressTest {
           + "  )\n"
           + ")";
 
-  /**
-   * A simple non-WASI module with no imports.
-   */
+  /** A simple non-WASI module with no imports. */
   private static final String NON_WASI_WAT =
-      "(module\n"
-          + "  (func (export \"get42\") (result i32) i32.const 42)\n"
-          + ")";
+      "(module\n" + "  (func (export \"get42\") (result i32) i32.const 42)\n" + ")";
 
   private WasmRuntime runtime;
 

@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -27,13 +26,13 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -44,22 +43,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Instance index-based export access methods: {@link Instance#getFunction(int)},
- * {@link Instance#getGlobal(int)}, {@link Instance#getMemory(int)},
- * {@link Instance#getTable(int)}, as well as {@link Instance#getTypedFunc(String, WasmValueType...)},
- * {@link Instance#callI32Function(String, int...)}, and {@link Instance#createAsync(Store, Module)}.
+ * Tests Instance index-based export access methods: {@link Instance#getFunction(int)}, {@link
+ * Instance#getGlobal(int)}, {@link Instance#getMemory(int)}, {@link Instance#getTable(int)}, as
+ * well as {@link Instance#getTypedFunc(String, WasmValueType...)}, {@link
+ * Instance#callI32Function(String, int...)}, and {@link Instance#createAsync(Store, Module)}.
  *
  * @since 1.0.0
  */
 @DisplayName("Instance Indexed Access Tests")
 public class InstanceIndexedAccessTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(InstanceIndexedAccessTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(InstanceIndexedAccessTest.class.getName());
 
-  /**
-   * WAT module exporting two functions (add, get42), a mutable global, a memory, and a table.
-   */
+  /** WAT module exporting two functions (add, get42), a mutable global, a memory, and a table. */
   private static final String WAT =
       """
       (module
@@ -93,9 +89,15 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
       final WasmFunction func = funcOpt.get();
       assertNotNull(func, "Function at index 0 should not be null");
       assertNotNull(func.getFunctionType(), "Function should have a type");
-      LOGGER.info("[" + runtime + "] getFunction(0) returned function: " + func.getName()
-          + " params=" + func.getFunctionType().getParamCount()
-          + " returns=" + func.getFunctionType().getReturnCount());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] getFunction(0) returned function: "
+              + func.getName()
+              + " params="
+              + func.getFunctionType().getParamCount()
+              + " returns="
+              + func.getFunctionType().getReturnCount());
 
       instance.close();
       module.close();
@@ -119,10 +121,9 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
 
       assertTrue(func0Opt.isPresent(), "getFunction(0) should return a function");
       assertTrue(func1Opt.isPresent(), "getFunction(1) should return a function");
-      assertNotNull(func1Opt.get().getFunctionType(),
-          "Function at index 1 should have a type");
-      LOGGER.info("[" + runtime + "] getFunction(1) returned function: "
-          + func1Opt.get().getName());
+      assertNotNull(func1Opt.get().getFunctionType(), "Function at index 1 should have a type");
+      LOGGER.info(
+          "[" + runtime + "] getFunction(1) returned function: " + func1Opt.get().getName());
 
       instance.close();
       module.close();
@@ -144,15 +145,19 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
       try {
         final Optional<WasmFunction> result = instance.getFunction(-1);
         // If it doesn't throw, it should at least return empty
-        assertFalse(result.isPresent(),
-            "getFunction(-1) should return empty if not throwing");
+        assertFalse(result.isPresent(), "getFunction(-1) should return empty if not throwing");
         LOGGER.info("[" + runtime + "] getFunction(-1) returned empty Optional");
       } catch (final IllegalArgumentException e) {
-        LOGGER.info("[" + runtime + "] getFunction(-1) threw IllegalArgumentException: "
-            + e.getMessage());
+        LOGGER.info(
+            "[" + runtime + "] getFunction(-1) threw IllegalArgumentException: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] getFunction(-1) threw "
-            + e.getClass().getName() + ": " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getFunction(-1) threw "
+                + e.getClass().getName()
+                + ": "
+                + e.getMessage());
       }
 
       instance.close();
@@ -201,8 +206,8 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
 
       assertTrue(memOpt.isPresent(), "getMemory(0) should return a memory");
       final WasmMemory memory = memOpt.get();
-      assertTrue(memory.getSize() >= 1,
-          "Memory should have at least 1 page, got: " + memory.getSize());
+      assertTrue(
+          memory.getSize() >= 1, "Memory should have at least 1 page, got: " + memory.getSize());
       LOGGER.info("[" + runtime + "] getMemory(0) size = " + memory.getSize() + " pages");
 
       instance.close();
@@ -226,8 +231,8 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
 
       assertTrue(tableOpt.isPresent(), "getTable(0) should return a table");
       final WasmTable table = tableOpt.get();
-      assertTrue(table.getSize() >= 2,
-          "Table should have at least 2 entries, got: " + table.getSize());
+      assertTrue(
+          table.getSize() >= 2, "Table should have at least 2 entries, got: " + table.getSize());
       LOGGER.info("[" + runtime + "] getTable(0) size = " + table.getSize());
 
       instance.close();
@@ -251,13 +256,11 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
         final Optional<TypedFunc> typedOpt =
             instance.getTypedFunc("add", WasmValueType.I32, WasmValueType.I32);
 
-        assertNotNull(typedOpt,
-            "getTypedFunc should not return null");
-        LOGGER.info("[" + runtime + "] getTypedFunc('add', I32, I32) present: "
-            + typedOpt.isPresent());
+        assertNotNull(typedOpt, "getTypedFunc should not return null");
+        LOGGER.info(
+            "[" + runtime + "] getTypedFunc('add', I32, I32) present: " + typedOpt.isPresent());
         if (typedOpt.isPresent()) {
-          LOGGER.info("[" + runtime + "] TypedFunc signature: "
-              + typedOpt.get().getSignature());
+          LOGGER.info("[" + runtime + "] TypedFunc signature: " + typedOpt.get().getSignature());
         }
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] getTypedFunc not supported: " + e.getMessage());
@@ -281,19 +284,23 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       try {
-        final Optional<TypedFunc> typedOpt =
-            instance.getTypedFunc("add", WasmValueType.I64);
+        final Optional<TypedFunc> typedOpt = instance.getTypedFunc("add", WasmValueType.I64);
 
-        assertFalse(typedOpt.isPresent(),
+        assertFalse(
+            typedOpt.isPresent(),
             "getTypedFunc('add', I64) should return empty for mismatched signature");
-        LOGGER.info("[" + runtime + "] getTypedFunc('add', I64) present: "
-            + typedOpt.isPresent());
+        LOGGER.info("[" + runtime + "] getTypedFunc('add', I64) present: " + typedOpt.isPresent());
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] getTypedFunc not supported: " + e.getMessage());
       } catch (final Exception e) {
         // Some runtimes may throw on mismatch rather than return empty
-        LOGGER.info("[" + runtime + "] getTypedFunc mismatch threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getTypedFunc mismatch threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -374,8 +381,13 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
         LOGGER.info("[" + runtime + "] createAsync not supported: " + e.getMessage());
       } catch (final Exception e) {
         // Async instantiation may fail due to thread-safety constraints
-        LOGGER.info("[" + runtime + "] createAsync threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] createAsync threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       module.close();

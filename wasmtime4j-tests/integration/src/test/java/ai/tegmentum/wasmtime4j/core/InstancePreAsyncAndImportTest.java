@@ -19,10 +19,8 @@ package ai.tegmentum.wasmtime4j.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstancePre;
 import ai.tegmentum.wasmtime4j.Linker;
@@ -35,6 +33,7 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -47,9 +46,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link InstancePre#instantiateAsync(Store)},
- * {@link InstancePre#instantiateAsync(Store, ImportMap)}, and
- * {@link InstancePre#instantiate(Store, ImportMap)}.
+ * Tests for {@link InstancePre#instantiateAsync(Store)}, {@link InstancePre#instantiateAsync(Store,
+ * ImportMap)}, and {@link InstancePre#instantiate(Store, ImportMap)}.
  *
  * <p>Verifies async and import-map-based instantiation from pre-instantiated modules. The JNI
  * implementation may throw {@link UnsatisfiedLinkError} if nativeInstantiatePre is not yet bound.
@@ -97,13 +95,19 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
       return linker.instantiatePre(module);
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning(
-          "[" + runtime + "] instantiatePre not available (missing native binding): "
+          "["
+              + runtime
+              + "] instantiatePre not available (missing native binding): "
               + e.getMessage());
       return null;
     } catch (final Exception e) {
       LOGGER.warning(
-          "[" + runtime + "] instantiatePre failed: " + e.getClass().getSimpleName()
-              + " - " + e.getMessage());
+          "["
+              + runtime
+              + "] instantiatePre failed: "
+              + e.getClass().getSimpleName()
+              + " - "
+              + e.getMessage());
       return null;
     }
   }
@@ -125,15 +129,18 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
         return;
       }
 
-      try (pre; Store store = engine.createStore()) {
+      try (pre;
+          Store store = engine.createStore()) {
         final CompletableFuture<Instance> future = pre.instantiateAsync(store);
         assertNotNull(future, "CompletableFuture should not be null");
 
         final Instance instance = future.get(10, TimeUnit.SECONDS);
         assertNotNull(instance, "Instance should not be null");
 
-        final WasmFunction answerFunc = instance.getFunction("answer")
-            .orElseThrow(() -> new AssertionError("answer function should be present"));
+        final WasmFunction answerFunc =
+            instance
+                .getFunction("answer")
+                .orElseThrow(() -> new AssertionError("answer function should be present"));
 
         final WasmValue[] result = answerFunc.call();
         assertEquals(42, result[0].asInt(), "answer() should return 42");
@@ -161,7 +168,8 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
         return;
       }
 
-      try (pre; Store store = engine.createStore()) {
+      try (pre;
+          Store store = engine.createStore()) {
         final ImportMap emptyMap = createImportMap();
         final CompletableFuture<Instance> future = pre.instantiateAsync(store, emptyMap);
         assertNotNull(future, "CompletableFuture should not be null");
@@ -170,8 +178,8 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
         assertNotNull(instance, "Instance should not be null");
 
         LOGGER.info("[" + runtime + "] instantiateAsync(store, importMap) returned valid instance");
-        LOGGER.info("[" + runtime + "] exports: "
-            + java.util.Arrays.toString(instance.getExportNames()));
+        LOGGER.info(
+            "[" + runtime + "] exports: " + java.util.Arrays.toString(instance.getExportNames()));
         instance.close();
       }
     }
@@ -194,13 +202,16 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
         return;
       }
 
-      try (pre; Store store = engine.createStore()) {
+      try (pre;
+          Store store = engine.createStore()) {
         final ImportMap emptyMap = createImportMap();
         final Instance instance = pre.instantiate(store, emptyMap);
         assertNotNull(instance, "Instance should not be null");
 
-        final WasmFunction answerFunc = instance.getFunction("answer")
-            .orElseThrow(() -> new AssertionError("answer function should be present"));
+        final WasmFunction answerFunc =
+            instance
+                .getFunction("answer")
+                .orElseThrow(() -> new AssertionError("answer function should be present"));
 
         final WasmValue[] result = answerFunc.call();
         assertEquals(42, result[0].asInt(), "answer() should return 42");
@@ -230,14 +241,20 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
       }
 
       try (pre) {
-        final Exception thrown = assertThrows(
-            Exception.class,
-            () -> pre.instantiateAsync(null),
-            "instantiateAsync(null) should throw an exception");
+        final Exception thrown =
+            assertThrows(
+                Exception.class,
+                () -> pre.instantiateAsync(null),
+                "instantiateAsync(null) should throw an exception");
 
         assertNotNull(thrown, "Exception should not be null");
-        LOGGER.info("[" + runtime + "] Threw " + thrown.getClass().getSimpleName()
-            + ": " + thrown.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Threw "
+                + thrown.getClass().getSimpleName()
+                + ": "
+                + thrown.getMessage());
       }
     }
   }
@@ -261,14 +278,20 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
 
       try (pre) {
         final ImportMap emptyMap = createImportMap();
-        final Exception thrown = assertThrows(
-            Exception.class,
-            () -> pre.instantiate(null, emptyMap),
-            "instantiate(null, importMap) should throw an exception");
+        final Exception thrown =
+            assertThrows(
+                Exception.class,
+                () -> pre.instantiate(null, emptyMap),
+                "instantiate(null, importMap) should throw an exception");
 
         assertNotNull(thrown, "Exception should not be null");
-        LOGGER.info("[" + runtime + "] Threw " + thrown.getClass().getSimpleName()
-            + ": " + thrown.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Threw "
+                + thrown.getClass().getSimpleName()
+                + ": "
+                + thrown.getMessage());
       }
     }
   }
@@ -299,8 +322,7 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
     }
 
     @Override
-    public ImportMap addTable(
-        final String moduleName, final String name, final WasmTable table) {
+    public ImportMap addTable(final String moduleName, final String name, final WasmTable table) {
       imports.computeIfAbsent(moduleName, k -> new HashMap<>()).put(name, table);
       return this;
     }

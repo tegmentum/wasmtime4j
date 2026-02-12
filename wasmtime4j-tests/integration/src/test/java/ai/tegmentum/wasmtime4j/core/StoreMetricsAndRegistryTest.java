@@ -22,17 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -116,22 +116,32 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
         final int numCalls = 5;
         for (int i = 0; i < numCalls; i++) {
           final WasmValue[] result = addFn.get().call(WasmValue.i32(i), WasmValue.i32(i + 1));
-          LOGGER.info("[" + runtime + "] add(" + i + ", " + (i + 1) + ") = "
-              + result[0].asI32());
+          LOGGER.info("[" + runtime + "] add(" + i + ", " + (i + 1) + ") = " + result[0].asI32());
         }
 
         final long countAfter = store.getExecutionCount();
-        LOGGER.info("[" + runtime + "] Execution count after " + numCalls + " calls: "
-            + countAfter);
-        assertTrue(countAfter >= countBefore,
+        LOGGER.info(
+            "[" + runtime + "] Execution count after " + numCalls + " calls: " + countAfter);
+        assertTrue(
+            countAfter >= countBefore,
             "Execution count should be >= initial count after calls, got: " + countAfter);
         if (countAfter == countBefore) {
-          LOGGER.info("[" + runtime + "] Runtime does not track per-call execution count "
-              + "(returned " + countAfter + " before and after calls)");
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Runtime does not track per-call execution count "
+                  + "(returned "
+                  + countAfter
+                  + " before and after calls)");
         } else {
-          assertTrue(countAfter >= countBefore + numCalls,
-              "Execution count should be at least " + (countBefore + numCalls)
-                  + " after " + numCalls + " calls, got: " + countAfter);
+          assertTrue(
+              countAfter >= countBefore + numCalls,
+              "Execution count should be at least "
+                  + (countBefore + numCalls)
+                  + " after "
+                  + numCalls
+                  + " calls, got: "
+                  + countAfter);
         }
       }
     }
@@ -149,10 +159,9 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
 
       final long timeMicros = store.getTotalExecutionTimeMicros();
       LOGGER.info("[" + runtime + "] Fresh store total execution time: " + timeMicros + " us");
-      assertTrue(timeMicros >= 0,
-          "Total execution time should be non-negative, got: " + timeMicros);
-      assertEquals(0L, timeMicros,
-          "Total execution time on fresh store should be 0");
+      assertTrue(
+          timeMicros >= 0, "Total execution time should be non-negative, got: " + timeMicros);
+      assertEquals(0L, timeMicros, "Total execution time on fresh store should be 0");
     }
   }
 
@@ -176,9 +185,9 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
         }
 
         final long timeMicros = store.getTotalExecutionTimeMicros();
-        LOGGER.info("[" + runtime + "] Total execution time after 10 calls: "
-            + timeMicros + " us");
-        assertTrue(timeMicros >= 0,
+        LOGGER.info("[" + runtime + "] Total execution time after 10 calls: " + timeMicros + " us");
+        assertTrue(
+            timeMicros >= 0,
             "Total execution time should be non-negative after calls, got: " + timeMicros);
       }
     }
@@ -214,10 +223,12 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
       final CallbackRegistry registry2 = store.getCallbackRegistry();
       assertNotNull(registry1, "First getCallbackRegistry() should not be null");
       assertNotNull(registry2, "Second getCallbackRegistry() should not be null");
-      assertSame(registry1, registry2,
+      assertSame(
+          registry1,
+          registry2,
           "getCallbackRegistry() should return the same instance on repeated calls");
-      LOGGER.info("[" + runtime + "] Both calls returned same instance: "
-          + registry1.getClass().getName());
+      LOGGER.info(
+          "[" + runtime + "] Both calls returned same instance: " + registry1.getClass().getName());
     }
   }
 
@@ -248,56 +259,67 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
         Store store = engine.createStore()) {
 
       try {
-        store.limiter(new ResourceLimiter() {
-          @Override
-          public long getId() {
-            return 42L;
-          }
+        store.limiter(
+            new ResourceLimiter() {
+              @Override
+              public long getId() {
+                return 42L;
+              }
 
-          @Override
-          public ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig getConfig()
-              throws WasmException {
-            return ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig.defaults();
-          }
+              @Override
+              public ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig getConfig()
+                  throws WasmException {
+                return ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig.defaults();
+              }
 
-          @Override
-          public boolean allowMemoryGrow(final long currentPages, final long requestedPages)
-              throws WasmException {
-            return true;
-          }
+              @Override
+              public boolean allowMemoryGrow(final long currentPages, final long requestedPages)
+                  throws WasmException {
+                return true;
+              }
 
-          @Override
-          public boolean allowTableGrow(final long currentElements, final long requestedElements)
-              throws WasmException {
-            return true;
-          }
+              @Override
+              public boolean allowTableGrow(
+                  final long currentElements, final long requestedElements) throws WasmException {
+                return true;
+              }
 
-          @Override
-          public ai.tegmentum.wasmtime4j.execution.ResourceLimiterStats getStats()
-              throws WasmException {
-            return new ai.tegmentum.wasmtime4j.execution.ResourceLimiterStats(
-                0, 0, 0, 0, 0, 0);
-          }
+              @Override
+              public ai.tegmentum.wasmtime4j.execution.ResourceLimiterStats getStats()
+                  throws WasmException {
+                return new ai.tegmentum.wasmtime4j.execution.ResourceLimiterStats(0, 0, 0, 0, 0, 0);
+              }
 
-          @Override
-          public void resetStats() throws WasmException {
-            // no-op
-          }
+              @Override
+              public void resetStats() throws WasmException {
+                // no-op
+              }
 
-          @Override
-          public void close() throws WasmException {
-            // no-op
-          }
-        });
+              @Override
+              public void close() throws WasmException {
+                // no-op
+              }
+            });
 
         final ResourceLimiter retrieved = store.getLimiter();
         assertNotNull(retrieved, "getLimiter() should return non-null after setting a limiter");
-        LOGGER.info("[" + runtime + "] getLimiter() returned: "
-            + retrieved.getClass().getName() + " (id=" + retrieved.getId() + ")");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] getLimiter() returned: "
+                + retrieved.getClass().getName()
+                + " (id="
+                + retrieved.getId()
+                + ")");
       } catch (final UnsupportedOperationException | UnsatisfiedLinkError e) {
-        LOGGER.info("[" + runtime + "] store.limiter() not supported: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage()
-            + " -- skipping round-trip assertion");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] store.limiter() not supported: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage()
+                + " -- skipping round-trip assertion");
       }
     }
   }
@@ -317,8 +339,7 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
 
       final long interval = store.getFuelAsyncYieldInterval();
       LOGGER.info("[" + runtime + "] Default fuel async yield interval: " + interval);
-      assertEquals(0L, interval,
-          "Fuel async yield interval should default to 0 (disabled)");
+      assertEquals(0L, interval, "Fuel async yield interval should default to 0 (disabled)");
     }
   }
 
@@ -339,13 +360,25 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
       try {
         store.setFuelAsyncYieldInterval(targetInterval);
         final long retrievedInterval = store.getFuelAsyncYieldInterval();
-        LOGGER.info("[" + runtime + "] Set fuel async yield interval to " + targetInterval
-            + ", got back: " + retrievedInterval);
-        assertEquals(targetInterval, retrievedInterval,
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Set fuel async yield interval to "
+                + targetInterval
+                + ", got back: "
+                + retrievedInterval);
+        assertEquals(
+            targetInterval,
+            retrievedInterval,
             "getFuelAsyncYieldInterval() should return the value that was set");
       } catch (final WasmException | UnsupportedOperationException | UnsatisfiedLinkError e) {
-        LOGGER.info("[" + runtime + "] setFuelAsyncYieldInterval not supported: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] setFuelAsyncYieldInterval not supported: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       }
     }
   }

@@ -23,12 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -39,8 +39,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Engine stream compilation and comparison APIs: {@link Engine#compileFromStream(InputStream)},
- * {@link Engine#isPulley()}, and {@link Engine#same(Engine)}.
+ * Tests Engine stream compilation and comparison APIs: {@link
+ * Engine#compileFromStream(InputStream)}, {@link Engine#isPulley()}, and {@link
+ * Engine#same(Engine)}.
  *
  * @since 1.0.0
  */
@@ -72,21 +73,51 @@ public class EngineStreamAndComparisonTest extends DualRuntimeTest {
     // Minimal WASM binary for: (module (func (export "add") (param i32 i32) (result i32)
     //   local.get 0 local.get 1 i32.add))
     final byte[] wasmBytes = {
-        0x00, 0x61, 0x73, 0x6D, // magic: \0asm
-        0x01, 0x00, 0x00, 0x00, // version: 1
-        // Type section (1): 1 type [i32, i32] -> [i32]
-        0x01, 0x07, 0x01, 0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F,
-        // Function section (3): 1 function, type index 0
-        0x03, 0x02, 0x01, 0x00,
-        // Export section (7): export "add" as func 0
-        0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00,
-        // Code section (10): 1 function body
-        0x0A, 0x09, 0x01, // section, size, count
-        0x07, 0x00,       // body size, 0 locals
-        0x20, 0x00,       // local.get 0
-        0x20, 0x01,       // local.get 1
-        0x6A,             // i32.add
-        0x0B              // end
+      0x00,
+      0x61,
+      0x73,
+      0x6D, // magic: \0asm
+      0x01,
+      0x00,
+      0x00,
+      0x00, // version: 1
+      // Type section (1): 1 type [i32, i32] -> [i32]
+      0x01,
+      0x07,
+      0x01,
+      0x60,
+      0x02,
+      0x7F,
+      0x7F,
+      0x01,
+      0x7F,
+      // Function section (3): 1 function, type index 0
+      0x03,
+      0x02,
+      0x01,
+      0x00,
+      // Export section (7): export "add" as func 0
+      0x07,
+      0x07,
+      0x01,
+      0x03,
+      0x61,
+      0x64,
+      0x64,
+      0x00,
+      0x00,
+      // Code section (10): 1 function body
+      0x0A,
+      0x09,
+      0x01, // section, size, count
+      0x07,
+      0x00, // body size, 0 locals
+      0x20,
+      0x00, // local.get 0
+      0x20,
+      0x01, // local.get 1
+      0x6A, // i32.add
+      0x0B // end
     };
 
     try (Engine engine = Engine.create()) {
@@ -98,8 +129,7 @@ public class EngineStreamAndComparisonTest extends DualRuntimeTest {
       try (Store store = engine.createStore()) {
         final Instance instance = streamModule.instantiate(store);
 
-        final WasmValue[] result =
-            instance.callFunction("add", WasmValue.i32(5), WasmValue.i32(7));
+        final WasmValue[] result = instance.callFunction("add", WasmValue.i32(5), WasmValue.i32(7));
 
         assertNotNull(result, "Result should not be null");
         assertEquals(1, result.length, "Should have exactly 1 result");
@@ -122,7 +152,8 @@ public class EngineStreamAndComparisonTest extends DualRuntimeTest {
     try (Engine engine = Engine.create()) {
       final InputStream emptyStream = new ByteArrayInputStream(new byte[0]);
 
-      assertThrows(Exception.class,
+      assertThrows(
+          Exception.class,
           () -> engine.compileFromStream(emptyStream),
           "compileFromStream with empty stream should throw");
       LOGGER.info("[" + runtime + "] compileFromStream with empty stream threw as expected");
@@ -171,8 +202,7 @@ public class EngineStreamAndComparisonTest extends DualRuntimeTest {
 
       final boolean result = engine1.same(engine2);
 
-      LOGGER.info("[" + runtime + "] engine1.same(engine2) = " + result
-          + " (two default engines)");
+      LOGGER.info("[" + runtime + "] engine1.same(engine2) = " + result + " (two default engines)");
       // Two separately created engines may or may not be "same" depending on implementation
     }
   }
@@ -190,8 +220,7 @@ public class EngineStreamAndComparisonTest extends DualRuntimeTest {
 
       final boolean result = defaultEngine.same(fuelEngine);
 
-      assertFalse(result,
-          "Engines with different configs should not be 'same'");
+      assertFalse(result, "Engines with different configs should not be 'same'");
       LOGGER.info("[" + runtime + "] defaultEngine.same(fuelEngine) = " + result);
     }
   }

@@ -46,8 +46,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Table Element Segment (table.init / elem.drop) Tests")
 public class TableElementSegmentTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(TableElementSegmentTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TableElementSegmentTest.class.getName());
 
   /**
    * WAT module with a funcref table (size 3), three functions returning 10/20/30, and a passive
@@ -90,8 +89,7 @@ public class TableElementSegmentTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // table_init(dest=0, src=0, len=3) -- copy all 3 function refs
-      instance.callFunction("table_init",
-          WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(3));
+      instance.callFunction("table_init", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(3));
 
       final WasmValue[] r0 = instance.callFunction("call_indirect", WasmValue.i32(0));
       final WasmValue[] r1 = instance.callFunction("call_indirect", WasmValue.i32(1));
@@ -103,8 +101,15 @@ public class TableElementSegmentTest extends DualRuntimeTest {
       assertEquals(10, r0[0].asInt(), "Table[0] should call f10 returning 10");
       assertEquals(20, r1[0].asInt(), "Table[1] should call f20 returning 20");
       assertEquals(30, r2[0].asInt(), "Table[2] should call f30 returning 30");
-      LOGGER.info("[" + runtime + "] table.init results: "
-          + r0[0].asInt() + ", " + r1[0].asInt() + ", " + r2[0].asInt());
+      LOGGER.info(
+          "["
+              + runtime
+              + "] table.init results: "
+              + r0[0].asInt()
+              + ", "
+              + r1[0].asInt()
+              + ", "
+              + r2[0].asInt());
 
       instance.close();
       module.close();
@@ -124,16 +129,15 @@ public class TableElementSegmentTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // table_init(dest=1, src=1, len=2) -- copy f20,f30 into table[1],table[2]
-      instance.callFunction("table_init",
-          WasmValue.i32(1), WasmValue.i32(1), WasmValue.i32(2));
+      instance.callFunction("table_init", WasmValue.i32(1), WasmValue.i32(1), WasmValue.i32(2));
 
       final WasmValue[] r1 = instance.callFunction("call_indirect", WasmValue.i32(1));
       final WasmValue[] r2 = instance.callFunction("call_indirect", WasmValue.i32(2));
 
       assertEquals(20, r1[0].asInt(), "Table[1] should call f20 returning 20");
       assertEquals(30, r2[0].asInt(), "Table[2] should call f30 returning 30");
-      LOGGER.info("[" + runtime + "] Partial table.init results: "
-          + r1[0].asInt() + ", " + r2[0].asInt());
+      LOGGER.info(
+          "[" + runtime + "] Partial table.init results: " + r1[0].asInt() + ", " + r2[0].asInt());
 
       instance.close();
       module.close();
@@ -157,9 +161,11 @@ public class TableElementSegmentTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] Element segment dropped");
 
       // Attempting to init dropped element segment should trap
-      assertThrows(Exception.class,
-          () -> instance.callFunction("table_init",
-              WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(3)),
+      assertThrows(
+          Exception.class,
+          () ->
+              instance.callFunction(
+                  "table_init", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(3)),
           "table.init on dropped element segment should trap");
       LOGGER.info("[" + runtime + "] table.init on dropped segment trapped as expected");
 
@@ -182,8 +188,9 @@ public class TableElementSegmentTest extends DualRuntimeTest {
 
       // table_init(dest=0, src=0, len=0) -- zero-length init should succeed
       assertDoesNotThrow(
-          () -> instance.callFunction("table_init",
-              WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(0)),
+          () ->
+              instance.callFunction(
+                  "table_init", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(0)),
           "Zero-length table.init should not trap");
       LOGGER.info("[" + runtime + "] Zero-length table.init succeeded");
 
@@ -205,9 +212,11 @@ public class TableElementSegmentTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // table_init(dest=0, src=0, len=100) -- segment only has 3 elements
-      assertThrows(Exception.class,
-          () -> instance.callFunction("table_init",
-              WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(100)),
+      assertThrows(
+          Exception.class,
+          () ->
+              instance.callFunction(
+                  "table_init", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(100)),
           "table.init with length exceeding segment should trap");
       LOGGER.info("[" + runtime + "] Out-of-bounds table.init trapped as expected");
 

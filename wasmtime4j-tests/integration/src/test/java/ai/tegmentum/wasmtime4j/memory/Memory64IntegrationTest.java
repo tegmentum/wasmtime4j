@@ -24,13 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.memory.Memory64Type;
-import ai.tegmentum.wasmtime4j.memory.MemoryAddressingMode;
-import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;

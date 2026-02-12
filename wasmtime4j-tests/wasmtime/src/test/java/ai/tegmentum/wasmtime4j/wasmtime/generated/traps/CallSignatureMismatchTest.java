@@ -31,17 +31,17 @@ public final class CallSignatureMismatchTest {
 
     final String wat =
         """
-        (module $a
-          (func $foo
-            i32.const 0
-            call_indirect)
-          (func $bar (param i32))
-          (start $foo)
+            (module $a
+              (func $foo
+                i32.const 0
+                call_indirect)
+              (func $bar (param i32))
+              (start $foo)
 
-          (table 1 funcref)
-          (elem (i32.const 0) 1)
-        )
-    """;
+              (table 1 funcref)
+              (elem (i32.const 0) 1)
+            )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       // The start function calls an indirect function with signature mismatch

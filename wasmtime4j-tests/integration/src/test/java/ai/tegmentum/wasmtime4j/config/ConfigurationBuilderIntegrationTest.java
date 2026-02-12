@@ -25,14 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.StoreBuilder;
-import ai.tegmentum.wasmtime4j.config.StoreLimits;
-import ai.tegmentum.wasmtime4j.config.StoreLimitsBuilder;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;

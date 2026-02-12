@@ -24,8 +24,8 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -50,8 +50,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("TypedFunc Integration Tests")
 public class TypedFuncIntegrationTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(TypedFuncIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TypedFuncIntegrationTest.class.getName());
 
   /**
    * WAT module with functions of various signatures.
@@ -108,10 +107,7 @@ public class TypedFuncIntegrationTest extends DualRuntimeTest {
         typedFunc.close();
       } catch (final UnsupportedOperationException e) {
         LOGGER.info(
-            "["
-                + runtime
-                + "] TypedFunctionSupport not implemented, skipping: "
-                + e.getMessage());
+            "[" + runtime + "] TypedFunctionSupport not implemented, skipping: " + e.getMessage());
       }
 
       instance.close();
@@ -138,8 +134,7 @@ public class TypedFuncIntegrationTest extends DualRuntimeTest {
       try {
         final TypedFunc typedFunc = nopFunc.typed("v->v");
         assertNotNull(typedFunc, "typed(\"v->v\") should return non-null TypedFunc");
-        LOGGER.info(
-            "[" + runtime + "] TypedFunc created for nop: " + typedFunc.getSignature());
+        LOGGER.info("[" + runtime + "] TypedFunc created for nop: " + typedFunc.getSignature());
 
         // Skip actual call for safety (see note in typedWithValidSignatureReturnsTypedFunc)
         LOGGER.info("[" + runtime + "] TypedFunc creation verified (call skipped for safety)");
@@ -147,10 +142,7 @@ public class TypedFuncIntegrationTest extends DualRuntimeTest {
         typedFunc.close();
       } catch (final UnsupportedOperationException e) {
         LOGGER.info(
-            "["
-                + runtime
-                + "] TypedFunctionSupport not implemented, skipping: "
-                + e.getMessage());
+            "[" + runtime + "] TypedFunctionSupport not implemented, skipping: " + e.getMessage());
       }
 
       instance.close();
@@ -177,8 +169,7 @@ public class TypedFuncIntegrationTest extends DualRuntimeTest {
       try {
         final TypedFunc typedFunc = get42Func.typed("->i");
         assertNotNull(typedFunc, "typed(\"->i\") should return non-null TypedFunc");
-        LOGGER.info(
-            "[" + runtime + "] TypedFunc created for get42: " + typedFunc.getSignature());
+        LOGGER.info("[" + runtime + "] TypedFunc created for get42: " + typedFunc.getSignature());
 
         final WasmFunction wrappedFunc = typedFunc.getFunction();
         assertNotNull(wrappedFunc, "TypedFunc.getFunction() should return non-null");
@@ -187,10 +178,7 @@ public class TypedFuncIntegrationTest extends DualRuntimeTest {
         typedFunc.close();
       } catch (final UnsupportedOperationException e) {
         LOGGER.info(
-            "["
-                + runtime
-                + "] TypedFunctionSupport not implemented, skipping: "
-                + e.getMessage());
+            "[" + runtime + "] TypedFunctionSupport not implemented, skipping: " + e.getMessage());
       }
 
       instance.close();

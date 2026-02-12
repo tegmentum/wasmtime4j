@@ -85,9 +85,7 @@ public class ZeroLengthMemoryOpsTest extends DualRuntimeTest {
 
       // copy(dest=0, src=0, len=0) should be a no-op
       assertDoesNotThrow(
-          () ->
-              instance.callFunction(
-                  "copy", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(0)),
+          () -> instance.callFunction("copy", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(0)),
           "memory.copy with length 0 should succeed");
       LOGGER.info("[" + runtime + "] memory.copy length 0 succeeded");
 
@@ -146,9 +144,7 @@ public class ZeroLengthMemoryOpsTest extends DualRuntimeTest {
 
       // Read 0 bytes
       final byte[] dest = new byte[0];
-      assertDoesNotThrow(
-          () -> memory.readBytes(0, dest, 0, 0),
-          "Reading 0 bytes should succeed");
+      assertDoesNotThrow(() -> memory.readBytes(0, dest, 0, 0), "Reading 0 bytes should succeed");
       LOGGER.info("[" + runtime + "] Read 0 bytes via API succeeded");
 
       instance.close();
@@ -181,9 +177,7 @@ public class ZeroLengthMemoryOpsTest extends DualRuntimeTest {
 
       // Write 0 bytes
       final byte[] src = new byte[0];
-      assertDoesNotThrow(
-          () -> memory.writeBytes(0, src, 0, 0),
-          "Writing 0 bytes should succeed");
+      assertDoesNotThrow(() -> memory.writeBytes(0, src, 0, 0), "Writing 0 bytes should succeed");
       LOGGER.info("[" + runtime + "] Write 0 bytes via API succeeded");
 
       instance.close();

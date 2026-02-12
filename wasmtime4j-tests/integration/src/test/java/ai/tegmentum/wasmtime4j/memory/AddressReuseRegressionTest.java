@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -31,6 +30,7 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -42,15 +42,15 @@ import org.junit.jupiter.api.TestInfo;
 /**
  * Regression test for DESTROYED_POINTERS address reuse bug.
  *
- * <p>When running many engine/store/memory create-destroy cycles in the same JVM
- * (simulating benchmark {@code -f 0} mode), the allocator may reuse freed addresses.
- * If the DESTROYED_POINTERS registry never removes entries, newly allocated resources
- * at reused addresses get incorrectly detected as "already destroyed" and silently
- * leak instead of being freed. After hundreds of iterations, accumulated leaked stores
- * (each holding virtual address space via Wasmtime guard pages) can exhaust resources,
- * causing subsequent shared memory and WASI operations to fail.
+ * <p>When running many engine/store/memory create-destroy cycles in the same JVM (simulating
+ * benchmark {@code -f 0} mode), the allocator may reuse freed addresses. If the DESTROYED_POINTERS
+ * registry never removes entries, newly allocated resources at reused addresses get incorrectly
+ * detected as "already destroyed" and silently leak instead of being freed. After hundreds of
+ * iterations, accumulated leaked stores (each holding virtual address space via Wasmtime guard
+ * pages) can exhaust resources, causing subsequent shared memory and WASI operations to fail.
  *
  * <p>This test validates that:
+ *
  * <ul>
  *   <li>Creating and destroying 600+ engine/store cycles does not corrupt state
  *   <li>Shared memory {@code isShared()} correctly returns true after many cycles
@@ -62,8 +62,7 @@ import org.junit.jupiter.api.TestInfo;
 @DisplayName("Address Reuse Regression Tests")
 public final class AddressReuseRegressionTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(AddressReuseRegressionTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(AddressReuseRegressionTest.class.getName());
 
   private static final int WARMUP_CYCLES = 600;
 
@@ -112,8 +111,7 @@ public final class AddressReuseRegressionTest {
             try {
               final Instance instance = module.instantiate(store);
               if (instance != null) {
-                final java.util.Optional<WasmMemory> memoryOpt =
-                    instance.getMemory("memory");
+                final java.util.Optional<WasmMemory> memoryOpt = instance.getMemory("memory");
                 if (memoryOpt.isPresent()) {
                   memoryOpt.get().isShared();
                   sharedMemorySupported = true;
@@ -143,10 +141,10 @@ public final class AddressReuseRegressionTest {
   }
 
   @Test
-  @DisplayName("Shared memory isShared() returns true after 600+ engine/store create-destroy cycles")
+  @DisplayName(
+      "Shared memory isShared() returns true after 600+ engine/store create-destroy cycles")
   void sharedMemoryAfterManyCreateDestroyCycles(final TestInfo testInfo) throws Exception {
-    assumeTrue(sharedMemorySupported,
-        "Shared memory not supported on this platform/runtime");
+    assumeTrue(sharedMemorySupported, "Shared memory not supported on this platform/runtime");
 
     LOGGER.info("Starting " + testInfo.getDisplayName());
     LOGGER.info("Running " + WARMUP_CYCLES + " engine/store create-destroy cycles...");
@@ -159,11 +157,12 @@ public final class AddressReuseRegressionTest {
       final Module module = engine.compileWat(SIMPLE_WAT);
 
       final Instance instance = module.instantiate(store);
-      final WasmFunction addFn = instance.getFunction("add").orElseThrow(
-          () -> new RuntimeException("add function not found"));
+      final WasmFunction addFn =
+          instance
+              .getFunction("add")
+              .orElseThrow(() -> new RuntimeException("add function not found"));
       final WasmValue[] result = addFn.call(WasmValue.i32(1), WasmValue.i32(2));
-      assertEquals(3, result[0].asInt(),
-          "Simple add should work correctly at cycle " + i);
+      assertEquals(3, result[0].asInt(), "Simple add should work correctly at cycle " + i);
 
       instance.close();
       module.close();
@@ -190,46 +189,52 @@ public final class AddressReuseRegressionTest {
           try {
             final Instance instance = module.instantiate(store);
             try {
-              final WasmMemory memory = instance.getMemory("memory").orElseThrow(
-                  () -> new RuntimeException("memory export not found"));
+              final WasmMemory memory =
+                  instance
+                      .getMemory("memory")
+                      .orElseThrow(() -> new RuntimeException("memory export not found"));
 
               // Verify isShared() returns true, not false due to error masking
-              final boolean shared = assertDoesNotThrow(
-                  () -> memory.isShared(),
-                  "isShared() should not throw after many create-destroy cycles");
-              assertTrue(shared,
+              final boolean shared =
+                  assertDoesNotThrow(
+                      () -> memory.isShared(),
+                      "isShared() should not throw after many create-destroy cycles");
+              assertTrue(
+                  shared,
                   "Memory declared as shared should report isShared()=true. "
                       + "If false, the DESTROYED_POINTERS bug may be causing "
                       + "resource leaks that exhaust native resources.");
 
-              LOGGER.info("isShared() correctly returned true after "
-                  + WARMUP_CYCLES + " cycles");
+              LOGGER.info("isShared() correctly returned true after " + WARMUP_CYCLES + " cycles");
 
               // Verify atomic operations work
-              final WasmFunction atomicStore = instance.getFunction("atomic_store")
-                  .orElseThrow(() -> new RuntimeException("atomic_store not found"));
-              final WasmFunction atomicLoad = instance.getFunction("atomic_load")
-                  .orElseThrow(() -> new RuntimeException("atomic_load not found"));
-              final WasmFunction atomicAdd = instance.getFunction("atomic_add")
-                  .orElseThrow(() -> new RuntimeException("atomic_add not found"));
+              final WasmFunction atomicStore =
+                  instance
+                      .getFunction("atomic_store")
+                      .orElseThrow(() -> new RuntimeException("atomic_store not found"));
+              final WasmFunction atomicLoad =
+                  instance
+                      .getFunction("atomic_load")
+                      .orElseThrow(() -> new RuntimeException("atomic_load not found"));
+              final WasmFunction atomicAdd =
+                  instance
+                      .getFunction("atomic_add")
+                      .orElseThrow(() -> new RuntimeException("atomic_add not found"));
 
               // Store a value atomically
               atomicStore.call(WasmValue.i32(0), WasmValue.i32(42));
 
               // Load it back
               WasmValue[] loadResult = atomicLoad.call(WasmValue.i32(0));
-              assertEquals(42, loadResult[0].asInt(),
-                  "Atomic load should return stored value");
+              assertEquals(42, loadResult[0].asInt(), "Atomic load should return stored value");
 
               // Atomic add
               WasmValue[] addResult = atomicAdd.call(WasmValue.i32(0), WasmValue.i32(8));
-              assertEquals(42, addResult[0].asInt(),
-                  "Atomic add should return previous value");
+              assertEquals(42, addResult[0].asInt(), "Atomic add should return previous value");
 
               // Verify the add took effect
               loadResult = atomicLoad.call(WasmValue.i32(0));
-              assertEquals(50, loadResult[0].asInt(),
-                  "Atomic load after add should return 50");
+              assertEquals(50, loadResult[0].asInt(), "Atomic load after add should return 50");
 
               // Verify Java-side atomic operations on shared memory
               assertDoesNotThrow(
@@ -237,7 +242,9 @@ public final class AddressReuseRegressionTest {
                   "Java atomicLoadInt should work on shared memory after many cycles");
 
               final int javaLoadResult = memory.atomicLoadInt(0);
-              assertEquals(50, javaLoadResult,
+              assertEquals(
+                  50,
+                  javaLoadResult,
                   "Java atomicLoadInt should return same value as WASM atomic load");
 
               LOGGER.info("All atomic operations succeeded after " + WARMUP_CYCLES + " cycles");
@@ -262,8 +269,7 @@ public final class AddressReuseRegressionTest {
   @Test
   @DisplayName("Multiple sequential shared memory instances work after create-destroy cycles")
   void multipleSequentialSharedMemoryInstances(final TestInfo testInfo) throws Exception {
-    assumeTrue(sharedMemorySupported,
-        "Shared memory not supported on this platform/runtime");
+    assumeTrue(sharedMemorySupported, "Shared memory not supported on this platform/runtime");
 
     LOGGER.info("Starting " + testInfo.getDisplayName());
 
@@ -278,11 +284,12 @@ public final class AddressReuseRegressionTest {
       final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = instance.getMemory("memory").orElseThrow(
-          () -> new RuntimeException("memory export not found at cycle " + cycle));
+      final WasmMemory memory =
+          instance
+              .getMemory("memory")
+              .orElseThrow(() -> new RuntimeException("memory export not found at cycle " + cycle));
 
-      assertTrue(memory.isShared(),
-          "isShared() should return true at cycle " + cycle);
+      assertTrue(memory.isShared(), "isShared() should return true at cycle " + cycle);
 
       instance.close();
       module.close();
@@ -298,9 +305,7 @@ public final class AddressReuseRegressionTest {
     LOGGER.info("All 200 shared memory cycles completed successfully");
   }
 
-  /**
-   * Clears handle registries to prevent stale handles from affecting subsequent tests.
-   */
+  /** Clears handle registries to prevent stale handles from affecting subsequent tests. */
   private static void clearHandleRegistries() {
     try {
       final Class<?> jniEngineClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniEngine");

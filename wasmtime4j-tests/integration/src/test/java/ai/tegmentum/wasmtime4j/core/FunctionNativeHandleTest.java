@@ -43,8 +43,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Function Native Handle Tests")
 public class FunctionNativeHandleTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(FunctionNativeHandleTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(FunctionNativeHandleTest.class.getName());
 
   /** Module with two exported functions: add (with params) and nop (no params, no results). */
   private static final String TWO_FUNCS_WAT =
@@ -72,8 +71,10 @@ public class FunctionNativeHandleTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Instance instance = module.instantiate(store)) {
 
-      final WasmFunction addFunc = instance.getFunction("add")
-          .orElseThrow(() -> new AssertionError("add function should be present"));
+      final WasmFunction addFunc =
+          instance
+              .getFunction("add")
+              .orElseThrow(() -> new AssertionError("add function should be present"));
 
       final long handle = addFunc.getNativeHandle();
 
@@ -94,8 +95,10 @@ public class FunctionNativeHandleTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Instance instance = module.instantiate(store)) {
 
-      final WasmFunction addFunc = instance.getFunction("add")
-          .orElseThrow(() -> new AssertionError("add function should be present"));
+      final WasmFunction addFunc =
+          instance
+              .getFunction("add")
+              .orElseThrow(() -> new AssertionError("add function should be present"));
 
       final long firstCall = addFunc.getNativeHandle();
       final long secondCall = addFunc.getNativeHandle();
@@ -119,10 +122,14 @@ public class FunctionNativeHandleTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Instance instance = module.instantiate(store)) {
 
-      final WasmFunction addFunc = instance.getFunction("add")
-          .orElseThrow(() -> new AssertionError("add function should be present"));
-      final WasmFunction nopFunc = instance.getFunction("nop")
-          .orElseThrow(() -> new AssertionError("nop function should be present"));
+      final WasmFunction addFunc =
+          instance
+              .getFunction("add")
+              .orElseThrow(() -> new AssertionError("add function should be present"));
+      final WasmFunction nopFunc =
+          instance
+              .getFunction("nop")
+              .orElseThrow(() -> new AssertionError("nop function should be present"));
 
       final long addHandle = addFunc.getNativeHandle();
       final long nopHandle = nopFunc.getNativeHandle();

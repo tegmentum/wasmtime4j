@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -14,6 +13,7 @@ import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -92,9 +92,7 @@ public class CrossFeatureInteractionStressTest {
   void sharedMemoryThenWasi() throws Exception {
     final int cycles = 200;
     LOGGER.info(
-        "Starting sharedMemoryThenWasi: "
-            + cycles
-            + " cycles alternating shared memory and WASI");
+        "Starting sharedMemoryThenWasi: " + cycles + " cycles alternating shared memory and WASI");
 
     for (int i = 0; i < cycles; i++) {
       // Shared memory cycle (requires threads feature)
@@ -121,11 +119,7 @@ public class CrossFeatureInteractionStressTest {
 
       if ((i + 1) % 50 == 0) {
         LOGGER.info(
-            "Completed "
-                + (i + 1)
-                + "/"
-                + cycles
-                + " shared-memory/WASI alternation cycles");
+            "Completed " + (i + 1) + "/" + cycles + " shared-memory/WASI alternation cycles");
       }
     }
 
@@ -160,20 +154,13 @@ public class CrossFeatureInteractionStressTest {
           Module module = engine.compileWat(SIMPLE_WAT);
           Instance instance = module.instantiate(store)) {
         assertNotNull(
-            instance, "Instance null at cycle " + i + " with feature set " + (i % featureSets
-                .length));
-        assertTrue(
-            instance.getFunction("get42").isPresent(),
-            "Missing get42 at cycle " + i);
+            instance,
+            "Instance null at cycle " + i + " with feature set " + (i % featureSets.length));
+        assertTrue(instance.getFunction("get42").isPresent(), "Missing get42 at cycle " + i);
       }
 
       if ((i + 1) % 100 == 0) {
-        LOGGER.info(
-            "Completed "
-                + (i + 1)
-                + "/"
-                + cycles
-                + " multi-feature engine config cycles");
+        LOGGER.info("Completed " + (i + 1) + "/" + cycles + " multi-feature engine config cycles");
       }
     }
 
@@ -184,9 +171,7 @@ public class CrossFeatureInteractionStressTest {
   void fuelTrackingUnderStress() throws Exception {
     final int cycles = 500;
     LOGGER.info(
-        "Starting fuelTrackingUnderStress: "
-            + cycles
-            + " cycles with fuel-tracked function calls");
+        "Starting fuelTrackingUnderStress: " + cycles + " cycles with fuel-tracked function calls");
 
     for (int i = 0; i < cycles; i++) {
       final int cycle = i;
@@ -204,8 +189,7 @@ public class CrossFeatureInteractionStressTest {
         final WasmFunction countFunc =
             instance
                 .getFunction("count")
-                .orElseThrow(
-                    () -> new AssertionError("Missing count function at cycle " + cycle));
+                .orElseThrow(() -> new AssertionError("Missing count function at cycle " + cycle));
 
         // Call with a small loop count that should succeed with available fuel
         final WasmValue[] result = countFunc.call(WasmValue.i32(10));
@@ -216,10 +200,7 @@ public class CrossFeatureInteractionStressTest {
         final long remainingFuel = store.getFuel();
         assertTrue(
             remainingFuel < 100_000L,
-            "Fuel should be consumed at cycle "
-                + i
-                + ", remaining: "
-                + remainingFuel);
+            "Fuel should be consumed at cycle " + i + ", remaining: " + remainingFuel);
       }
 
       if ((i + 1) % 100 == 0) {
@@ -238,8 +219,10 @@ public class CrossFeatureInteractionStressTest {
               Module module = engine.compileWat(FUEL_WAT);
               Instance instance = module.instantiate(store)) {
             store.addFuel(100_000L);
-            final WasmFunction countFunc = instance.getFunction("count")
-                .orElseThrow(() -> new AssertionError("Missing count function"));
+            final WasmFunction countFunc =
+                instance
+                    .getFunction("count")
+                    .orElseThrow(() -> new AssertionError("Missing count function"));
             countFunc.call(WasmValue.i32(5));
           }
         },
@@ -248,9 +231,7 @@ public class CrossFeatureInteractionStressTest {
     LOGGER.info("fuelTrackingUnderStress completed successfully");
   }
 
-  /**
-   * Inner helper class for runtime exceptions in lambdas.
-   */
+  /** Inner helper class for runtime exceptions in lambdas. */
   private static class AssertionError extends RuntimeException {
     private static final long serialVersionUID = 1L;
 

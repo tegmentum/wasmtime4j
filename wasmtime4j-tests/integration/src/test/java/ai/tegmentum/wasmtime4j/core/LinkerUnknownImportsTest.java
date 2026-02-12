@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -31,6 +30,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,8 +38,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests {@link Linker#defineUnknownImportsAsTraps(Store, Module)} and
- * {@link Linker#defineUnknownImportsAsDefaultValues(Store, Module)}.
+ * Tests {@link Linker#defineUnknownImportsAsTraps(Store, Module)} and {@link
+ * Linker#defineUnknownImportsAsDefaultValues(Store, Module)}.
  *
  * <p>These methods allow instantiation of modules with unsatisfied imports by either trapping on
  * call (as traps) or returning default values (as defaults).
@@ -49,8 +49,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Linker Unknown Imports Tests")
 public class LinkerUnknownImportsTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(LinkerUnknownImportsTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(LinkerUnknownImportsTest.class.getName());
 
   /**
    * WAT module importing two functions: one we define, one we leave undefined. Both have wrappers
@@ -75,8 +74,8 @@ public class LinkerUnknownImportsTest extends DualRuntimeTest {
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("defineUnknownImportsAsTraps allows instantiation with missing imports")
-  void defineUnknownImportsAsTrapsInstantiatesSuccessfully(
-      final RuntimeType runtime) throws Exception {
+  void defineUnknownImportsAsTrapsInstantiatesSuccessfully(final RuntimeType runtime)
+      throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing defineUnknownImportsAsTraps instantiation");
 
@@ -84,17 +83,18 @@ public class LinkerUnknownImportsTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<Void> linker = Linker.create(engine)) {
 
-      final FunctionType defType = FunctionType.of(
-          new WasmValueType[]{}, new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "defined_func", defType,
-          params -> new WasmValue[]{WasmValue.i32(99)});
+      final FunctionType defType =
+          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "defined_func", defType, params -> new WasmValue[] {WasmValue.i32(99)});
 
       final Module module = engine.compileWat(WAT);
 
       linker.defineUnknownImportsAsTraps(store, module);
 
       final Instance instance =
-          assertDoesNotThrow(() -> linker.instantiate(store, module),
+          assertDoesNotThrow(
+              () -> linker.instantiate(store, module),
               "Instantiation should succeed after defineUnknownImportsAsTraps");
       assertNotNull(instance, "Instance should not be null");
       LOGGER.info("[" + runtime + "] Instantiation succeeded with traps for unknowns");
@@ -115,20 +115,27 @@ public class LinkerUnknownImportsTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<Void> linker = Linker.create(engine)) {
 
-      final FunctionType defType = FunctionType.of(
-          new WasmValueType[]{}, new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "defined_func", defType,
-          params -> new WasmValue[]{WasmValue.i32(99)});
+      final FunctionType defType =
+          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "defined_func", defType, params -> new WasmValue[] {WasmValue.i32(99)});
 
       final Module module = engine.compileWat(WAT);
       linker.defineUnknownImportsAsTraps(store, module);
       final Instance instance = linker.instantiate(store, module);
 
-      final Exception ex = assertThrows(Exception.class,
-          () -> instance.callFunction("call_undefined", WasmValue.i32(5)),
-          "Calling trapped function should throw");
-      LOGGER.info("[" + runtime + "] Trapped function threw: " + ex.getClass().getName()
-          + " - " + ex.getMessage());
+      final Exception ex =
+          assertThrows(
+              Exception.class,
+              () -> instance.callFunction("call_undefined", WasmValue.i32(5)),
+              "Calling trapped function should throw");
+      LOGGER.info(
+          "["
+              + runtime
+              + "] Trapped function threw: "
+              + ex.getClass().getName()
+              + " - "
+              + ex.getMessage());
 
       instance.close();
       module.close();
@@ -146,10 +153,10 @@ public class LinkerUnknownImportsTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<Void> linker = Linker.create(engine)) {
 
-      final FunctionType defType = FunctionType.of(
-          new WasmValueType[]{}, new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "defined_func", defType,
-          params -> new WasmValue[]{WasmValue.i32(99)});
+      final FunctionType defType =
+          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "defined_func", defType, params -> new WasmValue[] {WasmValue.i32(99)});
 
       final Module module = engine.compileWat(WAT);
       linker.defineUnknownImportsAsTraps(store, module);
@@ -170,8 +177,7 @@ public class LinkerUnknownImportsTest extends DualRuntimeTest {
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("defineUnknownImportsAsDefaultValues allows instantiation")
-  void defineUnknownImportsAsDefaultValuesInstantiates(
-      final RuntimeType runtime) throws Exception {
+  void defineUnknownImportsAsDefaultValuesInstantiates(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing defineUnknownImportsAsDefaultValues instantiation");
 
@@ -179,17 +185,18 @@ public class LinkerUnknownImportsTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<Void> linker = Linker.create(engine)) {
 
-      final FunctionType defType = FunctionType.of(
-          new WasmValueType[]{}, new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "defined_func", defType,
-          params -> new WasmValue[]{WasmValue.i32(99)});
+      final FunctionType defType =
+          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "defined_func", defType, params -> new WasmValue[] {WasmValue.i32(99)});
 
       final Module module = engine.compileWat(WAT);
 
       linker.defineUnknownImportsAsDefaultValues(store, module);
 
       final Instance instance =
-          assertDoesNotThrow(() -> linker.instantiate(store, module),
+          assertDoesNotThrow(
+              () -> linker.instantiate(store, module),
               "Instantiation should succeed after defineUnknownImportsAsDefaultValues");
       assertNotNull(instance, "Instance should not be null");
       LOGGER.info("[" + runtime + "] Instantiation succeeded with defaults for unknowns");
@@ -210,22 +217,20 @@ public class LinkerUnknownImportsTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<Void> linker = Linker.create(engine)) {
 
-      final FunctionType defType = FunctionType.of(
-          new WasmValueType[]{}, new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "defined_func", defType,
-          params -> new WasmValue[]{WasmValue.i32(99)});
+      final FunctionType defType =
+          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "defined_func", defType, params -> new WasmValue[] {WasmValue.i32(99)});
 
       final Module module = engine.compileWat(WAT);
       linker.defineUnknownImportsAsDefaultValues(store, module);
       final Instance instance = linker.instantiate(store, module);
 
-      final WasmValue[] result =
-          instance.callFunction("call_undefined", WasmValue.i32(5));
+      final WasmValue[] result = instance.callFunction("call_undefined", WasmValue.i32(5));
 
       assertNotNull(result, "Result should not be null");
       assertEquals(1, result.length, "Should have exactly 1 result");
-      assertEquals(0, result[0].asInt(),
-          "Default value for i32 should be 0");
+      assertEquals(0, result[0].asInt(), "Default value for i32 should be 0");
       LOGGER.info("[" + runtime + "] Default value function returned: " + result[0].asInt());
 
       instance.close();
@@ -244,10 +249,10 @@ public class LinkerUnknownImportsTest extends DualRuntimeTest {
         Store store = engine.createStore();
         Linker<Void> linker = Linker.create(engine)) {
 
-      final FunctionType defType = FunctionType.of(
-          new WasmValueType[]{}, new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "defined_func", defType,
-          params -> new WasmValue[]{WasmValue.i32(99)});
+      final FunctionType defType =
+          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "defined_func", defType, params -> new WasmValue[] {WasmValue.i32(99)});
 
       final Module module = engine.compileWat(WAT);
       linker.defineUnknownImportsAsDefaultValues(store, module);

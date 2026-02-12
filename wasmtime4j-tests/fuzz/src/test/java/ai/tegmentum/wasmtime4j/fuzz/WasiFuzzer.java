@@ -48,47 +48,47 @@ public class WasiFuzzer {
   /** A simple WASI module that reads args and environ. */
   private static final String WASI_ARGS_MODULE_WAT =
       """
-        (module
-            (import "wasi_snapshot_preview1" "args_sizes_get" (func $args_sizes_get (param i32 i32) (result i32)))
-            (import "wasi_snapshot_preview1" "environ_sizes_get" (func $environ_sizes_get (param i32 i32) (result i32)))
-            (memory (export "memory") 1)
-            (func (export "get_args_sizes") (result i32)
-                i32.const 0
-                i32.const 4
-                call $args_sizes_get)
-            (func (export "get_environ_sizes") (result i32)
-                i32.const 8
-                i32.const 12
-                call $environ_sizes_get)
-        )
-        """;
+      (module
+          (import "wasi_snapshot_preview1" "args_sizes_get" (func $args_sizes_get (param i32 i32) (result i32)))
+          (import "wasi_snapshot_preview1" "environ_sizes_get" (func $environ_sizes_get (param i32 i32) (result i32)))
+          (memory (export "memory") 1)
+          (func (export "get_args_sizes") (result i32)
+              i32.const 0
+              i32.const 4
+              call $args_sizes_get)
+          (func (export "get_environ_sizes") (result i32)
+              i32.const 8
+              i32.const 12
+              call $environ_sizes_get)
+      )
+      """;
 
   /** A WASI module that uses random_get. */
   private static final String WASI_RANDOM_MODULE_WAT =
       """
-        (module
-            (import "wasi_snapshot_preview1" "random_get" (func $random_get (param i32 i32) (result i32)))
-            (memory (export "memory") 1)
-            (func (export "get_random") (param $len i32) (result i32)
-                i32.const 0
-                local.get $len
-                call $random_get)
-        )
-        """;
+      (module
+          (import "wasi_snapshot_preview1" "random_get" (func $random_get (param i32 i32) (result i32)))
+          (memory (export "memory") 1)
+          (func (export "get_random") (param $len i32) (result i32)
+              i32.const 0
+              local.get $len
+              call $random_get)
+      )
+      """;
 
   /** A WASI module that uses clock_time_get. */
   private static final String WASI_CLOCK_MODULE_WAT =
       """
-        (module
-            (import "wasi_snapshot_preview1" "clock_time_get" (func $clock_time_get (param i32 i64 i32) (result i32)))
-            (memory (export "memory") 1)
-            (func (export "get_time") (param $clock_id i32) (param $precision i64) (result i32)
-                local.get $clock_id
-                local.get $precision
-                i32.const 0
-                call $clock_time_get)
-        )
-        """;
+      (module
+          (import "wasi_snapshot_preview1" "clock_time_get" (func $clock_time_get (param i32 i64 i32) (result i32)))
+          (memory (export "memory") 1)
+          (func (export "get_time") (param $clock_id i32) (param $precision i64) (result i32)
+              local.get $clock_id
+              local.get $precision
+              i32.const 0
+              call $clock_time_get)
+      )
+      """;
 
   /**
    * Fuzz test for WASI file-related operations.

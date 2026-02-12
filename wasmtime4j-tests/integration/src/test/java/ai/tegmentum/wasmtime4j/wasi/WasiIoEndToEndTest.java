@@ -25,8 +25,6 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.nio.charset.StandardCharsets;
@@ -311,8 +309,10 @@ public class WasiIoEndToEndTest extends DualRuntimeTest {
       final byte[] stdoutCapture = wasiCtx.getStdoutCapture();
       final byte[] stderrCapture = wasiCtx.getStderrCapture();
 
-      assertNotNull(stdoutCapture, "stdout capture should not be null when output capture is enabled");
-      assertNotNull(stderrCapture, "stderr capture should not be null when output capture is enabled");
+      assertNotNull(
+          stdoutCapture, "stdout capture should not be null when output capture is enabled");
+      assertNotNull(
+          stderrCapture, "stderr capture should not be null when output capture is enabled");
 
       final String stdoutContent = new String(stdoutCapture, StandardCharsets.UTF_8);
       final String stderrContent = new String(stderrCapture, StandardCharsets.UTF_8);

@@ -18,11 +18,8 @@ package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstancePre;
 import ai.tegmentum.wasmtime4j.Linker;
@@ -33,6 +30,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -42,8 +40,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Stress and edge case tests for {@link Linker}: many imports, shadowing behavior,
- * {@link InstancePre} reuse, and WASI iteration.
+ * Stress and edge case tests for {@link Linker}: many imports, shadowing behavior, {@link
+ * InstancePre} reuse, and WASI iteration.
  *
  * @since 1.0.0
  */
@@ -70,19 +68,22 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
         Linker<?> linker = Linker.create(engine)) {
 
       // Define 100 host functions, each returning its index
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
       for (int i = 0; i < 100; i++) {
         final int value = i;
-        linker.defineHostFunction("env", "func_" + i, funcType,
-            (params) -> new WasmValue[]{WasmValue.i32(value)});
+        linker.defineHostFunction(
+            "env", "func_" + i, funcType, (params) -> new WasmValue[] {WasmValue.i32(value)});
       }
 
       // Build WAT that imports all 100 functions and calls a few
       final StringBuilder wat = new StringBuilder("(module\n");
       for (int i = 0; i < 100; i++) {
-        wat.append("  (import \"env\" \"func_").append(i)
-            .append("\" (func $f").append(i).append(" (result i32)))\n");
+        wat.append("  (import \"env\" \"func_")
+            .append(i)
+            .append("\" (func $f")
+            .append(i)
+            .append(" (result i32)))\n");
       }
       // Export functions that call specific imports
       wat.append("  (func (export \"call_0\") (result i32) call $f0)\n");
@@ -93,14 +94,11 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
       final Module module = engine.compileWat(wat.toString());
       final Instance instance = linker.instantiate(store, module);
 
-      assertEquals(0, instance.callI32Function("call_0"),
-          "call_0 should return 0");
-      assertEquals(50, instance.callI32Function("call_50"),
-          "call_50 should return 50");
-      assertEquals(99, instance.callI32Function("call_99"),
-          "call_99 should return 99");
-      LOGGER.info("[" + runtime + "] 100-import stress test passed: call_0=0, call_50=50, "
-          + "call_99=99");
+      assertEquals(0, instance.callI32Function("call_0"), "call_0 should return 0");
+      assertEquals(50, instance.callI32Function("call_50"), "call_50 should return 50");
+      assertEquals(99, instance.callI32Function("call_99"), "call_99 should return 99");
+      LOGGER.info(
+          "[" + runtime + "] 100-import stress test passed: call_0=0, call_50=50, " + "call_99=99");
 
       instance.close();
       module.close();
@@ -120,16 +118,16 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
 
       linker.allowShadowing(true);
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
 
       // Define first version returning 1
-      linker.defineHostFunction("env", "get_val", funcType,
-          (params) -> new WasmValue[]{WasmValue.i32(1)});
+      linker.defineHostFunction(
+          "env", "get_val", funcType, (params) -> new WasmValue[] {WasmValue.i32(1)});
 
       // Redefine with shadowing returning 2
-      linker.defineHostFunction("env", "get_val", funcType,
-          (params) -> new WasmValue[]{WasmValue.i32(2)});
+      linker.defineHostFunction(
+          "env", "get_val", funcType, (params) -> new WasmValue[] {WasmValue.i32(2)});
 
       final String wat =
           """
@@ -141,8 +139,7 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
       final Instance instance = linker.instantiate(store, module);
 
       final int result = instance.callI32Function("call_it");
-      assertEquals(2, result,
-          "Shadowed definition should return 2 (second definition wins)");
+      assertEquals(2, result, "Shadowed definition should return 2 (second definition wins)");
       LOGGER.info("[" + runtime + "] Shadowing test passed: call_it = " + result);
 
       instance.close();
@@ -162,22 +159,30 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
 
       linker.allowShadowing(false);
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
 
       // Define first time
-      linker.defineHostFunction("env", "get_val", funcType,
-          (params) -> new WasmValue[]{WasmValue.i32(1)});
+      linker.defineHostFunction(
+          "env", "get_val", funcType, (params) -> new WasmValue[] {WasmValue.i32(1)});
 
       // Second definition may or may not throw depending on implementation
       try {
-        linker.defineHostFunction("env", "get_val", funcType,
-            (params) -> new WasmValue[]{WasmValue.i32(2)});
-        LOGGER.info("[" + runtime + "] Redefine without shadowing did not throw "
-            + "(shadowing may be enabled by default)");
+        linker.defineHostFunction(
+            "env", "get_val", funcType, (params) -> new WasmValue[] {WasmValue.i32(2)});
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Redefine without shadowing did not throw "
+                + "(shadowing may be enabled by default)");
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] Redefine without shadowing threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Redefine without shadowing threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -192,10 +197,10 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
     try (Engine engine = Engine.create();
         Linker<?> linker = Linker.create(engine)) {
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[0], new WasmValueType[]{WasmValueType.I32});
-      linker.defineHostFunction("env", "get_val", funcType,
-          (params) -> new WasmValue[]{WasmValue.i32(42)});
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env", "get_val", funcType, (params) -> new WasmValue[] {WasmValue.i32(42)});
 
       final String wat =
           """
@@ -214,21 +219,29 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
           try (Store store = engine.createStore()) {
             final Instance instance = pre.instantiate(store);
             final int result = instance.callI32Function("call_it");
-            assertEquals(42, result,
-                "Instance " + i + " from pre should return 42");
-            LOGGER.info("[" + runtime + "] instantiatePre reuse " + i
-                + ": call_it = " + result);
+            assertEquals(42, result, "Instance " + i + " from pre should return 42");
+            LOGGER.info("[" + runtime + "] instantiatePre reuse " + i + ": call_it = " + result);
             instance.close();
           }
         }
 
         pre.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] instantiatePre not implemented: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] instantiatePre not implemented: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] instantiatePre threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] instantiatePre threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       module.close();
@@ -253,21 +266,28 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
           defs.add(def);
         }
 
-        LOGGER.info("[" + runtime + "] After enableWasi, iter has " + defs.size()
-            + " definitions");
+        LOGGER.info("[" + runtime + "] After enableWasi, iter has " + defs.size() + " definitions");
 
         if (defs.size() > 0) {
           // Check for typical WASI module names
-          final boolean hasWasiDefs = defs.stream()
-              .anyMatch(d -> d.getModuleName().contains("wasi"));
+          final boolean hasWasiDefs =
+              defs.stream().anyMatch(d -> d.getModuleName().contains("wasi"));
           LOGGER.info("[" + runtime + "] Has wasi_* module definitions: " + hasWasiDefs);
         } else {
-          LOGGER.info("[" + runtime + "] enableWasi definitions not visible via iter() "
-              + "(implementation may not expose WASI defs through iter)");
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] enableWasi definitions not visible via iter() "
+                  + "(implementation may not expose WASI defs through iter)");
         }
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] enableWasi or iter threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] enableWasi or iter threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }

@@ -34,16 +34,17 @@ public class CrossTableCopyTest extends DualRuntimeTest {
   /**
    * WAT with two funcref tables and functions that populate tab1 via elem segment.
    *
-   * <p>tab1[0]=f1 (returns 100), tab1[1]=f2 (returns 200) via elem segment initialization.
-   * tab2 starts empty. Both tables are exported for Java API access.
+   * <p>tab1[0]=f1 (returns 100), tab1[1]=f2 (returns 200) via elem segment initialization. tab2
+   * starts empty. Both tables are exported for Java API access.
    */
-  private static final String WAT = "(module\n"
-      + "  (table $tab1 (export \"tab1\") 5 funcref)\n"
-      + "  (table $tab2 (export \"tab2\") 5 funcref)\n"
-      + "  (func $f1 (result i32) i32.const 100)\n"
-      + "  (func $f2 (result i32) i32.const 200)\n"
-      + "  (elem (table $tab1) (i32.const 0) func $f1 $f2)\n"
-      + "  (func (export \"nop\")))";
+  private static final String WAT =
+      "(module\n"
+          + "  (table $tab1 (export \"tab1\") 5 funcref)\n"
+          + "  (table $tab2 (export \"tab2\") 5 funcref)\n"
+          + "  (func $f1 (result i32) i32.const 100)\n"
+          + "  (func $f2 (result i32) i32.const 200)\n"
+          + "  (elem (table $tab1) (i32.const 0) func $f1 $f2)\n"
+          + "  (func (export \"nop\")))";
 
   @AfterEach
   void cleanup() {
@@ -66,8 +67,8 @@ public class CrossTableCopyTest extends DualRuntimeTest {
       final WasmTable tab2 = instance.getTable("tab2").orElse(null);
       assertNotNull(tab1, "tab1 export must exist");
       assertNotNull(tab2, "tab2 export must exist");
-      LOGGER.info("[" + runtime + "] tab1 size=" + tab1.getSize()
-          + ", tab2 size=" + tab2.getSize());
+      LOGGER.info(
+          "[" + runtime + "] tab1 size=" + tab1.getSize() + ", tab2 size=" + tab2.getSize());
 
       // Verify tab1 has function entries from elem segment
       assertNotNull(tab1.get(0), "tab1[0] should contain f1 from elem segment");
@@ -84,13 +85,18 @@ public class CrossTableCopyTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] tab2[0]=" + tab2.get(0) + ", tab2[1]=" + tab2.get(1));
 
     } catch (final UnsatisfiedLinkError e) {
-      LOGGER.warning("[" + runtime + "] Native binding not linked for cross-table copy: "
-          + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] Native binding not linked for cross-table copy: " + e.getMessage());
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] Cross-table copy not supported: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -120,13 +126,18 @@ public class CrossTableCopyTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] tab2 size after zero copy: " + tab2Size);
 
     } catch (final UnsatisfiedLinkError e) {
-      LOGGER.warning("[" + runtime + "] Native binding not linked for cross-table copy: "
-          + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] Native binding not linked for cross-table copy: " + e.getMessage());
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] Cross-table copy not supported: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -149,21 +160,30 @@ public class CrossTableCopyTest extends DualRuntimeTest {
 
       try {
         tab2.copy(0, tab1, 0, 100);
-        LOGGER.warning("[" + runtime
-            + "] copy(0, tab1, 0, 100) did not throw on size-5 tables");
+        LOGGER.warning("[" + runtime + "] copy(0, tab1, 0, 100) did not throw on size-5 tables");
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] copy out of bounds threw: " + e.getClass().getName()
-            + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] copy out of bounds threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
     } catch (final UnsatisfiedLinkError e) {
-      LOGGER.warning("[" + runtime + "] Native binding not linked for cross-table copy: "
-          + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] Native binding not linked for cross-table copy: " + e.getMessage());
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] Cross-table copy not supported: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -192,13 +212,18 @@ public class CrossTableCopyTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] tab2[0]=" + tab2.get(0));
 
     } catch (final UnsatisfiedLinkError e) {
-      LOGGER.warning("[" + runtime + "] Native binding not linked for cross-table copy: "
-          + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] Native binding not linked for cross-table copy: " + e.getMessage());
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] Cross-table copy not supported: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 }

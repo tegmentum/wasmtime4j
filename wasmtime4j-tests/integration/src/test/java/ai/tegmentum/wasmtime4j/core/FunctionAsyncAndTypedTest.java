@@ -35,12 +35,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests {@link WasmFunction#callAsync(WasmValue...)} and
- * {@link WasmFunction#callSingleAsync(WasmValue...)} methods.
+ * Tests {@link WasmFunction#callAsync(WasmValue...)} and {@link
+ * WasmFunction#callSingleAsync(WasmValue...)} methods.
  *
- * <p>Note: {@link WasmFunction#typed(String)} tests are excluded because
- * the native implementation currently causes a SIGSEGV in
- * {@code wasmtime4j::memory::Memory::size_pages}, crashing the JVM.
+ * <p>Note: {@link WasmFunction#typed(String)} tests are excluded because the native implementation
+ * currently causes a SIGSEGV in {@code wasmtime4j::memory::Memory::size_pages}, crashing the JVM.
  * This is a known native library bug tracked separately.
  *
  * @since 1.0.0
@@ -48,12 +47,9 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Function Async Tests")
 public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(FunctionAsyncAndTypedTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(FunctionAsyncAndTypedTest.class.getName());
 
-  /**
-   * WAT module with four functions: add(i32,i32)->i32, double(i32)->i32, nop(), id64(i64)->i64.
-   */
+  /** WAT module with four functions: add(i32,i32)->i32, double(i32)->i32, nop(), id64(i64)->i64. */
   private static final String WAT =
       """
       (module
@@ -120,16 +116,22 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
               addFunc.callAsync(WasmValue.i32(i), WasmValue.i32(i * 10));
           final WasmValue[] results = future.get();
           final int expected = i + (i * 10);
-          assertEquals(expected, results[0].asInt(),
+          assertEquals(
+              expected,
+              results[0].asInt(),
               "Sequential async call " + i + " should return " + expected);
-          LOGGER.info("[" + runtime + "] Sequential async call " + i + " = "
-              + results[0].asInt());
+          LOGGER.info("[" + runtime + "] Sequential async call " + i + " = " + results[0].asInt());
         }
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] callAsync not supported: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] callAsync sequential threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callAsync sequential threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -151,8 +153,7 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
       final WasmFunction doubleFunc = instance.getFunction("double").get();
 
       try {
-        final CompletableFuture<WasmValue> future =
-            doubleFunc.callSingleAsync(WasmValue.i32(21));
+        final CompletableFuture<WasmValue> future = doubleFunc.callSingleAsync(WasmValue.i32(21));
         assertNotNull(future, "callSingleAsync should return a non-null future");
 
         final WasmValue result = future.get();
@@ -160,8 +161,7 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
         assertEquals(42, result.asInt(), "double(21) should return 42");
         LOGGER.info("[" + runtime + "] callSingleAsync double(21) = " + result.asInt());
       } catch (final UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] callSingleAsync not supported: "
-            + e.getMessage());
+        LOGGER.info("[" + runtime + "] callSingleAsync not supported: " + e.getMessage());
       }
 
       instance.close();
@@ -188,12 +188,16 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
         // Void functions may return null or a special value
         LOGGER.info("[" + runtime + "] callSingleAsync nop completed, result: " + result);
       } catch (final UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] callSingleAsync not supported: "
-            + e.getMessage());
+        LOGGER.info("[" + runtime + "] callSingleAsync not supported: " + e.getMessage());
       } catch (final Exception e) {
         // Void function may throw since there is no single result
-        LOGGER.info("[" + runtime + "] callSingleAsync nop threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callSingleAsync nop threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -222,7 +226,9 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
         final WasmValue[] results = future.get();
         assertNotNull(results, "Async results should not be null");
         assertEquals(1, results.length, "id64 should return 1 value");
-        assertEquals(Long.MAX_VALUE, results[0].asLong(),
+        assertEquals(
+            Long.MAX_VALUE,
+            results[0].asLong(),
             "id64(Long.MAX_VALUE) should return Long.MAX_VALUE");
         LOGGER.info("[" + runtime + "] callAsync id64(MAX_VALUE) = " + results[0].asLong());
       } catch (final UnsupportedOperationException e) {
@@ -253,14 +259,18 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
 
         final WasmValue[] results = future.get();
         assertNotNull(results, "Async results should not be null");
-        assertEquals(0, results.length,
-            "nop should return 0 values");
+        assertEquals(0, results.length, "nop should return 0 values");
         LOGGER.info("[" + runtime + "] callAsync nop returned empty array");
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] callAsync not supported: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] callAsync nop threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] callAsync nop threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -283,15 +293,13 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
 
       try {
         // Test with 0
-        final CompletableFuture<WasmValue[]> zeroFuture =
-            doubleFunc.callAsync(WasmValue.i32(0));
+        final CompletableFuture<WasmValue[]> zeroFuture = doubleFunc.callAsync(WasmValue.i32(0));
         final WasmValue[] zeroResult = zeroFuture.get();
         assertEquals(0, zeroResult[0].asInt(), "double(0) should return 0");
         LOGGER.info("[" + runtime + "] callAsync double(0) = " + zeroResult[0].asInt());
 
         // Test with negative
-        final CompletableFuture<WasmValue[]> negFuture =
-            doubleFunc.callAsync(WasmValue.i32(-5));
+        final CompletableFuture<WasmValue[]> negFuture = doubleFunc.callAsync(WasmValue.i32(-5));
         final WasmValue[] negResult = negFuture.get();
         assertEquals(-10, negResult[0].asInt(), "double(-5) should return -10");
         LOGGER.info("[" + runtime + "] callAsync double(-5) = " + negResult[0].asInt());
@@ -300,10 +308,8 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
         final CompletableFuture<WasmValue[]> largeFuture =
             doubleFunc.callAsync(WasmValue.i32(Integer.MAX_VALUE));
         final WasmValue[] largeResult = largeFuture.get();
-        assertEquals(-2, largeResult[0].asInt(),
-            "double(MAX_VALUE) should overflow to -2");
-        LOGGER.info("[" + runtime + "] callAsync double(MAX_VALUE) = "
-            + largeResult[0].asInt());
+        assertEquals(-2, largeResult[0].asInt(), "double(MAX_VALUE) should overflow to -2");
+        LOGGER.info("[" + runtime + "] callAsync double(MAX_VALUE) = " + largeResult[0].asInt());
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] callAsync not supported: " + e.getMessage());
       }
@@ -327,15 +333,13 @@ public class FunctionAsyncAndTypedTest extends DualRuntimeTest {
       final WasmFunction doubleFunc = instance.getFunction("double").get();
 
       try {
-        final CompletableFuture<WasmValue> future =
-            doubleFunc.callSingleAsync(WasmValue.i32(0));
+        final CompletableFuture<WasmValue> future = doubleFunc.callSingleAsync(WasmValue.i32(0));
         final WasmValue result = future.get();
         assertNotNull(result, "Single async result should not be null");
         assertEquals(0, result.asInt(), "double(0) should return 0");
         LOGGER.info("[" + runtime + "] callSingleAsync double(0) = " + result.asInt());
       } catch (final UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] callSingleAsync not supported: "
-            + e.getMessage());
+        LOGGER.info("[" + runtime + "] callSingleAsync not supported: " + e.getMessage());
       }
 
       instance.close();

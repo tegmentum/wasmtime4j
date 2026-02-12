@@ -21,11 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Export;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -35,7 +32,10 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.Caller;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,8 +62,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @DisplayName("Caller Export, Engine, GC, and Data Tests")
 public class CallerExportAndEngineTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(CallerExportAndEngineTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CallerExportAndEngineTest.class.getName());
 
   /**
    * WAT module that imports a host function and exports a memory.
@@ -136,8 +135,7 @@ public class CallerExportAndEngineTest extends DualRuntimeTest {
             (Caller<Void> caller, WasmValue[] params) -> {
               exportResult.set(caller.getExport("memory"));
               hasExportResult.set(caller.hasExport("memory"));
-              LOGGER.info(
-                  "[" + runtime + "] Caller.getExport(\"memory\"): " + exportResult.get());
+              LOGGER.info("[" + runtime + "] Caller.getExport(\"memory\"): " + exportResult.get());
               LOGGER.info(
                   "[" + runtime + "] Caller.hasExport(\"memory\"): " + hasExportResult.get());
               return new WasmValue[] {WasmValue.i32(42)};
@@ -185,10 +183,7 @@ public class CallerExportAndEngineTest extends DualRuntimeTest {
             (Caller<Void> caller, WasmValue[] params) -> {
               exportResult.set(caller.getExport("nonexistent"));
               LOGGER.info(
-                  "["
-                      + runtime
-                      + "] Caller.getExport(\"nonexistent\"): "
-                      + exportResult.get());
+                  "[" + runtime + "] Caller.getExport(\"nonexistent\"): " + exportResult.get());
               return new WasmValue[] {WasmValue.i32(42)};
             });
 
@@ -215,8 +210,7 @@ public class CallerExportAndEngineTest extends DualRuntimeTest {
       }
     }
 
-    assertFalse(
-        exportResult.get().isPresent(), "getExport(\"nonexistent\") should return empty");
+    assertFalse(exportResult.get().isPresent(), "getExport(\"nonexistent\") should return empty");
     LOGGER.info("[" + runtime + "] Caller.getExport(\"nonexistent\") correctly returned empty");
   }
 
@@ -369,10 +363,7 @@ public class CallerExportAndEngineTest extends DualRuntimeTest {
 
     assertTrue(
         dataResult.get().equals(expectedData),
-        "Caller.data() should return \""
-            + expectedData
-            + "\" but got: "
-            + dataResult.get());
+        "Caller.data() should return \"" + expectedData + "\" but got: " + dataResult.get());
     LOGGER.info("[" + runtime + "] Caller.data() correctly returned store data");
   }
 
@@ -391,8 +382,7 @@ public class CallerExportAndEngineTest extends DualRuntimeTest {
             (Caller<Void> caller, WasmValue[] params) -> {
               callerAvailable.set(true);
               dataResult.set(caller.data());
-              LOGGER.info(
-                  "[" + runtime + "] Caller.data() (no store data): " + dataResult.get());
+              LOGGER.info("[" + runtime + "] Caller.data() (no store data): " + dataResult.get());
               return new WasmValue[] {WasmValue.i32(42)};
             });
 

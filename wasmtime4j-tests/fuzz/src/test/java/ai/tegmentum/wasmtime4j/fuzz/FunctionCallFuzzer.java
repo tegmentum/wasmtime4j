@@ -32,35 +32,35 @@ public class FunctionCallFuzzer {
   /** A test module with various function signatures. */
   private static final String TEST_MODULE_WAT =
       """
-        (module
-            (func $identity_i32 (export "identity_i32") (param i32) (result i32)
-                local.get 0)
-            (func $identity_i64 (export "identity_i64") (param i64) (result i64)
-                local.get 0)
-            (func $identity_f32 (export "identity_f32") (param f32) (result f32)
-                local.get 0)
-            (func $identity_f64 (export "identity_f64") (param f64) (result f64)
-                local.get 0)
-            (func $add_i32 (export "add_i32") (param i32 i32) (result i32)
-                local.get 0
-                local.get 1
-                i32.add)
-            (func $add_i64 (export "add_i64") (param i64 i64) (result i64)
-                local.get 0
-                local.get 1
-                i64.add)
-            (func $no_args (export "no_args") (result i32)
-                i32.const 42)
-            (func $void_func (export "void_func")
-                nop)
-            (func $multi_param (export "multi_param") (param i32 i64 f32 f64) (result i32)
-                local.get 0)
-            (func $div_i32 (export "div_i32") (param i32 i32) (result i32)
-                local.get 0
-                local.get 1
-                i32.div_s)
-        )
-        """;
+      (module
+          (func $identity_i32 (export "identity_i32") (param i32) (result i32)
+              local.get 0)
+          (func $identity_i64 (export "identity_i64") (param i64) (result i64)
+              local.get 0)
+          (func $identity_f32 (export "identity_f32") (param f32) (result f32)
+              local.get 0)
+          (func $identity_f64 (export "identity_f64") (param f64) (result f64)
+              local.get 0)
+          (func $add_i32 (export "add_i32") (param i32 i32) (result i32)
+              local.get 0
+              local.get 1
+              i32.add)
+          (func $add_i64 (export "add_i64") (param i64 i64) (result i64)
+              local.get 0
+              local.get 1
+              i64.add)
+          (func $no_args (export "no_args") (result i32)
+              i32.const 42)
+          (func $void_func (export "void_func")
+              nop)
+          (func $multi_param (export "multi_param") (param i32 i64 f32 f64) (result i32)
+              local.get 0)
+          (func $div_i32 (export "div_i32") (param i32 i32) (result i32)
+              local.get 0
+              local.get 1
+              i32.div_s)
+      )
+      """;
 
   /** List of function names in the test module. */
   private static final String[] FUNCTION_NAMES = {

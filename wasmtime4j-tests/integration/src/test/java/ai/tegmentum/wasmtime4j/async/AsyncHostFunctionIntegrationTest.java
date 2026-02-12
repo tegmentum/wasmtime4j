@@ -445,7 +445,7 @@ public final class AsyncHostFunctionIntegrationTest {
           new AsyncHostFunction() {
             @Override
             public CompletableFuture<WasmValue[]> call(
-                final ai.tegmentum.wasmtime4j.Function<?> caller, final WasmValue[] args) {
+                final ai.tegmentum.wasmtime4j.func.Function<?> caller, final WasmValue[] args) {
               return CompletableFuture.completedFuture(new WasmValue[] {WasmValue.i32(1)});
             }
 

@@ -23,14 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
-import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
-import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.ByteArrayOutputStream;

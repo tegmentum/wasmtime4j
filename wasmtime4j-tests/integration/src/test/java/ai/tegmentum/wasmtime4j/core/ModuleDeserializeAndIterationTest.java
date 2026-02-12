@@ -22,14 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.func.FunctionInfo;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.func.FunctionInfo;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -51,9 +50,7 @@ public class ModuleDeserializeAndIterationTest extends DualRuntimeTest {
   private static final Logger LOGGER =
       Logger.getLogger(ModuleDeserializeAndIterationTest.class.getName());
 
-  /**
-   * WAT module with three exported functions for testing function iteration.
-   */
+  /** WAT module with three exported functions for testing function iteration. */
   private static final String WAT =
       """
       (module
@@ -98,12 +95,14 @@ public class ModuleDeserializeAndIterationTest extends DualRuntimeTest {
 
         // Instantiate and call "add" to verify
         final Instance instance = deserialized.instantiate(store);
-        final WasmValue[] result = instance.callFunction("add",
-            WasmValue.i32(10), WasmValue.i32(32));
-        assertEquals(42, result[0].asInt(),
-            "add(10, 32) should return 42 on deserialized module");
-        LOGGER.info("[" + runtime + "] deserializeFile round-trip verified, add(10,32) = "
-            + result[0].asInt());
+        final WasmValue[] result =
+            instance.callFunction("add", WasmValue.i32(10), WasmValue.i32(32));
+        assertEquals(42, result[0].asInt(), "add(10, 32) should return 42 on deserialized module");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] deserializeFile round-trip verified, add(10,32) = "
+                + result[0].asInt());
 
         instance.close();
         deserialized.close();
@@ -123,10 +122,11 @@ public class ModuleDeserializeAndIterationTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing deserializeFile with invalid path");
 
     try (Engine engine = Engine.create()) {
-      final Path nonExistent = Path.of("/tmp/wasmtime4j-nonexistent-"
-          + System.nanoTime() + ".cwasm");
+      final Path nonExistent =
+          Path.of("/tmp/wasmtime4j-nonexistent-" + System.nanoTime() + ".cwasm");
 
-      assertThrows(Exception.class,
+      assertThrows(
+          Exception.class,
           () -> Module.deserializeFile(engine, nonExistent),
           "deserializeFile with non-existent path should throw");
       LOGGER.info("[" + runtime + "] deserializeFile with invalid path threw as expected");
@@ -150,7 +150,8 @@ public class ModuleDeserializeAndIterationTest extends DualRuntimeTest {
         }
         Files.write(tempFile, garbage);
 
-        assertThrows(Exception.class,
+        assertThrows(
+            Exception.class,
             () -> Module.deserializeFile(engine, tempFile),
             "deserializeFile with corrupted data should throw");
         LOGGER.info("[" + runtime + "] deserializeFile with corrupted data threw as expected");
@@ -179,14 +180,22 @@ public class ModuleDeserializeAndIterationTest extends DualRuntimeTest {
           funcList.add(info);
         }
 
-        assertTrue(funcList.size() >= 3,
+        assertTrue(
+            funcList.size() >= 3,
             "Module with 3 exports should have >= 3 functions, got: " + funcList.size());
         LOGGER.info("[" + runtime + "] functions() returned " + funcList.size() + " entries");
         for (final FunctionInfo info : funcList) {
-          LOGGER.info("[" + runtime + "]   index=" + info.getIndex()
-              + " name=" + info.getName()
-              + " isImport=" + info.isImport()
-              + " isLocal=" + info.isLocal());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "]   index="
+                  + info.getIndex()
+                  + " name="
+                  + info.getName()
+                  + " isImport="
+                  + info.isImport()
+                  + " isLocal="
+                  + info.isLocal());
         }
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] functions() not supported: " + e.getMessage());
@@ -214,13 +223,14 @@ public class ModuleDeserializeAndIterationTest extends DualRuntimeTest {
 
         // All functions in this module are local (not imported)
         for (final FunctionInfo info : funcList) {
-          assertTrue(info.isLocal(),
-              "Function '" + info.getName() + "' should be local (not imported)");
-          assertTrue(info.getIndex() >= 0,
+          assertTrue(
+              info.isLocal(), "Function '" + info.getName() + "' should be local (not imported)");
+          assertTrue(
+              info.getIndex() >= 0,
               "Function index should be non-negative, got: " + info.getIndex());
         }
-        LOGGER.info("[" + runtime + "] All " + funcList.size()
-            + " functions are local with valid indices");
+        LOGGER.info(
+            "[" + runtime + "] All " + funcList.size() + " functions are local with valid indices");
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] functions() not supported: " + e.getMessage());
       }
@@ -249,15 +259,16 @@ public class ModuleDeserializeAndIterationTest extends DualRuntimeTest {
         }
 
         if (addInfo != null) {
-          assertNotNull(addInfo.getFuncType(),
-              "add function should have a FuncType");
-          assertEquals(2, addInfo.getFuncType().getParams().size(),
-              "add should have 2 params");
-          assertEquals(1, addInfo.getFuncType().getResults().size(),
-              "add should have 1 result");
-          LOGGER.info("[" + runtime + "] add FuncType: params="
-              + addInfo.getFuncType().getParams()
-              + " results=" + addInfo.getFuncType().getResults());
+          assertNotNull(addInfo.getFuncType(), "add function should have a FuncType");
+          assertEquals(2, addInfo.getFuncType().getParams().size(), "add should have 2 params");
+          assertEquals(1, addInfo.getFuncType().getResults().size(), "add should have 1 result");
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] add FuncType: params="
+                  + addInfo.getFuncType().getParams()
+                  + " results="
+                  + addInfo.getFuncType().getResults());
         } else {
           LOGGER.info("[" + runtime + "] 'add' function not found in functions() iteration");
         }
@@ -285,10 +296,10 @@ public class ModuleDeserializeAndIterationTest extends DualRuntimeTest {
           funcList.add(info);
         }
 
-        assertEquals(0, funcList.size(),
-            "Empty module should have 0 functions, got: " + funcList.size());
-        LOGGER.info("[" + runtime + "] Empty module functions() returned "
-            + funcList.size() + " entries");
+        assertEquals(
+            0, funcList.size(), "Empty module should have 0 functions, got: " + funcList.size());
+        LOGGER.info(
+            "[" + runtime + "] Empty module functions() returned " + funcList.size() + " entries");
       } catch (final UnsupportedOperationException e) {
         LOGGER.info("[" + runtime + "] functions() not supported: " + e.getMessage());
       }

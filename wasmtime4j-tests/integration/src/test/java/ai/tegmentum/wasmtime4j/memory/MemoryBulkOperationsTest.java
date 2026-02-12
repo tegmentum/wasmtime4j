@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.memory;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -34,23 +33,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests memory bulk operations (copy, fill, data segment init/drop) using
- * WAT-level instructions exposed through exported functions.
+ * Tests memory bulk operations (copy, fill, data segment init/drop) using WAT-level instructions
+ * exposed through exported functions.
  *
- * <p>Note: The Java API methods {@code WasmMemory.copy()}, {@code WasmMemory.fill()},
- * and {@code WasmMemory.dropDataSegment()} are NOT tested directly because they
- * currently trigger a SIGSEGV in the native library at
- * {@code wasmtime4j::memory::Memory::size_pages}. This is a known native bug.
- * Instead, tests exercise the underlying WebAssembly instructions via exported
- * WAT functions, similar to {@link ZeroLengthMemoryOpsTest}.
+ * <p>Note: The Java API methods {@code WasmMemory.copy()}, {@code WasmMemory.fill()}, and {@code
+ * WasmMemory.dropDataSegment()} are NOT tested directly because they currently trigger a SIGSEGV in
+ * the native library at {@code wasmtime4j::memory::Memory::size_pages}. This is a known native bug.
+ * Instead, tests exercise the underlying WebAssembly instructions via exported WAT functions,
+ * similar to {@link ZeroLengthMemoryOpsTest}.
  *
  * @since 1.0.0
  */
 @DisplayName("Memory Bulk Operations Tests")
 public class MemoryBulkOperationsTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(MemoryBulkOperationsTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(MemoryBulkOperationsTest.class.getName());
 
   /**
    * WAT module with memory copy, fill, read/write helpers, and passive data segment operations.
@@ -111,15 +108,13 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       }
 
       // Copy 10 bytes from offset 0 to offset 100
-      instance.callFunction("do_copy",
-          WasmValue.i32(100), WasmValue.i32(0), WasmValue.i32(10));
+      instance.callFunction("do_copy", WasmValue.i32(100), WasmValue.i32(0), WasmValue.i32(10));
 
       // Verify the copy using load_byte
       for (int i = 0; i < pattern.length; i++) {
-        final WasmValue[] result = instance.callFunction("load_byte",
-            WasmValue.i32(100 + i));
-        assertEquals(pattern[i], result[0].asInt(),
-            "Byte at dest offset " + i + " should match source");
+        final WasmValue[] result = instance.callFunction("load_byte", WasmValue.i32(100 + i));
+        assertEquals(
+            pattern[i], result[0].asInt(), "Byte at dest offset " + i + " should match source");
       }
       LOGGER.info("[" + runtime + "] Non-overlapping copy verified for 10 bytes");
 
@@ -147,16 +142,15 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       }
 
       // Overlapping copy: src=0, dest=2, len=5 (dest > src, forward overlap)
-      instance.callFunction("do_copy",
-          WasmValue.i32(2), WasmValue.i32(0), WasmValue.i32(5));
+      instance.callFunction("do_copy", WasmValue.i32(2), WasmValue.i32(0), WasmValue.i32(5));
 
       // After copy, bytes at [2..6] should be [1, 2, 3, 4, 5]
       for (int i = 0; i < pattern.length; i++) {
-        final WasmValue[] result = instance.callFunction("load_byte",
-            WasmValue.i32(2 + i));
-        assertEquals(pattern[i], result[0].asInt(),
-            "Overlapping copy byte at offset " + (2 + i)
-                + " should be " + pattern[i]);
+        final WasmValue[] result = instance.callFunction("load_byte", WasmValue.i32(2 + i));
+        assertEquals(
+            pattern[i],
+            result[0].asInt(),
+            "Overlapping copy byte at offset " + (2 + i) + " should be " + pattern[i]);
       }
       LOGGER.info("[" + runtime + "] Overlapping forward copy verified");
 
@@ -178,8 +172,7 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // This should not throw
-      instance.callFunction("do_copy",
-          WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(0));
+      instance.callFunction("do_copy", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(0));
       LOGGER.info("[" + runtime + "] Zero-length copy succeeded as no-op");
 
       instance.close();
@@ -200,15 +193,12 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // Fill 16 bytes at offset 0 with 0xAB
-      instance.callFunction("do_fill",
-          WasmValue.i32(0), WasmValue.i32(0xAB), WasmValue.i32(16));
+      instance.callFunction("do_fill", WasmValue.i32(0), WasmValue.i32(0xAB), WasmValue.i32(16));
 
       // Verify all 16 bytes
       for (int i = 0; i < 16; i++) {
-        final WasmValue[] result = instance.callFunction("load_byte",
-            WasmValue.i32(i));
-        assertEquals(0xAB, result[0].asInt(),
-            "Filled byte at offset " + i + " should be 0xAB");
+        final WasmValue[] result = instance.callFunction("load_byte", WasmValue.i32(i));
+        assertEquals(0xAB, result[0].asInt(), "Filled byte at offset " + i + " should be 0xAB");
       }
       LOGGER.info("[" + runtime + "] Fill with 0xAB verified for 16 bytes");
 
@@ -230,8 +220,7 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // Should not throw
-      instance.callFunction("do_fill",
-          WasmValue.i32(0), WasmValue.i32(0xFF), WasmValue.i32(0));
+      instance.callFunction("do_fill", WasmValue.i32(0), WasmValue.i32(0xFF), WasmValue.i32(0));
       LOGGER.info("[" + runtime + "] Zero-length fill succeeded as no-op");
 
       instance.close();
@@ -252,16 +241,13 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // Fill 4096 bytes with 0x55
-      instance.callFunction("do_fill",
-          WasmValue.i32(0), WasmValue.i32(0x55), WasmValue.i32(4096));
+      instance.callFunction("do_fill", WasmValue.i32(0), WasmValue.i32(0x55), WasmValue.i32(4096));
 
       // Spot-check a few positions
       final int[] offsets = {0, 100, 1000, 2048, 4095};
       for (final int offset : offsets) {
-        final WasmValue[] result = instance.callFunction("load_byte",
-            WasmValue.i32(offset));
-        assertEquals(0x55, result[0].asInt(),
-            "Byte at offset " + offset + " should be 0x55");
+        final WasmValue[] result = instance.callFunction("load_byte", WasmValue.i32(offset));
+        assertEquals(0x55, result[0].asInt(), "Byte at offset " + offset + " should be 0x55");
       }
       LOGGER.info("[" + runtime + "] Large fill (4096 bytes) verified at spot-check offsets");
 
@@ -283,15 +269,15 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       final Instance instance = module.instantiate(store);
 
       // init_seg(dest=0, seg_offset=0, len=5) copies "HELLO" to memory[0..4]
-      instance.callFunction("init_seg",
-          WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(5));
+      instance.callFunction("init_seg", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(5));
 
       // Verify "HELLO" = {72, 69, 76, 76, 79}
       final int[] expected = {'H', 'E', 'L', 'L', 'O'};
       for (int i = 0; i < expected.length; i++) {
-        final WasmValue[] result = instance.callFunction("load_byte",
-            WasmValue.i32(i));
-        assertEquals(expected[i], result[0].asInt(),
+        final WasmValue[] result = instance.callFunction("load_byte", WasmValue.i32(i));
+        assertEquals(
+            expected[i],
+            result[0].asInt(),
             "Byte at offset " + i + " should be '" + (char) expected[i] + "'");
       }
       LOGGER.info("[" + runtime + "] memory.init verified: 'HELLO' at offset 0");
@@ -319,12 +305,16 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
 
       // Now trying to init from the dropped segment should trap
       try {
-        instance.callFunction("init_seg",
-            WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(5));
+        instance.callFunction("init_seg", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(5));
         LOGGER.info("[" + runtime + "] memory.init after drop did not throw (unexpected)");
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] memory.init after drop threw as expected: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] memory.init after drop threw as expected: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -346,12 +336,16 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
 
       // 1 page = 65536 bytes; copying 65537 bytes should trap
       try {
-        instance.callFunction("do_copy",
-            WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(65537));
+        instance.callFunction("do_copy", WasmValue.i32(0), WasmValue.i32(0), WasmValue.i32(65537));
         LOGGER.info("[" + runtime + "] Copy out of bounds did not throw (unexpected)");
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] Copy out of bounds trapped as expected: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] Copy out of bounds trapped as expected: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
 
       instance.close();
@@ -386,9 +380,10 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
 
       // Verify using load_byte
       for (int i = 0; i < pattern.length; i++) {
-        final WasmValue[] result = instance.callFunction("load_byte",
-            WasmValue.i32(100 + i));
-        assertEquals(pattern[i] & 0xFF, result[0].asInt(),
+        final WasmValue[] result = instance.callFunction("load_byte", WasmValue.i32(100 + i));
+        assertEquals(
+            pattern[i] & 0xFF,
+            result[0].asInt(),
             "Byte at dest offset " + (100 + i) + " should match source");
       }
       LOGGER.info("[" + runtime + "] Long copy non-overlapping verified for 10 bytes");
@@ -422,9 +417,10 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
 
       // After copy, bytes at [2..6] should be [1,2,3,4,5]
       for (int i = 0; i < pattern.length; i++) {
-        final WasmValue[] result = instance.callFunction("load_byte",
-            WasmValue.i32(2 + i));
-        assertEquals(pattern[i], result[0].asInt(),
+        final WasmValue[] result = instance.callFunction("load_byte", WasmValue.i32(2 + i));
+        assertEquals(
+            pattern[i],
+            result[0].asInt(),
             "Overlapping copy byte at offset " + (2 + i) + " should be " + pattern[i]);
       }
       LOGGER.info("[" + runtime + "] Long copy forward overlap verified");
@@ -496,10 +492,8 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
 
       // Verify all 16 bytes using load_byte
       for (int i = 0; i < 16; i++) {
-        final WasmValue[] result = instance.callFunction("load_byte",
-            WasmValue.i32(i));
-        assertEquals(0xAB, result[0].asInt(),
-            "Filled byte at offset " + i + " should be 0xAB");
+        final WasmValue[] result = instance.callFunction("load_byte", WasmValue.i32(i));
+        assertEquals(0xAB, result[0].asInt(), "Filled byte at offset " + i + " should be 0xAB");
       }
       LOGGER.info("[" + runtime + "] Long fill verified for 16 bytes of 0xAB");
 

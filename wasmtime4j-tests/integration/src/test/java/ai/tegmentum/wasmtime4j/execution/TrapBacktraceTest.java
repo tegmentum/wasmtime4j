@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -31,6 +29,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.TrapException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -83,8 +82,7 @@ public class TrapBacktraceTest extends DualRuntimeTest {
 
         assertNotNull(e.getMessage(), "Trap should have a message");
         assertNotNull(e.getTrapType(), "Trap should have a type");
-        assertTrue(
-            e.getMessage().length() > 0, "Trap message should not be empty");
+        assertTrue(e.getMessage().length() > 0, "Trap message should not be empty");
         LOGGER.info("[" + runtime + "] Trap info verified");
       } catch (final Exception e) {
         // Non-TrapException is also acceptable - just verify it has info
@@ -130,8 +128,7 @@ public class TrapBacktraceTest extends DualRuntimeTest {
         if (backtrace != null) {
           LOGGER.info("[" + runtime + "] Backtrace:\n" + backtrace);
           // Backtrace should contain multiple frames for the nested call
-          assertTrue(
-              backtrace.length() > 0, "Backtrace should not be empty for nested calls");
+          assertTrue(backtrace.length() > 0, "Backtrace should not be empty for nested calls");
         }
         LOGGER.info("[" + runtime + "] Nested trap info verified");
       } catch (final Exception e) {

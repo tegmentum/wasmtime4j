@@ -4,12 +4,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Linker;
-import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
-import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.wasi.WasiContext;
+import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
+import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -97,7 +97,8 @@ public class WasiPreview2IntegrationTest {
 
     // Verify WASI Preview 2 imports are present
     assertTrue(
-        WasiLinkerUtils.hasWasiPreview2Imports(linker), "Linker should have WASI Preview 2 imports");
+        WasiLinkerUtils.hasWasiPreview2Imports(linker),
+        "Linker should have WASI Preview 2 imports");
 
     LOGGER.info("Successfully created WASI Preview 2 linker");
   }
@@ -121,7 +122,8 @@ public class WasiPreview2IntegrationTest {
 
     // Verify component model imports
     assertTrue(
-        WasiLinkerUtils.hasComponentModelImports(linker), "Linker should have component model imports");
+        WasiLinkerUtils.hasComponentModelImports(linker),
+        "Linker should have component model imports");
 
     LOGGER.info("Successfully validated component model support");
   }

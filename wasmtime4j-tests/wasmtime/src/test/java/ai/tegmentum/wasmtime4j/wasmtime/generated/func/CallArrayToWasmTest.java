@@ -29,14 +29,14 @@ public final class CallArrayToWasmTest {
 
     final String wat =
         """
-        (module
-                    (func (export "run") (param i32 i32 i32) (result i32 i32 i32)
-                      local.get 1
-                      local.get 2
-                      local.get 0
-                    )
-                  )
-    """;
+            (module
+                        (func (export "run") (param i32 i32 i32) (result i32 i32 i32)
+                          local.get 1
+                          local.get 2
+                          local.get 0
+                        )
+                      )
+        """;
 
     try (final WastTestRunner runner = new WastTestRunner()) {
       // Compile and instantiate module

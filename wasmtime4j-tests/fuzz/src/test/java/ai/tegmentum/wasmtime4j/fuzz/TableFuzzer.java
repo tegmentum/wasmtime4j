@@ -45,16 +45,16 @@ public class TableFuzzer {
   /** A module that exports a table. */
   private static final String TABLE_MODULE_WAT =
       """
-        (module
-            (table (export "table") 10 100 funcref)
-            (func $dummy (result i32)
-                i32.const 42)
-            (elem (i32.const 0) $dummy)
-            (func (export "call_indirect") (param i32) (result i32)
-                local.get 0
-                call_indirect (result i32))
-        )
-        """;
+      (module
+          (table (export "table") 10 100 funcref)
+          (func $dummy (result i32)
+              i32.const 42)
+          (elem (i32.const 0) $dummy)
+          (func (export "call_indirect") (param i32) (result i32)
+              local.get 0
+              call_indirect (result i32))
+      )
+      """;
 
   /**
    * Fuzz test for table grow operations.

@@ -23,10 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.validation.ImportMap;
-import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
@@ -37,7 +33,11 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.validation.ImportMap;
+import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -155,10 +155,19 @@ public class ModuleImportValidationDetailedTest extends DualRuntimeTest {
 
       LOGGER.info("[" + runtime + "] isValid: " + validation.isValid());
       LOGGER.info("[" + runtime + "] issues count: " + validation.getIssues().size());
-      validation.getIssues().forEach(issue ->
-          LOGGER.info("[" + runtime + "] issue: " + issue.getMessage()
-              + " severity=" + issue.getSeverity()
-              + " type=" + issue.getType()));
+      validation
+          .getIssues()
+          .forEach(
+              issue ->
+                  LOGGER.info(
+                      "["
+                          + runtime
+                          + "] issue: "
+                          + issue.getMessage()
+                          + " severity="
+                          + issue.getSeverity()
+                          + " type="
+                          + issue.getType()));
     }
   }
 
@@ -230,8 +239,7 @@ public class ModuleImportValidationDetailedTest extends DualRuntimeTest {
     }
 
     @Override
-    public ImportMap addTable(
-        final String moduleName, final String name, final WasmTable table) {
+    public ImportMap addTable(final String moduleName, final String name, final WasmTable table) {
       imports.computeIfAbsent(moduleName, k -> new HashMap<>()).put(name, table);
       return this;
     }

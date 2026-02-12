@@ -21,13 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.HostFunction.CallerContextUsage;
-import ai.tegmentum.wasmtime4j.HostFunction.OptimizedCallerAwareHostFunction;
-import ai.tegmentum.wasmtime4j.HostFunction.OptimizedHostFunction;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -37,7 +31,13 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.Caller;
+import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction.CallerContextUsage;
+import ai.tegmentum.wasmtime4j.func.HostFunction.OptimizedCallerAwareHostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunction.OptimizedHostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -137,17 +137,13 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     assertNotNull(optimized, "optimized() should return non-null");
     assertTrue(
         optimized instanceof OptimizedHostFunction,
-        "optimized() should return OptimizedHostFunction, got: "
-            + optimized.getClass().getName());
+        "optimized() should return OptimizedHostFunction, got: " + optimized.getClass().getName());
 
     final OptimizedHostFunction opt = (OptimizedHostFunction) optimized;
     assertFalse(opt.isCallerAware(), "Regular function should not be caller-aware");
     assertEquals(original, opt.getDelegate(), "Delegate should be the original function");
     LOGGER.info(
-        "["
-            + runtime
-            + "] OptimizedHostFunction metadata: isCallerAware="
-            + opt.isCallerAware());
+        "[" + runtime + "] OptimizedHostFunction metadata: isCallerAware=" + opt.isCallerAware());
 
     // Verify execution through linker
     try (Engine engine = Engine.create();
@@ -161,8 +157,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
         final Optional<WasmFunction> callOptFunc = instance.getFunction("call_opt");
         assertTrue(callOptFunc.isPresent(), "call_opt export must be present");
 
-        final WasmValue[] results =
-            callOptFunc.get().call(WasmValue.i32(3), WasmValue.i32(4));
+        final WasmValue[] results = callOptFunc.get().call(WasmValue.i32(3), WasmValue.i32(4));
         assertEquals(7, results[0].asI32(), "3 + 4 should equal 7");
         LOGGER.info("[" + runtime + "] Optimized function executed: 3 + 4 = 7");
       }
@@ -174,8 +169,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
   @DisplayName("optimized wraps caller-aware function with correct metadata")
   void optimizedWrapsCallerAwareFunction(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info(
-        "[" + runtime + "] Testing HostFunction.optimized() with caller-aware function");
+    LOGGER.info("[" + runtime + "] Testing HostFunction.optimized() with caller-aware function");
 
     final HostFunction callerAware =
         HostFunction.multiValueWithCaller(
@@ -190,8 +184,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     assertNotNull(optimized, "optimized() should return non-null");
     assertTrue(
         optimized instanceof OptimizedHostFunction,
-        "optimized() should return OptimizedHostFunction, got: "
-            + optimized.getClass().getName());
+        "optimized() should return OptimizedHostFunction, got: " + optimized.getClass().getName());
 
     final OptimizedHostFunction opt = (OptimizedHostFunction) optimized;
     assertTrue(opt.isCallerAware(), "Caller-aware function should be marked as caller-aware");
@@ -207,8 +200,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
   @DisplayName("optimizedWithCaller with NONE usage allows optimization")
   void optimizedWithCallerNoneUsage(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info(
-        "[" + runtime + "] Testing HostFunction.optimizedWithCaller with NONE usage");
+    LOGGER.info("[" + runtime + "] Testing HostFunction.optimizedWithCaller with NONE usage");
 
     final HostFunction optimized =
         HostFunction.optimizedWithCaller(
@@ -222,15 +214,10 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     assertNotNull(optimized, "optimizedWithCaller() should return non-null");
     assertTrue(
         optimized instanceof OptimizedCallerAwareHostFunction,
-        "Should return OptimizedCallerAwareHostFunction, got: "
-            + optimized.getClass().getName());
+        "Should return OptimizedCallerAwareHostFunction, got: " + optimized.getClass().getName());
 
-    final OptimizedCallerAwareHostFunction<?> opt =
-        (OptimizedCallerAwareHostFunction<?>) optimized;
-    assertEquals(
-        CallerContextUsage.NONE,
-        opt.getContextUsage(),
-        "Context usage should be NONE");
+    final OptimizedCallerAwareHostFunction<?> opt = (OptimizedCallerAwareHostFunction<?>) optimized;
+    assertEquals(CallerContextUsage.NONE, opt.getContextUsage(), "Context usage should be NONE");
     assertTrue(opt.canOptimize(), "NONE usage should be optimizable");
     LOGGER.info(
         "["
@@ -253,11 +240,9 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
         assertTrue(callOptFunc.isPresent(), "call_opt export must be present");
 
         try {
-          final WasmValue[] results =
-              callOptFunc.get().call(WasmValue.i32(10), WasmValue.i32(20));
+          final WasmValue[] results = callOptFunc.get().call(WasmValue.i32(10), WasmValue.i32(20));
           assertEquals(30, results[0].asI32(), "10 + 20 should equal 30");
-          LOGGER.info(
-              "[" + runtime + "] OptimizedWithCaller(NONE) executed: 10 + 20 = 30");
+          LOGGER.info("[" + runtime + "] OptimizedWithCaller(NONE) executed: 10 + 20 = 30");
         } catch (final WasmException e) {
           if (isCallerUnavailable(e)) {
             LOGGER.info("[" + runtime + "] " + CALLER_NOT_AVAILABLE);
@@ -274,8 +259,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
   @DisplayName("optimizedWithCaller with FULL usage prevents optimization")
   void optimizedWithCallerFullUsage(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info(
-        "[" + runtime + "] Testing HostFunction.optimizedWithCaller with FULL usage");
+    LOGGER.info("[" + runtime + "] Testing HostFunction.optimizedWithCaller with FULL usage");
 
     final HostFunction optimized =
         HostFunction.optimizedWithCaller(
@@ -289,15 +273,10 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     assertNotNull(optimized, "optimizedWithCaller() should return non-null");
     assertTrue(
         optimized instanceof OptimizedCallerAwareHostFunction,
-        "Should return OptimizedCallerAwareHostFunction, got: "
-            + optimized.getClass().getName());
+        "Should return OptimizedCallerAwareHostFunction, got: " + optimized.getClass().getName());
 
-    final OptimizedCallerAwareHostFunction<?> opt =
-        (OptimizedCallerAwareHostFunction<?>) optimized;
-    assertEquals(
-        CallerContextUsage.FULL,
-        opt.getContextUsage(),
-        "Context usage should be FULL");
+    final OptimizedCallerAwareHostFunction<?> opt = (OptimizedCallerAwareHostFunction<?>) optimized;
+    assertEquals(CallerContextUsage.FULL, opt.getContextUsage(), "Context usage should be FULL");
     assertFalse(opt.canOptimize(), "FULL usage should not be optimizable");
     LOGGER.info(
         "["
@@ -314,9 +293,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
   void optimizedWithCallerExportsOnlyUsage(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info(
-        "["
-            + runtime
-            + "] Testing HostFunction.optimizedWithCaller with EXPORTS_ONLY usage");
+        "[" + runtime + "] Testing HostFunction.optimizedWithCaller with EXPORTS_ONLY usage");
 
     final HostFunction optimized =
         HostFunction.optimizedWithCaller(
@@ -330,17 +307,14 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     assertNotNull(optimized, "optimizedWithCaller() should return non-null");
     assertTrue(
         optimized instanceof OptimizedCallerAwareHostFunction,
-        "Should return OptimizedCallerAwareHostFunction, got: "
-            + optimized.getClass().getName());
+        "Should return OptimizedCallerAwareHostFunction, got: " + optimized.getClass().getName());
 
-    final OptimizedCallerAwareHostFunction<?> opt =
-        (OptimizedCallerAwareHostFunction<?>) optimized;
+    final OptimizedCallerAwareHostFunction<?> opt = (OptimizedCallerAwareHostFunction<?>) optimized;
     assertEquals(
         CallerContextUsage.EXPORTS_ONLY,
         opt.getContextUsage(),
         "Context usage should be EXPORTS_ONLY");
-    assertTrue(
-        opt.getContextUsage().usesExports(), "EXPORTS_ONLY should use exports");
+    assertTrue(opt.getContextUsage().usesExports(), "EXPORTS_ONLY should use exports");
     assertFalse(opt.getContextUsage().usesFuel(), "EXPORTS_ONLY should not use fuel");
     LOGGER.info(
         "["
@@ -383,10 +357,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
         for (final int[] tc : testCases) {
           final WasmValue[] results =
               callOptFunc.get().call(WasmValue.i32(tc[0]), WasmValue.i32(tc[1]));
-          assertEquals(
-              tc[2],
-              results[0].asI32(),
-              tc[0] + " * " + tc[1] + " should equal " + tc[2]);
+          assertEquals(tc[2], results[0].asI32(), tc[0] + " * " + tc[1] + " should equal " + tc[2]);
           LOGGER.info(
               "["
                   + runtime

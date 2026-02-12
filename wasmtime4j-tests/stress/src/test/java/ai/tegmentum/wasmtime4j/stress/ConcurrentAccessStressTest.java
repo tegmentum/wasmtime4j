@@ -34,8 +34,7 @@ import org.junit.jupiter.api.Test;
  */
 public class ConcurrentAccessStressTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ConcurrentAccessStressTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ConcurrentAccessStressTest.class.getName());
 
   private static final String SIMPLE_WAT =
       "(module\n"
@@ -107,8 +106,7 @@ public class ConcurrentAccessStressTest {
                         Module module = engine.compileWat(SIMPLE_WAT);
                         Instance instance = module.instantiate(store)) {
                       assertNotNull(
-                          instance,
-                          "Instance null at thread " + threadId + " cycle " + i);
+                          instance, "Instance null at thread " + threadId + " cycle " + i);
                       assertTrue(
                           instance.getFunction("get42").isPresent(),
                           "Missing get42 at thread " + threadId + " cycle " + i);
@@ -116,8 +114,7 @@ public class ConcurrentAccessStressTest {
                     }
                   }
                 } catch (final Exception e) {
-                  LOGGER.severe(
-                      "Thread " + threadId + " failed: " + e.getMessage());
+                  LOGGER.severe("Thread " + threadId + " failed: " + e.getMessage());
                   errorCount.incrementAndGet();
                   throw new RuntimeException(e);
                 }
@@ -139,10 +136,7 @@ public class ConcurrentAccessStressTest {
             + " errors");
 
     assertEquals(0, errorCount.get(), "No errors should occur during concurrent engine creation");
-    assertEquals(
-        threadCount * cyclesPerThread,
-        successCount.get(),
-        "All cycles should succeed");
+    assertEquals(threadCount * cyclesPerThread, successCount.get(), "All cycles should succeed");
   }
 
   @Test
@@ -189,9 +183,7 @@ public class ConcurrentAccessStressTest {
                       for (int i = 0; i < callsPerThread; i++) {
                         final WasmValue[] result =
                             addFunc.call(WasmValue.i32(i), WasmValue.i32(threadId));
-                        assertNotNull(
-                            result,
-                            "Result null at thread " + threadId + " call " + i);
+                        assertNotNull(result, "Result null at thread " + threadId + " call " + i);
                         assertEquals(
                             1,
                             result.length,
@@ -204,8 +196,7 @@ public class ConcurrentAccessStressTest {
                       }
                     }
                   } catch (final Exception e) {
-                    LOGGER.severe(
-                        "Thread " + threadId + " failed: " + e.getMessage());
+                    LOGGER.severe("Thread " + threadId + " failed: " + e.getMessage());
                     errorCount.incrementAndGet();
                     throw new RuntimeException(e);
                   }
@@ -228,9 +219,7 @@ public class ConcurrentAccessStressTest {
 
       assertEquals(0, errorCount.get(), "No errors should occur during concurrent function calls");
       assertEquals(
-          threadCount * callsPerThread,
-          successCount.get(),
-          "All function calls should succeed");
+          threadCount * callsPerThread, successCount.get(), "All function calls should succeed");
     }
   }
 
@@ -273,8 +262,7 @@ public class ConcurrentAccessStressTest {
                     for (int i = 0; i < compilationsPerThread; i++) {
                       try (Module module = engine.compileWat(wat)) {
                         assertNotNull(
-                            module,
-                            "Module null at thread " + threadId + " compilation " + i);
+                            module, "Module null at thread " + threadId + " compilation " + i);
                         assertTrue(
                             !module.getExports().isEmpty(),
                             "Module should have exports at thread "
@@ -285,8 +273,7 @@ public class ConcurrentAccessStressTest {
                       }
                     }
                   } catch (final Exception e) {
-                    LOGGER.severe(
-                        "Thread " + threadId + " failed: " + e.getMessage());
+                    LOGGER.severe("Thread " + threadId + " failed: " + e.getMessage());
                     errorCount.incrementAndGet();
                     throw new RuntimeException(e);
                   }

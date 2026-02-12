@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -30,6 +29,7 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -66,18 +66,16 @@ public class UseAfterCloseTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (func (export "add") (param i32 i32) (result i32)
-              local.get 0 local.get 1 i32.add))
-          """);
+              (module
+                (func (export "add") (param i32 i32) (result i32)
+                  local.get 0 local.get 1 i32.add))
+              """);
 
       module.close();
       LOGGER.info("[" + runtime + "] Module closed, calling getExports()");
 
       assertThrows(
-          Exception.class,
-          module::getExports,
-          "getExports() on closed module should throw");
+          Exception.class, module::getExports, "getExports() on closed module should throw");
       LOGGER.info("[" + runtime + "] Exception thrown as expected");
     }
   }
@@ -94,10 +92,10 @@ public class UseAfterCloseTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (func (export "add") (param i32 i32) (result i32)
-              local.get 0 local.get 1 i32.add))
-          """);
+              (module
+                (func (export "add") (param i32 i32) (result i32)
+                  local.get 0 local.get 1 i32.add))
+              """);
       final Instance instance = module.instantiate(store);
 
       instance.close();
@@ -129,9 +127,7 @@ public class UseAfterCloseTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] Store closed, calling setFuel()");
 
       assertThrows(
-          Exception.class,
-          () -> store.setFuel(500),
-          "setFuel() on closed store should throw");
+          Exception.class, () -> store.setFuel(500), "setFuel() on closed store should throw");
       LOGGER.info("[" + runtime + "] Exception thrown as expected");
     }
   }
@@ -148,9 +144,9 @@ public class UseAfterCloseTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (func (export "noop")))
-          """);
+              (module
+                (func (export "noop")))
+              """);
       final Linker<Void> linker = Linker.create(engine);
 
       linker.close();
@@ -196,10 +192,10 @@ public class UseAfterCloseTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (memory (export "mem") 1)
-            (func (export "noop")))
-          """);
+              (module
+                (memory (export "mem") 1)
+                (func (export "noop")))
+              """);
       final Instance instance = module.instantiate(store);
       final Optional<WasmMemory> memOpt = instance.getMemory("mem");
       assert memOpt.isPresent() : "Memory export must be present";
@@ -243,10 +239,10 @@ public class UseAfterCloseTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (table (export "t") 2 funcref)
-            (func (export "noop")))
-          """);
+              (module
+                (table (export "t") 2 funcref)
+                (func (export "noop")))
+              """);
       final Instance instance = module.instantiate(store);
       final Optional<WasmTable> tableOpt = instance.getTable("t");
       assert tableOpt.isPresent() : "Table export must be present";
@@ -279,10 +275,10 @@ public class UseAfterCloseTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (table (export "t") 2 funcref)
-            (func (export "noop")))
-          """);
+              (module
+                (table (export "t") 2 funcref)
+                (func (export "noop")))
+              """);
       final Instance instance = module.instantiate(store);
       final Optional<WasmTable> tableOpt = instance.getTable("t");
       assert tableOpt.isPresent() : "Table export must be present";
@@ -315,10 +311,10 @@ public class UseAfterCloseTest extends DualRuntimeTest {
       final Module module =
           engine.compileWat(
               """
-          (module
-            (func (export "add") (param i32 i32) (result i32)
-              local.get 0 local.get 1 i32.add))
-          """);
+              (module
+                (func (export "add") (param i32 i32) (result i32)
+                  local.get 0 local.get 1 i32.add))
+              """);
       final Instance instance = module.instantiate(store);
       final Optional<WasmFunction> funcOpt = instance.getFunction("add");
       assert funcOpt.isPresent() : "Function export must be present";

@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -186,7 +185,6 @@ public class RuntimeFallbackTest {
     LOGGER.info("Panama available: " + panamaAvailable);
 
     // At least one runtime must be available for the project to function
-    assertTrue(
-        jniAvailable || panamaAvailable, "At least one runtime must be available");
+    assertTrue(jniAvailable || panamaAvailable, "At least one runtime must be available");
   }
 }

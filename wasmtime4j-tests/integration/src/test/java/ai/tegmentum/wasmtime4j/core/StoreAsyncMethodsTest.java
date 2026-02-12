@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -37,23 +36,20 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests {@link Store#setCallHookAsync(AsyncCallHookHandler)} and
- * {@link Store#limiterAsync(AsyncResourceLimiter)}.
+ * Tests {@link Store#setCallHookAsync(AsyncCallHookHandler)} and {@link
+ * Store#limiterAsync(AsyncResourceLimiter)}.
  *
- * <p>All methods are wrapped in defensive try/catch for {@link UnsupportedOperationException}
- * since async features may not be available in all runtimes.
+ * <p>All methods are wrapped in defensive try/catch for {@link UnsupportedOperationException} since
+ * async features may not be available in all runtimes.
  *
  * @since 1.0.0
  */
 @DisplayName("Store Async Methods Tests")
 public class StoreAsyncMethodsTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(StoreAsyncMethodsTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(StoreAsyncMethodsTest.class.getName());
 
-  /**
-   * WAT module with memory (1-10 pages), a memory grow function, and a nop function.
-   */
+  /** WAT module with memory (1-10 pages), a memory grow function, and a nop function. */
   private static final String WAT =
       """
       (module
@@ -62,9 +58,7 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
         (func (export "nop")))
       """;
 
-  /**
-   * WAT module with a table that can grow.
-   */
+  /** WAT module with a table that can grow. */
   private static final String TABLE_WAT =
       """
       (module
@@ -90,11 +84,12 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
       final AtomicBoolean hookInvoked = new AtomicBoolean(false);
 
       try {
-        final AsyncCallHookHandler handler = (callHook) -> {
-          hookInvoked.set(true);
-          LOGGER.info("[" + runtime + "] Async call hook invoked: " + callHook);
-          return CompletableFuture.completedFuture(null);
-        };
+        final AsyncCallHookHandler handler =
+            (callHook) -> {
+              hookInvoked.set(true);
+              LOGGER.info("[" + runtime + "] Async call hook invoked: " + callHook);
+              return CompletableFuture.completedFuture(null);
+            };
         store.setCallHookAsync(handler);
 
         final Module module = engine.compileWat(WAT);
@@ -103,18 +98,27 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
         // Call a function to trigger the hook
         instance.callFunction("nop");
 
-        LOGGER.info("[" + runtime + "] Hook invoked after calling nop: "
-            + hookInvoked.get());
+        LOGGER.info("[" + runtime + "] Hook invoked after calling nop: " + hookInvoked.get());
         // Note: hook invocation depends on async engine configuration
 
         instance.close();
         module.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] setCallHookAsync not supported: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] setCallHookAsync not supported: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] setCallHookAsync threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] setCallHookAsync threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -131,21 +135,29 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
 
       try {
         // Set a handler
-        store.setCallHookAsync((callHook) ->
-            CompletableFuture.completedFuture(null));
+        store.setCallHookAsync((callHook) -> CompletableFuture.completedFuture(null));
 
         // Clear by passing null
         store.setCallHookAsync(null);
         LOGGER.info("[" + runtime + "] setCallHookAsync(null) succeeded");
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] setCallHookAsync not supported: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] setCallHookAsync not supported: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final NullPointerException e) {
-        LOGGER.info("[" + runtime + "] setCallHookAsync(null) threw NPE: "
-            + e.getMessage());
+        LOGGER.info("[" + runtime + "] setCallHookAsync(null) threw NPE: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] setCallHookAsync(null) threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] setCallHookAsync(null) threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -161,21 +173,27 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
         Store store = engine.createStore()) {
 
       try {
-        final AsyncResourceLimiter limiter = new AsyncResourceLimiter() {
-          @Override
-          public CompletableFuture<Boolean> allowMemoryGrow(
-              final long currentSize, final long desiredSize) {
-            LOGGER.info("[" + runtime + "] Async limiter allowMemoryGrow: "
-                + currentSize + " -> " + desiredSize);
-            return CompletableFuture.completedFuture(true);
-          }
+        final AsyncResourceLimiter limiter =
+            new AsyncResourceLimiter() {
+              @Override
+              public CompletableFuture<Boolean> allowMemoryGrow(
+                  final long currentSize, final long desiredSize) {
+                LOGGER.info(
+                    "["
+                        + runtime
+                        + "] Async limiter allowMemoryGrow: "
+                        + currentSize
+                        + " -> "
+                        + desiredSize);
+                return CompletableFuture.completedFuture(true);
+              }
 
-          @Override
-          public CompletableFuture<Boolean> allowTableGrow(
-              final long currentSize, final long desiredSize) {
-            return CompletableFuture.completedFuture(true);
-          }
-        };
+              @Override
+              public CompletableFuture<Boolean> allowTableGrow(
+                  final long currentSize, final long desiredSize) {
+                return CompletableFuture.completedFuture(true);
+              }
+            };
         store.limiterAsync(limiter);
 
         final Module module = engine.compileWat(WAT);
@@ -184,17 +202,31 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
         // Try to grow memory by 1 page
         final WasmValue[] result = instance.callFunction("grow_mem");
         assertNotNull(result, "grow_mem should return a result");
-        LOGGER.info("[" + runtime + "] grow_mem returned: " + result[0].asInt()
-            + " (previous page count, -1 means failure)");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] grow_mem returned: "
+                + result[0].asInt()
+                + " (previous page count, -1 means failure)");
 
         instance.close();
         module.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] limiterAsync not supported: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] limiterAsync not supported: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] limiterAsync threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] limiterAsync threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -210,21 +242,27 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
         Store store = engine.createStore()) {
 
       try {
-        final AsyncResourceLimiter limiter = new AsyncResourceLimiter() {
-          @Override
-          public CompletableFuture<Boolean> allowMemoryGrow(
-              final long currentSize, final long desiredSize) {
-            LOGGER.info("[" + runtime + "] Async limiter DENYING memory grow: "
-                + currentSize + " -> " + desiredSize);
-            return CompletableFuture.completedFuture(false);
-          }
+        final AsyncResourceLimiter limiter =
+            new AsyncResourceLimiter() {
+              @Override
+              public CompletableFuture<Boolean> allowMemoryGrow(
+                  final long currentSize, final long desiredSize) {
+                LOGGER.info(
+                    "["
+                        + runtime
+                        + "] Async limiter DENYING memory grow: "
+                        + currentSize
+                        + " -> "
+                        + desiredSize);
+                return CompletableFuture.completedFuture(false);
+              }
 
-          @Override
-          public CompletableFuture<Boolean> allowTableGrow(
-              final long currentSize, final long desiredSize) {
-            return CompletableFuture.completedFuture(false);
-          }
-        };
+              @Override
+              public CompletableFuture<Boolean> allowTableGrow(
+                  final long currentSize, final long desiredSize) {
+                return CompletableFuture.completedFuture(false);
+              }
+            };
         store.limiterAsync(limiter);
 
         final Module module = engine.compileWat(WAT);
@@ -234,17 +272,31 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
         final WasmValue[] result = instance.callFunction("grow_mem");
         assertNotNull(result, "grow_mem should return a result even when denied");
         // When memory.grow is denied, it returns -1
-        LOGGER.info("[" + runtime + "] grow_mem returned: " + result[0].asInt()
-            + " (expected -1 for denied growth)");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] grow_mem returned: "
+                + result[0].asInt()
+                + " (expected -1 for denied growth)");
 
         instance.close();
         module.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] limiterAsync not supported: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] limiterAsync not supported: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] limiterAsync threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] limiterAsync threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -262,47 +314,75 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
       final AtomicBoolean tableGrowCalled = new AtomicBoolean(false);
 
       try {
-        final AsyncResourceLimiter limiter = new AsyncResourceLimiter() {
-          @Override
-          public CompletableFuture<Boolean> allowMemoryGrow(
-              final long currentSize, final long desiredSize) {
-            return CompletableFuture.completedFuture(true);
-          }
+        final AsyncResourceLimiter limiter =
+            new AsyncResourceLimiter() {
+              @Override
+              public CompletableFuture<Boolean> allowMemoryGrow(
+                  final long currentSize, final long desiredSize) {
+                return CompletableFuture.completedFuture(true);
+              }
 
-          @Override
-          public CompletableFuture<Boolean> allowTableGrow(
-              final long currentSize, final long desiredSize) {
-            tableGrowCalled.set(true);
-            LOGGER.info("[" + runtime + "] Async limiter allowTableGrow: "
-                + currentSize + " -> " + desiredSize);
-            return CompletableFuture.completedFuture(true);
-          }
-        };
+              @Override
+              public CompletableFuture<Boolean> allowTableGrow(
+                  final long currentSize, final long desiredSize) {
+                tableGrowCalled.set(true);
+                LOGGER.info(
+                    "["
+                        + runtime
+                        + "] Async limiter allowTableGrow: "
+                        + currentSize
+                        + " -> "
+                        + desiredSize);
+                return CompletableFuture.completedFuture(true);
+              }
+            };
         store.limiterAsync(limiter);
 
         final Module module = engine.compileWat(TABLE_WAT);
         final Instance instance = module.instantiate(store);
 
         // Get the table and try to grow it
-        instance.getTable("tab").ifPresent(table -> {
-          try {
-            table.grow(1, null);
-            LOGGER.info("[" + runtime + "] Table grow succeeded, "
-                + "tableGrowCalled=" + tableGrowCalled.get());
-          } catch (final Exception e) {
-            LOGGER.info("[" + runtime + "] Table grow threw: "
-                + e.getClass().getName() + " - " + e.getMessage());
-          }
-        });
+        instance
+            .getTable("tab")
+            .ifPresent(
+                table -> {
+                  try {
+                    table.grow(1, null);
+                    LOGGER.info(
+                        "["
+                            + runtime
+                            + "] Table grow succeeded, "
+                            + "tableGrowCalled="
+                            + tableGrowCalled.get());
+                  } catch (final Exception e) {
+                    LOGGER.info(
+                        "["
+                            + runtime
+                            + "] Table grow threw: "
+                            + e.getClass().getName()
+                            + " - "
+                            + e.getMessage());
+                  }
+                });
 
         instance.close();
         module.close();
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] limiterAsync not supported: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] limiterAsync not supported: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] limiterAsync threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] limiterAsync threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }
@@ -319,32 +399,42 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
 
       try {
         // Set a limiter
-        store.limiterAsync(new AsyncResourceLimiter() {
-          @Override
-          public CompletableFuture<Boolean> allowMemoryGrow(
-              final long currentSize, final long desiredSize) {
-            return CompletableFuture.completedFuture(true);
-          }
+        store.limiterAsync(
+            new AsyncResourceLimiter() {
+              @Override
+              public CompletableFuture<Boolean> allowMemoryGrow(
+                  final long currentSize, final long desiredSize) {
+                return CompletableFuture.completedFuture(true);
+              }
 
-          @Override
-          public CompletableFuture<Boolean> allowTableGrow(
-              final long currentSize, final long desiredSize) {
-            return CompletableFuture.completedFuture(true);
-          }
-        });
+              @Override
+              public CompletableFuture<Boolean> allowTableGrow(
+                  final long currentSize, final long desiredSize) {
+                return CompletableFuture.completedFuture(true);
+              }
+            });
 
         // Clear by passing null
         store.limiterAsync(null);
         LOGGER.info("[" + runtime + "] limiterAsync(null) succeeded");
       } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] limiterAsync not supported: "
-            + e.getClass().getSimpleName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] limiterAsync not supported: "
+                + e.getClass().getSimpleName()
+                + " - "
+                + e.getMessage());
       } catch (final NullPointerException e) {
-        LOGGER.info("[" + runtime + "] limiterAsync(null) threw NPE: "
-            + e.getMessage());
+        LOGGER.info("[" + runtime + "] limiterAsync(null) threw NPE: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] limiterAsync(null) threw: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] limiterAsync(null) threw: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
       }
     }
   }

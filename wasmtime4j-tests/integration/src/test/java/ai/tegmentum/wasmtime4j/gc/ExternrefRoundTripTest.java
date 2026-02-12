@@ -202,8 +202,12 @@ public class ExternrefRoundTripTest extends DualRuntimeTest {
       } catch (final Throwable t) {
         // NoSuchMethodError, Exception, etc. are all acceptable - no JVM crash is the key
         LOGGER.info(
-            "[" + runtime + "] externref call threw (expected): " + t.getClass().getName()
-                + " - " + t.getMessage());
+            "["
+                + runtime
+                + "] externref call threw (expected): "
+                + t.getClass().getName()
+                + " - "
+                + t.getMessage());
       }
 
       instance.close();

@@ -6,19 +6,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.ExnRef;
-import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.memory.Tag;
-import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.TagType;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,9 +28,9 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 /**
  * End-to-end tests for the WASM exception handling proposal APIs.
  *
- * <p>Covers {@link Store#hasPendingException()}, {@link Store#takePendingException()},
- * {@link Store#throwException(ExnRef)}, {@link Tag#create(Store, TagType)}, and
- * {@link TagType#create(FunctionType)}.
+ * <p>Covers {@link Store#hasPendingException()}, {@link Store#takePendingException()}, {@link
+ * Store#throwException(ExnRef)}, {@link Tag#create(Store, TagType)}, and {@link
+ * TagType#create(FunctionType)}.
  *
  * <p>All tests are defensively wrapped because WASM exception handling may not be fully wired
  * through the native layer. Tests log skip messages rather than failing if the feature is
@@ -70,8 +70,13 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -94,8 +99,13 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -109,9 +119,8 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
     try (Engine engine = Engine.create(exceptionsEnabledConfig());
         Store store = engine.createStore()) {
 
-      final FunctionType funcType = new FunctionType(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[0]);
+      final FunctionType funcType =
+          new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[0]);
       final TagType tagType = TagType.create(funcType);
       assertNotNull(tagType, "TagType.create must return non-null");
       LOGGER.info("[" + runtime + "] Created TagType with funcType=" + funcType);
@@ -122,18 +131,22 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
 
       final TagType retrievedType = tag.getType(store);
       assertNotNull(retrievedType, "Tag.getType must return non-null");
-      assertNotNull(retrievedType.getFunctionType(),
-          "Retrieved TagType must have a FunctionType");
-      LOGGER.info("[" + runtime + "] Tag.getType returned funcType="
-          + retrievedType.getFunctionType());
+      assertNotNull(retrievedType.getFunctionType(), "Retrieved TagType must have a FunctionType");
+      LOGGER.info(
+          "[" + runtime + "] Tag.getType returned funcType=" + retrievedType.getFunctionType());
 
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] Tag/TagType not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -152,25 +165,33 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
         // If it doesn't throw, that's unexpected but not a crash
         LOGGER.info("[" + runtime + "] throwException(null) returned without throwing");
       } catch (final IllegalArgumentException e) {
-        LOGGER.info("[" + runtime + "] throwException(null) threw IllegalArgumentException: "
-            + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] throwException(null) threw IllegalArgumentException: "
+                + e.getMessage());
       } catch (final NullPointerException e) {
-        LOGGER.info("[" + runtime + "] throwException(null) threw NullPointerException: "
-            + e.getMessage());
+        LOGGER.info(
+            "[" + runtime + "] throwException(null) threw NullPointerException: " + e.getMessage());
       } catch (final UnsupportedOperationException e) {
         LOGGER.warning("[" + runtime + "] throwException not supported: " + e.getMessage());
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] throwException(null) threw " + e.getClass().getName()
-            + ": " + e.getMessage());
+        LOGGER.info(
+            "["
+                + runtime
+                + "] throwException(null) threw "
+                + e.getClass().getName()
+                + ": "
+                + e.getMessage());
       }
       // Key assertion: no JVM crash
-      assertDoesNotThrow(() -> { }, "JVM must not crash from throwException(null)");
+      assertDoesNotThrow(() -> {}, "JVM must not crash from throwException(null)");
 
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Outer exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] Outer exception: " + e.getClass().getName() + " - " + e.getMessage());
     }
   }
 
@@ -181,28 +202,33 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing WASM throw instruction caught from Java side");
 
-    final String wat = "(module\n"
-        + "  (tag $t (export \"my_tag\") (param i32))\n"
-        + "  (func (export \"throw_42\")\n"
-        + "    i32.const 42\n"
-        + "    throw $t)\n"
-        + "  (func (export \"nop\")))";
+    final String wat =
+        "(module\n"
+            + "  (tag $t (export \"my_tag\") (param i32))\n"
+            + "  (func (export \"throw_42\")\n"
+            + "    i32.const 42\n"
+            + "    throw $t)\n"
+            + "  (func (export \"nop\")))";
 
     try (Engine engine = Engine.create(exceptionsEnabledConfig())) {
       Module module = null;
       try {
         module = engine.compileWat(wat);
       } catch (final Exception e) {
-        LOGGER.warning("[" + runtime + "] Failed to compile exception WAT: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.warning(
+            "["
+                + runtime
+                + "] Failed to compile exception WAT: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
         return;
       }
 
       try (Store store = engine.createStore();
           Instance instance = module.instantiate(store)) {
 
-        final WasmFunction throwFunc = instance.getFunction("throw_42")
-            .orElse(null);
+        final WasmFunction throwFunc = instance.getFunction("throw_42").orElse(null);
         assertNotNull(throwFunc, "throw_42 export must exist");
         LOGGER.info("[" + runtime + "] Found throw_42 export");
 
@@ -210,8 +236,13 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
           throwFunc.call();
           LOGGER.info("[" + runtime + "] throw_42 returned without throwing (unexpected)");
         } catch (final Exception e) {
-          LOGGER.info("[" + runtime + "] throw_42 threw: " + e.getClass().getName()
-              + " - " + e.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] throw_42 threw: "
+                  + e.getClass().getName()
+                  + " - "
+                  + e.getMessage());
         }
 
         // Check if there's a pending exception after the trap
@@ -224,8 +255,8 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
             LOGGER.info("[" + runtime + "] Took pending exception: valid=" + exn.isValid());
           }
         } catch (final UnsupportedOperationException e) {
-          LOGGER.warning("[" + runtime + "] Pending exception API not supported: "
-              + e.getMessage());
+          LOGGER.warning(
+              "[" + runtime + "] Pending exception API not supported: " + e.getMessage());
         }
 
       } finally {
@@ -237,8 +268,13 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -249,33 +285,38 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing WASM try_table/catch returns payload");
 
-    final String wat = "(module\n"
-        + "  (tag $t (param i32))\n"
-        + "  (func (export \"catch_tag\") (result i32)\n"
-        + "    (block $catch (result i32)\n"
-        + "      (try_table (catch $t $catch)\n"
-        + "        (throw $t (i32.const 99))\n"
-        + "      )\n"
-        + "      unreachable\n"
-        + "    )\n"
-        + "  )\n"
-        + ")";
+    final String wat =
+        "(module\n"
+            + "  (tag $t (param i32))\n"
+            + "  (func (export \"catch_tag\") (result i32)\n"
+            + "    (block $catch (result i32)\n"
+            + "      (try_table (catch $t $catch)\n"
+            + "        (throw $t (i32.const 99))\n"
+            + "      )\n"
+            + "      unreachable\n"
+            + "    )\n"
+            + "  )\n"
+            + ")";
 
     try (Engine engine = Engine.create(exceptionsEnabledConfig())) {
       Module module = null;
       try {
         module = engine.compileWat(wat);
       } catch (final Exception e) {
-        LOGGER.warning("[" + runtime + "] Failed to compile catch WAT: "
-            + e.getClass().getName() + " - " + e.getMessage());
+        LOGGER.warning(
+            "["
+                + runtime
+                + "] Failed to compile catch WAT: "
+                + e.getClass().getName()
+                + " - "
+                + e.getMessage());
         return;
       }
 
       try (Store store = engine.createStore();
           Instance instance = module.instantiate(store)) {
 
-        final WasmFunction catchFunc = instance.getFunction("catch_tag")
-            .orElse(null);
+        final WasmFunction catchFunc = instance.getFunction("catch_tag").orElse(null);
         assertNotNull(catchFunc, "catch_tag export must exist");
         LOGGER.info("[" + runtime + "] Found catch_tag export");
 
@@ -287,8 +328,8 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
           final int value = results[0].asI32();
           LOGGER.info("[" + runtime + "] catch_tag returned i32=" + value);
           // The caught value should be 99 (thrown by throw $t (i32.const 99))
-          org.junit.jupiter.api.Assertions.assertEquals(99, value,
-              "catch_tag should return the caught payload value 99");
+          org.junit.jupiter.api.Assertions.assertEquals(
+              99, value, "catch_tag should return the caught payload value 99");
         }
 
       } finally {
@@ -302,8 +343,13 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
     } catch (final UnsupportedOperationException e) {
       LOGGER.warning("[" + runtime + "] Exception handling not supported: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 }

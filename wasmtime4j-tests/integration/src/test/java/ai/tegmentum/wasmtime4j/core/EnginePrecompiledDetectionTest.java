@@ -20,8 +20,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link Engine#detectPrecompiled(byte[])} and
- * {@link Engine#detectPrecompiledFile(Path)}.
+ * Tests for {@link Engine#detectPrecompiled(byte[])} and {@link
+ * Engine#detectPrecompiledFile(Path)}.
  *
  * <p>Verifies that precompiled module detection correctly identifies serialized modules, rejects
  * raw WASM bytes and garbage, and handles null arguments defensively.
@@ -57,18 +57,25 @@ public class EnginePrecompiledDetectionTest extends DualRuntimeTest {
 
       final Precompiled result = engine.detectPrecompiled(serialized);
       assertNotNull(result, "detectPrecompiled on serialized module should return non-null");
-      assertEquals(Precompiled.MODULE, result,
+      assertEquals(
+          Precompiled.MODULE,
+          result,
           "detectPrecompiled should return MODULE for serialized module bytes");
       LOGGER.info("[" + runtime + "] detectPrecompiled=" + result);
 
     } catch (final UnsupportedOperationException e) {
-      LOGGER.warning("[" + runtime + "] serialize or detectPrecompiled not supported: "
-          + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] serialize or detectPrecompiled not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -81,14 +88,14 @@ public class EnginePrecompiledDetectionTest extends DualRuntimeTest {
 
     try (Engine engine = Engine.create()) {
       // Raw WASM binary (valid but not precompiled)
-      final byte[] rawWasm = new byte[] {
-          0x00, 0x61, 0x73, 0x6D, // magic
-          0x01, 0x00, 0x00, 0x00  // version
-      };
+      final byte[] rawWasm =
+          new byte[] {
+            0x00, 0x61, 0x73, 0x6D, // magic
+            0x01, 0x00, 0x00, 0x00 // version
+          };
 
       final Precompiled result = engine.detectPrecompiled(rawWasm);
-      assertNull(result,
-          "detectPrecompiled on raw WASM should return null (not precompiled)");
+      assertNull(result, "detectPrecompiled on raw WASM should return null (not precompiled)");
       LOGGER.info("[" + runtime + "] detectPrecompiled(rawWasm)=" + result);
 
     } catch (final UnsupportedOperationException e) {
@@ -96,8 +103,13 @@ public class EnginePrecompiledDetectionTest extends DualRuntimeTest {
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -109,14 +121,11 @@ public class EnginePrecompiledDetectionTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing detectPrecompiled on garbage bytes");
 
     try (Engine engine = Engine.create()) {
-      final byte[] garbage = new byte[] {
-          (byte) 0xDE, (byte) 0xAD, (byte) 0xBE, (byte) 0xEF,
-          0x01, 0x02, 0x03, 0x04
-      };
+      final byte[] garbage =
+          new byte[] {(byte) 0xDE, (byte) 0xAD, (byte) 0xBE, (byte) 0xEF, 0x01, 0x02, 0x03, 0x04};
 
       final Precompiled result = engine.detectPrecompiled(garbage);
-      assertNull(result,
-          "detectPrecompiled on garbage should return null");
+      assertNull(result, "detectPrecompiled on garbage should return null");
       LOGGER.info("[" + runtime + "] detectPrecompiled(garbage)=" + result);
 
     } catch (final UnsupportedOperationException e) {
@@ -124,8 +133,13 @@ public class EnginePrecompiledDetectionTest extends DualRuntimeTest {
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     }
   }
 
@@ -148,8 +162,7 @@ public class EnginePrecompiledDetectionTest extends DualRuntimeTest {
       // Write to temp file
       tempFile = Files.createTempFile("wasmtime4j-precompiled-", ".cwasm");
       Files.write(tempFile, serialized);
-      LOGGER.info("[" + runtime + "] Wrote " + serialized.length
-          + " bytes to " + tempFile);
+      LOGGER.info("[" + runtime + "] Wrote " + serialized.length + " bytes to " + tempFile);
 
       final Precompiled result = engine.detectPrecompiledFile(tempFile);
       LOGGER.info("[" + runtime + "] detectPrecompiledFile=" + result);
@@ -157,21 +170,31 @@ public class EnginePrecompiledDetectionTest extends DualRuntimeTest {
       // It may return MODULE if it detects the precompiled header, or null if the default
       // implementation delegates to detectPrecompiled(byte[]) which already works.
       if (result != null) {
-        assertEquals(Precompiled.MODULE, result,
+        assertEquals(
+            Precompiled.MODULE,
+            result,
             "If non-null, detectPrecompiledFile should return MODULE for serialized module");
       } else {
-        LOGGER.info("[" + runtime + "] detectPrecompiledFile returned null for serialized "
-            + "module file (file-based detection may read insufficient header bytes)");
+        LOGGER.info(
+            "["
+                + runtime
+                + "] detectPrecompiledFile returned null for serialized "
+                + "module file (file-based detection may read insufficient header bytes)");
       }
 
     } catch (final UnsupportedOperationException e) {
-      LOGGER.warning("[" + runtime + "] serialize or detectPrecompiledFile not supported: "
-          + e.getMessage());
+      LOGGER.warning(
+          "[" + runtime + "] serialize or detectPrecompiledFile not supported: " + e.getMessage());
     } catch (final UnsatisfiedLinkError e) {
       LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
     } catch (final Exception e) {
-      LOGGER.warning("[" + runtime + "] Unexpected exception: " + e.getClass().getName()
-          + " - " + e.getMessage());
+      LOGGER.warning(
+          "["
+              + runtime
+              + "] Unexpected exception: "
+              + e.getClass().getName()
+              + " - "
+              + e.getMessage());
     } finally {
       if (tempFile != null) {
         Files.deleteIfExists(tempFile);
@@ -187,7 +210,8 @@ public class EnginePrecompiledDetectionTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing detectPrecompiledFile with null path");
 
     try (Engine engine = Engine.create()) {
-      assertThrows(Exception.class,
+      assertThrows(
+          Exception.class,
           () -> engine.detectPrecompiledFile(null),
           "detectPrecompiledFile(null) should throw");
       LOGGER.info("[" + runtime + "] detectPrecompiledFile(null) threw as expected");
