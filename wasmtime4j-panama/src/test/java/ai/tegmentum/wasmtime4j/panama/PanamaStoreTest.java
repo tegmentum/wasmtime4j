@@ -716,21 +716,22 @@ class PanamaStoreTest {
   class LimiterTests {
 
     @Test
-    @DisplayName("limiter should throw UnsupportedOperationException")
-    void limiterShouldThrowUnsupported() throws Exception {
+    @DisplayName("limiter should accept null to clear limiter")
+    void limiterShouldAcceptNull() throws Exception {
       final PanamaStore store = createStore();
 
-      assertThrows(UnsupportedOperationException.class, () -> store.limiter(null));
-      LOGGER.info("limiter correctly throws UnsupportedOperationException");
+      assertDoesNotThrow(() -> store.limiter(null));
+      assertNull(store.getLimiter(), "getLimiter should return null after setting null limiter");
+      LOGGER.info("limiter correctly accepts null to clear limiter");
     }
 
     @Test
-    @DisplayName("limiterAsync should throw UnsupportedOperationException")
-    void limiterAsyncShouldThrowUnsupported() throws Exception {
+    @DisplayName("limiterAsync should accept null to clear async limiter")
+    void limiterAsyncShouldAcceptNull() throws Exception {
       final PanamaStore store = createStore();
 
-      assertThrows(UnsupportedOperationException.class, () -> store.limiterAsync(null));
-      LOGGER.info("limiterAsync correctly throws UnsupportedOperationException");
+      assertDoesNotThrow(() -> store.limiterAsync(null));
+      LOGGER.info("limiterAsync correctly accepts null to clear async limiter");
     }
 
     @Test

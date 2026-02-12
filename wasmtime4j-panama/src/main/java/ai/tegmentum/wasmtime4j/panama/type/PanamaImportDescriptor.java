@@ -63,13 +63,17 @@ public final class PanamaImportDescriptor implements ImportDescriptor {
     // [8]: pointer to field name string (null-terminated C string)
     // [16]: type kind ordinal (long)
     // [24]: pointer to type handle (MemorySegment)
-    final MemorySegment moduleNamePtr =
-        nativeSegment.get(ValueLayout.ADDRESS, 0).reinterpret(Long.MAX_VALUE);
-    final MemorySegment fieldNamePtr =
-        nativeSegment.get(ValueLayout.ADDRESS, 8).reinterpret(Long.MAX_VALUE);
+    final MemorySegment moduleNamePtr = nativeSegment.get(ValueLayout.ADDRESS, 0);
+    if (moduleNamePtr.address() == 0) {
+      throw new IllegalArgumentException("Module name pointer is null in native segment");
+    }
+    final MemorySegment fieldNamePtr = nativeSegment.get(ValueLayout.ADDRESS, 8);
+    if (fieldNamePtr.address() == 0) {
+      throw new IllegalArgumentException("Field name pointer is null in native segment");
+    }
 
-    final String moduleName = moduleNamePtr.getString(0);
-    final String name = fieldNamePtr.getString(0);
+    final String moduleName = moduleNamePtr.reinterpret(Long.MAX_VALUE).getString(0);
+    final String name = fieldNamePtr.reinterpret(Long.MAX_VALUE).getString(0);
 
     final int typeKindOrdinal = (int) nativeSegment.get(ValueLayout.JAVA_LONG, 16);
     final MemorySegment typeHandle =

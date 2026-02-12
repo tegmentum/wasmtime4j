@@ -58,13 +58,11 @@ class PanamaComponentLinkerTest {
 
   private static boolean checkNativeAvailable() {
     try {
-      // Try creating engine to verify native library availability
+      // Only verify engine creation - component linker creation can SIGSEGV and crash the JVM
       final PanamaEngine testEngine = new PanamaEngine();
-      final PanamaComponentLinker<?> testLinker = new PanamaComponentLinker<>(testEngine);
-      testLinker.close();
       testEngine.close();
       return true;
-    } catch (final Exception e) {
+    } catch (final Exception | Error e) {
       LOGGER.log(
           Level.INFO, "Native library not available, tests will be skipped: " + e.getMessage());
       return false;

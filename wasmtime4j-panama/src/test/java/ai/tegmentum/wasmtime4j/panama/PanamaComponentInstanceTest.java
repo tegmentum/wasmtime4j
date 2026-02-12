@@ -479,8 +479,9 @@ class PanamaComponentInstanceTest {
     @DisplayName("Should have expected number of fields")
     void shouldHaveExpectedFieldCount() {
       Field[] fields = PanamaComponentInstance.class.getDeclaredFields();
-      // Expected: NATIVE_BINDINGS, enhancedEngineHandle, instanceId, component, store, closed
-      assertEquals(6, fields.length, "Should have exactly 6 fields");
+      // Expected: LOGGER, NATIVE_BINDINGS, enhancedEngineHandle, instanceId, component, store,
+      // closed
+      assertEquals(7, fields.length, "Should have exactly 7 fields");
     }
   }
 

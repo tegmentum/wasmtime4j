@@ -57,10 +57,12 @@ public final class PanamaExportDescriptor implements ExportDescriptor {
     // [0]: pointer to export name string (null-terminated C string)
     // [8]: type kind ordinal (long)
     // [16]: pointer to type handle (MemorySegment)
-    final MemorySegment namePtr =
-        nativeSegment.get(ValueLayout.ADDRESS, 0).reinterpret(Long.MAX_VALUE);
+    final MemorySegment namePtr = nativeSegment.get(ValueLayout.ADDRESS, 0);
+    if (namePtr.address() == 0) {
+      throw new IllegalArgumentException("Export name pointer is null in native segment");
+    }
 
-    final String name = namePtr.getString(0);
+    final String name = namePtr.reinterpret(Long.MAX_VALUE).getString(0);
     if (name == null) {
       throw new IllegalStateException("Export name is null from native");
     }

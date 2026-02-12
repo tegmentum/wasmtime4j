@@ -378,14 +378,14 @@ class PanamaImportDescriptorTest {
   class FromNativeTests {
 
     @Test
-    @DisplayName("fromNative should throw UnsupportedOperationException")
-    void fromNativeShouldThrowUnsupportedOperationException() {
+    @DisplayName("fromNative should throw on zero-filled segment with null module name pointer")
+    void fromNativeShouldThrowOnNullModuleNamePointer() {
       final MemorySegment segment = arena.allocate(64);
 
       assertThrows(
-          UnsupportedOperationException.class,
+          IllegalArgumentException.class,
           () -> PanamaImportDescriptor.fromNative(segment, arena),
-          "fromNative should throw UnsupportedOperationException");
+          "fromNative should throw IllegalArgumentException for null module name pointer");
     }
 
     @Test
