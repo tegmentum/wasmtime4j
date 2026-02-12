@@ -3,6 +3,8 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiFileSystemException;
+import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryEntry;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileMetadata;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;

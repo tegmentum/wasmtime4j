@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiResourceLimits;
+import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;

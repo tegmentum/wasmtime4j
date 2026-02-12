@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.permission;
 
 import ai.tegmentum.wasmtime4j.panama.wasi.WasiFileOperation;
+import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Map;

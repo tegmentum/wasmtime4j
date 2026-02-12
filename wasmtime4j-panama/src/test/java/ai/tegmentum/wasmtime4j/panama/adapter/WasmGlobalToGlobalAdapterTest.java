@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.adapter.WasmGlobalToGlobalAdapter;
 import ai.tegmentum.wasmtime4j.memory.Global;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

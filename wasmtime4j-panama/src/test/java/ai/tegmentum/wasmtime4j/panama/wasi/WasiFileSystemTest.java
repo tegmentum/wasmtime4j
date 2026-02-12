@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiFileMetadata;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

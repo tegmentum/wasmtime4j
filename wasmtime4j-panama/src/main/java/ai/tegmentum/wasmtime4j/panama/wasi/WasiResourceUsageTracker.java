@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
-import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiResourceLimits;
+import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;

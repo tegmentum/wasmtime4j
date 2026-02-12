@@ -23,6 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryEntry;
+import ai.tegmentum.wasmtime4j.wasi.WasiEvent;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileStat;
+import ai.tegmentum.wasmtime4j.wasi.WasiSubscription;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.logging.Logger;

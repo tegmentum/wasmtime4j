@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiResourceLimits;
+import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

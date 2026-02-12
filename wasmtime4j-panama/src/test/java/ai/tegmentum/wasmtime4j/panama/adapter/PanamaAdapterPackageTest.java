@@ -44,7 +44,8 @@ public class PanamaAdapterPackageTest {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaAdapterPackageTest.class.getName());
 
-  private static final String PACKAGE_PREFIX = "ai.tegmentum.wasmtime4j.panama.adapter.";
+  private static final String PACKAGE_PREFIX = "ai.tegmentum.wasmtime4j.adapter.";
+  private static final String PANAMA_PACKAGE_PREFIX = "ai.tegmentum.wasmtime4j.panama.adapter.";
 
   /**
    * Loads a class without triggering static initialization.
@@ -263,7 +264,8 @@ public class PanamaAdapterPackageTest {
     @Test
     @DisplayName("Should be a final class implementing Function")
     void shouldBeFinalAndImplementFunction() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter");
+      final Class<?> clazz =
+          loadClassWithoutInit(PANAMA_PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter");
       assertTrue(
           Modifier.isFinal(clazz.getModifiers()), "WasmFunctionToFunctionAdapter should be final");
 
@@ -281,7 +283,8 @@ public class PanamaAdapterPackageTest {
     @Test
     @DisplayName("Should have delegate field")
     void shouldHaveDelegateField() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter");
+      final Class<?> clazz =
+          loadClassWithoutInit(PANAMA_PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter");
       boolean hasDelegate = false;
 
       for (final Field field : clazz.getDeclaredFields()) {
@@ -300,7 +303,8 @@ public class PanamaAdapterPackageTest {
     @Test
     @DisplayName("Should have Function interface methods")
     void shouldHaveFunctionInterfaceMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter");
+      final Class<?> clazz =
+          loadClassWithoutInit(PANAMA_PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter");
       boolean hasCall = false;
 
       for (final Method method : clazz.getDeclaredMethods()) {
@@ -316,7 +320,8 @@ public class PanamaAdapterPackageTest {
     @Test
     @DisplayName("Should have public constructor")
     void shouldHavePublicConstructor() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter");
+      final Class<?> clazz =
+          loadClassWithoutInit(PANAMA_PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter");
       boolean hasPublicConstructor = false;
 
       for (final Constructor<?> constructor : clazz.getConstructors()) {
@@ -423,23 +428,30 @@ public class PanamaAdapterPackageTest {
   @DisplayName("Package Completeness Tests")
   class PackageCompletenessTests {
 
+    /**
+     * Returns the fully qualified class names of all adapter classes used by the Panama module.
+     * Three adapters are in the shared base package; WasmFunctionToFunctionAdapter remains in the
+     * Panama adapter package because it has Panama-specific implementation details.
+     */
+    private String[] allAdapterClassNames() {
+      return new String[] {
+        PACKAGE_PREFIX + "WasmMemoryToMemoryAdapter",
+        PACKAGE_PREFIX + "WasmGlobalToGlobalAdapter",
+        PANAMA_PACKAGE_PREFIX + "WasmFunctionToFunctionAdapter",
+        PACKAGE_PREFIX + "WasmTableToTableAdapter"
+      };
+    }
+
     @Test
     @DisplayName("All expected adapter classes should exist")
     void allExpectedAdapterClassesShouldExist() {
-      final String[] expectedClasses = {
-        "WasmMemoryToMemoryAdapter",
-        "WasmGlobalToGlobalAdapter",
-        "WasmFunctionToFunctionAdapter",
-        "WasmTableToTableAdapter"
-      };
-
-      for (final String className : expectedClasses) {
+      for (final String fqcn : allAdapterClassNames()) {
         try {
-          final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + className);
-          assertNotNull(clazz, className + " should exist");
-          LOGGER.fine("Found adapter class: " + className);
+          final Class<?> clazz = loadClassWithoutInit(fqcn);
+          assertNotNull(clazz, fqcn + " should exist");
+          LOGGER.fine("Found adapter class: " + fqcn);
         } catch (final ClassNotFoundException e) {
-          throw new AssertionError("Expected class not found: " + className, e);
+          throw new AssertionError("Expected class not found: " + fqcn, e);
         }
       }
     }
@@ -447,47 +459,27 @@ public class PanamaAdapterPackageTest {
     @Test
     @DisplayName("All adapter classes should be final")
     void allAdapterClassesShouldBeFinal() throws ClassNotFoundException {
-      final String[] adapterClasses = {
-        "WasmMemoryToMemoryAdapter",
-        "WasmGlobalToGlobalAdapter",
-        "WasmFunctionToFunctionAdapter",
-        "WasmTableToTableAdapter"
-      };
-
-      for (final String className : adapterClasses) {
-        final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + className);
-        assertTrue(Modifier.isFinal(clazz.getModifiers()), className + " should be final");
+      for (final String fqcn : allAdapterClassNames()) {
+        final Class<?> clazz = loadClassWithoutInit(fqcn);
+        assertTrue(
+            Modifier.isFinal(clazz.getModifiers()), clazz.getSimpleName() + " should be final");
       }
     }
 
     @Test
     @DisplayName("All adapter classes should not be interfaces")
     void allAdapterClassesShouldNotBeInterfaces() throws ClassNotFoundException {
-      final String[] adapterClasses = {
-        "WasmMemoryToMemoryAdapter",
-        "WasmGlobalToGlobalAdapter",
-        "WasmFunctionToFunctionAdapter",
-        "WasmTableToTableAdapter"
-      };
-
-      for (final String className : adapterClasses) {
-        final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + className);
-        assertFalse(clazz.isInterface(), className + " should not be an interface");
+      for (final String fqcn : allAdapterClassNames()) {
+        final Class<?> clazz = loadClassWithoutInit(fqcn);
+        assertFalse(clazz.isInterface(), clazz.getSimpleName() + " should not be an interface");
       }
     }
 
     @Test
     @DisplayName("All adapter classes should have public constructors")
     void allAdapterClassesShouldHavePublicConstructors() throws ClassNotFoundException {
-      final String[] adapterClasses = {
-        "WasmMemoryToMemoryAdapter",
-        "WasmGlobalToGlobalAdapter",
-        "WasmFunctionToFunctionAdapter",
-        "WasmTableToTableAdapter"
-      };
-
-      for (final String className : adapterClasses) {
-        final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + className);
+      for (final String fqcn : allAdapterClassNames()) {
+        final Class<?> clazz = loadClassWithoutInit(fqcn);
         boolean hasPublicConstructor = false;
 
         for (final Constructor<?> constructor : clazz.getConstructors()) {
@@ -497,22 +489,15 @@ public class PanamaAdapterPackageTest {
           }
         }
 
-        assertTrue(hasPublicConstructor, className + " should have public constructor");
+        assertTrue(hasPublicConstructor, clazz.getSimpleName() + " should have public constructor");
       }
     }
 
     @Test
     @DisplayName("All adapter classes should have delegate field")
     void allAdapterClassesShouldHaveDelegateField() throws ClassNotFoundException {
-      final String[] adapterClasses = {
-        "WasmMemoryToMemoryAdapter",
-        "WasmGlobalToGlobalAdapter",
-        "WasmFunctionToFunctionAdapter",
-        "WasmTableToTableAdapter"
-      };
-
-      for (final String className : adapterClasses) {
-        final Class<?> clazz = loadClassWithoutInit(PACKAGE_PREFIX + className);
+      for (final String fqcn : allAdapterClassNames()) {
+        final Class<?> clazz = loadClassWithoutInit(fqcn);
         boolean hasDelegate = false;
 
         for (final Field field : clazz.getDeclaredFields()) {
@@ -522,7 +507,7 @@ public class PanamaAdapterPackageTest {
           }
         }
 
-        assertTrue(hasDelegate, className + " should have delegate field");
+        assertTrue(hasDelegate, clazz.getSimpleName() + " should have delegate field");
       }
     }
   }

@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiPermissionManager;
-import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiResourceLimits;
 import ai.tegmentum.wasmtime4j.jni.wasi.security.WasiSecurityPolicyEngine;
+import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

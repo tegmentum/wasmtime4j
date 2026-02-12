@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiResourceLeakDetector;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiResourceUsageTracker;
-import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiResourceLimits;
+import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;

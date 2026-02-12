@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi.permission;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiFileOperation;
+import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Map;

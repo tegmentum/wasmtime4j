@@ -11,6 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.adapter.WasmGlobalToGlobalAdapter;
+import ai.tegmentum.wasmtime4j.adapter.WasmMemoryToMemoryAdapter;
+import ai.tegmentum.wasmtime4j.adapter.WasmTableToTableAdapter;
 import ai.tegmentum.wasmtime4j.func.Function;
 import ai.tegmentum.wasmtime4j.memory.Global;
 import ai.tegmentum.wasmtime4j.memory.Memory;
@@ -117,9 +120,9 @@ class JniAdapterPackageTest {
     @DisplayName("WasmMemoryToMemoryAdapter should be in correct package")
     void wasmMemoryToMemoryAdapterShouldBeInCorrectPackage() {
       assertEquals(
-          "ai.tegmentum.wasmtime4j.jni.adapter",
+          "ai.tegmentum.wasmtime4j.adapter",
           WasmMemoryToMemoryAdapter.class.getPackage().getName(),
-          "WasmMemoryToMemoryAdapter should be in ai.tegmentum.wasmtime4j.jni.adapter package");
+          "WasmMemoryToMemoryAdapter should be in ai.tegmentum.wasmtime4j.adapter package");
     }
   }
 
@@ -181,9 +184,9 @@ class JniAdapterPackageTest {
     @DisplayName("WasmGlobalToGlobalAdapter should be in correct package")
     void wasmGlobalToGlobalAdapterShouldBeInCorrectPackage() {
       assertEquals(
-          "ai.tegmentum.wasmtime4j.jni.adapter",
+          "ai.tegmentum.wasmtime4j.adapter",
           WasmGlobalToGlobalAdapter.class.getPackage().getName(),
-          "WasmGlobalToGlobalAdapter should be in ai.tegmentum.wasmtime4j.jni.adapter package");
+          "WasmGlobalToGlobalAdapter should be in ai.tegmentum.wasmtime4j.adapter package");
     }
   }
 
@@ -301,9 +304,9 @@ class JniAdapterPackageTest {
     @DisplayName("WasmTableToTableAdapter should be in correct package")
     void wasmTableToTableAdapterShouldBeInCorrectPackage() {
       assertEquals(
-          "ai.tegmentum.wasmtime4j.jni.adapter",
+          "ai.tegmentum.wasmtime4j.adapter",
           WasmTableToTableAdapter.class.getPackage().getName(),
-          "WasmTableToTableAdapter should be in ai.tegmentum.wasmtime4j.jni.adapter package");
+          "WasmTableToTableAdapter should be in ai.tegmentum.wasmtime4j.adapter package");
     }
   }
 
@@ -318,20 +321,26 @@ class JniAdapterPackageTest {
     @Test
     @DisplayName("All adapter classes should be in correct package")
     void allAdapterClassesShouldBeInCorrectPackage() {
-      Class<?>[] adapterClasses = {
+      // Shared adapters are in the base adapter package
+      Class<?>[] sharedAdapters = {
         WasmMemoryToMemoryAdapter.class,
         WasmGlobalToGlobalAdapter.class,
-        WasmFunctionToFunctionAdapter.class,
         WasmTableToTableAdapter.class
       };
 
-      String expectedPackage = "ai.tegmentum.wasmtime4j.jni.adapter";
-      for (Class<?> clazz : adapterClasses) {
+      String sharedPackage = "ai.tegmentum.wasmtime4j.adapter";
+      for (Class<?> clazz : sharedAdapters) {
         assertEquals(
-            expectedPackage,
+            sharedPackage,
             clazz.getPackage().getName(),
-            clazz.getSimpleName() + " should be in " + expectedPackage);
+            clazz.getSimpleName() + " should be in " + sharedPackage);
       }
+
+      // WasmFunctionToFunctionAdapter has JNI-specific logic and stays in the JNI package
+      assertEquals(
+          "ai.tegmentum.wasmtime4j.jni.adapter",
+          WasmFunctionToFunctionAdapter.class.getPackage().getName(),
+          "WasmFunctionToFunctionAdapter should be in ai.tegmentum.wasmtime4j.jni.adapter");
     }
 
     @Test

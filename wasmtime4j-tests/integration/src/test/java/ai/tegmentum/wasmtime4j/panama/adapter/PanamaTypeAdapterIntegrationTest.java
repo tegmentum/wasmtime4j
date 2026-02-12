@@ -19,6 +19,9 @@ package ai.tegmentum.wasmtime4j.panama.adapter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.adapter.WasmGlobalToGlobalAdapter;
+import ai.tegmentum.wasmtime4j.adapter.WasmMemoryToMemoryAdapter;
+import ai.tegmentum.wasmtime4j.adapter.WasmTableToTableAdapter;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;

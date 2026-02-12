@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiFileMetadata;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
