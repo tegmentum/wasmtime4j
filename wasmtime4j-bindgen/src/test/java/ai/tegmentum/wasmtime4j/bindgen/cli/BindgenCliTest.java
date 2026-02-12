@@ -43,6 +43,9 @@ class BindgenCliTest {
     0x01, 0x00, 0x00, 0x00 // version 1
   };
 
+  // Minimal valid WIT interface
+  private static final String VALID_WIT = "interface test {\n  add: func(a: s32, b: s32) -> s32\n}";
+
   private ByteArrayOutputStream outContent;
   private ByteArrayOutputStream errContent;
   private PrintStream originalOut;
@@ -140,16 +143,16 @@ class BindgenCliTest {
     void shouldAcceptModernStyle(@TempDir Path tempDir) throws Exception {
       LOGGER.info("Testing MODERN style");
 
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(
-                  "--wasm",
-                  wasmFile.toString(),
+                  "--wit",
+                  witFile.toString(),
                   "--package",
                   "com.example",
                   "--output",
@@ -165,16 +168,16 @@ class BindgenCliTest {
     void shouldAcceptLegacyStyle(@TempDir Path tempDir) throws Exception {
       LOGGER.info("Testing LEGACY style");
 
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(
-                  "--wasm",
-                  wasmFile.toString(),
+                  "--wit",
+                  witFile.toString(),
                   "--package",
                   "com.example",
                   "--output",
@@ -188,16 +191,16 @@ class BindgenCliTest {
     @Test
     @DisplayName("should accept lowercase style names")
     void shouldAcceptLowercaseStyleNames(@TempDir Path tempDir) throws Exception {
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(
-                  "--wasm",
-                  wasmFile.toString(),
+                  "--wit",
+                  witFile.toString(),
                   "--package",
                   "com.example",
                   "--output",
@@ -213,14 +216,14 @@ class BindgenCliTest {
     void shouldDefaultToModernStyle(@TempDir Path tempDir) throws Exception {
       LOGGER.info("Testing default style");
 
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .execute(
-                  "--wasm", wasmFile.toString(),
+                  "--wit", witFile.toString(),
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
@@ -238,8 +241,8 @@ class BindgenCliTest {
     void shouldUseDefaultOutputDirectory(@TempDir Path tempDir) throws Exception {
       LOGGER.info("Testing default output directory");
 
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
 
       // Change to temp directory so default output goes there
       String originalDir = System.getProperty("user.dir");
@@ -248,7 +251,7 @@ class BindgenCliTest {
 
         int exitCode =
             new CommandLine(new BindgenCli())
-                .execute("--wasm", wasmFile.toString(), "--package", "com.example");
+                .execute("--wit", witFile.toString(), "--package", "com.example");
 
         assertThat(exitCode).isEqualTo(0);
       } finally {
@@ -259,8 +262,8 @@ class BindgenCliTest {
     @Test
     @DisplayName("should create output directory if not exists")
     void shouldCreateOutputDirectoryIfNotExists(@TempDir Path tempDir) throws Exception {
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("new/nested/output");
 
       assertThat(outputDir).doesNotExist();
@@ -268,7 +271,7 @@ class BindgenCliTest {
       int exitCode =
           new CommandLine(new BindgenCli())
               .execute(
-                  "--wasm", wasmFile.toString(),
+                  "--wit", witFile.toString(),
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
@@ -319,9 +322,9 @@ class BindgenCliTest {
     }
 
     @Test
-    @DisplayName("should process directory of WASM files")
-    void shouldProcessDirectoryOfWasmFiles(@TempDir Path tempDir) throws Exception {
-      LOGGER.info("Testing directory source");
+    @DisplayName("should reject WASM sources as not yet implemented")
+    void shouldRejectWasmSourcesAsNotYetImplemented(@TempDir Path tempDir) throws Exception {
+      LOGGER.info("Testing WASM source rejection");
 
       Path wasmDir = tempDir.resolve("wasm");
       Files.createDirectory(wasmDir);
@@ -336,7 +339,8 @@ class BindgenCliTest {
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
-      assertThat(exitCode).isEqualTo(0);
+      assertThat(exitCode).isEqualTo(1);
+      assertThat(errContent.toString()).contains("not yet implemented");
     }
   }
 
@@ -349,15 +353,15 @@ class BindgenCliTest {
     void shouldSupportNoJavadocFlag(@TempDir Path tempDir) throws Exception {
       LOGGER.info("Testing --no-javadoc flag");
 
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .execute(
-                  "--wasm",
-                  wasmFile.toString(),
+                  "--wit",
+                  witFile.toString(),
                   "--package",
                   "com.example",
                   "--output",
@@ -372,15 +376,15 @@ class BindgenCliTest {
     void shouldSupportNoBuildersFlag(@TempDir Path tempDir) throws Exception {
       LOGGER.info("Testing --no-builders flag");
 
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .execute(
-                  "--wasm",
-                  wasmFile.toString(),
+                  "--wit",
+                  witFile.toString(),
                   "--package",
                   "com.example",
                   "--output",
@@ -395,15 +399,15 @@ class BindgenCliTest {
     void shouldSupportVerboseFlag(@TempDir Path tempDir) throws Exception {
       LOGGER.info("Testing --verbose flag");
 
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .execute(
-                  "--wasm",
-                  wasmFile.toString(),
+                  "--wit",
+                  witFile.toString(),
                   "--package",
                   "com.example",
                   "--output",
@@ -420,15 +424,15 @@ class BindgenCliTest {
     void shouldSupportDryRunFlag(@TempDir Path tempDir) throws Exception {
       LOGGER.info("Testing --dry-run flag");
 
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .execute(
-                  "--wasm",
-                  wasmFile.toString(),
+                  "--wit",
+                  witFile.toString(),
                   "--package",
                   "com.example",
                   "--output",
@@ -476,22 +480,23 @@ class BindgenCliTest {
                   "-p", "com.example",
                   "-o", outputDir.toString());
 
-      assertThat(exitCode).isEqualTo(0);
+      // WASM introspection is not yet implemented, so this should fail
+      assertThat(exitCode).isEqualTo(1);
     }
 
     @Test
     @DisplayName("should support -s for --style")
     void shouldSupportShortStyleOption(@TempDir Path tempDir) throws Exception {
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .setCaseInsensitiveEnumValuesAllowed(true)
               .execute(
-                  "-m",
-                  wasmFile.toString(),
+                  "-w",
+                  witFile.toString(),
                   "-p",
                   "com.example",
                   "-o",
@@ -505,14 +510,14 @@ class BindgenCliTest {
     @Test
     @DisplayName("should support -v for --verbose")
     void shouldSupportShortVerboseOption(@TempDir Path tempDir) throws Exception {
-      Path wasmFile = tempDir.resolve("test.wasm");
-      Files.write(wasmFile, VALID_WASM);
+      Path witFile = tempDir.resolve("test.wit");
+      Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .execute(
-                  "-m", wasmFile.toString(), "-p", "com.example", "-o", outputDir.toString(), "-v");
+                  "-w", witFile.toString(), "-p", "com.example", "-o", outputDir.toString(), "-v");
 
       assertThat(exitCode).isEqualTo(0);
       assertThat(outContent.toString()).contains("Configuration:");
@@ -524,21 +529,21 @@ class BindgenCliTest {
   class MultipleSourceTests {
 
     @Test
-    @DisplayName("should accept multiple --wasm sources")
-    void shouldAcceptMultipleWasmSources(@TempDir Path tempDir) throws Exception {
-      LOGGER.info("Testing multiple WASM sources");
+    @DisplayName("should accept multiple --wit sources")
+    void shouldAcceptMultipleWitSources(@TempDir Path tempDir) throws Exception {
+      LOGGER.info("Testing multiple WIT sources");
 
-      Path wasmFile1 = tempDir.resolve("module1.wasm");
-      Path wasmFile2 = tempDir.resolve("module2.wasm");
-      Files.write(wasmFile1, VALID_WASM);
-      Files.write(wasmFile2, VALID_WASM);
+      Path witFile1 = tempDir.resolve("api1.wit");
+      Path witFile2 = tempDir.resolve("api2.wit");
+      Files.writeString(witFile1, VALID_WIT);
+      Files.writeString(witFile2, "interface calc {\n  multiply: func(a: s32, b: s32) -> s32\n}");
       Path outputDir = tempDir.resolve("output");
 
       int exitCode =
           new CommandLine(new BindgenCli())
               .execute(
-                  "--wasm", wasmFile1.toString(),
-                  "--wasm", wasmFile2.toString(),
+                  "--wit", witFile1.toString(),
+                  "--wit", witFile2.toString(),
                   "--package", "com.example",
                   "--output", outputDir.toString());
 

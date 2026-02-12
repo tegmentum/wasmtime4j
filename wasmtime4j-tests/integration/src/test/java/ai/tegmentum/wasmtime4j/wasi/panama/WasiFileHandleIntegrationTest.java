@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.wasi.WasiFileHandle;
-import ai.tegmentum.wasmtime4j.panama.wasi.WasiFileOperation;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;

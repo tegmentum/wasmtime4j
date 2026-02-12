@@ -82,26 +82,6 @@ class JniWasmRuntimeTest {
     }
 
     @Test
-    @DisplayName("should have concurrencyManager field")
-    void shouldHaveConcurrencyManagerField() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Field field = clazz.getDeclaredField("concurrencyManager");
-
-      assertThat(Modifier.isPrivate(field.getModifiers())).isTrue();
-      assertThat(Modifier.isFinal(field.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have phantomManager field")
-    void shouldHavePhantomManagerField() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Field field = clazz.getDeclaredField("phantomManager");
-
-      assertThat(Modifier.isPrivate(field.getModifiers())).isTrue();
-      assertThat(Modifier.isFinal(field.getModifiers())).isTrue();
-    }
-
-    @Test
     @DisplayName("should have defaultGcRuntime field with volatile modifier")
     void shouldHaveDefaultGcRuntimeField() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);

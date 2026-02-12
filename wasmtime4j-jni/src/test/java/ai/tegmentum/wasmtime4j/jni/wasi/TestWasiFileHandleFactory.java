@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;

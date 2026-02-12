@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -457,7 +458,7 @@ public class WasiFileOperationIntegrationTest {
       LOGGER.info("Testing operation count");
 
       final WasiFileOperation[] values = WasiFileOperation.values();
-      assertEquals(18, values.length, "Should have 18 file operations");
+      assertEquals(23, values.length, "Should have 23 file operations");
 
       LOGGER.info("Operation count: " + values.length);
     }

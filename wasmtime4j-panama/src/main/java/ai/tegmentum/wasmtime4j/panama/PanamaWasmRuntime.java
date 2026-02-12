@@ -619,10 +619,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
         return defaultSimdOperations;
       }
 
-      final Engine engine = createEngine();
-      final long engineHandle = ((PanamaEngine) engine).getNativeEngine().address();
-      defaultSimdOperations =
-          new ai.tegmentum.wasmtime4j.panama.simd.PanamaSimdOperations(engineHandle);
+      defaultSimdOperations = new ai.tegmentum.wasmtime4j.simd.DefaultSimdOperations();
 
       LOGGER.fine("Initialized default SIMD operations for Panama");
       return defaultSimdOperations;

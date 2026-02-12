@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.panama.wasi.WasiContextBuilder;
-import ai.tegmentum.wasmtime4j.panama.wasi.security.WasiSecurityValidator;
+import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Files;

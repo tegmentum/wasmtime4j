@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Configuration for Java binding generation.
@@ -50,8 +49,6 @@ public final class BindgenConfig {
   private final boolean generateJavadoc;
   private final boolean generateBuilders;
   private final boolean generateValidation;
-  private final String interfacePrefix;
-  private final String interfaceSuffix;
 
   private BindgenConfig(final Builder builder) {
     this.codeStyle = builder.codeStyle;
@@ -62,8 +59,6 @@ public final class BindgenConfig {
     this.generateJavadoc = builder.generateJavadoc;
     this.generateBuilders = builder.generateBuilders;
     this.generateValidation = builder.generateValidation;
-    this.interfacePrefix = builder.interfacePrefix;
-    this.interfaceSuffix = builder.interfaceSuffix;
   }
 
   /**
@@ -148,24 +143,6 @@ public final class BindgenConfig {
   }
 
   /**
-   * Returns the optional prefix for generated interface names.
-   *
-   * @return the interface prefix, or empty if not set
-   */
-  public Optional<String> getInterfacePrefix() {
-    return Optional.ofNullable(interfacePrefix).filter(s -> !s.isEmpty());
-  }
-
-  /**
-   * Returns the optional suffix for generated interface names.
-   *
-   * @return the interface suffix, or empty if not set
-   */
-  public Optional<String> getInterfaceSuffix() {
-    return Optional.ofNullable(interfaceSuffix).filter(s -> !s.isEmpty());
-  }
-
-  /**
    * Checks if there are WIT sources configured.
    *
    * @return true if WIT sources exist
@@ -217,9 +194,7 @@ public final class BindgenConfig {
         && Objects.equals(packageName, that.packageName)
         && Objects.equals(outputDirectory, that.outputDirectory)
         && Objects.equals(witSources, that.witSources)
-        && Objects.equals(wasmSources, that.wasmSources)
-        && Objects.equals(interfacePrefix, that.interfacePrefix)
-        && Objects.equals(interfaceSuffix, that.interfaceSuffix);
+        && Objects.equals(wasmSources, that.wasmSources);
   }
 
   @Override
@@ -232,9 +207,7 @@ public final class BindgenConfig {
         wasmSources,
         generateJavadoc,
         generateBuilders,
-        generateValidation,
-        interfacePrefix,
-        interfaceSuffix);
+        generateValidation);
   }
 
   @Override
@@ -271,8 +244,6 @@ public final class BindgenConfig {
     private boolean generateJavadoc = true;
     private boolean generateBuilders = true;
     private boolean generateValidation = true;
-    private String interfacePrefix;
-    private String interfaceSuffix;
 
     private Builder() {}
 
@@ -383,28 +354,6 @@ public final class BindgenConfig {
      */
     public Builder generateValidation(final boolean generate) {
       this.generateValidation = generate;
-      return this;
-    }
-
-    /**
-     * Sets the prefix for generated interface names.
-     *
-     * @param prefix the interface prefix
-     * @return this builder
-     */
-    public Builder interfacePrefix(final String prefix) {
-      this.interfacePrefix = prefix;
-      return this;
-    }
-
-    /**
-     * Sets the suffix for generated interface names.
-     *
-     * @param suffix the interface suffix
-     * @return this builder
-     */
-    public Builder interfaceSuffix(final String suffix) {
-      this.interfaceSuffix = suffix;
       return this;
     }
 

@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.bindgen;
 import ai.tegmentum.wasmtime4j.bindgen.generator.JavaCodeGenerator;
 import ai.tegmentum.wasmtime4j.bindgen.generator.LegacyCodeGenerator;
 import ai.tegmentum.wasmtime4j.bindgen.generator.ModernCodeGenerator;
-import ai.tegmentum.wasmtime4j.bindgen.introspection.WasmIntrospector;
 import ai.tegmentum.wasmtime4j.bindgen.model.BindgenModel;
 import ai.tegmentum.wasmtime4j.bindgen.wit.WitInterfaceParser;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -97,15 +96,10 @@ public final class CodeGenerator {
       }
     }
 
-    // Process WASM sources
+    // WASM source introspection is not yet implemented
     if (config.hasWasmSources()) {
-      LOGGER.info("Processing WASM sources...");
-      for (Path wasmPath : config.getWasmSources()) {
-        BindgenModel model = introspectWasmModule(wasmPath);
-        List<GeneratedSource> sources = codeGenerator.generate(model);
-        allSources.addAll(sources);
-        LOGGER.fine("Generated " + sources.size() + " sources from " + wasmPath);
-      }
+      throw new BindgenException(
+          "WASM source introspection is not yet implemented. Use WIT sources instead.");
     }
 
     LOGGER.info("Generated " + allSources.size() + " total source files");
@@ -154,18 +148,6 @@ public final class CodeGenerator {
     } catch (final WasmException e) {
       throw new BindgenException("Failed to parse WIT file: " + witPath, e);
     }
-  }
-
-  /**
-   * Introspects a WASM module to extract type information.
-   *
-   * @param wasmPath the path to the WASM module
-   * @return the introspected model
-   * @throws BindgenException if introspection fails
-   */
-  private BindgenModel introspectWasmModule(final Path wasmPath) throws BindgenException {
-    WasmIntrospector introspector = new WasmIntrospector();
-    return introspector.introspect(wasmPath);
   }
 
   /**

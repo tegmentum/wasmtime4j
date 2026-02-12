@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiPreview1Operations;
-import ai.tegmentum.wasmtime4j.jni.wasi.security.WasiSecurityValidator;
+import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;

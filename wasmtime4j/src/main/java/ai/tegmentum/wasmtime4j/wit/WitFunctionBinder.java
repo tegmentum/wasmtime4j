@@ -40,14 +40,14 @@ public final class WitFunctionBinder {
   private static final Logger LOGGER = Logger.getLogger(WitFunctionBinder.class.getName());
 
   private final WitTypeValidator validator;
-  private final WitValueMarshaler marshaler;
+  private final WitJavaObjectMarshaler marshaler;
   private final Map<String, BoundFunction> boundFunctions;
   private final Map<Class<?>, TypeAdapter<?>> typeAdapters;
 
   /** Creates a new WIT function binder. */
   public WitFunctionBinder() {
     this.validator = new WitTypeValidator();
-    this.marshaler = new WitValueMarshaler();
+    this.marshaler = new WitJavaObjectMarshaler();
     this.boundFunctions = new ConcurrentHashMap<>();
     this.typeAdapters = new ConcurrentHashMap<>();
     initializeBuiltInAdapters();
@@ -569,9 +569,10 @@ public final class WitFunctionBinder {
   /** Parameter marshaler. */
   private static final class ParameterMarshaler {
     private final WitParameter parameter;
-    private final WitValueMarshaler marshaler;
+    private final WitJavaObjectMarshaler marshaler;
 
-    public ParameterMarshaler(final WitParameter parameter, final WitValueMarshaler marshaler) {
+    public ParameterMarshaler(
+        final WitParameter parameter, final WitJavaObjectMarshaler marshaler) {
       this.parameter = parameter;
       this.marshaler = marshaler;
     }
@@ -584,9 +585,9 @@ public final class WitFunctionBinder {
   /** Return value marshaler. */
   private static final class ReturnMarshaler {
     private final WitType returnType;
-    private final WitValueMarshaler marshaler;
+    private final WitJavaObjectMarshaler marshaler;
 
-    public ReturnMarshaler(final WitType returnType, final WitValueMarshaler marshaler) {
+    public ReturnMarshaler(final WitType returnType, final WitJavaObjectMarshaler marshaler) {
       this.returnType = returnType;
       this.marshaler = marshaler;
     }

@@ -11,9 +11,7 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
-import ai.tegmentum.wasmtime4j.jni.util.JniConcurrencyManager;
 import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
-import ai.tegmentum.wasmtime4j.jni.util.JniPhantomReferenceManager;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniResourceCache;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
@@ -32,15 +30,12 @@ import java.util.logging.Logger;
  * provides defensive programming to prevent JVM crashes.
  *
  * <p>This implementation is designed for Java 8+ compatibility and uses JNI calls to interact with
- * the shared wasmtime4j-native Rust library. It includes advanced features like resource caching,
- * concurrency management, and automatic cleanup via phantom references.
+ * the shared wasmtime4j-native Rust library.
  *
  * <p>Key features:
  *
  * <ul>
- *   <li>Thread-safe concurrent access to WebAssembly resources
- *   <li>Automatic native resource cleanup and management
- *   <li>Performance optimizations through caching and batching
+ *   <li>Performance optimizations through resource caching
  *   <li>Comprehensive error handling and validation
  *   <li>Integration with public wasmtime4j API
  * </ul>
@@ -61,12 +56,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   /** Resource cache for engines and modules. */
   private final JniResourceCache<String, Object> resourceCache;
-
-  /** Concurrency manager for thread-safe operations. */
-  private final JniConcurrencyManager concurrencyManager;
-
-  /** Phantom reference manager for automatic cleanup. */
-  private final JniPhantomReferenceManager phantomManager;
 
   /** Cached default GC runtime for lazy initialization. */
   private volatile ai.tegmentum.wasmtime4j.gc.GcRuntime defaultGcRuntime;
@@ -91,13 +80,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     try {
       // Initialize performance and resource management utilities
       this.resourceCache = new JniResourceCache<>(500); // Cache up to 500 resources
-      this.concurrencyManager =
-          new JniConcurrencyManager(20, 30000); // 20 concurrent ops, 30s timeout
-      this.phantomManager = JniPhantomReferenceManager.getInstance();
-
-      // Register this runtime for automatic cleanup
-      this.phantomManager.register(this, nativeHandle, "nativeDestroyRuntime");
-      this.concurrencyManager.registerResource(nativeHandle);
 
       LOGGER.fine(
           "Created JNI WebAssembly runtime with handle: 0x" + Long.toHexString(nativeHandle));
@@ -142,36 +124,21 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     JniValidation.requireNonNull(this, "runtime");
 
     try {
-      return concurrencyManager.executeWithReadLock(
-          getNativeHandle(),
-          () -> {
-            try {
-              final long engineHandle = nativeCreateEngine(nativeHandle);
-              if (engineHandle == 0) {
-                throw new WasmException("Failed to create engine");
-              }
-
-              final JniEngine engine = new JniEngine(engineHandle, JniWasmRuntime.this);
-
-              // Register engine for concurrency management and cleanup
-              concurrencyManager.registerResource(engineHandle);
-              phantomManager.register(engine, engineHandle, "nativeDestroyEngine");
-
-              // Cache the engine
-              resourceCache.put("engine-" + engineHandle, engine);
-
-              LOGGER.fine("Created engine with handle: 0x" + Long.toHexString(engineHandle));
-              return engine;
-            } catch (final WasmException e) {
-              throw new RuntimeException(e);
-            } catch (final Exception e) {
-              throw new RuntimeException(new WasmException("Unexpected error creating engine", e));
-            }
-          });
-    } catch (final RuntimeException e) {
-      if (e.getCause() instanceof WasmException) {
-        throw (WasmException) e.getCause();
+      final long engineHandle = nativeCreateEngine(nativeHandle);
+      if (engineHandle == 0) {
+        throw new WasmException("Failed to create engine");
       }
+
+      final JniEngine engine = new JniEngine(engineHandle, JniWasmRuntime.this);
+
+      // Cache the engine
+      resourceCache.put("engine-" + engineHandle, engine);
+
+      LOGGER.fine("Created engine with handle: 0x" + Long.toHexString(engineHandle));
+      return engine;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
       throw new WasmException("Unexpected error creating engine", e);
     }
   }
@@ -235,10 +202,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
       final JniStore store = new JniStore(storeHandle, jniEngine);
 
-      // Register store for concurrency management and cleanup
-      concurrencyManager.registerResource(storeHandle);
-      phantomManager.register(store, storeHandle, "nativeDestroyStore");
-
       LOGGER.fine(
           "Created store with limits - memory: "
               + limits.getMemorySize()
@@ -298,10 +261,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       }
 
       final JniStore store = new JniStore(storeHandle, jniEngine);
-
-      // Register store for concurrency management and cleanup
-      concurrencyManager.registerResource(storeHandle);
-      phantomManager.register(store, storeHandle, "nativeDestroyStore");
 
       LOGGER.fine(
           "Created store with resource limits - fuel: "
@@ -392,25 +351,14 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       final JniEngine jniEngine = (JniEngine) engine;
       final long engineHandle = jniEngine.getNativeHandle();
 
-      return concurrencyManager.executeWithReadLock(
-          getNativeHandle(),
-          () -> {
-            try {
-              final JniGcRuntime gcRuntime = new JniGcRuntime(engineHandle);
+      final JniGcRuntime gcRuntime = new JniGcRuntime(engineHandle);
 
-              // Cache the GC runtime
-              resourceCache.put("gc-runtime-" + engineHandle, gcRuntime);
+      // Cache the GC runtime
+      resourceCache.put("gc-runtime-" + engineHandle, gcRuntime);
 
-              LOGGER.fine("Created GC runtime for engine: 0x" + Long.toHexString(engineHandle));
-              return gcRuntime;
-            } catch (final Exception e) {
-              throw new RuntimeException(new WasmException("Failed to create GC runtime", e));
-            }
-          });
-    } catch (final RuntimeException e) {
-      if (e.getCause() instanceof WasmException) {
-        throw (WasmException) e.getCause();
-      }
+      LOGGER.fine("Created GC runtime for engine: 0x" + Long.toHexString(engineHandle));
+      return gcRuntime;
+    } catch (final Exception e) {
       throw new WasmException("Unexpected error creating GC runtime", e);
     }
   }
@@ -480,11 +428,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       final JniEngine jniEngine = (JniEngine) engine;
       final Module module = jniEngine.compileWat(watText);
 
-      // Register module for resource management
-      concurrencyManager.registerResource(((JniModule) module).getNativeHandle());
-      phantomManager.register(
-          module, ((JniModule) module).getNativeHandle(), "nativeDestroyModule");
-
       // Cache the module (using WAT hash as key for potential reuse)
       final String cacheKey = "wat-module-" + watText.hashCode();
       resourceCache.put(cacheKey, module);
@@ -539,39 +482,24 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     }
 
     try {
-      return concurrencyManager.executeWithReadLock(
-          getNativeHandle(),
-          () -> {
-            try {
-              final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
-              if (moduleHandle == 0) {
-                throw new WasmException("Failed to compile WebAssembly module");
-              }
-
-              // Note: This creates a module without a proper engine reference
-              // which can cause cross-Engine instantiation issues
-              final JniModule module = new JniModule(moduleHandle, null);
-
-              // Register module for concurrency management and cleanup
-              concurrencyManager.registerResource(moduleHandle);
-              phantomManager.register(module, moduleHandle, "nativeDestroyModule");
-
-              // Cache the module (using bytecode hash as key for potential reuse)
-              final String cacheKey = "module-" + java.util.Arrays.hashCode(wasmBytes);
-              resourceCache.put(cacheKey, module);
-
-              LOGGER.fine("Compiled module with handle: 0x" + Long.toHexString(moduleHandle));
-              return module;
-            } catch (final WasmException e) {
-              throw new RuntimeException(e);
-            } catch (final Exception e) {
-              throw new RuntimeException(new WasmException("Unexpected error compiling module", e));
-            }
-          });
-    } catch (final RuntimeException e) {
-      if (e.getCause() instanceof WasmException) {
-        throw (WasmException) e.getCause();
+      final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
+      if (moduleHandle == 0) {
+        throw new WasmException("Failed to compile WebAssembly module");
       }
+
+      // Note: This creates a module without a proper engine reference
+      // which can cause cross-Engine instantiation issues
+      final JniModule module = new JniModule(moduleHandle, null);
+
+      // Cache the module (using bytecode hash as key for potential reuse)
+      final String cacheKey = "module-" + java.util.Arrays.hashCode(wasmBytes);
+      resourceCache.put(cacheKey, module);
+
+      LOGGER.fine("Compiled module with handle: 0x" + Long.toHexString(moduleHandle));
+      return module;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
       throw new WasmException("Unexpected error compiling module", e);
     }
   }
@@ -586,79 +514,57 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     JniValidation.requireNonNull(module, "module");
 
     try {
-      return concurrencyManager.executeWithWriteLock(
-          getNativeHandle(),
-          () -> {
-            try {
-              // For now, we'll create a basic instance without imports
-              // Full import support will be added when ImportMap interface is implemented
-              if (imports != null) {
-                LOGGER.fine(
-                    "Instantiating module with imports (import details will be implemented in"
-                        + " future)");
-              }
-
-              // Create a Store for the instance
-              final Engine engine = module.getEngine();
-              final Store store = createStore(engine);
-
-              // Instantiate the module with the Store
-              final long instanceHandle =
-                  nativeInstantiateModule(nativeHandle, ((JniModule) module).getNativeHandle());
-              if (instanceHandle == 0) {
-                throw new WasmException("Failed to instantiate WebAssembly module");
-              }
-
-              final JniInstance instance = new JniInstance(instanceHandle, module, store);
-
-              // Register instance for concurrency management and cleanup
-              concurrencyManager.registerResource(instanceHandle);
-              phantomManager.register(instance, instanceHandle, "nativeDestroyInstance");
-
-              LOGGER.fine(
-                  "Instantiated module with instance handle: 0x"
-                      + Long.toHexString(instanceHandle));
-              return instance;
-            } catch (final WasmException e) {
-              throw new RuntimeException(e);
-            } catch (final Exception e) {
-              throw new RuntimeException(
-                  new WasmException("Unexpected error instantiating module", e));
-            }
-          });
-    } catch (final RuntimeException e) {
-      if (e.getCause() instanceof WasmException) {
-        throw (WasmException) e.getCause();
+      // For now, we'll create a basic instance without imports
+      // Full import support will be added when ImportMap interface is implemented
+      if (imports != null) {
+        LOGGER.fine(
+            "Instantiating module with imports (import details will be implemented in future)");
       }
+
+      // Create a Store for the instance
+      final Engine engine = module.getEngine();
+      final Store store = createStore(engine);
+
+      // Instantiate the module with the Store
+      final long instanceHandle =
+          nativeInstantiateModule(nativeHandle, ((JniModule) module).getNativeHandle());
+      if (instanceHandle == 0) {
+        throw new WasmException("Failed to instantiate WebAssembly module");
+      }
+
+      final JniInstance instance = new JniInstance(instanceHandle, module, store);
+
+      LOGGER.fine(
+          "Instantiated module with instance handle: 0x" + Long.toHexString(instanceHandle));
+      return instance;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
       throw new WasmException("Unexpected error instantiating module", e);
     }
   }
 
   @Override
   public RuntimeInfo getRuntimeInfo() {
-    return concurrencyManager.executeWithReadLock(
-        getNativeHandle(),
-        () -> {
-          try {
-            final String version = nativeGetWasmtimeVersion();
-            return new RuntimeInfo(
-                "wasmtime4j-jni",
-                "1.0.0-SNAPSHOT",
-                version != null ? version : "unknown",
-                RuntimeType.JNI,
-                System.getProperty("java.version"),
-                PlatformDetector.getPlatformDescription());
-          } catch (final Exception e) {
-            LOGGER.warning("Failed to get runtime info: " + e.getMessage());
-            return new RuntimeInfo(
-                "wasmtime4j-jni",
-                "1.0.0-SNAPSHOT",
-                "unknown",
-                RuntimeType.JNI,
-                System.getProperty("java.version"),
-                PlatformDetector.getPlatformDescription());
-          }
-        });
+    try {
+      final String version = nativeGetWasmtimeVersion();
+      return new RuntimeInfo(
+          "wasmtime4j-jni",
+          "1.0.0-SNAPSHOT",
+          version != null ? version : "unknown",
+          RuntimeType.JNI,
+          System.getProperty("java.version"),
+          PlatformDetector.getPlatformDescription());
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get runtime info: " + e.getMessage());
+      return new RuntimeInfo(
+          "wasmtime4j-jni",
+          "1.0.0-SNAPSHOT",
+          "unknown",
+          RuntimeType.JNI,
+          System.getProperty("java.version"),
+          PlatformDetector.getPlatformDescription());
+    }
   }
 
   @Override
@@ -808,11 +714,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     try {
       final JniComponentEngine componentEngine = new JniComponentEngine(config);
 
-      // Register component engine for resource management
-      concurrencyManager.registerResource(componentEngine.getNativeHandle());
-      phantomManager.register(
-          componentEngine, componentEngine.getNativeHandle(), "nativeDestroyComponentEngine");
-
       LOGGER.fine(
           "Created component engine with handle: 0x"
               + Long.toHexString(componentEngine.getNativeHandle()));
@@ -828,15 +729,11 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   @Override
   public ai.tegmentum.wasmtime4j.config.Serializer createSerializer() throws WasmException {
     validateRuntimeState();
-    return concurrencyManager.executeWithWriteLock(
-        nativeHandle,
-        () -> {
-          final long serializerHandle = nativeCreateSerializer();
-          if (serializerHandle == 0) {
-            throw new RuntimeException("Failed to create serializer");
-          }
-          return new JniSerializer(serializerHandle);
-        });
+    final long serializerHandle = nativeCreateSerializer();
+    if (serializerHandle == 0) {
+      throw new WasmException("Failed to create serializer");
+    }
+    return new JniSerializer(serializerHandle);
   }
 
   @Override
@@ -847,45 +744,23 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new IllegalArgumentException("Compression level must be between 0 and 9");
     }
     validateRuntimeState();
-    return concurrencyManager.executeWithWriteLock(
-        nativeHandle,
-        () -> {
-          final long serializerHandle =
-              nativeCreateSerializerWithConfig(maxCacheSize, enableCompression, compressionLevel);
-          if (serializerHandle == 0) {
-            throw new RuntimeException("Failed to create serializer with configuration");
-          }
-          return new JniSerializer(serializerHandle);
-        });
+    final long serializerHandle =
+        nativeCreateSerializerWithConfig(maxCacheSize, enableCompression, compressionLevel);
+    if (serializerHandle == 0) {
+      throw new WasmException("Failed to create serializer with configuration");
+    }
+    return new JniSerializer(serializerHandle);
   }
 
   @Override
   protected void doClose() throws Exception {
-    // Close utility managers first
+    // Close resource cache first
     if (resourceCache != null && !resourceCache.isClosed()) {
       try {
         resourceCache.close();
         LOGGER.fine("Closed resource cache");
       } catch (final Exception e) {
         LOGGER.warning("Error closing resource cache: " + e.getMessage());
-      }
-    }
-
-    if (concurrencyManager != null && !concurrencyManager.isClosed()) {
-      try {
-        concurrencyManager.unregisterResource(nativeHandle);
-        concurrencyManager.close();
-        LOGGER.fine("Closed concurrency manager");
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing concurrency manager: " + e.getMessage());
-      }
-    }
-
-    if (phantomManager != null && !phantomManager.isClosed()) {
-      try {
-        phantomManager.unregister(this);
-      } catch (final Exception e) {
-        LOGGER.warning("Error unregistering from phantom manager: " + e.getMessage());
       }
     }
 
@@ -908,8 +783,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    */
   public boolean isSimdSupported() throws WasmException {
     validateRuntimeState();
-    return concurrencyManager.executeWithReadLock(
-        nativeHandle, () -> nativeIsSimdSupported(nativeHandle));
+    return nativeIsSimdSupported(nativeHandle);
   }
 
   /**
@@ -920,8 +794,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    */
   public String getSimdCapabilities() throws WasmException {
     validateRuntimeState();
-    return concurrencyManager.executeWithReadLock(
-        nativeHandle, () -> nativeGetSimdCapabilities(nativeHandle));
+    return nativeGetSimdCapabilities(nativeHandle);
   }
 
   // ===== WASI OPERATIONS =====
@@ -929,15 +802,12 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiContext createWasiContext() throws WasmException {
     validateRuntimeState();
-    return concurrencyManager.executeWithWriteLock(
-        nativeHandle,
-        () -> {
-          final long wasiHandle = nativeCreateWasiContext(nativeHandle);
-          if (wasiHandle == 0) {
-            throw new RuntimeException("Failed to create WASI context");
-          }
-          return new ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl(wasiHandle);
-        });
+
+    final long wasiHandle = nativeCreateWasiContext(nativeHandle);
+    if (wasiHandle == 0) {
+      throw new WasmException("Failed to create WASI context");
+    }
+    return new ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl(wasiHandle);
   }
 
   @Override
@@ -946,17 +816,13 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new IllegalArgumentException("Engine cannot be null");
     }
     validateRuntimeState();
-    return concurrencyManager.executeWithWriteLock(
-        nativeHandle,
-        () -> {
-          final long engineHandle =
-              ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
-          final long linkerHandle = nativeCreateLinker(nativeHandle, engineHandle);
-          if (linkerHandle == 0) {
-            throw new RuntimeException("Failed to create linker");
-          }
-          return new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle, engine);
-        });
+
+    final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+    final long linkerHandle = nativeCreateLinker(nativeHandle, engineHandle);
+    if (linkerHandle == 0) {
+      throw new WasmException("Failed to create linker");
+    }
+    return new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle, engine);
   }
 
   @Override
@@ -970,39 +836,29 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     validateRuntimeState();
 
     try {
-      return concurrencyManager.executeWithWriteLock(
-          nativeHandle,
-          () -> {
-            final long engineHandle =
-                ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
-            final long linkerHandle =
-                nativeCreateLinkerWithConfig(nativeHandle, engineHandle, allowShadowing);
+      final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+      final long linkerHandle =
+          nativeCreateLinkerWithConfig(nativeHandle, engineHandle, allowShadowing);
 
-            if (linkerHandle == 0) {
-              throw new RuntimeException("Failed to create linker with configuration");
-            }
-
-            final ai.tegmentum.wasmtime4j.jni.JniLinker<T> linker =
-                new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle, engine);
-
-            // Register linker for resource management
-            concurrencyManager.registerResource(linkerHandle);
-            phantomManager.register(linker, linkerHandle, "nativeDestroyLinker");
-
-            LOGGER.fine(
-                "Created linker with config - allowUnknownExports: "
-                    + allowUnknownExports
-                    + ", allowShadowing: "
-                    + allowShadowing
-                    + ", handle: 0x"
-                    + Long.toHexString(linkerHandle));
-
-            return linker;
-          });
-    } catch (final RuntimeException e) {
-      if (e.getCause() instanceof WasmException) {
-        throw (WasmException) e.getCause();
+      if (linkerHandle == 0) {
+        throw new WasmException("Failed to create linker with configuration");
       }
+
+      final ai.tegmentum.wasmtime4j.jni.JniLinker<T> linker =
+          new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle, engine);
+
+      LOGGER.fine(
+          "Created linker with config - allowUnknownExports: "
+              + allowUnknownExports
+              + ", allowShadowing: "
+              + allowShadowing
+              + ", handle: 0x"
+              + Long.toHexString(linkerHandle));
+
+      return linker;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
       throw new WasmException("Unexpected error creating linker with configuration", e);
     }
   }
@@ -1014,17 +870,13 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new IllegalArgumentException("Engine cannot be null");
     }
     validateRuntimeState();
-    return concurrencyManager.executeWithWriteLock(
-        nativeHandle,
-        () -> {
-          final long engineHandle =
-              ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
-          final long linkerHandle = nativeCreateComponentLinker(nativeHandle, engineHandle);
-          if (linkerHandle == 0) {
-            throw new RuntimeException("Failed to create component linker");
-          }
-          return new ai.tegmentum.wasmtime4j.jni.JniComponentLinker<>(linkerHandle, engine);
-        });
+
+    final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+    final long linkerHandle = nativeCreateComponentLinker(nativeHandle, engineHandle);
+    if (linkerHandle == 0) {
+      throw new WasmException("Failed to create component linker");
+    }
+    return new ai.tegmentum.wasmtime4j.jni.JniComponentLinker<>(linkerHandle, engine);
   }
 
   @Override
@@ -1040,31 +892,25 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     }
     validateRuntimeState();
 
-    concurrencyManager.executeWithWriteLock(
-        nativeHandle,
-        () -> {
-          final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
-          final long linkerHandle = jniLinker.getNativeHandle();
-          final long contextHandle =
-              ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
+    final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
+    final long linkerHandle = jniLinker.getNativeHandle();
+    final long contextHandle =
+        ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
 
-          final int result = nativeAddWasiToLinker(nativeHandle, linkerHandle, contextHandle);
-          if (result != 0) {
-            throw new RuntimeException("Failed to add WASI imports to linker");
-          }
+    final int result = nativeAddWasiToLinker(nativeHandle, linkerHandle, contextHandle);
+    if (result != 0) {
+      throw new WasmException("Failed to add WASI imports to linker");
+    }
 
-          // Track WASI imports for hasImport() checks
-          jniLinker.addImport("wasi_snapshot_preview1", "fd_write");
-          jniLinker.addImport("wasi_snapshot_preview1", "proc_exit");
-          jniLinker.addImport("wasi_snapshot_preview1", "fd_read");
-          jniLinker.addImport("wasi_snapshot_preview1", "fd_close");
-          jniLinker.addImport("wasi_snapshot_preview1", "environ_get");
-          jniLinker.addImport("wasi_snapshot_preview1", "environ_sizes_get");
-          jniLinker.addImport("wasi_snapshot_preview1", "args_get");
-          jniLinker.addImport("wasi_snapshot_preview1", "args_sizes_get");
-
-          return null;
-        });
+    // Track WASI imports for hasImport() checks
+    jniLinker.addImport("wasi_snapshot_preview1", "fd_write");
+    jniLinker.addImport("wasi_snapshot_preview1", "proc_exit");
+    jniLinker.addImport("wasi_snapshot_preview1", "fd_read");
+    jniLinker.addImport("wasi_snapshot_preview1", "fd_close");
+    jniLinker.addImport("wasi_snapshot_preview1", "environ_get");
+    jniLinker.addImport("wasi_snapshot_preview1", "environ_sizes_get");
+    jniLinker.addImport("wasi_snapshot_preview1", "args_get");
+    jniLinker.addImport("wasi_snapshot_preview1", "args_sizes_get");
   }
 
   @Override
@@ -1080,27 +926,20 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     }
     validateRuntimeState();
 
-    concurrencyManager.executeWithWriteLock(
-        nativeHandle,
-        () -> {
-          final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
-          final long linkerHandle = jniLinker.getNativeHandle();
-          final long contextHandle =
-              ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
+    final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
+    final long linkerHandle = jniLinker.getNativeHandle();
+    final long contextHandle =
+        ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
 
-          final int result =
-              nativeAddWasiPreview2ToLinker(nativeHandle, linkerHandle, contextHandle);
-          if (result != 0) {
-            throw new RuntimeException("Failed to add WASI Preview 2 imports to linker");
-          }
+    final int result = nativeAddWasiPreview2ToLinker(nativeHandle, linkerHandle, contextHandle);
+    if (result != 0) {
+      throw new WasmException("Failed to add WASI Preview 2 imports to linker");
+    }
 
-          // Track WASI Preview 2 imports for hasImport() checks
-          jniLinker.addImport("wasi:filesystem/types", "filesystem");
-          jniLinker.addImport("wasi:io/streams", "input-stream");
-          jniLinker.addImport("wasi:sockets/network", "network");
-
-          return null;
-        });
+    // Track WASI Preview 2 imports for hasImport() checks
+    jniLinker.addImport("wasi:filesystem/types", "filesystem");
+    jniLinker.addImport("wasi:io/streams", "input-stream");
+    jniLinker.addImport("wasi:sockets/network", "network");
   }
 
   @Override
@@ -1111,29 +950,19 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     }
     validateRuntimeState();
 
-    concurrencyManager.executeWithWriteLock(
-        nativeHandle,
-        () -> {
-          final long linkerHandle =
-              ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
+    final long linkerHandle = ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
 
-          final int result = nativeAddComponentModelToLinker(nativeHandle, linkerHandle);
-          if (result != 0) {
-            throw new RuntimeException("Failed to add Component Model imports to linker");
-          }
-          return null;
-        });
+    final int result = nativeAddComponentModelToLinker(nativeHandle, linkerHandle);
+    if (result != 0) {
+      throw new WasmException("Failed to add Component Model imports to linker");
+    }
   }
 
   @Override
   public boolean supportsComponentModel() {
     try {
       validateRuntimeState();
-      return concurrencyManager.executeWithReadLock(
-          nativeHandle,
-          () -> {
-            return nativeSupportsComponentModel(nativeHandle);
-          });
+      return nativeSupportsComponentModel(nativeHandle);
     } catch (WasmException e) {
       return false;
     }

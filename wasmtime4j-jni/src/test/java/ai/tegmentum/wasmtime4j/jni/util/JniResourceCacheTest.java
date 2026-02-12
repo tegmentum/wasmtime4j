@@ -321,6 +321,108 @@ class JniResourceCacheTest {
         assertTrue(limitedCache.getEvictionCount() > 0);
       }
     }
+
+    @Test
+    void testEvictLeastRecentlyUsedEntries() {
+      // maxSize=4, eviction removes max(1, 4/4)=1 entry
+      final int maxSize = 4;
+
+      try (final JniResourceCache<String, String> lruCache = new JniResourceCache<>(maxSize)) {
+        // Insert 4 entries in order: A, B, C, D
+        lruCache.put("A", "valueA");
+        lruCache.put("B", "valueB");
+        lruCache.put("C", "valueC");
+        lruCache.put("D", "valueD");
+        assertEquals(4, lruCache.size());
+
+        // Access A and C to make them recently used (B and D remain least recently used)
+        // Order after accesses: B, D, A, C (head=LRU, tail=MRU)
+        lruCache.get("A", k -> "factory");
+        lruCache.get("C", k -> "factory");
+
+        // Insert E - triggers eviction of 1 LRU entry (B, which is at the head)
+        lruCache.put("E", "valueE");
+
+        // B should have been evicted (least recently used)
+        assertNull(
+            lruCache.remove("B"), "B should have been evicted as the least recently used entry");
+
+        // A, C, D, E should still be present (D survived because only 1 entry was evicted)
+        // Actually after eviction of B, we have D, A, C, E. Size=4.
+        assertNotNull(
+            lruCache.get("A", k -> "factory"), "A should still be cached (recently used)");
+        assertNotNull(
+            lruCache.get("C", k -> "factory"), "C should still be cached (recently used)");
+        assertNotNull(
+            lruCache.get("E", k -> "factory"), "E should still be cached (just inserted)");
+      }
+    }
+
+    @Test
+    void testEvictMultipleLruEntriesInOrder() {
+      // maxSize=8, eviction removes max(1, 8/4)=2 entries
+      final int maxSize = 8;
+
+      try (final JniResourceCache<String, String> lruCache = new JniResourceCache<>(maxSize)) {
+        // Insert 8 entries
+        for (int i = 0; i < 8; i++) {
+          lruCache.put("key" + i, "value" + i);
+        }
+        assertEquals(8, lruCache.size());
+
+        // Access keys 2,4,6 to make them recently used
+        // LRU order after: key0, key1, key3, key5, key7, key2, key4, key6
+        lruCache.get("key2", k -> "factory");
+        lruCache.get("key4", k -> "factory");
+        lruCache.get("key6", k -> "factory");
+
+        // Insert a new entry - triggers eviction of 2 LRU entries (key0, key1)
+        lruCache.put("newKey", "newValue");
+
+        // key0 and key1 should have been evicted (2 least recently used)
+        assertNull(lruCache.remove("key0"), "key0 should have been evicted (least recently used)");
+        assertNull(
+            lruCache.remove("key1"), "key1 should have been evicted (second least recently used)");
+
+        // The accessed keys should still be present
+        assertNotNull(
+            lruCache.get("key2", k -> "factory"),
+            "key2 should still be cached (recently accessed)");
+        assertNotNull(
+            lruCache.get("key4", k -> "factory"),
+            "key4 should still be cached (recently accessed)");
+        assertNotNull(
+            lruCache.get("key6", k -> "factory"),
+            "key6 should still be cached (recently accessed)");
+        assertNotNull(
+            lruCache.get("newKey", k -> "factory"),
+            "newKey should still be cached (just inserted)");
+      }
+    }
+
+    @Test
+    void testPutUpdatesAccessOrderForExistingKey() {
+      // maxSize=4, eviction removes 1 entry
+      final int maxSize = 4;
+
+      try (final JniResourceCache<String, String> lruCache = new JniResourceCache<>(maxSize)) {
+        // Insert A, B, C, D
+        lruCache.put("A", "v1");
+        lruCache.put("B", "v1");
+        lruCache.put("C", "v1");
+        lruCache.put("D", "v1");
+
+        // Re-put A with new value - this moves A to the tail (most recently used)
+        // LRU order: B, C, D, A
+        lruCache.put("A", "v2");
+
+        // Insert E - triggers eviction of B (now the LRU entry)
+        lruCache.put("E", "v1");
+
+        assertNull(lruCache.remove("B"), "B should have been evicted (LRU after A was re-put)");
+        assertEquals("v2", lruCache.get("A", k -> "factory"), "A should have updated value");
+      }
+    }
   }
 
   @Nested

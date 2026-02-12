@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.panama.wasi.WasiFileOperation;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;

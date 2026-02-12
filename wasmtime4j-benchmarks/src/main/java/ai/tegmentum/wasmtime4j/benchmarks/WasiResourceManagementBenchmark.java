@@ -1,11 +1,8 @@
 package ai.tegmentum.wasmtime4j.benchmarks;
 
-import ai.tegmentum.wasmtime4j.jni.wasi.WasiFileOperation;
-import ai.tegmentum.wasmtime4j.jni.wasi.WasiResourceLeakDetector;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiResourceUsageTracker;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -25,8 +22,7 @@ import org.openjdk.jmh.annotations.Warmup;
 /**
  * Performance benchmarks for WASI resource management operations.
  *
- * <p>This benchmark suite measures the performance characteristics of various resource management
- * components including leak detection, usage tracking, and context isolation validation. The
+ * <p>This benchmark suite measures the performance characteristics of resource usage tracking. The
  * benchmarks help ensure that resource management operations have minimal impact on WASI operation
  * performance.
  *
@@ -43,15 +39,11 @@ public class WasiResourceManagementBenchmark {
   @Param({"false", "true"})
   private boolean detailedTracking;
 
-  private WasiResourceLeakDetector leakDetector;
   private WasiResourceUsageTracker usageTracker;
   private WasiResourceLimits resourceLimits;
 
   // Test data
   private String contextId;
-  private Path testPath;
-  private Object testMemorySegment;
-  private MockWasiContext mockContext;
 
   @Setup(Level.Trial)
   public void setupTrial() {
@@ -65,34 +57,17 @@ public class WasiResourceManagementBenchmark {
             .withMaxExecutionTime(Duration.ofMinutes(1))
             .build();
 
-    // Initialize components
-    leakDetector =
-        new WasiResourceLeakDetector(
-            1000, // threshold
-            Duration.ofMinutes(5), // age threshold
-            60 // monitoring interval
-            );
-
     usageTracker = new WasiResourceUsageTracker(resourceLimits, detailedTracking);
 
     // Setup test data
     contextId = "benchmark-context";
-    testPath = Paths.get("/tmp/benchmark/test.txt");
-    testMemorySegment = new Object();
-    mockContext = new MockWasiContext(contextId);
 
-    // Register context in usage tracker only
-    // Note: IsolationValidator requires a real WasiContext with native handle,
-    // so we skip registering with isolationValidator for benchmarking purposes.
-    // The isolation validator benchmarks will be skipped.
+    // Register context in usage tracker
     usageTracker.registerContext(contextId);
   }
 
   @TearDown(Level.Trial)
   public void teardownTrial() {
-    if (leakDetector != null) {
-      leakDetector.close();
-    }
     if (usageTracker != null) {
       usageTracker.unregisterContext(contextId);
     }
@@ -101,32 +76,6 @@ public class WasiResourceManagementBenchmark {
   @Setup(Level.Iteration)
   public void setupIteration() {
     // Reset any iteration-specific state if needed
-  }
-
-  @Benchmark
-  public void benchmarkLeakDetectorTracking() {
-    // Benchmark resource tracking in leak detector
-    leakDetector.trackWasiContext(contextId + System.nanoTime(), null);
-    leakDetector.trackMemorySegment(System.nanoTime(), testMemorySegment);
-  }
-
-  @Benchmark
-  public void benchmarkLeakDetectorUntracking() {
-    // Pre-track resources
-    final String dynamicContextId = contextId + System.nanoTime();
-    final long dynamicAddress = System.nanoTime();
-    leakDetector.trackWasiContext(dynamicContextId, null);
-    leakDetector.trackMemorySegment(dynamicAddress, testMemorySegment);
-
-    // Benchmark untracking
-    leakDetector.untrackWasiContext(dynamicContextId);
-    leakDetector.untrackMemorySegment(dynamicAddress);
-  }
-
-  @Benchmark
-  public void benchmarkLeakDetection() {
-    // Benchmark leak detection operation
-    leakDetector.performLeakDetection();
   }
 
   @Benchmark
@@ -174,7 +123,7 @@ public class WasiResourceManagementBenchmark {
 
   @Benchmark
   public void benchmarkCompleteResourceOperation() {
-    // Benchmark a complete resource operation using leak detector and usage tracker
+    // Benchmark a complete resource operation using usage tracker
     final long startTime = System.nanoTime();
 
     // 1. Track operation
@@ -191,66 +140,16 @@ public class WasiResourceManagementBenchmark {
   @Benchmark
   public void benchmarkConcurrentResourceTracking() {
     // Benchmark concurrent operations that might happen in real usage
-    final long timestamp = System.nanoTime();
-
-    // Simulate concurrent resource management operations
     usageTracker.recordMemoryAllocation(contextId, 512);
     usageTracker.recordCpuTime(contextId, 500000);
-    leakDetector.trackMemorySegment(timestamp, testMemorySegment);
 
     // Cleanup
     usageTracker.recordMemoryDeallocation(contextId, 512);
-    leakDetector.untrackMemorySegment(timestamp);
-  }
-
-  @Benchmark
-  public void benchmarkResourceCleanup() {
-    // Benchmark resource cleanup operations
-    final long timestamp = System.nanoTime();
-    final String dynamicContextId = "cleanup-context-" + timestamp;
-
-    // Setup resources
-    leakDetector.trackWasiContext(dynamicContextId, null);
-    leakDetector.trackMemorySegment(timestamp, testMemorySegment);
-
-    // Benchmark cleanup
-    leakDetector.untrackWasiContext(dynamicContextId);
-    leakDetector.untrackMemorySegment(timestamp);
   }
 
   @Benchmark
   public void benchmarkStatisticsCollection() {
-    // Benchmark collecting statistics from leak detector and usage tracker
-    leakDetector.getStatistics();
+    // Benchmark collecting statistics from usage tracker
     usageTracker.getGlobalUsage();
-  }
-
-  /** Benchmark-specific resource limits for performance testing. */
-  private static WasiResourceLimits createBenchmarkResourceLimits() {
-    return WasiResourceLimits.builder()
-        .withMaxMemoryBytes(10L * 1024L * 1024L) // 10 MB for benchmark
-        .withMaxFileDescriptors(500)
-        .withMaxDiskReadsPerSecond(5000)
-        .withMaxDiskWritesPerSecond(5000)
-        .withMaxExecutionTime(Duration.ofSeconds(30))
-        .build();
-  }
-
-  /** Mock WASI context for benchmarking. */
-  private static final class MockWasiContext {
-    private final String contextId;
-
-    MockWasiContext(final String contextId) {
-      this.contextId = contextId;
-    }
-
-    public String getContextId() {
-      return contextId;
-    }
-
-    @Override
-    public String toString() {
-      return "MockWasiContext{contextId='" + contextId + "'}";
-    }
   }
 }

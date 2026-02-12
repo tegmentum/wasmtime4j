@@ -5,6 +5,7 @@ import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiFileSystemException;
 import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryEntry;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileMetadata;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;

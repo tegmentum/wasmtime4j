@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.wasi.permission.WasiResourceLimits;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;

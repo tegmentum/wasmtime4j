@@ -2,8 +2,9 @@ package ai.tegmentum.wasmtime4j.jni.util;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -19,15 +20,16 @@ import java.util.logging.Logger;
  * <p>Key features:
  *
  * <ul>
- *   <li>Thread-safe concurrent access with minimal locking
+ *   <li>Thread-safe access with explicit synchronization
  *   <li>Weak reference-based caching to avoid memory leaks
- *   <li>Automatic cleanup of native resources via phantom references
  *   <li>Performance metrics and cache statistics
  *   <li>Configurable maximum cache size with LRU eviction
  * </ul>
  *
- * <p>This utility is designed to improve performance by caching frequently accessed native
- * resources while maintaining proper resource lifecycle management and defensive programming.
+ * <p>LRU eviction is implemented using a {@link LinkedHashMap} in access-order mode. When the cache
+ * reaches its maximum size, the least recently accessed entries are evicted first. Since contention
+ * is expected to be low (caching a small number of resource types), explicit synchronization on the
+ * underlying map is used for thread safety.
  *
  * @param <K> the cache key type
  * @param <V> the cached resource type
@@ -40,8 +42,8 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
   /** Default maximum cache size. */
   public static final int DEFAULT_MAX_SIZE = 1000;
 
-  /** The underlying cache map. */
-  private final ConcurrentMap<K, WeakReference<V>> cache;
+  /** The underlying cache map in access-order for LRU eviction. */
+  private final LinkedHashMap<K, WeakReference<V>> cache;
 
   /** Reference queue for tracking collected resources. */
   private final ReferenceQueue<V> referenceQueue;
@@ -73,7 +75,8 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
     JniValidation.requirePositive(maxSize, "maxSize");
 
     this.maxSize = maxSize;
-    this.cache = new ConcurrentHashMap<>(Math.min(maxSize, 256));
+    // access-order = true enables LRU ordering: most recently accessed entries move to the tail
+    this.cache = new LinkedHashMap<>(Math.min(maxSize, 256), 0.75f, true);
     this.referenceQueue = new ReferenceQueue<>();
 
     LOGGER.fine("Created JniResourceCache with maxSize=" + maxSize);
@@ -96,22 +99,24 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
       throw new RuntimeException("Resource cache is closed");
     }
 
-    cleanupCollectedReferences();
+    synchronized (cache) {
+      cleanupCollectedReferences();
 
-    // Try to get from cache first
-    final WeakReference<V> ref = cache.get(key);
-    if (ref != null) {
-      final V resource = ref.get();
-      if (resource != null) {
-        hits.incrementAndGet();
-        return resource;
-      } else {
-        // Reference was collected, remove stale entry
-        cache.remove(key, ref);
+      // Try to get from cache first (this also reorders for LRU)
+      final WeakReference<V> ref = cache.get(key);
+      if (ref != null) {
+        final V resource = ref.get();
+        if (resource != null) {
+          hits.incrementAndGet();
+          return resource;
+        } else {
+          // Reference was collected, remove stale entry
+          cache.remove(key);
+        }
       }
     }
 
-    // Cache miss, create new resource
+    // Cache miss, create new resource outside the lock
     misses.incrementAndGet();
     final V newResource = factory.apply(key);
 
@@ -138,14 +143,16 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
       throw new RuntimeException("Resource cache is closed");
     }
 
-    cleanupCollectedReferences();
+    synchronized (cache) {
+      cleanupCollectedReferences();
 
-    // Check if we need to evict entries
-    if (cache.size() >= maxSize) {
-      evictOldestEntries();
+      // Check if we need to evict entries
+      if (cache.size() >= maxSize) {
+        evictLruEntries();
+      }
+
+      cache.put(key, new WeakReference<>(resource, referenceQueue));
     }
-
-    cache.put(key, new WeakReference<>(resource, referenceQueue));
   }
 
   /**
@@ -158,17 +165,21 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
   public V remove(final K key) {
     JniValidation.requireNonNull(key, "key");
 
-    final WeakReference<V> ref = cache.remove(key);
-    if (ref != null) {
-      return ref.get();
+    synchronized (cache) {
+      final WeakReference<V> ref = cache.remove(key);
+      if (ref != null) {
+        return ref.get();
+      }
+      return null;
     }
-    return null;
   }
 
   /** Clears all entries from the cache. */
   public void clear() {
-    cache.clear();
-    cleanupCollectedReferences();
+    synchronized (cache) {
+      cache.clear();
+      cleanupCollectedReferences();
+    }
   }
 
   /**
@@ -177,8 +188,10 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
    * @return the number of entries currently in the cache
    */
   public int size() {
-    cleanupCollectedReferences();
-    return cache.size();
+    synchronized (cache) {
+      cleanupCollectedReferences();
+      return cache.size();
+    }
   }
 
   /**
@@ -251,41 +264,43 @@ public final class JniResourceCache<K, V> implements AutoCloseable {
     }
   }
 
-  /** Cleans up collected weak references. */
+  /**
+   * Cleans up collected weak references. Must be called while holding the cache lock.
+   *
+   * <p>Polls the reference queue and removes any cache entries whose weak references have been
+   * collected by the garbage collector.
+   */
   private void cleanupCollectedReferences() {
     java.lang.ref.Reference<? extends V> ref;
     while ((ref = referenceQueue.poll()) != null) {
-      // Find and remove the corresponding cache entry
       final java.lang.ref.Reference<? extends V> finalRef = ref;
       cache.entrySet().removeIf(entry -> entry.getValue() == finalRef);
     }
   }
 
   /**
-   * Evicts oldest entries to make room for new ones.
+   * Evicts the least recently used entries to make room for new ones.
    *
-   * <p>This is a simple implementation that removes a portion of entries. A more sophisticated LRU
-   * implementation could be added if needed.
+   * <p>Because the underlying {@link LinkedHashMap} is in access-order mode, iterating from the
+   * head of the map yields entries in LRU order (least recently accessed first). This method
+   * removes up to 25% of the cache capacity (minimum 1 entry) from the head.
+   *
+   * <p>Must be called while holding the cache lock.
    */
-  private void evictOldestEntries() {
-    final int entriesToEvict =
-        Math.max(1, maxSize / 4); // Remove at least 1 entry, or 25% of entries
+  private void evictLruEntries() {
+    final int entriesToEvict = Math.max(1, maxSize / 4);
     int evicted = 0;
 
-    for (final K key : cache.keySet()) {
-      if (evicted >= entriesToEvict) {
-        break;
-      }
-
-      final WeakReference<V> removed = cache.remove(key);
-      if (removed != null) {
-        evicted++;
-        evictions.incrementAndGet();
-      }
+    final Iterator<Map.Entry<K, WeakReference<V>>> iterator = cache.entrySet().iterator();
+    while (iterator.hasNext() && evicted < entriesToEvict) {
+      iterator.next();
+      iterator.remove();
+      evicted++;
+      evictions.incrementAndGet();
     }
 
     if (evicted > 0) {
-      LOGGER.fine("Evicted " + evicted + " entries from cache");
+      LOGGER.fine("Evicted " + evicted + " LRU entries from cache");
     }
   }
 

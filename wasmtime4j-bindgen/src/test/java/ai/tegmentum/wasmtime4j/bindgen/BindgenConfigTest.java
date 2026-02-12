@@ -125,34 +125,6 @@ class BindgenConfigTest {
   }
 
   @Test
-  void shouldSupportInterfacePrefixAndSuffix() {
-    BindgenConfig config =
-        BindgenConfig.builder()
-            .packageName("com.example")
-            .outputDirectory(Path.of("target/generated"))
-            .addWitSource(Path.of("api.wit"))
-            .interfacePrefix("I")
-            .interfaceSuffix("Api")
-            .build();
-
-    assertThat(config.getInterfacePrefix()).hasValue("I");
-    assertThat(config.getInterfaceSuffix()).hasValue("Api");
-  }
-
-  @Test
-  void shouldReturnEmptyOptionalForMissingPrefixAndSuffix() {
-    BindgenConfig config =
-        BindgenConfig.builder()
-            .packageName("com.example")
-            .outputDirectory(Path.of("target/generated"))
-            .addWitSource(Path.of("api.wit"))
-            .build();
-
-    assertThat(config.getInterfacePrefix()).isEmpty();
-    assertThat(config.getInterfaceSuffix()).isEmpty();
-  }
-
-  @Test
   void shouldImplementEqualsAndHashCode() {
     BindgenConfig config1 =
         BindgenConfig.builder()

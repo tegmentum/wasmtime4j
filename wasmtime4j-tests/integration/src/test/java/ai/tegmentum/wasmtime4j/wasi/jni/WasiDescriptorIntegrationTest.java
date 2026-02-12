@@ -24,7 +24,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.jni.wasi.filesystem.JniWasiDescriptor;
-import ai.tegmentum.wasmtime4j.jni.wasi.security.WasiSecurityValidator;
+import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
+import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;

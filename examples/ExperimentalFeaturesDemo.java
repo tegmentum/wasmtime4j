@@ -3,7 +3,7 @@ import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.jni.JniExperimentalFeatures;
-import ai.tegmentum.wasmtime4j.panama.PanamaExperimentalFeatures;
+import ai.tegmentum.wasmtime4j.panama.experimental.PanamaExperimentalFeatures;
 
 import java.util.Set;
 import java.util.logging.Logger;

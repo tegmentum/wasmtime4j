@@ -1,0 +1,2479 @@
+/*
+ * Copyright 2024 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ai.tegmentum.wasmtime4j.panama;
+
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+/**
+ * Native function bindings for Instance, Linker, InstancePre, Caller, Function, Function Reference,
+ * WASI-NN, extern type, and call hook operations.
+ *
+ * <p>Provides type-safe wrappers for all Wasmtime instance lifecycle, linker configuration and
+ * instantiation, caller context access, function invocation, function reference management, WASI-NN
+ * neural network inference, and call hook native functions. Hot-path methods use eagerly
+ * initialized volatile {@link MethodHandle} fields for {@code invokeExact} optimization.
+ *
+ * <p>This class follows the singleton pattern with double-checked locking.
+ */
+public final class NativeInstanceBindings extends NativeBindingsBase {
+
+  private static final Logger LOGGER = Logger.getLogger(NativeInstanceBindings.class.getName());
+
+  private static volatile NativeInstanceBindings instance;
+  private static final Object INSTANCE_LOCK = new Object();
+
+  // Hot-path volatile MethodHandle fields for invokeExact optimization
+  // Signature: (ADDRESS, ADDRESS) -> ADDRESS
+  private volatile MethodHandle mhInstanceCreate;
+
+  // Signature: (ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS, JAVA_LONG) -> JAVA_LONG
+  private volatile MethodHandle mhInstanceCallFunction;
+
+  private NativeInstanceBindings() {
+    super();
+    initializeBindings();
+    initializeHotPathHandles();
+    markInitialized();
+    LOGGER.fine("Initialized NativeInstanceBindings successfully");
+  }
+
+  /**
+   * Gets the singleton instance.
+   *
+   * @return the singleton instance
+   * @throws RuntimeException if initialization fails
+   */
+  public static NativeInstanceBindings getInstance() {
+    NativeInstanceBindings result = instance;
+    if (result == null) {
+      synchronized (INSTANCE_LOCK) {
+        result = instance;
+        if (result == null) {
+          instance = result = new NativeInstanceBindings();
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Eagerly initializes hot-path MethodHandles after all bindings are registered. */
+  private void initializeHotPathHandles() {
+    FunctionBinding instanceCreateBinding = getFunctionBinding("wasmtime4j_instance_create");
+    if (instanceCreateBinding != null) {
+      this.mhInstanceCreate = instanceCreateBinding.getMethodHandle().orElse(null);
+    }
+
+    FunctionBinding callBinding = getFunctionBinding("wasmtime4j_instance_call_function");
+    if (callBinding != null) {
+      this.mhInstanceCallFunction = callBinding.getMethodHandle().orElse(null);
+    }
+  }
+
+  /**
+   * Gets a cached method handle for a native function by name.
+   *
+   * @param functionName the name of the function
+   * @return optional containing the method handle, or empty if not found
+   */
+  public Optional<MethodHandle> getMethodHandle(final String functionName) {
+    FunctionBinding binding = getFunctionBinding(functionName);
+    if (binding == null) {
+      LOGGER.warning("Unknown function binding: " + functionName);
+      return Optional.empty();
+    }
+    return binding.getMethodHandle();
+  }
+
+  /**
+   * Gets the function descriptor for a native function by name.
+   *
+   * @param functionName the name of the function
+   * @return optional containing the function descriptor, or empty if not found
+   */
+  public Optional<FunctionDescriptor> getFunctionDescriptor(final String functionName) {
+    FunctionBinding binding = getFunctionBinding(functionName);
+    if (binding == null) {
+      return Optional.empty();
+    }
+    return Optional.of(binding.getDescriptor());
+  }
+
+  /**
+   * Gets the method handle for Panama FFI instance creation.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaInstanceCreate() {
+    return getMethodHandle("wasmtime4j_panama_instance_create").orElse(null);
+  }
+
+  // =============================================================================
+  // Instance Operations
+  // =============================================================================
+
+  /**
+   * Creates a WebAssembly instance (Panama FFI).
+   *
+   * @param storePtr pointer to the store
+   * @param modulePtr pointer to the module
+   * @return memory segment pointer to the instance, or null on failure
+   */
+  public MemorySegment instanceCreate(final MemorySegment storePtr, final MemorySegment modulePtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhInstanceCreate;
+    if (mh != null) {
+      try {
+        return (MemorySegment) mh.invokeExact(storePtr, modulePtr);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native instanceCreate failed", t);
+      }
+    }
+    return callNativeFunction(
+        "wasmtime4j_instance_create", MemorySegment.class, storePtr, modulePtr);
+  }
+
+  /**
+   * Destroys a WebAssembly instance.
+   *
+   * @param instancePtr pointer to the instance to destroy
+   */
+  public void instanceDestroy(final MemorySegment instancePtr) {
+    validatePointer(instancePtr, "instancePtr");
+    callNativeFunction("wasmtime4j_instance_destroy", Void.class, instancePtr);
+  }
+
+  /**
+   * Calls a WebAssembly function in an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName name of the function to call
+   * @param paramsPtr pointer to array of WasmValue parameters
+   * @param paramCount number of parameters
+   * @param resultsPtr pointer to buffer for WasmValue results
+   * @param maxResults maximum number of results to return
+   * @return number of actual results (0 on error)
+   */
+  public long instanceCallFunction(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final MemorySegment paramsPtr,
+      final long paramCount,
+      final MemorySegment resultsPtr,
+      final long maxResults) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(functionName, "functionName");
+
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhInstanceCallFunction;
+    if (mh != null) {
+      try {
+        return (long)
+            mh.invokeExact(
+                instancePtr, storePtr, functionName, paramsPtr, paramCount, resultsPtr, maxResults);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native instanceCallFunction failed", t);
+      }
+    }
+    return callNativeFunction(
+        "wasmtime4j_instance_call_function",
+        Long.class,
+        instancePtr,
+        storePtr,
+        functionName,
+        paramsPtr,
+        paramCount,
+        resultsPtr,
+        maxResults);
+  }
+
+  /**
+   * Fast path for instance function calls using invokeExact.
+   *
+   * <p>This method is optimized for performance by using invokeExact instead of
+   * invokeWithArguments, which avoids varargs array creation, primitive boxing, and runtime type
+   * checking.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName name of the function to call
+   * @param paramsPtr pointer to array of WasmValue parameters
+   * @param paramCount number of parameters
+   * @param resultsPtr pointer to buffer for WasmValue results
+   * @param maxResults maximum number of results to return
+   * @return number of actual results (0 on error)
+   */
+  public long instanceCallFunctionFast(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final MemorySegment paramsPtr,
+      final long paramCount,
+      final MemorySegment resultsPtr,
+      final long maxResults) {
+    final MethodHandle mh = mhInstanceCallFunction;
+    if (mh == null) {
+      // Fall back to slow path if handle not available
+      return instanceCallFunction(
+          instancePtr, storePtr, functionName, paramsPtr, paramCount, resultsPtr, maxResults);
+    }
+    try {
+      return (long)
+          mh.invokeExact(
+              instancePtr, storePtr, functionName, paramsPtr, paramCount, resultsPtr, maxResults);
+    } catch (Throwable t) {
+      throw new RuntimeException("Native instanceCallFunction failed", t);
+    }
+  }
+
+  /**
+   * Gets the number of exports in an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @return the number of exports
+   */
+  public long instanceExportsLen(final MemorySegment instancePtr) {
+    validatePointer(instancePtr, "instancePtr");
+    return callNativeFunction("wasmtime4j_instance_exports_len", Long.class, instancePtr);
+  }
+
+  /**
+   * Gets the nth export from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param index the index of the export to retrieve
+   * @param nameOutPtr pointer to receive the export name
+   * @param exportOutPtr pointer to receive the export data
+   * @return true if the export exists, false otherwise
+   */
+  public boolean instanceExportNth(
+      final MemorySegment instancePtr,
+      final long index,
+      final MemorySegment nameOutPtr,
+      final MemorySegment exportOutPtr) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(nameOutPtr, "nameOutPtr");
+    validatePointer(exportOutPtr, "exportOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_export_nth",
+        Boolean.class,
+        instancePtr,
+        index,
+        nameOutPtr,
+        exportOutPtr);
+  }
+
+  /**
+   * Gets a memory export by name from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @return memory segment pointer or null if not found
+   */
+  public MemorySegment instanceGetMemoryByName(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_memory_by_name", MemorySegment.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Checks if an instance has a memory export with the given name.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @return 1 if exists, 0 if not found
+   */
+  public int instanceHasMemoryExport(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_has_memory_export", Integer.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Gets memory size in pages by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param sizeOut pointer to store the size
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGetMemorySizePages(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment sizeOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(sizeOut, "sizeOut");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_memory_size_pages",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        sizeOut);
+  }
+
+  /**
+   * Gets memory size in bytes by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param sizeOut pointer to store the size
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGetMemorySizeBytes(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment sizeOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(sizeOut, "sizeOut");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_memory_size_bytes",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        sizeOut);
+  }
+
+  /**
+   * Grows memory by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param pages number of pages to grow
+   * @param previousPagesOut pointer to store previous size
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGrowMemory(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final long pages,
+      final MemorySegment previousPagesOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(previousPagesOut, "previousPagesOut");
+    return callNativeFunction(
+        "wasmtime4j_instance_grow_memory",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        pages,
+        previousPagesOut);
+  }
+
+  /**
+   * Reads bytes from memory by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param offset offset in memory
+   * @param length number of bytes to read
+   * @param buffer pointer to buffer to read into
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceReadMemoryBytes(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final long offset,
+      final long length,
+      final MemorySegment buffer) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(buffer, "buffer");
+    return callNativeFunction(
+        "wasmtime4j_instance_read_memory_bytes",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        offset,
+        length,
+        buffer);
+  }
+
+  /**
+   * Writes bytes to memory by looking up the memory fresh.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the memory export
+   * @param offset offset in memory
+   * @param length number of bytes to write
+   * @param buffer pointer to buffer to write from
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceWriteMemoryBytes(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final long offset,
+      final long length,
+      final MemorySegment buffer) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(buffer, "buffer");
+    return callNativeFunction(
+        "wasmtime4j_instance_write_memory_bytes",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        offset,
+        length,
+        buffer);
+  }
+
+  /**
+   * Gets the type and mutability of a global export.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @param valueTypeOut output for value type code
+   * @param isMutableOut output for mutability flag
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGetGlobalType(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment valueTypeOut,
+      final MemorySegment isMutableOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_global_type",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        valueTypeOut,
+        isMutableOut);
+  }
+
+  /**
+   * Checks if a global export exists in an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @return 0 if global exists, non-zero if not found or error
+   */
+  public int instanceHasGlobalExport(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_has_global_export", Integer.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Gets the value of a global by looking it up fresh from the instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @param i32Out output for i32 value
+   * @param i64Out output for i64 value
+   * @param f32Out output for f32 value (as double)
+   * @param f64Out output for f64 value
+   * @param refIdPresentOut output for reference presence flag
+   * @param refIdOut output for reference ID
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceGetGlobalValue(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment i32Out,
+      final MemorySegment i64Out,
+      final MemorySegment f32Out,
+      final MemorySegment f64Out,
+      final MemorySegment refIdPresentOut,
+      final MemorySegment refIdOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_global_value",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        i32Out,
+        i64Out,
+        f32Out,
+        f64Out,
+        refIdPresentOut,
+        refIdOut);
+  }
+
+  /**
+   * Sets the value of a global by looking it up fresh from the instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @param valueTypeCode type code (0=I32, 1=I64, 2=F32, 3=F64, 5=FuncRef, 6=ExternRef)
+   * @param i32Value i32 value
+   * @param i64Value i64 value
+   * @param f32Value f32 value (as double)
+   * @param f64Value f64 value
+   * @param refIdPresent reference presence flag
+   * @param refId reference ID
+   * @return 0 on success, negative error code on failure
+   */
+  public int instanceSetGlobalValue(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final int valueTypeCode,
+      final int i32Value,
+      final long i64Value,
+      final double f32Value,
+      final double f64Value,
+      final int refIdPresent,
+      final long refId) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_set_global_value",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        valueTypeCode,
+        i32Value,
+        i64Value,
+        f32Value,
+        f64Value,
+        refIdPresent,
+        refId);
+  }
+
+  /**
+   * Gets a table export by name from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the table export
+   * @return table segment pointer or null if not found
+   */
+  public MemorySegment instanceGetTableByName(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_table_by_name", MemorySegment.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Gets a global export by name from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @return global segment pointer or null if not found
+   */
+  public MemorySegment instanceGetGlobalByName(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_global_by_name", MemorySegment.class, instancePtr, storePtr, name);
+  }
+
+  /**
+   * Gets a global export by name from an instance, wrapped for linker use.
+   *
+   * <p>Unlike {@link #instanceGetGlobalByName}, this returns a properly wrapped Global struct that
+   * can be used with {@link #panamaLinkerDefineGlobal}.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the global export
+   * @return wrapped global segment pointer or null if not found
+   */
+  public MemorySegment instanceGetGlobalWrapped(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_get_global_wrapped",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        name);
+  }
+
+  // =============================================================================
+  // Caller Operations
+  // =============================================================================
+
+  /**
+   * Gets the fuel consumed by the caller if fuel metering is enabled.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param fuelOut pointer to store the fuel value
+   * @return 1 if fuel is available, 0 if fuel metering not enabled, negative error code on failure
+   */
+  public int callerGetFuel(final MemorySegment callerPtr, final MemorySegment fuelOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(fuelOut, "fuelOut");
+    return callNativeFunction("wasmtime4j_caller_get_fuel", Integer.class, callerPtr, fuelOut);
+  }
+
+  /**
+   * Gets the fuel remaining in the caller if fuel metering is enabled.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param fuelOut pointer to store the fuel value
+   * @return 1 if fuel is available, 0 if fuel metering not enabled, negative error code on failure
+   */
+  public int callerGetFuelRemaining(final MemorySegment callerPtr, final MemorySegment fuelOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(fuelOut, "fuelOut");
+    return callNativeFunction(
+        "wasmtime4j_caller_get_fuel_remaining", Integer.class, callerPtr, fuelOut);
+  }
+
+  /**
+   * Adds fuel to the caller.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param fuel amount of fuel to add
+   * @return 0 on success, negative error code on failure
+   */
+  public int callerAddFuel(final MemorySegment callerPtr, final long fuel) {
+    validatePointer(callerPtr, "callerPtr");
+    return callNativeFunction("wasmtime4j_caller_add_fuel", Integer.class, callerPtr, fuel);
+  }
+
+  /**
+   * Sets an epoch deadline for the caller.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param deadline the epoch deadline to set
+   * @return 0 on success, negative error code on failure
+   */
+  public int callerSetEpochDeadline(final MemorySegment callerPtr, final long deadline) {
+    validatePointer(callerPtr, "callerPtr");
+    return callNativeFunction(
+        "wasmtime4j_caller_set_epoch_deadline", Integer.class, callerPtr, deadline);
+  }
+
+  /**
+   * Checks if the caller has an active epoch deadline.
+   *
+   * @param callerPtr pointer to the caller context
+   * @return 1 if deadline is active, 0 if no deadline, negative error code on failure
+   */
+  public int callerHasEpochDeadline(final MemorySegment callerPtr) {
+    validatePointer(callerPtr, "callerPtr");
+    return callNativeFunction("wasmtime4j_caller_has_epoch_deadline", Integer.class, callerPtr);
+  }
+
+  /**
+   * Checks if caller has an export with the given name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the export to check
+   * @return 1 if export exists, 0 if not found, negative error code on failure
+   */
+  public int callerHasExport(final MemorySegment callerPtr, final MemorySegment name) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    return callNativeFunction("wasmtime4j_caller_has_export", Integer.class, callerPtr, name);
+  }
+
+  /**
+   * Gets memory export from caller by name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the memory export
+   * @param memoryOut pointer to store the memory pointer
+   * @return 1 if memory found, 0 if not found, negative error code on failure
+   */
+  public int callerGetMemory(
+      final MemorySegment callerPtr, final MemorySegment name, final MemorySegment memoryOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(memoryOut, "memoryOut");
+    return callNativeFunction(
+        "wasmtime4j_caller_get_memory", Integer.class, callerPtr, name, memoryOut);
+  }
+
+  /**
+   * Gets function export from caller by name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the function export
+   * @param functionOut pointer to store the function pointer
+   * @return 1 if function found, 0 if not found, negative error code on failure
+   */
+  public int callerGetFunction(
+      final MemorySegment callerPtr, final MemorySegment name, final MemorySegment functionOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(functionOut, "functionOut");
+    return callNativeFunction(
+        "wasmtime4j_caller_get_function", Integer.class, callerPtr, name, functionOut);
+  }
+
+  /**
+   * Gets global export from caller by name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the global export
+   * @param globalOut pointer to store the global pointer
+   * @return 1 if global found, 0 if not found, negative error code on failure
+   */
+  public int callerGetGlobal(
+      final MemorySegment callerPtr, final MemorySegment name, final MemorySegment globalOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(globalOut, "globalOut");
+    return callNativeFunction(
+        "wasmtime4j_caller_get_global", Integer.class, callerPtr, name, globalOut);
+  }
+
+  /**
+   * Gets table export from caller by name.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param name name of the table export
+   * @param tableOut pointer to store the table pointer
+   * @return 1 if table found, 0 if not found, negative error code on failure
+   */
+  public int callerGetTable(
+      final MemorySegment callerPtr, final MemorySegment name, final MemorySegment tableOut) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(name, "name");
+    validatePointer(tableOut, "tableOut");
+    return callNativeFunction(
+        "wasmtime4j_caller_get_table", Integer.class, callerPtr, name, tableOut);
+  }
+
+  // =============================================================================
+  // Panama Function FFI Operations
+  // =============================================================================
+
+  /**
+   * Calls a WebAssembly function directly using a function handle.
+   *
+   * @param funcPtr pointer to the function
+   * @param storePtr pointer to the store
+   * @param paramsPtr pointer to parameters array (WasmValue format)
+   * @param paramCount number of parameters
+   * @param resultsPtr pointer to results buffer (WasmValue format)
+   * @param resultCount maximum number of results
+   * @return 0 on success, negative error code on failure
+   */
+  public int funcCall(
+      final MemorySegment funcPtr,
+      final MemorySegment storePtr,
+      final MemorySegment paramsPtr,
+      final long paramCount,
+      final MemorySegment resultsPtr,
+      final long resultCount) {
+    validatePointer(funcPtr, "funcPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_call",
+        Integer.class,
+        funcPtr,
+        storePtr,
+        paramsPtr,
+        paramCount,
+        resultsPtr,
+        resultCount);
+  }
+
+  /**
+   * Gets the function type for a function handle.
+   *
+   * @param funcPtr pointer to the function
+   * @param storePtr pointer to the store
+   * @return pointer to the function type, or null on failure
+   */
+  public MemorySegment funcGetType(final MemorySegment funcPtr, final MemorySegment storePtr) {
+    validatePointer(funcPtr, "funcPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_type", MemorySegment.class, funcPtr, storePtr);
+  }
+
+  /**
+   * Destroys a function handle.
+   *
+   * @param funcPtr pointer to the function to destroy
+   */
+  public void funcDestroy(final MemorySegment funcPtr) {
+    if (funcPtr != null && !funcPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_func_destroy", Void.class, funcPtr);
+    }
+  }
+
+  /**
+   * Destroys a function type handle.
+   *
+   * @param funcTypePtr pointer to the function type to destroy
+   */
+  public void funcTypeDestroy(final MemorySegment funcTypePtr) {
+    if (funcTypePtr != null && !funcTypePtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_func_type_destroy", Void.class, funcTypePtr);
+    }
+  }
+
+  /**
+   * Calls a WebAssembly function asynchronously.
+   *
+   * @param instancePtr pointer to the instance
+   * @param functionName pointer to function name string
+   * @param argsPtr pointer to arguments array
+   * @param argsLen number of arguments
+   * @param timeoutMs timeout in milliseconds
+   * @param callback completion callback function pointer
+   * @param userData user data for callback
+   * @return operation ID on success, negative value on error
+   */
+  public int funcCallAsync(
+      final MemorySegment instancePtr,
+      final MemorySegment functionName,
+      final MemorySegment argsPtr,
+      final int argsLen,
+      final long timeoutMs,
+      final MemorySegment callback,
+      final MemorySegment userData) {
+    return callNativeFunction(
+        "wasmtime4j_func_call_async",
+        Integer.class,
+        instancePtr,
+        functionName,
+        argsPtr,
+        argsLen,
+        timeoutMs,
+        callback,
+        userData);
+  }
+
+  // =============================================================================
+  // Panama Linker Operations
+  // =============================================================================
+
+  /**
+   * Creates a new Panama linker.
+   *
+   * @param enginePtr pointer to the engine
+   * @return pointer to the linker, or null on failure
+   */
+  public MemorySegment panamaLinkerCreate(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction("wasmtime4j_panama_linker_create", MemorySegment.class, enginePtr);
+  }
+
+  /**
+   * Defines a host function in the Panama linker.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param moduleName module name (C string)
+   * @param name function name (C string)
+   * @param paramTypes parameter types array
+   * @param paramCount number of parameters
+   * @param returnTypes return types array
+   * @param returnCount number of returns
+   * @param callbackFn callback function pointer
+   * @param callbackId callback ID
+   * @return 0 on success, non-zero on error
+   */
+  public int panamaLinkerDefineHostFunction(
+      final MemorySegment linkerPtr,
+      final MemorySegment moduleName,
+      final MemorySegment name,
+      final MemorySegment paramTypes,
+      final int paramCount,
+      final MemorySegment returnTypes,
+      final int returnCount,
+      final MemorySegment callbackFn,
+      final long callbackId) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(moduleName, "moduleName");
+    validatePointer(name, "name");
+    validatePointer(paramTypes, "paramTypes");
+    validatePointer(returnTypes, "returnTypes");
+    validatePointer(callbackFn, "callbackFn");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_host_function",
+        Integer.class,
+        linkerPtr,
+        moduleName,
+        name,
+        paramTypes,
+        paramCount,
+        returnTypes,
+        returnCount,
+        callbackFn,
+        callbackId);
+  }
+
+  /**
+   * Defines a global in the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param namePtr pointer to the global name string
+   * @param globalPtr pointer to the global
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineGlobal(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr,
+      final MemorySegment globalPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(globalPtr, "globalPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_global",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        namePtr,
+        globalPtr);
+  }
+
+  /**
+   * Defines a memory in the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param namePtr pointer to the memory name string
+   * @param memoryPtr pointer to the memory
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineMemory(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr,
+      final MemorySegment memoryPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(memoryPtr, "memoryPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_memory",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        namePtr,
+        memoryPtr);
+  }
+
+  /**
+   * Defines a memory from an instance in the linker (Panama FFI version).
+   *
+   * <p>This variant extracts the memory from the instance and defines it in the linker all within
+   * the same store context to avoid store mismatch issues.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param memoryNamePtr pointer to the memory name string
+   * @param instancePtr pointer to the instance containing the memory
+   * @param exportNamePtr pointer to the export name of the memory in the instance
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineMemoryFromInstance(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment memoryNamePtr,
+      final MemorySegment instancePtr,
+      final MemorySegment exportNamePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(memoryNamePtr, "memoryNamePtr");
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(exportNamePtr, "exportNamePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_memory_from_instance",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        memoryNamePtr,
+        instancePtr,
+        exportNamePtr);
+  }
+
+  /**
+   * Defines a table in the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param namePtr pointer to the table name string
+   * @param tablePtr pointer to the table
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineTable(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr,
+      final MemorySegment tablePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(tablePtr, "tablePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_table",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        namePtr,
+        tablePtr);
+  }
+
+  /**
+   * Defines an instance in the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param instancePtr pointer to the instance
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerDefineInstance(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment instancePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(instancePtr, "instancePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_instance",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        instancePtr);
+  }
+
+  /**
+   * Instantiates a module using the linker (Panama FFI version).
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param modulePtr pointer to the module
+   * @return pointer to the instance, or null on failure
+   */
+  public MemorySegment panamaLinkerInstantiate(
+      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_linker_instantiate", MemorySegment.class, linkerPtr, storePtr, modulePtr);
+  }
+
+  /**
+   * Creates an alias for an export in the linker.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param fromModulePtr pointer to the source module name
+   * @param fromNamePtr pointer to the source export name
+   * @param toModulePtr pointer to the destination module name
+   * @param toNamePtr pointer to the destination export name
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerAlias(
+      final MemorySegment linkerPtr,
+      final MemorySegment fromModulePtr,
+      final MemorySegment fromNamePtr,
+      final MemorySegment toModulePtr,
+      final MemorySegment toNamePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(fromModulePtr, "fromModulePtr");
+    validatePointer(fromNamePtr, "fromNamePtr");
+    validatePointer(toModulePtr, "toModulePtr");
+    validatePointer(toNamePtr, "toNamePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_alias",
+        Integer.class,
+        linkerPtr,
+        fromModulePtr,
+        fromNamePtr,
+        toModulePtr,
+        toNamePtr);
+  }
+
+  /**
+   * Destroys a Panama linker.
+   *
+   * @param linkerPtr pointer to the linker to destroy
+   */
+  public void panamaLinkerDestroy(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    callNativeFunction("wasmtime4j_panama_linker_destroy", Void.class, linkerPtr);
+  }
+
+  /**
+   * Adds WASI Preview 1 imports to a linker.
+   *
+   * <p>Configures the linker to extract WASI context from store data when instantiating modules.
+   * The store must have a WASI context attached before instantiating WASI-enabled modules.
+   *
+   * @param linkerHandle pointer to the linker
+   * @return 0 on success, non-zero on failure
+   */
+  public int linkerAddWasi(final MemorySegment linkerHandle) {
+    validatePointer(linkerHandle, "linkerHandle");
+    return callNativeFunction("wasmtime4j_linker_add_wasi", Integer.class, linkerHandle);
+  }
+
+  /**
+   * Allows subsequent definitions to shadow prior definitions.
+   *
+   * @param linkerPtr the linker pointer
+   * @param allow 1 to allow, 0 to disallow
+   * @return 0 on success, -1 on error
+   */
+  public int linkerAllowShadowing(final MemorySegment linkerPtr, final int allow) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_allow_shadowing", Integer.class, linkerPtr, allow);
+  }
+
+  /**
+   * Allows unknown exports from modules.
+   *
+   * @param linkerPtr the linker pointer
+   * @param allow 1 to allow, 0 to disallow
+   * @return 0 on success, -1 on error
+   */
+  public int linkerAllowUnknownExports(final MemorySegment linkerPtr, final int allow) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_allow_unknown_exports", Integer.class, linkerPtr, allow);
+  }
+
+  /**
+   * Defines all undefined imports as trapping functions.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param modulePtr the module pointer
+   * @return 0 on success, -1 on error
+   */
+  public int linkerDefineUnknownImportsAsTraps(
+      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_unknown_imports_as_traps",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        modulePtr);
+  }
+
+  /**
+   * Defines all undefined imports with default values.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param modulePtr the module pointer
+   * @return 0 on success, -1 on error
+   */
+  public int linkerDefineUnknownImportsAsDefaultValues(
+      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_unknown_imports_as_default_values",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        modulePtr);
+  }
+
+  /**
+   * Gets a definition by its import specifier.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param moduleNamePtr the module name string
+   * @param namePtr the item name string
+   * @return the extern pointer, or NULL if not found
+   */
+  public MemorySegment linkerGetByImport(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_get",
+        MemorySegment.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        namePtr);
+  }
+
+  /**
+   * Gets the default function for a module.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param moduleNamePtr the module name string
+   * @return the function pointer, or NULL if not found
+   */
+  public MemorySegment linkerGetDefault(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_get_default",
+        MemorySegment.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr);
+  }
+
+  // =============================================================================
+  // InstancePre Operations
+  // =============================================================================
+
+  /**
+   * Creates an InstancePre from a linker and module for fast repeated instantiation.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param modulePtr pointer to the module
+   * @return pointer to the InstancePre, or null on failure
+   */
+  public MemorySegment linkerInstantiatePre(
+      final MemorySegment linkerPtr, final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_linker_instantiate_pre", MemorySegment.class, linkerPtr, modulePtr);
+  }
+
+  /**
+   * Instantiates from an InstancePre with a store.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @param storePtr pointer to the store
+   * @return pointer to the new instance, or null on failure
+   */
+  public MemorySegment instancePreInstantiate(
+      final MemorySegment instancePrePtr, final MemorySegment storePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_pre_instantiate", MemorySegment.class, instancePrePtr, storePtr);
+  }
+
+  /**
+   * Checks if an InstancePre is valid.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @return 1 if valid, 0 otherwise
+   */
+  public int instancePreIsValid(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    return callNativeFunction("wasmtime4j_instance_pre_is_valid", Integer.class, instancePrePtr);
+  }
+
+  /**
+   * Gets the instance count for an InstancePre.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @return the number of instances created from this InstancePre
+   */
+  public long instancePreGetInstanceCount(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    return callNativeFunction("wasmtime4j_instance_pre_instance_count", Long.class, instancePrePtr);
+  }
+
+  /**
+   * Gets the preparation time in nanoseconds for an InstancePre.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @return the preparation time in nanoseconds
+   */
+  public long instancePreGetPreparationTimeNs(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_pre_preparation_time_ns", Long.class, instancePrePtr);
+  }
+
+  /**
+   * Gets the average instantiation time in nanoseconds for an InstancePre.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @return the average instantiation time in nanoseconds
+   */
+  public long instancePreGetAvgInstantiationTimeNs(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    return callNativeFunction(
+        "wasmtime4j_instance_pre_avg_instantiation_time_ns", Long.class, instancePrePtr);
+  }
+
+  /**
+   * Destroys an InstancePre.
+   *
+   * @param instancePrePtr pointer to the InstancePre to destroy
+   */
+  public void instancePreDestroy(final MemorySegment instancePrePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    callNativeFunction("wasmtime4j_instance_pre_destroy", Void.class, instancePrePtr);
+  }
+
+  // =============================================================================
+  // Function Reference Operations
+  // =============================================================================
+
+  /**
+   * Creates a new function reference.
+   *
+   * @param storePtr pointer to the store
+   * @param paramTypes parameter types array
+   * @param paramCount number of parameters
+   * @param returnTypes return types array
+   * @param returnCount number of return values
+   * @param callbackFn callback function pointer
+   * @param callbackId callback ID for identifying the Java callback
+   * @param resultOut pointer to store the registry ID
+   * @return 0 on success, non-zero on error
+   */
+  public int functionReferenceCreate(
+      final MemorySegment storePtr,
+      final MemorySegment paramTypes,
+      final int paramCount,
+      final MemorySegment returnTypes,
+      final int returnCount,
+      final MemorySegment callbackFn,
+      final long callbackId,
+      final MemorySegment resultOut) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(paramTypes, "paramTypes");
+    validatePointer(returnTypes, "returnTypes");
+    validatePointer(callbackFn, "callbackFn");
+    validatePointer(resultOut, "resultOut");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_function_reference_create",
+        Integer.class,
+        storePtr,
+        paramTypes,
+        paramCount,
+        returnTypes,
+        returnCount,
+        callbackFn,
+        callbackId,
+        resultOut);
+  }
+
+  /**
+   * Destroys a function reference by its registry ID.
+   *
+   * @param registryId the registry ID of the function reference
+   * @return 0 on success, non-zero on error
+   */
+  public int functionReferenceDestroy(final long registryId) {
+    return callNativeFunction(
+        "wasmtime4j_panama_function_reference_destroy", Integer.class, registryId);
+  }
+
+  /**
+   * Checks if a function reference is valid.
+   *
+   * @param registryId the registry ID of the function reference
+   * @return 1 if valid, 0 otherwise
+   */
+  public int functionReferenceIsValid(final long registryId) {
+    return callNativeFunction(
+        "wasmtime4j_panama_function_reference_is_valid", Integer.class, registryId);
+  }
+
+  // =============================================================================
+  // Extern Type Operations
+  // =============================================================================
+
+  /**
+   * Gets the type of an extern value.
+   *
+   * @param externPtr the extern pointer
+   * @return the extern type code (0=FUNC, 1=TABLE, 2=MEMORY, 3=GLOBAL), or -1 on error
+   */
+  public int externGetType(final MemorySegment externPtr) {
+    validatePointer(externPtr, "externPtr");
+    return callNativeFunction("wasmtime4j_panama_extern_type", Integer.class, externPtr);
+  }
+
+  // =============================================================================
+  // Call Hook Operations
+  // =============================================================================
+
+  /**
+   * Sets a call hook on the store.
+   *
+   * @param storePtr the store pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int storeSetCallHook(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_panama_store_set_call_hook", Integer.class, storePtr);
+  }
+
+  /**
+   * Clears the call hook from the store.
+   *
+   * @param storePtr the store pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int storeClearCallHook(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_panama_store_clear_call_hook", Integer.class, storePtr);
+  }
+
+  /**
+   * Sets an async call hook on the store.
+   *
+   * @param storePtr the store pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int storeSetCallHookAsync(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_set_call_hook_async", Integer.class, storePtr);
+  }
+
+  /**
+   * Clears the async call hook from the store.
+   *
+   * @param storePtr the store pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int storeClearCallHookAsync(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_clear_call_hook_async", Integer.class, storePtr);
+  }
+
+  // =============================================================================
+  // WASI-NN Operations
+  // =============================================================================
+
+  /**
+   * Creates a new WASI-NN context.
+   *
+   * @return pointer to the WASI-NN context, or null on failure
+   */
+  public MemorySegment wasiNnContextCreate() {
+    return callNativeFunction("wasmtime4j_panama_wasi_nn_context_create", MemorySegment.class);
+  }
+
+  /**
+   * Checks if WASI-NN is available in this build.
+   *
+   * @return 1 if available, 0 if not
+   */
+  public int wasiNnIsAvailable() {
+    return callNativeFunction("wasmtime4j_panama_wasi_nn_is_available", Integer.class);
+  }
+
+  /**
+   * Gets the default execution target.
+   *
+   * @return the default target ordinal (0 = CPU)
+   */
+  public int wasiNnGetDefaultTarget() {
+    return callNativeFunction("wasmtime4j_panama_wasi_nn_get_default_target", Integer.class);
+  }
+
+  /**
+   * Closes a WASI-NN context.
+   *
+   * @param contextHandle the WASI-NN context handle
+   */
+  public void wasiNnContextClose(final MemorySegment contextHandle) {
+    if (contextHandle != null && !contextHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_wasi_nn_context_close", Void.class, contextHandle);
+    }
+  }
+
+  /**
+   * Loads a graph from model data.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param dataPtr pointer to the model data
+   * @param dataLen length of the model data
+   * @param encodingOrdinal the graph encoding format ordinal
+   * @param targetOrdinal the execution target ordinal
+   * @return pointer to the graph, or null on error
+   */
+  public MemorySegment wasiNnLoadGraph(
+      final MemorySegment contextHandle,
+      final MemorySegment dataPtr,
+      final long dataLen,
+      final int encodingOrdinal,
+      final int targetOrdinal) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_load_graph",
+        MemorySegment.class,
+        contextHandle,
+        dataPtr,
+        dataLen,
+        encodingOrdinal,
+        targetOrdinal);
+  }
+
+  /**
+   * Loads a graph by name.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param namePtr pointer to the null-terminated model name string
+   * @param targetOrdinal the execution target ordinal
+   * @return pointer to the graph, or null on error
+   */
+  public MemorySegment wasiNnLoadGraphByName(
+      final MemorySegment contextHandle, final MemorySegment namePtr, final int targetOrdinal) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(namePtr, "namePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_load_graph_by_name",
+        MemorySegment.class,
+        contextHandle,
+        namePtr,
+        targetOrdinal);
+  }
+
+  /**
+   * Gets supported encodings.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param outEncodings pointer to array to receive encoding ordinals
+   * @param maxCount maximum number of encodings to return
+   * @return number of encodings written, or -1 on error
+   */
+  public int wasiNnGetSupportedEncodings(
+      final MemorySegment contextHandle, final MemorySegment outEncodings, final int maxCount) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_get_supported_encodings",
+        Integer.class,
+        contextHandle,
+        outEncodings,
+        maxCount);
+  }
+
+  /**
+   * Gets supported targets.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param outTargets pointer to array to receive target ordinals
+   * @param maxCount maximum number of targets to return
+   * @return number of targets written, or -1 on error
+   */
+  public int wasiNnGetSupportedTargets(
+      final MemorySegment contextHandle, final MemorySegment outTargets, final int maxCount) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_get_supported_targets",
+        Integer.class,
+        contextHandle,
+        outTargets,
+        maxCount);
+  }
+
+  /**
+   * Checks if an encoding is supported.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param encodingOrdinal the encoding ordinal to check
+   * @return 1 if supported, 0 if not
+   */
+  public int wasiNnIsEncodingSupported(
+      final MemorySegment contextHandle, final int encodingOrdinal) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_is_encoding_supported",
+        Integer.class,
+        contextHandle,
+        encodingOrdinal);
+  }
+
+  /**
+   * Checks if a target is supported.
+   *
+   * @param contextHandle the WASI-NN context handle
+   * @param targetOrdinal the target ordinal to check
+   * @return 1 if supported, 0 if not
+   */
+  public int wasiNnIsTargetSupported(final MemorySegment contextHandle, final int targetOrdinal) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_is_target_supported",
+        Integer.class,
+        contextHandle,
+        targetOrdinal);
+  }
+
+  /**
+   * Creates an execution context from a graph.
+   *
+   * @param graphHandle the graph handle
+   * @return pointer to the execution context, or null on error
+   */
+  public MemorySegment wasiNnGraphCreateExecContext(final MemorySegment graphHandle) {
+    validatePointer(graphHandle, "graphHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_graph_create_exec_context", MemorySegment.class, graphHandle);
+  }
+
+  /**
+   * Closes a graph.
+   *
+   * @param graphHandle the graph handle
+   */
+  public void wasiNnGraphClose(final MemorySegment graphHandle) {
+    if (graphHandle != null && !graphHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_wasi_nn_graph_close", Void.class, graphHandle);
+    }
+  }
+
+  /**
+   * Sets an input tensor by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the input index
+   * @param dimsPtr pointer to dimensions array
+   * @param dimsLen number of dimensions
+   * @param typeOrdinal the tensor type ordinal
+   * @param dataPtr pointer to tensor data
+   * @param dataLen length of tensor data
+   * @return 0 on success, -1 on error
+   */
+  public int wasiNnExecSetInput(
+      final MemorySegment ctxHandle,
+      final int index,
+      final MemorySegment dimsPtr,
+      final int dimsLen,
+      final int typeOrdinal,
+      final MemorySegment dataPtr,
+      final long dataLen) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_set_input",
+        Integer.class,
+        ctxHandle,
+        index,
+        dimsPtr,
+        dimsLen,
+        typeOrdinal,
+        dataPtr,
+        dataLen);
+  }
+
+  /**
+   * Runs inference.
+   *
+   * @param ctxHandle the execution context handle
+   * @return 0 on success, -1 on error
+   */
+  public int wasiNnExecCompute(final MemorySegment ctxHandle) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction("wasmtime4j_panama_wasi_nn_exec_compute", Integer.class, ctxHandle);
+  }
+
+  /**
+   * Gets output tensor data by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the output index
+   * @param outData pointer to buffer to receive data
+   * @param maxLen maximum buffer length
+   * @return actual data length, or -1 on error
+   */
+  public long wasiNnExecGetOutput(
+      final MemorySegment ctxHandle,
+      final int index,
+      final MemorySegment outData,
+      final long maxLen) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_get_output", Long.class, ctxHandle, index, outData, maxLen);
+  }
+
+  /**
+   * Gets output tensor size by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the output index
+   * @return the output size, or -1 on error
+   */
+  public long wasiNnExecGetOutputSize(final MemorySegment ctxHandle, final int index) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_size", Long.class, ctxHandle, index);
+  }
+
+  /**
+   * Gets output tensor dimensions by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the output index
+   * @param outDims pointer to buffer to receive dimensions
+   * @param maxDims maximum number of dimensions
+   * @return number of dimensions, or -1 on error
+   */
+  public int wasiNnExecGetOutputDims(
+      final MemorySegment ctxHandle,
+      final int index,
+      final MemorySegment outDims,
+      final int maxDims) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_dims",
+        Integer.class,
+        ctxHandle,
+        index,
+        outDims,
+        maxDims);
+  }
+
+  /**
+   * Gets output tensor type by index.
+   *
+   * @param ctxHandle the execution context handle
+   * @param index the output index
+   * @return the tensor type ordinal, or -1 on error
+   */
+  public int wasiNnExecGetOutputType(final MemorySegment ctxHandle, final int index) {
+    validatePointer(ctxHandle, "ctxHandle");
+    return callNativeFunction(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_type", Integer.class, ctxHandle, index);
+  }
+
+  /**
+   * Closes an execution context.
+   *
+   * @param ctxHandle the execution context handle
+   */
+  public void wasiNnExecClose(final MemorySegment ctxHandle) {
+    if (ctxHandle != null && !ctxHandle.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_wasi_nn_exec_close", Void.class, ctxHandle);
+    }
+  }
+
+  // =============================================================================
+  // Binding Registrations
+  // =============================================================================
+
+  private void initializeBindings() {
+    initializeInstanceBindings();
+    initializeCallerBindings();
+    initializeFunctionBindings();
+    initializeLinkerBindings();
+    initializeInstancePreBindings();
+    initializeFunctionReferenceBindings();
+    initializeExternAndCallHookBindings();
+    initializeWasiNnBindings();
+  }
+
+  private void initializeInstanceBindings() {
+    addFunctionBinding(
+        "wasmtime4j_instance_create",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_call_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_exports_len",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_export_nth",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_BOOLEAN,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_memory_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_has_memory_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_memory_size_pages",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_memory_size_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_grow_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_read_memory_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_write_memory_bytes",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_global_type",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_has_global_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_global_value",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_set_global_value",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.JAVA_DOUBLE,
+            ValueLayout.JAVA_DOUBLE,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_table_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_get_global_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_get_global_wrapped",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+  }
+
+  private void initializeCallerBindings() {
+    addFunctionBinding(
+        "wasmtime4j_caller_get_fuel",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_get_fuel_remaining",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_add_fuel",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_set_epoch_deadline",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_has_epoch_deadline",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_has_export",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_get_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_get_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_get_global",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_caller_get_table",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    // Also register panama-prefixed caller bindings for compatibility
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_fuel",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_fuel_remaining",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_add_fuel",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_set_epoch_deadline",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_has_epoch_deadline",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_has_export",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_global",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_get_table",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+  }
+
+  private void initializeFunctionBindings() {
+    addFunctionBinding(
+        "wasmtime4j_panama_func_call",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_func_type",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_func_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_func_type_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_func_call_async",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+  }
+
+  private void initializeLinkerBindings() {
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_create",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_host_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_global",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_memory",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_memory_from_instance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_table",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_instance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_alias",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_linker_instantiate",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_linker_add_wasi",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_allow_shadowing",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_allow_unknown_exports",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_unknown_imports_as_traps",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_unknown_imports_as_default_values",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_get",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_get_default",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+  }
+
+  private void initializeInstancePreBindings() {
+    addFunctionBinding(
+        "wasmtime4j_linker_instantiate_pre",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_instantiate",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_is_valid",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_instance_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_preparation_time_ns",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_avg_instantiation_time_ns",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Panama-prefixed variants
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_instantiate",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_is_valid",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_instance_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_preparation_time_ns",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_avg_instantiation_time_ns",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_get_module",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+  }
+
+  private void initializeFunctionReferenceBindings() {
+    addFunctionBinding(
+        "wasmtime4j_panama_function_reference_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_function_reference_destroy",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_function_reference_is_valid",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));
+  }
+
+  private void initializeExternAndCallHookBindings() {
+    addFunctionBinding(
+        "wasmtime4j_panama_extern_type",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_call_hook",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_clear_call_hook",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_call_hook_async",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_clear_call_hook_async",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+  }
+
+  private void initializeWasiNnBindings() {
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_context_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_is_available", FunctionDescriptor.of(ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_get_default_target",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_context_close", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_load_graph",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_load_graph_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_get_supported_encodings",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_get_supported_targets",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_is_encoding_supported",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_is_target_supported",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_graph_create_exec_context",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_graph_close", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_exec_set_input",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_exec_compute",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_exec_get_output",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_size",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_dims",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_exec_get_output_type",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_wasi_nn_exec_close", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+  }
+}

@@ -21,11 +21,11 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
+import ai.tegmentum.wasmtime4j.wit.WitJavaObjectMarshaler;
 import ai.tegmentum.wasmtime4j.wit.WitPrimitiveType;
 import ai.tegmentum.wasmtime4j.wit.WitResourceManager;
 import ai.tegmentum.wasmtime4j.wit.WitType;
 import ai.tegmentum.wasmtime4j.wit.WitTypeValidator;
-import ai.tegmentum.wasmtime4j.wit.WitValueMarshaler;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +51,7 @@ public class WitInterfaceBenchmark {
 
   private WitInterfaceParser parser;
   private WitTypeValidator validator;
-  private WitValueMarshaler marshaler;
+  private WitJavaObjectMarshaler marshaler;
   private WitResourceManager resourceManager;
   private WitInterfaceLinker linker;
 
@@ -68,7 +68,7 @@ public class WitInterfaceBenchmark {
   public void setupTrial() {
     parser = new WitInterfaceParser();
     validator = new WitTypeValidator();
-    marshaler = new WitValueMarshaler();
+    marshaler = new WitJavaObjectMarshaler();
     resourceManager = new WitResourceManager();
     linker = new WitInterfaceLinker();
 
@@ -202,7 +202,8 @@ public class WitInterfaceBenchmark {
 
   @Benchmark
   public void benchmarkRecordValueMarshalingToJava(final Blackhole bh) throws WasmException {
-    final WitValueMarshaler.WitRecord witRecord = new WitValueMarshaler.WitRecord(testRecord);
+    final WitJavaObjectMarshaler.WitRecord witRecord =
+        new WitJavaObjectMarshaler.WitRecord(testRecord);
     final Object result = marshaler.marshalToJava(witRecord, recordType);
     bh.consume(result);
   }
@@ -217,7 +218,7 @@ public class WitInterfaceBenchmark {
   @Benchmark
   public void benchmarkListValueMarshalingToJava(final Blackhole bh) throws WasmException {
     final List<Integer> testList = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-    final WitValueMarshaler.WitList witList = new WitValueMarshaler.WitList(testList);
+    final WitJavaObjectMarshaler.WitList witList = new WitJavaObjectMarshaler.WitList(testList);
     final Object result = marshaler.marshalToJava(witList, listType);
     bh.consume(result);
   }

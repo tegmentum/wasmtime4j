@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiPermissionManager;
-import ai.tegmentum.wasmtime4j.jni.wasi.security.WasiSecurityValidator;
+import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
