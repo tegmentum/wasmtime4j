@@ -16,11 +16,11 @@
 
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.bindgen.wit.WitInterfaceParser;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceParser;
 import ai.tegmentum.wasmtime4j.wit.WitPrimitiveType;
 import ai.tegmentum.wasmtime4j.wit.WitResourceManager;
 import ai.tegmentum.wasmtime4j.wit.WitType;

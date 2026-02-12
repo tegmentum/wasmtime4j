@@ -14,9 +14,16 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j.wit;
+package ai.tegmentum.wasmtime4j.bindgen.wit;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
+import ai.tegmentum.wasmtime4j.wit.WitFunction;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.WitParameter;
+import ai.tegmentum.wasmtime4j.wit.WitPrimitiveType;
+import ai.tegmentum.wasmtime4j.wit.WitType;
+import ai.tegmentum.wasmtime4j.wit.WitTypeValidator;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -574,100 +581,6 @@ public final class WitInterfaceParser {
     }
 
     return parts.toArray(new String[0]);
-  }
-
-  /** WIT function representation. */
-  public static final class WitFunction {
-    private final String name;
-    private final List<WitParameter> parameters;
-    private final List<WitType> returnTypes;
-    private final boolean isAsync;
-    private final Optional<String> documentation;
-
-    /**
-     * Creates a new WIT function definition.
-     *
-     * @param name the function name
-     * @param parameters the function parameters
-     * @param returnTypes the function return types
-     * @param isAsync whether the function is asynchronous
-     * @param documentation optional documentation for the function
-     */
-    public WitFunction(
-        final String name,
-        final List<WitParameter> parameters,
-        final List<WitType> returnTypes,
-        final boolean isAsync,
-        final Optional<String> documentation) {
-      this.name = Objects.requireNonNull(name);
-      this.parameters = List.copyOf(Objects.requireNonNull(parameters));
-      this.returnTypes = List.copyOf(Objects.requireNonNull(returnTypes));
-      this.isAsync = isAsync;
-      this.documentation = Objects.requireNonNull(documentation);
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public List<WitParameter> getParameters() {
-      return parameters;
-    }
-
-    public List<WitType> getReturnTypes() {
-      return returnTypes;
-    }
-
-    public boolean isAsync() {
-      return isAsync;
-    }
-
-    public Optional<String> getDocumentation() {
-      return documentation;
-    }
-  }
-
-  /** WIT parameter representation. */
-  public static final class WitParameter {
-    private final String name;
-    private final WitType type;
-    private final boolean isOptional;
-    private final Optional<String> documentation;
-
-    /**
-     * Creates a new WIT function parameter.
-     *
-     * @param name the parameter name
-     * @param type the parameter type
-     * @param isOptional whether the parameter is optional
-     * @param documentation optional documentation for the parameter
-     */
-    public WitParameter(
-        final String name,
-        final WitType type,
-        final boolean isOptional,
-        final Optional<String> documentation) {
-      this.name = Objects.requireNonNull(name);
-      this.type = Objects.requireNonNull(type);
-      this.isOptional = isOptional;
-      this.documentation = Objects.requireNonNull(documentation);
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public WitType getType() {
-      return type;
-    }
-
-    public boolean isOptional() {
-      return isOptional;
-    }
-
-    public Optional<String> getDocumentation() {
-      return documentation;
-    }
   }
 
   /** Implementation of WitInterfaceDefinition. */

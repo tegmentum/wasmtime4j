@@ -38,15 +38,6 @@ import java.io.Closeable;
 public interface WasmRuntime extends Closeable {
 
   /**
-   * Creates a new WasmRuntime builder for advanced configuration.
-   *
-   * @return a new WasmRuntimeBuilder
-   */
-  static WasmRuntimeBuilder builder() {
-    return new WasmRuntimeBuilder();
-  }
-
-  /**
    * Creates a new WebAssembly engine with default configuration.
    *
    * <p>The engine is responsible for compilation and execution of WebAssembly modules. Multiple

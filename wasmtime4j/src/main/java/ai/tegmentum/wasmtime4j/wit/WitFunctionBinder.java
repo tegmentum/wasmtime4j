@@ -67,7 +67,7 @@ public final class WitFunctionBinder {
       justification = "Intentionally catching Exception to wrap all failures in WasmException")
   public void bindFunction(
       final String functionName,
-      final WitInterfaceParser.WitFunction function,
+      final WitFunction function,
       final Object implementation,
       final String methodName)
       throws WasmException {
@@ -199,9 +199,7 @@ public final class WitFunctionBinder {
    * @throws NoSuchMethodException if no matching method is found
    */
   private Method findMatchingMethod(
-      final Object implementation,
-      final String methodName,
-      final WitInterfaceParser.WitFunction function)
+      final Object implementation, final String methodName, final WitFunction function)
       throws NoSuchMethodException {
 
     final Class<?> implementationClass = implementation.getClass();
@@ -235,8 +233,7 @@ public final class WitFunctionBinder {
    * @param function the WIT function
    * @return true if compatible, false otherwise
    */
-  private boolean isMethodCompatible(
-      final Method method, final WitInterfaceParser.WitFunction function) {
+  private boolean isMethodCompatible(final Method method, final WitFunction function) {
 
     // Check parameter count
     if (method.getParameterCount() != function.getParameters().size()) {
@@ -245,7 +242,7 @@ public final class WitFunctionBinder {
 
     // Check parameter types (basic compatibility)
     final Class<?>[] paramTypes = method.getParameterTypes();
-    final List<WitInterfaceParser.WitParameter> witParams = function.getParameters();
+    final List<WitParameter> witParams = function.getParameters();
 
     for (int i = 0; i < paramTypes.length; i++) {
       if (!isTypeCompatible(paramTypes[i], witParams.get(i).getType())) {
@@ -274,15 +271,14 @@ public final class WitFunctionBinder {
    * @param function the WIT function
    * @throws ValidationException if not compatible
    */
-  private void validateMethodCompatibility(
-      final Method method, final WitInterfaceParser.WitFunction function)
+  private void validateMethodCompatibility(final Method method, final WitFunction function)
       throws ValidationException {
 
     final List<String> errors = new ArrayList<>();
 
     // Validate parameter compatibility
     final Class<?>[] paramTypes = method.getParameterTypes();
-    final List<WitInterfaceParser.WitParameter> witParams = function.getParameters();
+    final List<WitParameter> witParams = function.getParameters();
 
     if (paramTypes.length != witParams.size()) {
       errors.add(
@@ -400,11 +396,10 @@ public final class WitFunctionBinder {
    * @param parameters the WIT function parameters
    * @return list of parameter marshalers
    */
-  private List<ParameterMarshaler> createParameterMarshalers(
-      final List<WitInterfaceParser.WitParameter> parameters) {
+  private List<ParameterMarshaler> createParameterMarshalers(final List<WitParameter> parameters) {
 
     final List<ParameterMarshaler> marshalers = new ArrayList<>();
-    for (final WitInterfaceParser.WitParameter parameter : parameters) {
+    for (final WitParameter parameter : parameters) {
       marshalers.add(new ParameterMarshaler(parameter, marshaler));
     }
     return marshalers;
@@ -531,14 +526,14 @@ public final class WitFunctionBinder {
 
   /** Represents a bound WIT function. */
   private static final class BoundFunction {
-    private final WitInterfaceParser.WitFunction function;
+    private final WitFunction function;
     private final Object implementation;
     private final Method method;
     private final List<ParameterMarshaler> parameterMarshalers;
     private final List<ReturnMarshaler> returnMarshalers;
 
     public BoundFunction(
-        final WitInterfaceParser.WitFunction function,
+        final WitFunction function,
         final Object implementation,
         final Method method,
         final List<ParameterMarshaler> parameterMarshalers,
@@ -550,7 +545,7 @@ public final class WitFunctionBinder {
       this.returnMarshalers = returnMarshalers;
     }
 
-    public WitInterfaceParser.WitFunction getFunction() {
+    public WitFunction getFunction() {
       return function;
     }
 
@@ -573,11 +568,10 @@ public final class WitFunctionBinder {
 
   /** Parameter marshaler. */
   private static final class ParameterMarshaler {
-    private final WitInterfaceParser.WitParameter parameter;
+    private final WitParameter parameter;
     private final WitValueMarshaler marshaler;
 
-    public ParameterMarshaler(
-        final WitInterfaceParser.WitParameter parameter, final WitValueMarshaler marshaler) {
+    public ParameterMarshaler(final WitParameter parameter, final WitValueMarshaler marshaler) {
       this.parameter = parameter;
       this.marshaler = marshaler;
     }

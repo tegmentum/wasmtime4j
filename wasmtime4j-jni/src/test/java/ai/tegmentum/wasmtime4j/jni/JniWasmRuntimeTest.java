@@ -419,7 +419,8 @@ class JniWasmRuntimeTest {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Method method = clazz.getMethod("createSerializer");
 
-      assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Serializer");
+      assertThat(method.getReturnType().getName())
+          .isEqualTo("ai.tegmentum.wasmtime4j.config.Serializer");
     }
 
     @Test
@@ -428,7 +429,8 @@ class JniWasmRuntimeTest {
       Class<?> clazz = Class.forName(CLASS_NAME);
       Method method = clazz.getMethod("createSerializer", long.class, boolean.class, int.class);
 
-      assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Serializer");
+      assertThat(method.getReturnType().getName())
+          .isEqualTo("ai.tegmentum.wasmtime4j.config.Serializer");
     }
   }
 

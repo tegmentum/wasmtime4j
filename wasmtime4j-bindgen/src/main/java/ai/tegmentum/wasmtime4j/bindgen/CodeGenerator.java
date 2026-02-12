@@ -21,6 +21,11 @@ import ai.tegmentum.wasmtime4j.bindgen.generator.LegacyCodeGenerator;
 import ai.tegmentum.wasmtime4j.bindgen.generator.ModernCodeGenerator;
 import ai.tegmentum.wasmtime4j.bindgen.introspection.WasmIntrospector;
 import ai.tegmentum.wasmtime4j.bindgen.model.BindgenModel;
+import ai.tegmentum.wasmtime4j.bindgen.wit.WitInterfaceParser;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -131,13 +136,24 @@ public final class CodeGenerator {
    * @throws BindgenException if parsing fails
    */
   private BindgenModel parseWitSource(final Path witPath) throws BindgenException {
-    // TODO: Implement WIT parsing using existing WitInterfaceParser or custom implementation
-    // For now, return an empty model as a placeholder
-    LOGGER.warning("WIT parsing not yet implemented for: " + witPath);
-    return BindgenModel.builder()
-        .name(witPath.getFileName().toString())
-        .sourceFile(witPath.toString())
-        .build();
+    try {
+      final String witText = Files.readString(witPath);
+      final String fileName = witPath.getFileName().toString();
+      final String packageName =
+          config.getPackageName() != null ? config.getPackageName() : "generated";
+
+      final WitInterfaceParser parser = new WitInterfaceParser();
+      final WitInterfaceDefinition definition = parser.parseInterface(witText, packageName);
+
+      return BindgenModel.builder()
+          .name(definition.getName())
+          .sourceFile(witPath.toString())
+          .build();
+    } catch (final IOException e) {
+      throw new BindgenException("Failed to read WIT file: " + witPath, e);
+    } catch (final WasmException e) {
+      throw new BindgenException("Failed to parse WIT file: " + witPath, e);
+    }
   }
 
   /**

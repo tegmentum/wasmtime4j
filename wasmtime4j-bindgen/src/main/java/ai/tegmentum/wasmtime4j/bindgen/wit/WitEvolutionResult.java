@@ -1,5 +1,8 @@
-package ai.tegmentum.wasmtime4j.wit;
+package ai.tegmentum.wasmtime4j.bindgen.wit;
 
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceBindings;
+import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.WitTypeAdapter;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;

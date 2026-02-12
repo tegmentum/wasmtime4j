@@ -10,7 +10,6 @@ import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
 import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
 import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentStateTransitionConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
@@ -388,25 +387,6 @@ public final class JniComponentImpl implements Component {
   @Override
   public ComponentLifecycleState getLifecycleState() {
     return ComponentLifecycleState.ACTIVE;
-  }
-
-  /**
-   * Transitions this component to a new lifecycle state.
-   *
-   * @param targetState the target lifecycle state
-   * @param transitionConfig the transition configuration
-   * @return CompletableFuture that completes when transition is done
-   * @throws WasmException if transition fails
-   */
-  public CompletableFuture<Void> transitionTo(
-      final ComponentLifecycleState targetState,
-      final ComponentStateTransitionConfig transitionConfig)
-      throws WasmException {
-    JniValidation.requireNonNull(targetState, "targetState");
-    JniValidation.requireNonNull(transitionConfig, "transitionConfig");
-    ensureValid();
-
-    return CompletableFuture.completedFuture(null);
   }
 
   @Override

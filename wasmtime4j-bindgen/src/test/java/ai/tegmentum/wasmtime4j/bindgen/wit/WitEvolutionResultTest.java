@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j;
+package ai.tegmentum.wasmtime4j.bindgen.wit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,9 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
-import ai.tegmentum.wasmtime4j.wit.WitEvolutionChange;
-import ai.tegmentum.wasmtime4j.wit.WitEvolutionMetrics;
-import ai.tegmentum.wasmtime4j.wit.WitEvolutionResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.wit.WitTypeAdapter;
 import java.time.Duration;

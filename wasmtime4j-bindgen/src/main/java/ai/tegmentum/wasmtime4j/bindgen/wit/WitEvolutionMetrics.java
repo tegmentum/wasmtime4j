@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.wit;
+package ai.tegmentum.wasmtime4j.bindgen.wit;
 
 import java.time.Duration;
 import java.time.Instant;
