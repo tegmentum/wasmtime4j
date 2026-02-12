@@ -6,6 +6,7 @@ import ai.tegmentum.wasmtime4j.type.WasmType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.logging.Logger;
 
 /**
@@ -52,30 +53,26 @@ public final class PanamaExportDescriptor implements ExportDescriptor {
     PanamaValidation.requireNonNull(nativeSegment, "nativeSegment");
     PanamaValidation.requireNonNull(arena, "arena");
 
-    // TODO: Implement native export descriptor reading
-    // For now, create a dummy implementation
-    throw new UnsupportedOperationException(
-        "Export descriptor parsing from native not yet implemented");
+    // The native segment is expected to contain:
+    // [0]: pointer to export name string (null-terminated C string)
+    // [8]: type kind ordinal (long)
+    // [16]: pointer to type handle (MemorySegment)
+    final MemorySegment namePtr =
+        nativeSegment.get(ValueLayout.ADDRESS, 0).reinterpret(Long.MAX_VALUE);
 
-    /* Future implementation:
-    final String name = WasmtimeBindings.getExportName(nativeSegment);
+    final String name = namePtr.getString(0);
     if (name == null) {
       throw new IllegalStateException("Export name is null from native");
     }
 
-    final MemorySegment typeInfo = WasmtimeBindings.getExportTypeInfo(nativeSegment);
-    if (typeInfo == null) {
-      throw new IllegalStateException("Invalid export type info from native");
-    }
-
-    final int typeKindOrdinal = WasmtimeBindings.getTypeKind(typeInfo);
-    final MemorySegment typeSegment = WasmtimeBindings.getTypeHandle(typeInfo);
+    final int typeKindOrdinal = (int) nativeSegment.get(ValueLayout.JAVA_LONG, 8);
+    final MemorySegment typeHandle =
+        nativeSegment.get(ValueLayout.ADDRESS, 16).reinterpret(Long.MAX_VALUE);
 
     final WasmTypeKind typeKind = WasmTypeKind.values()[typeKindOrdinal];
-    final WasmType type = createTypeFromNative(typeKind, typeSegment, arena);
+    final WasmType type = createTypeFromNative(typeKind, typeHandle, arena);
 
     return new PanamaExportDescriptor(name, type);
-    */
   }
 
   /**

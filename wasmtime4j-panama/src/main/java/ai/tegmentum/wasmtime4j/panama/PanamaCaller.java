@@ -319,14 +319,22 @@ final class PanamaCaller<T> implements Caller<T> {
 
   @Override
   public void gc() throws WasmException {
-    // Caller GC is not currently supported in Panama implementation
-    throw new UnsupportedOperationException("Caller GC not yet supported in Panama implementation");
+    try {
+      store.gc();
+    } catch (Exception e) {
+      throw new WasmException("Failed to perform GC: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public Optional<Long> fuelAsyncYieldInterval() {
-    // Fuel async yield interval not currently supported in Panama implementation
-    return Optional.empty();
+    try {
+      final long interval = store.getFuelAsyncYieldInterval();
+      return interval >= 0 ? Optional.of(interval) : Optional.empty();
+    } catch (Exception e) {
+      LOGGER.log(Level.FINE, "Fuel async yield interval not available", e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -335,9 +343,11 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Interval cannot be negative");
     }
 
-    // Fuel async yield interval not currently supported in Panama implementation
-    throw new UnsupportedOperationException(
-        "Fuel async yield interval not yet supported in Panama implementation");
+    try {
+      store.setFuelAsyncYieldInterval(interval);
+    } catch (Exception e) {
+      throw new WasmException("Failed to set fuel async yield interval: " + e.getMessage(), e);
+    }
   }
 
   /**

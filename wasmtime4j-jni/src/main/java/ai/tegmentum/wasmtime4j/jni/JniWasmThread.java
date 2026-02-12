@@ -118,22 +118,12 @@ public final class JniWasmThread implements WasmThread {
           try {
             currentState.set(WasmThreadState.RUNNING);
 
-            // Get module handle and function name from JniFunction
-            final JniFunction jniFunc = (JniFunction) function;
-            final long moduleHandle = jniFunc.getModuleHandle();
-            final String functionName = jniFunc.getName();
-
-            // Convert arguments to native format
-            final byte[] serializedArgs = new byte[0]; // TODO: serialize args
-
-            // Execute function on native thread with thread-local Store
-            final byte[] result =
-                nativeExecuteFunction(nativeHandle, moduleHandle, functionName, serializedArgs);
+            // Execute function using the WasmFunction.call() API which handles
+            // argument marshalling and result conversion internally
+            final WasmValue[] result = function.call(args);
 
             currentState.set(WasmThreadState.TERMINATED);
-
-            // Convert result back to Java format
-            return new WasmValue[0]; // TODO: deserialize result
+            return result;
 
           } catch (final Exception e) {
             currentState.set(WasmThreadState.ERROR);
@@ -367,18 +357,6 @@ public final class JniWasmThread implements WasmThread {
    * @return state value as integer
    */
   private static native int nativeGetState(long handle);
-
-  /**
-   * Execute a function on the native thread with thread-local Store.
-   *
-   * @param threadHandle native thread handle
-   * @param moduleHandle native module handle for thread-local instantiation
-   * @param functionName function name to lookup in module
-   * @param serializedArgs serialized function arguments
-   * @return serialized function result
-   */
-  private static native byte[] nativeExecuteFunction(
-      long threadHandle, long moduleHandle, String functionName, byte[] serializedArgs);
 
   /**
    * Join the native thread.

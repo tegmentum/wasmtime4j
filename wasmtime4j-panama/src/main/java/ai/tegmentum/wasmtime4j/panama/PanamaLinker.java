@@ -1724,9 +1724,71 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
     ensureNotClosed();
 
-    // Native binding for linkerDefineName not yet implemented
-    throw new UnsupportedOperationException(
-        "defineName is not yet supported in Panama implementation");
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final MemorySegment storePtr = panamaStore.getNativeStore();
+
+    // Use empty string for module name since this is a top-level name definition
+    final MemorySegment moduleNamePtr = arena.allocateFrom("");
+    final MemorySegment namePtr = arena.allocateFrom(name);
+
+    try {
+      final int result = defineExternByType(extern, storePtr, moduleNamePtr, namePtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to define name: " + name + " (error code: " + result + ")");
+      }
+
+      addImportWithMetadata("", name, getExternImportType(extern), extern.toString());
+      LOGGER.fine("Defined name: " + name);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Error defining name: " + name, e);
+    }
+  }
+
+  private int defineExternByType(
+      final Extern extern,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment namePtr)
+      throws WasmException {
+    if (extern instanceof PanamaExternFunc) {
+      throw new WasmException(
+          "Defining a function extern by name is not supported. "
+              + "Use defineHostFunction() to register host functions.");
+    } else if (extern instanceof PanamaExternMemory) {
+      final MemorySegment memPtr = ((PanamaExternMemory) extern).getNativeHandle();
+      return NATIVE_BINDINGS.panamaLinkerDefineMemory(
+          nativeLinker, storePtr, moduleNamePtr, namePtr, memPtr);
+    } else if (extern instanceof PanamaExternTable) {
+      final MemorySegment tablePtr = ((PanamaExternTable) extern).getNativeHandle();
+      return NATIVE_BINDINGS.panamaLinkerDefineTable(
+          nativeLinker, storePtr, moduleNamePtr, namePtr, tablePtr);
+    } else if (extern instanceof PanamaExternGlobal) {
+      final MemorySegment globalPtr = ((PanamaExternGlobal) extern).getNativeHandle();
+      return NATIVE_BINDINGS.panamaLinkerDefineGlobal(
+          nativeLinker, storePtr, moduleNamePtr, namePtr, globalPtr);
+    }
+    throw new IllegalArgumentException("Unknown extern type: " + extern.getClass().getName());
+  }
+
+  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType getExternImportType(
+      final Extern extern) {
+    if (extern instanceof PanamaExternFunc) {
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+    } else if (extern instanceof PanamaExternTable) {
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
+    } else if (extern instanceof PanamaExternMemory) {
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
+    } else if (extern instanceof PanamaExternGlobal) {
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
+    }
+    return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
   }
 
   @Override

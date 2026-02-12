@@ -392,12 +392,28 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     JniValidation.requireNonNull(loadConfig, "loadConfig");
     ensureNotClosed();
 
-    // For now, return a future that completes with an unsupported operation
-    // Full implementation would involve HTTP client integration
-    final CompletableFuture<Component> future = new CompletableFuture<>();
-    future.completeExceptionally(
-        new UnsupportedOperationException("URL loading not yet implemented"));
-    return future;
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            final java.net.URI uri = java.net.URI.create(url);
+            final byte[] wasmBytes;
+            try (java.io.InputStream in = uri.toURL().openStream();
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+              final byte[] buffer = new byte[8192];
+              int bytesRead;
+              while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+              }
+              wasmBytes = out.toByteArray();
+            }
+            return loadComponentFromBytes(wasmBytes);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          } catch (final Exception e) {
+            throw new java.util.concurrent.CompletionException(
+                new WasmException("Failed to load component from URL: " + url, e));
+          }
+        });
   }
 
   @Override

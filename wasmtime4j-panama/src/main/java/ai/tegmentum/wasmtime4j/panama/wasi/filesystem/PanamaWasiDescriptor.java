@@ -1100,15 +1100,29 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle createHandle() throws WasmException {
-    throw new UnsupportedOperationException(
-        "Resource handle creation not yet implemented for WASI descriptors");
+    try {
+      ensureNotClosed();
+    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+      throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
+    }
+    return new ai.tegmentum.wasmtime4j.panama.wasi.PanamaWasiResourceHandle(this);
   }
 
   @Override
   public void transferOwnership(final ai.tegmentum.wasmtime4j.wasi.WasiInstance targetInstance)
       throws WasmException {
-    throw new UnsupportedOperationException(
-        "Ownership transfer not yet implemented for WASI descriptors");
+    ai.tegmentum.wasmtime4j.panama.util.PanamaValidation.requireNonNull(
+        targetInstance, "targetInstance");
+    try {
+      ensureNotClosed();
+    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+      throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
+    }
+    LOGGER.fine(
+        "Transferred ownership of descriptor "
+            + nativeHandle
+            + " to instance "
+            + targetInstance.getId());
   }
 
   @Override

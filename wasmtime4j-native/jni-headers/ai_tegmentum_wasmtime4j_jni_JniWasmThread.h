@@ -17,14 +17,6 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetS
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmThread
- * Method:    nativeExecuteFunction
- * Signature: (JJLjava/lang/String;[B)[B
- */
-JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExecuteFunction
-  (JNIEnv *, jclass, jlong, jlong, jstring, jbyteArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmThread
  * Method:    nativeJoin
  * Signature: (J)V
  */

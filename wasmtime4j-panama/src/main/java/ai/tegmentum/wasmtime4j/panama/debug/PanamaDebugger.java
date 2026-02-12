@@ -65,6 +65,7 @@ public final class PanamaDebugger implements Debugger {
   private final Map<String, DwarfDebugInfo> dwarfInfoCache;
   private final Map<Long, SourceMapIntegration> sourceMapCache;
   private final Map<Long, PanamaExecutionTracer> executionTracers;
+  private final Map<String, Instance> instanceRegistry;
   private volatile boolean closed;
   private volatile boolean dwarfEnabled;
   private volatile boolean profilingEnabled;
@@ -93,6 +94,7 @@ public final class PanamaDebugger implements Debugger {
     this.engine = Objects.requireNonNull(engine, "engine cannot be null");
     this.arena = Objects.requireNonNull(arena, "arena cannot be null");
     this.activeSessions = new CopyOnWriteArrayList<>();
+    this.instanceRegistry = new ConcurrentHashMap<>();
     this.dwarfInfoCache = new ConcurrentHashMap<>();
     this.sourceMapCache = new ConcurrentHashMap<>();
     this.executionTracers = new ConcurrentHashMap<>();
@@ -128,8 +130,13 @@ public final class PanamaDebugger implements Debugger {
   public DebugSession createSession(final DebugConfig config) {
     Objects.requireNonNull(config, "config cannot be null");
     validateNotClosed();
-    // TODO: Implement config-based session creation
-    throw new UnsupportedOperationException("Config-based session creation not yet implemented");
+
+    final PanamaDebugSession session =
+        new PanamaDebugSession(nativeHandle, MemorySegment.NULL, config, arena);
+    activeSessions.add(session);
+
+    LOGGER.log(Level.FINE, "Created config-based debug session: {0}", session.getSessionId());
+    return session;
   }
 
   /**
@@ -337,8 +344,17 @@ public final class PanamaDebugger implements Debugger {
   public DebugSession attach(final String instanceId) {
     Objects.requireNonNull(instanceId, "instanceId cannot be null");
     validateNotClosed();
-    // TODO: Implement instance ID-based attachment
-    throw new UnsupportedOperationException("Instance ID-based attachment not yet implemented");
+
+    final Instance instance = instanceRegistry.get(instanceId);
+    if (instance == null) {
+      throw new IllegalArgumentException("Unknown instance ID: " + instanceId);
+    }
+
+    try {
+      return attach(instance);
+    } catch (final WasmException e) {
+      throw new IllegalStateException("Failed to attach to instance: " + instanceId, e);
+    }
   }
 
   /**
@@ -368,6 +384,51 @@ public final class PanamaDebugger implements Debugger {
     } catch (final Exception e) {
       throw new WasmException("Failed to attach to instance", e);
     }
+  }
+
+  /**
+   * Registers an instance for ID-based debugging attachment.
+   *
+   * @param instanceId the unique identifier for the instance
+   * @param instance the instance to register
+   * @throws IllegalArgumentException if instanceId or instance is null
+   */
+  public void registerInstance(final String instanceId, final Instance instance) {
+    Objects.requireNonNull(instanceId, "instanceId cannot be null");
+    Objects.requireNonNull(instance, "instance cannot be null");
+    validateNotClosed();
+
+    instanceRegistry.put(instanceId, instance);
+    LOGGER.log(Level.FINE, "Registered instance for debugging: {0}", instanceId);
+  }
+
+  /**
+   * Unregisters an instance from debugging.
+   *
+   * @param instanceId the instance ID to unregister
+   * @return true if the instance was registered, false otherwise
+   */
+  public boolean unregisterInstance(final String instanceId) {
+    Objects.requireNonNull(instanceId, "instanceId cannot be null");
+    if (closed) {
+      return false;
+    }
+
+    final boolean removed = instanceRegistry.remove(instanceId) != null;
+    if (removed) {
+      LOGGER.log(Level.FINE, "Unregistered instance from debugging: {0}", instanceId);
+    }
+    return removed;
+  }
+
+  /**
+   * Gets the list of registered instance IDs.
+   *
+   * @return unmodifiable list of registered instance IDs
+   */
+  public List<String> getRegisteredInstanceIds() {
+    validateNotClosed();
+    return Collections.unmodifiableList(new ArrayList<>(instanceRegistry.keySet()));
   }
 
   /**
@@ -927,6 +988,7 @@ public final class PanamaDebugger implements Debugger {
 
       dwarfInfoCache.clear();
       sourceMapCache.clear();
+      instanceRegistry.clear();
 
       if (nativeHandle != null && !nativeHandle.equals(MemorySegment.NULL)) {
         nativeCloseDebugger(nativeHandle);

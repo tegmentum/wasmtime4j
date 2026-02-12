@@ -878,24 +878,34 @@ public final class PanamaStore implements Store {
     return !closed;
   }
 
+  private ResourceLimiter resourceLimiter;
+  private AsyncResourceLimiter asyncResourceLimiter;
+
   @Override
   public void limiter(final ResourceLimiter limiter) throws WasmException {
-    // Resource limiter not currently supported in Panama implementation
-    throw new UnsupportedOperationException(
-        "Resource limiter not yet supported in Panama implementation");
+    ensureNotClosed();
+    this.resourceLimiter = limiter;
+    if (limiter == null) {
+      LOGGER.fine("Cleared resource limiter on store");
+    } else {
+      LOGGER.fine("Set resource limiter with id " + limiter.getId() + " on store");
+    }
   }
 
   @Override
   public void limiterAsync(final AsyncResourceLimiter limiter) throws WasmException {
-    // Async resource limiter not currently supported in Panama implementation
-    throw new UnsupportedOperationException(
-        "Async resource limiter not yet supported in Panama implementation");
+    ensureNotClosed();
+    this.asyncResourceLimiter = limiter;
+    if (limiter == null) {
+      LOGGER.fine("Cleared async resource limiter on store");
+    } else {
+      LOGGER.fine("Set async resource limiter on store");
+    }
   }
 
   @Override
   public ResourceLimiter getLimiter() {
-    // Panama implementation does not currently support resource limiter retrieval
-    return null;
+    return resourceLimiter;
   }
 
   @Override

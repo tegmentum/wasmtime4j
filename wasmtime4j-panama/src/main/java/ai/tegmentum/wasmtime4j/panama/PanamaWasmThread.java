@@ -132,11 +132,6 @@ public final class PanamaWasmThread implements WasmThread {
     validateNotNull(function, "function");
     validateNotNull(args, "args");
 
-    // TODO: Implement when PanamaThreadingBindings and PanamaValueConverter are available
-    throw new UnsupportedOperationException(
-        "Thread function execution not yet implemented in Panama backend");
-
-    /*
     if (getState() != WasmThreadState.NEW && getState() != WasmThreadState.TERMINATED) {
       throw new IllegalStateException(
           "Thread must be in NEW or TERMINATED state to execute function");
@@ -147,28 +142,18 @@ public final class PanamaWasmThread implements WasmThread {
           try {
             currentState.set(WasmThreadState.RUNNING);
 
-            // Convert arguments to native format
-            try (final Arena callArena = Arena.ofConfined()) {
-              final MemorySegment argsSegment =
-                  PanamaValueConverter.serializeValues(args, callArena);
+            // Execute function using the WasmFunction.call() API which handles
+            // argument marshalling and result conversion internally
+            final WasmValue[] result = function.call(args);
 
-              // Execute function on native thread
-              final MemorySegment resultSegment =
-                  PanamaThreadingBindings.executeFunction(
-                      nativeHandle, ((PanamaWasmFunction) function).getNativeHandle(), argsSegment);
-
-              currentState.set(WasmThreadState.TERMINATED);
-
-              // Convert result back to Java format
-              return PanamaValueConverter.deserializeValues(resultSegment, callArena);
-            }
+            currentState.set(WasmThreadState.TERMINATED);
+            return result;
 
           } catch (final Exception e) {
             currentState.set(WasmThreadState.ERROR);
             throw new RuntimeException("Function execution failed", e);
           }
         });
-    */
   }
 
   @Override

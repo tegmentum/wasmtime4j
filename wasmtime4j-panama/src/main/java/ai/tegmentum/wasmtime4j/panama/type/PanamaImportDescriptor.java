@@ -6,6 +6,7 @@ import ai.tegmentum.wasmtime4j.type.WasmType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.logging.Logger;
 
 /**
@@ -57,33 +58,27 @@ public final class PanamaImportDescriptor implements ImportDescriptor {
     PanamaValidation.requireNonNull(nativeSegment, "nativeSegment");
     PanamaValidation.requireNonNull(arena, "arena");
 
-    // TODO: Implement native import descriptor reading
-    // For now, throw UnsupportedOperationException
-    throw new UnsupportedOperationException(
-        "Import descriptor parsing from native not yet implemented");
+    // The native segment is expected to contain:
+    // [0]: pointer to module name string (null-terminated C string)
+    // [8]: pointer to field name string (null-terminated C string)
+    // [16]: type kind ordinal (long)
+    // [24]: pointer to type handle (MemorySegment)
+    final MemorySegment moduleNamePtr =
+        nativeSegment.get(ValueLayout.ADDRESS, 0).reinterpret(Long.MAX_VALUE);
+    final MemorySegment fieldNamePtr =
+        nativeSegment.get(ValueLayout.ADDRESS, 8).reinterpret(Long.MAX_VALUE);
 
-    /* Future implementation:
-    final String[] stringInfo = WasmtimeBindings.getImportStringInfo(nativeSegment);
-    if (stringInfo.length < 2) {
-      throw new IllegalStateException("Invalid import string info from native");
-    }
+    final String moduleName = moduleNamePtr.getString(0);
+    final String name = fieldNamePtr.getString(0);
 
-    final String moduleName = stringInfo[0];
-    final String name = stringInfo[1];
-
-    final MemorySegment typeInfo = WasmtimeBindings.getImportTypeInfo(nativeSegment);
-    if (typeInfo == null) {
-      throw new IllegalStateException("Invalid import type info from native");
-    }
-
-    final int typeKindOrdinal = WasmtimeBindings.getTypeKind(typeInfo);
-    final MemorySegment typeSegment = WasmtimeBindings.getTypeHandle(typeInfo);
+    final int typeKindOrdinal = (int) nativeSegment.get(ValueLayout.JAVA_LONG, 16);
+    final MemorySegment typeHandle =
+        nativeSegment.get(ValueLayout.ADDRESS, 24).reinterpret(Long.MAX_VALUE);
 
     final WasmTypeKind typeKind = WasmTypeKind.values()[typeKindOrdinal];
-    final WasmType type = createTypeFromNative(typeKind, typeSegment, arena);
+    final WasmType type = createTypeFromNative(typeKind, typeHandle, arena);
 
     return new PanamaImportDescriptor(moduleName, name, type);
-    */
   }
 
   /**
