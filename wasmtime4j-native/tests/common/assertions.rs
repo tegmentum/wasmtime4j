@@ -15,7 +15,9 @@ pub fn assert_error_contains<T: std::fmt::Debug>(
         Err(e) => {
             let error_msg = e.to_string();
             assert!(
-                error_msg.to_lowercase().contains(&expected_substring.to_lowercase()),
+                error_msg
+                    .to_lowercase()
+                    .contains(&expected_substring.to_lowercase()),
                 "Expected error containing '{}', got: {}",
                 expected_substring,
                 error_msg
@@ -92,7 +94,9 @@ pub fn assert_trap<T: std::fmt::Debug>(result: Result<T, WasmtimeError>) {
         Err(e) => {
             let error_str = e.to_string().to_lowercase();
             assert!(
-                error_str.contains("trap") || error_str.contains("wasm trap") || error_str.contains("unreachable"),
+                error_str.contains("trap")
+                    || error_str.contains("wasm trap")
+                    || error_str.contains("unreachable"),
                 "Expected a trap error, got: {}",
                 e
             );
@@ -102,7 +106,10 @@ pub fn assert_trap<T: std::fmt::Debug>(result: Result<T, WasmtimeError>) {
 }
 
 /// Asserts that a result is a trap containing the specified message.
-pub fn assert_trap_message<T: std::fmt::Debug>(result: Result<T, WasmtimeError>, expected_msg: &str) {
+pub fn assert_trap_message<T: std::fmt::Debug>(
+    result: Result<T, WasmtimeError>,
+    expected_msg: &str,
+) {
     match result {
         Err(e) => {
             let error_str = e.to_string().to_lowercase();

@@ -1,8 +1,8 @@
 //! JNI bindings for NativeMethodBindings validation
 
-use jni::JNIEnv;
 use jni::objects::JClass;
 use jni::sys::jlong;
+use jni::JNIEnv;
 
 /// Create a test runtime for validation (JNI version) - PLACEHOLDER
 #[no_mangle]

@@ -3,10 +3,10 @@
 //! This module provides resource tracking, cleanup, and lifecycle management
 //! for component instances.
 
+use crate::error::WasmtimeResult;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use wasmtime::component::Instance as ComponentInstance;
-use crate::error::WasmtimeResult;
 
 /// Resource manager for automatic component cleanup
 ///
@@ -43,17 +43,20 @@ impl ResourceManager {
     /// # Returns
     ///
     /// Returns `Ok(())` if the instance was successfully registered.
-    pub fn register_instance<F>(&mut self,
+    pub fn register_instance<F>(
+        &mut self,
         instance_id: u64,
         instance: Weak<ComponentInstance>,
-        cleanup_callback: Option<F>) -> WasmtimeResult<()>
+        cleanup_callback: Option<F>,
+    ) -> WasmtimeResult<()>
     where
         F: FnOnce() + Send + 'static,
     {
         self.instances.insert(instance_id, instance);
 
         if let Some(callback) = cleanup_callback {
-            self.cleanup_callbacks.insert(instance_id, Box::new(callback));
+            self.cleanup_callbacks
+                .insert(instance_id, Box::new(callback));
         }
 
         Ok(())
@@ -93,7 +96,8 @@ impl ResourceManager {
     ///
     /// Returns the number of currently active component instances.
     pub fn active_count(&self) -> usize {
-        self.instances.iter()
+        self.instances
+            .iter()
             .filter(|(_, weak_ref)| weak_ref.strong_count() > 0)
             .count()
     }

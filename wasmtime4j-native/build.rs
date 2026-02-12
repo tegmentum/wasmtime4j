@@ -7,17 +7,20 @@ use std::path::PathBuf;
 fn main() {
     let target = env::var("TARGET").unwrap();
     let _out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    
+
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/");
-    
+
     // Print build information
     println!("cargo:rustc-env=BUILD_TARGET={}", target);
-    println!("cargo:rustc-env=BUILD_PROFILE={}", env::var("PROFILE").unwrap_or_else(|_| "unknown".to_string()));
-    
+    println!(
+        "cargo:rustc-env=BUILD_PROFILE={}",
+        env::var("PROFILE").unwrap_or_else(|_| "unknown".to_string())
+    );
+
     // Configure target-specific settings
     configure_target(&target);
-    
+
     // Configure linking
     configure_linking(&target);
 }

@@ -1,8 +1,8 @@
 //! JNI bindings for Memory operations
 
-use jni::JNIEnv;
 use jni::objects::{JByteArray, JByteBuffer, JClass, JValue};
 use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray, jobject, jstring};
+use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 use crate::memory::core;
@@ -25,7 +25,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
 
         // Check for obviously invalid pointers (basic sanity check)
         if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!("JNI Memory.nativeGetSize: invalid memory handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeGetSize: invalid memory handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid memory handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.",
@@ -84,31 +87,37 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
 
         // Get memory reference for metadata access
         let memory = unsafe {
-            core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)
-                .map_err(|e| {
-                    log::error!("Failed to get memory reference for handle 0x{:x}: {}", memory_ptr, e);
-                    WasmtimeError::Memory {
-                        message: format!(
-                            "Unable to access memory (handle: 0x{:x}): {}. \
-                             Memory may be in an invalid state.",
-                            memory_ptr, e
-                        ),
-                    }
-                })?
-        };
-
-        // Get metadata with error handling
-        let metadata = memory.get_metadata()
-            .map_err(|e| {
-                log::error!("Failed to get memory metadata for handle 0x{:x}: {}", memory_ptr, e);
+            core::get_memory_ref(memory_ptr as *const std::os::raw::c_void).map_err(|e| {
+                log::error!(
+                    "Failed to get memory reference for handle 0x{:x}: {}",
+                    memory_ptr,
+                    e
+                );
                 WasmtimeError::Memory {
                     message: format!(
-                        "Unable to retrieve memory metadata (handle: 0x{:x}): {}. \
-                         Memory statistics may be corrupted.",
+                        "Unable to access memory (handle: 0x{:x}): {}. \
+                             Memory may be in an invalid state.",
                         memory_ptr, e
                     ),
                 }
-            })?;
+            })?
+        };
+
+        // Get metadata with error handling
+        let metadata = memory.get_metadata().map_err(|e| {
+            log::error!(
+                "Failed to get memory metadata for handle 0x{:x}: {}",
+                memory_ptr,
+                e
+            );
+            WasmtimeError::Memory {
+                message: format!(
+                    "Unable to retrieve memory metadata (handle: 0x{:x}): {}. \
+                         Memory statistics may be corrupted.",
+                    memory_ptr, e
+                ),
+            }
+        })?;
 
         // Calculate size with overflow protection
         let pages = metadata.current_pages;
@@ -136,8 +145,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
             });
         }
 
-        log::debug!("Memory size retrieved: {} bytes ({} pages) for handle 0x{:x}",
-                   size_bytes, pages, memory_ptr);
+        log::debug!(
+            "Memory size retrieved: {} bytes ({} pages) for handle 0x{:x}",
+            size_bytes,
+            pages,
+            memory_ptr
+        );
 
         Ok(size_bytes as jlong)
     })
@@ -169,7 +182,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrow(
         }
 
         if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!("JNI Memory.nativeGrow: invalid memory handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeGrow: invalid memory handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid memory handle (0x{:x}) for growth operation. Handle appears corrupted or uninitialized.",
@@ -179,7 +195,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrow(
         }
 
         if pages < 0 {
-            log::error!("JNI Memory.nativeGrow: negative page count {} provided for handle 0x{:x}", pages, memory_ptr);
+            log::error!(
+                "JNI Memory.nativeGrow: negative page count {} provided for handle 0x{:x}",
+                pages,
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Page count for memory growth cannot be negative (received: {}). Specify a non-negative number of pages to grow.",
@@ -204,7 +224,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrow(
             Err(e) => {
                 log::error!(
                     "JNI Memory.nativeGrow: growth failed for handle 0x{:x} with {} pages: {}",
-                    memory_ptr, pages, e
+                    memory_ptr,
+                    pages,
+                    e
                 );
                 Err(e)
             }
@@ -238,7 +260,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
         }
 
         if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!("JNI Memory.nativeReadByte: invalid memory handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeReadByte: invalid memory handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid memory handle (0x{:x}) for read operation. Handle appears corrupted or uninitialized.",
@@ -248,7 +273,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
         }
 
         if offset < 0 {
-            log::error!("JNI Memory.nativeReadByte: negative offset {} for handle 0x{:x}", offset, memory_ptr);
+            log::error!(
+                "JNI Memory.nativeReadByte: negative offset {} for handle 0x{:x}",
+                offset,
+                memory_ptr
+            );
             return Err(WasmtimeError::Memory {
                 message: format!(
                     "Memory read offset cannot be negative (received: {}). \
@@ -274,7 +303,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
             Err(e) => {
                 log::error!(
                     "JNI Memory.nativeReadByte: read failed for handle 0x{:x} at offset {}: {}",
-                    memory_ptr, offset, e
+                    memory_ptr,
+                    offset,
+                    e
                 );
                 Err(e)
             }
@@ -309,7 +340,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
         }
 
         if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!("JNI Memory.nativeWriteByte: invalid memory handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeWriteByte: invalid memory handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid memory handle (0x{:x}) for write operation. Handle appears corrupted or uninitialized.",
@@ -319,7 +353,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
         }
 
         if offset < 0 {
-            log::error!("JNI Memory.nativeWriteByte: negative offset {} for handle 0x{:x}", offset, memory_ptr);
+            log::error!(
+                "JNI Memory.nativeWriteByte: negative offset {} for handle 0x{:x}",
+                offset,
+                memory_ptr
+            );
             return Err(WasmtimeError::Memory {
                 message: format!(
                     "Memory write offset cannot be negative (received: {}). \
@@ -330,7 +368,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
         }
 
         if value < -128 || value > 255 {
-            log::error!("JNI Memory.nativeWriteByte: invalid byte value {} for handle 0x{:x}", value, memory_ptr);
+            log::error!(
+                "JNI Memory.nativeWriteByte: invalid byte value {} for handle 0x{:x}",
+                value,
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Byte value must be in range [-128, 255] (received: {}). \
@@ -346,7 +388,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
 
         // Convert jint to u8 (handling signed/unsigned conversion safely)
         let byte_value = if value < 0 {
-            (value + 256) as u8  // Convert signed negative to unsigned equivalent
+            (value + 256) as u8 // Convert signed negative to unsigned equivalent
         } else {
             value as u8
         };
@@ -398,7 +440,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
         }
 
         if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!("JNI Memory.nativeReadBytes: invalid memory handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeReadBytes: invalid memory handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid memory handle (0x{:x}) for bulk read operation. Handle appears corrupted or uninitialized.",
@@ -408,7 +453,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
         }
 
         if offset < 0 {
-            log::error!("JNI Memory.nativeReadBytes: negative offset {} for handle 0x{:x}", offset, memory_ptr);
+            log::error!(
+                "JNI Memory.nativeReadBytes: negative offset {} for handle 0x{:x}",
+                offset,
+                memory_ptr
+            );
             return Err(WasmtimeError::Memory {
                 message: format!(
                     "Memory read offset cannot be negative (received: {}). \
@@ -420,9 +469,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
 
         // Validate JNI buffer parameter
         if buffer.is_null() {
-            log::error!("JNI Memory.nativeReadBytes: null buffer provided for handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeReadBytes: null buffer provided for handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
-                message: "Buffer cannot be null for bulk read operations. Provide a valid byte array.".to_string(),
+                message:
+                    "Buffer cannot be null for bulk read operations. Provide a valid byte array."
+                        .to_string(),
             });
         }
 
@@ -430,11 +484,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
         let buffer_length = match env.get_array_length(&buffer) {
             Ok(len) => len as usize,
             Err(e) => {
-                log::error!("Failed to get buffer length for read operation (handle 0x{:x}): {:?}", memory_ptr, e);
+                log::error!(
+                    "Failed to get buffer length for read operation (handle 0x{:x}): {:?}",
+                    memory_ptr,
+                    e
+                );
                 return Err(WasmtimeError::InvalidParameter {
                     message: format!(
                         "Cannot determine buffer size for read operation: {:?}. \
-                         Ensure buffer is a valid Java byte array.", e
+                         Ensure buffer is a valid Java byte array.",
+                        e
                     ),
                 });
             }
@@ -506,7 +565,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
         }
 
         if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!("JNI Memory.nativeWriteBytes: invalid memory handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeWriteBytes: invalid memory handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid memory handle (0x{:x}) for bulk write operation. Handle appears corrupted or uninitialized.",
@@ -516,7 +578,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
         }
 
         if offset < 0 {
-            log::error!("JNI Memory.nativeWriteBytes: negative offset {} for handle 0x{:x}", offset, memory_ptr);
+            log::error!(
+                "JNI Memory.nativeWriteBytes: negative offset {} for handle 0x{:x}",
+                offset,
+                memory_ptr
+            );
             return Err(WasmtimeError::Memory {
                 message: format!(
                     "Memory write offset cannot be negative (received: {}). \
@@ -528,20 +594,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
 
         // Validate JNI buffer parameter
         if buffer.is_null() {
-            log::error!("JNI Memory.nativeWriteBytes: null buffer provided for handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeWriteBytes: null buffer provided for handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
-                message: "Buffer cannot be null for bulk write operations. Provide a valid byte array.".to_string(),
+                message:
+                    "Buffer cannot be null for bulk write operations. Provide a valid byte array."
+                        .to_string(),
             });
         }
 
         // Get buffer length with bounds checking
-        let buffer_length = env.get_array_length(&buffer)
-            .map_err(|e| {
-                log::error!("JNI Memory.nativeWriteBytes: failed to get buffer length for handle 0x{:x}: {}", memory_ptr, e);
-                WasmtimeError::Memory {
-                    message: format!("Failed to get buffer length for write operation: {}", e),
-                }
-            })? as usize;
+        let buffer_length = env.get_array_length(&buffer).map_err(|e| {
+            log::error!(
+                "JNI Memory.nativeWriteBytes: failed to get buffer length for handle 0x{:x}: {}",
+                memory_ptr,
+                e
+            );
+            WasmtimeError::Memory {
+                message: format!("Failed to get buffer length for write operation: {}", e),
+            }
+        })? as usize;
 
         if buffer_length == 0 {
             log::debug!("JNI Memory.nativeWriteBytes: zero-length write requested for handle 0x{:x} at offset {}", memory_ptr, offset);
@@ -556,7 +630,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
         let mut signed_buffer = vec![0i8; buffer_length];
         env.get_byte_array_region(&buffer, 0, &mut signed_buffer)
             .map_err(|e| {
-                log::error!("JNI Memory.nativeWriteBytes: failed to read buffer data for handle 0x{:x}: {}", memory_ptr, e);
+                log::error!(
+                    "JNI Memory.nativeWriteBytes: failed to read buffer data for handle 0x{:x}: {}",
+                    memory_ptr,
+                    e
+                );
                 WasmtimeError::Memory {
                     message: format!("Failed to read buffer data for write operation: {}", e),
                 }
@@ -617,7 +695,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetBuffe
     }
 
     if memory_ptr < 0x1000 || memory_ptr == -1 {
-        log::error!("JNI Memory.nativeGetBuffer: invalid memory handle 0x{:x}", memory_ptr);
+        log::error!(
+            "JNI Memory.nativeGetBuffer: invalid memory handle 0x{:x}",
+            memory_ptr
+        );
         handle_error!(WasmtimeError::InvalidParameter {
             message: format!(
                 "Invalid memory handle (0x{:x}) for buffer access. Handle appears corrupted or uninitialized.",
@@ -640,7 +721,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetBuffe
     let (buffer_ptr, buffer_size) = match core::get_memory_buffer(memory, store) {
         Ok(result) => result,
         Err(e) => {
-            log::error!("JNI Memory.nativeGetBuffer: failed to get memory buffer for handle 0x{:x}: {}", memory_ptr, e);
+            log::error!(
+                "JNI Memory.nativeGetBuffer: failed to get memory buffer for handle 0x{:x}: {}",
+                memory_ptr,
+                e
+            );
             handle_error!(WasmtimeError::Memory {
                 message: format!("Failed to get memory buffer: {}", e),
             });
@@ -653,19 +738,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetBuffe
     // while the ByteBuffer is in use.
     log::debug!(
         "JNI Memory.nativeGetBuffer: creating ByteBuffer for handle 0x{:x} with size {} bytes",
-        memory_ptr, buffer_size
+        memory_ptr,
+        buffer_size
     );
 
     // Create a direct ByteBuffer using JNI
-    let byte_buffer = match unsafe { env.new_direct_byte_buffer(buffer_ptr as *mut u8, buffer_size) } {
-        Ok(buf) => buf,
-        Err(e) => {
-            log::error!("JNI Memory.nativeGetBuffer: failed to create DirectByteBuffer: {}", e);
-            handle_error!(WasmtimeError::Memory {
-                message: format!("Failed to create DirectByteBuffer: {}", e),
-            });
-        }
-    };
+    let byte_buffer =
+        match unsafe { env.new_direct_byte_buffer(buffer_ptr as *mut u8, buffer_size) } {
+            Ok(buf) => buf,
+            Err(e) => {
+                log::error!(
+                    "JNI Memory.nativeGetBuffer: failed to create DirectByteBuffer: {}",
+                    e
+                );
+                handle_error!(WasmtimeError::Memory {
+                    message: format!("Failed to create DirectByteBuffer: {}", e),
+                });
+            }
+        };
 
     log::debug!(
         "JNI Memory.nativeGetBuffer: successfully created ByteBuffer for handle 0x{:x}",
@@ -716,7 +806,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageC
 
         // Check for obviously invalid pointers (basic sanity check)
         if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!("JNI Memory.nativeGetPageCount: invalid memory handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeGetPageCount: invalid memory handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid memory handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.",
@@ -766,48 +859,64 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageC
 
         // Get memory reference for metadata access
         let memory = unsafe {
-            core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)
-                .map_err(|e| {
-                    log::error!("Failed to get memory reference for page count operation on handle 0x{:x}: {}", memory_ptr, e);
-                    WasmtimeError::Memory {
-                        message: format!(
-                            "Unable to access memory for page count operation (handle: 0x{:x}): {}. \
-                             Memory may be in an invalid state or corrupted.",
-                            memory_ptr, e
-                        ),
-                    }
-                })?
-        };
-
-        // Get metadata with comprehensive error handling
-        let metadata = memory.get_metadata()
-            .map_err(|e| {
-                log::error!("Failed to get memory metadata for page count operation on handle 0x{:x}: {}", memory_ptr, e);
+            core::get_memory_ref(memory_ptr as *const std::os::raw::c_void).map_err(|e| {
+                log::error!(
+                    "Failed to get memory reference for page count operation on handle 0x{:x}: {}",
+                    memory_ptr,
+                    e
+                );
                 WasmtimeError::Memory {
                     message: format!(
-                        "Unable to retrieve memory metadata for page count (handle: 0x{:x}): {}. \
-                         Memory statistics may be corrupted or inaccessible.",
+                        "Unable to access memory for page count operation (handle: 0x{:x}): {}. \
+                             Memory may be in an invalid state or corrupted.",
                         memory_ptr, e
                     ),
                 }
-            })?;
+            })?
+        };
+
+        // Get metadata with comprehensive error handling
+        let metadata = memory.get_metadata().map_err(|e| {
+            log::error!(
+                "Failed to get memory metadata for page count operation on handle 0x{:x}: {}",
+                memory_ptr,
+                e
+            );
+            WasmtimeError::Memory {
+                message: format!(
+                    "Unable to retrieve memory metadata for page count (handle: 0x{:x}): {}. \
+                         Memory statistics may be corrupted or inaccessible.",
+                    memory_ptr, e
+                ),
+            }
+        })?;
 
         let pages = metadata.current_pages;
 
-        // Validate page count is reasonable (basic sanity check)
-        const MAX_WASM_PAGES: u64 = 65536; // 4GB / 64KB
-        if pages > MAX_WASM_PAGES {
-            log::error!("Memory page count {} exceeds WebAssembly limit {}", pages, MAX_WASM_PAGES);
-            return Err(WasmtimeError::Memory {
-                message: format!(
-                    "Memory page count ({}) exceeds WebAssembly limit ({}). \
-                     This indicates corrupted memory metadata or invalid memory state.",
-                    pages, MAX_WASM_PAGES
-                ),
-            });
+        // Validate page count is reasonable (basic sanity check for 32-bit memory)
+        if !memory.get_config().is_64 {
+            const MAX_WASM_PAGES: u64 = 65536; // 4GB / 64KB
+            if pages > MAX_WASM_PAGES {
+                log::error!(
+                    "Memory page count {} exceeds WebAssembly 32-bit limit {}",
+                    pages,
+                    MAX_WASM_PAGES
+                );
+                return Err(WasmtimeError::Memory {
+                    message: format!(
+                        "Memory page count ({}) exceeds WebAssembly 32-bit limit ({}). \
+                         This indicates corrupted memory metadata or invalid memory state.",
+                        pages, MAX_WASM_PAGES
+                    ),
+                });
+            }
         }
 
-        log::debug!("Memory page count retrieved: {} pages for handle 0x{:x}", pages, memory_ptr);
+        log::debug!(
+            "Memory page count retrieved: {} pages for handle 0x{:x}",
+            pages,
+            memory_ptr
+        );
 
         Ok(pages as jlong)
     })
@@ -831,7 +940,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMaxSi
 
         // Check for obviously invalid pointers (basic sanity check)
         if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!("JNI Memory.nativeGetMaxSize: invalid memory handle 0x{:x}", memory_ptr);
+            log::error!(
+                "JNI Memory.nativeGetMaxSize: invalid memory handle 0x{:x}",
+                memory_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid memory handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.",
@@ -881,52 +993,68 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMaxSi
 
         // Get memory reference for metadata access
         let memory = unsafe {
-            core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)
-                .map_err(|e| {
-                    log::error!("Failed to get memory reference for max size operation on handle 0x{:x}: {}", memory_ptr, e);
-                    WasmtimeError::Memory {
-                        message: format!(
-                            "Unable to access memory for max size operation (handle: 0x{:x}): {}. \
-                             Memory may be in an invalid state or corrupted.",
-                            memory_ptr, e
-                        ),
-                    }
-                })?
-        };
-
-        // Get metadata with comprehensive error handling
-        let metadata = memory.get_metadata()
-            .map_err(|e| {
-                log::error!("Failed to get memory metadata for max size operation on handle 0x{:x}: {}", memory_ptr, e);
+            core::get_memory_ref(memory_ptr as *const std::os::raw::c_void).map_err(|e| {
+                log::error!(
+                    "Failed to get memory reference for max size operation on handle 0x{:x}: {}",
+                    memory_ptr,
+                    e
+                );
                 WasmtimeError::Memory {
                     message: format!(
-                        "Unable to retrieve memory metadata for max size (handle: 0x{:x}): {}. \
-                         Memory statistics may be corrupted or inaccessible.",
+                        "Unable to access memory for max size operation (handle: 0x{:x}): {}. \
+                             Memory may be in an invalid state or corrupted.",
                         memory_ptr, e
                     ),
                 }
-            })?;
+            })?
+        };
+
+        // Get metadata with comprehensive error handling
+        let metadata = memory.get_metadata().map_err(|e| {
+            log::error!(
+                "Failed to get memory metadata for max size operation on handle 0x{:x}: {}",
+                memory_ptr,
+                e
+            );
+            WasmtimeError::Memory {
+                message: format!(
+                    "Unable to retrieve memory metadata for max size (handle: 0x{:x}): {}. \
+                         Memory statistics may be corrupted or inaccessible.",
+                    memory_ptr, e
+                ),
+            }
+        })?;
 
         let max_pages = match metadata.maximum_pages {
             Some(pages) => {
-                // Validate max page count is reasonable (basic sanity check)
-                const MAX_WASM_PAGES: u64 = 65536; // 4GB / 64KB
-                if pages > MAX_WASM_PAGES {
-                    log::error!("Memory max page count {} exceeds WebAssembly limit {}", pages, MAX_WASM_PAGES);
-                    return Err(WasmtimeError::Memory {
-                        message: format!(
-                            "Memory max page count ({}) exceeds WebAssembly limit ({}). \
-                             This indicates corrupted memory metadata or invalid memory state.",
-                            pages, MAX_WASM_PAGES
-                        ),
-                    });
+                // Validate max page count is reasonable (basic sanity check for 32-bit memory)
+                if !memory.get_config().is_64 {
+                    const MAX_WASM_PAGES: u64 = 65536; // 4GB / 64KB
+                    if pages > MAX_WASM_PAGES {
+                        log::error!(
+                            "Memory max page count {} exceeds WebAssembly 32-bit limit {}",
+                            pages,
+                            MAX_WASM_PAGES
+                        );
+                        return Err(WasmtimeError::Memory {
+                            message: format!(
+                                "Memory max page count ({}) exceeds WebAssembly 32-bit limit ({}). \
+                                 This indicates corrupted memory metadata or invalid memory state.",
+                                pages, MAX_WASM_PAGES
+                            ),
+                        });
+                    }
                 }
                 pages as jlong
-            },
+            }
             None => -1, // Unlimited memory
         };
 
-        log::debug!("Memory max size retrieved: {} pages for handle 0x{:x}", max_pages, memory_ptr);
+        log::debug!(
+            "Memory max size retrieved: {} pages for handle 0x{:x}",
+            max_pages,
+            memory_ptr
+        );
 
         Ok(max_pages)
     })
@@ -950,7 +1078,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeValidate
             1 // true
         }
         Err(e) => {
-            log::debug!("Memory handle validation failed: 0x{:x}, error: {}", memory_ptr, e);
+            log::debug!(
+                "Memory handle validation failed: 0x{:x}, error: {}",
+                memory_ptr,
+                e
+            );
             0 // false
         }
     }
@@ -967,13 +1099,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetAcces
         return -1;
     }
 
-    jni_utils::jni_try_default(&env, -1, || {
-        unsafe {
-            core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
+    jni_utils::jni_try_default(&env, -1, || unsafe {
+        core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
 
-            let validated_memory = &*(memory_ptr as *const core::ValidatedMemory);
-            Ok(validated_memory.get_access_count() as jlong)
-        }
+        let validated_memory = &*(memory_ptr as *const core::ValidatedMemory);
+        Ok(validated_memory.get_access_count() as jlong)
     })
 }
 
@@ -1020,7 +1150,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetElemen
         }
 
         if table_ptr < 0x1000 || table_ptr == -1 {
-            log::error!("JNI Table.nativeGetElementType: invalid table handle 0x{:x}", table_ptr);
+            log::error!(
+                "JNI Table.nativeGetElementType: invalid table handle 0x{:x}",
+                table_ptr
+            );
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Invalid table handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.",
@@ -1044,12 +1177,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetElemen
                 }
             }
             _ => {
-                log::warn!("JNI Table.nativeGetElementType: unexpected non-reference element type {:?}", metadata.element_type);
+                log::warn!(
+                    "JNI Table.nativeGetElementType: unexpected non-reference element type {:?}",
+                    metadata.element_type
+                );
                 "funcref" // Default fallback
             }
         };
 
-        log::debug!("JNI Table.nativeGetElementType: returning '{}' for table 0x{:x}", element_type_str, table_ptr);
+        log::debug!(
+            "JNI Table.nativeGetElementType: returning '{}' for table 0x{:x}",
+            element_type_str,
+            table_ptr
+        );
 
         env.new_string(element_type_str)
             .map(|jstr| jstr.into_raw())
@@ -1108,25 +1248,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet(
         // Get element from table
         let element = table.get(store, index as u64)?;
 
-        log::debug!("JNI Table.nativeGet: retrieved element at index {} = {:?}", index, element);
+        log::debug!(
+            "JNI Table.nativeGet: retrieved element at index {} = {:?}",
+            index,
+            element
+        );
 
         // Convert TableElement to Java object
         match element {
             crate::table::TableElement::FuncRef(None) => Ok(std::ptr::null_mut()),
             crate::table::TableElement::FuncRef(Some(func_id)) => {
                 // Return a Long object representing the function ID
-                let long_class = env.find_class("java/lang/Long").map_err(|e| {
-                    WasmtimeError::Runtime {
-                        message: format!("Failed to find Long class: {}", e),
-                        backtrace: None,
-                    }
-                })?;
+                let long_class =
+                    env.find_class("java/lang/Long")
+                        .map_err(|e| WasmtimeError::Runtime {
+                            message: format!("Failed to find Long class: {}", e),
+                            backtrace: None,
+                        })?;
                 let long_obj = env
-                    .new_object(
-                        long_class,
-                        "(J)V",
-                        &[JValue::Long(func_id as jlong)],
-                    )
+                    .new_object(long_class, "(J)V", &[JValue::Long(func_id as jlong)])
                     .map_err(|e| WasmtimeError::Runtime {
                         message: format!("Failed to create Long object: {}", e),
                         backtrace: None,
@@ -1136,18 +1276,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet(
             crate::table::TableElement::ExternRef(None) => Ok(std::ptr::null_mut()),
             crate::table::TableElement::ExternRef(Some(extern_id)) => {
                 // Return a Long object representing the extern reference ID
-                let long_class = env.find_class("java/lang/Long").map_err(|e| {
-                    WasmtimeError::Runtime {
-                        message: format!("Failed to find Long class: {}", e),
-                        backtrace: None,
-                    }
-                })?;
+                let long_class =
+                    env.find_class("java/lang/Long")
+                        .map_err(|e| WasmtimeError::Runtime {
+                            message: format!("Failed to find Long class: {}", e),
+                            backtrace: None,
+                        })?;
                 let long_obj = env
-                    .new_object(
-                        long_class,
-                        "(J)V",
-                        &[JValue::Long(extern_id as jlong)],
-                    )
+                    .new_object(long_class, "(J)V", &[JValue::Long(extern_id as jlong)])
                     .map_err(|e| WasmtimeError::Runtime {
                         message: format!("Failed to create Long object: {}", e),
                         backtrace: None,
@@ -1157,18 +1293,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet(
             crate::table::TableElement::AnyRef(None) => Ok(std::ptr::null_mut()),
             crate::table::TableElement::AnyRef(Some(any_id)) => {
                 // Return a Long object representing the any reference ID
-                let long_class = env.find_class("java/lang/Long").map_err(|e| {
-                    WasmtimeError::Runtime {
-                        message: format!("Failed to find Long class: {}", e),
-                        backtrace: None,
-                    }
-                })?;
+                let long_class =
+                    env.find_class("java/lang/Long")
+                        .map_err(|e| WasmtimeError::Runtime {
+                            message: format!("Failed to find Long class: {}", e),
+                            backtrace: None,
+                        })?;
                 let long_obj = env
-                    .new_object(
-                        long_class,
-                        "(J)V",
-                        &[JValue::Long(any_id as jlong)],
-                    )
+                    .new_object(long_class, "(J)V", &[JValue::Long(any_id as jlong)])
                     .map_err(|e| WasmtimeError::Runtime {
                         message: format!("Failed to create Long object: {}", e),
                         backtrace: None,
@@ -1318,14 +1450,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemor
         } else {
             0i64
         };
-        let is_64_bit = if memory.memory_type.is_64() { 1i64 } else { 0i64 };
+        let is_64_bit = if memory.memory_type.is_64() {
+            1i64
+        } else {
+            0i64
+        };
 
         // Create long array with [minimum, maximum, is64Bit, isShared]
-        let result_array =
-            env.new_long_array(4)
-                .map_err(|e| WasmtimeError::Memory {
-                    message: format!("Failed to create long array: {}", e),
-                })?;
+        let result_array = env.new_long_array(4).map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to create long array: {}", e),
+        })?;
 
         let values = vec![minimum, maximum, is_64_bit, is_shared];
         env.set_long_array_region(&result_array, 0, &values)

@@ -3,20 +3,14 @@
 //! This module provides defensive compilation and comprehensive module management
 //! with validation, caching, and detailed introspection capabilities.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-use wasmtime::{
-    Engine as WasmtimeEngine,
-    Module as WasmtimeModule,
-    FuncType,
-    ValType,
-    Mutability,
-};
+use crate::data_segment::DataSegment;
+use crate::element_segment::ElementSegment;
+use crate::element_segment_parser::{parse_data_segments, parse_element_segments};
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::element_segment::ElementSegment;
-use crate::data_segment::DataSegment;
-use crate::element_segment_parser::{parse_element_segments, parse_data_segments};
+use std::collections::HashMap;
+use std::sync::Arc;
+use wasmtime::{Engine as WasmtimeEngine, FuncType, Module as WasmtimeModule, Mutability, ValType};
 // Note: validation functions removed from crate root
 
 /// Thread-safe wrapper around Wasmtime module with introspection
@@ -217,7 +211,11 @@ impl Module {
         const MAX_MODULE_SIZE: usize = 100 * 1024 * 1024; // 100MB
         if wasm_bytes.len() > MAX_MODULE_SIZE {
             return Err(WasmtimeError::Validation {
-                message: format!("Module size {} exceeds maximum {}", wasm_bytes.len(), MAX_MODULE_SIZE),
+                message: format!(
+                    "Module size {} exceeds maximum {}",
+                    wasm_bytes.len(),
+                    MAX_MODULE_SIZE
+                ),
             });
         }
 
@@ -236,18 +234,16 @@ impl Module {
         let metadata = ModuleMetadata::extract(&module, wasm_bytes.len(), wasm_bytes)?;
 
         // Parse element segments for table.init() support (hybrid design)
-        let element_segments = parse_element_segments(wasm_bytes)
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to parse element segments: {:?}", e);
-                Vec::new()
-            });
+        let element_segments = parse_element_segments(wasm_bytes).unwrap_or_else(|e| {
+            log::warn!("Failed to parse element segments: {:?}", e);
+            Vec::new()
+        });
 
         // Parse data segments for memory.init() support (hybrid design)
-        let data_segments = parse_data_segments(wasm_bytes)
-            .unwrap_or_else(|e| {
-                log::warn!("Failed to parse data segments: {:?}", e);
-                Vec::new()
-            });
+        let data_segments = parse_data_segments(wasm_bytes).unwrap_or_else(|e| {
+            log::warn!("Failed to parse data segments: {:?}", e);
+            Vec::new()
+        });
 
         Ok(Module {
             inner: Arc::new(module),
@@ -269,10 +265,9 @@ impl Module {
         engine.validate()?;
 
         // Convert WAT to WASM bytes using wat crate
-        let wasm_bytes = wat::parse_str(wat)
-            .map_err(|e| WasmtimeError::Compilation {
-                message: format!("WAT parsing failed: {}", e),
-            })?;
+        let wasm_bytes = wat::parse_str(wat).map_err(|e| WasmtimeError::Compilation {
+            message: format!("WAT parsing failed: {}", e),
+        })?;
 
         Self::compile(engine, &wasm_bytes)
     }
@@ -300,10 +295,9 @@ impl Module {
         }
 
         // Check version
-        let version = u32::from_le_bytes([
-            wasm_bytes[4], wasm_bytes[5], wasm_bytes[6], wasm_bytes[7]
-        ]);
-        
+        let version =
+            u32::from_le_bytes([wasm_bytes[4], wasm_bytes[5], wasm_bytes[6], wasm_bytes[7]]);
+
         if version != 1 {
             return Err(WasmtimeError::Validation {
                 message: format!("Unsupported WebAssembly version: {}", version),
@@ -370,14 +364,18 @@ impl Module {
 
     /// Get all function exports
     pub fn function_exports(&self) -> Vec<&ExportInfo> {
-        self.metadata.exports.iter()
+        self.metadata
+            .exports
+            .iter()
             .filter(|exp| matches!(exp.export_type, ExportKind::Function(_)))
             .collect()
     }
 
     /// Get all memory exports
     pub fn memory_exports(&self) -> Vec<&ExportInfo> {
-        self.metadata.exports.iter()
+        self.metadata
+            .exports
+            .iter()
             .filter(|exp| matches!(exp.export_type, ExportKind::Memory(_, _, _, _)))
             .collect()
     }
@@ -388,17 +386,23 @@ impl Module {
     }
 
     /// Validate that all required imports can be satisfied
-    pub fn validate_imports(&self, available_imports: &HashMap<String, HashMap<String, ImportKind>>) -> WasmtimeResult<()> {
+    pub fn validate_imports(
+        &self,
+        available_imports: &HashMap<String, HashMap<String, ImportKind>>,
+    ) -> WasmtimeResult<()> {
         for import in &self.metadata.imports {
-            let module_imports = available_imports.get(&import.module)
-                .ok_or_else(|| WasmtimeError::ImportExport {
+            let module_imports = available_imports.get(&import.module).ok_or_else(|| {
+                WasmtimeError::ImportExport {
                     message: format!("Missing import module: {}", import.module),
-                })?;
+                }
+            })?;
 
-            let import_item = module_imports.get(&import.name)
-                .ok_or_else(|| WasmtimeError::ImportExport {
-                    message: format!("Missing import: {}.{}", import.module, import.name),
-                })?;
+            let import_item =
+                module_imports
+                    .get(&import.name)
+                    .ok_or_else(|| WasmtimeError::ImportExport {
+                        message: format!("Missing import: {}.{}", import.module, import.name),
+                    })?;
 
             // Validate import type compatibility
             if !import_types_compatible(&import.import_type, import_item) {
@@ -412,10 +416,9 @@ impl Module {
 
     /// Get module serialization for caching
     pub fn serialize(&self) -> WasmtimeResult<Vec<u8>> {
-        self.inner.serialize()
-            .map_err(|e| WasmtimeError::Internal {
-                message: format!("Module serialization failed: {}", e),
-            })
+        self.inner.serialize().map_err(|e| WasmtimeError::Internal {
+            message: format!("Module serialization failed: {}", e),
+        })
     }
 
     /// Deserialize module from cache
@@ -429,9 +432,11 @@ impl Module {
         engine.validate()?;
 
         // Safety: We trust that the serialized bytes came from Wasmtime
-        let module = unsafe { WasmtimeModule::deserialize(engine.inner(), bytes) }
-            .map_err(|e| WasmtimeError::Compilation {
-                message: format!("Module deserialization failed: {}", e),
+        let module =
+            unsafe { WasmtimeModule::deserialize(engine.inner(), bytes) }.map_err(|e| {
+                WasmtimeError::Compilation {
+                    message: format!("Module deserialization failed: {}", e),
+                }
             })?;
 
         // Note: We can't extract metadata from deserialized modules easily
@@ -491,7 +496,10 @@ impl Module {
     ///
     /// # Returns
     /// The deserialized Module on success, or an error if deserialization fails
-    pub fn deserialize_file(engine: &Engine, path: impl AsRef<std::path::Path>) -> WasmtimeResult<Self> {
+    pub fn deserialize_file(
+        engine: &Engine,
+        path: impl AsRef<std::path::Path>,
+    ) -> WasmtimeResult<Self> {
         let path = path.as_ref();
 
         if !path.exists() {
@@ -503,9 +511,11 @@ impl Module {
         engine.validate()?;
 
         // Safety: We trust that the serialized file came from Wasmtime
-        let module = unsafe { WasmtimeModule::deserialize_file(engine.inner(), path) }
-            .map_err(|e| WasmtimeError::Compilation {
-                message: format!("Module deserialization from file failed: {}", e),
+        let module =
+            unsafe { WasmtimeModule::deserialize_file(engine.inner(), path) }.map_err(|e| {
+                WasmtimeError::Compilation {
+                    message: format!("Module deserialization from file failed: {}", e),
+                }
             })?;
 
         // Note: We can't extract metadata from deserialized modules easily
@@ -531,7 +541,11 @@ impl Module {
 }
 
 impl ModuleMetadata {
-    fn extract(module: &WasmtimeModule, size_bytes: usize, wasm_bytes: &[u8]) -> WasmtimeResult<Self> {
+    fn extract(
+        module: &WasmtimeModule,
+        size_bytes: usize,
+        wasm_bytes: &[u8],
+    ) -> WasmtimeResult<Self> {
         let mut imports = Vec::new();
         let mut exports = Vec::new();
         let mut functions = Vec::new();
@@ -644,27 +658,23 @@ fn convert_import_type(ty: wasmtime::ExternType) -> WasmtimeResult<ImportKind> {
         wasmtime::ExternType::Func(func_type) => {
             Ok(ImportKind::Function(convert_func_type(&func_type)?))
         }
-        wasmtime::ExternType::Global(global_type) => {
-            Ok(ImportKind::Global(
-                convert_val_type(global_type.content().clone())?,
-                matches!(global_type.mutability(), Mutability::Var)
-            ))
-        }
-        wasmtime::ExternType::Memory(memory_type) => {
-            Ok(ImportKind::Memory(
-                memory_type.minimum(),
-                memory_type.maximum(),
-                memory_type.is_64(),
-                memory_type.is_shared()
-            ))
-        }
-        wasmtime::ExternType::Table(table_type) => {
-            Ok(ImportKind::Table(
-                convert_ref_type(table_type.element().clone())?,
-                table_type.minimum().try_into().unwrap_or(u32::MAX),
-                table_type.maximum().map(|max| max.try_into().unwrap_or(u32::MAX))
-            ))
-        }
+        wasmtime::ExternType::Global(global_type) => Ok(ImportKind::Global(
+            convert_val_type(global_type.content().clone())?,
+            matches!(global_type.mutability(), Mutability::Var),
+        )),
+        wasmtime::ExternType::Memory(memory_type) => Ok(ImportKind::Memory(
+            memory_type.minimum(),
+            memory_type.maximum(),
+            memory_type.is_64(),
+            memory_type.is_shared(),
+        )),
+        wasmtime::ExternType::Table(table_type) => Ok(ImportKind::Table(
+            convert_ref_type(table_type.element().clone())?,
+            table_type.minimum().try_into().unwrap_or(u32::MAX),
+            table_type
+                .maximum()
+                .map(|max| max.try_into().unwrap_or(u32::MAX)),
+        )),
         wasmtime::ExternType::Tag(_tag_type) => {
             // Tag types are not supported in our interface
             Err(WasmtimeError::Module {
@@ -679,27 +689,23 @@ fn convert_export_type(ty: wasmtime::ExternType) -> WasmtimeResult<ExportKind> {
         wasmtime::ExternType::Func(func_type) => {
             Ok(ExportKind::Function(convert_func_type(&func_type)?))
         }
-        wasmtime::ExternType::Global(global_type) => {
-            Ok(ExportKind::Global(
-                convert_val_type(global_type.content().clone())?,
-                matches!(global_type.mutability(), Mutability::Var)
-            ))
-        }
-        wasmtime::ExternType::Memory(memory_type) => {
-            Ok(ExportKind::Memory(
-                memory_type.minimum(),
-                memory_type.maximum(),
-                memory_type.is_64(),
-                memory_type.is_shared()
-            ))
-        }
-        wasmtime::ExternType::Table(table_type) => {
-            Ok(ExportKind::Table(
-                convert_ref_type(table_type.element().clone())?,
-                table_type.minimum().try_into().unwrap_or(u32::MAX),
-                table_type.maximum().map(|max| max.try_into().unwrap_or(u32::MAX))
-            ))
-        }
+        wasmtime::ExternType::Global(global_type) => Ok(ExportKind::Global(
+            convert_val_type(global_type.content().clone())?,
+            matches!(global_type.mutability(), Mutability::Var),
+        )),
+        wasmtime::ExternType::Memory(memory_type) => Ok(ExportKind::Memory(
+            memory_type.minimum(),
+            memory_type.maximum(),
+            memory_type.is_64(),
+            memory_type.is_shared(),
+        )),
+        wasmtime::ExternType::Table(table_type) => Ok(ExportKind::Table(
+            convert_ref_type(table_type.element().clone())?,
+            table_type.minimum().try_into().unwrap_or(u32::MAX),
+            table_type
+                .maximum()
+                .map(|max| max.try_into().unwrap_or(u32::MAX)),
+        )),
         wasmtime::ExternType::Tag(_tag_type) => {
             // Tag types are not supported in our interface
             Err(WasmtimeError::Module {
@@ -710,11 +716,13 @@ fn convert_export_type(ty: wasmtime::ExternType) -> WasmtimeResult<ExportKind> {
 }
 
 fn convert_func_type(func_type: &FuncType) -> WasmtimeResult<FunctionSignature> {
-    let params = func_type.params()
+    let params = func_type
+        .params()
         .map(|vt| convert_val_type(vt))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let returns = func_type.results()
+    let returns = func_type
+        .results()
         .map(|vt| convert_val_type(vt))
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -737,19 +745,29 @@ fn convert_ref_type(ref_type: wasmtime::RefType) -> WasmtimeResult<ModuleValueTy
     // In wasmtime 40.x with GC support, concrete function references use ConcreteFunc
     match ref_type.heap_type() {
         wasmtime::HeapType::Extern => Ok(ModuleValueType::ExternRef),
-        wasmtime::HeapType::Func | wasmtime::HeapType::ConcreteFunc(_) => Ok(ModuleValueType::FuncRef),
+        wasmtime::HeapType::Func | wasmtime::HeapType::ConcreteFunc(_) => {
+            Ok(ModuleValueType::FuncRef)
+        }
         // GC proposal heap types
         wasmtime::HeapType::Any | wasmtime::HeapType::Exn => Ok(ModuleValueType::AnyRef),
         wasmtime::HeapType::Eq => Ok(ModuleValueType::EqRef),
         wasmtime::HeapType::I31 => Ok(ModuleValueType::I31Ref),
-        wasmtime::HeapType::Struct | wasmtime::HeapType::ConcreteStruct(_) => Ok(ModuleValueType::StructRef),
-        wasmtime::HeapType::Array | wasmtime::HeapType::ConcreteArray(_) => Ok(ModuleValueType::ArrayRef),
+        wasmtime::HeapType::Struct | wasmtime::HeapType::ConcreteStruct(_) => {
+            Ok(ModuleValueType::StructRef)
+        }
+        wasmtime::HeapType::Array | wasmtime::HeapType::ConcreteArray(_) => {
+            Ok(ModuleValueType::ArrayRef)
+        }
         wasmtime::HeapType::None => Ok(ModuleValueType::NullRef),
         wasmtime::HeapType::NoFunc => Ok(ModuleValueType::NullFuncRef),
         wasmtime::HeapType::NoExtern => Ok(ModuleValueType::NullExternRef),
         _ => Err(WasmtimeError::Module {
-            message: format!("Unsupported reference type: {:?} (heap_type: {:?})", ref_type, ref_type.heap_type()),
-        })
+            message: format!(
+                "Unsupported reference type: {:?} (heap_type: {:?})",
+                ref_type,
+                ref_type.heap_type()
+            ),
+        }),
     }
 }
 
@@ -761,22 +779,30 @@ fn import_types_compatible(required: &ImportKind, available: &ImportKind) -> boo
         (ImportKind::Global(req_type, req_mut), ImportKind::Global(avail_type, avail_mut)) => {
             req_type == avail_type && req_mut <= avail_mut
         }
-        (ImportKind::Memory(req_min, req_max, req_64, req_shared), ImportKind::Memory(avail_min, avail_max, avail_64, avail_shared)) => {
-            req_64 == avail_64 &&
-            avail_min >= req_min &&
-            match (req_max, avail_max) {
-                (Some(req_max), Some(avail_max)) => avail_max >= req_max,
-                (Some(_), None) => true,
-                (None, _) => true,
-            } && req_shared == avail_shared
+        (
+            ImportKind::Memory(req_min, req_max, req_64, req_shared),
+            ImportKind::Memory(avail_min, avail_max, avail_64, avail_shared),
+        ) => {
+            req_64 == avail_64
+                && avail_min >= req_min
+                && match (req_max, avail_max) {
+                    (Some(req_max), Some(avail_max)) => avail_max >= req_max,
+                    (Some(_), None) => true,
+                    (None, _) => true,
+                }
+                && req_shared == avail_shared
         }
-        (ImportKind::Table(req_elem, req_min, req_max), ImportKind::Table(avail_elem, avail_min, avail_max)) => {
-            req_elem == avail_elem && avail_min >= &req_min &&
-            match (req_max, avail_max) {
-                (Some(req_max), Some(avail_max)) => avail_max >= req_max,
-                (Some(_), None) => true,
-                (None, _) => true,
-            }
+        (
+            ImportKind::Table(req_elem, req_min, req_max),
+            ImportKind::Table(avail_elem, avail_min, avail_max),
+        ) => {
+            req_elem == avail_elem
+                && avail_min >= &req_min
+                && match (req_max, avail_max) {
+                    (Some(req_max), Some(avail_max)) => avail_max >= req_max,
+                    (Some(_), None) => true,
+                    (None, _) => true,
+                }
         }
         _ => false,
     }
@@ -787,125 +813,125 @@ fn signatures_compatible(required: &FunctionSignature, available: &FunctionSigna
 }
 
 /// Shared core functions for module operations used by both JNI and Panama interfaces
-/// 
+///
 /// These functions eliminate code duplication and provide consistent behavior
 /// across interface implementations while maintaining defensive programming practices.
 pub mod core {
     use super::*;
-    use std::os::raw::c_void;
-    use crate::error::ffi_utils;
-    use crate::{validate_ptr_not_null, validate_not_empty};
     use crate::engine::Engine;
-    
+    use crate::error::ffi_utils;
+    use crate::{validate_not_empty, validate_ptr_not_null};
+    use std::os::raw::c_void;
+
     /// Core function to compile a WebAssembly module from bytes
     pub fn compile_module(engine: &Engine, wasm_bytes: &[u8]) -> WasmtimeResult<Box<Module>> {
         validate_not_empty!(wasm_bytes, "WebAssembly bytes");
         Module::compile(engine, wasm_bytes).map(Box::new)
     }
-    
+
     /// Core function to compile a WebAssembly module from WAT (WebAssembly Text format)
     pub fn compile_module_wat(engine: &Engine, wat: &str) -> WasmtimeResult<Box<Module>> {
         validate_not_empty!(wat.as_bytes(), "WAT string");
         Module::compile_wat(engine, wat).map(Box::new)
     }
-    
+
     /// Core function to validate WebAssembly bytes without compilation
     pub fn validate_module_bytes(wasm_bytes: &[u8]) -> WasmtimeResult<()> {
         validate_not_empty!(wasm_bytes, "WebAssembly bytes");
         Module::validate_bytes(wasm_bytes)
     }
-    
+
     /// Core function to validate module pointer and get reference
     pub unsafe fn get_module_ref(module_ptr: *const c_void) -> WasmtimeResult<&'static Module> {
         validate_ptr_not_null!(module_ptr, "module");
         Ok(&*(module_ptr as *const Module))
     }
-    
+
     /// Core function to validate module pointer and get mutable reference
     pub unsafe fn get_module_mut(module_ptr: *mut c_void) -> WasmtimeResult<&'static mut Module> {
         validate_ptr_not_null!(module_ptr, "module");
         Ok(&mut *(module_ptr as *mut Module))
     }
-    
+
     /// Core function to get module metadata
     pub fn get_metadata(module: &Module) -> &ModuleMetadata {
         module.metadata()
     }
-    
+
     /// Core function to check if module has a specific export
     pub fn has_export(module: &Module, name: &str) -> bool {
         module.has_export(name)
     }
-    
+
     /// Core function to get export information by name
     pub fn get_export_info<'a>(module: &'a Module, name: &str) -> Option<&'a ExportInfo> {
         module.get_export(name)
     }
-    
+
     /// Core function to get all function exports
     pub fn get_function_exports(module: &Module) -> Vec<&ExportInfo> {
         module.function_exports()
     }
-    
+
     /// Core function to get all memory exports
     pub fn get_memory_exports(module: &Module) -> Vec<&ExportInfo> {
         module.memory_exports()
     }
-    
+
     /// Core function to get required imports
     pub fn get_required_imports(module: &Module) -> &[ImportInfo] {
         module.required_imports()
     }
-    
+
     /// Core function to validate that all required imports can be satisfied
     pub fn validate_imports(
-        module: &Module, 
-        available_imports: &HashMap<String, HashMap<String, ImportKind>>
+        module: &Module,
+        available_imports: &HashMap<String, HashMap<String, ImportKind>>,
     ) -> WasmtimeResult<()> {
         module.validate_imports(available_imports)
     }
-    
+
     /// Core function to serialize module for caching
     pub fn serialize_module(module: &Module) -> WasmtimeResult<Vec<u8>> {
         module.serialize()
     }
-    
+
     /// Core function to deserialize module from cache
     pub fn deserialize_module(engine: &Engine, bytes: &[u8]) -> WasmtimeResult<Box<Module>> {
         validate_not_empty!(bytes, "serialized module bytes");
         Module::deserialize(engine, bytes).map(Box::new)
     }
-    
+
     /// Core function to destroy a module (safe cleanup)
     pub unsafe fn destroy_module(module_ptr: *mut c_void) {
         ffi_utils::destroy_resource::<Module>(module_ptr, "Module");
     }
-    
+
     /// Core function to validate module functionality
     pub fn validate_module(module: &Module) -> WasmtimeResult<()> {
         module.validate()
     }
-    
+
     /// Core function to get module size in bytes
     pub fn get_module_size(module: &Module) -> usize {
         module.metadata().size_bytes
     }
-    
+
     /// Core function to get module name (if available)
     pub fn get_module_name(module: &Module) -> Option<&str> {
         module.metadata().name.as_deref()
     }
-    
+
     /// Core function to get number of exports
     pub fn get_export_count(module: &Module) -> usize {
         module.metadata().exports.len()
     }
-    
+
     /// Core function to get number of imports
     pub fn get_import_count(module: &Module) -> usize {
         module.metadata().imports.len()
     }
-    
+
     /// Core function to get number of functions
     pub fn get_function_count(module: &Module) -> usize {
         module.metadata().functions.len()
@@ -913,14 +939,19 @@ pub mod core {
 
     /// Core function to check if module has specific import
     pub fn has_import(module: &Module, module_name: &str, name: &str) -> bool {
-        module.metadata.imports.iter().any(|import| {
-            import.module == module_name && import.name == name
-        })
+        module
+            .metadata
+            .imports
+            .iter()
+            .any(|import| import.module == module_name && import.name == name)
     }
 
     /// Core function to get table exports (returns cloned data for FFI use)
     pub fn get_table_exports(module: &Module) -> Vec<ExportInfo> {
-        module.metadata.exports.iter()
+        module
+            .metadata
+            .exports
+            .iter()
             .filter(|export| matches!(export.export_type, ExportKind::Table(_, _, _)))
             .cloned()
             .collect()
@@ -928,7 +959,10 @@ pub mod core {
 
     /// Core function to get global exports (returns cloned data for FFI use)
     pub fn get_global_exports(module: &Module) -> Vec<ExportInfo> {
-        module.metadata.exports.iter()
+        module
+            .metadata
+            .exports
+            .iter()
             .filter(|export| matches!(export.export_type, ExportKind::Global(_, _)))
             .cloned()
             .collect()
@@ -947,11 +981,10 @@ mod tests {
     #[test]
     fn test_module_compilation() {
         let engine = shared_engine();
-        
+
         // Simple WAT module for testing
         let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
-        let module = Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         assert!(module.validate().is_ok());
         assert!(module.has_export("test"));
@@ -971,14 +1004,13 @@ mod tests {
         let wat = "(module 
                      (import \"env\" \"print\" (func $print (param i32)))
                      (func (export \"main\") (result i32) i32.const 42))";
-        
-        let module = Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let metadata = module.metadata();
         assert_eq!(metadata.imports.len(), 1);
         assert_eq!(metadata.exports.len(), 1);
-        
+
         let import = &metadata.imports[0];
         assert_eq!(import.module, "env");
         assert_eq!(import.name, "print");
@@ -992,8 +1024,7 @@ mod tests {
                        local.get 0 local.get 1 i32.add)
                      (memory (export \"mem\") 1))";
 
-        let module = Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let func_exports = module.function_exports();
         assert_eq!(func_exports.len(), 1);
@@ -1141,14 +1172,15 @@ mod tests {
                      (global (export \"counter\") (mut i32) (i32.const 0))
                      (global (export \"constant\") i64 (i64.const 42)))";
 
-        let module = Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let metadata = module.metadata();
         assert_eq!(metadata.exports.len(), 2);
 
         // Check for global exports
-        let global_exports: Vec<_> = metadata.exports.iter()
+        let global_exports: Vec<_> = metadata
+            .exports
+            .iter()
             .filter(|e| matches!(e.export_type, ExportKind::Global(_, _)))
             .collect();
         assert_eq!(global_exports.len(), 2);
@@ -1160,8 +1192,7 @@ mod tests {
         let wat = "(module
                      (table (export \"table\") 10 funcref))";
 
-        let module = Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let metadata = module.metadata();
         assert_eq!(metadata.exports.len(), 1);
@@ -1184,8 +1215,7 @@ mod tests {
                      (func (export \"test\") (result i32) i32.const 42)
                      (memory (export \"mem\") 1))";
 
-        let module = Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         assert!(module.get_export("test").is_some());
         assert!(module.get_export("mem").is_some());
@@ -1227,9 +1257,9 @@ mod tests {
 // Native C exports for JNI and Panama FFI consumption
 //
 
-use std::os::raw::{c_void, c_char, c_int};
-use std::ffi::CStr;
 use crate::shared_ffi::FFI_ERROR;
+use std::ffi::CStr;
+use std::os::raw::{c_char, c_int, c_void};
 
 /// Compile WebAssembly module from bytes
 ///
@@ -1254,7 +1284,7 @@ pub unsafe extern "C" fn wasmtime4j_module_compile(
                 Ok(module) => Box::into_raw(module) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1275,16 +1305,12 @@ pub unsafe extern "C" fn wasmtime4j_module_compile_wat(
     }
 
     match crate::engine::core::get_engine_ref(engine_ptr) {
-        Ok(engine) => {
-            match CStr::from_ptr(wat_text).to_str() {
-                Ok(wat_str) => {
-                    match core::compile_module_wat(engine, wat_str) {
-                        Ok(module) => Box::into_raw(module) as *mut c_void,
-                        Err(_) => std::ptr::null_mut(),
-                    }
-                },
+        Ok(engine) => match CStr::from_ptr(wat_text).to_str() {
+            Ok(wat_str) => match core::compile_module_wat(engine, wat_str) {
+                Ok(module) => Box::into_raw(module) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
-            }
+            },
+            Err(_) => std::ptr::null_mut(),
         },
         Err(_) => std::ptr::null_mut(),
     }
@@ -1336,13 +1362,15 @@ pub unsafe extern "C" fn wasmtime4j_module_has_export(
     }
 
     match core::get_module_ref(module_ptr) {
-        Ok(module) => {
-            match CStr::from_ptr(name).to_str() {
-                Ok(name_str) => {
-                    if core::has_export(module, name_str) { 1 } else { 0 }
-                },
-                Err(_) => FFI_ERROR,
+        Ok(module) => match CStr::from_ptr(name).to_str() {
+            Ok(name_str) => {
+                if core::has_export(module, name_str) {
+                    1
+                } else {
+                    0
+                }
             }
+            Err(_) => FFI_ERROR,
         },
         Err(_) => FFI_ERROR,
     }
@@ -1365,13 +1393,20 @@ pub unsafe extern "C" fn wasmtime4j_module_has_import(
 
     match core::get_module_ref(module_ptr) {
         Ok(module) => {
-            match (CStr::from_ptr(module_name).to_str(), CStr::from_ptr(name).to_str()) {
+            match (
+                CStr::from_ptr(module_name).to_str(),
+                CStr::from_ptr(name).to_str(),
+            ) {
                 (Ok(mod_str), Ok(name_str)) => {
-                    if core::has_import(module, mod_str, name_str) { 1 } else { 0 }
-                },
+                    if core::has_import(module, mod_str, name_str) {
+                        1
+                    } else {
+                        0
+                    }
+                }
                 _ => FFI_ERROR,
             }
-        },
+        }
         Err(_) => FFI_ERROR,
     }
 }
@@ -1408,7 +1443,9 @@ pub unsafe extern "C" fn wasmtime4j_module_export_count(module_ptr: *const c_voi
 ///
 /// module_ptr must be a valid pointer from wasmtime4j_module_compile
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_module_function_export_count(module_ptr: *const c_void) -> usize {
+pub unsafe extern "C" fn wasmtime4j_module_function_export_count(
+    module_ptr: *const c_void,
+) -> usize {
     match core::get_module_ref(module_ptr) {
         Ok(module) => core::get_function_exports(module).len(),
         Err(_) => 0,
@@ -1521,7 +1558,10 @@ pub unsafe extern "C" fn wasmtime4j_module_get_export_kind(
         return 0;
     }
 
-    match (core::get_module_ref(module_ptr), std::ffi::CStr::from_ptr(name).to_str()) {
+    match (
+        core::get_module_ref(module_ptr),
+        std::ffi::CStr::from_ptr(name).to_str(),
+    ) {
         (Ok(module), Ok(name_str)) => {
             // Query the wasmtime module directly for exports
             // This works correctly for both compiled and deserialized modules

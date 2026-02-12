@@ -3,12 +3,12 @@
 //! This module provides C-compatible functions for creating, managing,
 //! and accessing WebAssembly tables with bounds checking and reference type support.
 
+use crate::error::ffi_utils;
+use crate::store::Store;
+use crate::table::core;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
-use crate::table::core;
-use crate::store::Store;
-use crate::error::ffi_utils;
-use wasmtime::{ValType, RefType};
+use wasmtime::{RefType, ValType};
 
 /// Create a new WebAssembly table (Panama FFI version)
 #[no_mangle]
@@ -27,12 +27,18 @@ pub extern "C" fn wasmtime4j_panama_table_create(
         let val_type = match element_type {
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
-            _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: format!("Invalid table element type: {}", element_type),
-            }),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
         };
 
-        let max_size = if has_maximum != 0 { Some(maximum_size) } else { None };
+        let max_size = if has_maximum != 0 {
+            Some(maximum_size)
+        } else {
+            None
+        };
 
         let name = if name_ptr.is_null() {
             None
@@ -123,12 +129,18 @@ pub extern "C" fn wasmtime4j_panama_table_set(
         let val_type = match element_type {
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
-            _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: format!("Invalid table element type: {}", element_type),
-            }),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
         };
 
-        let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+        let ref_id_opt = if ref_id_present != 0 {
+            Some(ref_id)
+        } else {
+            None
+        };
         let element = core::create_table_element(val_type, ref_id_opt)?;
 
         core::set_table_element(table, store, index, element)?;
@@ -155,12 +167,18 @@ pub extern "C" fn wasmtime4j_panama_table_grow(
         let val_type = match element_type {
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
-            _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: format!("Invalid table element type: {}", element_type),
-            }),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
         };
 
-        let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+        let ref_id_opt = if ref_id_present != 0 {
+            Some(ref_id)
+        } else {
+            None
+        };
         let init_value = core::create_table_element(val_type, ref_id_opt)?;
 
         let previous_size = core::grow_table(table, store, delta, init_value)?;
@@ -193,12 +211,18 @@ pub extern "C" fn wasmtime4j_panama_table_fill(
         let val_type = match element_type {
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
-            _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: format!("Invalid table element type: {}", element_type),
-            }),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
         };
 
-        let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+        let ref_id_opt = if ref_id_present != 0 {
+            Some(ref_id)
+        } else {
+            None
+        };
         let value = core::create_table_element(val_type, ref_id_opt)?;
 
         core::fill_table(table, store, dst, value, len)?;
@@ -229,19 +253,19 @@ pub extern "C" fn wasmtime4j_panama_table_metadata(
                     ValType::Ref(ref_type) => {
                         // Check the heap type to determine funcref vs externref
                         match ref_type.heap_type() {
-                            wasmtime::HeapType::Func => 5,     // FUNCREF
-                            wasmtime::HeapType::Extern => 6,   // EXTERNREF
-                            wasmtime::HeapType::Any => 7,      // ANYREF
-                            wasmtime::HeapType::Eq => 8,       // EQREF
-                            wasmtime::HeapType::I31 => 9,      // I31REF
-                            wasmtime::HeapType::Struct => 10,  // STRUCTREF
-                            wasmtime::HeapType::Array => 11,   // ARRAYREF
-                            wasmtime::HeapType::None => 12,    // NULLREF
-                            wasmtime::HeapType::NoFunc => 13,  // NULLFUNCREF
+                            wasmtime::HeapType::Func => 5,      // FUNCREF
+                            wasmtime::HeapType::Extern => 6,    // EXTERNREF
+                            wasmtime::HeapType::Any => 7,       // ANYREF
+                            wasmtime::HeapType::Eq => 8,        // EQREF
+                            wasmtime::HeapType::I31 => 9,       // I31REF
+                            wasmtime::HeapType::Struct => 10,   // STRUCTREF
+                            wasmtime::HeapType::Array => 11,    // ARRAYREF
+                            wasmtime::HeapType::None => 12,     // NULLREF
+                            wasmtime::HeapType::NoFunc => 13,   // NULLFUNCREF
                             wasmtime::HeapType::NoExtern => 14, // NULLEXTERNREF
                             _ => 6, // Default to EXTERNREF for other/unknown types
                         }
-                    },
+                    }
                     _ => -1, // Invalid
                 };
             }
@@ -249,7 +273,11 @@ pub extern "C" fn wasmtime4j_panama_table_metadata(
                 *initial_size = metadata.initial_size;
             }
             if !has_maximum.is_null() {
-                *has_maximum = if metadata.maximum_size.is_some() { 1 } else { 0 };
+                *has_maximum = if metadata.maximum_size.is_some() {
+                    1
+                } else {
+                    0
+                };
             }
             if !maximum_size.is_null() {
                 *maximum_size = metadata.maximum_size.unwrap_or(0);
@@ -296,12 +324,18 @@ pub extern "C" fn wasmtime4j_panama_table_create64(
         let val_type = match element_type {
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
-            _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: format!("Invalid table element type: {}", element_type),
-            }),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
         };
 
-        let max_size = if has_maximum != 0 { Some(maximum_size) } else { None };
+        let max_size = if has_maximum != 0 {
+            Some(maximum_size)
+        } else {
+            None
+        };
 
         let name = if name_ptr.is_null() {
             None
@@ -324,7 +358,11 @@ pub extern "C" fn wasmtime4j_panama_table_create64(
 pub extern "C" fn wasmtime4j_panama_table_is_64(table_ptr: *mut c_void) -> c_int {
     match unsafe { core::get_table_ref(table_ptr) } {
         Ok(table) => {
-            if core::is_table_64(table) { 1 } else { 0 }
+            if core::is_table_64(table) {
+                1
+            } else {
+                0
+            }
         }
         Err(_) => -1,
     }
@@ -344,7 +382,8 @@ pub extern "C" fn wasmtime4j_panama_table_init(
     ffi_utils::ffi_try_code(|| {
         let table = unsafe { core::get_table_ref(table_ptr)? };
         let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
-        let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
+        let instance =
+            unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
 
         table.init_from_segment(store, instance, dst, src, len, segment_index)?;
         Ok(())
@@ -358,7 +397,8 @@ pub extern "C" fn wasmtime4j_panama_elem_drop(
     segment_index: c_uint,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
+        let instance =
+            unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
 
         let segment_manager = instance.get_element_segment_manager();
         segment_manager.drop_segment(segment_index)?;
@@ -379,16 +419,26 @@ pub extern "C" fn wasmtime4j_panama_memory_init(
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         // Get raw wasmtime::Memory (not wrapped)
-        let wasmtime_memory = unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
+        let wasmtime_memory =
+            unsafe { ffi_utils::deref_ptr::<wasmtime::Memory>(memory_ptr, "memory")? };
         let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
-        let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
+        let instance =
+            unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
 
         // Get memory type information from the store
         let memory_type = store.with_context_ro(|ctx| Ok(wasmtime_memory.ty(ctx)))?;
         // Create wrapped Memory from wasmtime::Memory
         let memory = crate::memory::Memory::from_wasmtime_memory(*wasmtime_memory, memory_type);
 
-        crate::memory::core::memory_init(&memory, store, instance, dest_offset, data_segment_index, src_offset, len)?;
+        crate::memory::core::memory_init(
+            &memory,
+            store,
+            instance,
+            dest_offset,
+            data_segment_index,
+            src_offset,
+            len,
+        )?;
         Ok(())
     })
 }
@@ -400,7 +450,8 @@ pub extern "C" fn wasmtime4j_panama_data_drop(
     data_segment_index: c_uint,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let instance = unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
+        let instance =
+            unsafe { ffi_utils::deref_ptr::<crate::instance::Instance>(instance_ptr, "instance")? };
 
         crate::memory::core::data_drop(instance, data_segment_index)?;
         Ok(())
@@ -420,7 +471,13 @@ pub extern "C" fn wasmtime4j_panama_memory_copy(
         let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
-        crate::memory::core::memory_copy(memory, store, dest_offset as usize, src_offset as usize, len as usize)?;
+        crate::memory::core::memory_copy(
+            memory,
+            store,
+            dest_offset as usize,
+            src_offset as usize,
+            len as usize,
+        )?;
         Ok(())
     })
 }
@@ -468,7 +525,9 @@ pub extern "C" fn wasmtime4j_panama_memory_atomic_compare_and_swap_i32(
             });
         }
 
-        let result = crate::memory::core::atomic_compare_and_swap_i32(memory, store, offset, expected, new_value)?;
+        let result = crate::memory::core::atomic_compare_and_swap_i32(
+            memory, store, offset, expected, new_value,
+        )?;
 
         unsafe {
             *result_out = result;
@@ -499,7 +558,9 @@ pub extern "C" fn wasmtime4j_panama_memory_atomic_compare_and_swap_i64(
             });
         }
 
-        let result = crate::memory::core::atomic_compare_and_swap_i64(memory, store, offset, expected, new_value)?;
+        let result = crate::memory::core::atomic_compare_and_swap_i64(
+            memory, store, offset, expected, new_value,
+        )?;
 
         unsafe {
             *result_out = result;
@@ -820,7 +881,8 @@ pub extern "C" fn wasmtime4j_panama_memory_atomic_wait32(
             });
         }
 
-        let result = crate::memory::core::atomic_wait32(memory, store, offset, expected, timeout_nanos)?;
+        let result =
+            crate::memory::core::atomic_wait32(memory, store, offset, expected, timeout_nanos)?;
 
         unsafe {
             *result_out = result;
@@ -851,7 +913,8 @@ pub extern "C" fn wasmtime4j_panama_memory_atomic_wait64(
             });
         }
 
-        let result = crate::memory::core::atomic_wait64(memory, store, offset, expected, timeout_nanos)?;
+        let result =
+            crate::memory::core::atomic_wait64(memory, store, offset, expected, timeout_nanos)?;
 
         unsafe {
             *result_out = result;
@@ -890,8 +953,10 @@ pub extern "C" fn wasmtime4j_panama_table_copy_from(
     len: c_uint,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let dst_table = unsafe { crate::table::core::get_table_ref(dst_table_ptr as *const c_void)? };
-        let src_table = unsafe { crate::table::core::get_table_ref(src_table_ptr as *const c_void)? };
+        let dst_table =
+            unsafe { crate::table::core::get_table_ref(dst_table_ptr as *const c_void)? };
+        let src_table =
+            unsafe { crate::table::core::get_table_ref(src_table_ptr as *const c_void)? };
         let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
 
         dst_table.copy_from(store, dst, src_table, src, len)?;

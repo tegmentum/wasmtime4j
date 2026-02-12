@@ -6,14 +6,14 @@
 //! All functions use C calling conventions and handle memory management appropriately.
 //! All FFI functions are wrapped with catch_unwind to prevent panics from crashing the JVM.
 
+use std::ffi::CStr;
 use std::os::raw::{c_char, c_int, c_long, c_void};
 use std::ptr;
 use std::slice;
-use std::ffi::CStr;
 
-use crate::wasi_preview2::WasiPreview2Context;
-use crate::wasi_filesystem_helpers;
 use crate::ffi_boundary_i32;
+use crate::wasi_filesystem_helpers;
+use crate::wasi_preview2::WasiPreview2Context;
 
 /// Read via stream from a descriptor at the specified offset
 ///
@@ -306,22 +306,23 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_open_at(
     out_descriptor_handle: *mut *mut c_void,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || descriptor_handle.is_null() || path.is_null() || out_descriptor_handle.is_null() {
+        if context_handle.is_null()
+            || descriptor_handle.is_null()
+            || path.is_null()
+            || out_descriptor_handle.is_null()
+        {
             return Ok(-1);
         }
 
         let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
         let descriptor_id = descriptor_handle as u64;
 
-        let path_str = unsafe {
-            CStr::from_ptr(path)
-                .to_str()
-                .unwrap_or("")
-        };
+        let path_str = unsafe { CStr::from_ptr(path).to_str().unwrap_or("") };
 
         let combined_flags = (path_flags as u32) | (open_flags as u32) | (descriptor_flags as u32);
 
-        match wasi_filesystem_helpers::open_at(context, descriptor_id, path_str, combined_flags, 0) {
+        match wasi_filesystem_helpers::open_at(context, descriptor_id, path_str, combined_flags, 0)
+        {
             Ok(new_descriptor_id) => {
                 unsafe {
                     *out_descriptor_handle = new_descriptor_id as *mut c_void;
@@ -358,11 +359,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_create_directory_at(
         let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
         let descriptor_id = descriptor_handle as u64;
 
-        let path_str = unsafe {
-            CStr::from_ptr(path)
-                .to_str()
-                .unwrap_or("")
-        };
+        let path_str = unsafe { CStr::from_ptr(path).to_str().unwrap_or("") };
 
         match wasi_filesystem_helpers::create_directory_at(context, descriptor_id, path_str) {
             Ok(()) => Ok(0),
@@ -389,7 +386,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_read_directory(
     out_entries_len: *mut c_int,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || descriptor_handle.is_null() || out_entries.is_null() || out_entries_len.is_null() {
+        if context_handle.is_null()
+            || descriptor_handle.is_null()
+            || out_entries.is_null()
+            || out_entries_len.is_null()
+        {
             return Ok(-1);
         }
 
@@ -435,7 +436,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_read_directory(
                     offset += 4;
 
                     unsafe {
-                        ptr::copy_nonoverlapping(name_bytes.as_ptr(), buffer.add(offset), name_bytes.len());
+                        ptr::copy_nonoverlapping(
+                            name_bytes.as_ptr(),
+                            buffer.add(offset),
+                            name_bytes.len(),
+                        );
                     }
                     offset += name_bytes.len();
 
@@ -482,18 +487,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_read_link_at(
     out_target_len: *mut c_int,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || descriptor_handle.is_null() || path.is_null() || out_target.is_null() || out_target_len.is_null() {
+        if context_handle.is_null()
+            || descriptor_handle.is_null()
+            || path.is_null()
+            || out_target.is_null()
+            || out_target_len.is_null()
+        {
             return Ok(-1);
         }
 
         let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
         let descriptor_id = descriptor_handle as u64;
 
-        let path_str = unsafe {
-            CStr::from_ptr(path)
-                .to_str()
-                .unwrap_or("")
-        };
+        let path_str = unsafe { CStr::from_ptr(path).to_str().unwrap_or("") };
 
         match wasi_filesystem_helpers::read_link_at(context, descriptor_id, path_str) {
             Ok(_target) => {
@@ -533,11 +539,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_unlink_file_at(
         let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
         let descriptor_id = descriptor_handle as u64;
 
-        let path_str = unsafe {
-            CStr::from_ptr(path)
-                .to_str()
-                .unwrap_or("")
-        };
+        let path_str = unsafe { CStr::from_ptr(path).to_str().unwrap_or("") };
 
         match wasi_filesystem_helpers::unlink_file_at(context, descriptor_id, path_str) {
             Ok(()) => Ok(0),
@@ -571,11 +573,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_remove_directory_at(
         let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
         let descriptor_id = descriptor_handle as u64;
 
-        let path_str = unsafe {
-            CStr::from_ptr(path)
-                .to_str()
-                .unwrap_or("")
-        };
+        let path_str = unsafe { CStr::from_ptr(path).to_str().unwrap_or("") };
 
         match wasi_filesystem_helpers::remove_directory_at(context, descriptor_id, path_str) {
             Ok(()) => Ok(0),
@@ -608,8 +606,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_rename_at(
     _new_path_len: c_int,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || old_descriptor_handle.is_null() || old_path.is_null()
-            || new_descriptor_handle.is_null() || new_path.is_null() {
+        if context_handle.is_null()
+            || old_descriptor_handle.is_null()
+            || old_path.is_null()
+            || new_descriptor_handle.is_null()
+            || new_path.is_null()
+        {
             return Ok(-1);
         }
 
@@ -617,18 +619,16 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_rename_at(
         let old_descriptor_id = old_descriptor_handle as u64;
         let new_descriptor_id = new_descriptor_handle as u64;
 
-        let old_path_str = unsafe {
-            CStr::from_ptr(old_path)
-                .to_str()
-                .unwrap_or("")
-        };
-        let new_path_str = unsafe {
-            CStr::from_ptr(new_path)
-                .to_str()
-                .unwrap_or("")
-        };
+        let old_path_str = unsafe { CStr::from_ptr(old_path).to_str().unwrap_or("") };
+        let new_path_str = unsafe { CStr::from_ptr(new_path).to_str().unwrap_or("") };
 
-        match wasi_filesystem_helpers::rename_at(context, old_descriptor_id, old_path_str, new_descriptor_id, new_path_str) {
+        match wasi_filesystem_helpers::rename_at(
+            context,
+            old_descriptor_id,
+            old_path_str,
+            new_descriptor_id,
+            new_path_str,
+        ) {
             Ok(()) => Ok(0),
             Err(_) => Ok(-1),
         }
@@ -657,25 +657,26 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_symlink_at(
     _new_path_len: c_int,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || descriptor_handle.is_null() || old_path.is_null() || new_path.is_null() {
+        if context_handle.is_null()
+            || descriptor_handle.is_null()
+            || old_path.is_null()
+            || new_path.is_null()
+        {
             return Ok(-1);
         }
 
         let context = unsafe { &*(context_handle as *const WasiPreview2Context) };
         let descriptor_id = descriptor_handle as u64;
 
-        let old_path_str = unsafe {
-            CStr::from_ptr(old_path)
-                .to_str()
-                .unwrap_or("")
-        };
-        let new_path_str = unsafe {
-            CStr::from_ptr(new_path)
-                .to_str()
-                .unwrap_or("")
-        };
+        let old_path_str = unsafe { CStr::from_ptr(old_path).to_str().unwrap_or("") };
+        let new_path_str = unsafe { CStr::from_ptr(new_path).to_str().unwrap_or("") };
 
-        match wasi_filesystem_helpers::symlink_at(context, descriptor_id, old_path_str, new_path_str) {
+        match wasi_filesystem_helpers::symlink_at(
+            context,
+            descriptor_id,
+            old_path_str,
+            new_path_str,
+        ) {
             Ok(()) => Ok(0),
             Err(_) => Ok(-1),
         }
@@ -708,8 +709,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_link_at(
     _new_path_len: c_int,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || old_descriptor_handle.is_null() || old_path.is_null()
-            || new_descriptor_handle.is_null() || new_path.is_null() {
+        if context_handle.is_null()
+            || old_descriptor_handle.is_null()
+            || old_path.is_null()
+            || new_descriptor_handle.is_null()
+            || new_path.is_null()
+        {
             return Ok(-1);
         }
 
@@ -717,20 +722,18 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_link_at(
         let old_descriptor_id = old_descriptor_handle as u64;
         let new_descriptor_id = new_descriptor_handle as u64;
 
-        let old_path_str = unsafe {
-            CStr::from_ptr(old_path)
-                .to_str()
-                .unwrap_or("")
-        };
-        let new_path_str = unsafe {
-            CStr::from_ptr(new_path)
-                .to_str()
-                .unwrap_or("")
-        };
+        let old_path_str = unsafe { CStr::from_ptr(old_path).to_str().unwrap_or("") };
+        let new_path_str = unsafe { CStr::from_ptr(new_path).to_str().unwrap_or("") };
 
         let _ = old_path_flags;
 
-        match wasi_filesystem_helpers::link_at(context, old_descriptor_id, old_path_str, new_descriptor_id, new_path_str) {
+        match wasi_filesystem_helpers::link_at(
+            context,
+            old_descriptor_id,
+            old_path_str,
+            new_descriptor_id,
+            new_path_str,
+        ) {
             Ok(()) => Ok(0),
             Err(_) => Ok(-1),
         }
@@ -755,7 +758,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_descriptor_is_same_object(
     out_same: *mut c_int,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || descriptor_handle1.is_null() || descriptor_handle2.is_null() || out_same.is_null() {
+        if context_handle.is_null()
+            || descriptor_handle1.is_null()
+            || descriptor_handle2.is_null()
+            || out_same.is_null()
+        {
             return Ok(-1);
         }
 

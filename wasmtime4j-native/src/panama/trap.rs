@@ -50,9 +50,7 @@ pub mod trap_codes {
 /// # Returns
 /// The trap code constant, or UNKNOWN if the trap type cannot be determined
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_trap_parse_code(
-    error_message: *const c_char,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_trap_parse_code(error_message: *const c_char) -> c_int {
     if error_message.is_null() {
         return trap_codes::UNKNOWN;
     }
@@ -105,9 +103,7 @@ pub extern "C" fn wasmtime4j_panama_trap_parse_code(
 /// Pointer to a static null-terminated string with the trap code name,
 /// or null if the code is invalid
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_trap_code_name(
-    trap_code: c_int,
-) -> *const c_char {
+pub extern "C" fn wasmtime4j_panama_trap_code_name(trap_code: c_int) -> *const c_char {
     static STACK_OVERFLOW: &[u8] = b"STACK_OVERFLOW\0";
     static MEMORY_OUT_OF_BOUNDS: &[u8] = b"MEMORY_OUT_OF_BOUNDS\0";
     static HEAP_MISALIGNED: &[u8] = b"HEAP_MISALIGNED\0";
@@ -153,9 +149,7 @@ pub extern "C" fn wasmtime4j_panama_trap_code_name(
 /// # Returns
 /// 1 if the message indicates a trap, 0 otherwise
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_trap_is_trap(
-    error_message: *const c_char,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_trap_is_trap(error_message: *const c_char) -> c_int {
     if error_message.is_null() {
         return 0;
     }
@@ -180,7 +174,11 @@ pub extern "C" fn wasmtime4j_panama_trap_is_trap(
         || msg.contains("null reference")
         || msg.contains("misaligned");
 
-    if is_trap { 1 } else { 0 }
+    if is_trap {
+        1
+    } else {
+        0
+    }
 }
 
 /// Extract function name from a backtrace line if present
@@ -238,11 +236,7 @@ pub extern "C" fn wasmtime4j_panama_trap_extract_function_name(
     let copy_len = std::cmp::min(bytes.len(), buffer_size - 1);
 
     unsafe {
-        std::ptr::copy_nonoverlapping(
-            bytes.as_ptr(),
-            out_buffer as *mut u8,
-            copy_len,
-        );
+        std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_buffer as *mut u8, copy_len);
         *out_buffer.add(copy_len) = 0; // Null terminator
     }
 
@@ -257,9 +251,7 @@ pub extern "C" fn wasmtime4j_panama_trap_extract_function_name(
 /// # Returns
 /// The instruction offset if found, or -1 if not found
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_trap_extract_offset(
-    error_message: *const c_char,
-) -> c_long {
+pub extern "C" fn wasmtime4j_panama_trap_extract_offset(error_message: *const c_char) -> c_long {
     if error_message.is_null() {
         return -1;
     }

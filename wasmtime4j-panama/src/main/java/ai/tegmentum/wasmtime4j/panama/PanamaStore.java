@@ -693,8 +693,9 @@ public final class PanamaStore implements Store {
         throw new WasmException("Panama memory creation function not available");
       }
 
-      final int maximumPages = (maxPages == -1) ? 0 : maxPages;
+      final long maximumPages = (maxPages == -1) ? 0L : (long) maxPages;
       final int isShared = 0; // Not shared
+      final int is64 = 0; // Standard 32-bit memory
       final int memoryIndex = 0; // Not used for direct creation
 
       final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
@@ -703,9 +704,10 @@ public final class PanamaStore implements Store {
           (int)
               createHandle.invoke(
                   nativeStore,
-                  initialPages,
+                  (long) initialPages,
                   maximumPages,
                   isShared,
+                  is64,
                   memoryIndex,
                   MemorySegment.NULL, // name = null
                   memoryPtr);
@@ -759,6 +761,7 @@ public final class PanamaStore implements Store {
       }
 
       final int isShared = 1; // Shared memory
+      final int is64 = 0; // Standard 32-bit memory
       final int memoryIndex = 0; // Not used for direct creation
 
       final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
@@ -767,9 +770,10 @@ public final class PanamaStore implements Store {
           (int)
               createHandle.invoke(
                   nativeStore,
-                  initialPages,
-                  maxPages,
+                  (long) initialPages,
+                  (long) maxPages,
                   isShared,
+                  is64,
                   memoryIndex,
                   MemorySegment.NULL, // name = null
                   memoryPtr);

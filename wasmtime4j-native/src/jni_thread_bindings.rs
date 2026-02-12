@@ -3,7 +3,7 @@
 //! This module provides the JNI interface for WebAssembly threading capabilities,
 //! including thread spawning, execution, synchronization, and lifecycle management.
 
-use crate::error::{WasmtimeError, WasmtimeResult, jni_utils};
+use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 use crate::threading::{WasmThread, WasmThreadState};
 use jni::objects::{JByteArray, JClass};
 use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray};
@@ -107,12 +107,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExec
         };
 
         // Get function name
-        let func_name: String = env_ref.get_string(&function_name)
+        let func_name: String = env_ref
+            .get_string(&function_name)
             .map_err(|e| WasmtimeError::JniError(format!("Failed to get function name: {}", e)))?
             .into();
 
         // Deserialize arguments
-        let args_bytes = env_ref.convert_byte_array(&serialized_args)
+        let args_bytes = env_ref
+            .convert_byte_array(&serialized_args)
             .map_err(|e| WasmtimeError::JniError(format!("Failed to convert arguments: {}", e)))?;
 
         let args: Vec<wasmtime::Val> = crate::value_serialization::deserialize_values(&args_bytes)?;
@@ -124,17 +126,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExec
             let mut store = wasmtime::Store::new(&engine, ());
 
             // Instantiate module in this thread's context
-            let instance = wasmtime::Instance::new(&mut store, module, &[])
-                .map_err(|e| WasmtimeError::Runtime {
+            let instance = wasmtime::Instance::new(&mut store, module, &[]).map_err(|e| {
+                WasmtimeError::Runtime {
                     message: format!("Failed to instantiate module: {}", e),
                     backtrace: None,
-                })?;
+                }
+            })?;
 
             // Look up function by name
-            let func = instance.get_func(&mut store, &func_name)
-                .ok_or_else(|| WasmtimeError::Function {
+            let func = instance.get_func(&mut store, &func_name).ok_or_else(|| {
+                WasmtimeError::Function {
                     message: format!("Function '{}' not found", func_name),
-                })?;
+                }
+            })?;
 
             // Prepare results buffer
             let func_type = func.ty(&store);
@@ -152,8 +156,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExec
 
         // Serialize results
         let result_bytes = crate::value_serialization::serialize_values(&result)?;
-        let result_array = env_ref.byte_array_from_slice(&result_bytes)
-            .map_err(|e| WasmtimeError::JniError(format!("Failed to create result array: {}", e)))?;
+        let result_array = env_ref.byte_array_from_slice(&result_bytes).map_err(|e| {
+            WasmtimeError::JniError(format!("Failed to create result array: {}", e))
+        })?;
 
         Ok(unsafe { jni::objects::JObject::from_raw(result_array.as_raw()) })
     })
@@ -176,11 +181,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeJoin
         let thread = unsafe { get_thread_ref_mut(handle as *mut c_void)? };
 
         // Wait for thread to complete
-        thread.join()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Thread join failed: {}", e),
-                backtrace: None,
-            })?;
+        thread.join().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Thread join failed: {}", e),
+            backtrace: None,
+        })?;
 
         Ok(())
     });
@@ -209,7 +213,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeJoin
         let thread = unsafe { get_thread_ref_mut(handle as *mut c_void)? };
 
         // Wait for thread to complete with timeout
-        let completed = thread.join_timeout(std::time::Duration::from_millis(timeout_ms as u64))
+        let completed = thread
+            .join_timeout(std::time::Duration::from_millis(timeout_ms as u64))
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Thread join with timeout failed: {}", e),
                 backtrace: None,
@@ -255,7 +260,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeForc
         }
 
         let thread = unsafe { get_thread_ref_mut(handle as *mut c_void)? };
-        thread.force_terminate()
+        thread
+            .force_terminate()
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Force termination failed: {}", e),
                 backtrace: None,
@@ -305,8 +311,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetS
 
         // Create array: [functionsExecuted, totalExecutionTime, atomicOperations,
         //                memoryAccesses, waitNotifyOperations, peakMemoryUsage]
-        let stats_array = env_ref.new_long_array(6)
-            .map_err(|e| WasmtimeError::JniError(format!("Failed to create statistics array: {}", e)))?;
+        let stats_array = env_ref.new_long_array(6).map_err(|e| {
+            WasmtimeError::JniError(format!("Failed to create statistics array: {}", e))
+        })?;
 
         let stats_data = vec![
             stats.functions_executed as i64,
@@ -317,8 +324,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetS
             stats.peak_memory_usage as i64,
         ];
 
-        env_ref.set_long_array_region(&stats_array, 0, &stats_data)
-            .map_err(|e| WasmtimeError::JniError(format!("Failed to set statistics data: {}", e)))?;
+        env_ref
+            .set_long_array_region(&stats_array, 0, &stats_data)
+            .map_err(|e| {
+                WasmtimeError::JniError(format!("Failed to set statistics data: {}", e))
+            })?;
 
         Ok(unsafe { jni::objects::JObject::from_raw(stats_array.as_raw()) })
     })
@@ -397,8 +407,14 @@ mod tests {
         let _: extern "system" fn(JNIEnv, JClass, jlong) -> jint =
             Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeGetState;
 
-        let _: extern "system" fn(JNIEnv, JClass, jlong, jlong, jni::objects::JString, JByteArray) -> jbyteArray =
-            Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExecuteFunction;
+        let _: extern "system" fn(
+            JNIEnv,
+            JClass,
+            jlong,
+            jlong,
+            jni::objects::JString,
+            JByteArray,
+        ) -> jbyteArray = Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeExecuteFunction;
 
         let _: extern "system" fn(JNIEnv, JClass, jlong) =
             Java_ai_tegmentum_wasmtime4j_jni_JniWasmThread_nativeJoin;
@@ -447,7 +463,10 @@ mod tests {
         let mut seen_values = std::collections::HashSet::new();
         for state in states {
             let value = state as i32;
-            assert!(value >= 0 && value <= 8, "State value out of expected range");
+            assert!(
+                value >= 0 && value <= 8,
+                "State value out of expected range"
+            );
             assert!(seen_values.insert(value), "Duplicate state value found");
         }
 

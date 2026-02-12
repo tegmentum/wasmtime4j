@@ -3,8 +3,8 @@
 //! This module provides defensive, thread-safe wrapper around Wasmtime engines
 //! with proper resource management and JVM crash prevention.
 
-use std::sync::{Arc, RwLock};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, RwLock};
 
 use wasmtime::{Config, Engine as WasmtimeEngine, Strategy};
 
@@ -92,10 +92,9 @@ impl Engine {
 
         let summary = EngineConfigSummary::from_config(&config);
 
-        let engine =
-            WasmtimeEngine::new(&config).map_err(|e| WasmtimeError::EngineConfig {
-                message: format!("Failed to create Wasmtime engine: {}", e),
-            })?;
+        let engine = WasmtimeEngine::new(&config).map_err(|e| WasmtimeError::EngineConfig {
+            message: format!("Failed to create Wasmtime engine: {}", e),
+        })?;
 
         Ok(Engine {
             inner: Arc::new(engine),
@@ -502,13 +501,13 @@ impl Default for Engine {
                         // This should virtually never fail unless the system is severely broken
                         let default_config = safe_wasmtime_config();
                         Engine {
-                            inner: Arc::new(
-                                WasmtimeEngine::new(&default_config).unwrap_or_else(|_| {
+                            inner: Arc::new(WasmtimeEngine::new(&default_config).unwrap_or_else(
+                                |_| {
                                     panic!(
                                         "Critical: Cannot create fallback engine - system unusable"
                                     )
-                                }),
-                            ),
+                                },
+                            )),
                             config_summary: EngineConfigSummary {
                                 strategy: "Default".to_string(),
                                 opt_level: "None".to_string(),

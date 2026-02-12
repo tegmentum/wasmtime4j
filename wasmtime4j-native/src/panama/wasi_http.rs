@@ -74,9 +74,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_read_timeout(
     if builder_ptr.is_null() {
         return -1;
     }
-    unsafe {
-        crate::wasi_http::wasi_http_config_builder_set_read_timeout(builder_ptr, timeout_ms)
-    }
+    unsafe { crate::wasi_http::wasi_http_config_builder_set_read_timeout(builder_ptr, timeout_ms) }
 }
 
 /// Set write timeout in milliseconds (Panama FFI)
@@ -88,9 +86,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_write_timeout(
     if builder_ptr.is_null() {
         return -1;
     }
-    unsafe {
-        crate::wasi_http::wasi_http_config_builder_set_write_timeout(builder_ptr, timeout_ms)
-    }
+    unsafe { crate::wasi_http::wasi_http_config_builder_set_write_timeout(builder_ptr, timeout_ms) }
 }
 
 /// Set max connections (Panama FFI)
@@ -156,9 +152,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_https_required(
     if builder_ptr.is_null() {
         return -1;
     }
-    unsafe {
-        crate::wasi_http::wasi_http_config_builder_set_https_required(builder_ptr, required)
-    }
+    unsafe { crate::wasi_http::wasi_http_config_builder_set_https_required(builder_ptr, required) }
 }
 
 /// Set certificate validation flag (Panama FFI)
@@ -171,10 +165,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_certificate_val
         return -1;
     }
     unsafe {
-        crate::wasi_http::wasi_http_config_builder_set_certificate_validation(
-            builder_ptr,
-            enabled,
-        )
+        crate::wasi_http::wasi_http_config_builder_set_certificate_validation(builder_ptr, enabled)
     }
 }
 
@@ -213,9 +204,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_http_config_builder_set_follow_redirect
     if builder_ptr.is_null() {
         return -1;
     }
-    unsafe {
-        crate::wasi_http::wasi_http_config_builder_set_follow_redirects(builder_ptr, follow)
-    }
+    unsafe { crate::wasi_http::wasi_http_config_builder_set_follow_redirects(builder_ptr, follow) }
 }
 
 /// Set max redirects (Panama FFI)
@@ -384,9 +373,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_active_requests(
 
 /// Get statistics - bytes sent (Panama FFI)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_bytes_sent(
-    ctx_ptr: *const c_void,
-) -> u64 {
+pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_stats_bytes_sent(ctx_ptr: *const c_void) -> u64 {
     if ctx_ptr.is_null() {
         return 0;
     }
@@ -561,8 +548,7 @@ pub extern "C" fn wasmtime4j_panama_tag_create(
 
     // Convert param type codes to ValTypes
     let params: Vec<ValType> = if param_count > 0 && !param_types.is_null() {
-        let param_slice =
-            unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
+        let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
         param_slice
             .iter()
             .filter_map(|&code| match code {
@@ -625,7 +611,9 @@ pub extern "C" fn wasmtime4j_panama_tag_get_param_types(
     let store_guard = match store.try_lock_store() {
         Ok(guard) => guard,
         Err(_) => {
-            unsafe { *out_count = 0; }
+            unsafe {
+                *out_count = 0;
+            }
             return std::ptr::null_mut();
         }
     };
@@ -688,7 +676,9 @@ pub extern "C" fn wasmtime4j_panama_tag_get_return_types(
     let store_guard = match store.try_lock_store() {
         Ok(guard) => guard,
         Err(_) => {
-            unsafe { *out_count = 0; }
+            unsafe {
+                *out_count = 0;
+            }
             return std::ptr::null_mut();
         }
     };

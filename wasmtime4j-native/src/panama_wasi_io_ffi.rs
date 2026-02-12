@@ -19,9 +19,9 @@ use crate::{ffi_boundary_i32, ffi_boundary_ptr};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::WasiContext;
 use crate::wasi_stream_ops::{
-    read_from_stream_generic, skip_in_stream_generic, close_stream_generic,
-    check_write_capacity_generic, write_to_stream_generic, flush_stream_generic,
-    write_zeroes_to_stream_generic, splice_streams_generic,
+    check_write_capacity_generic, close_stream_generic, flush_stream_generic,
+    read_from_stream_generic, skip_in_stream_generic, splice_streams_generic,
+    write_to_stream_generic, write_zeroes_to_stream_generic,
 };
 
 // ============================================================================
@@ -128,13 +128,20 @@ fn check_pollable_ready(context: &WasiContext, pollable_id: u64) -> WasmtimeResu
 /// configured. This function logs a warning and returns success for non-blocking
 /// streams, but returns an error for blocking operations that would actually block.
 #[inline]
-fn block_on_pollable(context: &WasiContext, pollable_id: u64, timeout: Option<u64>) -> WasmtimeResult<()> {
+fn block_on_pollable(
+    context: &WasiContext,
+    pollable_id: u64,
+    timeout: Option<u64>,
+) -> WasmtimeResult<()> {
     // Check if the stream is already ready
     match check_pollable_ready(context, pollable_id) {
         Ok(true) => Ok(()), // Stream is ready, no blocking needed
         Ok(false) => {
             // Stream is not ready, we would need to block
-            log::warn!("block_on_pollable: stream {} not ready, async runtime not configured", pollable_id);
+            log::warn!(
+                "block_on_pollable: stream {} not ready, async runtime not configured",
+                pollable_id
+            );
             if timeout.is_some() {
                 // With a timeout, we can return immediately as if it timed out
                 Ok(())
@@ -182,7 +189,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_read(
     out_length: *mut c_long,
 ) -> i32 {
     ffi_boundary_i32!({
-        if context_handle.is_null() || stream_handle.is_null() || out_buffer.is_null() || out_length.is_null() || length < 0 {
+        if context_handle.is_null()
+            || stream_handle.is_null()
+            || out_buffer.is_null()
+            || out_length.is_null()
+            || length < 0
+        {
             return Ok(-1);
         }
 
@@ -230,7 +242,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_blocking_read(
     out_length: *mut c_long,
 ) -> i32 {
     ffi_boundary_i32!({
-        if context_handle.is_null() || stream_handle.is_null() || out_buffer.is_null() || out_length.is_null() || length < 0 {
+        if context_handle.is_null()
+            || stream_handle.is_null()
+            || out_buffer.is_null()
+            || out_length.is_null()
+            || length < 0
+        {
             return Ok(-1);
         }
 
@@ -276,7 +293,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_skip(
     out_skipped: *mut c_long,
 ) -> i32 {
     ffi_boundary_i32!({
-        if context_handle.is_null() || stream_handle.is_null() || out_skipped.is_null() || length < 0 {
+        if context_handle.is_null()
+            || stream_handle.is_null()
+            || out_skipped.is_null()
+            || length < 0
+        {
             return Ok(-1);
         }
 
@@ -664,7 +685,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_splice(
     out_spliced: *mut c_long,
 ) -> i32 {
     ffi_boundary_i32!({
-        if context_handle.is_null() || output_stream_handle.is_null() || input_stream_handle.is_null() || out_spliced.is_null() || length < 0 {
+        if context_handle.is_null()
+            || output_stream_handle.is_null()
+            || input_stream_handle.is_null()
+            || out_spliced.is_null()
+            || length < 0
+        {
             return Ok(-1);
         }
 
@@ -679,7 +705,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_splice(
         let dest_stream_id = output_stream_handle as u64;
         let source_stream_id = input_stream_handle as u64;
 
-        match splice_streams(context, dest_stream_id, source_stream_id, length as u64, false) {
+        match splice_streams(
+            context,
+            dest_stream_id,
+            source_stream_id,
+            length as u64,
+            false,
+        ) {
             Ok(spliced) => {
                 unsafe {
                     *out_spliced = spliced as c_long;
@@ -711,7 +743,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_splice(
     out_spliced: *mut c_long,
 ) -> i32 {
     ffi_boundary_i32!({
-        if context_handle.is_null() || output_stream_handle.is_null() || input_stream_handle.is_null() || out_spliced.is_null() || length < 0 {
+        if context_handle.is_null()
+            || output_stream_handle.is_null()
+            || input_stream_handle.is_null()
+            || out_spliced.is_null()
+            || length < 0
+        {
             return Ok(-1);
         }
 
@@ -726,7 +763,13 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_splice(
         let dest_stream_id = output_stream_handle as u64;
         let source_stream_id = input_stream_handle as u64;
 
-        match splice_streams(context, dest_stream_id, source_stream_id, length as u64, true) {
+        match splice_streams(
+            context,
+            dest_stream_id,
+            source_stream_id,
+            length as u64,
+            true,
+        ) {
             Ok(spliced) => {
                 unsafe {
                     *out_spliced = spliced as c_long;

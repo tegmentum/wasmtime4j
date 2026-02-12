@@ -50,7 +50,11 @@ pub extern "C" fn wasmtime4j_platform_memory_allocate(
     }
 
     let allocator = unsafe { &*allocator };
-    let alignment = if alignment == 0 { None } else { Some(alignment) };
+    let alignment = if alignment == 0 {
+        None
+    } else {
+        Some(alignment)
+    };
 
     match allocator.allocate(size, alignment) {
         Ok(ptr) => ptr.as_ptr(),
@@ -216,6 +220,7 @@ pub extern "C" fn wasmtime4j_memory_create_with_platform_config(
             Some(maximum_pages as u64)
         },
         is_shared: false,
+        is_64: false,
         memory_index: 0,
         name: None,
     };

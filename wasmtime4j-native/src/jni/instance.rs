@@ -1,11 +1,11 @@
 //! JNI bindings for Instance operations
 
+use jni::objects::{JClass, JObject, JString, JValue};
+use jni::sys::{jboolean, jint, jintArray, jlong, jobject, jobjectArray, jstring};
 use jni::JNIEnv;
-use jni::objects::{JClass, JString, JObject, JValue};
-use jni::sys::{jlong, jint, jboolean, jstring, jobject, jintArray, jobjectArray};
 
-use crate::instance::{core, InstanceState};
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
+use crate::instance::{core, InstanceState};
 
 use std::os::raw::c_void;
 
@@ -107,25 +107,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetExp
         let export_names: Vec<String> = exports.keys().cloned().collect();
 
         // Create a Java String array
-        let string_class = env.find_class("java/lang/String")
-            .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to find String class: {}", e)
-            })?;
+        let string_class =
+            env.find_class("java/lang/String")
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to find String class: {}", e),
+                })?;
 
-        let output_array = env.new_object_array(export_names.len() as i32, string_class, JObject::null())
+        let output_array = env
+            .new_object_array(export_names.len() as i32, string_class, JObject::null())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to create array: {}", e)
+                message: format!("Failed to create array: {}", e),
             })?;
 
         // Fill the array with export names
         for (i, name) in export_names.iter().enumerate() {
-            let jstr = env.new_string(name)
+            let jstr = env
+                .new_string(name)
                 .map_err(|e| WasmtimeError::InvalidParameter {
-                    message: format!("Failed to create string: {}", e)
+                    message: format!("Failed to create string: {}", e),
                 })?;
             env.set_object_array_element(&output_array, i as i32, jstr)
                 .map_err(|e| WasmtimeError::InvalidParameter {
-                    message: format!("Failed to set array element: {}", e)
+                    message: format!("Failed to set array element: {}", e),
                 })?;
         }
 
@@ -162,78 +165,100 @@ fn convert_java_object_to_wasm_value(
     use crate::instance::WasmValue;
 
     // Check if it's a WasmValue object
-    let is_wasm_value = env.is_instance_of(param_obj, "ai/tegmentum/wasmtime4j/WasmValue").unwrap_or(false);
+    let is_wasm_value = env
+        .is_instance_of(param_obj, "ai/tegmentum/wasmtime4j/WasmValue")
+        .unwrap_or(false);
 
     if is_wasm_value {
         // Get the type from WasmValue.getType()
-        let type_obj = env.call_method(param_obj, "getType", "()Lai/tegmentum/wasmtime4j/WasmValueType;", &[])
+        let type_obj = env
+            .call_method(
+                param_obj,
+                "getType",
+                "()Lai/tegmentum/wasmtime4j/WasmValueType;",
+                &[],
+            )
             .and_then(|v| v.l())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get type from WasmValue: {}", e)
+                message: format!("Failed to get type from WasmValue: {}", e),
             })?;
 
         // Get the type ordinal to determine which type it is
-        let type_ordinal = env.call_method(&type_obj, "ordinal", "()I", &[])
+        let type_ordinal = env
+            .call_method(&type_obj, "ordinal", "()I", &[])
             .and_then(|v| v.i())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get type ordinal: {}", e)
+                message: format!("Failed to get type ordinal: {}", e),
             })?;
 
         // Get the value from WasmValue.getValue()
-        let value_obj = env.call_method(param_obj, "getValue", "()Ljava/lang/Object;", &[])
+        let value_obj = env
+            .call_method(param_obj, "getValue", "()Ljava/lang/Object;", &[])
             .and_then(|v| v.l())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get value from WasmValue: {}", e)
+                message: format!("Failed to get value from WasmValue: {}", e),
             })?;
 
         // Convert based on type ordinal (0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF)
         match type_ordinal {
-            0 => { // I32
-                let value = env.call_method(&value_obj, "intValue", "()I", &[])
+            0 => {
+                // I32
+                let value = env
+                    .call_method(&value_obj, "intValue", "()I", &[])
                     .and_then(|v| v.i())
                     .map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to extract I32 value: {}", e)
+                        message: format!("Failed to extract I32 value: {}", e),
                     })?;
                 Ok(WasmValue::I32(value))
             }
-            1 => { // I64
-                let value = env.call_method(&value_obj, "longValue", "()J", &[])
+            1 => {
+                // I64
+                let value = env
+                    .call_method(&value_obj, "longValue", "()J", &[])
                     .and_then(|v| v.j())
                     .map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to extract I64 value: {}", e)
+                        message: format!("Failed to extract I64 value: {}", e),
                     })?;
                 Ok(WasmValue::I64(value))
             }
-            2 => { // F32
-                let value = env.call_method(&value_obj, "floatValue", "()F", &[])
+            2 => {
+                // F32
+                let value = env
+                    .call_method(&value_obj, "floatValue", "()F", &[])
                     .and_then(|v| v.f())
                     .map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to extract F32 value: {}", e)
+                        message: format!("Failed to extract F32 value: {}", e),
                     })?;
                 Ok(WasmValue::F32(value))
             }
-            3 => { // F64
-                let value = env.call_method(&value_obj, "doubleValue", "()D", &[])
+            3 => {
+                // F64
+                let value = env
+                    .call_method(&value_obj, "doubleValue", "()D", &[])
                     .and_then(|v| v.d())
                     .map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to extract F64 value: {}", e)
+                        message: format!("Failed to extract F64 value: {}", e),
                     })?;
                 Ok(WasmValue::F64(value))
             }
-            5 => { // FUNCREF
+            5 => {
+                // FUNCREF
                 let ref_value = if !value_obj.is_null() {
                     env.call_method(&value_obj, "getId", "()J", &[])
                         .and_then(|v| v.j())
                         .ok()
-                        .or_else(|| env.call_method(&value_obj, "longValue", "()J", &[])
-                            .and_then(|v| v.j())
-                            .ok())
+                        .or_else(|| {
+                            env.call_method(&value_obj, "longValue", "()J", &[])
+                                .and_then(|v| v.j())
+                                .ok()
+                        })
                 } else {
                     None
                 };
                 Ok(WasmValue::FuncRef(ref_value))
             }
-            6 => { // EXTERNREF
+            6 => {
+                // EXTERNREF
                 let ref_value = if !value_obj.is_null() {
                     env.call_method(&value_obj, "longValue", "()J", &[])
                         .and_then(|v| v.j())
@@ -244,55 +269,78 @@ fn convert_java_object_to_wasm_value(
                 Ok(WasmValue::ExternRef(ref_value))
             }
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Unsupported WasmValue type ordinal: {}", type_ordinal)
-            })
+                message: format!("Unsupported WasmValue type ordinal: {}", type_ordinal),
+            }),
         }
-    } else if env.is_instance_of(param_obj, "java/lang/Integer").unwrap_or(false) {
-        let value = env.call_method(param_obj, "intValue", "()I", &[])
+    } else if env
+        .is_instance_of(param_obj, "java/lang/Integer")
+        .unwrap_or(false)
+    {
+        let value = env
+            .call_method(param_obj, "intValue", "()I", &[])
             .and_then(|v| v.i())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to extract int value: {}", e)
+                message: format!("Failed to extract int value: {}", e),
             })?;
         Ok(WasmValue::I32(value))
-    } else if env.is_instance_of(param_obj, "java/lang/Long").unwrap_or(false) {
-        let value = env.call_method(param_obj, "longValue", "()J", &[])
+    } else if env
+        .is_instance_of(param_obj, "java/lang/Long")
+        .unwrap_or(false)
+    {
+        let value = env
+            .call_method(param_obj, "longValue", "()J", &[])
             .and_then(|v| v.j())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to extract long value: {}", e)
+                message: format!("Failed to extract long value: {}", e),
             })?;
         Ok(WasmValue::I64(value))
-    } else if env.is_instance_of(param_obj, "java/lang/Float").unwrap_or(false) {
-        let value = env.call_method(param_obj, "floatValue", "()F", &[])
+    } else if env
+        .is_instance_of(param_obj, "java/lang/Float")
+        .unwrap_or(false)
+    {
+        let value = env
+            .call_method(param_obj, "floatValue", "()F", &[])
             .and_then(|v| v.f())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to extract float value: {}", e)
+                message: format!("Failed to extract float value: {}", e),
             })?;
         Ok(WasmValue::F32(value))
-    } else if env.is_instance_of(param_obj, "java/lang/Double").unwrap_or(false) {
-        let value = env.call_method(param_obj, "doubleValue", "()D", &[])
+    } else if env
+        .is_instance_of(param_obj, "java/lang/Double")
+        .unwrap_or(false)
+    {
+        let value = env
+            .call_method(param_obj, "doubleValue", "()D", &[])
             .and_then(|v| v.d())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to extract double value: {}", e)
+                message: format!("Failed to extract double value: {}", e),
             })?;
         Ok(WasmValue::F64(value))
     } else {
         // Unknown parameter type - get class name for debugging
-        let class = env.get_object_class(param_obj)
-            .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get parameter {} class: {}", index, e)
-            })?;
-        let class_name_obj = env.call_method(&class, "getName", "()Ljava/lang/String;", &[])
+        let class =
+            env.get_object_class(param_obj)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get parameter {} class: {}", index, e),
+                })?;
+        let class_name_obj = env
+            .call_method(&class, "getName", "()Ljava/lang/String;", &[])
             .and_then(|v| v.l())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get class name: {}", e)
+                message: format!("Failed to get class name: {}", e),
             })?;
-        let class_name: String = env.get_string(&class_name_obj.into())
+        let class_name: String = env
+            .get_string(&class_name_obj.into())
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to convert class name: {}", e)
-            })?.into();
+                message: format!("Failed to convert class name: {}", e),
+            })?
+            .into();
 
         Err(WasmtimeError::InvalidParameter {
-            message: format!("Unsupported parameter type at index {}: {}", index, class_name)
+            message: format!(
+                "Unsupported parameter type at index {}: {}",
+                index, class_name
+            ),
         })
     }
 }
@@ -302,18 +350,20 @@ fn convert_java_params_to_wasm(
     env: &mut JNIEnv,
     params_array: &jni::objects::JObjectArray,
 ) -> WasmtimeResult<Vec<crate::instance::WasmValue>> {
-    let param_count = env.get_array_length(params_array)
-        .map_err(|e| WasmtimeError::InvalidParameter {
-            message: format!("Failed to get array length: {}", e)
-        })?;
+    let param_count =
+        env.get_array_length(params_array)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get array length: {}", e),
+            })?;
 
     let mut wasm_params = Vec::with_capacity(param_count as usize);
 
     for i in 0..param_count {
-        let param_obj = env.get_object_array_element(params_array, i)
-            .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get parameter {}: {}", i, e)
-            })?;
+        let param_obj = env.get_object_array_element(params_array, i).map_err(|e| {
+            WasmtimeError::InvalidParameter {
+                message: format!("Failed to get parameter {}: {}", i, e),
+            }
+        })?;
 
         let wasm_value = convert_java_object_to_wasm_value(env, &param_obj, i)?;
         wasm_params.push(wasm_value);
@@ -329,9 +379,10 @@ fn convert_wasm_value_to_java<'a>(
 ) -> WasmtimeResult<JObject<'a>> {
     use crate::instance::WasmValue;
 
-    let wasm_value_class = env.find_class("ai/tegmentum/wasmtime4j/WasmValue")
+    let wasm_value_class = env
+        .find_class("ai/tegmentum/wasmtime4j/WasmValue")
         .map_err(|e| WasmtimeError::InvalidParameter {
-            message: format!("Failed to find WasmValue class: {}", e)
+            message: format!("Failed to find WasmValue class: {}", e),
         })?;
 
     match val {
@@ -341,11 +392,14 @@ fn convert_wasm_value_to_java<'a>(
                 wasm_value_class,
                 "i32",
                 "(I)Lai/tegmentum/wasmtime4j/WasmValue;",
-                &[integer_value]
-            ).map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to create WasmValue.i32: {}", e)
-            })?.l().map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get WasmValue.i32 result: {}", e)
+                &[integer_value],
+            )
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to create WasmValue.i32: {}", e),
+            })?
+            .l()
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get WasmValue.i32 result: {}", e),
             })
         }
         WasmValue::I64(v) => {
@@ -354,11 +408,14 @@ fn convert_wasm_value_to_java<'a>(
                 wasm_value_class,
                 "i64",
                 "(J)Lai/tegmentum/wasmtime4j/WasmValue;",
-                &[long_value]
-            ).map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to create WasmValue.i64: {}", e)
-            })?.l().map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get WasmValue.i64 result: {}", e)
+                &[long_value],
+            )
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to create WasmValue.i64: {}", e),
+            })?
+            .l()
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get WasmValue.i64 result: {}", e),
             })
         }
         WasmValue::F32(v) => {
@@ -367,11 +424,14 @@ fn convert_wasm_value_to_java<'a>(
                 wasm_value_class,
                 "f32",
                 "(F)Lai/tegmentum/wasmtime4j/WasmValue;",
-                &[float_value]
-            ).map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to create WasmValue.f32: {}", e)
-            })?.l().map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get WasmValue.f32 result: {}", e)
+                &[float_value],
+            )
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to create WasmValue.f32: {}", e),
+            })?
+            .l()
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get WasmValue.f32 result: {}", e),
             })
         }
         WasmValue::F64(v) => {
@@ -380,85 +440,99 @@ fn convert_wasm_value_to_java<'a>(
                 wasm_value_class,
                 "f64",
                 "(D)Lai/tegmentum/wasmtime4j/WasmValue;",
-                &[double_value]
-            ).map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to create WasmValue.f64: {}", e)
-            })?.l().map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get WasmValue.f64 result: {}", e)
+                &[double_value],
+            )
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to create WasmValue.f64: {}", e),
+            })?
+            .l()
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get WasmValue.f64 result: {}", e),
             })
         }
-        WasmValue::ExternRef(ref_value) => {
-            match ref_value {
-                Some(id) => {
-                    let long_class = env.find_class("java/lang/Long")?;
-                    let long_obj = env.new_object(long_class, "(J)V", &[JValue::from(*id)])
-                        .map_err(|e| WasmtimeError::InvalidParameter {
-                            message: format!("Failed to create Long for externref: {}", e)
-                        })?;
-                    env.call_static_method(
-                        wasm_value_class,
-                        "externref",
-                        "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
-                        &[JValue::from(&long_obj)]
-                    ).map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to create WasmValue.externref: {}", e)
-                    })?.l().map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to get WasmValue.externref result: {}", e)
-                    })
-                }
-                None => {
-                    let null_obj = JObject::null();
-                    env.call_static_method(
-                        wasm_value_class,
-                        "externref",
-                        "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
-                        &[JValue::from(&null_obj)]
-                    ).map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to create WasmValue.externref(null): {}", e)
-                    })?.l().map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to get WasmValue.externref(null) result: {}", e)
-                    })
-                }
+        WasmValue::ExternRef(ref_value) => match ref_value {
+            Some(id) => {
+                let long_class = env.find_class("java/lang/Long")?;
+                let long_obj = env
+                    .new_object(long_class, "(J)V", &[JValue::from(*id)])
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to create Long for externref: {}", e),
+                    })?;
+                env.call_static_method(
+                    wasm_value_class,
+                    "externref",
+                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[JValue::from(&long_obj)],
+                )
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create WasmValue.externref: {}", e),
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get WasmValue.externref result: {}", e),
+                })
             }
-        }
-        WasmValue::FuncRef(ref_id) => {
-            match ref_id {
-                Some(id) => {
-                    let long_class = env.find_class("java/lang/Long")
-                        .map_err(|e| WasmtimeError::InvalidParameter {
-                            message: format!("Failed to find Long class: {}", e)
-                        })?;
-                    let long_obj = env.new_object(long_class, "(J)V", &[JValue::Long(*id)])
-                        .map_err(|e| WasmtimeError::InvalidParameter {
-                            message: format!("Failed to create Long object: {}", e)
-                        })?;
-                    env.call_static_method(
-                        wasm_value_class,
-                        "funcref",
-                        "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
-                        &[JValue::from(&long_obj)]
-                    ).map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to create WasmValue.funcref: {}", e)
-                    })?.l().map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to get WasmValue.funcref result: {}", e)
-                    })
-                }
-                None => {
-                    let null_obj = JObject::null();
-                    env.call_static_method(
-                        wasm_value_class,
-                        "funcref",
-                        "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
-                        &[JValue::from(&null_obj)]
-                    ).map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to create WasmValue.funcref(null): {}", e)
-                    })?.l().map_err(|e| WasmtimeError::InvalidParameter {
-                        message: format!("Failed to get WasmValue.funcref(null) result: {}", e)
-                    })
-                }
+            None => {
+                let null_obj = JObject::null();
+                env.call_static_method(
+                    wasm_value_class,
+                    "externref",
+                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[JValue::from(&null_obj)],
+                )
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create WasmValue.externref(null): {}", e),
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get WasmValue.externref(null) result: {}", e),
+                })
             }
-        }
-        _ => Ok(JObject::null()) // Skip unsupported types
+        },
+        WasmValue::FuncRef(ref_id) => match ref_id {
+            Some(id) => {
+                let long_class = env.find_class("java/lang/Long").map_err(|e| {
+                    WasmtimeError::InvalidParameter {
+                        message: format!("Failed to find Long class: {}", e),
+                    }
+                })?;
+                let long_obj = env
+                    .new_object(long_class, "(J)V", &[JValue::Long(*id)])
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to create Long object: {}", e),
+                    })?;
+                env.call_static_method(
+                    wasm_value_class,
+                    "funcref",
+                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[JValue::from(&long_obj)],
+                )
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create WasmValue.funcref: {}", e),
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get WasmValue.funcref result: {}", e),
+                })
+            }
+            None => {
+                let null_obj = JObject::null();
+                env.call_static_method(
+                    wasm_value_class,
+                    "funcref",
+                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[JValue::from(&null_obj)],
+                )
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create WasmValue.funcref(null): {}", e),
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get WasmValue.funcref(null) result: {}", e),
+                })
+            }
+        },
+        _ => Ok(JObject::null()), // Skip unsupported types
     }
 }
 
@@ -467,14 +541,16 @@ fn convert_wasm_results_to_java<'a>(
     env: &mut JNIEnv<'a>,
     results: &[crate::instance::WasmValue],
 ) -> WasmtimeResult<jni::objects::JObjectArray<'a>> {
-    let object_class = env.find_class("java/lang/Object")
-        .map_err(|e| WasmtimeError::InvalidParameter {
-            message: format!("Failed to find Object class: {}", e)
-        })?;
+    let object_class =
+        env.find_class("java/lang/Object")
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to find Object class: {}", e),
+            })?;
 
-    let result_array = env.new_object_array(results.len() as i32, object_class, JObject::null())
+    let result_array = env
+        .new_object_array(results.len() as i32, object_class, JObject::null())
         .map_err(|e| WasmtimeError::InvalidParameter {
-            message: format!("Failed to create result array: {}", e)
+            message: format!("Failed to create result array: {}", e),
         })?;
 
     for (i, val) in results.iter().enumerate() {
@@ -482,7 +558,7 @@ fn convert_wasm_results_to_java<'a>(
         if !java_obj.is_null() {
             env.set_object_array_element(&result_array, i as i32, java_obj)
                 .map_err(|e| WasmtimeError::InvalidParameter {
-                    message: format!("Failed to set array element: {}", e)
+                    message: format!("Failed to set array element: {}", e),
                 })?;
         }
     }
@@ -515,10 +591,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallFu
         let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
 
         // Convert function name
-        let name_str: String = env.get_string(&function_name)
+        let name_str: String = env
+            .get_string(&function_name)
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to convert function name: {}", e)
-            })?.into();
+                message: format!("Failed to convert function name: {}", e),
+            })?
+            .into();
 
         // Convert Java parameters to WasmValue
         use jni::objects::JObjectArray;
@@ -526,7 +604,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallFu
         let wasm_params = convert_java_params_to_wasm(&mut env, &params_array)?;
 
         // Call the function
-        let exec_result: ExecutionResult = instance.call_export_function(store, &name_str, &wasm_params)?;
+        let exec_result: ExecutionResult =
+            instance.call_export_function(store, &name_str, &wasm_params)?;
 
         // Convert results to Java Object array
         let result_array = convert_wasm_results_to_java(&mut env, &exec_result.values)?;
@@ -568,7 +647,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetFun
         match func_opt {
             Some(func) => {
                 // Create FunctionHandle with cached type information
-                let func_handle = crate::jni::function::FunctionHandle::new(func, name_str.clone(), store);
+                let func_handle =
+                    crate::jni::function::FunctionHandle::new(func, name_str.clone(), store);
                 Ok(Box::into_raw(Box::new(func_handle)) as jlong)
             }
             None => Ok(0), // Return 0 for not found
@@ -600,11 +680,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetGlo
         match global_opt {
             Some(global) => {
                 // Create a new Global wrapper and return its pointer
-                let global_wrapper = crate::global::Global::from_wasmtime_global(
-                    global,
-                    store,
-                    Some(name_str),
-                )?;
+                let global_wrapper =
+                    crate::global::Global::from_wasmtime_global(global, store, Some(name_str))?;
                 Ok(Box::into_raw(Box::new(global_wrapper)) as jlong)
             }
             None => Ok(0), // Return 0 for not found
@@ -683,11 +760,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTab
         match table_opt {
             Some(table) => {
                 // Create a new Table wrapper and return its pointer
-                let table_wrapper = crate::table::Table::from_wasmtime_table(
-                    table,
-                    store,
-                    Some(name_str),
-                )?;
+                let table_wrapper =
+                    crate::table::Table::from_wasmtime_table(table, store, Some(name_str))?;
                 Ok(Box::into_raw(Box::new(table_wrapper)) as jlong)
             }
             None => Ok(0), // Return 0 for not found
@@ -757,7 +831,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDispos
                 "JNI Instance",
             )
         };
-        if destroyed { 1 } else { 0 }
+        if destroyed {
+            1
+        } else {
+            0
+        }
     } else {
         0
     }
@@ -829,27 +907,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI3
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
         // Convert function name
-        let name_str: String = env.get_string(&function_name)
+        let name_str: String = env
+            .get_string(&function_name)
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to convert function name: {}", e)
-            })?.into();
+                message: format!("Failed to convert function name: {}", e),
+            })?
+            .into();
 
         // Convert int array to WasmValue::I32 vector
         let params_array = unsafe { JPrimitiveArray::from_raw(params) };
-        let param_count = env.get_array_length(&params_array)
-            .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get array length: {}", e)
-            })?;
+        let param_count =
+            env.get_array_length(&params_array)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get array length: {}", e),
+                })?;
 
         let mut int_values = vec![0i32; param_count as usize];
         env.get_int_array_region(&params_array, 0, &mut int_values)
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get int array: {}", e)
+                message: format!("Failed to get int array: {}", e),
             })?;
 
-        let wasm_params: Vec<WasmValue> = int_values.into_iter()
-            .map(WasmValue::I32)
-            .collect();
+        let wasm_params: Vec<WasmValue> = int_values.into_iter().map(WasmValue::I32).collect();
 
         // Call the function
         let exec_result = instance.call_export_function(store, &name_str, &wasm_params)?;
@@ -895,10 +974,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI3
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
         // Convert function name
-        let name_str: String = env.get_string(&function_name)
+        let name_str: String = env
+            .get_string(&function_name)
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to convert function name: {}", e)
-            })?.into();
+                message: format!("Failed to convert function name: {}", e),
+            })?
+            .into();
 
         // Call the function with no parameters
         let exec_result = instance.call_export_function(store, &name_str, &[])?;

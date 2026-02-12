@@ -3,13 +3,13 @@
 //! This module provides JNI bindings for creating and managing function references
 //! that can be used with WebAssembly tables and indirect calls.
 
+use jni::objects::{JByteArray, JClass};
+use jni::sys::{jbyteArray, jint, jlong};
 use jni::JNIEnv;
-use jni::objects::{JClass, JByteArray};
-use jni::sys::{jlong, jint, jbyteArray};
 
-use crate::error::{jni_utils, WasmtimeError};
-use super::linker::JniHostFunctionCallback;
 use super::hostfunc::unmarshal_function_type;
+use super::linker::JniHostFunctionCallback;
+use crate::error::{jni_utils, WasmtimeError};
 use crate::store::Store;
 
 /// Create a new function reference from a host function (JNI version)
@@ -24,7 +24,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
     function_reference_id: jlong,
 ) -> jlong {
     // Extract data before the closure
-    let type_data_result = env.convert_byte_array(unsafe { jni::objects::JByteArray::from_raw(function_type_data) })
+    let type_data_result = env
+        .convert_byte_array(unsafe { jni::objects::JByteArray::from_raw(function_type_data) })
         .map_err(|e| WasmtimeError::Runtime {
             message: format!("Failed to read function type data: {}", e),
             backtrace: None,
@@ -51,15 +52,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
         let store_ref = unsafe { &*(store_handle as *const Store) };
 
         // Get engine from store context and unmarshal function type
-        let func_type = store_ref.with_context(|ctx| {
-            unmarshal_function_type(ctx.engine(), &type_data)
-        })?;
+        let func_type =
+            store_ref.with_context(|ctx| unmarshal_function_type(ctx.engine(), &type_data))?;
 
         // Create the JNI callback wrapper (jvm is already extracted above)
         let callback = Box::new(JniHostFunctionCallback {
             jvm: std::sync::Arc::new(jvm),
             callback_id: function_reference_id,
-            is_function_reference: true,  // This is a FunctionReference
+            is_function_reference: true, // This is a FunctionReference
         });
 
         // Create and register the function using Store::create_function_reference

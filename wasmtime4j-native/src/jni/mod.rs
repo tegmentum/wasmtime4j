@@ -6,55 +6,55 @@
 #![allow(unused_variables)]
 
 #[cfg(feature = "jni-bindings")]
-use jni::JNIEnv;
-#[cfg(feature = "jni-bindings")]
 use jni::objects::JClass;
 #[cfg(feature = "jni-bindings")]
 use jni::sys::jstring;
+#[cfg(feature = "jni-bindings")]
+use jni::JNIEnv;
 
 // Public modules
 #[cfg(feature = "jni-bindings")]
-pub mod instance;
+pub mod caller;
+#[cfg(feature = "jni-bindings")]
+pub mod component;
+#[cfg(feature = "jni-bindings")]
+pub mod component_linker;
+#[cfg(feature = "jni-bindings")]
+pub mod debugger;
 #[cfg(feature = "jni-bindings")]
 pub mod engine;
 #[cfg(feature = "jni-bindings")]
 pub mod function;
 #[cfg(feature = "jni-bindings")]
-pub mod native_method_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod store;
-#[cfg(feature = "jni-bindings")]
-pub mod linker;
-#[cfg(feature = "jni-bindings")]
-pub mod module;
-#[cfg(feature = "jni-bindings")]
-pub mod component;
-#[cfg(feature = "jni-bindings")]
-pub mod hostfunc;
-#[cfg(feature = "jni-bindings")]
 pub mod functionref;
 #[cfg(feature = "jni-bindings")]
 pub mod global;
 #[cfg(feature = "jni-bindings")]
-pub mod table;
+pub mod hostfunc;
+#[cfg(feature = "jni-bindings")]
+pub mod instance;
+#[cfg(feature = "jni-bindings")]
+pub mod linker;
 #[cfg(feature = "jni-bindings")]
 pub mod memory;
 #[cfg(feature = "jni-bindings")]
+pub mod module;
+#[cfg(feature = "jni-bindings")]
+pub mod native_method_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod resource_limiter;
+#[cfg(feature = "jni-bindings")]
 pub mod runtime;
-#[cfg(feature = "jni-bindings")]
-pub mod wasi;
-#[cfg(feature = "jni-bindings")]
-pub mod caller;
-#[cfg(feature = "jni-bindings")]
-pub mod simd;
 #[cfg(feature = "jni-bindings")]
 pub mod serializer;
 #[cfg(feature = "jni-bindings")]
-pub mod debugger;
+pub mod simd;
 #[cfg(feature = "jni-bindings")]
-pub mod component_linker;
+pub mod store;
 #[cfg(feature = "jni-bindings")]
-pub mod resource_limiter;
+pub mod table;
+#[cfg(feature = "jni-bindings")]
+pub mod wasi;
 
 // Private modules
 #[cfg(feature = "jni-bindings")]
@@ -64,11 +64,11 @@ mod private;
 #[cfg(feature = "jni-bindings")]
 pub use function::FunctionHandle;
 #[cfg(feature = "jni-bindings")]
+pub use hostfunc::unmarshal_function_type;
+#[cfg(feature = "jni-bindings")]
 pub use linker::{wasm_values_to_java_array, JniHostFunctionCallback};
 #[cfg(feature = "jni-bindings")]
-pub use module::{VecByteArrayConverter, JStringConverter};
-#[cfg(feature = "jni-bindings")]
-pub use hostfunc::unmarshal_function_type;
+pub use module::{JStringConverter, VecByteArrayConverter};
 
 /// Get library version for debugging
 #[cfg(feature = "jni-bindings")]
@@ -80,7 +80,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetLib
     let version = "wasmtime4j-native-DEBUG-2025-10-06-18:45-WITH-SIGNALS-DISABLED";
     match env.new_string(version) {
         Ok(s) => s.into_raw(),
-        Err(_) => std::ptr::null_mut()
+        Err(_) => std::ptr::null_mut(),
     }
 }
 
@@ -94,7 +94,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBi
     // Return Wasmtime version from constant
     match env.new_string(crate::WASMTIME_VERSION) {
         Ok(s) => s.into_raw(),
-        Err(_) => std::ptr::null_mut()
+        Err(_) => std::ptr::null_mut(),
     }
 }
 

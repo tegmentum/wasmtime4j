@@ -3,23 +3,23 @@
 //! This module provides C-compatible functions for creating, managing,
 //! and accessing WebAssembly linear memory with comprehensive bounds checking.
 
-use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
-use std::sync::Arc;
 use crate::error::ffi_utils;
 use crate::memory::{Memory, MemoryBuilder, MemoryDataType, MemoryRegistry};
 use crate::store::Store;
+use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
+use std::sync::Arc;
 
 /// Create a new WebAssembly memory with default configuration (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_memory_create(
     store_ptr: *mut c_void,
-    initial_pages: c_uint,
+    initial_pages: u64,
     memory_ptr: *mut *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
 
-        let memory = Memory::new(store, initial_pages as u64)?;
+        let memory = Memory::new(store, initial_pages)?;
 
         unsafe {
             *memory_ptr = Box::into_raw(Box::new(memory)) as *mut c_void;
@@ -33,28 +33,32 @@ pub extern "C" fn wasmtime4j_panama_memory_create(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_memory_create_with_config(
     store_ptr: *mut c_void,
-    initial_pages: c_uint,
-    maximum_pages: c_uint,
+    initial_pages: u64,
+    maximum_pages: u64,
     is_shared: c_int,
+    is_64: c_int,
     memory_index: c_uint,
     name: *const c_char,
     memory_ptr: *mut *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         // SAFETY IMPROVEMENT: Using new memory utilities with comprehensive validation
-        let store = crate::ffi_common::memory_utils::safe_deref_mut(
-            store_ptr as *mut Store,
-            "store"
-        ).map_err(|e| e.to_wasmtime_error())?;
+        let store =
+            crate::ffi_common::memory_utils::safe_deref_mut(store_ptr as *mut Store, "store")
+                .map_err(|e| e.to_wasmtime_error())?;
 
-        let mut builder = MemoryBuilder::new(initial_pages as u64);
+        let mut builder = MemoryBuilder::new(initial_pages);
 
         if maximum_pages > 0 {
-            builder = builder.maximum_pages(maximum_pages as u64);
+            builder = builder.maximum_pages(maximum_pages);
         }
 
         if is_shared != 0 {
             builder = builder.shared();
+        }
+
+        if is_64 != 0 {
+            builder = builder.memory64();
         }
 
         builder = builder.memory_index(memory_index);
@@ -82,7 +86,7 @@ pub extern "C" fn wasmtime4j_panama_memory_create_with_config(
 pub extern "C" fn wasmtime4j_panama_memory_size_pages(
     memory_ptr: *mut c_void,
     store_ptr: *mut c_void,
-    size_out: *mut c_uint,
+    size_out: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         // Get Memory through ValidatedMemory wrapper
@@ -93,7 +97,7 @@ pub extern "C" fn wasmtime4j_panama_memory_size_pages(
         let size = memory.size_pages(store)?;
 
         unsafe {
-            *size_out = size as c_uint;
+            *size_out = size;
         }
 
         Ok(())
@@ -128,8 +132,8 @@ pub extern "C" fn wasmtime4j_panama_memory_size_bytes(
 pub extern "C" fn wasmtime4j_panama_memory_grow(
     memory_ptr: *mut c_void,
     store_ptr: *mut c_void,
-    additional_pages: c_uint,
-    previous_pages_out: *mut c_uint,
+    additional_pages: u64,
+    previous_pages_out: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         // Get Memory through ValidatedMemory wrapper
@@ -137,10 +141,10 @@ pub extern "C" fn wasmtime4j_panama_memory_grow(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         // Use Memory's grow method
-        let previous_pages = memory.grow(store, additional_pages as u64)?;
+        let previous_pages = memory.grow(store, additional_pages)?;
 
         unsafe {
-            *previous_pages_out = previous_pages as c_uint;
+            *previous_pages_out = previous_pages;
         }
 
         Ok(())
@@ -412,11 +416,11 @@ pub extern "C" fn wasmtime4j_instance_has_memory_export(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in memory name".to_string(),
-                })?
+                }
+            })?
         };
 
         match crate::instance::core::get_exported_memory(instance, store, name_str)? {
@@ -435,25 +439,26 @@ pub extern "C" fn wasmtime4j_instance_get_memory_size_pages(
     instance_ptr: *const c_void,
     store_ptr: *mut c_void,
     name: *const c_char,
-    size_out: *mut c_uint,
+    size_out: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in memory name".to_string(),
-                })?
+                }
+            })?
         };
 
         // First try regular memory
-        if let Some(memory) = crate::instance::core::get_exported_memory(instance, store, name_str)? {
+        if let Some(memory) = crate::instance::core::get_exported_memory(instance, store, name_str)?
+        {
             let size = store.with_context_ro(|ctx| Ok(memory.size(ctx)))?;
             unsafe {
-                *size_out = size as c_uint;
+                *size_out = size;
             }
             return Ok(());
         }
@@ -462,13 +467,16 @@ pub extern "C" fn wasmtime4j_instance_get_memory_size_pages(
         if let Some(shared_memory) = instance.get_shared_memory(store, name_str)? {
             let size = shared_memory.size();
             unsafe {
-                *size_out = size as c_uint;
+                *size_out = size;
             }
             return Ok(());
         }
 
         Err(crate::error::WasmtimeError::ImportExport {
-            message: format!("Memory '{}' not found (neither regular nor shared)", name_str),
+            message: format!(
+                "Memory '{}' not found (neither regular nor shared)",
+                name_str
+            ),
         })
     })
 }
@@ -487,15 +495,16 @@ pub extern "C" fn wasmtime4j_instance_get_memory_size_bytes(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in memory name".to_string(),
-                })?
+                }
+            })?
         };
 
         // First try regular memory
-        if let Some(memory) = crate::instance::core::get_exported_memory(instance, store, name_str)? {
+        if let Some(memory) = crate::instance::core::get_exported_memory(instance, store, name_str)?
+        {
             let size = store.with_context_ro(|ctx| Ok(memory.data_size(ctx)))?;
             unsafe {
                 *size_out = size;
@@ -513,7 +522,10 @@ pub extern "C" fn wasmtime4j_instance_get_memory_size_bytes(
         }
 
         Err(crate::error::WasmtimeError::ImportExport {
-            message: format!("Memory '{}' not found (neither regular nor shared)", name_str),
+            message: format!(
+                "Memory '{}' not found (neither regular nor shared)",
+                name_str
+            ),
         })
     })
 }
@@ -524,19 +536,19 @@ pub extern "C" fn wasmtime4j_instance_grow_memory(
     instance_ptr: *const c_void,
     store_ptr: *mut c_void,
     name: *const c_char,
-    additional_pages: c_uint,
-    previous_pages_out: *mut c_uint,
+    additional_pages: u64,
+    previous_pages_out: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in memory name".to_string(),
-                })?
+                }
+            })?
         };
 
         let memory = crate::instance::core::get_exported_memory(instance, store, name_str)?
@@ -545,15 +557,16 @@ pub extern "C" fn wasmtime4j_instance_grow_memory(
             })?;
 
         let previous_pages = store.with_context(|mut ctx| {
-            memory.grow(&mut ctx, additional_pages as u64)
-                .map_err(|e| crate::error::WasmtimeError::Runtime {
+            memory.grow(&mut ctx, additional_pages).map_err(|e| {
+                crate::error::WasmtimeError::Runtime {
                     message: format!("Failed to grow memory: {}", e),
                     backtrace: None,
-                })
+                }
+            })
         })?;
 
         unsafe {
-            *previous_pages_out = previous_pages as c_uint;
+            *previous_pages_out = previous_pages;
         }
 
         Ok(())
@@ -575,11 +588,11 @@ pub extern "C" fn wasmtime4j_instance_read_memory_bytes(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in memory name".to_string(),
-                })?
+                }
+            })?
         };
 
         if buffer.is_null() {
@@ -597,7 +610,12 @@ pub extern "C" fn wasmtime4j_instance_read_memory_bytes(
             let data = memory.data(ctx);
             if offset + length > data.len() {
                 return Err(crate::error::WasmtimeError::Memory {
-                    message: format!("Memory access out of bounds: offset={}, length={}, size={}", offset, length, data.len()),
+                    message: format!(
+                        "Memory access out of bounds: offset={}, length={}, size={}",
+                        offset,
+                        length,
+                        data.len()
+                    ),
                 });
             }
 
@@ -625,11 +643,11 @@ pub extern "C" fn wasmtime4j_instance_write_memory_bytes(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in memory name".to_string(),
-                })?
+                }
+            })?
         };
 
         if buffer.is_null() {
@@ -647,7 +665,12 @@ pub extern "C" fn wasmtime4j_instance_write_memory_bytes(
             let data = memory.data_mut(&mut ctx);
             if offset + length > data.len() {
                 return Err(crate::error::WasmtimeError::Memory {
-                    message: format!("Memory access out of bounds: offset={}, length={}, size={}", offset, length, data.len()),
+                    message: format!(
+                        "Memory access out of bounds: offset={}, length={}, size={}",
+                        offset,
+                        length,
+                        data.len()
+                    ),
                 });
             }
 
@@ -674,11 +697,11 @@ pub extern "C" fn wasmtime4j_instance_get_global_type(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in global name".to_string(),
-                })?
+                }
+            })?
         };
 
         let global = crate::instance::core::get_exported_global(instance, store, name_str)?
@@ -699,7 +722,7 @@ pub extern "C" fn wasmtime4j_instance_get_global_type(
                 wasmtime::ValType::Ref(ref_type) => {
                     match ref_type.heap_type() {
                         wasmtime::HeapType::Func => 5, // FuncRef
-                        _ => 6, // ExternRef or other
+                        _ => 6,                        // ExternRef or other
                     }
                 }
             };
@@ -734,11 +757,11 @@ pub extern "C" fn wasmtime4j_instance_has_global_export(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in global name".to_string(),
-                })?
+                }
+            })?
         };
 
         match crate::instance::core::get_exported_global(instance, store, name_str)? {
@@ -768,11 +791,11 @@ pub extern "C" fn wasmtime4j_instance_get_global_value(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in global name".to_string(),
-                })?
+                }
+            })?
         };
 
         let global = crate::instance::core::get_exported_global(instance, store, name_str)?
@@ -868,11 +891,11 @@ pub extern "C" fn wasmtime4j_instance_set_global_value(
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|_| crate::error::WasmtimeError::InvalidParameter {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: "Invalid UTF-8 in global name".to_string(),
-                })?
+                }
+            })?
         };
 
         let global = crate::instance::core::get_exported_global(instance, store, name_str)?
@@ -891,7 +914,10 @@ pub extern "C" fn wasmtime4j_instance_set_global_value(
                     // Look up the function from the registry using the ref_id
                     let func = crate::table::core::get_function_reference(ref_id as u64)?
                         .ok_or_else(|| crate::error::WasmtimeError::InvalidParameter {
-                            message: format!("Function reference not found in registry: {}", ref_id),
+                            message: format!(
+                                "Function reference not found in registry: {}",
+                                ref_id
+                            ),
                         })?;
                     wasmtime::Val::FuncRef(Some(func))
                 } else {
@@ -977,7 +1003,7 @@ pub extern "C" fn wasmtime4j_panama_memory_get_usage(
     memory_ptr: *mut c_void,
     store_ptr: *mut c_void,
     current_bytes_out: *mut usize,
-    current_pages_out: *mut c_uint,
+    current_pages_out: *mut u64,
     peak_bytes_out: *mut usize,
     read_count_out: *mut c_ulong,
     write_count_out: *mut c_ulong,
@@ -995,7 +1021,7 @@ pub extern "C" fn wasmtime4j_panama_memory_get_usage(
                 *current_bytes_out = usage.current_bytes;
             }
             if !current_pages_out.is_null() {
-                *current_pages_out = usage.current_pages as c_uint;
+                *current_pages_out = usage.current_pages;
             }
             if !peak_bytes_out.is_null() {
                 *peak_bytes_out = usage.peak_bytes;
@@ -1020,7 +1046,9 @@ pub extern "C" fn wasmtime4j_panama_memory_get_usage(
 
 /// Create a memory registry (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_memory_registry_create(registry_ptr: *mut *mut c_void) -> c_int {
+pub extern "C" fn wasmtime4j_panama_memory_registry_create(
+    registry_ptr: *mut *mut c_void,
+) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let registry = MemoryRegistry::new();
 

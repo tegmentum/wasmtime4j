@@ -19,58 +19,41 @@
 //! All component operations include comprehensive validation and error handling
 //! to prevent JVM crashes and ensure robust operation in production environments.
 
+mod linker;
 mod resources;
 mod wit;
-mod linker;
 
 #[cfg(test)]
 mod tests;
 
 // Re-export all public types for backward compatibility with crate::component::*
 pub use resources::{
-    ResourceManager,
-    HostInterface,
-    ComponentInstanceWrapper,
-    ComponentInstanceMetadata,
-    ComponentInstanceState,
-    InstanceInfo,
+    ComponentInstanceMetadata, ComponentInstanceState, ComponentInstanceWrapper, HostInterface,
+    InstanceInfo, ResourceManager,
 };
 
 pub use wit::{
-    WitParser,
-    ComponentValueType,
-    ComponentTypeKind,
-    FieldType,
-    CaseType,
-    InterfaceDefinition,
-    FunctionDefinition,
-    Parameter,
-    TypeDefinition,
-    ResourceDefinition,
+    CaseType, ComponentTypeKind, ComponentValueType, FieldType, FunctionDefinition,
+    InterfaceDefinition, Parameter, ResourceDefinition, TypeDefinition, WitParser,
 };
 
 pub use linker::{
-    ComponentLinker,
-    WasiP2Config,
-    ComponentValue,
-    ComponentHostCallback,
-    ComponentHostFunctionEntry,
-    parse_wit_path,
-    get_component_host_function_registry,
-    NEXT_COMPONENT_HOST_FUNCTION_ID,
-    component_linker_core,
+    component_linker_core, get_component_host_function_registry, parse_wit_path,
+    ComponentHostCallback, ComponentHostFunctionEntry, ComponentLinker, ComponentValue,
+    WasiP2Config, NEXT_COMPONENT_HOST_FUNCTION_ID,
 };
 
+use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Instant;
 use wasmtime::{
-    Engine as WasmtimeEngine,
-    Store,
-    component::{Component as WasmtimeComponent, Linker, Instance as ComponentInstance, ResourceTable}
+    component::{
+        Component as WasmtimeComponent, Instance as ComponentInstance, Linker, ResourceTable,
+    },
+    Engine as WasmtimeEngine, Store,
 };
-use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Engine for managing WebAssembly component instances
 ///
@@ -139,7 +122,8 @@ impl wasmtime_wasi::WasiView for ComponentStoreData {
 #[cfg(feature = "wasi-http")]
 impl wasmtime_wasi_http::WasiHttpView for ComponentStoreData {
     fn ctx(&mut self) -> &mut wasmtime_wasi_http::WasiHttpCtx {
-        self.wasi_http_ctx.get_or_insert_with(wasmtime_wasi_http::WasiHttpCtx::new)
+        self.wasi_http_ctx
+            .get_or_insert_with(wasmtime_wasi_http::WasiHttpCtx::new)
     }
 
     fn table(&mut self) -> &mut ResourceTable {
@@ -248,10 +232,11 @@ impl ComponentEngine {
             });
         }
 
-        let component = WasmtimeComponent::new(&self.engine, bytes)
-            .map_err(|e| WasmtimeError::Compilation {
+        let component = WasmtimeComponent::new(&self.engine, bytes).map_err(|e| {
+            WasmtimeError::Compilation {
                 message: format!("Failed to compile component: {}", e),
-            })?;
+            }
+        })?;
 
         let metadata = self.extract_component_metadata(&component)?;
 
@@ -287,15 +272,20 @@ impl ComponentEngine {
             return Err(WasmtimeError::Io {
                 source: std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    format!("Component file not found: {}", path.display())
-                )
+                    format!("Component file not found: {}", path.display()),
+                ),
             });
         }
 
-        let component = WasmtimeComponent::from_file(&self.engine, path)
-            .map_err(|e| WasmtimeError::Compilation {
-                message: format!("Failed to load component from file {}: {}", path.display(), e),
-            })?;
+        let component = WasmtimeComponent::from_file(&self.engine, path).map_err(|e| {
+            WasmtimeError::Compilation {
+                message: format!(
+                    "Failed to load component from file {}: {}",
+                    path.display(),
+                    e
+                ),
+            }
+        })?;
 
         let metadata = self.extract_component_metadata(&component)?;
 
@@ -324,12 +314,17 @@ impl ComponentEngine {
     ///
     /// This function performs comprehensive validation of component imports
     /// and exports before instantiation to prevent runtime errors.
-    pub fn instantiate_component(&self, component: &Component) -> WasmtimeResult<Arc<ComponentInstance>> {
+    pub fn instantiate_component(
+        &self,
+        component: &Component,
+    ) -> WasmtimeResult<Arc<ComponentInstance>> {
         let instance_id = {
-            let mut next_id = self.next_instance_id.lock()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire instance ID lock".to_string(),
-                })?;
+            let mut next_id =
+                self.next_instance_id
+                    .lock()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire instance ID lock".to_string(),
+                    })?;
             let id = *next_id;
             *next_id += 1;
             id
@@ -343,7 +338,9 @@ impl ComponentEngine {
 
         let mut store = Store::new(&self.engine, store_data);
 
-        let instance = self.linker.instantiate(&mut store, &component.component)
+        let instance = self
+            .linker
+            .instantiate(&mut store, &component.component)
             .map_err(|e| WasmtimeError::Instance {
                 message: format!("Failed to instantiate component: {}", e),
             })?;
@@ -352,7 +349,9 @@ impl ComponentEngine {
 
         // Track the instance for resource management
         {
-            let mut instances = self.instances.lock()
+            let mut instances = self
+                .instances
+                .lock()
                 .map_err(|_| WasmtimeError::Concurrency {
                     message: "Failed to acquire instances lock".to_string(),
                 })?;
@@ -385,12 +384,17 @@ impl ComponentEngine {
     ///
     /// This function performs comprehensive validation of component imports
     /// and exports before instantiation to prevent runtime errors.
-    pub async fn instantiate_component_async(&self, component: &Component) -> WasmtimeResult<Arc<ComponentInstance>> {
+    pub async fn instantiate_component_async(
+        &self,
+        component: &Component,
+    ) -> WasmtimeResult<Arc<ComponentInstance>> {
         let instance_id = {
-            let mut next_id = self.next_instance_id.lock()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire instance ID lock".to_string(),
-                })?;
+            let mut next_id =
+                self.next_instance_id
+                    .lock()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire instance ID lock".to_string(),
+                    })?;
             let id = *next_id;
             *next_id += 1;
             id
@@ -404,7 +408,9 @@ impl ComponentEngine {
 
         let mut store = Store::new(&self.engine, store_data);
 
-        let instance = self.linker.instantiate_async(&mut store, &component.component)
+        let instance = self
+            .linker
+            .instantiate_async(&mut store, &component.component)
             .await
             .map_err(|e| WasmtimeError::Instance {
                 message: format!("Failed to instantiate component asynchronously: {}", e),
@@ -414,7 +420,9 @@ impl ComponentEngine {
 
         // Track the instance for resource management
         {
-            let mut instances = self.instances.lock()
+            let mut instances = self
+                .instances
+                .lock()
                 .map_err(|_| WasmtimeError::Concurrency {
                     message: "Failed to acquire instances lock".to_string(),
                 })?;
@@ -442,10 +450,17 @@ impl ComponentEngine {
     ///
     /// Returns `WasmtimeError::ImportExport` if the interface cannot be bound
     /// due to type mismatches or other linking errors.
-    pub fn add_host_interface(&mut self, interface_name: &str, _implementation: HostInterface) -> WasmtimeResult<()> {
+    pub fn add_host_interface(
+        &mut self,
+        interface_name: &str,
+        _implementation: HostInterface,
+    ) -> WasmtimeResult<()> {
         // Host interface binding is not yet implemented - return error to indicate the feature is unavailable
         // The Wasmtime component model API is still stabilizing
-        log::warn!("Host interface binding not yet implemented: {}", interface_name);
+        log::warn!(
+            "Host interface binding not yet implemented: {}",
+            interface_name
+        );
 
         Err(WasmtimeError::UnsupportedFeature {
             message: format!("Host interface binding for '{}'", interface_name),
@@ -459,7 +474,9 @@ impl ComponentEngine {
     /// Returns a vector containing metadata about all active component instances
     /// managed by this engine.
     pub fn get_active_instances(&self) -> WasmtimeResult<Vec<InstanceInfo>> {
-        let instances = self.instances.lock()
+        let instances = self
+            .instances
+            .lock()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instances lock".to_string(),
             })?;
@@ -487,7 +504,9 @@ impl ComponentEngine {
     ///
     /// Returns the number of instances that were cleaned up.
     pub fn cleanup_instances(&self) -> WasmtimeResult<usize> {
-        let mut instances = self.instances.lock()
+        let mut instances = self
+            .instances
+            .lock()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instances lock".to_string(),
             })?;
@@ -538,10 +557,9 @@ impl ComponentEngine {
         }
 
         // Convert WAT to bytes first using the wat crate
-        let bytes = wat::parse_str(wat)
-            .map_err(|e| WasmtimeError::Compilation {
-                message: format!("Failed to parse WAT: {}", e),
-            })?;
+        let bytes = wat::parse_str(wat).map_err(|e| WasmtimeError::Compilation {
+            message: format!("Failed to parse WAT: {}", e),
+        })?;
 
         self.load_component_from_bytes(&bytes)
     }
@@ -552,7 +570,8 @@ impl ComponentEngine {
     ///
     /// Returns the count of currently active component instances.
     pub fn get_instance_count(&self) -> usize {
-        self.instances.lock()
+        self.instances
+            .lock()
             .map(|instances| instances.len())
             .unwrap_or(0)
     }
@@ -592,7 +611,10 @@ impl ComponentEngine {
     ///
     /// This internal function analyzes a compiled component to extract
     /// information about its imports, exports, and interfaces.
-    fn extract_component_metadata(&self, component: &WasmtimeComponent) -> WasmtimeResult<ComponentMetadata> {
+    fn extract_component_metadata(
+        &self,
+        component: &WasmtimeComponent,
+    ) -> WasmtimeResult<ComponentMetadata> {
         // Get component type information from Wasmtime
         let component_ty = component.component_type();
 
@@ -635,7 +657,7 @@ impl ComponentEngine {
                 namespace: None, // Will be enhanced with actual namespace parsing
                 version: None,   // Will be enhanced with actual version parsing
                 functions,
-                types: Vec::new(),     // Will be enhanced with actual type extraction
+                types: Vec::new(), // Will be enhanced with actual type extraction
                 resources: Vec::new(), // Will be enhanced with actual resource extraction
             });
         }
@@ -678,15 +700,15 @@ impl ComponentEngine {
                 namespace: None, // Will be enhanced with actual namespace parsing
                 version: None,   // Will be enhanced with actual version parsing
                 functions,
-                types: Vec::new(),     // Will be enhanced with actual type extraction
+                types: Vec::new(), // Will be enhanced with actual type extraction
                 resources: Vec::new(), // Will be enhanced with actual resource extraction
             });
         }
 
         // Calculate approximate size (this is a simplified approach)
-        let size_bytes = std::mem::size_of_val(component) +
-                        imports.len() * std::mem::size_of::<InterfaceDefinition>() +
-                        exports.len() * std::mem::size_of::<InterfaceDefinition>();
+        let size_bytes = std::mem::size_of_val(component)
+            + imports.len() * std::mem::size_of::<InterfaceDefinition>()
+            + exports.len() * std::mem::size_of::<InterfaceDefinition>();
 
         Ok(ComponentMetadata {
             imports,
@@ -751,7 +773,9 @@ impl Component {
     ///
     /// Returns `true` if the component exports the specified interface.
     pub fn exports_interface(&self, interface_name: &str) -> bool {
-        self.metadata.exports.iter()
+        self.metadata
+            .exports
+            .iter()
             .any(|export| export.name == interface_name)
     }
 
@@ -765,7 +789,9 @@ impl Component {
     ///
     /// Returns `true` if the component imports the specified interface.
     pub fn imports_interface(&self, interface_name: &str) -> bool {
-        self.metadata.imports.iter()
+        self.metadata
+            .imports
+            .iter()
             .any(|import| import.name == interface_name)
     }
 
@@ -810,8 +836,14 @@ impl Component {
     /// # Errors
     ///
     /// Returns `WasmtimeError::NotFound` if the export doesn't exist.
-    pub fn get_export_interface(&self, export_name: &str) -> WasmtimeResult<Option<&InterfaceDefinition>> {
-        let interface = self.metadata.exports.iter()
+    pub fn get_export_interface(
+        &self,
+        export_name: &str,
+    ) -> WasmtimeResult<Option<&InterfaceDefinition>> {
+        let interface = self
+            .metadata
+            .exports
+            .iter()
             .find(|export| export.name == export_name);
 
         Ok(interface)
@@ -826,8 +858,14 @@ impl Component {
     /// # Returns
     ///
     /// Returns the interface definition for the import if found.
-    pub fn get_import_interface(&self, import_name: &str) -> WasmtimeResult<Option<&InterfaceDefinition>> {
-        let interface = self.metadata.imports.iter()
+    pub fn get_import_interface(
+        &self,
+        import_name: &str,
+    ) -> WasmtimeResult<Option<&InterfaceDefinition>> {
+        let interface = self
+            .metadata
+            .imports
+            .iter()
             .find(|import| import.name == import_name);
 
         Ok(interface)
@@ -839,7 +877,9 @@ impl Component {
     ///
     /// Returns a vector of all exported interface names.
     pub fn get_exported_interfaces(&self) -> Vec<String> {
-        self.metadata.exports.iter()
+        self.metadata
+            .exports
+            .iter()
             .map(|export| export.name.clone())
             .collect()
     }
@@ -850,7 +890,9 @@ impl Component {
     ///
     /// Returns a vector of all imported interface names.
     pub fn get_imported_interfaces(&self) -> Vec<String> {
-        self.metadata.imports.iter()
+        self.metadata
+            .imports
+            .iter()
             .map(|import| import.name.clone())
             .collect()
     }
@@ -864,14 +906,19 @@ impl Default for ComponentEngine {
         match Self::new() {
             Ok(engine) => engine,
             Err(e) => {
-                log::error!("Failed to create default ComponentEngine: {}. Creating minimal fallback.", e);
+                log::error!(
+                    "Failed to create default ComponentEngine: {}. Creating minimal fallback.",
+                    e
+                );
                 // Create a minimal engine using the fallback-protected shared engine
                 let engine = crate::engine::get_shared_component_wasmtime_engine();
                 let linker = wasmtime::component::Linker::new(&engine);
                 ComponentEngine {
                     engine,
                     linker,
-                    instances: std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+                    instances: std::sync::Arc::new(std::sync::Mutex::new(
+                        std::collections::HashMap::new(),
+                    )),
                     next_instance_id: std::sync::Arc::new(std::sync::Mutex::new(1)),
                 }
             }
@@ -885,9 +932,9 @@ impl Default for ComponentEngine {
 /// across interface implementations while maintaining defensive programming practices.
 pub mod core {
     use super::*;
-    use std::os::raw::c_void;
     use crate::error::ffi_utils;
-    use crate::{validate_ptr_not_null, validate_not_empty};
+    use crate::{validate_not_empty, validate_ptr_not_null};
+    use std::os::raw::c_void;
 
     /// Core function to create a new component engine
     pub fn create_component_engine() -> WasmtimeResult<Box<ComponentEngine>> {
@@ -895,52 +942,75 @@ pub mod core {
     }
 
     /// Core function to create a component engine with a custom Wasmtime engine
-    pub fn create_component_engine_with_engine(engine: WasmtimeEngine) -> WasmtimeResult<Box<ComponentEngine>> {
+    pub fn create_component_engine_with_engine(
+        engine: WasmtimeEngine,
+    ) -> WasmtimeResult<Box<ComponentEngine>> {
         ComponentEngine::with_engine(engine).map(Box::new)
     }
 
     /// Core function to validate component engine pointer and get reference
-    pub unsafe fn get_component_engine_ref(engine_ptr: *const c_void) -> WasmtimeResult<&'static ComponentEngine> {
+    pub unsafe fn get_component_engine_ref(
+        engine_ptr: *const c_void,
+    ) -> WasmtimeResult<&'static ComponentEngine> {
         validate_ptr_not_null!(engine_ptr, "component engine");
         Ok(&*(engine_ptr as *const ComponentEngine))
     }
 
     /// Core function to validate component engine pointer and get mutable reference
-    pub unsafe fn get_component_engine_mut(engine_ptr: *mut c_void) -> WasmtimeResult<&'static mut ComponentEngine> {
+    pub unsafe fn get_component_engine_mut(
+        engine_ptr: *mut c_void,
+    ) -> WasmtimeResult<&'static mut ComponentEngine> {
         validate_ptr_not_null!(engine_ptr, "component engine");
         Ok(&mut *(engine_ptr as *mut ComponentEngine))
     }
 
     /// Core function to load a component from bytes
-    pub fn load_component_from_bytes(engine: &ComponentEngine, bytes: &[u8]) -> WasmtimeResult<Box<Component>> {
+    pub fn load_component_from_bytes(
+        engine: &ComponentEngine,
+        bytes: &[u8],
+    ) -> WasmtimeResult<Box<Component>> {
         validate_not_empty!(bytes, "component bytes");
         engine.load_component_from_bytes(bytes).map(Box::new)
     }
 
     /// Core function to load a component from a file
-    pub fn load_component_from_file<P: AsRef<std::path::Path>>(engine: &ComponentEngine, path: P) -> WasmtimeResult<Box<Component>> {
+    pub fn load_component_from_file<P: AsRef<std::path::Path>>(
+        engine: &ComponentEngine,
+        path: P,
+    ) -> WasmtimeResult<Box<Component>> {
         engine.load_component_from_file(path).map(Box::new)
     }
 
     /// Core function to validate component pointer and get reference
-    pub unsafe fn get_component_ref(component_ptr: *const c_void) -> WasmtimeResult<&'static Component> {
+    pub unsafe fn get_component_ref(
+        component_ptr: *const c_void,
+    ) -> WasmtimeResult<&'static Component> {
         validate_ptr_not_null!(component_ptr, "component");
         Ok(&*(component_ptr as *const Component))
     }
 
     /// Core function to validate component pointer and get mutable reference
-    pub unsafe fn get_component_mut(component_ptr: *mut c_void) -> WasmtimeResult<&'static mut Component> {
+    pub unsafe fn get_component_mut(
+        component_ptr: *mut c_void,
+    ) -> WasmtimeResult<&'static mut Component> {
         validate_ptr_not_null!(component_ptr, "component");
         Ok(&mut *(component_ptr as *mut Component))
     }
 
     /// Core function to instantiate a component
-    pub fn instantiate_component(engine: &ComponentEngine, component: &Component) -> WasmtimeResult<Arc<ComponentInstance>> {
+    pub fn instantiate_component(
+        engine: &ComponentEngine,
+        component: &Component,
+    ) -> WasmtimeResult<Arc<ComponentInstance>> {
         engine.instantiate_component(component)
     }
 
     /// Core function to add a host interface to the component linker
-    pub fn add_host_interface(engine: &mut ComponentEngine, interface_name: &str, implementation: HostInterface) -> WasmtimeResult<()> {
+    pub fn add_host_interface(
+        engine: &mut ComponentEngine,
+        interface_name: &str,
+        implementation: HostInterface,
+    ) -> WasmtimeResult<()> {
         engine.add_host_interface(interface_name, implementation)
     }
 
@@ -1002,8 +1072,8 @@ pub mod core {
 
 // Component Model C API for FFI integration
 
-use std::os::raw::{c_char, c_int, c_void};
 use std::ffi::{CStr, CString};
+use std::os::raw::{c_char, c_int, c_void};
 
 const FFI_SUCCESS: c_int = 0;
 const FFI_ERROR: c_int = -1;
@@ -1159,7 +1229,10 @@ pub unsafe extern "C" fn wasmtime4j_component_export_count(component_ptr: *const
     let component = &*(component_ptr as *const Component);
 
     // Count total functions across all exported interfaces
-    component.metadata.exports.iter()
+    component
+        .metadata
+        .exports
+        .iter()
         .map(|export| export.functions.len())
         .sum()
 }
@@ -1202,11 +1275,17 @@ pub unsafe extern "C" fn wasmtime4j_component_has_export(
         Err(_) => return FFI_ERROR,
     };
 
-    let has_export = component.metadata.exports
+    let has_export = component
+        .metadata
+        .exports
         .iter()
         .any(|export| export.name == name_str);
 
-    if has_export { 1 } else { 0 }
+    if has_export {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if a component requires a specific import
@@ -1225,11 +1304,17 @@ pub unsafe extern "C" fn wasmtime4j_component_has_import(
         Err(_) => return FFI_ERROR,
     };
 
-    let has_import = component.metadata.imports
+    let has_import = component
+        .metadata
+        .imports
         .iter()
         .any(|import| import.name == name_str);
 
-    if has_import { 1 } else { 0 }
+    if has_import {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if a component exports a specific interface
@@ -1248,7 +1333,11 @@ pub unsafe extern "C" fn wasmtime4j_component_exports_interface(
         Err(_) => return FFI_ERROR,
     };
 
-    if component.exports_interface(name_str) { 1 } else { 0 }
+    if component.exports_interface(name_str) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if a component imports a specific interface
@@ -1267,7 +1356,11 @@ pub unsafe extern "C" fn wasmtime4j_component_imports_interface(
         Err(_) => return FFI_ERROR,
     };
 
-    if component.imports_interface(name_str) { 1 } else { 0 }
+    if component.imports_interface(name_str) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Validate a component against WIT interface requirements
@@ -1287,14 +1380,22 @@ pub unsafe extern "C" fn wasmtime4j_component_validate(
     };
 
     match component.validate_wit_interface(wit_str) {
-        Ok(is_valid) => if is_valid { 1 } else { 0 },
+        Ok(is_valid) => {
+            if is_valid {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => FFI_ERROR,
     }
 }
 
 /// Get the number of active component instances from the engine
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_engine_instance_count(engine_ptr: *const c_void) -> usize {
+pub unsafe extern "C" fn wasmtime4j_component_engine_instance_count(
+    engine_ptr: *const c_void,
+) -> usize {
     if engine_ptr.is_null() {
         return 0;
     }
@@ -1305,7 +1406,9 @@ pub unsafe extern "C" fn wasmtime4j_component_engine_instance_count(engine_ptr: 
 
 /// Cleanup unused component instances in the engine
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_engine_cleanup_instances(engine_ptr: *mut c_void) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_component_engine_cleanup_instances(
+    engine_ptr: *mut c_void,
+) -> c_int {
     if engine_ptr.is_null() {
         return FFI_ERROR;
     }
@@ -1332,7 +1435,13 @@ pub unsafe extern "C" fn wasmtime4j_component_engine_supports_feature(
     };
 
     match engine.supports_feature(feature_str) {
-        Ok(supported) => if supported { 1 } else { 0 },
+        Ok(supported) => {
+            if supported {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => FFI_ERROR,
     }
 }
@@ -1355,20 +1464,16 @@ pub unsafe extern "C" fn wasmtime4j_component_get_export_interface(
     };
 
     match component.get_export_interface(name_str) {
-        Ok(Some(interface)) => {
-            match interface.to_json() {
-                Ok(json_str) => {
-                    match CString::new(json_str) {
-                        Ok(c_string) => {
-                            *interface_json_out = c_string.into_raw();
-                            FFI_SUCCESS
-                        }
-                        Err(_) => FFI_ERROR,
-                    }
+        Ok(Some(interface)) => match interface.to_json() {
+            Ok(json_str) => match CString::new(json_str) {
+                Ok(c_string) => {
+                    *interface_json_out = c_string.into_raw();
+                    FFI_SUCCESS
                 }
                 Err(_) => FFI_ERROR,
-            }
-        }
+            },
+            Err(_) => FFI_ERROR,
+        },
         Ok(None) => FFI_ERROR, // Export not found
         Err(_) => FFI_ERROR,
     }
@@ -1406,7 +1511,7 @@ pub unsafe extern "C" fn wasmtime4j_component_get_export_name(
             *name_out = c_string.into_raw();
             FFI_SUCCESS
         }
-        Err(_) => FFI_ERROR
+        Err(_) => FFI_ERROR,
     }
 }
 

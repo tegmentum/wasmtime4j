@@ -5,9 +5,9 @@
 //! crashing. Full debugging support would require integration with external
 //! debugging tools (e.g., LLDB, GDB) or DWARF parsing libraries.
 
-use jni::JNIEnv;
 use jni::objects::{JClass, JObject};
-use jni::sys::{jlong, jboolean};
+use jni::sys::{jboolean, jlong};
+use jni::JNIEnv;
 
 /// Create a debugger for an engine (stub - returns engine handle as debugger handle)
 #[no_mangle]
@@ -52,7 +52,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeIsVali
 
 /// Get debug capabilities - returns null for stub implementation
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCapabilities<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCapabilities<
+    'local,
+>(
     _env: JNIEnv<'local>,
     _class: JClass<'local>,
     _debugger_handle: jlong,
@@ -132,7 +134,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeSetDeb
 
 /// Get debug options - returns null for stub
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDebugOptions<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDebugOptions<
+    'local,
+>(
     _env: JNIEnv<'local>,
     _class: JClass<'local>,
     _debugger_handle: jlong,
@@ -153,7 +157,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetDwa
 
 /// Create source map integration - returns null for stub
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCreateSourceMapIntegration<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeCreateSourceMapIntegration<
+    'local,
+>(
     _env: JNIEnv<'local>,
     _class: JClass<'local>,
     _debugger_handle: jlong,
@@ -196,7 +202,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeStopPr
 
 /// Get profiling data - returns null for stub
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetProfilingData<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetProfilingData<
+    'local,
+>(
     _env: JNIEnv<'local>,
     _class: JClass<'local>,
     _debugger_handle: jlong,
@@ -262,7 +270,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetCal
 
 /// Get local variables - returns null for stub
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetLocalVariables<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetLocalVariables<
+    'local,
+>(
     _env: JNIEnv<'local>,
     _class: JClass<'local>,
     _debugger_handle: jlong,
@@ -273,7 +283,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeGetLoc
 
 /// Evaluate expression - returns null for stub
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeEvaluateExpression<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniDebugger_nativeEvaluateExpression<
+    'local,
+>(
     _env: JNIEnv<'local>,
     _class: JClass<'local>,
     _debugger_handle: jlong,

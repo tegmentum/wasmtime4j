@@ -291,7 +291,13 @@ mod tests {
 
     #[test]
     fn test_serialize_deserialize_i32() {
-        let values = vec![Val::I32(0), Val::I32(42), Val::I32(-100), Val::I32(i32::MAX), Val::I32(i32::MIN)];
+        let values = vec![
+            Val::I32(0),
+            Val::I32(42),
+            Val::I32(-100),
+            Val::I32(i32::MAX),
+            Val::I32(i32::MIN),
+        ];
         let serialized = serialize_values(&values).unwrap();
         let deserialized = deserialize_values(&serialized).unwrap();
 
@@ -307,7 +313,13 @@ mod tests {
 
     #[test]
     fn test_serialize_deserialize_i64() {
-        let values = vec![Val::I64(0), Val::I64(42), Val::I64(-100), Val::I64(i64::MAX), Val::I64(i64::MIN)];
+        let values = vec![
+            Val::I64(0),
+            Val::I64(42),
+            Val::I64(-100),
+            Val::I64(i64::MAX),
+            Val::I64(i64::MIN),
+        ];
         let serialized = serialize_values(&values).unwrap();
         let deserialized = deserialize_values(&serialized).unwrap();
 
@@ -369,7 +381,9 @@ mod tests {
     fn test_serialize_deserialize_v128() {
         let values = vec![
             Val::V128(V128::from(0u128)),
-            Val::V128(V128::from(u128::from_le_bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]))),
+            Val::V128(V128::from(u128::from_le_bytes([
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+            ]))),
             Val::V128(V128::from(u128::MAX)),
         ];
         let serialized = serialize_values(&values).unwrap();
@@ -392,7 +406,9 @@ mod tests {
             Val::I64(100),
             Val::F32(3.14_f32.to_bits()),
             Val::F64(2.71828_f64.to_bits()),
-            Val::V128(V128::from(u128::from_le_bytes([0xDE, 0xAD, 0xBE, 0xEF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))),
+            Val::V128(V128::from(u128::from_le_bytes([
+                0xDE, 0xAD, 0xBE, 0xEF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ]))),
         ];
         let serialized = serialize_values(&values).unwrap();
         let deserialized = deserialize_values(&serialized).unwrap();

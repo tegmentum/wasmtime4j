@@ -4,10 +4,10 @@
 //! beyond basic v128 support, including platform-specific optimizations.
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-#[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::*;
 #[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::*;
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::*;
 use wasmtime::*;
 
 /// V128 vector representation
@@ -16,8 +16,6 @@ pub struct V128 {
     /// Raw 16-byte data
     pub data: [u8; 16],
 }
-
-
 
 /// Platform SIMD capabilities
 #[derive(Debug, Clone)]
@@ -94,12 +92,24 @@ impl V128 {
     pub fn as_f64s(&self) -> [f64; 2] {
         [
             f64::from_le_bytes([
-                self.data[0], self.data[1], self.data[2], self.data[3],
-                self.data[4], self.data[5], self.data[6], self.data[7],
+                self.data[0],
+                self.data[1],
+                self.data[2],
+                self.data[3],
+                self.data[4],
+                self.data[5],
+                self.data[6],
+                self.data[7],
             ]),
             f64::from_le_bytes([
-                self.data[8], self.data[9], self.data[10], self.data[11],
-                self.data[12], self.data[13], self.data[14], self.data[15],
+                self.data[8],
+                self.data[9],
+                self.data[10],
+                self.data[11],
+                self.data[12],
+                self.data[13],
+                self.data[14],
+                self.data[15],
             ]),
         ]
     }
@@ -289,7 +299,6 @@ impl PlatformCapabilities {
         false
     }
 
-
     /// Detects FMA support
     #[cfg(target_arch = "x86_64")]
     fn detect_fma() -> bool {
@@ -377,7 +386,13 @@ impl SIMDOperations {
     }
 
     /// Performs gather operation - load vector from scattered memory locations
-    pub fn gather_v128(&self, memory: &Memory, store: &mut Store<()>, indices: &V128, scale: u32) -> WasmtimeResult<V128> {
+    pub fn gather_v128(
+        &self,
+        memory: &Memory,
+        store: &mut Store<()>,
+        indices: &V128,
+        scale: u32,
+    ) -> WasmtimeResult<V128> {
         if !self.config.enable_gather_scatter {
             return Err(WasmtimeError::UnsupportedFeature {
                 message: "Gather/scatter operations are not enabled".to_string(),
@@ -403,7 +418,14 @@ impl SIMDOperations {
     }
 
     /// Performs scatter operation - store vector to scattered memory locations
-    pub fn scatter_v128(&self, memory: &Memory, store: &mut Store<()>, indices: &V128, data: &V128, scale: u32) -> WasmtimeResult<()> {
+    pub fn scatter_v128(
+        &self,
+        memory: &Memory,
+        store: &mut Store<()>,
+        indices: &V128,
+        data: &V128,
+        scale: u32,
+    ) -> WasmtimeResult<()> {
         if !self.config.enable_gather_scatter {
             return Err(WasmtimeError::UnsupportedFeature {
                 message: "Gather/scatter operations are not enabled".to_string(),
@@ -479,7 +501,10 @@ impl SIMDOperations {
     /// Scalar reduction sum fallback
     fn reduce_sum_i32_scalar(&self, a: &V128) -> WasmtimeResult<i32> {
         let a_ints = a.as_i32s();
-        Ok(a_ints[0].wrapping_add(a_ints[1]).wrapping_add(a_ints[2]).wrapping_add(a_ints[3]))
+        Ok(a_ints[0]
+            .wrapping_add(a_ints[1])
+            .wrapping_add(a_ints[2])
+            .wrapping_add(a_ints[3]))
     }
 
     /// Vector reduction - find minimum element
@@ -610,7 +635,12 @@ impl SIMDOperations {
     }
 
     /// Loads a V128 vector from memory
-    pub fn load(&self, memory: &Memory, store: &mut Store<()>, offset: u32) -> WasmtimeResult<V128> {
+    pub fn load(
+        &self,
+        memory: &Memory,
+        store: &mut Store<()>,
+        offset: u32,
+    ) -> WasmtimeResult<V128> {
         if offset as u64 + 16 > memory.data_size(&mut *store) as u64 {
             return Err(WasmtimeError::Runtime {
                 message: "Memory access out of bounds".to_string(),
@@ -1005,7 +1035,7 @@ impl SIMDOperations {
                 return Err(WasmtimeError::Runtime {
                     message: "Division by zero in SIMD operation".to_string(),
                     backtrace: None,
-                })
+                });
             }
         }
 
@@ -1407,7 +1437,7 @@ impl SIMDOperations {
                 return Err(WasmtimeError::Runtime {
                     message: "Division by zero in reciprocal operation".to_string(),
                     backtrace: None,
-                })
+                });
             }
         }
 
@@ -1447,10 +1477,10 @@ impl SIMDOperations {
         // Check for negative values
         for &val in &a_floats {
             if val < 0.0 {
-                return Err(WasmtimeError::Runtime { message: 
-                    "Square root of negative number".to_string(),
+                return Err(WasmtimeError::Runtime {
+                    message: "Square root of negative number".to_string(),
                     backtrace: None,
-                })
+                });
             }
         }
 
@@ -1490,10 +1520,10 @@ impl SIMDOperations {
         // Check for zero or negative values
         for &val in &a_floats {
             if val <= 0.0 {
-                return Err(WasmtimeError::Runtime { message: 
-                    "Reciprocal square root of non-positive number".to_string(),
+                return Err(WasmtimeError::Runtime {
+                    message: "Reciprocal square root of non-positive number".to_string(),
                     backtrace: None,
-                })
+                });
             }
         }
 
@@ -1542,8 +1572,10 @@ impl SIMDOperations {
 
         if offset % alignment != 0 {
             return Err(WasmtimeError::Validation {
-                message: format!("Memory offset {} is not aligned to {} bytes (required: {})",
-                        offset, alignment, required_alignment),
+                message: format!(
+                    "Memory offset {} is not aligned to {} bytes (required: {})",
+                    offset, alignment, required_alignment
+                ),
             });
         }
 
@@ -1551,7 +1583,13 @@ impl SIMDOperations {
     }
 
     /// Performs prefetching for memory operations
-    pub fn prefetch_memory(&self, memory: &Memory, store: &Store<()>, offset: u32, size: u32) -> WasmtimeResult<()> {
+    pub fn prefetch_memory(
+        &self,
+        memory: &Memory,
+        store: &Store<()>,
+        offset: u32,
+        size: u32,
+    ) -> WasmtimeResult<()> {
         if !self.config.enable_prefetching {
             return Ok(());
         }
@@ -1573,7 +1611,10 @@ impl SIMDOperations {
                 let mut ptr = data_ptr;
                 let end_ptr = data_ptr.add(size as usize);
                 while ptr < end_ptr {
-                    std::arch::x86_64::_mm_prefetch(ptr as *const i8, std::arch::x86_64::_MM_HINT_T0);
+                    std::arch::x86_64::_mm_prefetch(
+                        ptr as *const i8,
+                        std::arch::x86_64::_MM_HINT_T0,
+                    );
                     ptr = ptr.add(64); // Cache line size
                 }
             }
@@ -1594,17 +1635,29 @@ impl SIMDOperations {
     }
 
     /// Loads a V128 vector from memory with alignment
-    pub fn load_aligned(&self, memory: &Memory, store: &mut Store<()>, offset: u32, alignment: u32) -> WasmtimeResult<V128> {
+    pub fn load_aligned(
+        &self,
+        memory: &Memory,
+        store: &mut Store<()>,
+        offset: u32,
+        alignment: u32,
+    ) -> WasmtimeResult<V128> {
         // Check custom alignment
         if !alignment.is_power_of_two() || alignment > 16 {
             return Err(WasmtimeError::Validation {
-                message: format!("Invalid alignment: {}. Must be power of 2 and <= 16", alignment),
+                message: format!(
+                    "Invalid alignment: {}. Must be power of 2 and <= 16",
+                    alignment
+                ),
             });
         }
 
         if offset % alignment != 0 {
             return Err(WasmtimeError::Validation {
-                message: format!("Memory offset {} is not aligned to {} bytes", offset, alignment),
+                message: format!(
+                    "Memory offset {} is not aligned to {} bytes",
+                    offset, alignment
+                ),
             });
         }
 
@@ -1631,13 +1684,19 @@ impl SIMDOperations {
         // Validate alignment
         if !alignment.is_power_of_two() || alignment > 16 {
             return Err(WasmtimeError::Validation {
-                message: format!("Invalid alignment: {}. Must be power of 2 and <= 16", alignment),
+                message: format!(
+                    "Invalid alignment: {}. Must be power of 2 and <= 16",
+                    alignment
+                ),
             });
         }
 
         if offset % alignment != 0 {
             return Err(WasmtimeError::Validation {
-                message: format!("Memory offset {} is not aligned to {} bytes", offset, alignment),
+                message: format!(
+                    "Memory offset {} is not aligned to {} bytes",
+                    offset, alignment
+                ),
             });
         }
 
@@ -1810,7 +1869,10 @@ impl SIMDOperations {
                 log::warn!("Required SIMD feature '{}' is not supported, falling back to scalar implementation", feature);
                 if self.config.debug_mode {
                     return Err(WasmtimeError::UnsupportedFeature {
-                        message: format!("SIMD feature '{}' is not supported on this platform", feature),
+                        message: format!(
+                            "SIMD feature '{}' is not supported on this platform",
+                            feature
+                        ),
                     });
                 }
             }
@@ -1833,7 +1895,10 @@ impl SIMDOperations {
 
         if actual != expected {
             return Err(WasmtimeError::Runtime {
-                message: format!("SIMD test failed: expected {:?}, got {:?}", expected, actual),
+                message: format!(
+                    "SIMD test failed: expected {:?}, got {:?}",
+                    expected, actual
+                ),
                 backtrace: None,
             });
         }
@@ -1849,8 +1914,10 @@ impl SIMDOperations {
         for i in 0..4 {
             if (factual[i] - fexpected[i]).abs() > f32::EPSILON {
                 return Err(WasmtimeError::Runtime {
-                    message: format!("SIMD float test failed at index {}: expected {}, got {}",
-                           i, fexpected[i], factual[i]),
+                    message: format!(
+                        "SIMD float test failed at index {}: expected {}, got {}",
+                        i, fexpected[i], factual[i]
+                    ),
                     backtrace: None,
                 });
             }
@@ -1888,10 +1955,12 @@ impl SIMDOperations {
     }
 
     /// Fallback operation selector - chooses best available implementation
-    pub fn select_best_operation<T, F1, F2, F3>(&self,
-                                               optimized_impl: F1,
-                                               fallback_impl: F2,
-                                               scalar_impl: F3) -> WasmtimeResult<T>
+    pub fn select_best_operation<T, F1, F2, F3>(
+        &self,
+        optimized_impl: F1,
+        fallback_impl: F2,
+        scalar_impl: F3,
+    ) -> WasmtimeResult<T>
     where
         F1: FnOnce() -> WasmtimeResult<T>,
         F2: FnOnce() -> WasmtimeResult<T>,
@@ -1901,7 +1970,10 @@ impl SIMDOperations {
             match optimized_impl() {
                 Ok(result) => return Ok(result),
                 Err(e) => {
-                    log::warn!("Optimized SIMD implementation failed: {}, trying fallback", e);
+                    log::warn!(
+                        "Optimized SIMD implementation failed: {}, trying fallback",
+                        e
+                    );
                     if self.config.debug_mode {
                         return Err(e);
                     }
@@ -2043,8 +2115,18 @@ mod tests {
         let config = SIMDConfig::default();
         let simd = SIMDOperations::new(config).unwrap();
 
-        let a = V128::from_i32s(0xFF00FF00u32 as i32, 0x00FF00FF, 0xF0F0F0F0u32 as i32, 0x0F0F0F0F);
-        let b = V128::from_i32s(0xF0F0F0F0u32 as i32, 0x0F0F0F0F, 0xFF00FF00u32 as i32, 0x00FF00FF);
+        let a = V128::from_i32s(
+            0xFF00FF00u32 as i32,
+            0x00FF00FF,
+            0xF0F0F0F0u32 as i32,
+            0x0F0F0F0F,
+        );
+        let b = V128::from_i32s(
+            0xF0F0F0F0u32 as i32,
+            0x0F0F0F0F,
+            0xFF00FF00u32 as i32,
+            0x00FF00FF,
+        );
 
         // Test AND
         let and_result = simd.and(&a, &b).unwrap();
@@ -2389,7 +2471,10 @@ mod tests {
     fn test_alignment_requirement_variants() {
         assert_eq!(AlignmentRequirement::None, AlignmentRequirement::None);
         assert_ne!(AlignmentRequirement::None, AlignmentRequirement::Align16);
-        assert_ne!(AlignmentRequirement::Align16, AlignmentRequirement::CacheLine);
+        assert_ne!(
+            AlignmentRequirement::Align16,
+            AlignmentRequirement::CacheLine
+        );
     }
 
     #[test]
@@ -2401,7 +2486,10 @@ mod tests {
         };
 
         assert_eq!(config.scheduling_strategy, SchedulingStrategy::OutOfOrder);
-        assert_eq!(config.alignment_requirement, AlignmentRequirement::CacheLine);
+        assert_eq!(
+            config.alignment_requirement,
+            AlignmentRequirement::CacheLine
+        );
     }
 
     #[test]

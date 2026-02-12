@@ -14,11 +14,11 @@
 //! All operations coordinate with Wasmtime's actual GC system to ensure
 //! memory safety and prevent crashes.
 
+use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::gc_types::GcTypeRegistry;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
-use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::gc_types::GcTypeRegistry;
 
 /// Unique identifier for GC objects
 pub type ObjectId = u64;
@@ -39,8 +39,8 @@ pub struct GcHeapConfig {
 impl Default for GcHeapConfig {
     fn default() -> Self {
         Self {
-            max_heap_size: 64 * 1024 * 1024, // 64MB default
-            minor_gc_threshold: 8 * 1024 * 1024, // 8MB
+            max_heap_size: 64 * 1024 * 1024,      // 64MB default
+            minor_gc_threshold: 8 * 1024 * 1024,  // 8MB
             major_gc_threshold: 32 * 1024 * 1024, // 32MB
             weak_references: true,
         }
@@ -146,19 +146,24 @@ impl GcHeap {
     }
 
     /// Trigger garbage collection with Wasmtime GC coordination
-    pub fn collect_garbage(&self, trigger: CollectionTrigger) -> WasmtimeResult<GcCollectionResult> {
+    pub fn collect_garbage(
+        &self,
+        trigger: CollectionTrigger,
+    ) -> WasmtimeResult<GcCollectionResult> {
         let start_time = Instant::now();
 
         // Check if collection is already in progress
         {
-            let mut state = self.collection_state.lock()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire collection state lock".to_string()
-                })?;
+            let mut state =
+                self.collection_state
+                    .lock()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire collection state lock".to_string(),
+                    })?;
 
             if state.collection_in_progress {
                 return Err(WasmtimeError::Resource {
-                    message: "Collection already in progress".to_string()
+                    message: "Collection already in progress".to_string(),
                 });
             }
 
@@ -167,11 +172,13 @@ impl GcHeap {
 
         // Get stats before collection
         let (objects_before, bytes_before) = {
-            let stats = self.stats.lock()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire stats lock".to_string()
-                })?;
-            (stats.total_allocated - stats.total_collected, stats.current_heap_size)
+            let stats = self.stats.lock().map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire stats lock".to_string(),
+            })?;
+            (
+                stats.total_allocated - stats.total_collected,
+                stats.current_heap_size,
+            )
         };
 
         // Clean up invalid weak references
@@ -181,10 +188,12 @@ impl GcHeap {
 
         // Update collection state
         {
-            let mut state = self.collection_state.lock()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire collection state lock".to_string()
-                })?;
+            let mut state =
+                self.collection_state
+                    .lock()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire collection state lock".to_string(),
+                    })?;
 
             state.collection_in_progress = false;
             state.last_collection = Some(start_time);
@@ -192,10 +201,9 @@ impl GcHeap {
 
         // Update statistics
         {
-            let mut stats = self.stats.lock()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire stats lock".to_string()
-                })?;
+            let mut stats = self.stats.lock().map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire stats lock".to_string(),
+            })?;
 
             stats.total_gc_time += collection_time;
             match trigger {
@@ -209,11 +217,13 @@ impl GcHeap {
 
         // Get stats after collection
         let (objects_after, bytes_after) = {
-            let stats = self.stats.lock()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire stats lock".to_string()
-                })?;
-            (stats.total_allocated - stats.total_collected, stats.current_heap_size)
+            let stats = self.stats.lock().map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire stats lock".to_string(),
+            })?;
+            (
+                stats.total_allocated - stats.total_collected,
+                stats.current_heap_size,
+            )
         };
 
         Ok(GcCollectionResult {
@@ -229,10 +239,9 @@ impl GcHeap {
 
     /// Get current heap statistics
     pub fn get_stats(&self) -> WasmtimeResult<GcHeapStats> {
-        let stats = self.stats.lock()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire stats lock".to_string()
-            })?;
+        let stats = self.stats.lock().map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire stats lock".to_string(),
+        })?;
 
         Ok(stats.clone())
     }
@@ -241,33 +250,38 @@ impl GcHeap {
     pub fn create_weak_reference(&self, object_id: ObjectId) -> WasmtimeResult<GcWeakReference> {
         if !self.config.weak_references {
             return Err(WasmtimeError::InvalidParameter {
-                message: "Weak references are disabled".to_string()
+                message: "Weak references are disabled".to_string(),
             });
         }
 
         // Register the weak reference
         {
-            let mut weak_refs = self.weak_refs.write()
+            let mut weak_refs = self
+                .weak_refs
+                .write()
                 .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire weak refs lock".to_string()
+                    message: "Failed to acquire weak refs lock".to_string(),
                 })?;
 
-            weak_refs.insert(object_id, WeakRefEntry {
-                created_at: Instant::now(),
-                valid: true,
-            });
+            weak_refs.insert(
+                object_id,
+                WeakRefEntry {
+                    created_at: Instant::now(),
+                    valid: true,
+                },
+            );
         }
 
-        Ok(GcWeakReference {
-            object_id,
-        })
+        Ok(GcWeakReference { object_id })
     }
 
     /// Check if an object exists (by checking weak reference validity)
     pub fn object_exists(&self, object_id: ObjectId) -> WasmtimeResult<bool> {
-        let weak_refs = self.weak_refs.read()
+        let weak_refs = self
+            .weak_refs
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire weak refs lock".to_string()
+                message: "Failed to acquire weak refs lock".to_string(),
             })?;
 
         Ok(weak_refs.get(&object_id).map(|e| e.valid).unwrap_or(false))
@@ -275,9 +289,11 @@ impl GcHeap {
 
     /// Mark an object as invalid (collected)
     pub fn invalidate_object(&self, object_id: ObjectId) -> WasmtimeResult<()> {
-        let mut weak_refs = self.weak_refs.write()
+        let mut weak_refs = self
+            .weak_refs
+            .write()
             .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire weak refs lock".to_string()
+                message: "Failed to acquire weak refs lock".to_string(),
             })?;
 
         if let Some(entry) = weak_refs.get_mut(&object_id) {
@@ -289,10 +305,9 @@ impl GcHeap {
 
     /// Record an allocation for statistics tracking
     pub fn record_allocation(&self, size_bytes: usize) -> WasmtimeResult<()> {
-        let mut stats = self.stats.lock()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire stats lock".to_string()
-            })?;
+        let mut stats = self.stats.lock().map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire stats lock".to_string(),
+        })?;
 
         stats.total_allocated += 1;
         stats.bytes_allocated += size_bytes as u64;
@@ -304,10 +319,9 @@ impl GcHeap {
 
     /// Record a deallocation for statistics tracking
     pub fn record_deallocation(&self, size_bytes: usize) -> WasmtimeResult<()> {
-        let mut stats = self.stats.lock()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire stats lock".to_string()
-            })?;
+        let mut stats = self.stats.lock().map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire stats lock".to_string(),
+        })?;
 
         stats.total_collected += 1;
         stats.bytes_collected += size_bytes as u64;
@@ -318,9 +332,11 @@ impl GcHeap {
 
     /// Clean up invalid weak references
     fn cleanup_weak_refs(&self) -> WasmtimeResult<u64> {
-        let mut weak_refs = self.weak_refs.write()
+        let mut weak_refs = self
+            .weak_refs
+            .write()
             .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire weak refs lock".to_string()
+                message: "Failed to acquire weak refs lock".to_string(),
             })?;
 
         let initial_count = weak_refs.len();
@@ -346,7 +362,11 @@ impl GcWeakReference {
     /// Attempt to upgrade weak reference to check if object is still valid
     pub fn upgrade(&self, heap: &GcHeap) -> Option<ObjectId> {
         heap.object_exists(self.object_id).ok().and_then(|exists| {
-            if exists { Some(self.object_id) } else { None }
+            if exists {
+                Some(self.object_id)
+            } else {
+                None
+            }
         })
     }
 

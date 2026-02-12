@@ -93,15 +93,21 @@ fn test_component_metadata_accessors() {
     assert_eq!(metadata.imports.len(), 0);
 
     // Test interface lookup functions on metadata
-    let has_export = metadata.exports.iter()
+    let has_export = metadata
+        .exports
+        .iter()
         .any(|export| export.name == "test-interface");
     assert!(has_export);
 
-    let has_nonexistent = metadata.exports.iter()
+    let has_nonexistent = metadata
+        .exports
+        .iter()
         .any(|export| export.name == "nonexistent");
     assert!(!has_nonexistent);
 
-    let has_import = metadata.imports.iter()
+    let has_import = metadata
+        .imports
+        .iter()
         .any(|import| import.name == "any-interface");
     assert!(!has_import);
 }
@@ -134,7 +140,10 @@ fn test_value_type_variants() {
         ComponentValueType::String,
         ComponentValueType::List(Box::new(ComponentValueType::String)),
         ComponentValueType::Option(Box::new(ComponentValueType::Bool)),
-        ComponentValueType::Result { ok: Some(Box::new(ComponentValueType::S32)), err: Some(Box::new(ComponentValueType::String)) },
+        ComponentValueType::Result {
+            ok: Some(Box::new(ComponentValueType::S32)),
+            err: Some(Box::new(ComponentValueType::String)),
+        },
     ];
 
     // Test that all value types can be created and cloned
@@ -158,7 +167,11 @@ fn test_resource_manager_active_count() {
     let manager = ResourceManager::new();
 
     // New manager should have 0 active instances
-    assert_eq!(manager.active_count(), 0, "New manager should have 0 active instances");
+    assert_eq!(
+        manager.active_count(),
+        0,
+        "New manager should have 0 active instances"
+    );
 }
 
 #[test]
@@ -167,18 +180,14 @@ fn test_interface_definition_json_serialization() {
         name: "test-interface".to_string(),
         namespace: Some("test".to_string()),
         version: Some("1.0.0".to_string()),
-        functions: vec![
-            FunctionDefinition {
-                name: "my-func".to_string(),
-                parameters: vec![
-                    Parameter {
-                        name: "input".to_string(),
-                        value_type: ComponentValueType::String,
-                    },
-                ],
-                results: vec![ComponentValueType::String],
-            },
-        ],
+        functions: vec![FunctionDefinition {
+            name: "my-func".to_string(),
+            parameters: vec![Parameter {
+                name: "input".to_string(),
+                value_type: ComponentValueType::String,
+            }],
+            results: vec![ComponentValueType::String],
+        }],
         types: vec![],
         resources: vec![],
     };
@@ -187,8 +196,14 @@ fn test_interface_definition_json_serialization() {
     assert!(json_result.is_ok(), "JSON serialization should succeed");
 
     let json = json_result.unwrap();
-    assert!(json.contains("test-interface"), "JSON should contain interface name");
-    assert!(json.contains("my-func"), "JSON should contain function name");
+    assert!(
+        json.contains("test-interface"),
+        "JSON should contain interface name"
+    );
+    assert!(
+        json.contains("my-func"),
+        "JSON should contain function name"
+    );
 }
 
 #[test]
@@ -215,32 +230,31 @@ fn test_component_engine_supports_feature() {
     assert!(supports_gc.is_ok(), "supports_feature should not error");
 
     let supports_threads = engine.supports_feature("threads");
-    assert!(supports_threads.is_ok(), "supports_feature should not error");
+    assert!(
+        supports_threads.is_ok(),
+        "supports_feature should not error"
+    );
 }
 
 #[test]
 fn test_component_metadata_struct() {
     let metadata = ComponentMetadata {
-        imports: vec![
-            InterfaceDefinition {
-                name: "import1".to_string(),
-                namespace: None,
-                version: None,
-                functions: vec![],
-                types: vec![],
-                resources: vec![],
-            },
-        ],
-        exports: vec![
-            InterfaceDefinition {
-                name: "export1".to_string(),
-                namespace: Some("test".to_string()),
-                version: Some("2.0.0".to_string()),
-                functions: vec![],
-                types: vec![],
-                resources: vec![],
-            },
-        ],
+        imports: vec![InterfaceDefinition {
+            name: "import1".to_string(),
+            namespace: None,
+            version: None,
+            functions: vec![],
+            types: vec![],
+            resources: vec![],
+        }],
+        exports: vec![InterfaceDefinition {
+            name: "export1".to_string(),
+            namespace: Some("test".to_string()),
+            version: Some("2.0.0".to_string()),
+            functions: vec![],
+            types: vec![],
+            resources: vec![],
+        }],
         size_bytes: 2048,
     };
 
@@ -275,12 +289,10 @@ fn test_function_definition_struct() {
 fn test_type_definition_struct() {
     let type_def = TypeDefinition {
         name: "MyRecord".to_string(),
-        kind: ComponentTypeKind::Record(vec![
-            FieldType {
-                name: "field1".to_string(),
-                value_type: ComponentValueType::U32,
-            },
-        ]),
+        kind: ComponentTypeKind::Record(vec![FieldType {
+            name: "field1".to_string(),
+            value_type: ComponentValueType::U32,
+        }]),
     };
 
     assert_eq!(type_def.name, "MyRecord");
@@ -350,7 +362,7 @@ fn test_case_type_struct() {
 fn test_host_interface_struct() {
     let host_interface = HostInterface {
         name: "my-host-interface".to_string(),
-        implementation: Box::new(42i32),  // Placeholder implementation
+        implementation: Box::new(42i32), // Placeholder implementation
     };
 
     assert_eq!(host_interface.name, "my-host-interface");
@@ -424,7 +436,10 @@ fn test_wit_parser_validate_simple_interface() {
 #[test]
 fn test_core_create_component_engine() {
     let engine = core::create_component_engine();
-    assert!(engine.is_ok(), "core::create_component_engine should succeed");
+    assert!(
+        engine.is_ok(),
+        "core::create_component_engine should succeed"
+    );
 }
 
 #[test]
@@ -486,16 +501,14 @@ fn test_core_get_export_count() {
 #[test]
 fn test_core_get_import_count() {
     let metadata = ComponentMetadata {
-        imports: vec![
-            InterfaceDefinition {
-                name: "import1".to_string(),
-                namespace: None,
-                version: None,
-                functions: vec![],
-                types: vec![],
-                resources: vec![],
-            },
-        ],
+        imports: vec![InterfaceDefinition {
+            name: "import1".to_string(),
+            namespace: None,
+            version: None,
+            functions: vec![],
+            types: vec![],
+            resources: vec![],
+        }],
         exports: vec![],
         size_bytes: 0,
     };
@@ -573,7 +586,11 @@ fn test_component_linker_wasi_preopen_dir() {
     linker.add_wasi_preopen_dir("/tmp".to_string(), "/sandbox".to_string(), true);
 
     let wasi_config = linker.wasi_p2_config();
-    assert_eq!(wasi_config.preopened_dirs.len(), 1, "Should have 1 preopen dir");
+    assert_eq!(
+        wasi_config.preopened_dirs.len(),
+        1,
+        "Should have 1 preopen dir"
+    );
 }
 
 #[test]

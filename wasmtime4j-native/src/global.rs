@@ -4,10 +4,10 @@
 //! in WebAssembly modules. It enforces mutability constraints and provides type validation
 //! to prevent runtime errors and ensure safe global variable operations.
 
-use std::sync::{Arc, Mutex};
-use wasmtime::{Global as WasmtimeGlobal, GlobalType, Val, Mutability, ValType};
-use crate::store::Store;
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::store::Store;
+use std::sync::{Arc, Mutex};
+use wasmtime::{Global as WasmtimeGlobal, GlobalType, Mutability, Val, ValType};
 
 /// Thread-safe wrapper around Wasmtime global with type safety
 pub struct Global {
@@ -82,11 +82,12 @@ impl Global {
         let wasmtime_value = Self::global_value_to_wasmtime_val(initial_value.clone(), store)?;
 
         let wasmtime_global = store.with_context(|mut ctx| {
-            WasmtimeGlobal::new(&mut ctx, global_type, wasmtime_value)
-                .map_err(|e| WasmtimeError::Runtime {
+            WasmtimeGlobal::new(&mut ctx, global_type, wasmtime_value).map_err(|e| {
+                WasmtimeError::Runtime {
                     message: format!("Failed to create global variable: {}", e),
                     backtrace: None,
-                })
+                }
+            })
         })?;
 
         let metadata = GlobalMetadata {
@@ -107,9 +108,7 @@ impl Global {
             message: format!("Failed to acquire global lock: {}", e),
         })?;
 
-        let wasmtime_value = store.with_context(|ctx| {
-            Ok(global.get(ctx))
-        })?;
+        let wasmtime_value = store.with_context(|ctx| Ok(global.get(ctx)))?;
 
         Self::wasmtime_val_to_global_value(wasmtime_value)
     }
@@ -133,7 +132,8 @@ impl Global {
         let wasmtime_value = Self::global_value_to_wasmtime_val(value, store)?;
 
         store.with_context(|mut ctx| {
-            global.set(&mut ctx, wasmtime_value)
+            global
+                .set(&mut ctx, wasmtime_value)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to set global value: {}", e),
                     backtrace: None,
@@ -152,9 +152,7 @@ impl Global {
             message: format!("Failed to acquire global lock: {}", e),
         })?;
 
-        store.with_context_ro(|ctx| {
-            Ok(global.ty(&ctx))
-        })
+        store.with_context_ro(|ctx| Ok(global.ty(&ctx)))
     }
 
     /// Validate that a GlobalValue matches the expected ValType
@@ -168,26 +166,35 @@ impl Global {
             (GlobalValue::F64(_), ValType::F64) => true,
             (GlobalValue::V128(_), ValType::V128) => true,
             (GlobalValue::FuncRef(_), ValType::Ref(ref_type)) => {
-                matches!(*ref_type.heap_type(), HeapType::Func | HeapType::ConcreteFunc(_))
-            },
+                matches!(
+                    *ref_type.heap_type(),
+                    HeapType::Func | HeapType::ConcreteFunc(_)
+                )
+            }
             (GlobalValue::ExternRef(_), ValType::Ref(ref_type)) => {
                 matches!(*ref_type.heap_type(), HeapType::Extern)
-            },
+            }
             (GlobalValue::AnyRef(_), ValType::Ref(ref_type)) => {
                 matches!(*ref_type.heap_type(), HeapType::Any)
-            },
+            }
             (GlobalValue::EqRef(_), ValType::Ref(ref_type)) => {
                 matches!(*ref_type.heap_type(), HeapType::Eq)
-            },
+            }
             (GlobalValue::I31Ref(_), ValType::Ref(ref_type)) => {
                 matches!(*ref_type.heap_type(), HeapType::I31)
-            },
+            }
             (GlobalValue::StructRef(_), ValType::Ref(ref_type)) => {
-                matches!(*ref_type.heap_type(), HeapType::Struct | HeapType::ConcreteStruct(_))
-            },
+                matches!(
+                    *ref_type.heap_type(),
+                    HeapType::Struct | HeapType::ConcreteStruct(_)
+                )
+            }
             (GlobalValue::ArrayRef(_), ValType::Ref(ref_type)) => {
-                matches!(*ref_type.heap_type(), HeapType::Array | HeapType::ConcreteArray(_))
-            },
+                matches!(
+                    *ref_type.heap_type(),
+                    HeapType::Array | HeapType::ConcreteArray(_)
+                )
+            }
             _ => false,
         };
 
@@ -225,25 +232,25 @@ impl Global {
                 } else {
                     Val::FuncRef(None)
                 }
-            },
+            }
             GlobalValue::ExternRef(_extern_id) => {
                 // ExternRef requires Store context to create Rooted<ExternRef>
                 // Since global value conversion happens without Store context,
                 // we can only pass null externref values
                 // Full externref support requires Store-aware APIs
                 Val::ExternRef(None)
-            },
+            }
             GlobalValue::AnyRef(_ref_id) => {
                 // AnyRef supports null values directly
                 // Non-null AnyRef would require Store context for GC-managed objects
                 // For now, only null anyref is supported for global creation
                 Val::AnyRef(None)
-            },
+            }
             GlobalValue::EqRef(_ref_id) => {
                 // EqRef supports null values directly
                 // Non-null EqRef would require Store context for GC-managed objects
                 Val::AnyRef(None) // EqRef is a subtype of AnyRef
-            },
+            }
             GlobalValue::I31Ref(maybe_value) => {
                 // i31ref can hold actual 31-bit integer values
                 if let Some(value) = maybe_value {
@@ -256,17 +263,17 @@ impl Global {
                 } else {
                     Val::AnyRef(None) // null i31ref
                 }
-            },
+            }
             GlobalValue::StructRef(_ref_id) => {
                 // StructRef requires a concrete struct type from a module
                 // Only null values can be created without a module instance
                 Val::AnyRef(None)
-            },
+            }
             GlobalValue::ArrayRef(_ref_id) => {
                 // ArrayRef requires a concrete array type from a module
                 // Only null values can be created without a module instance
                 Val::AnyRef(None)
-            },
+            }
         };
 
         Ok(wasmtime_val)
@@ -289,31 +296,31 @@ impl Global {
                 } else {
                     GlobalValue::FuncRef(None)
                 }
-            },
+            }
             Val::ExternRef(_extern_ref) => {
                 // ExternRef is a GC object that requires Store context to access
                 // Cannot extract data without Store, so store as null
                 // Full externref support requires Store-aware APIs
                 GlobalValue::ExternRef(None)
-            },
+            }
             Val::AnyRef(_any_ref) => {
                 // AnyRef is part of GC proposal and requires Store context
                 // Cannot extract data without Store, so store as null
                 // Full anyref support requires Store-aware APIs
                 GlobalValue::AnyRef(None)
-            },
+            }
             Val::ExnRef(_) => {
                 // ExnRef is not supported in GlobalValue, return error
                 return Err(WasmtimeError::Type {
                     message: "ExnRef type not supported in globals".to_string(),
                 });
-            },
+            }
             Val::ContRef(_) => {
                 // ContRef is not supported in GlobalValue, return error
                 return Err(WasmtimeError::Type {
                     message: "ContRef type not supported in globals".to_string(),
                 });
-            },
+            }
         };
 
         Ok(global_value)
@@ -325,9 +332,7 @@ impl Global {
         store: &Store,
         name: Option<String>,
     ) -> WasmtimeResult<Self> {
-        let global_type = store.with_context_ro(|ctx| {
-            Ok(wasmtime_global.ty(&ctx))
-        })?;
+        let global_type = store.with_context_ro(|ctx| Ok(wasmtime_global.ty(&ctx)))?;
 
         let metadata = GlobalMetadata {
             value_type: global_type.content().clone(),
@@ -357,8 +362,8 @@ unsafe impl Sync for Global {}
 /// across interface implementations while maintaining defensive programming practices.
 pub mod core {
     use super::*;
-    use std::os::raw::c_void;
     use crate::validate_ptr_not_null;
+    use std::os::raw::c_void;
 
     /// Core function to create a new global variable
     pub fn create_global(
@@ -389,7 +394,11 @@ pub mod core {
     }
 
     /// Core function to set global variable value
-    pub fn set_global_value(global: &Global, store: &Store, value: GlobalValue) -> WasmtimeResult<()> {
+    pub fn set_global_value(
+        global: &Global,
+        store: &Store,
+        value: GlobalValue,
+    ) -> WasmtimeResult<()> {
         global.set(store, value)
     }
 
@@ -437,7 +446,7 @@ pub mod core {
                     HeapType::Extern => GlobalValue::ExternRef(ref_id),
                     _ => GlobalValue::AnyRef(ref_id),
                 }
-            },
+            }
         };
 
         Ok(global_value)
@@ -450,7 +459,15 @@ pub mod core {
             GlobalValue::I64(val) => (0, *val, 0.0, 0.0, None),
             GlobalValue::F32(val) => (0, 0, *val, 0.0, None),
             GlobalValue::F64(val) => (0, 0, 0.0, *val, None),
-            GlobalValue::V128(val) => (0, i64::from_le_bytes([val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]]), 0.0, 0.0, None),
+            GlobalValue::V128(val) => (
+                0,
+                i64::from_le_bytes([
+                    val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7],
+                ]),
+                0.0,
+                0.0,
+                None,
+            ),
             GlobalValue::FuncRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
             GlobalValue::ExternRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
             GlobalValue::AnyRef(ref_id) => (0, 0, 0.0, 0.0, *ref_id),
@@ -485,7 +502,8 @@ mod tests {
             Mutability::Var,
             GlobalValue::I32(42),
             Some("test_global".to_string()),
-        ).expect("Failed to create global");
+        )
+        .expect("Failed to create global");
 
         assert!(matches!(global.metadata().value_type, ValType::I32));
         assert_eq!(global.metadata().mutability, Mutability::Var);
@@ -503,7 +521,8 @@ mod tests {
             Mutability::Var,
             GlobalValue::I32(42),
             None,
-        ).expect("Failed to create global");
+        )
+        .expect("Failed to create global");
 
         // Test getting initial value
         let value = global.get(&store).expect("Failed to get global value");
@@ -513,7 +532,9 @@ mod tests {
         }
 
         // Test setting new value
-        global.set(&store, GlobalValue::I32(100)).expect("Failed to set global value");
+        global
+            .set(&store, GlobalValue::I32(100))
+            .expect("Failed to set global value");
 
         // Test getting updated value
         let value = global.get(&store).expect("Failed to get global value");
@@ -534,7 +555,8 @@ mod tests {
             Mutability::Const,
             GlobalValue::I32(42),
             None,
-        ).expect("Failed to create global");
+        )
+        .expect("Failed to create global");
 
         // Test that setting fails on immutable global
         let result = global.set(&store, GlobalValue::I32(100));
@@ -552,7 +574,8 @@ mod tests {
             Mutability::Var,
             GlobalValue::I32(42),
             None,
-        ).expect("Failed to create global");
+        )
+        .expect("Failed to create global");
 
         // Test that setting wrong type fails
         let result = global.set(&store, GlobalValue::I64(100));
@@ -571,7 +594,8 @@ mod tests {
             Mutability::Var,
             GlobalValue::I64(123456789),
             None,
-        ).expect("Failed to create I64 global");
+        )
+        .expect("Failed to create I64 global");
 
         let value = global_i64.get(&store).expect("Failed to get I64 value");
         match value {
@@ -586,7 +610,8 @@ mod tests {
             Mutability::Var,
             GlobalValue::F32(3.14159),
             None,
-        ).expect("Failed to create F32 global");
+        )
+        .expect("Failed to create F32 global");
 
         let value = global_f32.get(&store).expect("Failed to get F32 value");
         match value {
@@ -601,7 +626,8 @@ mod tests {
             Mutability::Var,
             GlobalValue::F64(2.71828),
             None,
-        ).expect("Failed to create F64 global");
+        )
+        .expect("Failed to create F64 global");
 
         let value = global_f64.get(&store).expect("Failed to get F64 value");
         match value {

@@ -22,7 +22,8 @@ pub extern "C" fn wasmtime4j_panama_instance_create(
 
         unsafe {
             // SAFETY IMPROVEMENT: Using safe Box management utilities
-            *instance_ptr = crate::ffi_common::memory_utils::box_into_raw_safe(instance) as *mut c_void;
+            *instance_ptr =
+                crate::ffi_common::memory_utils::box_into_raw_safe(instance) as *mut c_void;
         }
 
         Ok(())
@@ -51,9 +52,7 @@ pub extern "C" fn wasmtime4j_panama_instance_has_export(
 
 /// Get number of exports in instance (Panama FFI)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_instance_export_count(
-    instance_ptr: *const c_void,
-) -> usize {
+pub extern "C" fn wasmtime4j_panama_instance_export_count(instance_ptr: *const c_void) -> usize {
     if instance_ptr.is_null() {
         return 0;
     }
@@ -71,9 +70,7 @@ pub extern "C" fn wasmtime4j_panama_instance_dispose(instance_ptr: *mut c_void) 
 
 /// Check if instance is disposed (Panama FFI)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_instance_is_disposed(
-    instance_ptr: *const c_void,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_instance_is_disposed(instance_ptr: *const c_void) -> c_int {
     if instance_ptr.is_null() {
         return -1;
     }
@@ -124,9 +121,7 @@ pub extern "C" fn wasmtime4j_panama_instance_call_i32_function_no_params(
 
 /// Get instance creation timestamp in microseconds since epoch (Panama FFI)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_instance_created_at_micros(
-    instance_ptr: *const c_void,
-) -> u64 {
+pub extern "C" fn wasmtime4j_panama_instance_created_at_micros(instance_ptr: *const c_void) -> u64 {
     if instance_ptr.is_null() {
         return 0;
     }
@@ -225,9 +220,7 @@ pub extern "C" fn wasmtime4j_panama_instance_get_table_by_name(
     if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
         return std::ptr::null_mut();
     }
-    unsafe {
-        crate::instance::wasmtime4j_instance_get_table_by_name(instance_ptr, store_ptr, name)
-    }
+    unsafe { crate::instance::wasmtime4j_instance_get_table_by_name(instance_ptr, store_ptr, name) }
 }
 
 /// Get exported global by name (Panama FFI)
@@ -264,28 +257,27 @@ pub extern "C" fn wasmtime4j_panama_instance_get_global_wrapped(
 
     ffi_utils::ffi_try_ptr(|| {
         let name_str = unsafe {
-            std::ffi::CStr::from_ptr(name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+            std::ffi::CStr::from_ptr(name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
                     message: e.to_string(),
-                })?
+                }
+            })?
         };
 
         let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         // Get the raw wasmtime global from the instance
-        let wasmtime_global = crate::instance::core::get_exported_global(instance, store, name_str)?
-            .ok_or_else(|| crate::error::WasmtimeError::ExportNotFound {
-                name: name_str.to_string(),
-            })?;
+        let wasmtime_global = crate::instance::core::get_exported_global(
+            instance, store, name_str,
+        )?
+        .ok_or_else(|| crate::error::WasmtimeError::ExportNotFound {
+            name: name_str.to_string(),
+        })?;
 
         // Wrap it in our Global struct so it can be used with the linker
-        let wrapped_global = Global::from_wasmtime_global(
-            wasmtime_global,
-            store,
-            Some(name_str.to_string()),
-        )?;
+        let wrapped_global =
+            Global::from_wasmtime_global(wasmtime_global, store, Some(name_str.to_string()))?;
 
         Ok(Box::new(wrapped_global))
     })

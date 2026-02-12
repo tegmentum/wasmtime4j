@@ -1,8 +1,8 @@
 //! JNI bindings for SIMD operations
 
-use jni::JNIEnv;
 use jni::objects::{JByteArray, JClass, JObject};
 use jni::sys::{jboolean, jbyte, jbyteArray, jfloat, jint, jlong, jstring};
+use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError};
 use crate::simd;
@@ -91,8 +91,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         // Create SIMD operations instance with default config
         let simd_config = simd::SIMDConfig::default();
@@ -111,7 +115,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut() // Error setting array region
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(), // Error creating array
     }
 }
@@ -155,8 +159,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -173,7 +181,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -197,8 +205,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -206,10 +218,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
         let result = simd_ops.multiply(&a_v128, &b_v128)?;
         let data = result.data.to_vec();
 
-        let byte_array = env.new_byte_array(data.len() as i32)
-            .map_err(|e| WasmtimeError::Memory { message: format!("Failed to create byte array: {}", e) })?;
-        env.set_byte_array_region(&byte_array, 0, &data.iter().map(|&b| b as i8).collect::<Vec<i8>>())
-            .map_err(|e| WasmtimeError::Memory { message: format!("Failed to set byte array region: {}", e) })?;
+        let byte_array =
+            env.new_byte_array(data.len() as i32)
+                .map_err(|e| WasmtimeError::Memory {
+                    message: format!("Failed to create byte array: {}", e),
+                })?;
+        env.set_byte_array_region(
+            &byte_array,
+            0,
+            &data.iter().map(|&b| b as i8).collect::<Vec<i8>>(),
+        )
+        .map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to set byte array region: {}", e),
+        })?;
 
         Ok(unsafe { JObject::from_raw(byte_array.into_raw()) })
     })
@@ -236,9 +257,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes.try_into().expect("length validated above") };
-        let c_v128 = simd::V128 { data: c_bytes.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes.try_into().expect("length validated above"),
+        };
+        let c_v128 = simd::V128 {
+            data: c_bytes.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -246,10 +273,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
         let result = simd_ops.fma(&a_v128, &b_v128, &c_v128)?;
         let data = result.data.to_vec();
 
-        let byte_array = env.new_byte_array(data.len() as i32)
-            .map_err(|e| WasmtimeError::Memory { message: format!("Failed to create byte array: {}", e) })?;
-        env.set_byte_array_region(&byte_array, 0, &data.iter().map(|&b| b as i8).collect::<Vec<i8>>())
-            .map_err(|e| WasmtimeError::Memory { message: format!("Failed to set byte array region: {}", e) })?;
+        let byte_array =
+            env.new_byte_array(data.len() as i32)
+                .map_err(|e| WasmtimeError::Memory {
+                    message: format!("Failed to create byte array: {}", e),
+                })?;
+        env.set_byte_array_region(
+            &byte_array,
+            0,
+            &data.iter().map(|&b| b as i8).collect::<Vec<i8>>(),
+        )
+        .map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to set byte array region: {}", e),
+        })?;
 
         Ok(unsafe { JObject::from_raw(byte_array.into_raw()) })
     })
@@ -266,16 +302,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     match env.convert_byte_array(a) {
         Ok(a_bytes) => {
             if a_bytes.len() == 16 {
-                let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
+                let a_v128 = simd::V128 {
+                    data: a_bytes.try_into().expect("length validated above"),
+                };
 
                 let simd_config = simd::SIMDConfig::default();
                 match simd::SIMDOperations::new(simd_config) {
-                    Ok(simd_ops) => {
-                        match simd_ops.reduce_sum_i32(&a_v128) {
-                            Ok(result) => result as f32,
-                            Err(_) => 0.0,
-                        }
-                    }
+                    Ok(simd_ops) => match simd_ops.reduce_sum_i32(&a_v128) {
+                        Ok(result) => result as f32,
+                        Err(_) => 0.0,
+                    },
                     Err(_) => 0.0,
                 }
             } else {
@@ -324,8 +360,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -342,7 +382,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -385,8 +425,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -403,7 +447,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -446,8 +490,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -464,7 +512,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -507,8 +555,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -525,7 +577,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -568,8 +620,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -586,7 +642,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -619,7 +675,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -636,7 +694,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -679,8 +737,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -697,7 +759,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -740,8 +802,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -758,7 +824,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -801,8 +867,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -819,7 +889,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -872,9 +942,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
-        let c_v128 = simd::V128 { data: c_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
+        let c_v128 = simd::V128 {
+            data: c_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -891,7 +967,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -924,7 +1000,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -941,7 +1019,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -974,7 +1052,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -991,7 +1071,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1024,7 +1104,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -1041,7 +1123,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1079,7 +1161,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     if env.get_byte_array_region(b, 0, &mut b_bytes).is_err() {
         return std::ptr::null_mut();
     }
-    if env.get_byte_array_region(indices, 0, &mut indices_bytes).is_err() {
+    if env
+        .get_byte_array_region(indices, 0, &mut indices_bytes)
+        .is_err()
+    {
         return std::ptr::null_mut();
     }
 
@@ -1094,8 +1179,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
         let indices_arr: [u8; 16] = indices_u8.try_into().expect("length validated above");
 
         let simd_config = simd::SIMDConfig::default();
@@ -1113,7 +1202,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1156,8 +1245,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
-        let b_v128 = simd::V128 { data: b_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
+        let b_v128 = simd::V128 {
+            data: b_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -1174,7 +1267,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1207,7 +1300,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -1224,7 +1319,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1257,7 +1352,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -1274,7 +1371,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1291,16 +1388,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     match env.convert_byte_array(a) {
         Ok(a_bytes) => {
             if a_bytes.len() == 16 && lane >= 0 && lane < 4 {
-                let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
+                let a_v128 = simd::V128 {
+                    data: a_bytes.try_into().expect("length validated above"),
+                };
 
                 let simd_config = simd::SIMDConfig::default();
                 match simd::SIMDOperations::new(simd_config) {
-                    Ok(simd_ops) => {
-                        match simd_ops.extract_lane_i32(&a_v128, lane as u8) {
-                            Ok(result) => result,
-                            Err(_) => 0,
-                        }
-                    }
+                    Ok(simd_ops) => match simd_ops.extract_lane_i32(&a_v128, lane as u8) {
+                        Ok(result) => result,
+                        Err(_) => 0,
+                    },
                     Err(_) => 0,
                 }
             } else {
@@ -1341,7 +1438,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             });
         }
 
-        let a_v128 = simd::V128 { data: a_bytes_u8.try_into().expect("length validated above") };
+        let a_v128 = simd::V128 {
+            data: a_bytes_u8.try_into().expect("length validated above"),
+        };
 
         let simd_config = simd::SIMDConfig::default();
         let simd_ops = simd::SIMDOperations::new(simd_config)?;
@@ -1358,7 +1457,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1387,7 +1486,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1416,7 +1515,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
             } else {
                 std::ptr::null_mut()
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1432,16 +1531,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     match env.convert_byte_array(a) {
         Ok(a_bytes) => {
             if a_bytes.len() == 16 {
-                let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
+                let a_v128 = simd::V128 {
+                    data: a_bytes.try_into().expect("length validated above"),
+                };
 
                 let simd_config = simd::SIMDConfig::default();
                 match simd::SIMDOperations::new(simd_config) {
-                    Ok(simd_ops) => {
-                        match simd_ops.reduce_min_i32(&a_v128) {
-                            Ok(result) => result as f32,
-                            Err(_) => 0.0,
-                        }
-                    }
+                    Ok(simd_ops) => match simd_ops.reduce_min_i32(&a_v128) {
+                        Ok(result) => result as f32,
+                        Err(_) => 0.0,
+                    },
                     Err(_) => 0.0,
                 }
             } else {
@@ -1463,16 +1562,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     match env.convert_byte_array(a) {
         Ok(a_bytes) => {
             if a_bytes.len() == 16 {
-                let a_v128 = simd::V128 { data: a_bytes.try_into().expect("length validated above") };
+                let a_v128 = simd::V128 {
+                    data: a_bytes.try_into().expect("length validated above"),
+                };
 
                 let simd_config = simd::SIMDConfig::default();
                 match simd::SIMDOperations::new(simd_config) {
-                    Ok(simd_ops) => {
-                        match simd_ops.reduce_max_i32(&a_v128) {
-                            Ok(result) => result as f32,
-                            Err(_) => 0.0,
-                        }
-                    }
+                    Ok(simd_ops) => match simd_ops.reduce_max_i32(&a_v128) {
+                        Ok(result) => result as f32,
+                        Err(_) => 0.0,
+                    },
                     Err(_) => 0.0,
                 }
             } else {
@@ -1495,9 +1594,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     _memory_handle: jlong,
     _offset: jint,
 ) -> jbyteArray {
-    jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
-        message: "SIMD load requires store context; Java API update needed".to_string(),
-    });
+    jni_utils::throw_jni_exception(
+        &mut env,
+        &WasmtimeError::UnsupportedFeature {
+            message: "SIMD load requires store context; Java API update needed".to_string(),
+        },
+    );
     std::ptr::null_mut()
 }
 
@@ -1514,9 +1616,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     _offset: jint,
     _alignment: jint,
 ) -> jbyteArray {
-    jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
-        message: "SIMD aligned load requires store context; Java API update needed".to_string(),
-    });
+    jni_utils::throw_jni_exception(
+        &mut env,
+        &WasmtimeError::UnsupportedFeature {
+            message: "SIMD aligned load requires store context; Java API update needed".to_string(),
+        },
+    );
     std::ptr::null_mut()
 }
 
@@ -1533,9 +1638,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     _offset: jint,
     _vector: JByteArray,
 ) -> jboolean {
-    jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
-        message: "SIMD store requires store context; Java API update needed".to_string(),
-    });
+    jni_utils::throw_jni_exception(
+        &mut env,
+        &WasmtimeError::UnsupportedFeature {
+            message: "SIMD store requires store context; Java API update needed".to_string(),
+        },
+    );
     0
 }
 
@@ -1553,9 +1661,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     _vector: JByteArray,
     _alignment: jint,
 ) -> jboolean {
-    jni_utils::throw_jni_exception(&mut env, &WasmtimeError::UnsupportedFeature {
-        message: "SIMD aligned store requires store context; Java API update needed".to_string(),
-    });
+    jni_utils::throw_jni_exception(
+        &mut env,
+        &WasmtimeError::UnsupportedFeature {
+            message: "SIMD aligned store requires store context; Java API update needed"
+                .to_string(),
+        },
+    );
     0
 }
 
@@ -1596,7 +1708,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     // Create result array
     match env.new_byte_array(16) {
         Ok(result_array) => {
-            if env.set_byte_array_region(&result_array, 0, &result).is_err() {
+            if env
+                .set_byte_array_region(&result_array, 0, &result)
+                .is_err()
+            {
                 return std::ptr::null_mut();
             }
             result_array.into_raw()
@@ -1640,7 +1755,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     match env.new_byte_array(16) {
         Ok(result_array) => {
             let result_signed: Vec<i8> = result.iter().map(|&x| x as i8).collect();
-            if env.set_byte_array_region(&result_array, 0, &result_signed).is_err() {
+            if env
+                .set_byte_array_region(&result_array, 0, &result_signed)
+                .is_err()
+            {
                 return std::ptr::null_mut();
             }
             result_array.into_raw()
@@ -1684,7 +1802,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     match env.new_byte_array(16) {
         Ok(result_array) => {
             let result_signed: Vec<i8> = result.iter().map(|&x| x as i8).collect();
-            if env.set_byte_array_region(&result_array, 0, &result_signed).is_err() {
+            if env
+                .set_byte_array_region(&result_array, 0, &result_signed)
+                .is_err()
+            {
                 return std::ptr::null_mut();
             }
             result_array.into_raw()
@@ -1732,7 +1853,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     match env.new_byte_array(16) {
         Ok(result_array) => {
             let result_signed: Vec<i8> = result.iter().map(|&x| x as i8).collect();
-            if env.set_byte_array_region(&result_array, 0, &result_signed).is_err() {
+            if env
+                .set_byte_array_region(&result_array, 0, &result_signed)
+                .is_err()
+            {
                 return std::ptr::null_mut();
             }
             result_array.into_raw()
@@ -1782,7 +1906,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSim
     match env.new_byte_array(16) {
         Ok(result_array) => {
             let result_signed: Vec<i8> = result.iter().map(|&x| x as i8).collect();
-            if env.set_byte_array_region(&result_array, 0, &result_signed).is_err() {
+            if env
+                .set_byte_array_region(&result_array, 0, &result_signed)
+                .is_err()
+            {
                 return std::ptr::null_mut();
             }
             result_array.into_raw()
@@ -1835,7 +1962,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableInit
         // Get objects from handles
         let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
-        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
+        let instance =
+            unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
 
         // Call table.init_from_segment
         table.init_from_segment(
@@ -1875,7 +2003,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeElemDr
         }
 
         // Get instance from handle
-        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
+        let instance =
+            unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
 
         // Drop the element segment
         let segment_manager = instance.get_element_segment_manager();
@@ -1929,7 +2058,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryIn
         // Get objects from handles
         let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *mut c_void)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
-        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
+        let instance =
+            unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
 
         // Call memory_init
         crate::memory::core::memory_init(
@@ -1970,7 +2100,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDataDr
         }
 
         // Get instance from handle
-        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
+        let instance =
+            unsafe { crate::instance::core::get_instance_ref(instance_ptr as *const c_void)? };
 
         // Drop the data segment
         crate::memory::core::data_drop(instance, data_segment_index as u32)?;
@@ -2737,7 +2868,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeSupports
         // Check if it's a 64-bit memory from the cached memory type
         let is_64 = memory.memory_type.is_64();
 
-        log::debug!("Memory 0x{:x} is {}",  memory_ptr, if is_64 { "64-bit" } else { "32-bit" });
+        log::debug!(
+            "Memory 0x{:x} is {}",
+            memory_ptr,
+            if is_64 { "64-bit" } else { "32-bit" }
+        );
 
         Ok(if is_64 { 1 } else { 0 })
     }) as jboolean
@@ -2796,7 +2931,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableCopy
     src_table_ptr: jlong,
     src: jint,
     len: jint,
-    ) -> jint {
+) -> jint {
     jni_utils::jni_try_code(&mut env, || {
         use std::os::raw::c_void;
 
@@ -2818,16 +2953,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableCopy
         }
         if dst < 0 || src < 0 || len < 0 {
             return Err(WasmtimeError::InvalidParameter {
-                message: format!(
-                    "Invalid parameters: dst={}, src={}, len={}",
-                    dst, src, len
-                ),
+                message: format!("Invalid parameters: dst={}, src={}, len={}", dst, src, len),
             });
         }
 
         // Get objects from handles
-        let dst_table = unsafe { crate::table::core::get_table_ref(dst_table_ptr as *const c_void)? };
-        let src_table = unsafe { crate::table::core::get_table_ref(src_table_ptr as *const c_void)? };
+        let dst_table =
+            unsafe { crate::table::core::get_table_ref(dst_table_ptr as *const c_void)? };
+        let src_table =
+            unsafe { crate::table::core::get_table_ref(src_table_ptr as *const c_void)? };
         let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
 
         // Call table.copy_from

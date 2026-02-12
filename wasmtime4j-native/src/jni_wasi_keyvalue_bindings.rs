@@ -78,7 +78,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
         return JNI_FALSE;
     }
     let ctx = unsafe { &*ptr };
-    if ctx.is_valid() { JNI_TRUE } else { JNI_FALSE }
+    if ctx.is_valid() {
+        JNI_TRUE
+    } else {
+        JNI_FALSE
+    }
 }
 
 // =============================================================================
@@ -89,13 +93,21 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
 ///
 /// Returns the value as a byte array, or null if not found
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeGet<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeGet<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     handle: jlong,
     key: JString<'local>,
 ) -> jbyteArray {
-    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", std::ptr::null_mut());
+    let ctx = jni_get_ref!(
+        env,
+        handle,
+        WasiKeyValueContext,
+        "context",
+        std::ptr::null_mut()
+    );
 
     // Get the key string
     let key_str: String = match env.get_string(&key) {
@@ -111,18 +123,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
 
     // Get the value
     match ctx.get(&key_str) {
-        Ok(Some(value)) => {
-            match env.byte_array_from_slice(&value) {
-                Ok(arr) => arr.into_raw(),
-                Err(e) => {
-                    let _ = env.throw_new(
-                        "ai/tegmentum/wasmtime4j/exception/WasmException",
-                        format!("Failed to create byte array: {}", e),
-                    );
-                    std::ptr::null_mut()
-                }
+        Ok(Some(value)) => match env.byte_array_from_slice(&value) {
+            Ok(arr) => arr.into_raw(),
+            Err(e) => {
+                let _ = env.throw_new(
+                    "ai/tegmentum/wasmtime4j/exception/WasmException",
+                    format!("Failed to create byte array: {}", e),
+                );
+                std::ptr::null_mut()
             }
-        }
+        },
         Ok(None) => std::ptr::null_mut(),
         Err(e) => {
             let _ = env.throw_new(
@@ -210,7 +220,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
 
     // Delete the key
     match ctx.delete(&key_str) {
-        Ok(deleted) => if deleted { JNI_TRUE } else { JNI_FALSE },
+        Ok(deleted) => {
+            if deleted {
+                JNI_TRUE
+            } else {
+                JNI_FALSE
+            }
+        }
         Err(e) => {
             let _ = env.throw_new(
                 "ai/tegmentum/wasmtime4j/exception/WasmException",
@@ -245,7 +261,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
 
     // Check if key exists
     match ctx.exists(&key_str) {
-        Ok(exists) => if exists { JNI_TRUE } else { JNI_FALSE },
+        Ok(exists) => {
+            if exists {
+                JNI_TRUE
+            } else {
+                JNI_FALSE
+            }
+        }
         Err(e) => {
             let _ = env.throw_new(
                 "ai/tegmentum/wasmtime4j/exception/WasmException",
@@ -344,12 +366,20 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
 
 /// Gets all keys as a JSON array string
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeKeys<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeKeys<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     handle: jlong,
 ) -> jobject {
-    let ctx = jni_get_ref!(env, handle, WasiKeyValueContext, "context", std::ptr::null_mut());
+    let ctx = jni_get_ref!(
+        env,
+        handle,
+        WasiKeyValueContext,
+        "context",
+        std::ptr::null_mut()
+    );
 
     match ctx.keys() {
         Ok(keys) => {

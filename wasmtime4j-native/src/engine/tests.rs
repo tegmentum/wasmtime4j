@@ -660,7 +660,10 @@ fn test_builder_with_memory_configuration() {
     let config = engine.config_summary();
     assert_eq!(config.memory_reservation, Some(1024 * 1024 * 1024));
     assert_eq!(config.memory_guard_size, Some(64 * 1024));
-    assert_eq!(config.memory_reservation_for_growth, Some(256 * 1024 * 1024));
+    assert_eq!(
+        config.memory_reservation_for_growth,
+        Some(256 * 1024 * 1024)
+    );
 }
 
 #[test]

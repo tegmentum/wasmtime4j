@@ -72,9 +72,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let storage = self.storage.read().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire read lock: {}", e),
-        })?;
+        let storage = self
+            .storage
+            .read()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire read lock: {}", e),
+            })?;
 
         Ok(storage.get(key).cloned())
     }
@@ -87,9 +90,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let mut storage = self.storage.write().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire write lock: {}", e),
-        })?;
+        let mut storage = self
+            .storage
+            .write()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire write lock: {}", e),
+            })?;
 
         storage.insert(key.to_string(), value);
         Ok(())
@@ -103,9 +109,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let mut storage = self.storage.write().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire write lock: {}", e),
-        })?;
+        let mut storage = self
+            .storage
+            .write()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire write lock: {}", e),
+            })?;
 
         Ok(storage.remove(key).is_some())
     }
@@ -118,9 +127,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let storage = self.storage.read().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire read lock: {}", e),
-        })?;
+        let storage = self
+            .storage
+            .read()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire read lock: {}", e),
+            })?;
 
         Ok(storage.contains_key(key))
     }
@@ -133,9 +145,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let storage = self.storage.read().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire read lock: {}", e),
-        })?;
+        let storage = self
+            .storage
+            .read()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire read lock: {}", e),
+            })?;
 
         Ok(storage.keys().cloned().collect())
     }
@@ -148,9 +163,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let storage = self.storage.read().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire read lock: {}", e),
-        })?;
+        let storage = self
+            .storage
+            .read()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire read lock: {}", e),
+            })?;
 
         let mut result = HashMap::new();
         for key in keys {
@@ -169,9 +187,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let mut storage = self.storage.write().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire write lock: {}", e),
-        })?;
+        let mut storage = self
+            .storage
+            .write()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire write lock: {}", e),
+            })?;
 
         for (key, value) in entries {
             storage.insert(key, value);
@@ -187,9 +208,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let mut storage = self.storage.write().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire write lock: {}", e),
-        })?;
+        let mut storage = self
+            .storage
+            .write()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire write lock: {}", e),
+            })?;
 
         let mut deleted = Vec::new();
         for key in keys {
@@ -208,17 +232,25 @@ impl WasiKeyValueContext {
             });
         }
 
-        let mut storage = self.storage.write().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire write lock: {}", e),
-        })?;
+        let mut storage = self
+            .storage
+            .write()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire write lock: {}", e),
+            })?;
 
-        let current = storage.get(key).and_then(|v| {
-            if v.len() == 8 {
-                Some(i64::from_le_bytes(v.as_slice().try_into().unwrap_or([0; 8])))
-            } else {
-                None
-            }
-        }).unwrap_or(0);
+        let current = storage
+            .get(key)
+            .and_then(|v| {
+                if v.len() == 8 {
+                    Some(i64::from_le_bytes(
+                        v.as_slice().try_into().unwrap_or([0; 8]),
+                    ))
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(0);
 
         let new_value = current.saturating_add(delta);
         storage.insert(key.to_string(), new_value.to_le_bytes().to_vec());
@@ -233,9 +265,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let storage = self.storage.read().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire read lock: {}", e),
-        })?;
+        let storage = self
+            .storage
+            .read()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire read lock: {}", e),
+            })?;
 
         Ok(storage.len())
     }
@@ -248,9 +283,12 @@ impl WasiKeyValueContext {
             });
         }
 
-        let mut storage = self.storage.write().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire write lock: {}", e),
-        })?;
+        let mut storage = self
+            .storage
+            .write()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire write lock: {}", e),
+            })?;
 
         storage.clear();
         Ok(())
@@ -346,13 +384,17 @@ mod tests {
         ctx.set_many(entries).unwrap();
 
         // Get multiple
-        let result = ctx.get_many(&["key1".to_string(), "key2".to_string(), "key3".to_string()]).unwrap();
+        let result = ctx
+            .get_many(&["key1".to_string(), "key2".to_string(), "key3".to_string()])
+            .unwrap();
         assert_eq!(result.len(), 2);
         assert_eq!(result.get("key1"), Some(&b"value1".to_vec()));
         assert_eq!(result.get("key2"), Some(&b"value2".to_vec()));
 
         // Delete multiple
-        let deleted = ctx.delete_many(&["key1".to_string(), "key3".to_string()]).unwrap();
+        let deleted = ctx
+            .delete_many(&["key1".to_string(), "key3".to_string()])
+            .unwrap();
         assert_eq!(deleted, vec!["key1"]);
     }
 

@@ -18,14 +18,14 @@
 //! All operations are designed for safety and performance with comprehensive
 //! validation and defensive programming patterns.
 
-use wasmtime::*;
-use std::sync::{Arc, Mutex, RwLock};
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::collections::HashMap;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::gc_types::*;
 use crate::gc_heap::*;
 use crate::gc_operations::*;
+use crate::gc_types::*;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, RwLock};
+use wasmtime::*;
 
 /// Real WebAssembly GC reference using Wasmtime's native GC system
 #[derive(Clone)]
@@ -116,8 +116,9 @@ impl WasmGcRuntime {
         let store = Store::new(&engine, ());
 
         // Initialize real GC operations with Wasmtime integration
-        let gc_operations = WasmtimeGcOperations::new(store)
-            .map_err(|e| WasmtimeError::from_string(&format!("Failed to initialize GC operations: {}", e)))?;
+        let gc_operations = WasmtimeGcOperations::new(store).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to initialize GC operations: {}", e))
+        })?;
 
         Ok(Self {
             type_registry,
@@ -140,8 +141,9 @@ impl WasmGcRuntime {
         let store = Store::new(&engine, ());
 
         // Initialize real GC operations with Wasmtime integration
-        let gc_operations = WasmtimeGcOperations::new(store)
-            .map_err(|e| WasmtimeError::from_string(&format!("Failed to initialize GC operations: {}", e)))?;
+        let gc_operations = WasmtimeGcOperations::new(store).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to initialize GC operations: {}", e))
+        })?;
 
         Ok(Self {
             type_registry,
@@ -165,8 +167,11 @@ impl WasmGcRuntime {
     ) -> StructOperationResult {
         // Generate unique object ID
         let object_id = {
-            let mut next_id = match self.next_object_id.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock")) {
+            let mut next_id = match self
+                .next_object_id
+                .lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
+            {
                 Ok(guard) => guard,
                 Err(_) => {
                     return StructOperationResult {
@@ -185,12 +190,14 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return StructOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return StructOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Register struct type with Wasmtime if not already registered
@@ -241,8 +248,10 @@ impl WasmGcRuntime {
 
     /// Create a new struct instance with default values (struct.new_default) including advanced SIMD
     pub fn struct_new_default(&self, type_def: StructTypeDefinition) -> StructOperationResult {
-        let default_values: Vec<GcValue> = type_def.fields.iter().map(|field| {
-            match &field.field_type {
+        let default_values: Vec<GcValue> = type_def
+            .fields
+            .iter()
+            .map(|field| match &field.field_type {
                 crate::gc_types::FieldType::I32 => GcValue::I32(0),
                 crate::gc_types::FieldType::I64 => GcValue::I64(0),
                 crate::gc_types::FieldType::F32 => GcValue::F32(0.0),
@@ -250,10 +259,12 @@ impl WasmGcRuntime {
                 crate::gc_types::FieldType::V128 => GcValue::V128([0; 16]),
                 crate::gc_types::FieldType::V256 => GcValue::V256([0; 32]),
                 crate::gc_types::FieldType::V512 => GcValue::V512([0; 64]),
-                crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => GcValue::I32(0),
+                crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => {
+                    GcValue::I32(0)
+                }
                 crate::gc_types::FieldType::Reference(_) => GcValue::Null,
-            }
-        }).collect();
+            })
+            .collect();
 
         self.struct_new(type_def, default_values)
     }
@@ -267,7 +278,7 @@ impl WasmGcRuntime {
                 return StructOperationResult {
                     success: false,
                     object_id: None,
-                value: None,
+                    value: None,
                     error: Some("Failed to acquire GC objects lock".to_string()),
                 };
             }
@@ -279,7 +290,7 @@ impl WasmGcRuntime {
                 return StructOperationResult {
                     success: false,
                     object_id: None,
-                value: None,
+                    value: None,
                     error: Some(format!("Object {} not found", object_id)),
                 };
             }
@@ -300,12 +311,14 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return StructOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return StructOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Get field value using real Wasmtime GC APIs
@@ -320,7 +333,12 @@ impl WasmGcRuntime {
     }
 
     /// Set a struct field value using real Wasmtime GC (struct.set)
-    pub fn struct_set(&self, object_id: ObjectId, field_index: u32, value: GcValue) -> StructOperationResult {
+    pub fn struct_set(
+        &self,
+        object_id: ObjectId,
+        field_index: u32,
+        value: GcValue,
+    ) -> StructOperationResult {
         // Validate object exists
         let gc_objects = match self.gc_objects.read() {
             Ok(objects) => objects,
@@ -328,7 +346,7 @@ impl WasmGcRuntime {
                 return StructOperationResult {
                     success: false,
                     object_id: None,
-                value: None,
+                    value: None,
                     error: Some("Failed to acquire GC objects lock".to_string()),
                 };
             }
@@ -340,7 +358,7 @@ impl WasmGcRuntime {
                 return StructOperationResult {
                     success: false,
                     object_id: None,
-                value: None,
+                    value: None,
                     error: Some(format!("Object {} not found", object_id)),
                 };
             }
@@ -361,12 +379,14 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return StructOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return StructOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Set field value using real Wasmtime GC APIs
@@ -390,8 +410,11 @@ impl WasmGcRuntime {
     ) -> ArrayOperationResult {
         // Generate unique object ID
         let object_id = {
-            let mut next_id = match self.next_object_id.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock")) {
+            let mut next_id = match self
+                .next_object_id
+                .lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
+            {
                 Ok(guard) => guard,
                 Err(_) => {
                     return ArrayOperationResult {
@@ -411,13 +434,15 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return ArrayOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                length: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Register array type with Wasmtime if not already registered
@@ -470,7 +495,11 @@ impl WasmGcRuntime {
     }
 
     /// Create a new array instance with default values (array.new_default) including advanced SIMD
-    pub fn array_new_default(&self, type_def: ArrayTypeDefinition, length: u32) -> ArrayOperationResult {
+    pub fn array_new_default(
+        &self,
+        type_def: ArrayTypeDefinition,
+        length: u32,
+    ) -> ArrayOperationResult {
         let default_value = match &type_def.element_type {
             crate::gc_types::FieldType::I32 => GcValue::I32(0),
             crate::gc_types::FieldType::I64 => GcValue::I64(0),
@@ -479,7 +508,9 @@ impl WasmGcRuntime {
             crate::gc_types::FieldType::V128 => GcValue::V128([0; 16]),
             crate::gc_types::FieldType::V256 => GcValue::V256([0; 32]),
             crate::gc_types::FieldType::V512 => GcValue::V512([0; 64]),
-            crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => GcValue::I32(0),
+            crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => {
+                GcValue::I32(0)
+            }
             crate::gc_types::FieldType::Reference(_) => GcValue::Null,
         };
 
@@ -506,7 +537,7 @@ impl WasmGcRuntime {
                 return ArrayOperationResult {
                     success: false,
                     object_id: None,
-                value: None,
+                    value: None,
                     length: None,
                     error: Some("Failed to acquire GC objects lock".to_string()),
                 };
@@ -519,7 +550,7 @@ impl WasmGcRuntime {
                 return ArrayOperationResult {
                     success: false,
                     object_id: None,
-                value: None,
+                    value: None,
                     length: None,
                     error: Some(format!("Object {} not found", object_id)),
                 };
@@ -542,13 +573,15 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return ArrayOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                length: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Get element value using real Wasmtime GC APIs
@@ -564,7 +597,12 @@ impl WasmGcRuntime {
     }
 
     /// Set an array element value (array.set)
-    pub fn array_set(&self, object_id: ObjectId, element_index: u32, value: GcValue) -> ArrayOperationResult {
+    pub fn array_set(
+        &self,
+        object_id: ObjectId,
+        element_index: u32,
+        value: GcValue,
+    ) -> ArrayOperationResult {
         // Validate object exists
         let gc_objects = match self.gc_objects.read() {
             Ok(objects) => objects,
@@ -608,13 +646,15 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return ArrayOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                length: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Set element value using real Wasmtime GC APIs
@@ -638,7 +678,7 @@ impl WasmGcRuntime {
                 return ArrayOperationResult {
                     success: false,
                     object_id: None,
-                value: None,
+                    value: None,
                     length: None,
                     error: Some("Failed to acquire GC objects lock".to_string()),
                 };
@@ -651,7 +691,7 @@ impl WasmGcRuntime {
                 return ArrayOperationResult {
                     success: false,
                     object_id: None,
-                value: None,
+                    value: None,
                     length: None,
                     error: Some(format!("Object {} not found", object_id)),
                 };
@@ -674,13 +714,15 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return ArrayOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                length: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Get array length using real Wasmtime GC APIs
@@ -707,17 +749,20 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return ArrayOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                length: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Perform array copy using real Wasmtime GC APIs
-        let result = gc_ops.array_copy(dest_object_id, dest_index, src_object_id, src_index, length);
+        let result =
+            gc_ops.array_copy(dest_object_id, dest_index, src_object_id, src_index, length);
 
         ArrayOperationResult {
             success: result.success,
@@ -739,13 +784,15 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return ArrayOperationResult {
-                success: false,
-                object_id: None,
-                value: None,
-                length: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Perform array fill using real Wasmtime GC APIs
@@ -763,7 +810,11 @@ impl WasmGcRuntime {
     // === Reference Type Operations ===
 
     /// Cast a reference to a specific type using real Wasmtime GC (ref.cast)
-    pub fn ref_cast(&self, object_id: ObjectId, target_type: GcReferenceType) -> RefOperationResult {
+    pub fn ref_cast(
+        &self,
+        object_id: ObjectId,
+        target_type: GcReferenceType,
+    ) -> RefOperationResult {
         // Validate object exists
         let gc_objects = match self.gc_objects.read() {
             Ok(objects) => objects,
@@ -774,7 +825,7 @@ impl WasmGcRuntime {
                     test_result: None,
                     eq_result: None,
                     is_null: None,
-                value: None,
+                    value: None,
                     error: Some("Failed to acquire GC objects lock".to_string()),
                 };
             }
@@ -789,7 +840,7 @@ impl WasmGcRuntime {
                     test_result: None,
                     eq_result: None,
                     is_null: None,
-                value: None,
+                    value: None,
                     error: Some(format!("Object {} not found", object_id)),
                 };
             }
@@ -800,15 +851,17 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return RefOperationResult {
-                success: false,
-                cast_result: None,
-                test_result: None,
-                eq_result: None,
-                is_null: None,
-                value: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return RefOperationResult {
+                    success: false,
+                    cast_result: None,
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Perform cast using real Wasmtime GC APIs
@@ -838,19 +891,25 @@ impl WasmGcRuntime {
     }
 
     /// Test if a reference is of a specific type using real Wasmtime GC (ref.test)
-    pub fn ref_test(&self, object_id: ObjectId, target_type: GcReferenceType) -> RefOperationResult {
+    pub fn ref_test(
+        &self,
+        object_id: ObjectId,
+        target_type: GcReferenceType,
+    ) -> RefOperationResult {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return RefOperationResult {
-                success: false,
-                cast_result: None,
-                test_result: None,
-                eq_result: None,
-                is_null: None,
-                value: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return RefOperationResult {
+                    success: false,
+                    cast_result: None,
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Perform type test using real Wasmtime GC APIs
@@ -862,7 +921,7 @@ impl WasmGcRuntime {
             test_result: result.test_result,
             eq_result: None,
             is_null: None,
-                value: None,
+            value: None,
             error: result.error,
         }
     }
@@ -875,20 +934,22 @@ impl WasmGcRuntime {
                 // Use real Wasmtime GC operations for null checking
                 let gc_ops = match self.gc_operations.lock() {
                     Ok(ops) => ops,
-                    Err(_) => return RefOperationResult {
-                        success: false,
-                        cast_result: None,
-                        test_result: None,
-                        eq_result: None,
-                        is_null: None,
-                value: None,
-                        error: Some("Failed to acquire GC operations lock".to_string()),
-                    },
+                    Err(_) => {
+                        return RefOperationResult {
+                            success: false,
+                            cast_result: None,
+                            test_result: None,
+                            eq_result: None,
+                            is_null: None,
+                            value: None,
+                            error: Some("Failed to acquire GC operations lock".to_string()),
+                        }
+                    }
                 };
 
                 let result = gc_ops.ref_is_null(id);
                 result.is_null.unwrap_or(true)
-            },
+            }
         };
 
         RefOperationResult {
@@ -903,28 +964,34 @@ impl WasmGcRuntime {
     }
 
     /// Compare two references for equality using real Wasmtime GC (ref.eq)
-    pub fn ref_eq(&self, object_id1: Option<ObjectId>, object_id2: Option<ObjectId>) -> RefOperationResult {
+    pub fn ref_eq(
+        &self,
+        object_id1: Option<ObjectId>,
+        object_id2: Option<ObjectId>,
+    ) -> RefOperationResult {
         let eq_result = match (object_id1, object_id2) {
-            (None, None) => true,  // Both null
+            (None, None) => true, // Both null
             (Some(id1), Some(id2)) => {
                 // Use real Wasmtime GC operations for reference comparison
                 let mut gc_ops = match self.gc_operations.lock() {
                     Ok(ops) => ops,
-                    Err(_) => return RefOperationResult {
-                        success: false,
-                        cast_result: None,
-                        test_result: None,
-                        eq_result: None,
-                        is_null: None,
-                value: None,
-                        error: Some("Failed to acquire GC operations lock".to_string()),
-                    },
+                    Err(_) => {
+                        return RefOperationResult {
+                            success: false,
+                            cast_result: None,
+                            test_result: None,
+                            eq_result: None,
+                            is_null: None,
+                            value: None,
+                            error: Some("Failed to acquire GC operations lock".to_string()),
+                        }
+                    }
                 };
 
                 let result = gc_ops.ref_eq(id1, id2);
                 result.eq_result.unwrap_or(false)
-            },
-            _ => false,  // One null, one not null
+            }
+            _ => false, // One null, one not null
         };
 
         RefOperationResult {
@@ -933,7 +1000,7 @@ impl WasmGcRuntime {
             test_result: None,
             eq_result: Some(eq_result),
             is_null: None,
-                value: None,
+            value: None,
             error: None,
         }
     }
@@ -942,19 +1009,23 @@ impl WasmGcRuntime {
     pub fn ref_null(&self, ref_type: GcReferenceType) -> RefOperationResult {
         // Validate that the reference type is valid
         match ref_type {
-            GcReferenceType::AnyRef | GcReferenceType::EqRef | GcReferenceType::I31Ref |
-            GcReferenceType::StructRef(_) | GcReferenceType::ArrayRef(_) |
-            GcReferenceType::ExternRef | GcReferenceType::FuncRef |
-            GcReferenceType::NullRef | GcReferenceType::NullFuncRef | GcReferenceType::NullExternRef => {
-                RefOperationResult {
-                    success: true,
-                    cast_result: None,
-                    test_result: None,
-                    eq_result: None,
-                    is_null: Some(true),
-                    value: None,
-                    error: None,
-                }
+            GcReferenceType::AnyRef
+            | GcReferenceType::EqRef
+            | GcReferenceType::I31Ref
+            | GcReferenceType::StructRef(_)
+            | GcReferenceType::ArrayRef(_)
+            | GcReferenceType::ExternRef
+            | GcReferenceType::FuncRef
+            | GcReferenceType::NullRef
+            | GcReferenceType::NullFuncRef
+            | GcReferenceType::NullExternRef => RefOperationResult {
+                success: true,
+                cast_result: None,
+                test_result: None,
+                eq_result: None,
+                is_null: Some(true),
+                value: None,
+                error: None,
             },
         }
     }
@@ -964,7 +1035,9 @@ impl WasmGcRuntime {
         match object_id {
             Some(id) => {
                 // Check if object exists in our gc_objects map
-                let exists = self.gc_objects.read()
+                let exists = self
+                    .gc_objects
+                    .read()
                     .map(|objects| objects.contains_key(&id))
                     .unwrap_or(false);
 
@@ -989,7 +1062,7 @@ impl WasmGcRuntime {
                         error: Some(format!("Object {} not found", id)),
                     }
                 }
-            },
+            }
             None => RefOperationResult {
                 success: false,
                 cast_result: None,
@@ -1008,8 +1081,11 @@ impl WasmGcRuntime {
     pub fn i31_new(&self, value: i32) -> RefOperationResult {
         // Generate unique object ID
         let object_id = {
-            let mut next_id = match self.next_object_id.lock()
-                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock")) {
+            let mut next_id = match self
+                .next_object_id
+                .lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
+            {
                 Ok(guard) => guard,
                 Err(_) => {
                     return RefOperationResult {
@@ -1031,15 +1107,17 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return RefOperationResult {
-                success: false,
-                cast_result: None,
-                test_result: None,
-                eq_result: None,
-                is_null: None,
-                value: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return RefOperationResult {
+                    success: false,
+                    cast_result: None,
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Create I31 using real Wasmtime GC APIs
@@ -1089,15 +1167,17 @@ impl WasmGcRuntime {
         // Use real Wasmtime GC operations
         let mut gc_ops = match self.gc_operations.lock() {
             Ok(ops) => ops,
-            Err(_) => return RefOperationResult {
-                success: false,
-                cast_result: None,
-                test_result: None,
-                eq_result: None,
-                is_null: None,
-                value: None,
-                error: Some("Failed to acquire GC operations lock".to_string()),
-            },
+            Err(_) => {
+                return RefOperationResult {
+                    success: false,
+                    cast_result: None,
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
         };
 
         // Get I31 value using real Wasmtime GC APIs
@@ -1161,7 +1241,9 @@ impl WasmGcRuntime {
         let total_allocated = self.allocation_count.load(Ordering::Relaxed);
 
         // Also get object count from gc_objects
-        let current_objects = self.gc_objects.read()
+        let current_objects = self
+            .gc_objects
+            .read()
             .map(|objects| objects.len() as u64)
             .unwrap_or(0);
 
@@ -1184,7 +1266,9 @@ impl WasmGcRuntime {
     /// Create weak reference
     pub fn create_weak_reference(&self, object_id: ObjectId) -> WasmtimeResult<GcWeakReference> {
         // Check that the object exists in gc_objects (where struct_new stores objects)
-        let gc_objects = self.gc_objects.read()
+        let gc_objects = self
+            .gc_objects
+            .read()
             .map_err(|_| WasmtimeError::from_string("Failed to acquire gc_objects lock"))?;
 
         if !gc_objects.contains_key(&object_id) {
@@ -1201,7 +1285,11 @@ impl WasmGcRuntime {
     // === Advanced GC Features ===
 
     /// Create a weak reference to an object for future GC support
-    pub fn create_weak_reference_advanced(&self, object_id: ObjectId, finalization_callback: Option<Box<dyn Fn() + Send + Sync>>) -> WasmtimeResult<GcWeakReference> {
+    pub fn create_weak_reference_advanced(
+        &self,
+        object_id: ObjectId,
+        finalization_callback: Option<Box<dyn Fn() + Send + Sync>>,
+    ) -> WasmtimeResult<GcWeakReference> {
         // Store the finalization callback for future use
         if let Some(_callback) = finalization_callback {
             // In a real implementation, this would be stored in a finalization registry
@@ -1212,14 +1300,22 @@ impl WasmGcRuntime {
     }
 
     /// Register object for finalization monitoring (future GC proposal support)
-    pub fn register_finalization_callback(&self, _object_id: ObjectId, _callback: Box<dyn Fn() + Send + Sync>) -> WasmtimeResult<()> {
+    pub fn register_finalization_callback(
+        &self,
+        _object_id: ObjectId,
+        _callback: Box<dyn Fn() + Send + Sync>,
+    ) -> WasmtimeResult<()> {
         // This is a placeholder for future WebAssembly GC finalization support
         // When the GC proposal includes finalization, this will integrate with Wasmtime's finalizers
         Ok(())
     }
 
     /// Advanced GC collection with incremental and concurrent support
-    pub fn collect_garbage_advanced(&self, max_pause_millis: Option<u64>, concurrent: bool) -> WasmtimeResult<GcCollectionResult> {
+    pub fn collect_garbage_advanced(
+        &self,
+        max_pause_millis: Option<u64>,
+        concurrent: bool,
+    ) -> WasmtimeResult<GcCollectionResult> {
         // This prepares for future advanced GC algorithms in Wasmtime
         let result = if concurrent {
             // Future: concurrent GC support
@@ -1249,7 +1345,12 @@ impl WasmGcRuntime {
     }
 
     /// Advanced type casting with performance optimization
-    pub fn ref_cast_optimized(&self, object_id: ObjectId, target_type: GcReferenceType, enable_caching: bool) -> RefOperationResult {
+    pub fn ref_cast_optimized(
+        &self,
+        object_id: ObjectId,
+        target_type: GcReferenceType,
+        enable_caching: bool,
+    ) -> RefOperationResult {
         // Use caching for frequent cast operations to improve performance
         if enable_caching {
             // Future: implement cast result caching
@@ -1260,17 +1361,24 @@ impl WasmGcRuntime {
     }
 
     /// Batch GC operations for better performance
-    pub fn batch_struct_operations(&self, operations: Vec<StructBatchOperation>) -> Vec<StructOperationResult> {
-        operations.into_iter().map(|op| {
-            match op {
-                StructBatchOperation::Get { object_id, field_index } => {
-                    self.struct_get(object_id, field_index)
-                },
-                StructBatchOperation::Set { object_id, field_index, value } => {
-                    self.struct_set(object_id, field_index, value)
-                },
-            }
-        }).collect()
+    pub fn batch_struct_operations(
+        &self,
+        operations: Vec<StructBatchOperation>,
+    ) -> Vec<StructOperationResult> {
+        operations
+            .into_iter()
+            .map(|op| match op {
+                StructBatchOperation::Get {
+                    object_id,
+                    field_index,
+                } => self.struct_get(object_id, field_index),
+                StructBatchOperation::Set {
+                    object_id,
+                    field_index,
+                    value,
+                } => self.struct_set(object_id, field_index, value),
+            })
+            .collect()
     }
 }
 
@@ -1278,9 +1386,16 @@ impl WasmGcRuntime {
 #[derive(Debug, Clone)]
 pub enum StructBatchOperation {
     /// Get a struct field value
-    Get { object_id: ObjectId, field_index: u32 },
+    Get {
+        object_id: ObjectId,
+        field_index: u32,
+    },
     /// Set a struct field value
-    Set { object_id: ObjectId, field_index: u32, value: GcValue },
+    Set {
+        object_id: ObjectId,
+        field_index: u32,
+        value: GcValue,
+    },
 }
 
 #[cfg(test)]
@@ -1308,14 +1423,12 @@ mod tests {
         // Register struct type
         let struct_def = StructTypeDefinition {
             type_id: 0,
-            fields: vec![
-                FieldDefinition {
-                    name: Some("x".to_string()),
-                    field_type: crate::gc_types::FieldType::I32,
-                    mutable: true,
-                    index: 0,
-                },
-            ],
+            fields: vec![FieldDefinition {
+                name: Some("x".to_string()),
+                field_type: crate::gc_types::FieldType::I32,
+                mutable: true,
+                index: 0,
+            }],
             name: Some("TestStruct".to_string()),
             supertype: None,
         };
@@ -1465,13 +1578,23 @@ mod tests {
         let array_def = runtime.get_array_type(type_id).unwrap();
 
         // Create source array
-        let src_elements = vec![GcValue::I32(1), GcValue::I32(2), GcValue::I32(3), GcValue::I32(4)];
+        let src_elements = vec![
+            GcValue::I32(1),
+            GcValue::I32(2),
+            GcValue::I32(3),
+            GcValue::I32(4),
+        ];
         let src_result = runtime.array_new(array_def.clone(), src_elements);
         assert!(src_result.success);
         let src_object_id = src_result.object_id.unwrap();
 
         // Create destination array
-        let dest_elements = vec![GcValue::I32(0), GcValue::I32(0), GcValue::I32(0), GcValue::I32(0)];
+        let dest_elements = vec![
+            GcValue::I32(0),
+            GcValue::I32(0),
+            GcValue::I32(0),
+            GcValue::I32(0),
+        ];
         let dest_result = runtime.array_new(array_def, dest_elements);
         assert!(dest_result.success);
         let dest_object_id = dest_result.object_id.unwrap();
@@ -1514,7 +1637,12 @@ mod tests {
         let array_def = runtime.get_array_type(type_id).unwrap();
 
         // Create array
-        let elements = vec![GcValue::I32(0), GcValue::I32(0), GcValue::I32(0), GcValue::I32(0)];
+        let elements = vec![
+            GcValue::I32(0),
+            GcValue::I32(0),
+            GcValue::I32(0),
+            GcValue::I32(0),
+        ];
         let result = runtime.array_new(array_def, elements);
         assert!(result.success);
         let object_id = result.object_id.unwrap();

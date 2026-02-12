@@ -64,7 +64,10 @@
 
 use crate::error::WasmtimeError;
 use std::collections::HashMap;
-use std::sync::{Mutex, atomic::{AtomicU64, Ordering}};
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Mutex,
+};
 use wasmtime::component::{ResourceAny, Val};
 
 /// Global resource registry for FFI marshalling.
@@ -269,7 +272,10 @@ fn deserialize_u64(data: &[u8]) -> Result<Val, WasmtimeError> {
 fn deserialize_float64(data: &[u8]) -> Result<Val, WasmtimeError> {
     if data.len() != 8 {
         return Err(WasmtimeError::InvalidParameter {
-            message: format!("Invalid float64 data length: expected 8, got {}", data.len()),
+            message: format!(
+                "Invalid float64 data length: expected 8, got {}",
+                data.len()
+            ),
         });
     }
     let value = f64::from_le_bytes([
@@ -294,7 +300,10 @@ fn deserialize_char(data: &[u8]) -> Result<Val, WasmtimeError> {
 fn deserialize_string(data: &[u8]) -> Result<Val, WasmtimeError> {
     if data.len() < 4 {
         return Err(WasmtimeError::InvalidParameter {
-            message: format!("Invalid string data length: expected at least 4, got {}", data.len()),
+            message: format!(
+                "Invalid string data length: expected at least 4, got {}",
+                data.len()
+            ),
         });
     }
 
@@ -360,7 +369,10 @@ fn deserialize_u16(data: &[u8]) -> Result<Val, WasmtimeError> {
 fn deserialize_float32(data: &[u8]) -> Result<Val, WasmtimeError> {
     if data.len() != 4 {
         return Err(WasmtimeError::InvalidParameter {
-            message: format!("Invalid float32 data length: expected 4, got {}", data.len()),
+            message: format!(
+                "Invalid float32 data length: expected 4, got {}",
+                data.len()
+            ),
         });
     }
     let value = f32::from_le_bytes([data[0], data[1], data[2], data[3]]);
@@ -376,7 +388,10 @@ fn deserialize_float32(data: &[u8]) -> Result<Val, WasmtimeError> {
 fn deserialize_resource(data: &[u8]) -> Result<Val, WasmtimeError> {
     if data.len() != 8 {
         return Err(WasmtimeError::InvalidParameter {
-            message: format!("Invalid resource data length: expected 8, got {}", data.len()),
+            message: format!(
+                "Invalid resource data length: expected 8, got {}",
+                data.len()
+            ),
         });
     }
     let handle_id = u64::from_le_bytes([
@@ -826,9 +841,11 @@ fn deserialize_variant(data: &[u8]) -> Result<Val, WasmtimeError> {
         });
     }
 
-    let case_name = String::from_utf8(data[offset..offset + name_length].to_vec())
-        .map_err(|_| WasmtimeError::InvalidParameter {
-            message: "Invalid UTF-8 in variant case name".to_string(),
+    let case_name =
+        String::from_utf8(data[offset..offset + name_length].to_vec()).map_err(|_| {
+            WasmtimeError::InvalidParameter {
+                message: "Invalid UTF-8 in variant case name".to_string(),
+            }
         })?;
     offset += name_length;
 
@@ -896,10 +913,11 @@ fn deserialize_enum(data: &[u8]) -> Result<Val, WasmtimeError> {
         });
     }
 
-    let discriminant = String::from_utf8(data[4..4 + name_length].to_vec())
-        .map_err(|_| WasmtimeError::InvalidParameter {
+    let discriminant = String::from_utf8(data[4..4 + name_length].to_vec()).map_err(|_| {
+        WasmtimeError::InvalidParameter {
             message: "Invalid UTF-8 in enum discriminant".to_string(),
-        })?;
+        }
+    })?;
 
     Ok(Val::Enum(discriminant))
 }
@@ -1039,9 +1057,11 @@ fn deserialize_flags(data: &[u8]) -> Result<Val, WasmtimeError> {
             });
         }
 
-        let flag_name = String::from_utf8(data[offset..offset + name_length].to_vec())
-            .map_err(|_| WasmtimeError::InvalidParameter {
-                message: "Invalid UTF-8 in flag name".to_string(),
+        let flag_name =
+            String::from_utf8(data[offset..offset + name_length].to_vec()).map_err(|_| {
+                WasmtimeError::InvalidParameter {
+                    message: "Invalid UTF-8 in flag name".to_string(),
+                }
             })?;
         flags.push(flag_name);
         offset += name_length;
@@ -1109,7 +1129,10 @@ fn serialize_list(elements: &[Val]) -> Result<Vec<u8>, WasmtimeError> {
     Ok(result)
 }
 
-fn serialize_variant(case_name: &str, payload: &Option<Box<Val>>) -> Result<Vec<u8>, WasmtimeError> {
+fn serialize_variant(
+    case_name: &str,
+    payload: &Option<Box<Val>>,
+) -> Result<Vec<u8>, WasmtimeError> {
     let mut result = Vec::new();
 
     // Serialize case name
@@ -1159,7 +1182,9 @@ fn serialize_option(value: &Option<Box<Val>>) -> Result<Vec<u8>, WasmtimeError> 
     Ok(result)
 }
 
-fn serialize_result(result_val: &Result<Option<Box<Val>>, Option<Box<Val>>>) -> Result<Vec<u8>, WasmtimeError> {
+fn serialize_result(
+    result_val: &Result<Option<Box<Val>>, Option<Box<Val>>>,
+) -> Result<Vec<u8>, WasmtimeError> {
     let mut result = Vec::new();
 
     // Serialize is_ok flag and value

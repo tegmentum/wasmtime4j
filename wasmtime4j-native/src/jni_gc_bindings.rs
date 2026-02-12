@@ -10,15 +10,17 @@
 //! JVM crashes and ensure robust error handling. Input validation and null checks are
 //! performed for all parameters.
 
-use jni::JNIEnv;
+use jni::objects::JObjectArray;
 use jni::objects::{JByteArray, JClass, JObject, JString, JValue, JValueOwned};
 use jni::sys::{jboolean, jint, jlong, jobject};
-use jni::objects::JObjectArray;
+use jni::JNIEnv;
 
-use crate::gc::WasmGcRuntime;
-use crate::gc_types::{StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue};
-use crate::gc_heap::ObjectId;
 use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::gc::WasmGcRuntime;
+use crate::gc_heap::ObjectId;
+use crate::gc_types::{
+    ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
+};
 use wasmtime::Engine;
 
 // FFI constants
@@ -38,9 +40,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_createRunti
         Ok(runtime) => {
             let runtime_ptr = Box::into_raw(Box::new(runtime));
             runtime_ptr as jlong
-        },
+        }
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -81,13 +86,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_registerStr
         name,
         field_names,
         field_types,
-        field_mutabilities
+        field_mutabilities,
     );
 
     match result {
         Ok(type_id) => type_id as jint,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             -1
         }
     }
@@ -103,12 +111,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_registerArr
     element_type: jint,
     mutable: jboolean,
 ) -> jint {
-    let result = register_array_type_internal(&mut env, runtime_handle, name, element_type, mutable);
+    let result =
+        register_array_type_internal(&mut env, runtime_handle, name, element_type, mutable);
 
     match result {
         Ok(type_id) => type_id as jint,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             -1
         }
     }
@@ -128,7 +140,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_structNewNa
     match result {
         Ok(object_id) => object_id as jlong,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -147,7 +162,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_structNewDe
     match result {
         Ok(object_id) => object_id as jlong,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -180,7 +198,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_structSetNa
     match result {
         Ok(_) => FFI_SUCCESS,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             FFI_ERROR
         }
     }
@@ -200,7 +221,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayNewNat
     match result {
         Ok(object_id) => object_id as jlong,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -220,7 +244,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayNewDef
     match result {
         Ok(object_id) => object_id as jlong,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -253,7 +280,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arraySetNat
     match result {
         Ok(_) => FFI_SUCCESS,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             FFI_ERROR
         }
     }
@@ -272,7 +302,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayLenNat
     match result {
         Ok(length) => length as jint,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             -1
         }
     }
@@ -291,7 +324,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31NewNativ
     match result {
         Ok(object_id) => object_id as jlong,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -311,7 +347,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31GetNativ
     match result {
         Ok(value) => value,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -349,9 +388,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_refTestNati
     let result = ref_test_internal(&mut env, runtime_handle, object_id, target_type);
 
     match result {
-        Ok(test_result) => if test_result { 1 } else { 0 },
+        Ok(test_result) => {
+            if test_result {
+                1
+            } else {
+                0
+            }
+        }
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -369,9 +417,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_refEqNative
     let result = ref_eq_internal(&mut env, runtime_handle, object_id1, object_id2);
 
     match result {
-        Ok(eq_result) => if eq_result { 1 } else { 0 },
+        Ok(eq_result) => {
+            if eq_result {
+                1
+            } else {
+                0
+            }
+        }
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -388,9 +445,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_refIsNullNa
     let result = ref_is_null_internal(&mut env, runtime_handle, object_id);
 
     match result {
-        Ok(is_null) => if is_null { 1 } else { 0 },
+        Ok(is_null) => {
+            if is_null {
+                1
+            } else {
+                0
+            }
+        }
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             0
         }
     }
@@ -446,24 +512,28 @@ fn register_struct_type_internal(
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
     // Convert Java strings and arrays to Rust types
-    let name_str = env.get_string(&name)
+    let name_str = env
+        .get_string(&name)
         .map_err(|_| WasmtimeError::from_string("Failed to get struct name"))?
         .to_string_lossy()
         .to_string();
 
-    let field_count = env.get_array_length(&field_names)
-        .map_err(|_| WasmtimeError::from_string("Failed to get field count"))? as usize;
+    let field_count =
+        env.get_array_length(&field_names)
+            .map_err(|_| WasmtimeError::from_string("Failed to get field count"))? as usize;
 
     let mut fields = Vec::with_capacity(field_count);
 
     for i in 0..field_count {
         // Get field name
-        let field_name_obj = env.get_object_array_element(&field_names, i as i32)
+        let field_name_obj = env
+            .get_object_array_element(&field_names, i as i32)
             .map_err(|_| WasmtimeError::from_string("Failed to get field name"))?;
 
         let field_name = if !field_name_obj.is_null() {
             let field_name_jstring = JString::from(field_name_obj);
-            let field_name_str = env.get_string(&field_name_jstring)
+            let field_name_str = env
+                .get_string(&field_name_jstring)
                 .map_err(|_| WasmtimeError::from_string("Failed to convert field name"))?;
             Some(field_name_str.to_string_lossy().to_string())
         } else {
@@ -471,10 +541,12 @@ fn register_struct_type_internal(
         };
 
         // Get field type string
-        let field_type_obj = env.get_object_array_element(&field_types, i as i32)
+        let field_type_obj = env
+            .get_object_array_element(&field_types, i as i32)
             .map_err(|_| WasmtimeError::from_string("Failed to get field type"))?;
         let field_type_jstring = JString::from(field_type_obj);
-        let field_type_str = env.get_string(&field_type_jstring)
+        let field_type_str = env
+            .get_string(&field_type_jstring)
             .map_err(|_| WasmtimeError::from_string("Failed to convert field type"))?
             .to_string_lossy()
             .to_string();
@@ -483,9 +555,11 @@ fn register_struct_type_internal(
         let field_type = parse_field_type(&field_type_str)?;
 
         // Get field mutability
-        let field_mutability_obj = env.get_object_array_element(&field_mutabilities, i as i32)
+        let field_mutability_obj = env
+            .get_object_array_element(&field_mutabilities, i as i32)
             .map_err(|_| WasmtimeError::from_string("Failed to get field mutability"))?;
-        let mutable = env.call_method(&field_mutability_obj, "booleanValue", "()Z", &[])
+        let mutable = env
+            .call_method(&field_mutability_obj, "booleanValue", "()Z", &[])
             .map_err(|_| WasmtimeError::from_string("Failed to get boolean value"))?;
         let mutable = match mutable {
             JValueOwned::Bool(b) => b != 0,
@@ -523,7 +597,8 @@ fn register_array_type_internal(
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
-    let name_str = env.get_string(&name)
+    let name_str = env
+        .get_string(&name)
         .map_err(|_| WasmtimeError::from_string("Failed to get array name"))?
         .to_string_lossy()
         .to_string();
@@ -537,7 +612,12 @@ fn register_array_type_internal(
         4 => FieldType::V128,
         5 => FieldType::PackedI8,
         6 => FieldType::PackedI16,
-        _ => return Err(WasmtimeError::from_string(&format!("Invalid element type: {}", element_type))),
+        _ => {
+            return Err(WasmtimeError::from_string(&format!(
+                "Invalid element type: {}",
+                element_type
+            )))
+        }
     };
 
     let array_def = ArrayTypeDefinition {
@@ -580,7 +660,9 @@ fn struct_new_internal(
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -601,7 +683,9 @@ fn struct_new_default_internal(
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -631,7 +715,7 @@ fn struct_get_internal(
             match env.new_object(
                 "ai/tegmentum/wasmtime4j/jni/JniGcRuntime$GcReferenceMarker",
                 "(J)V",
-                &[JValue::Long(ref_object_id as jlong)]
+                &[JValue::Long(ref_object_id as jlong)],
             ) {
                 Ok(obj) => obj.into_raw(),
                 Err(_) => std::ptr::null_mut(),
@@ -678,7 +762,9 @@ fn struct_set_internal(
     if result.success {
         Ok(())
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -712,7 +798,9 @@ fn array_new_internal(
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -734,7 +822,9 @@ fn array_new_default_internal(
     if result.success {
         Ok(result.object_id.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -784,7 +874,9 @@ fn array_set_internal(
     if result.success {
         Ok(())
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -804,7 +896,9 @@ fn array_len_internal(
     if result.success {
         Ok(result.length.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -824,7 +918,9 @@ fn i31_new_internal(
     if result.success {
         Ok(result.cast_result.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -846,10 +942,14 @@ fn i31_get_internal(
         if let Some(GcValue::I32(val)) = result.value {
             Ok(val)
         } else {
-            Err(WasmtimeError::from_string("Expected I32 value from i31.get"))
+            Err(WasmtimeError::from_string(
+                "Expected I32 value from i31.get",
+            ))
         }
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -878,7 +978,7 @@ fn ref_cast_internal(
                 name: None,
                 supertype: None,
             })
-        },
+        }
         4 => {
             // ARRAY_REF
             GcReferenceType::ArrayRef(Box::new(ArrayTypeDefinition {
@@ -887,8 +987,13 @@ fn ref_cast_internal(
                 element_type: FieldType::I32,
                 mutable: true,
             }))
-        },
-        _ => return Err(WasmtimeError::from_string(&format!("Invalid target type: {}", target_type))),
+        }
+        _ => {
+            return Err(WasmtimeError::from_string(&format!(
+                "Invalid target type: {}",
+                target_type
+            )))
+        }
     };
 
     let result = runtime.ref_cast(object_id as ObjectId, target_ref_type);
@@ -896,7 +1001,9 @@ fn ref_cast_internal(
     if result.success {
         Ok(result.cast_result.unwrap_or(0))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -926,7 +1033,7 @@ fn ref_test_internal(
                 name: None,
                 supertype: None,
             })
-        },
+        }
         4 => {
             // ARRAY_REF - need to create a placeholder array definition
             // For type testing, we don't need the exact array type
@@ -936,8 +1043,13 @@ fn ref_test_internal(
                 element_type: FieldType::I32,
                 mutable: true,
             }))
-        },
-        _ => return Err(WasmtimeError::from_string(&format!("Invalid target type: {}", target_type))),
+        }
+        _ => {
+            return Err(WasmtimeError::from_string(&format!(
+                "Invalid target type: {}",
+                target_type
+            )))
+        }
     };
 
     let result = runtime.ref_test(object_id as ObjectId, target_ref_type);
@@ -945,7 +1057,9 @@ fn ref_test_internal(
     if result.success {
         Ok(result.test_result.unwrap_or(false))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -962,14 +1076,24 @@ fn ref_eq_internal(
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
     let result = runtime.ref_eq(
-        if object_id1 == 0 { None } else { Some(object_id1 as ObjectId) },
-        if object_id2 == 0 { None } else { Some(object_id2 as ObjectId) }
+        if object_id1 == 0 {
+            None
+        } else {
+            Some(object_id1 as ObjectId)
+        },
+        if object_id2 == 0 {
+            None
+        } else {
+            Some(object_id2 as ObjectId)
+        },
     );
 
     if result.success {
         Ok(result.eq_result.unwrap_or(false))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
@@ -984,21 +1108,22 @@ fn ref_is_null_internal(
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
-    let result = runtime.ref_is_null(
-        if object_id == 0 { None } else { Some(object_id as ObjectId) }
-    );
+    let result = runtime.ref_is_null(if object_id == 0 {
+        None
+    } else {
+        Some(object_id as ObjectId)
+    });
 
     if result.success {
         Ok(result.is_null.unwrap_or(true))
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_default()))
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }
 
-fn collect_garbage_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn collect_garbage_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1016,16 +1141,23 @@ fn collect_garbage_internal(
         Err(_) => return std::ptr::null_mut(),
     };
 
-    put_long_in_map(env, &hashmap_obj, "objectsCollected", collection_result.objects_collected as i64);
-    put_long_in_map(env, &hashmap_obj, "bytesCollected", collection_result.bytes_collected as i64);
+    put_long_in_map(
+        env,
+        &hashmap_obj,
+        "objectsCollected",
+        collection_result.objects_collected as i64,
+    );
+    put_long_in_map(
+        env,
+        &hashmap_obj,
+        "bytesCollected",
+        collection_result.bytes_collected as i64,
+    );
 
     hashmap_obj.into_raw()
 }
 
-fn get_gc_stats_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn get_gc_stats_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1043,9 +1175,24 @@ fn get_gc_stats_internal(
         Err(_) => return std::ptr::null_mut(),
     };
 
-    put_long_in_map(env, &hashmap_obj, "totalAllocated", gc_stats.total_allocated as i64);
-    put_long_in_map(env, &hashmap_obj, "currentHeapSize", gc_stats.current_heap_size as i64);
-    put_long_in_map(env, &hashmap_obj, "majorCollections", gc_stats.major_collections as i64);
+    put_long_in_map(
+        env,
+        &hashmap_obj,
+        "totalAllocated",
+        gc_stats.total_allocated as i64,
+    );
+    put_long_in_map(
+        env,
+        &hashmap_obj,
+        "currentHeapSize",
+        gc_stats.current_heap_size as i64,
+    );
+    put_long_in_map(
+        env,
+        &hashmap_obj,
+        "majorCollections",
+        gc_stats.major_collections as i64,
+    );
 
     hashmap_obj.into_raw()
 }
@@ -1077,7 +1224,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayCopyNa
     match result {
         Ok(_) => FFI_SUCCESS,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             FFI_ERROR
         }
     }
@@ -1106,7 +1256,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayFillNa
     match result {
         Ok(_) => FFI_SUCCESS,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             FFI_ERROR
         }
     }
@@ -1127,7 +1280,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_configureGc
     match result {
         Ok(_) => FFI_SUCCESS,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/RuntimeException", e.to_string());
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
             FFI_ERROR
         }
     }
@@ -1159,7 +1315,9 @@ fn array_copy_internal(
     }
 
     if source_index < 0 || dest_index < 0 || length < 0 {
-        return Err(WasmtimeError::from_string("Array indices and length must be non-negative"));
+        return Err(WasmtimeError::from_string(
+            "Array indices and length must be non-negative",
+        ));
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -1175,7 +1333,11 @@ fn array_copy_internal(
     if result.success {
         Ok(())
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_else(|| "Array copy failed".to_string())))
+        Err(WasmtimeError::from_string(
+            &result
+                .error
+                .unwrap_or_else(|| "Array copy failed".to_string()),
+        ))
     }
 }
 
@@ -1192,7 +1354,9 @@ fn array_fill_internal(
     }
 
     if start_index < 0 || length < 0 {
-        return Err(WasmtimeError::from_string("Start index and length must be non-negative"));
+        return Err(WasmtimeError::from_string(
+            "Start index and length must be non-negative",
+        ));
     }
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
@@ -1210,7 +1374,11 @@ fn array_fill_internal(
     if result.success {
         Ok(())
     } else {
-        Err(WasmtimeError::from_string(&result.error.unwrap_or_else(|| "Array fill failed".to_string())))
+        Err(WasmtimeError::from_string(
+            &result
+                .error
+                .unwrap_or_else(|| "Array fill failed".to_string()),
+        ))
     }
 }
 
@@ -1224,7 +1392,8 @@ fn configure_gc_strategy_internal(
     }
 
     // Get strategy name
-    let strategy_str = env.get_string(&strategy)
+    let strategy_str = env
+        .get_string(&strategy)
         .map_err(|_| WasmtimeError::from_string("Failed to get strategy string"))?
         .to_string_lossy()
         .to_string();
@@ -1236,15 +1405,15 @@ fn configure_gc_strategy_internal(
             // In Wasmtime, GC strategy is configured at engine creation time
             // This allows runtime strategy selection for future GC implementations
             Ok(())
-        },
-        _ => Err(WasmtimeError::from_string(&format!("Unknown GC strategy: {}", strategy_str))),
+        }
+        _ => Err(WasmtimeError::from_string(&format!(
+            "Unknown GC strategy: {}",
+            strategy_str
+        ))),
     }
 }
 
-fn inspect_heap_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn inspect_heap_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1268,22 +1437,40 @@ fn inspect_heap_internal(
         Ok(s) => s,
         Err(_) => return std::ptr::null_mut(),
     };
-    let value = match env.new_object("java/lang/Long", "(J)V", &[JValue::Long(gc_stats.total_allocated as i64)]) {
+    let value = match env.new_object(
+        "java/lang/Long",
+        "(J)V",
+        &[JValue::Long(gc_stats.total_allocated as i64)],
+    ) {
         Ok(v) => v,
         Err(_) => return std::ptr::null_mut(),
     };
-    let _ = env.call_method(&hashmap_obj, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", &[JValue::Object(&key.into()), JValue::Object(&value)]);
+    let _ = env.call_method(
+        &hashmap_obj,
+        "put",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[JValue::Object(&key.into()), JValue::Object(&value)],
+    );
 
     // Put totalHeapSize into the map
     let key = match env.new_string("totalHeapSize") {
         Ok(s) => s,
         Err(_) => return std::ptr::null_mut(),
     };
-    let value = match env.new_object("java/lang/Long", "(J)V", &[JValue::Long(gc_stats.current_heap_size as i64)]) {
+    let value = match env.new_object(
+        "java/lang/Long",
+        "(J)V",
+        &[JValue::Long(gc_stats.current_heap_size as i64)],
+    ) {
         Ok(v) => v,
         Err(_) => return std::ptr::null_mut(),
     };
-    let _ = env.call_method(&hashmap_obj, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", &[JValue::Object(&key.into()), JValue::Object(&value)]);
+    let _ = env.call_method(
+        &hashmap_obj,
+        "put",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[JValue::Object(&key.into()), JValue::Object(&value)],
+    );
 
     hashmap_obj.into_raw()
 }
@@ -1492,10 +1679,7 @@ fn collect_garbage_incremental_internal(
     create_gc_stats_object(env, &collection_result)
 }
 
-fn collect_garbage_concurrent_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn collect_garbage_concurrent_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1559,15 +1743,12 @@ fn create_weak_reference_internal(
         Ok(weak_ref) => {
             // Return the object ID as the weak reference handle
             weak_ref.object_id() as jlong
-        },
+        }
         Err(_) => 0,
     }
 }
 
-fn integrate_host_object_internal(
-    _env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jlong {
+fn integrate_host_object_internal(_env: &mut JNIEnv, runtime_handle: jlong) -> jlong {
     if runtime_handle == 0 {
         return 0;
     }
@@ -1584,10 +1765,7 @@ fn integrate_host_object_internal(
     }
 }
 
-fn extract_host_object_internal(
-    _env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn extract_host_object_internal(_env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1597,10 +1775,7 @@ fn extract_host_object_internal(
     std::ptr::null_mut()
 }
 
-fn create_sharing_bridge_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn create_sharing_bridge_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1612,10 +1787,7 @@ fn create_sharing_bridge_internal(
     }
 }
 
-fn track_object_lifecycles_internal(
-    _env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jlong {
+fn track_object_lifecycles_internal(_env: &mut JNIEnv, runtime_handle: jlong) -> jlong {
     if runtime_handle == 0 {
         return 0;
     }
@@ -1625,10 +1797,7 @@ fn track_object_lifecycles_internal(
     TRACKER_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as jlong
 }
 
-fn detect_memory_leaks_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn detect_memory_leaks_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1647,16 +1816,18 @@ fn detect_memory_leaks_internal(
         Err(_) => return std::ptr::null_mut(),
     };
 
-    put_long_in_map(env, &hashmap_obj, "totalObjectCount", stats.total_allocated as i64);
+    put_long_in_map(
+        env,
+        &hashmap_obj,
+        "totalObjectCount",
+        stats.total_allocated as i64,
+    );
     put_long_in_map(env, &hashmap_obj, "potentialLeakCount", 0);
 
     hashmap_obj.into_raw()
 }
 
-fn start_profiling_internal(
-    _env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jlong {
+fn start_profiling_internal(_env: &mut JNIEnv, runtime_handle: jlong) -> jlong {
     if runtime_handle == 0 {
         return 0;
     }
@@ -1666,10 +1837,7 @@ fn start_profiling_internal(
     PROFILER_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed) as jlong
 }
 
-fn validate_reference_safety_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn validate_reference_safety_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1704,15 +1872,12 @@ fn enforce_type_safety_internal(
     // Type safety check based on operation
     match op_str.as_str() {
         "struct.get" | "struct.set" | "array.get" | "array.set" => 1, // These are safe
-        "ref.cast" => 0, // Unsafe cast
-        _ => 1, // Default to safe
+        "ref.cast" => 0,                                              // Unsafe cast
+        _ => 1,                                                       // Default to safe
     }
 }
 
-fn detect_memory_corruption_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn detect_memory_corruption_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1728,10 +1893,7 @@ fn detect_memory_corruption_internal(
     hashmap_obj.into_raw()
 }
 
-fn validate_invariants_internal(
-    env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jobject {
+fn validate_invariants_internal(env: &mut JNIEnv, runtime_handle: jlong) -> jobject {
     if runtime_handle == 0 {
         return std::ptr::null_mut();
     }
@@ -1748,10 +1910,7 @@ fn validate_invariants_internal(
     hashmap_obj.into_raw()
 }
 
-fn register_finalization_callback_internal(
-    _env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jint {
+fn register_finalization_callback_internal(_env: &mut JNIEnv, runtime_handle: jlong) -> jint {
     if runtime_handle == 0 {
         return FFI_ERROR;
     }
@@ -1760,10 +1919,7 @@ fn register_finalization_callback_internal(
     FFI_SUCCESS
 }
 
-fn run_finalization_internal(
-    _env: &mut JNIEnv,
-    runtime_handle: jlong,
-) -> jint {
+fn run_finalization_internal(_env: &mut JNIEnv, runtime_handle: jlong) -> jint {
     if runtime_handle == 0 {
         return 0;
     }
@@ -1783,8 +1939,18 @@ fn create_gc_stats_object(
         Err(_) => return std::ptr::null_mut(),
     };
 
-    put_long_in_map(env, &hashmap_obj, "totalCollected", result.objects_collected as i64);
-    put_long_in_map(env, &hashmap_obj, "bytesCollected", result.bytes_collected as i64);
+    put_long_in_map(
+        env,
+        &hashmap_obj,
+        "totalCollected",
+        result.objects_collected as i64,
+    );
+    put_long_in_map(
+        env,
+        &hashmap_obj,
+        "bytesCollected",
+        result.bytes_collected as i64,
+    );
 
     hashmap_obj.into_raw()
 }
@@ -1801,8 +1967,12 @@ fn put_long_in_map(env: &mut JNIEnv, map: &JObject, key: &str, value: i64) {
         Ok(v) => v,
         Err(_) => return,
     };
-    let _ = env.call_method(map, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
-        &[JValue::Object(&key_str.into()), JValue::Object(&value_obj)]);
+    let _ = env.call_method(
+        map,
+        "put",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[JValue::Object(&key_str.into()), JValue::Object(&value_obj)],
+    );
 }
 
 // Helper function to put a boolean value into a HashMap
@@ -1811,12 +1981,17 @@ fn put_bool_in_map(env: &mut JNIEnv, map: &JObject, key: &str, value: bool) {
         Ok(s) => s,
         Err(_) => return,
     };
-    let value_obj = match env.new_object("java/lang/Boolean", "(Z)V", &[JValue::Bool(value as u8)]) {
+    let value_obj = match env.new_object("java/lang/Boolean", "(Z)V", &[JValue::Bool(value as u8)])
+    {
         Ok(v) => v,
         Err(_) => return,
     };
-    let _ = env.call_method(map, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
-        &[JValue::Object(&key_str.into()), JValue::Object(&value_obj)]);
+    let _ = env.call_method(
+        map,
+        "put",
+        "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+        &[JValue::Object(&key_str.into()), JValue::Object(&value_obj)],
+    );
 }
 
 /// Parse FieldType from string representation
@@ -1835,31 +2010,35 @@ fn parse_field_type(type_str: &str) -> WasmtimeResult<FieldType> {
         "anyref" | "anyref?" => Ok(FieldType::Reference(GcReferenceType::AnyRef)),
         "eqref" | "eqref?" => Ok(FieldType::Reference(GcReferenceType::EqRef)),
         "i31ref" | "i31ref?" => Ok(FieldType::Reference(GcReferenceType::I31Ref)),
-        "structref" | "structref?" => Ok(FieldType::Reference(GcReferenceType::StructRef(StructTypeDefinition {
-            type_id: 0,
-            fields: vec![],
-            name: None,
-            supertype: None,
-        }))),
-        "arrayref" | "arrayref?" => Ok(FieldType::Reference(GcReferenceType::ArrayRef(Box::new(ArrayTypeDefinition {
-            type_id: 0,
-            name: None,
-            element_type: FieldType::I32,
-            mutable: true,
-        })))),
+        "structref" | "structref?" => Ok(FieldType::Reference(GcReferenceType::StructRef(
+            StructTypeDefinition {
+                type_id: 0,
+                fields: vec![],
+                name: None,
+                supertype: None,
+            },
+        ))),
+        "arrayref" | "arrayref?" => Ok(FieldType::Reference(GcReferenceType::ArrayRef(Box::new(
+            ArrayTypeDefinition {
+                type_id: 0,
+                name: None,
+                element_type: FieldType::I32,
+                mutable: true,
+            },
+        )))),
         s if s.starts_with("reference(") || s.starts_with("ref(") => {
             // For now, return a basic AnyRef - full reference type parsing can be added later
             Ok(FieldType::Reference(GcReferenceType::AnyRef))
-        },
-        _ => Err(WasmtimeError::from_string(&format!("Unknown field type: {}", type_str))),
+        }
+        _ => Err(WasmtimeError::from_string(&format!(
+            "Unknown field type: {}",
+            type_str
+        ))),
     }
 }
 
 /// Convert a Java object to a GcValue
-fn convert_jobject_to_gc_value(
-    env: &mut JNIEnv,
-    obj: JObject,
-) -> WasmtimeResult<GcValue> {
+fn convert_jobject_to_gc_value(env: &mut JNIEnv, obj: JObject) -> WasmtimeResult<GcValue> {
     if obj.is_null() {
         return Ok(GcValue::Null);
     }
@@ -1904,46 +2083,42 @@ fn convert_jobject_to_gc_value(
             let mut bytes = vec![0i8; 16];
             env.get_byte_array_region(&byte_array, 0, &mut bytes)?;
             // Vec has exactly 16 elements due to the length check above
-            let unsigned_bytes: [u8; 16] = bytes.iter().map(|&b| b as u8).collect::<Vec<_>>()
+            let unsigned_bytes: [u8; 16] = bytes
+                .iter()
+                .map(|&b| b as u8)
+                .collect::<Vec<_>>()
                 .try_into()
                 .expect("Vec has exactly 16 elements from length check");
             return Ok(GcValue::V128(unsigned_bytes));
         }
     }
 
-    Err(WasmtimeError::from_string("Unsupported Java object type for GcValue conversion"))
+    Err(WasmtimeError::from_string(
+        "Unsupported Java object type for GcValue conversion",
+    ))
 }
 
 /// Convert a GcValue to a Java object
-fn convert_gc_value_to_jobject(
-    env: &mut JNIEnv,
-    gc_value: &GcValue,
-) -> jobject {
+fn convert_gc_value_to_jobject(env: &mut JNIEnv, gc_value: &GcValue) -> jobject {
     match gc_value {
-        GcValue::I32(i) => {
-            match env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(*i)]) {
-                Ok(obj) => obj.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
+        GcValue::I32(i) => match env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(*i)]) {
+            Ok(obj) => obj.into_raw(),
+            Err(_) => std::ptr::null_mut(),
         },
-        GcValue::I64(i) => {
-            match env.new_object("java/lang/Long", "(J)V", &[JValue::Long(*i)]) {
-                Ok(obj) => obj.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
+        GcValue::I64(i) => match env.new_object("java/lang/Long", "(J)V", &[JValue::Long(*i)]) {
+            Ok(obj) => obj.into_raw(),
+            Err(_) => std::ptr::null_mut(),
         },
-        GcValue::F32(f) => {
-            match env.new_object("java/lang/Float", "(F)V", &[JValue::Float(*f)]) {
-                Ok(obj) => obj.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
+        GcValue::F32(f) => match env.new_object("java/lang/Float", "(F)V", &[JValue::Float(*f)]) {
+            Ok(obj) => obj.into_raw(),
+            Err(_) => std::ptr::null_mut(),
         },
         GcValue::F64(f) => {
             match env.new_object("java/lang/Double", "(D)V", &[JValue::Double(*f)]) {
                 Ok(obj) => obj.into_raw(),
                 Err(_) => std::ptr::null_mut(),
             }
-        },
+        }
         GcValue::V128(bytes) => {
             let byte_array = match env.new_byte_array(16) {
                 Ok(arr) => arr,
@@ -1951,12 +2126,15 @@ fn convert_gc_value_to_jobject(
             };
 
             let signed_bytes: Vec<i8> = bytes.iter().map(|&b| b as i8).collect();
-            if env.set_byte_array_region(&byte_array, 0, &signed_bytes).is_err() {
+            if env
+                .set_byte_array_region(&byte_array, 0, &signed_bytes)
+                .is_err()
+            {
                 return std::ptr::null_mut();
             }
 
             JObject::from(byte_array).into_raw()
-        },
+        }
         GcValue::Reference | GcValue::Null => std::ptr::null_mut(),
         _ => std::ptr::null_mut(),
     }

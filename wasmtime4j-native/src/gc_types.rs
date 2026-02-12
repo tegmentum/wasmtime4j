@@ -17,10 +17,10 @@
 //! All operations validate type compatibility and provide defensive checks
 //! to prevent runtime errors and ensure type safety.
 
-use wasmtime::*;
+use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
 use std::sync::{Mutex, RwLock};
-use crate::error::{WasmtimeError, WasmtimeResult};
+use wasmtime::*;
 
 /// WebAssembly GC reference type enumeration
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -158,9 +158,16 @@ impl GcTypeRegistry {
     }
 
     /// Register a new struct type and return its type ID
-    pub fn register_struct_type(&self, mut definition: StructTypeDefinition) -> WasmtimeResult<u32> {
-        let mut next_id = self.next_type_id.lock()
-            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire type ID lock".to_string() })?;
+    pub fn register_struct_type(
+        &self,
+        mut definition: StructTypeDefinition,
+    ) -> WasmtimeResult<u32> {
+        let mut next_id = self
+            .next_type_id
+            .lock()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire type ID lock".to_string(),
+            })?;
 
         let type_id = *next_id;
         *next_id += 1;
@@ -170,8 +177,12 @@ impl GcTypeRegistry {
         // Validate field definitions
         self.validate_struct_definition(&definition)?;
 
-        let mut struct_types = self.struct_types.write()
-            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire struct types lock".to_string() })?;
+        let mut struct_types =
+            self.struct_types
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire struct types lock".to_string(),
+                })?;
 
         struct_types.insert(type_id, definition);
         Ok(type_id)
@@ -179,8 +190,12 @@ impl GcTypeRegistry {
 
     /// Register a new array type and return its type ID
     pub fn register_array_type(&self, mut definition: ArrayTypeDefinition) -> WasmtimeResult<u32> {
-        let mut next_id = self.next_type_id.lock()
-            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire type ID lock".to_string() })?;
+        let mut next_id = self
+            .next_type_id
+            .lock()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire type ID lock".to_string(),
+            })?;
 
         let type_id = *next_id;
         *next_id += 1;
@@ -190,8 +205,12 @@ impl GcTypeRegistry {
         // Validate element type
         self.validate_field_type(&definition.element_type)?;
 
-        let mut array_types = self.array_types.write()
-            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire array types lock".to_string() })?;
+        let mut array_types = self
+            .array_types
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire array types lock".to_string(),
+            })?;
 
         array_types.insert(type_id, definition);
         Ok(type_id)
@@ -199,22 +218,36 @@ impl GcTypeRegistry {
 
     /// Get struct type definition by ID
     pub fn get_struct_type(&self, type_id: u32) -> WasmtimeResult<StructTypeDefinition> {
-        let struct_types = self.struct_types.read()
-            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire struct types lock".to_string() })?;
+        let struct_types = self
+            .struct_types
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire struct types lock".to_string(),
+            })?;
 
-        struct_types.get(&type_id)
+        struct_types
+            .get(&type_id)
             .cloned()
-            .ok_or_else(|| WasmtimeError::Type { message: format!("Struct type {} not found", type_id) })
+            .ok_or_else(|| WasmtimeError::Type {
+                message: format!("Struct type {} not found", type_id),
+            })
     }
 
     /// Get array type definition by ID
     pub fn get_array_type(&self, type_id: u32) -> WasmtimeResult<ArrayTypeDefinition> {
-        let array_types = self.array_types.read()
-            .map_err(|_| WasmtimeError::Concurrency { message: "Failed to acquire array types lock".to_string() })?;
+        let array_types = self
+            .array_types
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire array types lock".to_string(),
+            })?;
 
-        array_types.get(&type_id)
+        array_types
+            .get(&type_id)
             .cloned()
-            .ok_or_else(|| WasmtimeError::Type { message: format!("Array type {} not found", type_id) })
+            .ok_or_else(|| WasmtimeError::Type {
+                message: format!("Array type {} not found", type_id),
+            })
     }
 
     /// Check if one type is a subtype of another
@@ -241,14 +274,20 @@ impl GcTypeRegistry {
     }
 
     /// Validate struct field access
-    pub fn validate_struct_field_access(&self, struct_type_id: u32, field_index: u32) -> WasmtimeResult<FieldDefinition> {
+    pub fn validate_struct_field_access(
+        &self,
+        struct_type_id: u32,
+        field_index: u32,
+    ) -> WasmtimeResult<FieldDefinition> {
         let struct_def = self.get_struct_type(struct_type_id)?;
 
         if field_index as usize >= struct_def.fields.len() {
             return Err(WasmtimeError::InvalidParameter {
                 message: format!(
                     "Field index {} out of bounds for struct type {} (has {} fields)",
-                    field_index, struct_type_id, struct_def.fields.len()
+                    field_index,
+                    struct_type_id,
+                    struct_def.fields.len()
                 ),
             });
         }
@@ -257,7 +296,12 @@ impl GcTypeRegistry {
     }
 
     /// Validate array element access
-    pub fn validate_array_element_access(&self, array_type_id: u32, element_index: u32, array_length: u32) -> WasmtimeResult<FieldType> {
+    pub fn validate_array_element_access(
+        &self,
+        array_type_id: u32,
+        element_index: u32,
+        array_length: u32,
+    ) -> WasmtimeResult<FieldType> {
         let array_def = self.get_array_type(array_type_id)?;
 
         if element_index >= array_length {
@@ -265,7 +309,7 @@ impl GcTypeRegistry {
                 message: format!(
                     "Element index {} out of bounds for array of length {}",
                     element_index, array_length
-                )
+                ),
             });
         }
 
@@ -273,7 +317,11 @@ impl GcTypeRegistry {
     }
 
     /// Validate that a value is compatible with a field type including advanced SIMD from Task #307
-    pub fn validate_value_type(&self, value: &GcValue, expected_type: &FieldType) -> WasmtimeResult<()> {
+    pub fn validate_value_type(
+        &self,
+        value: &GcValue,
+        expected_type: &FieldType,
+    ) -> WasmtimeResult<()> {
         match (value, expected_type) {
             (GcValue::I32(_), FieldType::I32) => Ok(()),
             (GcValue::I64(_), FieldType::I64) => Ok(()),
@@ -290,7 +338,7 @@ impl GcTypeRegistry {
                 message: format!(
                     "Value type mismatch: expected {:?}, got {:?}",
                     expected_type, value
-                )
+                ),
             }),
         }
     }
@@ -302,17 +350,19 @@ impl GcTypeRegistry {
 
         for (index, field) in definition.fields.iter().enumerate() {
             if field.index != index as u32 {
-                return Err(WasmtimeError::InvalidParameter { message: format!(
-                    "Field index mismatch: expected {}, got {}",
-                    index, field.index
-                )});
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Field index mismatch: expected {}, got {}",
+                        index, field.index
+                    ),
+                });
             }
 
             if let Some(ref name) = field.name {
                 if !field_names.insert(name.clone()) {
-                    return Err(WasmtimeError::InvalidParameter { message: format!(
-                        "Duplicate field name: {}", name
-                    )});
+                    return Err(WasmtimeError::InvalidParameter {
+                        message: format!("Duplicate field name: {}", name),
+                    });
                 }
             }
 
@@ -325,9 +375,15 @@ impl GcTypeRegistry {
     /// Private method to validate field type
     fn validate_field_type(&self, field_type: &FieldType) -> WasmtimeResult<()> {
         match field_type {
-            FieldType::I32 | FieldType::I64 | FieldType::F32 | FieldType::F64 |
-            FieldType::V128 | FieldType::V256 | FieldType::V512 |
-            FieldType::PackedI8 | FieldType::PackedI16 => Ok(()),
+            FieldType::I32
+            | FieldType::I64
+            | FieldType::F32
+            | FieldType::F64
+            | FieldType::V128
+            | FieldType::V256
+            | FieldType::V512
+            | FieldType::PackedI8
+            | FieldType::PackedI16 => Ok(()),
             FieldType::Reference(_) => {
                 // Additional reference type validation could be added here
                 Ok(())
@@ -336,13 +392,17 @@ impl GcTypeRegistry {
     }
 
     /// Private method to compute subtype relationship
-    fn compute_subtype_relationship(&self, subtype_id: u32, supertype_id: u32) -> WasmtimeResult<bool> {
+    fn compute_subtype_relationship(
+        &self,
+        subtype_id: u32,
+        supertype_id: u32,
+    ) -> WasmtimeResult<bool> {
         // For now, implement basic structural subtyping
         // In a full implementation, this would check field-by-field compatibility
 
         if let (Ok(subtype), Ok(supertype)) = (
             self.get_struct_type(subtype_id),
-            self.get_struct_type(supertype_id)
+            self.get_struct_type(supertype_id),
         ) {
             // Struct subtyping: all fields of supertype must be present and compatible in subtype
             if subtype.fields.len() < supertype.fields.len() {
@@ -369,10 +429,10 @@ impl GcTypeRegistry {
         // For array types, check element type compatibility
         if let (Ok(subtype), Ok(supertype)) = (
             self.get_array_type(subtype_id),
-            self.get_array_type(supertype_id)
+            self.get_array_type(supertype_id),
         ) {
-            return Ok(subtype.element_type == supertype.element_type &&
-                     (!supertype.mutable || subtype.mutable));
+            return Ok(subtype.element_type == supertype.element_type
+                && (!supertype.mutable || subtype.mutable));
         }
 
         // No subtyping relationship found
@@ -393,8 +453,16 @@ mod tests {
     #[test]
     fn test_gc_type_registry_creation() {
         let registry = GcTypeRegistry::new();
-        assert!(registry.struct_types.read().unwrap_or_else(|e| e.into_inner()).is_empty());
-        assert!(registry.array_types.read().unwrap_or_else(|e| e.into_inner()).is_empty());
+        assert!(registry
+            .struct_types
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_empty());
+        assert!(registry
+            .array_types
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .is_empty());
     }
 
     #[test]
@@ -479,14 +547,12 @@ mod tests {
 
         let struct_def = StructTypeDefinition {
             type_id: 0,
-            fields: vec![
-                FieldDefinition {
-                    name: Some("field1".to_string()),
-                    field_type: FieldType::I32,
-                    mutable: true,
-                    index: 0,
-                },
-            ],
+            fields: vec![FieldDefinition {
+                name: Some("field1".to_string()),
+                field_type: FieldType::I32,
+                mutable: true,
+                index: 0,
+            }],
             name: Some("TestStruct".to_string()),
             supertype: None,
         };
@@ -604,14 +670,12 @@ mod tests {
     fn test_struct_type_definition_with_supertype() {
         let base_struct = Box::new(StructTypeDefinition {
             type_id: 1,
-            fields: vec![
-                FieldDefinition {
-                    name: Some("x".to_string()),
-                    field_type: FieldType::I32,
-                    mutable: true,
-                    index: 0,
-                },
-            ],
+            fields: vec![FieldDefinition {
+                name: Some("x".to_string()),
+                field_type: FieldType::I32,
+                mutable: true,
+                index: 0,
+            }],
             name: Some("Base".to_string()),
             supertype: None,
         });
@@ -724,21 +788,22 @@ mod tests {
             name: Some("RefArray".to_string()),
         };
 
-        assert_eq!(array_def.element_type, FieldType::Reference(GcReferenceType::AnyRef));
+        assert_eq!(
+            array_def.element_type,
+            FieldType::Reference(GcReferenceType::AnyRef)
+        );
     }
 
     #[test]
     fn test_struct_type_immutable_field() {
         let struct_def = StructTypeDefinition {
             type_id: 1,
-            fields: vec![
-                FieldDefinition {
-                    name: Some("constant".to_string()),
-                    field_type: FieldType::I32,
-                    mutable: false,
-                    index: 0,
-                },
-            ],
+            fields: vec![FieldDefinition {
+                name: Some("constant".to_string()),
+                field_type: FieldType::I32,
+                mutable: false,
+                index: 0,
+            }],
             name: Some("ImmutableFieldStruct".to_string()),
             supertype: None,
         };

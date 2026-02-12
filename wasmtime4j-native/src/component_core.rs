@@ -18,28 +18,23 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 use wasmtime::{
-    Engine, Store, Config,
     component::{
-        Component as WasmtimeComponent,
-        Linker as ComponentLinker,
-        Instance as WasmtimeComponentInstance,
-        Func as ComponentFunc,
-        Resource, ResourceTable, ResourceAny,
-        types::{ComponentItem},
-        ComponentType,
-        Val, Type
-    }
+        types::ComponentItem, Component as WasmtimeComponent, ComponentType, Func as ComponentFunc,
+        Instance as WasmtimeComponentInstance, Linker as ComponentLinker, Resource, ResourceAny,
+        ResourceTable, Type, Val,
+    },
+    Config, Engine, Store,
 };
 
 #[cfg(feature = "wasi")]
 use wasmtime_wasi;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::component::{
-    ComponentEngine, Component, ComponentMetadata, InterfaceDefinition,
-    FunctionDefinition, Parameter, ComponentValueType, ComponentTypeKind,
-    TypeDefinition, ResourceDefinition, FieldType, CaseType, InstanceInfo
+    CaseType, Component, ComponentEngine, ComponentMetadata, ComponentTypeKind, ComponentValueType,
+    FieldType, FunctionDefinition, InstanceInfo, InterfaceDefinition, Parameter,
+    ResourceDefinition, TypeDefinition,
 };
+use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Enhanced component engine with actual Wasmtime component model integration
 pub struct EnhancedComponentEngine {
@@ -119,7 +114,6 @@ pub struct ComponentMetrics {
     pub error_count: u64,
 }
 
-
 impl EnhancedComponentEngine {
     /// Create a new enhanced component engine with optimized configuration
     ///
@@ -163,10 +157,9 @@ impl EnhancedComponentEngine {
         // Explicitly disable async support to prevent fiber/future crashes
         config.async_support(false);
 
-        let engine = Engine::new(&config)
-            .map_err(|e| WasmtimeError::EngineConfig {
-                message: format!("Failed to create component engine with config: {}", e),
-            })?;
+        let engine = Engine::new(&config).map_err(|e| WasmtimeError::EngineConfig {
+            message: format!("Failed to create component engine with config: {}", e),
+        })?;
 
         let linker = ComponentLinker::new(&engine);
 
@@ -207,10 +200,11 @@ impl EnhancedComponentEngine {
 
         let start_time = Instant::now();
 
-        let component = WasmtimeComponent::new(&self.engine, bytes)
-            .map_err(|e| WasmtimeError::Compilation {
+        let component = WasmtimeComponent::new(&self.engine, bytes).map_err(|e| {
+            WasmtimeError::Compilation {
                 message: format!("Failed to compile component: {}", e),
-            })?;
+            }
+        })?;
 
         let metadata = self.extract_component_metadata(&component)?;
 
@@ -241,13 +235,12 @@ impl EnhancedComponentEngine {
             return Err(WasmtimeError::Io {
                 source: std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    format!("Component file not found: {}", path.display())
-                )
+                    format!("Component file not found: {}", path.display()),
+                ),
             });
         }
 
-        let bytes = std::fs::read(path)
-            .map_err(|e| WasmtimeError::Io { source: e })?;
+        let bytes = std::fs::read(path).map_err(|e| WasmtimeError::Io { source: e })?;
 
         self.load_component_from_bytes(&bytes)
     }
@@ -283,22 +276,26 @@ impl EnhancedComponentEngine {
         // Add WASI Preview 2 imports to the linker
         #[cfg(feature = "wasi")]
         {
-            wasmtime_wasi::p2::add_to_linker_sync(&mut linker)
-                .map_err(|e| {
-                    WasmtimeError::Instance {
-                        message: format!("Failed to add WASI to linker: {}", e),
-                    }
-                })?;
+            wasmtime_wasi::p2::add_to_linker_sync(&mut linker).map_err(|e| {
+                WasmtimeError::Instance {
+                    message: format!("Failed to add WASI to linker: {}", e),
+                }
+            })?;
         }
 
         {
             use std::io::Write;
-            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+            if let Ok(mut f) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("/tmp/wasmtime4j_debug.log")
+            {
                 let _ = writeln!(f, "DEBUG: Attempting component instantiation...");
             }
         }
 
-        let instance = linker.instantiate(&mut store, component.wasmtime_component())
+        let instance = linker
+            .instantiate(&mut store, component.wasmtime_component())
             .map_err(|e| WasmtimeError::Instance {
                 message: format!("Failed to instantiate component: {}", e),
             })?;
@@ -315,7 +312,9 @@ impl EnhancedComponentEngine {
         // Store the instance in the engine's HashMap to maintain Engine/Store/Instance ownership
         // This prevents the ownership violation that causes SIGSEGV
         {
-            let mut instances = self.instances.write()
+            let mut instances = self
+                .instances
+                .write()
                 .map_err(|_| WasmtimeError::Concurrency {
                     message: "Failed to acquire instances write lock".to_string(),
                 })?;
@@ -353,16 +352,20 @@ impl EnhancedComponentEngine {
         instance_info.last_accessed = start_time;
 
         // Get the exported function from the component instance
-        let func = instance_info.instance
+        let func = instance_info
+            .instance
             .get_func(&mut instance_info.store, function_name)
             .ok_or_else(|| WasmtimeError::ImportExport {
-                message: format!("Function '{}' not found in component exports", function_name),
+                message: format!(
+                    "Function '{}' not found in component exports",
+                    function_name
+                ),
             })?;
 
         // Pre-allocate results vector with correct size
         // Wasmtime requires the results vec to be pre-sized, not just have capacity
         let result_count = func.ty(&instance_info.store).results().len();
-        let mut results: Vec<Val> = vec![Val::Bool(false); result_count];  // Initialize with dummy values
+        let mut results: Vec<Val> = vec![Val::Bool(false); result_count]; // Initialize with dummy values
 
         let call_result = func.call(&mut instance_info.store, params, &mut results);
 
@@ -371,13 +374,19 @@ impl EnhancedComponentEngine {
                 // Call succeeded, now do post_return cleanup
                 func.post_return(&mut instance_info.store)
                     .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to complete post-return cleanup for '{}': {}", function_name, e),
+                        message: format!(
+                            "Failed to complete post-return cleanup for '{}': {}",
+                            function_name, e
+                        ),
                         backtrace: None,
                     })?;
             }
             Err(e) => {
                 return Err(WasmtimeError::Runtime {
-                    message: format!("Failed to call component function '{}': {}", function_name, e),
+                    message: format!(
+                        "Failed to call component function '{}': {}",
+                        function_name, e
+                    ),
                     backtrace: None,
                 });
             }
@@ -401,15 +410,19 @@ impl EnhancedComponentEngine {
     ///
     /// Returns a vector of function names exported by the component instance.
     pub fn get_exported_function_names(&self, instance_id: u64) -> WasmtimeResult<Vec<String>> {
-        let instances = self.instances.read()
+        let instances = self
+            .instances
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instances read lock".to_string(),
             })?;
 
-        let handle = instances.get(&instance_id)
-            .ok_or_else(|| WasmtimeError::InvalidParameter {
-                message: format!("Instance {} not found", instance_id),
-            })?;
+        let handle =
+            instances
+                .get(&instance_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                })?;
 
         let mut function_names = Vec::new();
         for export in &handle.metadata.exports {
@@ -438,15 +451,19 @@ impl EnhancedComponentEngine {
         function_name: &str,
         params: &[wasmtime::component::Val],
     ) -> WasmtimeResult<Vec<wasmtime::component::Val>> {
-        let mut instances = self.instances.write()
+        let mut instances = self
+            .instances
+            .write()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instances write lock".to_string(),
             })?;
 
-        let handle = instances.get_mut(&instance_id)
-            .ok_or_else(|| WasmtimeError::InvalidParameter {
-                message: format!("Instance {} not found", instance_id),
-            })?;
+        let handle =
+            instances
+                .get_mut(&instance_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                })?;
 
         self.call_component_function(handle, function_name, params)
     }
@@ -466,7 +483,11 @@ impl EnhancedComponentEngine {
     pub fn remove_instance(&self, instance_id: u64) -> WasmtimeResult<()> {
         use std::io::Write;
         let log = |msg: &str| {
-            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+            if let Ok(mut f) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("/tmp/wasmtime4j_debug.log")
+            {
                 let _ = writeln!(f, "[remove_instance] {}", msg);
                 let _ = f.flush();
             }
@@ -474,12 +495,17 @@ impl EnhancedComponentEngine {
 
         log(&format!("called for instance_id={}", instance_id));
 
-        let mut instances = self.instances.write()
+        let mut instances = self
+            .instances
+            .write()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instances write lock".to_string(),
             })?;
 
-        log(&format!("Got instances lock, current count={}", instances.len()));
+        log(&format!(
+            "Got instances lock, current count={}",
+            instances.len()
+        ));
 
         if let Some(_handle) = instances.remove(&instance_id) {
             log("Found instance, dropping it");
@@ -512,7 +538,10 @@ impl EnhancedComponentEngine {
     /// # Returns
     ///
     /// Returns `ComponentMetadata` with comprehensive component information.
-    fn extract_component_metadata(&self, component: &WasmtimeComponent) -> WasmtimeResult<ComponentMetadata> {
+    fn extract_component_metadata(
+        &self,
+        component: &WasmtimeComponent,
+    ) -> WasmtimeResult<ComponentMetadata> {
         let mut imports = Vec::new();
         let mut exports = Vec::new();
 
@@ -542,7 +571,7 @@ impl EnhancedComponentEngine {
     fn convert_component_item_to_interface(
         &self,
         name: &str,
-        item: &ComponentItem
+        item: &ComponentItem,
     ) -> WasmtimeResult<InterfaceDefinition> {
         let mut functions = Vec::new();
         let mut types = Vec::new();
@@ -552,18 +581,22 @@ impl EnhancedComponentEngine {
             ComponentItem::ComponentFunc(func_type) => {
                 let function_def = FunctionDefinition {
                     name: name.to_string(),
-                    parameters: func_type.params().map(|(param_name, param_type)| {
-                        Parameter {
+                    parameters: func_type
+                        .params()
+                        .map(|(param_name, param_type)| Parameter {
                             name: param_name.to_string(),
                             value_type: self.convert_wasmtime_type_to_component_type(&param_type),
-                        }
-                    }).collect(),
-                    results: func_type.results()
-                        .map(|result_type| self.convert_wasmtime_type_to_component_type(&result_type))
+                        })
+                        .collect(),
+                    results: func_type
+                        .results()
+                        .map(|result_type| {
+                            self.convert_wasmtime_type_to_component_type(&result_type)
+                        })
                         .collect(),
                 };
                 functions.push(function_def);
-            },
+            }
             ComponentItem::CoreFunc(_) => {
                 // Handle core functions
                 let function_def = FunctionDefinition {
@@ -572,20 +605,20 @@ impl EnhancedComponentEngine {
                     results: Vec::new(),
                 };
                 functions.push(function_def);
-            },
+            }
             ComponentItem::Component(_) => {
                 // Nested component - would need recursive analysis
-            },
+            }
             ComponentItem::ComponentInstance(_) => {
                 // Component instance - extract its interface
-            },
+            }
             ComponentItem::Type(_type_def) => {
                 let type_definition = TypeDefinition {
                     name: name.to_string(),
                     kind: ComponentTypeKind::Alias(ComponentValueType::Type(name.to_string())),
                 };
                 types.push(type_definition);
-            },
+            }
             _ => {
                 // Handle other component items as needed
             }
@@ -620,72 +653,74 @@ impl EnhancedComponentEngine {
             Type::Float64 => ComponentValueType::Float64,
             Type::Char => ComponentValueType::U32, // Unicode scalar value
             Type::String => ComponentValueType::String,
-            Type::List(inner) => ComponentValueType::List(
-                Box::new(self.convert_wasmtime_type_to_component_type(&inner.ty()))
-            ),
+            Type::List(inner) => ComponentValueType::List(Box::new(
+                self.convert_wasmtime_type_to_component_type(&inner.ty()),
+            )),
             Type::Record(record) => {
-                let fields = record.fields().map(|field| {
-                    FieldType {
+                let fields = record
+                    .fields()
+                    .map(|field| FieldType {
                         name: field.name.to_string(),
                         value_type: self.convert_wasmtime_type_to_component_type(&field.ty),
-                    }
-                }).collect();
+                    })
+                    .collect();
                 ComponentValueType::Record(fields)
-            },
+            }
             Type::Variant(variant) => {
-                let cases = variant.cases().map(|case| {
-                    CaseType {
+                let cases = variant
+                    .cases()
+                    .map(|case| CaseType {
                         name: case.name.to_string(),
-                        payload: case.ty.as_ref().map(|ty|
-                            self.convert_wasmtime_type_to_component_type(ty)
-                        ),
-                    }
-                }).collect();
+                        payload: case
+                            .ty
+                            .as_ref()
+                            .map(|ty| self.convert_wasmtime_type_to_component_type(ty)),
+                    })
+                    .collect();
                 ComponentValueType::Variant(cases)
-            },
+            }
             Type::Enum(enum_type) => {
                 let names = enum_type.names().map(|s| s.to_string()).collect();
                 ComponentValueType::Enum(names)
-            },
-            Type::Option(inner) => ComponentValueType::Option(
-                Box::new(self.convert_wasmtime_type_to_component_type(&inner.ty()))
-            ),
+            }
+            Type::Option(inner) => ComponentValueType::Option(Box::new(
+                self.convert_wasmtime_type_to_component_type(&inner.ty()),
+            )),
             Type::Result(result) => ComponentValueType::Result {
-                ok: result.ok().as_ref().map(|ty|
-                    Box::new(self.convert_wasmtime_type_to_component_type(ty))
-                ),
-                err: result.err().as_ref().map(|ty|
-                    Box::new(self.convert_wasmtime_type_to_component_type(ty))
-                ),
+                ok: result
+                    .ok()
+                    .as_ref()
+                    .map(|ty| Box::new(self.convert_wasmtime_type_to_component_type(ty))),
+                err: result
+                    .err()
+                    .as_ref()
+                    .map(|ty| Box::new(self.convert_wasmtime_type_to_component_type(ty))),
             },
             Type::Flags(flags) => {
                 let flag_names = flags.names().map(|s| s.to_string()).collect();
                 ComponentValueType::Flags(flag_names)
             }
-            Type::Own(_resource) => ComponentValueType::Resource(
-                "own<resource>".to_string()
-            ),
-            Type::Borrow(_resource) => ComponentValueType::Resource(
-                "borrow<resource>".to_string()
-            ),
+            Type::Own(_resource) => ComponentValueType::Resource("own<resource>".to_string()),
+            Type::Borrow(_resource) => ComponentValueType::Resource("borrow<resource>".to_string()),
             Type::Tuple(tuple) => {
-                let element_types = tuple.types()
+                let element_types = tuple
+                    .types()
                     .map(|ty| self.convert_wasmtime_type_to_component_type(&ty))
                     .collect();
                 ComponentValueType::Tuple(element_types)
-            },
+            }
             Type::Future(_future_type) => {
                 // Future types - represent as generic type
                 ComponentValueType::Type("future".to_string())
-            },
+            }
             Type::Stream(_stream_type) => {
                 // Stream types - represent as generic type
                 ComponentValueType::Type("stream".to_string())
-            },
+            }
             Type::ErrorContext => {
                 // Error context type
                 ComponentValueType::Type("error-context".to_string())
-            },
+            }
         }
     }
 
@@ -712,7 +747,9 @@ impl EnhancedComponentEngine {
 
     /// Get next available instance ID
     fn get_next_instance_id(&self) -> WasmtimeResult<u64> {
-        let mut next_id = self.next_instance_id.lock()
+        let mut next_id = self
+            .next_instance_id
+            .lock()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instance ID lock".to_string(),
             })?;
@@ -723,7 +760,9 @@ impl EnhancedComponentEngine {
 
     /// Get current component metrics
     pub fn get_metrics(&self) -> WasmtimeResult<ComponentMetrics> {
-        let metrics = self.metrics.read()
+        let metrics = self
+            .metrics
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire metrics lock".to_string(),
             })?;
@@ -769,7 +808,7 @@ impl EnhancedComponentEngine {
     fn bind_custom_interface(
         &mut self,
         interface_name: &str,
-        _implementation: Box<dyn std::any::Any + Send + Sync>
+        _implementation: Box<dyn std::any::Any + Send + Sync>,
     ) -> WasmtimeResult<()> {
         // For now, log the binding - actual implementation would depend on the interface
         log::info!("Binding custom interface: {}", interface_name);
@@ -779,7 +818,9 @@ impl EnhancedComponentEngine {
 
     /// Cleanup inactive component instances
     pub fn cleanup_instances(&self) -> WasmtimeResult<usize> {
-        let mut instances = self.instances.write()
+        let mut instances = self
+            .instances
+            .write()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instances lock".to_string(),
             })?;
@@ -805,17 +846,20 @@ impl EnhancedComponentEngine {
 
     /// Get information about active instances
     pub fn get_active_instances(&self) -> WasmtimeResult<Vec<InstanceInfo>> {
-        let instances = self.instances.read()
+        let instances = self
+            .instances
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instances lock".to_string(),
             })?;
 
-        let active_instances = instances.iter().map(|(id, info)| {
-            InstanceInfo {
+        let active_instances = instances
+            .iter()
+            .map(|(id, info)| InstanceInfo {
                 instance_id: *id,
                 strong_references: info.ref_count,
-            }
-        }).collect();
+            })
+            .collect();
 
         Ok(active_instances)
     }
@@ -833,7 +877,7 @@ impl EnhancedComponentEngine {
     pub fn add_host_interface(
         &mut self,
         interface_name: &str,
-        implementation: Box<dyn std::any::Any + Send + Sync>
+        implementation: Box<dyn std::any::Any + Send + Sync>,
     ) -> WasmtimeResult<()> {
         // Implement actual host interface binding using Wasmtime's component model
         log::info!("Adding host interface: {}", interface_name);
@@ -892,9 +936,9 @@ impl Default for ComponentStoreData {
 /// Core functions compatible with existing JNI/Panama integration
 pub mod core {
     use super::*;
-    use std::os::raw::c_void;
     use crate::error::ffi_utils;
-    use crate::{validate_ptr_not_null, validate_not_empty};
+    use crate::{validate_not_empty, validate_ptr_not_null};
+    use std::os::raw::c_void;
 
     /// Core function to create a new enhanced component engine
     pub fn create_component_engine() -> WasmtimeResult<Box<ComponentEngine>> {
@@ -904,7 +948,9 @@ pub mod core {
     }
 
     /// Core function to create component engine with custom Wasmtime engine
-    pub fn create_component_engine_with_engine(engine: wasmtime::Engine) -> WasmtimeResult<Box<ComponentEngine>> {
+    pub fn create_component_engine_with_engine(
+        engine: wasmtime::Engine,
+    ) -> WasmtimeResult<Box<ComponentEngine>> {
         ComponentEngine::with_engine(engine).map(Box::new)
     }
 
@@ -914,80 +960,118 @@ pub mod core {
     }
 
     /// Core function to validate component engine pointer and get reference
-    pub unsafe fn get_component_engine_ref(engine_ptr: *const c_void) -> WasmtimeResult<&'static ComponentEngine> {
+    pub unsafe fn get_component_engine_ref(
+        engine_ptr: *const c_void,
+    ) -> WasmtimeResult<&'static ComponentEngine> {
         validate_ptr_not_null!(engine_ptr, "component engine");
         Ok(&*(engine_ptr as *const ComponentEngine))
     }
 
     /// Core function to validate component engine pointer and get mutable reference
-    pub unsafe fn get_component_engine_mut(engine_ptr: *mut c_void) -> WasmtimeResult<&'static mut ComponentEngine> {
+    pub unsafe fn get_component_engine_mut(
+        engine_ptr: *mut c_void,
+    ) -> WasmtimeResult<&'static mut ComponentEngine> {
         validate_ptr_not_null!(engine_ptr, "component engine");
         Ok(&mut *(engine_ptr as *mut ComponentEngine))
     }
 
     /// Get enhanced component engine reference
-    pub unsafe fn get_enhanced_component_engine_ref(engine_ptr: *const c_void) -> WasmtimeResult<&'static EnhancedComponentEngine> {
+    pub unsafe fn get_enhanced_component_engine_ref(
+        engine_ptr: *const c_void,
+    ) -> WasmtimeResult<&'static EnhancedComponentEngine> {
         validate_ptr_not_null!(engine_ptr, "enhanced component engine");
         Ok(&*(engine_ptr as *const EnhancedComponentEngine))
     }
 
     /// Get enhanced component engine mutable reference
-    pub unsafe fn get_enhanced_component_engine_mut(engine_ptr: *mut c_void) -> WasmtimeResult<&'static mut EnhancedComponentEngine> {
+    pub unsafe fn get_enhanced_component_engine_mut(
+        engine_ptr: *mut c_void,
+    ) -> WasmtimeResult<&'static mut EnhancedComponentEngine> {
         validate_ptr_not_null!(engine_ptr, "enhanced component engine");
         Ok(&mut *(engine_ptr as *mut EnhancedComponentEngine))
     }
 
     /// Core function to load a component from bytes (backward compatible)
-    pub fn load_component_from_bytes(engine: &ComponentEngine, bytes: &[u8]) -> WasmtimeResult<Box<Component>> {
+    pub fn load_component_from_bytes(
+        engine: &ComponentEngine,
+        bytes: &[u8],
+    ) -> WasmtimeResult<Box<Component>> {
         validate_not_empty!(bytes, "component bytes");
         engine.load_component_from_bytes(bytes).map(Box::new)
     }
 
     /// Load component using enhanced engine
-    pub fn load_component_from_bytes_enhanced(engine: &EnhancedComponentEngine, bytes: &[u8]) -> WasmtimeResult<Box<Component>> {
+    pub fn load_component_from_bytes_enhanced(
+        engine: &EnhancedComponentEngine,
+        bytes: &[u8],
+    ) -> WasmtimeResult<Box<Component>> {
         validate_not_empty!(bytes, "component bytes");
         engine.load_component_from_bytes(bytes).map(Box::new)
     }
 
     /// Core function to load a component from a file (backward compatible)
-    pub fn load_component_from_file<P: AsRef<std::path::Path>>(engine: &ComponentEngine, path: P) -> WasmtimeResult<Box<Component>> {
+    pub fn load_component_from_file<P: AsRef<std::path::Path>>(
+        engine: &ComponentEngine,
+        path: P,
+    ) -> WasmtimeResult<Box<Component>> {
         engine.load_component_from_file(path).map(Box::new)
     }
 
     /// Load component from file using enhanced engine
-    pub fn load_component_from_file_enhanced<P: AsRef<std::path::Path>>(engine: &EnhancedComponentEngine, path: P) -> WasmtimeResult<Box<Component>> {
+    pub fn load_component_from_file_enhanced<P: AsRef<std::path::Path>>(
+        engine: &EnhancedComponentEngine,
+        path: P,
+    ) -> WasmtimeResult<Box<Component>> {
         engine.load_component_from_file(path).map(Box::new)
     }
 
     /// Core function to validate component pointer and get reference
-    pub unsafe fn get_component_ref(component_ptr: *const c_void) -> WasmtimeResult<&'static Component> {
+    pub unsafe fn get_component_ref(
+        component_ptr: *const c_void,
+    ) -> WasmtimeResult<&'static Component> {
         validate_ptr_not_null!(component_ptr, "component");
         Ok(&*(component_ptr as *const Component))
     }
 
     /// Core function to validate component pointer and get mutable reference
-    pub unsafe fn get_component_mut(component_ptr: *mut c_void) -> WasmtimeResult<&'static mut Component> {
+    pub unsafe fn get_component_mut(
+        component_ptr: *mut c_void,
+    ) -> WasmtimeResult<&'static mut Component> {
         validate_ptr_not_null!(component_ptr, "component");
         Ok(&mut *(component_ptr as *mut Component))
     }
 
     /// Core function to instantiate a component (backward compatible)
-    pub fn instantiate_component(engine: &ComponentEngine, component: &Component) -> WasmtimeResult<Arc<wasmtime::component::Instance>> {
+    pub fn instantiate_component(
+        engine: &ComponentEngine,
+        component: &Component,
+    ) -> WasmtimeResult<Arc<wasmtime::component::Instance>> {
         engine.instantiate_component(component)
     }
 
     /// Instantiate component using enhanced engine (returns instance ID)
-    pub fn instantiate_component_enhanced(engine: &EnhancedComponentEngine, component: &Component) -> WasmtimeResult<u64> {
+    pub fn instantiate_component_enhanced(
+        engine: &EnhancedComponentEngine,
+        component: &Component,
+    ) -> WasmtimeResult<u64> {
         engine.instantiate_component(component)
     }
 
     /// Core function to add a host interface to the component linker
-    pub fn add_host_interface(engine: &mut ComponentEngine, interface_name: &str, implementation: crate::component::HostInterface) -> WasmtimeResult<()> {
+    pub fn add_host_interface(
+        engine: &mut ComponentEngine,
+        interface_name: &str,
+        implementation: crate::component::HostInterface,
+    ) -> WasmtimeResult<()> {
         engine.add_host_interface(interface_name, implementation)
     }
 
     /// Add host interface to enhanced engine
-    pub fn add_host_interface_enhanced(engine: &mut EnhancedComponentEngine, interface_name: &str, implementation: Box<dyn std::any::Any + Send + Sync>) -> WasmtimeResult<()> {
+    pub fn add_host_interface_enhanced(
+        engine: &mut EnhancedComponentEngine,
+        interface_name: &str,
+        implementation: Box<dyn std::any::Any + Send + Sync>,
+    ) -> WasmtimeResult<()> {
         engine.add_host_interface(interface_name, implementation)
     }
 
@@ -997,7 +1081,9 @@ pub mod core {
     }
 
     /// Get active instances from enhanced engine
-    pub fn get_active_instances_enhanced(engine: &EnhancedComponentEngine) -> WasmtimeResult<Vec<InstanceInfo>> {
+    pub fn get_active_instances_enhanced(
+        engine: &EnhancedComponentEngine,
+    ) -> WasmtimeResult<Vec<InstanceInfo>> {
         engine.get_active_instances()
     }
 
@@ -1038,7 +1124,10 @@ pub mod core {
 
     /// Destroy enhanced component engine
     pub unsafe fn destroy_enhanced_component_engine(engine_ptr: *mut c_void) {
-        ffi_utils::destroy_resource::<EnhancedComponentEngine>(engine_ptr, "EnhancedComponentEngine");
+        ffi_utils::destroy_resource::<EnhancedComponentEngine>(
+            engine_ptr,
+            "EnhancedComponentEngine",
+        );
     }
 
     /// Core function to destroy a component (safe cleanup)
@@ -1048,7 +1137,10 @@ pub mod core {
 
     /// Core function to destroy a component instance (safe cleanup)
     pub unsafe fn destroy_component_instance(instance_ptr: *mut c_void) {
-        ffi_utils::destroy_resource::<Arc<wasmtime::component::Instance>>(instance_ptr, "ComponentInstance");
+        ffi_utils::destroy_resource::<Arc<wasmtime::component::Instance>>(
+            instance_ptr,
+            "ComponentInstance",
+        );
     }
 
     /// Core function to get number of exports in component
@@ -1062,7 +1154,9 @@ pub mod core {
     }
 
     /// Get component metrics from enhanced engine
-    pub fn get_component_metrics(engine: &EnhancedComponentEngine) -> WasmtimeResult<ComponentMetrics> {
+    pub fn get_component_metrics(
+        engine: &EnhancedComponentEngine,
+    ) -> WasmtimeResult<ComponentMetrics> {
         engine.get_metrics()
     }
 
@@ -1193,8 +1287,11 @@ pub unsafe extern "C" fn wasmtime4j_enhanced_component_invoke(
         return FFI_ERROR;
     }
 
-    if results_out.is_null() || results_len_out.is_null()
-        || result_types_out.is_null() || result_count_out.is_null() {
+    if results_out.is_null()
+        || results_len_out.is_null()
+        || result_types_out.is_null()
+        || result_count_out.is_null()
+    {
         return FFI_ERROR;
     }
 
@@ -1284,10 +1381,14 @@ pub unsafe extern "C" fn wasmtime4j_enhanced_component_free_results(
     result_count: c_int,
 ) {
     if !results_ptr.is_null() && results_len > 0 {
-        let _ = Box::from_raw(std::slice::from_raw_parts_mut(results_ptr, results_len) as *mut [u8]);
+        let _ =
+            Box::from_raw(std::slice::from_raw_parts_mut(results_ptr, results_len) as *mut [u8]);
     }
     if !result_types_ptr.is_null() && result_count > 0 {
-        let _ = Box::from_raw(std::slice::from_raw_parts_mut(result_types_ptr, result_count as usize) as *mut [c_int]);
+        let _ = Box::from_raw(std::slice::from_raw_parts_mut(
+            result_types_ptr,
+            result_count as usize,
+        ) as *mut [c_int]);
     }
 }
 

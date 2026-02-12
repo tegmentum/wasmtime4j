@@ -25,10 +25,10 @@
 //! let strategy = FfiStrategy::from_ffi(1)?; // Cranelift
 //! ```
 
-use wasmtime::{Strategy, OptLevel};
 use crate::engine::WasmFeature;
-use crate::error::{WasmtimeResult, WasmtimeError};
+use crate::error::{WasmtimeError, WasmtimeResult};
 use std::os::raw::c_void;
+use wasmtime::{OptLevel, Strategy};
 
 /// Standard FFI return codes
 pub const FFI_SUCCESS: i32 = 0;
@@ -42,10 +42,10 @@ pub const FFI_ERROR: i32 = -1;
 pub trait ParameterConverter<T> {
     /// Convert from FFI representation to native type with validation
     fn from_ffi(value: i32) -> WasmtimeResult<T>;
-    
+
     /// Convert from native type to FFI representation
     fn to_ffi(enum_value: T) -> i32;
-    
+
     /// Validate FFI value without conversion (for early parameter checking)
     fn validate(value: i32) -> WasmtimeResult<()>;
 }
@@ -56,11 +56,13 @@ pub trait ParameterConverter<T> {
 /// maintaining proper error propagation and resource management.
 pub trait ReturnValueConverter<T> {
     /// Convert result to (error_code, value) tuple for operations returning values
-    fn to_ffi_result(result: WasmtimeResult<T>) -> (i32, T) where T: Default;
-    
+    fn to_ffi_result(result: WasmtimeResult<T>) -> (i32, T)
+    where
+        T: Default;
+
     /// Convert result to pointer for operations returning boxed resources
     fn to_ffi_ptr(result: WasmtimeResult<Box<T>>) -> *mut c_void;
-    
+
     /// Convert result to simple error code for success/failure operations
     fn to_ffi_code(result: WasmtimeResult<()>) -> i32;
 }
@@ -80,11 +82,14 @@ impl ParameterConverter<Strategy> for FfiStrategy {
             0 => Ok(Strategy::Auto),
             1 => Ok(Strategy::Cranelift),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)", value)
+                message: format!(
+                    "Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)",
+                    value
+                ),
             }),
         }
     }
-    
+
     fn to_ffi(enum_value: Strategy) -> i32 {
         match enum_value {
             Strategy::Auto => 0,
@@ -92,12 +97,15 @@ impl ParameterConverter<Strategy> for FfiStrategy {
             _ => 1, // Default to Cranelift for unknown strategies
         }
     }
-    
+
     fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
             0 | 1 => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)", value)
+                message: format!(
+                    "Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)",
+                    value
+                ),
             }),
         }
     }
@@ -111,7 +119,7 @@ impl FfiStrategy {
             FfiStrategy::Cranelift => Strategy::Cranelift,
         }
     }
-    
+
     /// Create FFI strategy from native Strategy enum
     pub fn from_native(strategy: Strategy) -> Self {
         match strategy {
@@ -143,7 +151,7 @@ impl ParameterConverter<OptLevel> for FfiOptLevel {
             }),
         }
     }
-    
+
     fn to_ffi(enum_value: OptLevel) -> i32 {
         match enum_value {
             OptLevel::None => 0,
@@ -152,7 +160,7 @@ impl ParameterConverter<OptLevel> for FfiOptLevel {
             _ => 1, // Default to Speed for any new variants
         }
     }
-    
+
     fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
             0..=2 => Ok(()),
@@ -172,7 +180,7 @@ impl FfiOptLevel {
             FfiOptLevel::SpeedAndSize => OptLevel::SpeedAndSize,
         }
     }
-    
+
     /// Create FFI optimization level from native OptLevel enum
     pub fn from_native(opt_level: OptLevel) -> Self {
         match opt_level {
@@ -241,11 +249,11 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
             21 => Ok(WasmFeature::ComponentModelErrorContext),
             22 => Ok(WasmFeature::ComponentModelGc),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-22", value)
+                message: format!("Invalid WASM feature: {}. Expected 0-22", value),
             }),
         }
     }
-    
+
     fn to_ffi(enum_value: WasmFeature) -> i32 {
         match enum_value {
             WasmFeature::Threads => 0,
@@ -278,7 +286,7 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
         match value {
             0..=22 => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-22", value)
+                message: format!("Invalid WASM feature: {}. Expected 0-22", value),
             }),
         }
     }
@@ -370,12 +378,12 @@ impl ReturnValueConverter<bool> for BooleanReturnConverter {
             Err(_) => (FFI_ERROR, false),
         }
     }
-    
+
     fn to_ffi_ptr(_result: WasmtimeResult<Box<bool>>) -> *mut c_void {
         // Booleans are not returned as pointers
         std::ptr::null_mut()
     }
-    
+
     fn to_ffi_code(result: WasmtimeResult<()>) -> i32 {
         match result {
             Ok(()) => FFI_SUCCESS,
@@ -394,12 +402,12 @@ impl ReturnValueConverter<i32> for IntegerReturnConverter {
             Err(_) => (FFI_ERROR, -1),
         }
     }
-    
+
     fn to_ffi_ptr(_result: WasmtimeResult<Box<i32>>) -> *mut c_void {
         // Integers are not typically returned as pointers in this API
         std::ptr::null_mut()
     }
-    
+
     fn to_ffi_code(result: WasmtimeResult<()>) -> i32 {
         match result {
             Ok(()) => FFI_SUCCESS,
@@ -412,23 +420,23 @@ impl ReturnValueConverter<i32> for IntegerReturnConverter {
 pub struct PointerReturnConverter;
 
 impl<T> ReturnValueConverter<T> for PointerReturnConverter {
-    fn to_ffi_result(result: WasmtimeResult<T>) -> (i32, T) 
-    where 
-        T: Default 
+    fn to_ffi_result(result: WasmtimeResult<T>) -> (i32, T)
+    where
+        T: Default,
     {
         match result {
             Ok(value) => (FFI_SUCCESS, value),
             Err(_) => (FFI_ERROR, T::default()),
         }
     }
-    
+
     fn to_ffi_ptr(result: WasmtimeResult<Box<T>>) -> *mut c_void {
         match result {
             Ok(boxed_value) => Box::into_raw(boxed_value) as *mut c_void,
             Err(_) => std::ptr::null_mut(),
         }
     }
-    
+
     fn to_ffi_code(result: WasmtimeResult<()>) -> i32 {
         match result {
             Ok(()) => FFI_SUCCESS,
@@ -439,35 +447,49 @@ impl<T> ReturnValueConverter<T> for PointerReturnConverter {
 
 /// Validation utilities module
 pub mod validation {
-    use crate::error::{WasmtimeResult, WasmtimeError};
-    
+    use crate::error::{WasmtimeError, WasmtimeResult};
+
     /// Validate that a pointer is not null
     pub fn validate_not_null<T>(ptr: *const T, name: &str) -> WasmtimeResult<()> {
         if ptr.is_null() {
             Err(WasmtimeError::InvalidParameter {
-                message: format!("{} cannot be null", name)
+                message: format!("{} cannot be null", name),
             })
         } else {
             Ok(())
         }
     }
-    
+
     /// Validate array bounds
     pub fn validate_array_bounds(array_len: usize, index: usize, name: &str) -> WasmtimeResult<()> {
         if index >= array_len {
             Err(WasmtimeError::InvalidParameter {
-                message: format!("{} index {} out of bounds (length: {})", name, index, array_len)
+                message: format!(
+                    "{} index {} out of bounds (length: {})",
+                    name, index, array_len
+                ),
             })
         } else {
             Ok(())
         }
     }
-    
+
     /// Validate that a slice has valid bounds
-    pub fn validate_slice_bounds<T>(slice: &[T], start: usize, len: usize, name: &str) -> WasmtimeResult<()> {
+    pub fn validate_slice_bounds<T>(
+        slice: &[T],
+        start: usize,
+        len: usize,
+        name: &str,
+    ) -> WasmtimeResult<()> {
         if start >= slice.len() || start.saturating_add(len) > slice.len() {
             Err(WasmtimeError::InvalidParameter {
-                message: format!("{} slice bounds invalid: start={}, len={}, slice_len={}", name, start, len, slice.len())
+                message: format!(
+                    "{} slice bounds invalid: start={}, len={}, slice_len={}",
+                    name,
+                    start,
+                    len,
+                    slice.len()
+                ),
             })
         } else {
             Ok(())
@@ -478,14 +500,14 @@ pub mod validation {
 /// Error code mapping utilities
 pub mod error_mapping {
     use crate::error::WasmtimeError;
-    
+
     /// Map WasmtimeError to standardized FFI error codes
     pub fn map_error_to_code(_error: &WasmtimeError) -> i32 {
         // All errors map to FFI_ERROR (-1) for simplicity and consistency
         // Detailed error information is available through error message retrieval
         super::FFI_ERROR
     }
-    
+
     /// Check if an error should be propagated to FFI boundary
     pub fn should_propagate_error(_error: &WasmtimeError) -> bool {
         // All errors should be propagated as return codes, never as panics
@@ -499,11 +521,11 @@ pub mod error_mapping {
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
 pub mod component {
-    use crate::component::{ComponentEngine, Component};
-    use crate::error::{WasmtimeResult, WasmtimeError};
+    use super::{validation, PointerReturnConverter, ReturnValueConverter};
+    use crate::component::{Component, ComponentEngine};
+    use crate::error::{WasmtimeError, WasmtimeResult};
     use std::os::raw::c_void;
     use std::sync::Arc;
-    use super::{PointerReturnConverter, ReturnValueConverter, validation};
 
     /// Shared implementation for creating component engine
     pub fn create_component_engine_shared() -> WasmtimeResult<Box<ComponentEngine>> {
@@ -513,16 +535,16 @@ pub mod component {
     /// Shared implementation for loading component from bytes
     pub fn load_component_from_bytes_shared<B>(
         engine_ptr: *mut c_void,
-        component_bytes: B
+        component_bytes: B,
     ) -> WasmtimeResult<Box<Component>>
     where
         B: super::module::ByteArrayConverter,
     {
         validation::validate_not_null(engine_ptr, "component_engine")?;
-        
+
         if component_bytes.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message: "Component bytes cannot be empty".to_string()
+                message: "Component bytes cannot be empty".to_string(),
             });
         }
 
@@ -534,14 +556,14 @@ pub mod component {
     /// Shared implementation for component instantiation
     pub fn instantiate_component_shared(
         engine_ptr: *mut c_void,
-        component_ptr: *mut c_void
+        component_ptr: *mut c_void,
     ) -> WasmtimeResult<*mut c_void> {
         validation::validate_not_null(engine_ptr, "component_engine")?;
         validation::validate_not_null(component_ptr, "component")?;
 
         let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
         let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
-        
+
         let instance = crate::component::core::instantiate_component(engine, component)?;
         Ok(Arc::into_raw(instance) as *mut c_void)
     }
@@ -549,7 +571,7 @@ pub mod component {
     /// Shared implementation for getting component size
     pub fn get_component_size_shared(component_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(component_ptr, "component")?;
-        
+
         let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
         Ok(crate::component::core::get_component_size(component))
     }
@@ -557,7 +579,7 @@ pub mod component {
     /// Shared implementation for getting component exports count
     pub fn get_component_exports_count_shared(component_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(component_ptr, "component")?;
-        
+
         let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
         Ok(crate::component::core::get_export_count(component))
     }
@@ -565,7 +587,7 @@ pub mod component {
     /// Shared implementation for getting component imports count
     pub fn get_component_imports_count_shared(component_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(component_ptr, "component")?;
-        
+
         let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
         Ok(crate::component::core::get_import_count(component))
     }
@@ -573,7 +595,7 @@ pub mod component {
     /// Shared implementation for getting active instances count
     pub fn get_active_instances_count_shared(engine_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(engine_ptr, "component_engine")?;
-        
+
         let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
         let instances = crate::component::core::get_active_instances(engine)?;
         Ok(instances.len())
@@ -582,7 +604,7 @@ pub mod component {
     /// Shared implementation for cleanup instances
     pub fn cleanup_instances_shared(engine_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(engine_ptr, "component_engine")?;
-        
+
         let engine = unsafe { crate::component::core::get_component_engine_ref(engine_ptr)? };
         let instances_before = crate::component::core::get_active_instances(engine)?.len();
         // Note: The actual cleanup of inactive instances would need to be implemented
@@ -593,21 +615,27 @@ pub mod component {
     /// Shared implementation for component engine destruction
     pub fn destroy_component_engine_shared(engine_ptr: *mut c_void) {
         if !engine_ptr.is_null() {
-            unsafe { crate::component::core::destroy_component_engine(engine_ptr); }
+            unsafe {
+                crate::component::core::destroy_component_engine(engine_ptr);
+            }
         }
     }
 
     /// Shared implementation for component destruction
     pub fn destroy_component_shared(component_ptr: *mut c_void) {
         if !component_ptr.is_null() {
-            unsafe { crate::component::core::destroy_component(component_ptr); }
+            unsafe {
+                crate::component::core::destroy_component(component_ptr);
+            }
         }
     }
 
     /// Shared implementation for component instance destruction
     pub fn destroy_component_instance_shared(instance_ptr: *mut c_void) {
         if !instance_ptr.is_null() {
-            unsafe { crate::component::core::destroy_component_instance(instance_ptr); }
+            unsafe {
+                crate::component::core::destroy_component_instance(instance_ptr);
+            }
         }
     }
 
@@ -622,7 +650,9 @@ pub mod component {
     }
 
     /// Helper function to convert instantiate result to FFI code and pointer
-    pub fn instantiate_result_to_ffi_result(result: WasmtimeResult<*mut c_void>) -> (i32, *mut c_void) {
+    pub fn instantiate_result_to_ffi_result(
+        result: WasmtimeResult<*mut c_void>,
+    ) -> (i32, *mut c_void) {
         match result {
             Ok(ptr) => (super::FFI_SUCCESS, ptr),
             Err(_) => (super::FFI_ERROR, std::ptr::null_mut()),
@@ -647,25 +677,27 @@ pub mod component {
 }
 
 /// Memory operations shared between JNI and Panama FFI implementations
-/// 
+///
 /// This module provides consolidated implementations for WebAssembly memory operations,
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
 pub mod memory {
-    use crate::memory::{Memory, MemoryBuilder, MemoryConfig, MemoryUsage, MemoryDataType, MemoryRegistry};
-    use crate::store::Store;
+    use super::{validation, IntegerReturnConverter, PointerReturnConverter, ReturnValueConverter};
     use crate::error::WasmtimeResult;
+    use crate::memory::{
+        Memory, MemoryBuilder, MemoryConfig, MemoryDataType, MemoryRegistry, MemoryUsage,
+    };
+    use crate::store::Store;
     use std::os::raw::c_void;
     use std::sync::Arc;
-    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
 
     /// Shared implementation for creating memory
     pub fn create_memory_shared(
         store_ptr: *mut c_void,
-        initial_pages: u32
+        initial_pages: u32,
     ) -> WasmtimeResult<Box<Memory>> {
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let store = unsafe { &mut *(store_ptr as *mut Store) };
         Memory::new(store, initial_pages as u64).map(|memory| Box::new(memory))
     }
@@ -677,45 +709,45 @@ pub mod memory {
         maximum_pages: i32,
         is_shared: bool,
         memory_index: u32,
-        name: S
+        name: S,
     ) -> WasmtimeResult<Box<Memory>>
     where
         S: super::module::StringConverter,
     {
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let store = unsafe { &mut *(store_ptr as *mut Store) };
-        
+
         let mut builder = MemoryBuilder::new(initial_pages as u64);
-        
+
         if maximum_pages >= 0 {
             builder = builder.maximum_pages(maximum_pages as u64);
         }
-        
+
         if is_shared {
             builder = builder.shared();
         }
-        
+
         builder = builder.memory_index(memory_index);
-        
+
         if !name.is_empty() {
             let name_str = unsafe { name.get_string()? };
             builder = builder.name(name_str);
         }
-        
+
         let config = MemoryConfig::from(builder);
-        
+
         Memory::new_with_config(store, config).map(|memory| Box::new(memory))
     }
 
     /// Shared implementation for getting memory size in pages
     pub fn get_memory_size_pages_shared(
         memory_ptr: *mut c_void,
-        store_ptr: *mut c_void
+        store_ptr: *mut c_void,
     ) -> WasmtimeResult<u64> {
         validation::validate_not_null(memory_ptr, "memory")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &*(store_ptr as *const Store) };
         memory.size_pages(store)
@@ -724,11 +756,11 @@ pub mod memory {
     /// Shared implementation for getting memory size in bytes
     pub fn get_memory_size_bytes_shared(
         memory_ptr: *mut c_void,
-        store_ptr: *mut c_void
+        store_ptr: *mut c_void,
     ) -> WasmtimeResult<usize> {
         validation::validate_not_null(memory_ptr, "memory")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &*(store_ptr as *const Store) };
         memory.size_bytes(store)
@@ -738,11 +770,11 @@ pub mod memory {
     pub fn grow_memory_shared(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
-        additional_pages: u64
+        additional_pages: u64,
     ) -> WasmtimeResult<u64> {
         validation::validate_not_null(memory_ptr, "memory")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &mut *(store_ptr as *mut Store) };
         memory.grow(store, additional_pages)
@@ -753,11 +785,11 @@ pub mod memory {
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         offset: usize,
-        length: usize
+        length: usize,
     ) -> WasmtimeResult<Vec<u8>> {
         validation::validate_not_null(memory_ptr, "memory")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &*(store_ptr as *const Store) };
         memory.read_bytes(store, offset, length)
@@ -768,11 +800,11 @@ pub mod memory {
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         offset: usize,
-        data: &[u8]
+        data: &[u8],
     ) -> WasmtimeResult<()> {
         validation::validate_not_null(memory_ptr, "memory")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &mut *(store_ptr as *mut Store) };
         memory.write_bytes(store, offset, data)
@@ -782,11 +814,11 @@ pub mod memory {
     pub fn read_memory_u32_shared(
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
-        offset: usize
+        offset: usize,
     ) -> WasmtimeResult<u32> {
         validation::validate_not_null(memory_ptr, "memory")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &*(store_ptr as *const Store) };
         memory.read_typed::<u32>(store, offset, MemoryDataType::U32Le)
@@ -797,11 +829,11 @@ pub mod memory {
         memory_ptr: *mut c_void,
         store_ptr: *mut c_void,
         offset: usize,
-        value: u32
+        value: u32,
     ) -> WasmtimeResult<()> {
         validation::validate_not_null(memory_ptr, "memory")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &mut *(store_ptr as *mut Store) };
         memory.write_typed(store, offset, value, MemoryDataType::U32Le)
@@ -810,11 +842,11 @@ pub mod memory {
     /// Shared implementation for getting memory usage
     pub fn get_memory_usage_shared(
         memory_ptr: *mut c_void,
-        store_ptr: *mut c_void
+        store_ptr: *mut c_void,
     ) -> WasmtimeResult<MemoryUsage> {
         validation::validate_not_null(memory_ptr, "memory")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let memory = unsafe { &*(memory_ptr as *const Memory) };
         let store = unsafe { &*(store_ptr as *const Store) };
         memory.get_usage(store)
@@ -828,11 +860,11 @@ pub mod memory {
     /// Shared implementation for registering memory
     pub fn register_memory_shared(
         registry_ptr: *mut c_void,
-        memory_ptr: *mut c_void
+        memory_ptr: *mut c_void,
     ) -> WasmtimeResult<u32> {
         validation::validate_not_null(registry_ptr, "memory_registry")?;
         validation::validate_not_null(memory_ptr, "memory")?;
-        
+
         let registry = unsafe { &*(registry_ptr as *const MemoryRegistry) };
         let memory = unsafe { (memory_ptr as *const Memory).read() };
         registry.register(memory)
@@ -841,10 +873,10 @@ pub mod memory {
     /// Shared implementation for getting memory from registry
     pub fn get_memory_from_registry_shared(
         registry_ptr: *mut c_void,
-        memory_id: u32
+        memory_id: u32,
     ) -> WasmtimeResult<Arc<Memory>> {
         validation::validate_not_null(registry_ptr, "memory_registry")?;
-        
+
         let registry = unsafe { &*(registry_ptr as *const MemoryRegistry) };
         registry.get(memory_id)
     }
@@ -852,7 +884,7 @@ pub mod memory {
     /// Shared implementation for memory destruction
     pub fn destroy_memory_shared(memory_ptr: *mut c_void) {
         if !memory_ptr.is_null() {
-            unsafe { 
+            unsafe {
                 let _ = Box::from_raw(memory_ptr as *mut Memory);
             }
         }
@@ -861,7 +893,7 @@ pub mod memory {
     /// Shared implementation for memory registry destruction
     pub fn destroy_memory_registry_shared(registry_ptr: *mut c_void) {
         if !registry_ptr.is_null() {
-            unsafe { 
+            unsafe {
                 let _ = Box::from_raw(registry_ptr as *mut MemoryRegistry);
             }
         }
@@ -873,7 +905,9 @@ pub mod memory {
     }
 
     /// Helper function to convert registry create result to FFI code and pointer
-    pub fn registry_create_result_to_ffi_result(result: WasmtimeResult<Box<MemoryRegistry>>) -> (i32, *mut c_void) {
+    pub fn registry_create_result_to_ffi_result(
+        result: WasmtimeResult<Box<MemoryRegistry>>,
+    ) -> (i32, *mut c_void) {
         match result {
             Ok(registry) => (super::FFI_SUCCESS, Box::into_raw(registry) as *mut c_void),
             Err(_) => (super::FFI_ERROR, std::ptr::null_mut()),
@@ -919,18 +953,18 @@ pub mod memory {
 }
 
 /// Global operations shared between JNI and Panama FFI implementations
-/// 
+///
 /// This module provides consolidated implementations for WebAssembly global operations,
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
 pub mod global {
-    use crate::global::{Global, GlobalValue, GlobalMetadata, core};
-    
+    use crate::global::{core, Global, GlobalMetadata, GlobalValue};
+
+    use super::{validation, IntegerReturnConverter, PointerReturnConverter, ReturnValueConverter};
+    use crate::error::{WasmtimeError, WasmtimeResult};
     use crate::store::Store;
-    use crate::error::{WasmtimeResult, WasmtimeError};
     use std::os::raw::c_void;
-    use wasmtime::{ValType, Mutability};
-    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
+    use wasmtime::{Mutability, ValType};
 
     /// FFI-compatible representation of GlobalValue
     #[repr(C)]
@@ -962,12 +996,15 @@ pub mod global {
                 7 => Ok(GlobalValue::AnyRef(None)),
                 // WasmGC reference types
                 8 => Ok(GlobalValue::EqRef(None)),
-                9 => Ok(GlobalValue::I31Ref(if self.i32_value == 0 { None } else { Some(self.i32_value) })),
+                9 => Ok(GlobalValue::I31Ref(if self.i32_value == 0 {
+                    None
+                } else {
+                    Some(self.i32_value)
+                })),
                 10 => Ok(GlobalValue::StructRef(None)),
                 11 => Ok(GlobalValue::ArrayRef(None)),
                 _ => Err(WasmtimeError::InvalidParameter {
-                message:
-                    format!("Invalid global value type: {}", self.value_type)
+                    message: format!("Invalid global value type: {}", self.value_type),
                 }),
             }
         }
@@ -1081,13 +1118,13 @@ pub mod global {
         store_ptr: *mut c_void,
         value_type: i32,
         is_mutable: bool,
-        initial_value: FfiGlobalValue
+        initial_value: FfiGlobalValue,
     ) -> WasmtimeResult<Box<Global>> {
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let store = unsafe { &*(store_ptr as *const Store) };
         let native_value = initial_value.to_native()?;
-        
+
         // Convert FFI value type to native ValType
         let val_type = match value_type {
             0 => ValType::I32,
@@ -1096,15 +1133,17 @@ pub mod global {
             3 => ValType::F64,
             4 => ValType::V128,
             5 | 6 | 7 => ValType::ANYREF,
-            _ => return Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid value type: {}", value_type)
-            }),
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid value type: {}", value_type),
+                })
+            }
         };
 
-        let mutability = if is_mutable { 
-            Mutability::Var 
-        } else { 
-            Mutability::Const 
+        let mutability = if is_mutable {
+            Mutability::Var
+        } else {
+            Mutability::Const
         };
 
         core::create_global(store, val_type, mutability, native_value, None)
@@ -1113,14 +1152,14 @@ pub mod global {
     /// Shared implementation for getting global variable value
     pub fn get_global_value_shared(
         global_ptr: *mut c_void,
-        store_ptr: *mut c_void
+        store_ptr: *mut c_void,
     ) -> WasmtimeResult<FfiGlobalValue> {
         validation::validate_not_null(global_ptr, "global")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let global = unsafe { core::get_global_ref(global_ptr)? };
         let store = unsafe { &*(store_ptr as *const Store) };
-        
+
         let value = core::get_global_value(global, store)?;
         Ok(FfiGlobalValue::from_native(&value))
     }
@@ -1129,22 +1168,22 @@ pub mod global {
     pub fn set_global_value_shared(
         global_ptr: *mut c_void,
         store_ptr: *mut c_void,
-        value: FfiGlobalValue
+        value: FfiGlobalValue,
     ) -> WasmtimeResult<()> {
         validation::validate_not_null(global_ptr, "global")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let global = unsafe { core::get_global_ref(global_ptr)? };
         let store = unsafe { &*(store_ptr as *const Store) };
         let native_value = value.to_native()?;
-        
+
         core::set_global_value(global, store, native_value)
     }
 
     /// Shared implementation for getting global metadata
     pub fn get_global_metadata_shared(global_ptr: *mut c_void) -> WasmtimeResult<GlobalMetadata> {
         validation::validate_not_null(global_ptr, "global")?;
-        
+
         let global = unsafe { core::get_global_ref(global_ptr)? };
         Ok(core::get_global_metadata(global).clone())
     }
@@ -1152,7 +1191,9 @@ pub mod global {
     /// Shared implementation for global destruction
     pub fn destroy_global_shared(global_ptr: *mut c_void) {
         if !global_ptr.is_null() {
-            unsafe { core::destroy_global(global_ptr); }
+            unsafe {
+                core::destroy_global(global_ptr);
+            }
         }
     }
 
@@ -1162,17 +1203,22 @@ pub mod global {
     }
 
     /// Helper function to convert get value result to FFI result tuple
-    pub fn get_value_result_to_ffi_result(result: WasmtimeResult<FfiGlobalValue>) -> (i32, FfiGlobalValue) {
+    pub fn get_value_result_to_ffi_result(
+        result: WasmtimeResult<FfiGlobalValue>,
+    ) -> (i32, FfiGlobalValue) {
         match result {
             Ok(value) => (super::FFI_SUCCESS, value),
-            Err(_) => (super::FFI_ERROR, FfiGlobalValue {
-                value_type: -1,
-                i32_value: 0,
-                i64_value: 0,
-                f32_value: 0.0,
-                f64_value: 0.0,
-                v128_value: 0,
-            }),
+            Err(_) => (
+                super::FFI_ERROR,
+                FfiGlobalValue {
+                    value_type: -1,
+                    i32_value: 0,
+                    i64_value: 0,
+                    f32_value: 0.0,
+                    f64_value: 0.0,
+                    v128_value: 0,
+                },
+            ),
         }
     }
 
@@ -1183,26 +1229,26 @@ pub mod global {
 }
 
 /// Table operations shared between JNI and Panama FFI implementations
-/// 
+///
 /// This module provides consolidated implementations for WebAssembly table operations,
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
 pub mod table {
-    use crate::table::{Table, TableElement, TableMetadata, core};
-    use wasmtime::{ValType, RefType};
-    
+    use crate::table::{core, Table, TableElement, TableMetadata};
+    use wasmtime::{RefType, ValType};
+
+    use super::{validation, IntegerReturnConverter, PointerReturnConverter, ReturnValueConverter};
+    use crate::error::{WasmtimeError, WasmtimeResult};
     use crate::store::Store;
-    use crate::error::{WasmtimeResult, WasmtimeError};
     use std::os::raw::c_void;
-    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
 
     /// FFI-compatible representation of TableElement
     #[repr(C)]
     #[derive(Debug, Clone, Copy)]
     #[allow(missing_docs)]
     pub struct FfiTableElement {
-        pub element_type: i32,  // 0=FuncRef, 1=ExternRef, 2=AnyRef
-        pub ptr_value: *mut c_void,  // For storing reference pointers
+        pub element_type: i32,      // 0=FuncRef, 1=ExternRef, 2=AnyRef
+        pub ptr_value: *mut c_void, // For storing reference pointers
     }
 
     impl FfiTableElement {
@@ -1213,8 +1259,7 @@ pub mod table {
                 1 => Ok(TableElement::ExternRef(None)),
                 2 => Ok(TableElement::AnyRef(None)),
                 _ => Err(WasmtimeError::InvalidParameter {
-                message:
-                    format!("Invalid table element type: {}", self.element_type)
+                    message: format!("Invalid table element type: {}", self.element_type),
                 }),
             }
         }
@@ -1243,35 +1288,41 @@ pub mod table {
         store_ptr: *mut c_void,
         element_type: i32,
         initial_size: u32,
-        maximum_size: i32
+        maximum_size: i32,
     ) -> WasmtimeResult<Box<Table>> {
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let store = unsafe { &*(store_ptr as *const Store) };
-        
-        // Convert FFI element type to ValType 
+
+        // Convert FFI element type to ValType
         let val_type = match element_type {
             0 => ValType::Ref(RefType::FUNCREF),
-            1 => ValType::Ref(RefType::EXTERNREF), 
+            1 => ValType::Ref(RefType::EXTERNREF),
             2 => ValType::Ref(RefType::FUNCREF), // Default AnyRef to FuncRef for now
-            _ => return Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid element type: {}", element_type)
-            }),
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid element type: {}", element_type),
+                })
+            }
         };
 
-        let max_size = if maximum_size < 0 { None } else { Some(maximum_size as u32) };
-        
+        let max_size = if maximum_size < 0 {
+            None
+        } else {
+            Some(maximum_size as u32)
+        };
+
         core::create_table(store, val_type, initial_size, max_size, None)
     }
 
     /// Shared implementation for getting table size
     pub fn get_table_size_shared(
         table_ptr: *mut c_void,
-        store_ptr: *mut c_void
+        store_ptr: *mut c_void,
     ) -> WasmtimeResult<u32> {
         validation::validate_not_null(table_ptr, "table")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let table = unsafe { core::get_table_ref(table_ptr)? };
         let store = unsafe { &*(store_ptr as *const Store) };
         core::get_table_size(table, store)
@@ -1281,14 +1332,14 @@ pub mod table {
     pub fn get_table_element_shared(
         table_ptr: *mut c_void,
         store_ptr: *mut c_void,
-        index: u32
+        index: u32,
     ) -> WasmtimeResult<FfiTableElement> {
         validation::validate_not_null(table_ptr, "table")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let table = unsafe { core::get_table_ref(table_ptr)? };
         let store = unsafe { &*(store_ptr as *const Store) };
-        
+
         let element = core::get_table_element(table, store, index)?;
         Ok(FfiTableElement::from_native(&element))
     }
@@ -1298,15 +1349,15 @@ pub mod table {
         table_ptr: *mut c_void,
         store_ptr: *mut c_void,
         index: u32,
-        element: FfiTableElement
+        element: FfiTableElement,
     ) -> WasmtimeResult<()> {
         validation::validate_not_null(table_ptr, "table")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let table = unsafe { core::get_table_ref(table_ptr)? };
         let store = unsafe { &*(store_ptr as *const Store) };
         let native_element = element.to_native()?;
-        
+
         core::set_table_element(table, store, index, native_element)
     }
 
@@ -1315,15 +1366,15 @@ pub mod table {
         table_ptr: *mut c_void,
         store_ptr: *mut c_void,
         delta: u32,
-        init_element: FfiTableElement
+        init_element: FfiTableElement,
     ) -> WasmtimeResult<u32> {
         validation::validate_not_null(table_ptr, "table")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let table = unsafe { core::get_table_ref(table_ptr)? };
         let store = unsafe { &*(store_ptr as *const Store) };
         let native_init = init_element.to_native()?;
-        
+
         core::grow_table(table, store, delta, native_init)
     }
 
@@ -1333,22 +1384,22 @@ pub mod table {
         store_ptr: *mut c_void,
         start_index: u32,
         count: u32,
-        fill_element: FfiTableElement
+        fill_element: FfiTableElement,
     ) -> WasmtimeResult<()> {
         validation::validate_not_null(table_ptr, "table")?;
         validation::validate_not_null(store_ptr, "store")?;
-        
+
         let table = unsafe { core::get_table_ref(table_ptr)? };
         let store = unsafe { &*(store_ptr as *const Store) };
         let native_fill = fill_element.to_native()?;
-        
+
         core::fill_table(table, store, start_index, native_fill, count)
     }
 
     /// Shared implementation for getting table metadata
     pub fn get_table_metadata_shared(table_ptr: *mut c_void) -> WasmtimeResult<TableMetadata> {
         validation::validate_not_null(table_ptr, "table")?;
-        
+
         let table = unsafe { core::get_table_ref(table_ptr)? };
         Ok(core::get_table_metadata(table).clone())
     }
@@ -1356,7 +1407,9 @@ pub mod table {
     /// Shared implementation for table destruction
     pub fn destroy_table_shared(table_ptr: *mut c_void) {
         if !table_ptr.is_null() {
-            unsafe { core::destroy_table(table_ptr); }
+            unsafe {
+                core::destroy_table(table_ptr);
+            }
         }
     }
 
@@ -1374,13 +1427,18 @@ pub mod table {
     }
 
     /// Helper function to convert get element result to FFI result tuple
-    pub fn get_element_result_to_ffi_result(result: WasmtimeResult<FfiTableElement>) -> (i32, FfiTableElement) {
+    pub fn get_element_result_to_ffi_result(
+        result: WasmtimeResult<FfiTableElement>,
+    ) -> (i32, FfiTableElement) {
         match result {
             Ok(element) => (super::FFI_SUCCESS, element),
-            Err(_) => (super::FFI_ERROR, FfiTableElement {
-                element_type: -1,
-                ptr_value: std::ptr::null_mut(),
-            }),
+            Err(_) => (
+                super::FFI_ERROR,
+                FfiTableElement {
+                    element_type: -1,
+                    ptr_value: std::ptr::null_mut(),
+                },
+            ),
         }
     }
 
@@ -1399,29 +1457,30 @@ pub mod table {
 }
 
 /// Host function operations shared between JNI and Panama FFI implementations
-/// 
+///
 /// This module provides consolidated implementations for WebAssembly host function operations,
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
-/// 
+///
 /// Note: Callback handling remains interface-specific due to different calling conventions.
 pub mod hostfunc {
-    use crate::hostfunc::{HostFunction, HostFunctionBuilder, core};
-    use crate::error::{WasmtimeResult, WasmtimeError};
+    use super::{validation, IntegerReturnConverter, PointerReturnConverter, ReturnValueConverter};
+    use crate::error::{WasmtimeError, WasmtimeResult};
+    use crate::hostfunc::{core, HostFunction, HostFunctionBuilder};
     use std::os::raw::c_void;
     use std::sync::Arc;
     use wasmtime::ValType;
-    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
 
     /// Shared implementation for creating host function builder
-    pub fn create_host_function_builder_shared<S>(name: S) -> WasmtimeResult<Box<HostFunctionBuilder>>
+    pub fn create_host_function_builder_shared<S>(
+        name: S,
+    ) -> WasmtimeResult<Box<HostFunctionBuilder>>
     where
         S: super::module::StringConverter,
     {
         if name.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message:
-                "Host function name cannot be empty".to_string()
+                message: "Host function name cannot be empty".to_string(),
             });
         }
 
@@ -1430,14 +1489,11 @@ pub mod hostfunc {
     }
 
     /// Shared implementation for adding parameter type to builder
-    pub fn add_param_type_shared(
-        builder_ptr: *mut c_void,
-        val_type: i32
-    ) -> WasmtimeResult<()> {
+    pub fn add_param_type_shared(builder_ptr: *mut c_void, val_type: i32) -> WasmtimeResult<()> {
         validation::validate_not_null(builder_ptr, "host_function_builder")?;
-        
+
         let builder = unsafe { &mut *(builder_ptr as *mut HostFunctionBuilder) };
-        
+
         let wasmtime_val_type = match val_type {
             0 => ValType::I32,
             1 => ValType::I64,
@@ -1445,24 +1501,23 @@ pub mod hostfunc {
             3 => ValType::F64,
             4 => ValType::V128,
             5 => ValType::ANYREF,
-            _ => return Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid parameter type: {}", val_type)
-            }),
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid parameter type: {}", val_type),
+                })
+            }
         };
-        
+
         core::builder_add_param(builder, wasmtime_val_type);
         Ok(())
     }
 
     /// Shared implementation for adding return type to builder
-    pub fn add_return_type_shared(
-        builder_ptr: *mut c_void,
-        val_type: i32
-    ) -> WasmtimeResult<()> {
+    pub fn add_return_type_shared(builder_ptr: *mut c_void, val_type: i32) -> WasmtimeResult<()> {
         validation::validate_not_null(builder_ptr, "host_function_builder")?;
-        
+
         let builder = unsafe { &mut *(builder_ptr as *mut HostFunctionBuilder) };
-        
+
         let wasmtime_val_type = match val_type {
             0 => ValType::I32,
             1 => ValType::I64,
@@ -1470,11 +1525,13 @@ pub mod hostfunc {
             3 => ValType::F64,
             4 => ValType::V128,
             5 => ValType::ANYREF,
-            _ => return Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid return type: {}", val_type)
-            }),
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid return type: {}", val_type),
+                })
+            }
         };
-        
+
         core::builder_add_result(builder, wasmtime_val_type);
         Ok(())
     }
@@ -1497,14 +1554,16 @@ pub mod hostfunc {
     /// Shared implementation for host function builder destruction
     pub fn destroy_builder_shared(builder_ptr: *mut c_void) {
         if !builder_ptr.is_null() {
-            unsafe { 
+            unsafe {
                 let _ = Box::from_raw(builder_ptr as *mut HostFunctionBuilder);
             }
         }
     }
 
     /// Helper function to convert create builder result to FFI pointer
-    pub fn create_builder_result_to_ffi_ptr(result: WasmtimeResult<Box<HostFunctionBuilder>>) -> *mut c_void {
+    pub fn create_builder_result_to_ffi_ptr(
+        result: WasmtimeResult<Box<HostFunctionBuilder>>,
+    ) -> *mut c_void {
         PointerReturnConverter::to_ffi_ptr(result)
     }
 
@@ -1523,28 +1582,28 @@ pub mod hostfunc {
 }
 
 /// Module operations shared between JNI and Panama FFI implementations
-/// 
+///
 /// This module provides consolidated implementations for WebAssembly module operations,
 /// eliminating code duplication between interface implementations while maintaining
 /// defensive programming practices and consistent error handling.
 pub mod module {
+    use super::{validation, IntegerReturnConverter, PointerReturnConverter, ReturnValueConverter};
     use crate::engine::Engine;
-    use crate::module::{Module, core};
-    use crate::error::{WasmtimeResult, WasmtimeError};
+    use crate::error::{WasmtimeError, WasmtimeResult};
+    use crate::module::{core, Module};
     use std::os::raw::c_void;
-    use super::{PointerReturnConverter, ReturnValueConverter, IntegerReturnConverter, validation};
 
     /// Trait for handling byte array conversion in module operations
-    /// 
+    ///
     /// Different FFI interfaces (JNI vs Panama) handle byte arrays differently.
     /// This trait provides a consistent interface for byte array access.
     pub trait ByteArrayConverter {
         /// Get a slice to the byte data with validation
         unsafe fn get_bytes(&self) -> WasmtimeResult<&[u8]>;
-        
+
         /// Get the length of the byte array
         fn len(&self) -> usize;
-        
+
         /// Check if the byte array is empty
         fn is_empty(&self) -> bool {
             self.len() == 0
@@ -1552,33 +1611,29 @@ pub mod module {
     }
 
     /// Trait for handling string conversion in module operations
-    /// 
+    ///
     /// Different FFI interfaces handle strings differently (JString vs char*).
     /// This trait provides a consistent interface for string access.
     pub trait StringConverter {
         /// Get string content with validation
         unsafe fn get_string(&self) -> WasmtimeResult<String>;
-        
+
         /// Check if string is empty or null
         fn is_empty(&self) -> bool;
     }
 
     /// Shared implementation for module compilation from bytes
-    /// 
+    ///
     /// This function provides unified module compilation logic that works
     /// with any byte array representation through the ByteArrayConverter trait.
-    pub fn compile_module_shared<B>(
-        engine: &Engine,
-        wasm_bytes: B
-    ) -> WasmtimeResult<Box<Module>>
+    pub fn compile_module_shared<B>(engine: &Engine, wasm_bytes: B) -> WasmtimeResult<Box<Module>>
     where
         B: ByteArrayConverter,
     {
         // Validate byte array
         if wasm_bytes.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message:
-                "WebAssembly bytes cannot be empty".to_string()
+                message: "WebAssembly bytes cannot be empty".to_string(),
             });
         }
 
@@ -1593,7 +1648,7 @@ pub mod module {
     /// with any byte array representation through the ByteArrayConverter trait.
     pub fn compile_module_bytes_shared<B>(
         engine: &Engine,
-        wasm_bytes: B
+        wasm_bytes: B,
     ) -> WasmtimeResult<Box<Module>>
     where
         B: ByteArrayConverter,
@@ -1601,7 +1656,7 @@ pub mod module {
         // Validate byte array
         if wasm_bytes.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message: "WebAssembly bytes cannot be empty".to_string()
+                message: "WebAssembly bytes cannot be empty".to_string(),
             });
         }
 
@@ -1616,7 +1671,7 @@ pub mod module {
     /// with any string representation through the StringConverter trait.
     pub fn compile_module_wat_shared<S>(
         engine: &Engine,
-        wat_string: S
+        wat_string: S,
     ) -> WasmtimeResult<Box<Module>>
     where
         S: StringConverter,
@@ -1624,8 +1679,7 @@ pub mod module {
         // Validate string
         if wat_string.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message:
-                "WAT string cannot be empty".to_string()
+                message: "WAT string cannot be empty".to_string(),
             });
         }
 
@@ -1635,7 +1689,7 @@ pub mod module {
     }
 
     /// Shared implementation for module validation
-    /// 
+    ///
     /// Validates WebAssembly bytecode without compilation using shared logic.
     pub fn validate_module_shared<B>(wasm_bytes: B) -> WasmtimeResult<()>
     where
@@ -1644,8 +1698,7 @@ pub mod module {
         // Validate byte array
         if wasm_bytes.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message:
-                "WebAssembly bytes cannot be empty".to_string()
+                message: "WebAssembly bytes cannot be empty".to_string(),
             });
         }
 
@@ -1655,21 +1708,21 @@ pub mod module {
     }
 
     /// Shared implementation for module serialization
-    /// 
+    ///
     /// Serializes a compiled module to bytes for caching purposes.
     pub fn serialize_module_shared(module_ptr: *mut c_void) -> WasmtimeResult<Vec<u8>> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         core::serialize_module(module)
     }
 
     /// Shared implementation for module deserialization
-    /// 
+    ///
     /// Deserializes a module from bytes using shared logic.
     pub fn deserialize_module_shared<B>(
         engine: &Engine,
-        serialized_bytes: B
+        serialized_bytes: B,
     ) -> WasmtimeResult<Box<Module>>
     where
         B: ByteArrayConverter,
@@ -1677,8 +1730,7 @@ pub mod module {
         // Validate byte array
         if serialized_bytes.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message:
-                "Serialized module bytes cannot be empty".to_string()
+                message: "Serialized module bytes cannot be empty".to_string(),
             });
         }
 
@@ -1693,12 +1745,12 @@ pub mod module {
     /// This is more efficient than reading the file first for large modules.
     pub fn deserialize_module_file_shared(
         engine: &Engine,
-        path: &str
+        path: &str,
     ) -> WasmtimeResult<Box<Module>> {
         // Validate path is not empty
         if path.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message: "File path cannot be empty".to_string()
+                message: "File path cannot be empty".to_string(),
             });
         }
 
@@ -1711,14 +1763,13 @@ pub mod module {
         }
 
         // Call Module::deserialize_file
-        Module::deserialize_file(engine, path_ref)
-            .map(|m| Box::new(m))
+        Module::deserialize_file(engine, path_ref).map(|m| Box::new(m))
     }
 
     /// Shared implementation for getting module size
     pub fn get_module_size_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         Ok(core::get_module_size(module))
     }
@@ -1726,7 +1777,7 @@ pub mod module {
     /// Shared implementation for getting module name
     pub fn get_module_name_shared(module_ptr: *mut c_void) -> WasmtimeResult<Option<String>> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         Ok(core::get_module_name(module).map(String::from))
     }
@@ -1734,7 +1785,7 @@ pub mod module {
     /// Shared implementation for getting export count
     pub fn get_export_count_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         Ok(core::get_export_count(module))
     }
@@ -1742,7 +1793,7 @@ pub mod module {
     /// Shared implementation for getting import count
     pub fn get_import_count_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         Ok(core::get_import_count(module))
     }
@@ -1750,25 +1801,21 @@ pub mod module {
     /// Shared implementation for getting function count
     pub fn get_function_count_shared(module_ptr: *mut c_void) -> WasmtimeResult<usize> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         Ok(core::get_function_count(module))
     }
 
     /// Shared implementation for checking if module has export
-    pub fn has_export_shared<S>(
-        module_ptr: *mut c_void,
-        export_name: S
-    ) -> WasmtimeResult<bool>
+    pub fn has_export_shared<S>(module_ptr: *mut c_void, export_name: S) -> WasmtimeResult<bool>
     where
         S: StringConverter,
     {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         if export_name.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
-                message:
-                "Export name cannot be empty".to_string()
+                message: "Export name cannot be empty".to_string(),
             });
         }
 
@@ -1780,34 +1827,43 @@ pub mod module {
     /// Shared implementation for getting function export names
     pub fn get_function_exports_shared(module_ptr: *mut c_void) -> WasmtimeResult<Vec<String>> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         let function_exports = core::get_function_exports(module);
-        Ok(function_exports.into_iter().map(|exp| exp.name.clone()).collect())
+        Ok(function_exports
+            .into_iter()
+            .map(|exp| exp.name.clone())
+            .collect())
     }
 
     /// Shared implementation for getting memory export names
     pub fn get_memory_exports_shared(module_ptr: *mut c_void) -> WasmtimeResult<Vec<String>> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         let memory_exports = core::get_memory_exports(module);
-        Ok(memory_exports.into_iter().map(|exp| exp.name.clone()).collect())
+        Ok(memory_exports
+            .into_iter()
+            .map(|exp| exp.name.clone())
+            .collect())
     }
 
     /// Shared implementation for getting required import names
     pub fn get_required_imports_shared(module_ptr: *mut c_void) -> WasmtimeResult<Vec<String>> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         let imports = core::get_required_imports(module);
-        Ok(imports.iter().map(|imp| format!("{}::{}", imp.module, imp.name)).collect())
+        Ok(imports
+            .iter()
+            .map(|imp| format!("{}::{}", imp.module, imp.name))
+            .collect())
     }
 
     /// Shared implementation for module validation (defensive check)
     pub fn validate_module_functionality_shared(module_ptr: *mut c_void) -> WasmtimeResult<()> {
         validation::validate_not_null(module_ptr, "module")?;
-        
+
         let module = unsafe { core::get_module_ref(module_ptr)? };
         core::validate_module(module)
     }
@@ -1815,7 +1871,9 @@ pub mod module {
     /// Shared implementation for module destruction
     pub fn destroy_module_shared(module_ptr: *mut c_void) {
         if !module_ptr.is_null() {
-            unsafe { core::destroy_module(module_ptr); }
+            unsafe {
+                core::destroy_module(module_ptr);
+            }
         }
     }
 
@@ -1857,96 +1915,108 @@ pub mod module {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_strategy_conversion() {
         // Test valid conversions
         assert_eq!(FfiStrategy::from_ffi(0).unwrap(), Strategy::Auto);
         assert_eq!(FfiStrategy::from_ffi(1).unwrap(), Strategy::Cranelift);
-        
+
         // Test invalid conversion
         assert!(FfiStrategy::from_ffi(99).is_err());
-        
+
         // Test bidirectional conversion
         assert_eq!(FfiStrategy::to_ffi(Strategy::Auto), 0);
         assert_eq!(FfiStrategy::to_ffi(Strategy::Cranelift), 1);
-        
+
         // Test validation
         assert!(FfiStrategy::validate(0).is_ok());
         assert!(FfiStrategy::validate(1).is_ok());
         assert!(FfiStrategy::validate(99).is_err());
     }
-    
+
     #[test]
     fn test_opt_level_conversion() {
         // Test valid conversions
         assert_eq!(FfiOptLevel::from_ffi(0).unwrap(), OptLevel::None);
         assert_eq!(FfiOptLevel::from_ffi(1).unwrap(), OptLevel::Speed);
         assert_eq!(FfiOptLevel::from_ffi(2).unwrap(), OptLevel::SpeedAndSize);
-        
+
         // Test invalid conversion
         assert!(FfiOptLevel::from_ffi(99).is_err());
-        
+
         // Test bidirectional conversion
         assert_eq!(FfiOptLevel::to_ffi(OptLevel::None), 0);
         assert_eq!(FfiOptLevel::to_ffi(OptLevel::Speed), 1);
         assert_eq!(FfiOptLevel::to_ffi(OptLevel::SpeedAndSize), 2);
     }
-    
+
     #[test]
     fn test_wasm_feature_conversion() {
         // Test valid conversions
         assert_eq!(FfiWasmFeature::from_ffi(0).unwrap(), WasmFeature::Threads);
-        assert_eq!(FfiWasmFeature::from_ffi(1).unwrap(), WasmFeature::ReferenceTypes);
-        assert_eq!(FfiWasmFeature::from_ffi(4).unwrap(), WasmFeature::MultiValue);
-        
+        assert_eq!(
+            FfiWasmFeature::from_ffi(1).unwrap(),
+            WasmFeature::ReferenceTypes
+        );
+        assert_eq!(
+            FfiWasmFeature::from_ffi(4).unwrap(),
+            WasmFeature::MultiValue
+        );
+
         // Test invalid conversion
         assert!(FfiWasmFeature::from_ffi(99).is_err());
-        
+
         // Test batch conversion
         let features = vec![0, 1, 2];
         let result = convert_wasm_features(&features);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 3);
-        
+
         // Test batch validation
         assert!(validate_wasm_features(&[0, 1, 2, 3, 4]).is_ok());
         assert!(validate_wasm_features(&[0, 99]).is_err());
     }
-    
+
     #[test]
     fn test_return_value_converters() {
         // Test boolean converter
         let (code, value) = BooleanReturnConverter::to_ffi_result(Ok(true));
         assert_eq!(code, FFI_SUCCESS);
         assert_eq!(value, true);
-        
-        let (code, value) = BooleanReturnConverter::to_ffi_result(Err(WasmtimeError::InvalidParameter {
-                message:"test".to_string()}));
+
+        let (code, value) =
+            BooleanReturnConverter::to_ffi_result(Err(WasmtimeError::InvalidParameter {
+                message: "test".to_string(),
+            }));
         assert_eq!(code, FFI_ERROR);
         assert_eq!(value, false);
-        
+
         // Test error code converter
         assert_eq!(BooleanReturnConverter::to_ffi_code(Ok(())), FFI_SUCCESS);
-        assert_eq!(BooleanReturnConverter::to_ffi_code(Err(WasmtimeError::InvalidParameter {
-                message:"test".to_string()})), FFI_ERROR);
+        assert_eq!(
+            BooleanReturnConverter::to_ffi_code(Err(WasmtimeError::InvalidParameter {
+                message: "test".to_string()
+            })),
+            FFI_ERROR
+        );
     }
-    
+
     #[test]
     fn test_validation_utilities() {
         use validation::*;
-        
+
         // Test null pointer validation
         let valid_ptr = &42 as *const i32;
         let null_ptr = std::ptr::null::<i32>();
-        
+
         assert!(validate_not_null(valid_ptr, "test_ptr").is_ok());
         assert!(validate_not_null(null_ptr, "test_ptr").is_err());
-        
+
         // Test array bounds validation
         assert!(validate_array_bounds(10, 5, "test_array").is_ok());
         assert!(validate_array_bounds(10, 15, "test_array").is_err());
-        
+
         // Test slice bounds validation
         let slice = &[1, 2, 3, 4, 5];
         assert!(validate_slice_bounds(slice, 1, 3, "test_slice").is_ok());
@@ -1956,17 +2026,35 @@ mod tests {
     #[test]
     fn test_strategy_boundary_values() {
         // Test boundary values for strategy conversion
-        assert!(FfiStrategy::from_ffi(-1).is_err(), "Negative values should fail");
-        assert!(FfiStrategy::from_ffi(i32::MAX).is_err(), "Max i32 should fail");
-        assert!(FfiStrategy::from_ffi(i32::MIN).is_err(), "Min i32 should fail");
+        assert!(
+            FfiStrategy::from_ffi(-1).is_err(),
+            "Negative values should fail"
+        );
+        assert!(
+            FfiStrategy::from_ffi(i32::MAX).is_err(),
+            "Max i32 should fail"
+        );
+        assert!(
+            FfiStrategy::from_ffi(i32::MIN).is_err(),
+            "Min i32 should fail"
+        );
     }
 
     #[test]
     fn test_opt_level_boundary_values() {
         // Test boundary values for opt level conversion
-        assert!(FfiOptLevel::from_ffi(-1).is_err(), "Negative values should fail");
-        assert!(FfiOptLevel::from_ffi(3).is_err(), "Value 3 should fail (only 0-2 valid)");
-        assert!(FfiOptLevel::from_ffi(i32::MAX).is_err(), "Max i32 should fail");
+        assert!(
+            FfiOptLevel::from_ffi(-1).is_err(),
+            "Negative values should fail"
+        );
+        assert!(
+            FfiOptLevel::from_ffi(3).is_err(),
+            "Value 3 should fail (only 0-2 valid)"
+        );
+        assert!(
+            FfiOptLevel::from_ffi(i32::MAX).is_err(),
+            "Max i32 should fail"
+        );
     }
 
     #[test]
@@ -1982,8 +2070,11 @@ mod tests {
     fn test_wasm_feature_invalid_values() {
         // Test invalid feature values (valid range is 0-22)
         for invalid in [23, 100, -1, i32::MAX, i32::MIN] {
-            assert!(FfiWasmFeature::from_ffi(invalid).is_err(),
-                "Feature {} should be invalid", invalid);
+            assert!(
+                FfiWasmFeature::from_ffi(invalid).is_err(),
+                "Feature {} should be invalid",
+                invalid
+            );
         }
     }
 
@@ -2001,7 +2092,11 @@ mod tests {
         let features = vec![0, 0, 0, 1, 1];
         let result = convert_wasm_features(&features);
         assert!(result.is_ok(), "Duplicate features should succeed");
-        assert_eq!(result.unwrap().len(), 5, "Should convert all including duplicates");
+        assert_eq!(
+            result.unwrap().len(),
+            5,
+            "Should convert all including duplicates"
+        );
     }
 
     #[test]
@@ -2015,7 +2110,10 @@ mod tests {
     #[test]
     fn test_validate_wasm_features_empty() {
         let features: &[i32] = &[];
-        assert!(validate_wasm_features(features).is_ok(), "Empty features should validate");
+        assert!(
+            validate_wasm_features(features).is_ok(),
+            "Empty features should validate"
+        );
     }
 
     #[test]
@@ -2027,8 +2125,10 @@ mod tests {
         assert!(result.is_err());
 
         let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("my_important_pointer"),
-            "Error message should contain parameter name");
+        assert!(
+            err_msg.contains("my_important_pointer"),
+            "Error message should contain parameter name"
+        );
     }
 
     #[test]
@@ -2038,19 +2138,34 @@ mod tests {
         // Note: validate_array_bounds checks: index >= array_len
 
         // Exact boundary - index at array_len fails (10 >= 10 is true)
-        assert!(validate_array_bounds(10, 10, "arr").is_err(), "Exact boundary should fail");
+        assert!(
+            validate_array_bounds(10, 10, "arr").is_err(),
+            "Exact boundary should fail"
+        );
 
         // Valid last element access (9 >= 10 is false)
-        assert!(validate_array_bounds(10, 9, "arr").is_ok(), "Last element should succeed");
+        assert!(
+            validate_array_bounds(10, 9, "arr").is_ok(),
+            "Last element should succeed"
+        );
 
         // Off by one
-        assert!(validate_array_bounds(10, 11, "arr").is_err(), "Off by one should fail");
+        assert!(
+            validate_array_bounds(10, 11, "arr").is_err(),
+            "Off by one should fail"
+        );
 
         // Zero length array - any index fails (0 >= 0 is true)
-        assert!(validate_array_bounds(0, 0, "arr").is_err(), "Zero length array fails any index");
+        assert!(
+            validate_array_bounds(0, 0, "arr").is_err(),
+            "Zero length array fails any index"
+        );
 
         // Zero index with items (0 >= 5 is false)
-        assert!(validate_array_bounds(5, 0, "arr").is_ok(), "Zero index should succeed");
+        assert!(
+            validate_array_bounds(5, 0, "arr").is_ok(),
+            "Zero index should succeed"
+        );
     }
 
     #[test]
@@ -2061,7 +2176,10 @@ mod tests {
 
         // Note: validate_slice_bounds checks: start >= slice.len() || start + len > slice.len()
         // For empty slice (len=0): start=0 >= 0 is true, so it returns error
-        assert!(validate_slice_bounds(empty_slice, 0, 0, "empty").is_err(), "Empty slice fails bounds check");
+        assert!(
+            validate_slice_bounds(empty_slice, 0, 0, "empty").is_err(),
+            "Empty slice fails bounds check"
+        );
 
         // Any non-zero range should also fail
         assert!(validate_slice_bounds(empty_slice, 0, 1, "empty").is_err());
@@ -2073,24 +2191,39 @@ mod tests {
 
         let single = &[42];
 
-        assert!(validate_slice_bounds(single, 0, 1, "single").is_ok(), "Full range should succeed");
-        assert!(validate_slice_bounds(single, 0, 0, "single").is_ok(), "Empty range should succeed");
+        assert!(
+            validate_slice_bounds(single, 0, 1, "single").is_ok(),
+            "Full range should succeed"
+        );
+        assert!(
+            validate_slice_bounds(single, 0, 0, "single").is_ok(),
+            "Empty range should succeed"
+        );
         // start=1 >= len=1 is true, so this fails
-        assert!(validate_slice_bounds(single, 1, 0, "single").is_err(), "End position fails bounds check");
-        assert!(validate_slice_bounds(single, 0, 2, "single").is_err(), "Beyond end should fail");
+        assert!(
+            validate_slice_bounds(single, 1, 0, "single").is_err(),
+            "End position fails bounds check"
+        );
+        assert!(
+            validate_slice_bounds(single, 0, 2, "single").is_err(),
+            "Beyond end should fail"
+        );
     }
 
     #[test]
     fn test_boolean_return_converter_false_result() {
         let (code, value) = BooleanReturnConverter::to_ffi_result(Ok(false));
-        assert_eq!(code, FFI_SUCCESS, "Success should return success code even for false");
+        assert_eq!(
+            code, FFI_SUCCESS,
+            "Success should return success code even for false"
+        );
         assert_eq!(value, false, "Should preserve false value");
     }
 
     #[test]
     fn test_pointer_return_converter_null() {
         let result: WasmtimeResult<Box<bool>> = Err(WasmtimeError::InvalidParameter {
-            message: "test".to_string()
+            message: "test".to_string(),
         });
         let ptr = BooleanReturnConverter::to_ffi_ptr(result);
         assert!(ptr.is_null(), "Error should return null pointer");
@@ -2100,7 +2233,10 @@ mod tests {
     fn test_ffi_constants() {
         assert_eq!(FFI_SUCCESS, 0, "FFI_SUCCESS should be 0");
         assert_eq!(FFI_ERROR, -1, "FFI_ERROR should be -1");
-        assert_ne!(FFI_SUCCESS, FFI_ERROR, "Success and error codes should differ");
+        assert_ne!(
+            FFI_SUCCESS, FFI_ERROR,
+            "Success and error codes should differ"
+        );
     }
 
     // =========================================================================
@@ -2116,7 +2252,10 @@ mod tests {
     #[test]
     fn test_ffi_strategy_from_native() {
         assert_eq!(FfiStrategy::from_native(Strategy::Auto), FfiStrategy::Auto);
-        assert_eq!(FfiStrategy::from_native(Strategy::Cranelift), FfiStrategy::Cranelift);
+        assert_eq!(
+            FfiStrategy::from_native(Strategy::Cranelift),
+            FfiStrategy::Cranelift
+        );
     }
 
     #[test]
@@ -2151,14 +2290,23 @@ mod tests {
     fn test_ffi_opt_level_to_native() {
         assert_eq!(FfiOptLevel::None.to_native(), OptLevel::None);
         assert_eq!(FfiOptLevel::Speed.to_native(), OptLevel::Speed);
-        assert_eq!(FfiOptLevel::SpeedAndSize.to_native(), OptLevel::SpeedAndSize);
+        assert_eq!(
+            FfiOptLevel::SpeedAndSize.to_native(),
+            OptLevel::SpeedAndSize
+        );
     }
 
     #[test]
     fn test_ffi_opt_level_from_native() {
         assert_eq!(FfiOptLevel::from_native(OptLevel::None), FfiOptLevel::None);
-        assert_eq!(FfiOptLevel::from_native(OptLevel::Speed), FfiOptLevel::Speed);
-        assert_eq!(FfiOptLevel::from_native(OptLevel::SpeedAndSize), FfiOptLevel::SpeedAndSize);
+        assert_eq!(
+            FfiOptLevel::from_native(OptLevel::Speed),
+            FfiOptLevel::Speed
+        );
+        assert_eq!(
+            FfiOptLevel::from_native(OptLevel::SpeedAndSize),
+            FfiOptLevel::SpeedAndSize
+        );
     }
 
     #[test]
@@ -2194,30 +2342,57 @@ mod tests {
     fn test_ffi_wasm_feature_to_native_basic() {
         assert_eq!(FfiWasmFeature::Threads.to_native(), WasmFeature::Threads);
         assert_eq!(FfiWasmFeature::Simd.to_native(), WasmFeature::Simd);
-        assert_eq!(FfiWasmFeature::BulkMemory.to_native(), WasmFeature::BulkMemory);
-        assert_eq!(FfiWasmFeature::MultiValue.to_native(), WasmFeature::MultiValue);
+        assert_eq!(
+            FfiWasmFeature::BulkMemory.to_native(),
+            WasmFeature::BulkMemory
+        );
+        assert_eq!(
+            FfiWasmFeature::MultiValue.to_native(),
+            WasmFeature::MultiValue
+        );
     }
 
     #[test]
     fn test_ffi_wasm_feature_to_native_advanced() {
         assert_eq!(FfiWasmFeature::Gc.to_native(), WasmFeature::Gc);
-        assert_eq!(FfiWasmFeature::Exceptions.to_native(), WasmFeature::Exceptions);
+        assert_eq!(
+            FfiWasmFeature::Exceptions.to_native(),
+            WasmFeature::Exceptions
+        );
         assert_eq!(FfiWasmFeature::TailCall.to_native(), WasmFeature::TailCall);
         assert_eq!(FfiWasmFeature::Memory64.to_native(), WasmFeature::Memory64);
     }
 
     #[test]
     fn test_ffi_wasm_feature_from_native_basic() {
-        assert_eq!(FfiWasmFeature::from_native(WasmFeature::Threads), FfiWasmFeature::Threads);
-        assert_eq!(FfiWasmFeature::from_native(WasmFeature::Simd), FfiWasmFeature::Simd);
-        assert_eq!(FfiWasmFeature::from_native(WasmFeature::ReferenceTypes), FfiWasmFeature::ReferenceTypes);
+        assert_eq!(
+            FfiWasmFeature::from_native(WasmFeature::Threads),
+            FfiWasmFeature::Threads
+        );
+        assert_eq!(
+            FfiWasmFeature::from_native(WasmFeature::Simd),
+            FfiWasmFeature::Simd
+        );
+        assert_eq!(
+            FfiWasmFeature::from_native(WasmFeature::ReferenceTypes),
+            FfiWasmFeature::ReferenceTypes
+        );
     }
 
     #[test]
     fn test_ffi_wasm_feature_from_native_component_model() {
-        assert_eq!(FfiWasmFeature::from_native(WasmFeature::ComponentModel), FfiWasmFeature::ComponentModel);
-        assert_eq!(FfiWasmFeature::from_native(WasmFeature::ComponentModelAsync), FfiWasmFeature::ComponentModelAsync);
-        assert_eq!(FfiWasmFeature::from_native(WasmFeature::ComponentModelGc), FfiWasmFeature::ComponentModelGc);
+        assert_eq!(
+            FfiWasmFeature::from_native(WasmFeature::ComponentModel),
+            FfiWasmFeature::ComponentModel
+        );
+        assert_eq!(
+            FfiWasmFeature::from_native(WasmFeature::ComponentModelAsync),
+            FfiWasmFeature::ComponentModelAsync
+        );
+        assert_eq!(
+            FfiWasmFeature::from_native(WasmFeature::ComponentModelGc),
+            FfiWasmFeature::ComponentModelGc
+        );
     }
 
     #[test]
@@ -2292,7 +2467,7 @@ mod tests {
     #[test]
     fn test_integer_return_converter_error() {
         let result: WasmtimeResult<i32> = Err(WasmtimeError::InvalidParameter {
-            message: "test".to_string()
+            message: "test".to_string(),
         });
         let (code, value) = IntegerReturnConverter::to_ffi_result(result);
         assert_eq!(code, FFI_ERROR);
@@ -2309,7 +2484,7 @@ mod tests {
     #[test]
     fn test_integer_return_converter_ffi_code_error() {
         let result: WasmtimeResult<()> = Err(WasmtimeError::Internal {
-            message: "test".to_string()
+            message: "test".to_string(),
         });
         let code = IntegerReturnConverter::to_ffi_code(result);
         assert_eq!(code, FFI_ERROR);
@@ -2335,13 +2510,15 @@ mod tests {
         assert!(!ptr.is_null());
 
         // Clean up
-        unsafe { let _ = Box::from_raw(ptr as *mut i32); }
+        unsafe {
+            let _ = Box::from_raw(ptr as *mut i32);
+        }
     }
 
     #[test]
     fn test_pointer_return_converter_error_ptr() {
         let result: WasmtimeResult<Box<i32>> = Err(WasmtimeError::InvalidParameter {
-            message: "test".to_string()
+            message: "test".to_string(),
         });
         let ptr = PointerReturnConverter::to_ffi_ptr(result);
         assert!(ptr.is_null());
@@ -2358,7 +2535,7 @@ mod tests {
     #[test]
     fn test_pointer_return_converter_ffi_result_error() {
         let result: WasmtimeResult<i32> = Err(WasmtimeError::Internal {
-            message: "test".to_string()
+            message: "test".to_string(),
         });
         let (code, value) = PointerReturnConverter::to_ffi_result(result);
         assert_eq!(code, FFI_ERROR);
@@ -2369,11 +2546,17 @@ mod tests {
     fn test_pointer_return_converter_ffi_code() {
         let success: WasmtimeResult<()> = Ok(());
         let error: WasmtimeResult<()> = Err(WasmtimeError::Internal {
-            message: "test".to_string()
+            message: "test".to_string(),
         });
 
-        assert_eq!(<PointerReturnConverter as ReturnValueConverter<i32>>::to_ffi_code(success), FFI_SUCCESS);
-        assert_eq!(<PointerReturnConverter as ReturnValueConverter<i32>>::to_ffi_code(error), FFI_ERROR);
+        assert_eq!(
+            <PointerReturnConverter as ReturnValueConverter<i32>>::to_ffi_code(success),
+            FFI_SUCCESS
+        );
+        assert_eq!(
+            <PointerReturnConverter as ReturnValueConverter<i32>>::to_ffi_code(error),
+            FFI_ERROR
+        );
     }
 
     // =========================================================================
@@ -2494,7 +2677,7 @@ mod tests {
         use error_mapping::*;
 
         let error = WasmtimeError::Compilation {
-            message: "test".to_string()
+            message: "test".to_string(),
         };
         assert_eq!(map_error_to_code(&error), FFI_ERROR);
     }
@@ -2504,7 +2687,7 @@ mod tests {
         use error_mapping::*;
 
         let error = WasmtimeError::Validation {
-            message: "test".to_string()
+            message: "test".to_string(),
         };
         assert_eq!(map_error_to_code(&error), FFI_ERROR);
     }
@@ -2525,11 +2708,22 @@ mod tests {
         use error_mapping::*;
 
         let errors = [
-            WasmtimeError::Compilation { message: "test".to_string() },
-            WasmtimeError::Validation { message: "test".to_string() },
-            WasmtimeError::Runtime { message: "test".to_string(), backtrace: None },
-            WasmtimeError::InvalidParameter { message: "test".to_string() },
-            WasmtimeError::Internal { message: "test".to_string() },
+            WasmtimeError::Compilation {
+                message: "test".to_string(),
+            },
+            WasmtimeError::Validation {
+                message: "test".to_string(),
+            },
+            WasmtimeError::Runtime {
+                message: "test".to_string(),
+                backtrace: None,
+            },
+            WasmtimeError::InvalidParameter {
+                message: "test".to_string(),
+            },
+            WasmtimeError::Internal {
+                message: "test".to_string(),
+            },
         ];
 
         for error in &errors {
@@ -2543,11 +2737,21 @@ mod tests {
 
         // All different error types should map to FFI_ERROR
         let error_types = [
-            WasmtimeError::Store { message: "test".to_string() },
-            WasmtimeError::Instance { message: "test".to_string() },
-            WasmtimeError::Memory { message: "test".to_string() },
-            WasmtimeError::Table { message: "test".to_string() },
-            WasmtimeError::Global { message: "test".to_string() },
+            WasmtimeError::Store {
+                message: "test".to_string(),
+            },
+            WasmtimeError::Instance {
+                message: "test".to_string(),
+            },
+            WasmtimeError::Memory {
+                message: "test".to_string(),
+            },
+            WasmtimeError::Table {
+                message: "test".to_string(),
+            },
+            WasmtimeError::Global {
+                message: "test".to_string(),
+            },
         ];
 
         for error in &error_types {
@@ -2561,8 +2765,8 @@ mod tests {
 
     #[test]
     fn test_ffi_global_value_i32_conversion() {
-        use global::FfiGlobalValue;
         use crate::global::GlobalValue;
+        use global::FfiGlobalValue;
 
         let ffi_val = FfiGlobalValue {
             value_type: 0,
@@ -2582,8 +2786,8 @@ mod tests {
 
     #[test]
     fn test_ffi_global_value_i64_conversion() {
-        use global::FfiGlobalValue;
         use crate::global::GlobalValue;
+        use global::FfiGlobalValue;
 
         let ffi_val = FfiGlobalValue {
             value_type: 1,
@@ -2603,8 +2807,8 @@ mod tests {
 
     #[test]
     fn test_ffi_global_value_f32_conversion() {
-        use global::FfiGlobalValue;
         use crate::global::GlobalValue;
+        use global::FfiGlobalValue;
 
         let ffi_val = FfiGlobalValue {
             value_type: 2,
@@ -2624,8 +2828,8 @@ mod tests {
 
     #[test]
     fn test_ffi_global_value_f64_conversion() {
-        use global::FfiGlobalValue;
         use crate::global::GlobalValue;
+        use global::FfiGlobalValue;
 
         let ffi_val = FfiGlobalValue {
             value_type: 3,
@@ -2645,8 +2849,8 @@ mod tests {
 
     #[test]
     fn test_ffi_global_value_from_native_roundtrip() {
-        use global::FfiGlobalValue;
         use crate::global::GlobalValue;
+        use global::FfiGlobalValue;
 
         let original = GlobalValue::I32(99);
         let ffi = FfiGlobalValue::from_native(&original);
@@ -2676,8 +2880,8 @@ mod tests {
 
     #[test]
     fn test_ffi_global_value_reference_types() {
-        use global::FfiGlobalValue;
         use crate::global::GlobalValue;
+        use global::FfiGlobalValue;
 
         // FuncRef
         let funcref = FfiGlobalValue {
@@ -2688,7 +2892,9 @@ mod tests {
             f64_value: 0.0,
             v128_value: 0,
         };
-        let native = funcref.to_native().expect("FuncRef conversion should succeed");
+        let native = funcref
+            .to_native()
+            .expect("FuncRef conversion should succeed");
         assert!(matches!(native, GlobalValue::FuncRef(None)));
 
         // ExternRef
@@ -2700,7 +2906,9 @@ mod tests {
             f64_value: 0.0,
             v128_value: 0,
         };
-        let native = externref.to_native().expect("ExternRef conversion should succeed");
+        let native = externref
+            .to_native()
+            .expect("ExternRef conversion should succeed");
         assert!(matches!(native, GlobalValue::ExternRef(None)));
     }
 
@@ -2710,8 +2918,8 @@ mod tests {
 
     #[test]
     fn test_ffi_table_element_funcref() {
-        use table::FfiTableElement;
         use crate::table::TableElement;
+        use table::FfiTableElement;
 
         let ffi_elem = FfiTableElement {
             element_type: 0,
@@ -2724,8 +2932,8 @@ mod tests {
 
     #[test]
     fn test_ffi_table_element_externref() {
-        use table::FfiTableElement;
         use crate::table::TableElement;
+        use table::FfiTableElement;
 
         let ffi_elem = FfiTableElement {
             element_type: 1,
@@ -2738,8 +2946,8 @@ mod tests {
 
     #[test]
     fn test_ffi_table_element_anyref() {
-        use table::FfiTableElement;
         use crate::table::TableElement;
+        use table::FfiTableElement;
 
         let ffi_elem = FfiTableElement {
             element_type: 2,
@@ -2764,8 +2972,8 @@ mod tests {
 
     #[test]
     fn test_ffi_table_element_from_native_roundtrip() {
-        use table::FfiTableElement;
         use crate::table::TableElement;
+        use table::FfiTableElement;
 
         let original = TableElement::FuncRef(None);
         let ffi = FfiTableElement::from_native(&original);

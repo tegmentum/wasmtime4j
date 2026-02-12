@@ -3,8 +3,8 @@
 //! This module provides utilities for converting Wasmtime errors to JNI exceptions
 //! and handling JNI-specific error scenarios.
 
-use super::{ErrorCode, WasmtimeError, WasmtimeResult};
 use super::ffi_utils::clear_last_error;
+use super::{ErrorCode, WasmtimeError, WasmtimeResult};
 use std::os::raw::c_void;
 
 /// Clear the last error (stub for JNI compatibility)
@@ -17,7 +17,9 @@ fn jni_clear_last_error() {
 /// Convert WasmtimeError to JNI exception class name
 pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
     match error {
-        WasmtimeError::Compilation { .. } => "ai/tegmentum/wasmtime4j/exception/CompilationException",
+        WasmtimeError::Compilation { .. } => {
+            "ai/tegmentum/wasmtime4j/exception/CompilationException"
+        }
         WasmtimeError::Validation { .. } => "ai/tegmentum/wasmtime4j/exception/ValidationException",
         WasmtimeError::Runtime { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
         WasmtimeError::Memory { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
@@ -27,21 +29,33 @@ pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
         WasmtimeError::Io { .. } => "java/io/IOException",
         WasmtimeError::Component { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
         WasmtimeError::Interface { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
-        WasmtimeError::EngineConfig { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
+        WasmtimeError::EngineConfig { .. } => {
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException"
+        }
         WasmtimeError::Store { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
-        WasmtimeError::Instance { .. } => "ai/tegmentum/wasmtime4j/exception/InstantiationException",
+        WasmtimeError::Instance { .. } => {
+            "ai/tegmentum/wasmtime4j/exception/InstantiationException"
+        }
         WasmtimeError::Instantiation { .. } => "ai/tegmentum/wasmtime4j/exception/LinkingException",
         WasmtimeError::ImportExport { .. } => "ai/tegmentum/wasmtime4j/exception/LinkingException",
         WasmtimeError::Resource { .. } => "ai/tegmentum/wasmtime4j/exception/ResourceException",
-        WasmtimeError::Concurrency { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
+        WasmtimeError::Concurrency { .. } => {
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException"
+        }
         WasmtimeError::Wasi { .. } => "ai/tegmentum/wasmtime4j/exception/WasiException",
         WasmtimeError::Security { .. } => "ai/tegmentum/wasmtime4j/exception/SecurityException",
         WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
         WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/exception/TrapException",
-        WasmtimeError::ExportNotFound { .. } => "ai/tegmentum/wasmtime4j/exception/LinkingException",
+        WasmtimeError::ExportNotFound { .. } => {
+            "ai/tegmentum/wasmtime4j/exception/LinkingException"
+        }
         WasmtimeError::Multiple { .. } => "ai/tegmentum/wasmtime4j/exception/WasmException",
-        WasmtimeError::TypeMismatch { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
-        WasmtimeError::InvalidState { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
+        WasmtimeError::TypeMismatch { .. } => {
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException"
+        }
+        WasmtimeError::InvalidState { .. } => {
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException"
+        }
         _ => "ai/tegmentum/wasmtime4j/exception/WasmException",
     }
 }
@@ -56,7 +70,9 @@ pub fn throw_jni_exception(env: &mut jni::JNIEnv, error: &WasmtimeError) {
 
     // Handle exceptions that require enum parameters
     let result = match error {
-        WasmtimeError::ImportExport { .. } | WasmtimeError::ExportNotFound { .. } | WasmtimeError::Instantiation { .. } => {
+        WasmtimeError::ImportExport { .. }
+        | WasmtimeError::ExportNotFound { .. }
+        | WasmtimeError::Instantiation { .. } => {
             // LinkingException requires LinkingErrorType enum
             throw_linking_exception(env, &message)
         }
@@ -72,7 +88,11 @@ pub fn throw_jni_exception(env: &mut jni::JNIEnv, error: &WasmtimeError) {
 
     if let Err(e) = result {
         // Fallback to RuntimeException if specific exception class doesn't exist
-        log::error!("Failed to throw specific exception {}: {:?}, using RuntimeException", class_name, e);
+        log::error!(
+            "Failed to throw specific exception {}: {:?}, using RuntimeException",
+            class_name,
+            e
+        );
         if let Err(e2) = env.throw_new("java/lang/RuntimeException", &message) {
             log::error!("Failed to throw fallback RuntimeException: {:?}", e2);
         }
@@ -85,11 +105,12 @@ fn throw_linking_exception(env: &mut jni::JNIEnv, message: &str) -> Result<(), j
     use jni::objects::{JThrowable, JValue};
 
     // Get LinkingErrorType.UNKNOWN enum value
-    let error_type_class = env.find_class("ai/tegmentum/wasmtime4j/exception/LinkingException$LinkingErrorType")?;
+    let error_type_class =
+        env.find_class("ai/tegmentum/wasmtime4j/exception/LinkingException$LinkingErrorType")?;
     let unknown_field = env.get_static_field(
         error_type_class,
         "UNKNOWN",
-        "Lai/tegmentum/wasmtime4j/exception/LinkingException$LinkingErrorType;"
+        "Lai/tegmentum/wasmtime4j/exception/LinkingException$LinkingErrorType;",
     )?;
 
     // Create LinkingException(LinkingErrorType, String)
@@ -111,11 +132,12 @@ fn throw_trap_exception(env: &mut jni::JNIEnv, message: &str) -> Result<(), jni:
     use jni::objects::{JThrowable, JValue};
 
     // Get TrapType.UNKNOWN enum value
-    let error_type_class = env.find_class("ai/tegmentum/wasmtime4j/exception/TrapException$TrapType")?;
+    let error_type_class =
+        env.find_class("ai/tegmentum/wasmtime4j/exception/TrapException$TrapType")?;
     let unknown_field = env.get_static_field(
         error_type_class,
         "UNKNOWN",
-        "Lai/tegmentum/wasmtime4j/exception/TrapException$TrapType;"
+        "Lai/tegmentum/wasmtime4j/exception/TrapException$TrapType;",
     )?;
 
     // Create TrapException(TrapType, String)
@@ -125,7 +147,7 @@ fn throw_trap_exception(env: &mut jni::JNIEnv, message: &str) -> Result<(), jni:
     let exception_obj = env.new_object(
         exception_class,
         "(Lai/tegmentum/wasmtime4j/exception/TrapException$TrapType;Ljava/lang/String;)V",
-        &[(&unknown_field).into(), JValue::Object(&message_jstring)]
+        &[(&unknown_field).into(), JValue::Object(&message_jstring)],
     )?;
 
     env.throw(JThrowable::from(exception_obj))
@@ -413,12 +435,13 @@ pub fn get_byte_array_bytes(
     let mut buffer: Vec<i8> = vec![0i8; len];
 
     // Copy the bytes from Java to Rust
-    env.get_byte_array_region(array, 0, &mut buffer).map_err(|e| {
-        log::error!("Failed to get byte array region: {}", e);
-        WasmtimeError::InvalidParameter {
-            message: format!("Failed to get byte array region: {}", e),
-        }
-    })?;
+    env.get_byte_array_region(array, 0, &mut buffer)
+        .map_err(|e| {
+            log::error!("Failed to get byte array region: {}", e);
+            WasmtimeError::InvalidParameter {
+                message: format!("Failed to get byte array region: {}", e),
+            }
+        })?;
 
     // Convert i8 to u8
     let result: Vec<u8> = buffer.into_iter().map(|b| b as u8).collect();

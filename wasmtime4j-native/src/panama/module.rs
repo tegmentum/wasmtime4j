@@ -25,13 +25,13 @@ impl ByteArrayConverter for PanamaByteArrayConverter {
     unsafe fn get_bytes(&self) -> crate::error::WasmtimeResult<&[u8]> {
         if self.data.is_null() {
             return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: "Byte data pointer cannot be null".to_string()
+                message: "Byte data pointer cannot be null".to_string(),
             });
         }
 
         if self.len == 0 {
             return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: "Byte data length cannot be zero".to_string()
+                message: "Byte data length cannot be zero".to_string(),
             });
         }
 
@@ -59,7 +59,7 @@ impl StringConverter for PanamaStringConverter {
     unsafe fn get_string(&self) -> crate::error::WasmtimeResult<String> {
         if self.string_ptr.is_null() {
             return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: "String pointer cannot be null".to_string()
+                message: "String pointer cannot be null".to_string(),
             });
         }
 
@@ -113,7 +113,8 @@ pub extern "C" fn wasmtime4j_panama_module_compile_wat(
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
         let string_converter = unsafe { PanamaStringConverter::new(wat_text) };
 
-        let module = crate::shared_ffi::module::compile_module_wat_shared(engine, string_converter)?;
+        let module =
+            crate::shared_ffi::module::compile_module_wat_shared(engine, string_converter)?;
 
         unsafe {
             *module_ptr = Box::into_raw(module) as *mut c_void;
@@ -130,7 +131,7 @@ pub extern "C" fn wasmtime4j_panama_module_validate(
 ) -> c_int {
     let byte_converter = unsafe { PanamaByteArrayConverter::new(wasm_bytes, wasm_size) };
     crate::shared_ffi::module::validation_result_to_ffi_code(
-        crate::shared_ffi::module::validate_module_shared(byte_converter)
+        crate::shared_ffi::module::validate_module_shared(byte_converter),
     )
 }
 
@@ -146,12 +147,10 @@ pub extern "C" fn wasmtime4j_panama_module_get_size(module_ptr: *mut c_void) -> 
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_module_get_name(module_ptr: *mut c_void) -> *mut c_char {
     match crate::shared_ffi::module::get_module_name_shared(module_ptr) {
-        Ok(Some(name)) => {
-            match std::ffi::CString::new(name) {
-                Ok(c_str) => c_str.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
-        }
+        Ok(Some(name)) => match std::ffi::CString::new(name) {
+            Ok(c_str) => c_str.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
         _ => std::ptr::null_mut(),
     }
 }
@@ -189,7 +188,11 @@ pub extern "C" fn wasmtime4j_panama_module_has_export(
     let string_converter = unsafe { PanamaStringConverter::new(name) };
     let result = crate::shared_ffi::module::has_export_shared(module_ptr, string_converter);
     let (_, has_export) = crate::shared_ffi::module::bool_result_to_ffi_result(result);
-    if has_export { 1 } else { 0 }
+    if has_export {
+        1
+    } else {
+        0
+    }
 }
 
 /// Serialize a module for caching
@@ -278,9 +281,11 @@ pub extern "C" fn wasmtime4j_panama_module_deserialize_file(
 
 /// Validate module functionality (defensive check)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_module_validate_functionality(module_ptr: *mut c_void) -> c_int {
+pub extern "C" fn wasmtime4j_panama_module_validate_functionality(
+    module_ptr: *mut c_void,
+) -> c_int {
     crate::shared_ffi::module::validation_result_to_ffi_code(
-        crate::shared_ffi::module::validate_module_functionality_shared(module_ptr)
+        crate::shared_ffi::module::validate_module_functionality_shared(module_ptr),
     )
 }
 
@@ -298,7 +303,9 @@ pub extern "C" fn wasmtime4j_panama_module_free_serialized_data(data_ptr: *mut u
 /// Returns NULL on error or a JSON string containing export metadata
 /// Caller must free the returned string with wasmtime4j_panama_module_free_string
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_module_get_exports_json(module_ptr: *mut c_void) -> *mut c_char {
+pub extern "C" fn wasmtime4j_panama_module_get_exports_json(
+    module_ptr: *mut c_void,
+) -> *mut c_char {
     if module_ptr.is_null() {
         return std::ptr::null_mut();
     }
@@ -312,12 +319,10 @@ pub extern "C" fn wasmtime4j_panama_module_get_exports_json(module_ptr: *mut c_v
 
     // Serialize exports to JSON
     match serde_json::to_string(&metadata.exports) {
-        Ok(json) => {
-            match std::ffi::CString::new(json) {
-                Ok(c_str) => c_str.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
-        }
+        Ok(json) => match std::ffi::CString::new(json) {
+            Ok(c_str) => c_str.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -326,7 +331,9 @@ pub extern "C" fn wasmtime4j_panama_module_get_exports_json(module_ptr: *mut c_v
 /// Returns NULL on error or a JSON string containing import metadata
 /// Caller must free the returned string with wasmtime4j_panama_module_free_string
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_module_get_imports_json(module_ptr: *mut c_void) -> *mut c_char {
+pub extern "C" fn wasmtime4j_panama_module_get_imports_json(
+    module_ptr: *mut c_void,
+) -> *mut c_char {
     if module_ptr.is_null() {
         return std::ptr::null_mut();
     }
@@ -340,12 +347,10 @@ pub extern "C" fn wasmtime4j_panama_module_get_imports_json(module_ptr: *mut c_v
 
     // Serialize imports to JSON
     match serde_json::to_string(&metadata.imports) {
-        Ok(json) => {
-            match std::ffi::CString::new(json) {
-                Ok(c_str) => c_str.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
-        }
+        Ok(json) => match std::ffi::CString::new(json) {
+            Ok(c_str) => c_str.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -364,8 +369,10 @@ pub extern "C" fn wasmtime4j_panama_module_free_string(str_ptr: *mut c_char) {
 /// Returns a JSON string mapping section names to Base64-encoded data
 /// Caller must free the returned string with wasmtime4j_panama_module_free_string
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_module_get_custom_sections(module_ptr: *mut c_void) -> *mut c_char {
-    use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+pub extern "C" fn wasmtime4j_panama_module_get_custom_sections(
+    module_ptr: *mut c_void,
+) -> *mut c_char {
+    use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 
     if module_ptr.is_null() {
         return std::ptr::null_mut();
@@ -381,7 +388,11 @@ pub extern "C" fn wasmtime4j_panama_module_get_custom_sections(module_ptr: *mut 
                 let encoded = BASE64.encode(data);
                 // Escape JSON string values
                 let escaped_name = name.replace('\\', "\\\\").replace('"', "\\\"");
-                json_parts.push(format!(r#""{}":{}"#, escaped_name, serde_json::json!(encoded)));
+                json_parts.push(format!(
+                    r#""{}":{}"#,
+                    escaped_name,
+                    serde_json::json!(encoded)
+                ));
             }
 
             let json = format!("{{{}}}", json_parts.join(","));

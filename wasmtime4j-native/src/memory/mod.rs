@@ -11,15 +11,15 @@
 //! - Memory pool management with size-based allocation strategies
 //! - Platform-specific virtual memory management and protection
 
-mod types;
-mod platform;
 mod ffi;
+mod platform;
+mod types;
 
 // Re-export all public types for backward compatibility
 pub use types::{
-    AllocationInfo, MemoryBuilder, MemoryConfig, MemoryDataType, MemoryError,
-    MemoryMetadata, MemoryResult, MemoryUsage, MemoryVariant, PageSize,
-    PlatformMemoryConfig, PlatformMemoryInfo, PlatformMemoryLeak, PlatformMemoryPoolStats,
+    AllocationInfo, MemoryBuilder, MemoryConfig, MemoryDataType, MemoryError, MemoryMetadata,
+    MemoryResult, MemoryUsage, MemoryVariant, PageSize, PlatformMemoryConfig, PlatformMemoryInfo,
+    PlatformMemoryLeak, PlatformMemoryPoolStats,
 };
 
 pub use platform::PlatformMemoryAllocator;
@@ -31,9 +31,9 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
-use wasmtime::{Memory as WasmtimeMemory, MemoryType, SharedMemory as WasmtimeSharedMemory};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::store::Store;
+use wasmtime::{Memory as WasmtimeMemory, MemoryType, SharedMemory as WasmtimeSharedMemory};
 
 /// Thread-safe WebAssembly memory wrapper with comprehensive bounds checking
 ///
@@ -61,6 +61,7 @@ impl Memory {
             initial_pages,
             maximum_pages: None,
             is_shared: false,
+            is_64: false,
             memory_index: 0,
             name: None,
         };
@@ -74,11 +75,12 @@ impl Memory {
         platform_config: PlatformMemoryConfig,
     ) -> WasmtimeResult<Self> {
         // Create platform allocator
-        let platform_allocator = Arc::new(
-            PlatformMemoryAllocator::new(platform_config).map_err(|e| WasmtimeError::Memory {
-                message: format!("Failed to create platform allocator: {}", e),
-            })?,
-        );
+        let platform_allocator =
+            Arc::new(PlatformMemoryAllocator::new(platform_config).map_err(|e| {
+                WasmtimeError::Memory {
+                    message: format!("Failed to create platform allocator: {}", e),
+                }
+            })?);
 
         // Create memory with standard configuration
         let mut memory = Self::new_with_config(store, config)?;
@@ -106,33 +108,41 @@ impl Memory {
             }
         }
 
-        // Check WebAssembly memory limits (4GB max)
-        const MAX_WASM_PAGES: u64 = 65536; // 4GB / 64KB
-        if config.initial_pages > MAX_WASM_PAGES {
-            return Err(WasmtimeError::InvalidParameter {
-                message: format!(
-                    "Initial pages ({}) exceeds WebAssembly limit ({})",
-                    config.initial_pages, MAX_WASM_PAGES
-                ),
-            });
-        }
-
-        if let Some(max_pages) = config.maximum_pages {
-            if max_pages > MAX_WASM_PAGES {
+        // Check WebAssembly memory limits
+        // For 32-bit memory: max 65536 pages (4GB)
+        // For 64-bit memory: defer to wasmtime's own limits
+        if !config.is_64 {
+            const MAX_WASM_PAGES_32: u64 = 65536; // 4GB / 64KB
+            if config.initial_pages > MAX_WASM_PAGES_32 {
                 return Err(WasmtimeError::InvalidParameter {
                     message: format!(
-                        "Maximum pages ({}) exceeds WebAssembly limit ({})",
-                        max_pages, MAX_WASM_PAGES
+                        "Initial pages ({}) exceeds WebAssembly 32-bit limit ({})",
+                        config.initial_pages, MAX_WASM_PAGES_32
                     ),
                 });
             }
+
+            if let Some(max_pages) = config.maximum_pages {
+                if max_pages > MAX_WASM_PAGES_32 {
+                    return Err(WasmtimeError::InvalidParameter {
+                        message: format!(
+                            "Maximum pages ({}) exceeds WebAssembly 32-bit limit ({})",
+                            max_pages, MAX_WASM_PAGES_32
+                        ),
+                    });
+                }
+            }
         }
 
-        // Create Wasmtime memory type (standard 32-bit memory, not memory64)
-        let memory_type = MemoryType::new(
-            config.initial_pages as u32,
-            config.maximum_pages.map(|p| p as u32),
-        );
+        // Create Wasmtime memory type based on addressing mode
+        let memory_type = if config.is_64 {
+            MemoryType::new64(config.initial_pages, config.maximum_pages)
+        } else {
+            MemoryType::new(
+                config.initial_pages as u32,
+                config.maximum_pages.map(|p| p as u32),
+            )
+        };
 
         // Create memory instance
         let inner = store.with_context(|ctx| {
@@ -214,27 +224,27 @@ impl Memory {
             }
         }
 
-        // Check WebAssembly memory limits
-        const MAX_WASM_PAGES: u64 = 65536;
-        if requested_pages > MAX_WASM_PAGES {
-            return Err(MemoryError::GrowthFailure {
-                current_pages,
-                requested_pages,
-                maximum_pages: Some(MAX_WASM_PAGES),
+        // Check WebAssembly 32-bit memory limits (64-bit defers to wasmtime)
+        if !self.config.is_64 {
+            const MAX_WASM_PAGES_32: u64 = 65536;
+            if requested_pages > MAX_WASM_PAGES_32 {
+                return Err(MemoryError::GrowthFailure {
+                    current_pages,
+                    requested_pages,
+                    maximum_pages: Some(MAX_WASM_PAGES_32),
+                }
+                .into());
             }
-            .into());
         }
 
         // Perform the growth operation based on memory variant
         let previous_pages = match &self.inner {
-            MemoryVariant::Regular(mem) => {
-                store.with_context(|ctx| {
-                    mem.grow(ctx, additional_pages)
-                        .map_err(|e| WasmtimeError::Memory {
-                            message: format!("Memory growth failed: {}", e),
-                        })
-                })?
-            }
+            MemoryVariant::Regular(mem) => store.with_context(|ctx| {
+                mem.grow(ctx, additional_pages)
+                    .map_err(|e| WasmtimeError::Memory {
+                        message: format!("Memory growth failed: {}", e),
+                    })
+            })?,
             MemoryVariant::Shared(mem) => {
                 log::debug!(
                     "Growing shared memory from {} to {} pages (adding {})",
@@ -243,13 +253,18 @@ impl Memory {
                     additional_pages
                 );
 
-                let result = mem.grow(additional_pages).map_err(|e| WasmtimeError::Memory {
-                    message: format!("Shared memory growth failed: {}", e),
-                })?;
+                let result = mem
+                    .grow(additional_pages)
+                    .map_err(|e| WasmtimeError::Memory {
+                        message: format!("Shared memory growth failed: {}", e),
+                    })?;
 
                 // Memory barrier to ensure growth is visible to all threads
                 std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
-                log::info!("Shared memory successfully grown to {} pages", requested_pages);
+                log::info!(
+                    "Shared memory successfully grown to {} pages",
+                    requested_pages
+                );
 
                 result
             }
@@ -276,13 +291,21 @@ impl Memory {
     }
 
     /// Read data with comprehensive bounds checking
-    pub fn read_bytes(&self, store: &Store, offset: usize, length: usize) -> WasmtimeResult<Vec<u8>> {
+    pub fn read_bytes(
+        &self,
+        store: &Store,
+        offset: usize,
+        length: usize,
+    ) -> WasmtimeResult<Vec<u8>> {
         // Bounds checking
         let memory_size = self.size_bytes(store)?;
         if offset.saturating_add(length) > memory_size {
-            let mut metadata = self.metadata.write().map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire metadata lock".to_string(),
-            })?;
+            let mut metadata = self
+                .metadata
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire metadata lock".to_string(),
+                })?;
             metadata.bounds_violations_prevented += 1;
 
             return Err(MemoryError::BoundsViolation {
@@ -295,12 +318,10 @@ impl Memory {
 
         // Read memory data based on variant
         let result = match &self.inner {
-            MemoryVariant::Regular(mem) => {
-                store.with_context_ro(|ctx| {
-                    let data = mem.data(ctx);
-                    Ok(data[offset..offset + length].to_vec())
-                })?
-            }
+            MemoryVariant::Regular(mem) => store.with_context_ro(|ctx| {
+                let data = mem.data(ctx);
+                Ok(data[offset..offset + length].to_vec())
+            })?,
             MemoryVariant::Shared(mem) => {
                 let data = mem.data();
                 let mut result = vec![0u8; length];
@@ -328,9 +349,12 @@ impl Memory {
         // Bounds checking
         let memory_size = self.size_bytes(store)?;
         if offset.saturating_add(length) > memory_size {
-            let mut metadata = self.metadata.write().map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire metadata lock".to_string(),
-            })?;
+            let mut metadata = self
+                .metadata
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire metadata lock".to_string(),
+                })?;
             metadata.bounds_violations_prevented += 1;
 
             return Err(MemoryError::BoundsViolation {
@@ -369,7 +393,12 @@ impl Memory {
     }
 
     /// Read typed value with alignment checking
-    pub fn read_typed<T>(&self, store: &Store, offset: usize, data_type: MemoryDataType) -> WasmtimeResult<T>
+    pub fn read_typed<T>(
+        &self,
+        store: &Store,
+        offset: usize,
+        data_type: MemoryDataType,
+    ) -> WasmtimeResult<T>
     where
         T: Default + Copy,
     {
@@ -423,9 +452,12 @@ impl Memory {
         let current_bytes = (current_pages * 65536) as usize;
         let maximum_bytes = self.config.maximum_pages.map(|p| (p * 65536) as usize);
 
-        let metadata = self.metadata.read().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire metadata lock".to_string(),
-        })?;
+        let metadata = self
+            .metadata
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire metadata lock".to_string(),
+            })?;
 
         let peak_bytes = (metadata.peak_pages * 65536) as usize;
         let bytes_transferred = metadata.bytes_read + metadata.bytes_written;
@@ -450,9 +482,12 @@ impl Memory {
 
     /// Get memory metadata (read-only)
     pub fn get_metadata(&self) -> WasmtimeResult<MemoryMetadata> {
-        let metadata = self.metadata.read().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire metadata lock".to_string(),
-        })?;
+        let metadata = self
+            .metadata
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire metadata lock".to_string(),
+            })?;
         Ok(metadata.clone())
     }
 
@@ -504,6 +539,7 @@ impl Memory {
             initial_pages,
             maximum_pages,
             is_shared,
+            is_64: memory_type.is_64(),
             memory_index: 0,
             name: Some("exported_memory".to_string()),
         };
@@ -542,6 +578,7 @@ impl Memory {
             initial_pages,
             maximum_pages,
             is_shared: true,
+            is_64: memory_type.is_64(),
             memory_index: 0,
             name: Some("exported_shared_memory".to_string()),
         };
@@ -637,13 +674,15 @@ impl Memory {
                 }
                 MemoryDataType::U64Le => {
                     let value = u64::from_le_bytes([
-                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+                        bytes[7],
                     ]);
                     Ok(std::mem::transmute_copy(&value))
                 }
                 MemoryDataType::I64Le => {
                     let value = i64::from_le_bytes([
-                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+                        bytes[7],
                     ]);
                     Ok(std::mem::transmute_copy(&value))
                 }
@@ -654,7 +693,8 @@ impl Memory {
                 }
                 MemoryDataType::F64Le => {
                     let bits = u64::from_le_bytes([
-                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6],
+                        bytes[7],
                     ]);
                     let value = f64::from_bits(bits);
                     Ok(std::mem::transmute_copy(&value))
@@ -729,9 +769,12 @@ impl MemoryRegistry {
 
     /// Register a memory instance
     pub fn register(&self, memory: Memory) -> WasmtimeResult<u32> {
-        let mut memories = self.memories.lock().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire memory registry lock".to_string(),
-        })?;
+        let mut memories = self
+            .memories
+            .lock()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire memory registry lock".to_string(),
+            })?;
 
         let memory_id = memory.config.memory_index;
         memories.insert(memory_id, Arc::new(memory));
@@ -742,24 +785,35 @@ impl MemoryRegistry {
 
     /// Get memory instance by ID
     pub fn get(&self, memory_id: u32) -> WasmtimeResult<Arc<Memory>> {
-        let memories = self.memories.lock().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire memory registry lock".to_string(),
-        })?;
+        let memories = self
+            .memories
+            .lock()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire memory registry lock".to_string(),
+            })?;
 
-        memories.get(&memory_id).cloned().ok_or_else(|| WasmtimeError::InvalidParameter {
-            message: format!("Memory with ID {} not found", memory_id),
-        })
+        memories
+            .get(&memory_id)
+            .cloned()
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Memory with ID {} not found", memory_id),
+            })
     }
 
     /// Remove memory instance
     pub fn unregister(&self, memory_id: u32) -> WasmtimeResult<()> {
-        let mut memories = self.memories.lock().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire memory registry lock".to_string(),
-        })?;
+        let mut memories = self
+            .memories
+            .lock()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire memory registry lock".to_string(),
+            })?;
 
-        memories.remove(&memory_id).ok_or_else(|| WasmtimeError::InvalidParameter {
-            message: format!("Memory with ID {} not found", memory_id),
-        })?;
+        memories
+            .remove(&memory_id)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Memory with ID {} not found", memory_id),
+            })?;
 
         log::debug!("Unregistered memory with ID {}", memory_id);
         Ok(())
@@ -767,9 +821,12 @@ impl MemoryRegistry {
 
     /// Get all registered memory IDs
     pub fn list_memories(&self) -> WasmtimeResult<Vec<u32>> {
-        let memories = self.memories.lock().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire memory registry lock".to_string(),
-        })?;
+        let memories = self
+            .memories
+            .lock()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire memory registry lock".to_string(),
+            })?;
 
         Ok(memories.keys().cloned().collect())
     }

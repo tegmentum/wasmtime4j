@@ -1,8 +1,8 @@
 //! JNI bindings for WebAssembly tables
 
-use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray};
+use jni::JNIEnv;
 
 use crate::error::{ffi_utils, jni_utils, WasmtimeError, WasmtimeResult};
 use crate::store::Store;
@@ -135,14 +135,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMetada
         data.extend_from_slice(&(element_type_code as i32).to_le_bytes());
         data.extend_from_slice(&(metadata.initial_size as i32).to_le_bytes());
         data.extend_from_slice(&(metadata.maximum_size.unwrap_or(0) as i32).to_le_bytes());
-        data.push(if metadata.maximum_size.is_some() { 1 } else { 0 });
+        data.push(if metadata.maximum_size.is_some() {
+            1
+        } else {
+            0
+        });
         data.push(if metadata.name.is_some() { 1 } else { 0 });
 
-        let byte_array = env
-            .new_byte_array(data.len() as i32)
-            .map_err(|e| WasmtimeError::Memory {
-                message: format!("Failed to create byte array: {}", e),
-            })?;
+        let byte_array =
+            env.new_byte_array(data.len() as i32)
+                .map_err(|e| WasmtimeError::Memory {
+                    message: format!("Failed to create byte array: {}", e),
+                })?;
         let raw_array = byte_array.as_raw();
         env.set_byte_array_region(
             &byte_array,
@@ -172,9 +176,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetName<'
         let metadata = core::get_table_metadata(table);
 
         if let Some(ref name) = metadata.name {
-            Ok(env.new_string(name).map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to create JNI string: {}", e),
-            })?)
+            Ok(env
+                .new_string(name)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create JNI string: {}", e),
+                })?)
         } else {
             Ok(JString::default())
         }
@@ -220,9 +226,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableT
                 // Map reference types based on heap type
                 use wasmtime::HeapType;
                 match ref_type.heap_type() {
-                    HeapType::Extern => 6,  // EXTERNREF
-                    HeapType::Func => 5,    // FUNCREF
-                    _ => 5,  // Default to FUNCREF for other ref types
+                    HeapType::Extern => 6, // EXTERNREF
+                    HeapType::Func => 5,   // FUNCREF
+                    _ => 5,                // Default to FUNCREF for other ref types
                 }
             }
         };
@@ -231,11 +237,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableT
         let maximum = metadata.maximum_size.map(|m| m as i64).unwrap_or(-1);
 
         // Create long array with [elementTypeCode, minimum, maximum]
-        let result_array =
-            env.new_long_array(3)
-                .map_err(|e| WasmtimeError::Memory {
-                    message: format!("Failed to create long array: {}", e),
-                })?;
+        let result_array = env.new_long_array(3).map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to create long array: {}", e),
+        })?;
 
         let values = vec![type_code as i64, minimum, maximum];
         env.set_long_array_region(&result_array, 0, &values)

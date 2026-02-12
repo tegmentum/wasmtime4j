@@ -40,10 +40,14 @@ pub trait WasiStreamContext {
     type StreamEntry: WasiStreamEntry;
 
     /// Get read access to the streams map
-    fn streams_read(&self) -> WasmtimeResult<std::sync::RwLockReadGuard<'_, HashMap<u32, Self::StreamEntry>>>;
+    fn streams_read(
+        &self,
+    ) -> WasmtimeResult<std::sync::RwLockReadGuard<'_, HashMap<u32, Self::StreamEntry>>>;
 
     /// Get write access to the streams map
-    fn streams_write(&self) -> WasmtimeResult<std::sync::RwLockWriteGuard<'_, HashMap<u32, Self::StreamEntry>>>;
+    fn streams_write(
+        &self,
+    ) -> WasmtimeResult<std::sync::RwLockWriteGuard<'_, HashMap<u32, Self::StreamEntry>>>;
 }
 
 // ============================================================================
@@ -58,11 +62,12 @@ pub fn read_from_stream_generic<C: WasiStreamContext>(
     _blocking: bool,
 ) -> WasmtimeResult<Vec<u8>> {
     let mut streams = context.streams_write()?;
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get_mut(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if stream.is_closed() {
         return Err(WasmtimeError::Wasi {
@@ -83,11 +88,12 @@ pub fn skip_in_stream_generic<C: WasiStreamContext>(
     _blocking: bool,
 ) -> WasmtimeResult<u64> {
     let mut streams = context.streams_write()?;
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get_mut(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if stream.is_closed() {
         return Err(WasmtimeError::Wasi {
@@ -119,11 +125,12 @@ pub fn check_write_capacity_generic<C: WasiStreamContext>(
     stream_id: u64,
 ) -> WasmtimeResult<u64> {
     let streams = context.streams_read()?;
-    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if stream.is_closed() {
         return Err(WasmtimeError::Wasi {
@@ -142,11 +149,12 @@ pub fn write_to_stream_generic<C: WasiStreamContext>(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     let mut streams = context.streams_write()?;
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get_mut(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if stream.is_closed() {
         return Err(WasmtimeError::Wasi {
@@ -165,11 +173,12 @@ pub fn flush_stream_generic<C: WasiStreamContext>(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     let streams = context.streams_read()?;
-    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if stream.is_closed() {
         return Err(WasmtimeError::Wasi {
@@ -189,11 +198,12 @@ pub fn write_zeroes_to_stream_generic<C: WasiStreamContext>(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     let mut streams = context.streams_write()?;
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get_mut(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if stream.is_closed() {
         return Err(WasmtimeError::Wasi {
@@ -220,11 +230,12 @@ pub fn splice_streams_generic<C: WasiStreamContext>(
     let mut streams = context.streams_write()?;
 
     // First check source stream
-    let source_stream = streams.get(&(source_stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Source stream {} not found", source_stream_id),
-        }
-    })?;
+    let source_stream =
+        streams
+            .get(&(source_stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Source stream {} not found", source_stream_id),
+            })?;
 
     if source_stream.is_closed() {
         return Err(WasmtimeError::Wasi {
@@ -307,13 +318,19 @@ mod tests {
     impl WasiStreamContext for TestContext {
         type StreamEntry = TestStream;
 
-        fn streams_read(&self) -> WasmtimeResult<std::sync::RwLockReadGuard<'_, HashMap<u32, Self::StreamEntry>>> {
+        fn streams_read(
+            &self,
+        ) -> WasmtimeResult<std::sync::RwLockReadGuard<'_, HashMap<u32, Self::StreamEntry>>>
+        {
             self.streams.read().map_err(|_| WasmtimeError::Wasi {
                 message: "Failed to lock streams".to_string(),
             })
         }
 
-        fn streams_write(&self) -> WasmtimeResult<std::sync::RwLockWriteGuard<'_, HashMap<u32, Self::StreamEntry>>> {
+        fn streams_write(
+            &self,
+        ) -> WasmtimeResult<std::sync::RwLockWriteGuard<'_, HashMap<u32, Self::StreamEntry>>>
+        {
             self.streams.write().map_err(|_| WasmtimeError::Wasi {
                 message: "Failed to lock streams".to_string(),
             })
@@ -327,10 +344,13 @@ mod tests {
         };
 
         // Insert a test stream
-        ctx.streams.write().unwrap().insert(1, TestStream {
-            buffer: vec![1, 2, 3, 4, 5],
-            closed: false,
-        });
+        ctx.streams.write().unwrap().insert(
+            1,
+            TestStream {
+                buffer: vec![1, 2, 3, 4, 5],
+                closed: false,
+            },
+        );
 
         // Read from it
         let result = read_from_stream_generic(&ctx, 1, 3, false);
@@ -348,10 +368,13 @@ mod tests {
             streams: RwLock::new(HashMap::new()),
         };
 
-        ctx.streams.write().unwrap().insert(1, TestStream {
-            buffer: vec![1, 2, 3],
-            closed: false,
-        });
+        ctx.streams.write().unwrap().insert(
+            1,
+            TestStream {
+                buffer: vec![1, 2, 3],
+                closed: false,
+            },
+        );
 
         let result = close_stream_generic(&ctx, 1);
         assert!(result.is_ok());
@@ -368,10 +391,13 @@ mod tests {
             streams: RwLock::new(HashMap::new()),
         };
 
-        ctx.streams.write().unwrap().insert(1, TestStream {
-            buffer: vec![1, 2, 3],
-            closed: true,
-        });
+        ctx.streams.write().unwrap().insert(
+            1,
+            TestStream {
+                buffer: vec![1, 2, 3],
+                closed: true,
+            },
+        );
 
         let result = read_from_stream_generic(&ctx, 1, 3, false);
         assert!(result.is_err());
@@ -385,10 +411,13 @@ mod tests {
             streams: RwLock::new(HashMap::new()),
         };
 
-        ctx.streams.write().unwrap().insert(1, TestStream {
-            buffer: Vec::new(),
-            closed: false,
-        });
+        ctx.streams.write().unwrap().insert(
+            1,
+            TestStream {
+                buffer: Vec::new(),
+                closed: false,
+            },
+        );
 
         let result = write_to_stream_generic(&ctx, 1, &[1, 2, 3], false);
         assert!(result.is_ok());

@@ -1,22 +1,22 @@
 //! JNI bindings for WASI operations
-//! 
+//!
 //! This module provides JNI-compatible functions for WASI context management.
 
 #[cfg(feature = "jni-bindings")]
-use jni::JNIEnv;
+use jni::objects::JByteArray;
 #[cfg(feature = "jni-bindings")]
 use jni::objects::{JClass, JObject, JObjectArray, JString};
 #[cfg(feature = "jni-bindings")]
-use jni::sys::{jlong, jint, jboolean, jobjectArray, jbyteArray};
+use jni::sys::{jboolean, jbyteArray, jint, jlong, jobjectArray};
 #[cfg(feature = "jni-bindings")]
-use jni::objects::JByteArray;
+use jni::JNIEnv;
 
 /// JNI bindings for WASI operations
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi {
     use super::*;
-    use crate::wasi;
     use crate::error::jni_utils;
+    use crate::wasi;
     use std::ffi::CString;
     use std::os::raw::c_void;
 
@@ -51,17 +51,17 @@ pub mod jni_wasi {
             if !environment.is_null() {
                 let env_array = JObjectArray::from(unsafe { JObject::from_raw(environment) });
                 let env_len = env.get_array_length(&env_array)?;
-                
+
                 for i in 0..env_len {
                     let env_entry = env.get_object_array_element(&env_array, i)?;
                     if !env_entry.is_null() {
                         let env_str: String = env.get_string(&JString::from(env_entry))?.into();
-                        
+
                         // Parse "KEY=VALUE" format
                         if let Some(eq_pos) = env_str.find('=') {
                             let key = &env_str[..eq_pos];
                             let value = &env_str[eq_pos + 1..];
-                            
+
                             let key_cstr = CString::new(key).map_err(|_| {
                                 crate::error::WasmtimeError::Wasi {
                                     message: format!("Invalid environment key: {}", key),
@@ -72,7 +72,7 @@ pub mod jni_wasi {
                                     message: format!("Invalid environment value: {}", value),
                                 }
                             })?;
-                            
+
                             let result = unsafe {
                                 wasi::wasi_ctx_set_env(
                                     ctx_ptr,
@@ -80,11 +80,16 @@ pub mod jni_wasi {
                                     value_cstr.as_ptr(),
                                 )
                             };
-                            
+
                             if result != 0 {
-                                unsafe { wasi::wasi_ctx_destroy(ctx_ptr); }
+                                unsafe {
+                                    wasi::wasi_ctx_destroy(ctx_ptr);
+                                }
                                 return Err(crate::error::WasmtimeError::Wasi {
-                                    message: format!("Failed to set environment variable {}={}", key, value),
+                                    message: format!(
+                                        "Failed to set environment variable {}={}",
+                                        key, value
+                                    ),
                                 });
                             }
                         }
@@ -96,10 +101,10 @@ pub mod jni_wasi {
             if !arguments.is_null() {
                 let args_array = JObjectArray::from(unsafe { JObject::from_raw(arguments) });
                 let args_len = env.get_array_length(&args_array)?;
-                
+
                 let mut arg_cstrs = Vec::new();
                 let mut arg_ptrs = Vec::new();
-                
+
                 for i in 0..args_len {
                     let arg_entry = env.get_object_array_element(&args_array, i)?;
                     if !arg_entry.is_null() {
@@ -113,14 +118,16 @@ pub mod jni_wasi {
                         arg_cstrs.push(arg_cstr);
                     }
                 }
-                
+
                 if !arg_ptrs.is_empty() {
                     let result = unsafe {
                         wasi::wasi_ctx_set_args(ctx_ptr, arg_ptrs.as_ptr(), arg_ptrs.len())
                     };
-                    
+
                     if result != 0 {
-                        unsafe { wasi::wasi_ctx_destroy(ctx_ptr); }
+                        unsafe {
+                            wasi::wasi_ctx_destroy(ctx_ptr);
+                        }
                         return Err(crate::error::WasmtimeError::Wasi {
                             message: "Failed to set command line arguments".to_string(),
                         });
@@ -132,17 +139,17 @@ pub mod jni_wasi {
             if !preopen_dirs.is_null() {
                 let dirs_array = JObjectArray::from(unsafe { JObject::from_raw(preopen_dirs) });
                 let dirs_len = env.get_array_length(&dirs_array)?;
-                
+
                 for i in 0..dirs_len {
                     let dir_entry = env.get_object_array_element(&dirs_array, i)?;
                     if !dir_entry.is_null() {
                         let dir_str: String = env.get_string(&JString::from(dir_entry))?.into();
-                        
+
                         // Parse "HOST_PATH:GUEST_PATH" format
                         if let Some(colon_pos) = dir_str.find(':') {
                             let host_path = &dir_str[..colon_pos];
                             let guest_path = &dir_str[colon_pos + 1..];
-                            
+
                             let host_cstr = CString::new(host_path).map_err(|_| {
                                 crate::error::WasmtimeError::Wasi {
                                     message: format!("Invalid host path: {}", host_path),
@@ -153,22 +160,32 @@ pub mod jni_wasi {
                                     message: format!("Invalid guest path: {}", guest_path),
                                 }
                             })?;
-                            
+
                             // Default permissions: read-only access
                             let result = unsafe {
                                 wasi::wasi_ctx_add_dir(
                                     ctx_ptr,
                                     host_cstr.as_ptr(),
                                     guest_cstr.as_ptr(),
-                                    0, 1, 0, // dir perms: no create, read, no remove
-                                    1, 0, 0, 0, // file perms: read only
+                                    0,
+                                    1,
+                                    0, // dir perms: no create, read, no remove
+                                    1,
+                                    0,
+                                    0,
+                                    0, // file perms: read only
                                 )
                             };
-                            
+
                             if result != 0 {
-                                unsafe { wasi::wasi_ctx_destroy(ctx_ptr); }
+                                unsafe {
+                                    wasi::wasi_ctx_destroy(ctx_ptr);
+                                }
                                 return Err(crate::error::WasmtimeError::Wasi {
-                                    message: format!("Failed to add directory mapping {}:{}", host_path, guest_path),
+                                    message: format!(
+                                        "Failed to add directory mapping {}:{}",
+                                        host_path, guest_path
+                                    ),
                                 });
                             }
                         }
@@ -215,7 +232,7 @@ pub mod jni_wasi {
         // Extract strings outside the closure to avoid borrowing conflicts
         let host_str_result = env.get_string(&host_path);
         let guest_str_result = env.get_string(&guest_path);
-        
+
         jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -225,25 +242,28 @@ pub mod jni_wasi {
 
             let host_str: String = host_str_result?.into();
             let guest_str: String = guest_str_result?.into();
-            
-            let host_cstr = CString::new(host_str).map_err(|_| {
-                crate::error::WasmtimeError::Wasi {
+
+            let host_cstr =
+                CString::new(host_str).map_err(|_| crate::error::WasmtimeError::Wasi {
                     message: "Invalid host path string".to_string(),
-                }
-            })?;
-            let guest_cstr = CString::new(guest_str).map_err(|_| {
-                crate::error::WasmtimeError::Wasi {
+                })?;
+            let guest_cstr =
+                CString::new(guest_str).map_err(|_| crate::error::WasmtimeError::Wasi {
                     message: "Invalid guest path string".to_string(),
-                }
-            })?;
+                })?;
 
             let result = unsafe {
                 wasi::wasi_ctx_add_dir(
                     handle as *mut c_void,
                     host_cstr.as_ptr(),
                     guest_cstr.as_ptr(),
-                    can_create as i32, can_read as i32, 0, // dir perms
-                    can_read as i32, can_write as i32, can_create as i32, 0, // file perms
+                    can_create as i32,
+                    can_read as i32,
+                    0, // dir perms
+                    can_read as i32,
+                    can_write as i32,
+                    can_create as i32,
+                    0, // file perms
                 )
             };
 
@@ -269,7 +289,7 @@ pub mod jni_wasi {
         // Extract strings outside the closure to avoid borrowing conflicts
         let key_str_result = env.get_string(&key);
         let value_str_result = env.get_string(&value);
-        
+
         jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -279,17 +299,15 @@ pub mod jni_wasi {
 
             let key_str: String = key_str_result?.into();
             let value_str: String = value_str_result?.into();
-            
-            let key_cstr = CString::new(key_str).map_err(|_| {
-                crate::error::WasmtimeError::Wasi {
+
+            let key_cstr =
+                CString::new(key_str).map_err(|_| crate::error::WasmtimeError::Wasi {
                     message: "Invalid environment key string".to_string(),
-                }
-            })?;
-            let value_cstr = CString::new(value_str).map_err(|_| {
-                crate::error::WasmtimeError::Wasi {
+                })?;
+            let value_cstr =
+                CString::new(value_str).map_err(|_| crate::error::WasmtimeError::Wasi {
                     message: "Invalid environment value string".to_string(),
-                }
-            })?;
+                })?;
 
             let result = unsafe {
                 wasi::wasi_ctx_set_env(
@@ -319,7 +337,7 @@ pub mod jni_wasi {
     ) -> jboolean {
         // Extract string outside the closure to avoid borrowing conflicts
         let path_str_result = env.get_string(&path);
-        
+
         jni_utils::jni_try_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -328,11 +346,10 @@ pub mod jni_wasi {
             }
 
             let path_str: String = path_str_result?.into();
-            let path_cstr = CString::new(path_str).map_err(|_| {
-                crate::error::WasmtimeError::Wasi {
+            let path_cstr =
+                CString::new(path_str).map_err(|_| crate::error::WasmtimeError::Wasi {
                     message: "Invalid path string".to_string(),
-                }
-            })?;
+                })?;
 
             let result = unsafe {
                 wasi::wasi_ctx_is_path_allowed(handle as *const c_void, path_cstr.as_ptr())
@@ -357,9 +374,7 @@ pub mod jni_wasi {
                 });
             }
 
-            let count = unsafe {
-                wasi::wasi_ctx_get_env_count(handle as *const c_void)
-            };
+            let count = unsafe { wasi::wasi_ctx_get_env_count(handle as *const c_void) };
 
             Ok(count as jint)
         })
@@ -379,9 +394,7 @@ pub mod jni_wasi {
                 });
             }
 
-            let count = unsafe {
-                wasi::wasi_ctx_get_args_count(handle as *const c_void)
-            };
+            let count = unsafe { wasi::wasi_ctx_get_args_count(handle as *const c_void) };
 
             Ok(count as jint)
         })
@@ -401,9 +414,7 @@ pub mod jni_wasi {
                 });
             }
 
-            let count = unsafe {
-                wasi::wasi_ctx_get_dir_count(handle as *const c_void)
-            };
+            let count = unsafe { wasi::wasi_ctx_get_dir_count(handle as *const c_void) };
 
             Ok(count as jint)
         })
@@ -460,9 +471,7 @@ pub mod jni_wasi {
                 });
             }
 
-            let wasi_ptr = unsafe {
-                wasi::wasi_ctx_get_from_store(store_handle as *const c_void)
-            };
+            let wasi_ptr = unsafe { wasi::wasi_ctx_get_from_store(store_handle as *const c_void) };
 
             Ok(wasi_ptr as jlong)
         })
@@ -482,9 +491,7 @@ pub mod jni_wasi {
                 });
             }
 
-            let result = unsafe {
-                wasi::wasi_ctx_store_has_wasi(store_handle as *const c_void)
-            };
+            let result = unsafe { wasi::wasi_ctx_store_has_wasi(store_handle as *const c_void) };
 
             // wasi_ctx_store_has_wasi returns 0 or 1, which always fits in jboolean (u8)
             Ok(result.try_into().expect("boolean result always fits in u8"))
@@ -684,11 +691,10 @@ pub mod jni_wasi {
 
             // Copy byte array to Rust Vec
             let mut bytes = vec![0i8; data_len];
-            env.get_byte_array_region(&data_ref, 0, &mut bytes).map_err(|e| {
-                crate::error::WasmtimeError::InvalidParameter {
+            env.get_byte_array_region(&data_ref, 0, &mut bytes)
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Failed to copy byte array: {}", e),
-                }
-            })?;
+                })?;
 
             // Convert i8 to u8 and call native function
             let bytes_u8: Vec<u8> = bytes.into_iter().map(|b| b as u8).collect();
@@ -1135,15 +1141,21 @@ pub mod jni_wasi {
                 let data_i8: Vec<i8> = data_slice.iter().map(|&b| b as i8).collect();
                 if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
                     // Free the native buffer
-                    unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                    unsafe {
+                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                    }
                     byte_array.into_raw()
                 } else {
-                    unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                    unsafe {
+                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                    }
                     std::ptr::null_mut()
                 }
             }
             Err(_) => {
-                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                unsafe {
+                    wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                }
                 std::ptr::null_mut()
             }
         }
@@ -1180,15 +1192,21 @@ pub mod jni_wasi {
                 let data_i8: Vec<i8> = data_slice.iter().map(|&b| b as i8).collect();
                 if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
                     // Free the native buffer
-                    unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                    unsafe {
+                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                    }
                     byte_array.into_raw()
                 } else {
-                    unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                    unsafe {
+                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                    }
                     std::ptr::null_mut()
                 }
             }
             Err(_) => {
-                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr); }
+                unsafe {
+                    wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                }
                 std::ptr::null_mut()
             }
         }
@@ -1204,9 +1222,7 @@ pub mod jni_wasi {
         if context_handle == 0 {
             return -1;
         }
-        unsafe {
-            wasi::wasmtime4j_wasi_context_has_stdout_capture(context_handle as *const c_void)
-        }
+        unsafe { wasi::wasmtime4j_wasi_context_has_stdout_capture(context_handle as *const c_void) }
     }
 
     /// Check if stderr capture is enabled
@@ -1219,8 +1235,6 @@ pub mod jni_wasi {
         if context_handle == 0 {
             return -1;
         }
-        unsafe {
-            wasi::wasmtime4j_wasi_context_has_stderr_capture(context_handle as *const c_void)
-        }
+        unsafe { wasi::wasmtime4j_wasi_context_has_stderr_capture(context_handle as *const c_void) }
     }
 }

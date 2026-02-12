@@ -24,9 +24,7 @@ impl WitParser {
     ///
     /// Returns `WasmtimeError::EngineConfig` if the parser cannot be initialized.
     pub fn new() -> WasmtimeResult<Self> {
-        Ok(WitParser {
-            _state: (),
-        })
+        Ok(WitParser { _state: () })
     }
 
     /// Parse a WIT interface definition
@@ -161,9 +159,22 @@ impl WitParser {
     /// Check for valid WIT keywords
     fn check_valid_keywords(&self, wit_text: &str) -> bool {
         let _valid_keywords = [
-            "interface", "type", "record", "variant", "enum", "flags",
-            "resource", "func", "constructor", "method", "static",
-            "use", "package", "world", "export", "import"
+            "interface",
+            "type",
+            "record",
+            "variant",
+            "enum",
+            "flags",
+            "resource",
+            "func",
+            "constructor",
+            "method",
+            "static",
+            "use",
+            "package",
+            "world",
+            "export",
+            "import",
         ];
 
         // Basic check - ensure we don't have invalid syntax patterns
@@ -229,21 +240,27 @@ impl InterfaceDefinition {
 
         json.push_str("  \"functions\": [\n");
         for (i, function) in self.functions.iter().enumerate() {
-            if i > 0 { json.push_str(",\n"); }
+            if i > 0 {
+                json.push_str(",\n");
+            }
             json.push_str(&format!("    {{\"name\": \"{}\"}}", function.name));
         }
         json.push_str("\n  ],\n");
 
         json.push_str("  \"types\": [\n");
         for (i, type_def) in self.types.iter().enumerate() {
-            if i > 0 { json.push_str(",\n"); }
+            if i > 0 {
+                json.push_str(",\n");
+            }
             json.push_str(&format!("    {{\"name\": \"{}\"}}", type_def.name));
         }
         json.push_str("\n  ],\n");
 
         json.push_str("  \"resources\": [\n");
         for (i, resource) in self.resources.iter().enumerate() {
-            if i > 0 { json.push_str(",\n"); }
+            if i > 0 {
+                json.push_str(",\n");
+            }
             json.push_str(&format!("    {{\"name\": \"{}\"}}", resource.name));
         }
         json.push_str("\n  ]\n");
@@ -329,7 +346,7 @@ pub enum ComponentValueType {
         /// Success value type
         ok: Option<Box<ComponentValueType>>,
         /// Error value type
-        err: Option<Box<ComponentValueType>>
+        err: Option<Box<ComponentValueType>>,
     },
     /// Record type with named fields
     Record(Vec<FieldType>),
@@ -380,8 +397,8 @@ pub struct CaseType {
 
 // FFI functions for WIT parser
 
-use std::os::raw::{c_char, c_int, c_void};
 use std::ffi::CStr;
+use std::os::raw::{c_char, c_int, c_void};
 
 const FFI_SUCCESS: c_int = 0;
 const FFI_ERROR: c_int = -1;
@@ -446,7 +463,13 @@ pub unsafe extern "C" fn wasmtime4j_wit_parser_validate_syntax(
     };
 
     match parser.validate_syntax(wit_str) {
-        Ok(is_valid) => if is_valid { 1 } else { 0 },
+        Ok(is_valid) => {
+            if is_valid {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => FFI_ERROR,
     }
 }

@@ -5,9 +5,9 @@
 //!
 //! WARNING: These features are unstable and should only be used for testing and development.
 
-use wasmtime::Config;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use std::os::raw::{c_void, c_int};
+use std::os::raw::{c_int, c_void};
+use wasmtime::Config;
 
 /// Configuration for experimental WebAssembly features
 #[derive(Debug, Clone)]
@@ -273,9 +273,7 @@ impl Default for ExtendedConstExpressionsConfig {
 
 impl Default for Memory64ExtendedConfig {
     fn default() -> Self {
-        Self {
-            enabled: false,
-        }
+        Self { enabled: false }
     }
 }
 
@@ -295,7 +293,9 @@ impl Default for SharedEverythingThreadsConfig {
         Self {
             enabled: false,
             min_threads: 1,
-            max_threads: std::thread::available_parallelism().map(|p| p.get() as u32).unwrap_or(4),
+            max_threads: std::thread::available_parallelism()
+                .map(|p| p.get() as u32)
+                .unwrap_or(4),
             global_state_sharing: false,
             atomic_operations: false,
         }
@@ -338,9 +338,7 @@ impl Default for ResourceTypesConfig {
 
 impl Default for InterfaceTypesConfig {
     fn default() -> Self {
-        Self {
-            enabled: false,
-        }
+        Self { enabled: false }
     }
 }
 
@@ -464,17 +462,44 @@ impl ExperimentalFeaturesConfig {
     /// Create a configuration with all experimental features enabled (for testing)
     pub fn all_experimental_enabled() -> Self {
         Self {
-            stack_switching: StackSwitchingConfig { enabled: true, ..Default::default() },
-            call_cc: CallCcConfig { enabled: true, ..Default::default() },
-            extended_const_expressions: ExtendedConstExpressionsConfig { enabled: true, ..Default::default() },
+            stack_switching: StackSwitchingConfig {
+                enabled: true,
+                ..Default::default()
+            },
+            call_cc: CallCcConfig {
+                enabled: true,
+                ..Default::default()
+            },
+            extended_const_expressions: ExtendedConstExpressionsConfig {
+                enabled: true,
+                ..Default::default()
+            },
             memory64_extended: Memory64ExtendedConfig { enabled: true },
-            custom_page_sizes: CustomPageSizesConfig { enabled: true, ..Default::default() },
-            shared_everything_threads: SharedEverythingThreadsConfig { enabled: true, ..Default::default() },
-            type_imports: TypeImportsConfig { enabled: true, ..Default::default() },
-            string_imports: StringImportsConfig { enabled: true, ..Default::default() },
-            resource_types: ResourceTypesConfig { enabled: true, ..Default::default() },
+            custom_page_sizes: CustomPageSizesConfig {
+                enabled: true,
+                ..Default::default()
+            },
+            shared_everything_threads: SharedEverythingThreadsConfig {
+                enabled: true,
+                ..Default::default()
+            },
+            type_imports: TypeImportsConfig {
+                enabled: true,
+                ..Default::default()
+            },
+            string_imports: StringImportsConfig {
+                enabled: true,
+                ..Default::default()
+            },
+            resource_types: ResourceTypesConfig {
+                enabled: true,
+                ..Default::default()
+            },
             interface_types: InterfaceTypesConfig { enabled: true },
-            flexible_vectors: FlexibleVectorsConfig { enabled: true, ..Default::default() },
+            flexible_vectors: FlexibleVectorsConfig {
+                enabled: true,
+                ..Default::default()
+            },
         }
     }
 }
@@ -485,13 +510,16 @@ pub mod core {
     use crate::validate_ptr_not_null;
 
     /// Create default experimental features configuration
-    pub fn create_experimental_features_config() -> WasmtimeResult<Box<ExperimentalFeaturesConfig>> {
+    pub fn create_experimental_features_config() -> WasmtimeResult<Box<ExperimentalFeaturesConfig>>
+    {
         Ok(Box::new(ExperimentalFeaturesConfig::default()))
     }
 
     /// Create experimental features configuration with all features enabled
     pub fn create_all_experimental_config() -> WasmtimeResult<Box<ExperimentalFeaturesConfig>> {
-        Ok(Box::new(ExperimentalFeaturesConfig::all_experimental_enabled()))
+        Ok(Box::new(
+            ExperimentalFeaturesConfig::all_experimental_enabled(),
+        ))
     }
 
     /// Enable stack switching in configuration
@@ -700,7 +728,7 @@ pub mod core {
     pub unsafe fn destroy_experimental_features_config(config_ptr: *mut c_void) {
         crate::error::ffi_utils::destroy_resource::<ExperimentalFeaturesConfig>(
             config_ptr,
-            "ExperimentalFeaturesConfig"
+            "ExperimentalFeaturesConfig",
         );
     }
 }

@@ -208,12 +208,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_context_preopen_dir_with_perms(
     }
     unsafe {
         crate::wasi::wasmtime4j_wasi_context_preopen_dir_with_perms(
-            ctx_ptr,
-            host_path,
-            guest_path,
-            can_read,
-            can_write,
-            can_create,
+            ctx_ptr, host_path, guest_path, can_read, can_write, can_create,
         )
     }
 }

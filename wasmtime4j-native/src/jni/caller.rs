@@ -1,8 +1,8 @@
 //! JNI bindings for Caller context operations
 
-use jni::JNIEnv;
 use jni::objects::{JClass, JString};
-use jni::sys::{jlong, jboolean};
+use jni::sys::{jboolean, jlong};
+use jni::JNIEnv;
 
 use wasmtime::Caller as WasmtimeCaller;
 
@@ -25,7 +25,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFuel(
         let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
         match core::caller_get_fuel(caller)? {
             Some(fuel) => Ok(Box::new(fuel)),
-            None => Err(WasmtimeError::CallerContextError { message: "Fuel metering not enabled".to_string() }),
+            None => Err(WasmtimeError::CallerContextError {
+                message: "Fuel metering not enabled".to_string(),
+            }),
         }
     }) as jlong
 }
@@ -45,7 +47,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFuelR
         let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
         match core::caller_get_fuel_remaining(caller)? {
             Some(fuel) => Ok(Box::new(fuel)),
-            None => Err(WasmtimeError::CallerContextError { message: "Fuel metering not enabled".to_string() }),
+            None => Err(WasmtimeError::CallerContextError {
+                message: "Fuel metering not enabled".to_string(),
+            }),
         }
     }) as jlong
 }

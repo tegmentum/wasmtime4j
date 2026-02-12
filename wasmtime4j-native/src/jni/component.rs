@@ -3,9 +3,9 @@
 //! This module provides JNI bindings for WebAssembly Component Model operations
 //! including component creation, instantiation, and function invocation.
 
+use jni::objects::{JByteArray, JClass, JObject, JString};
+use jni::sys::{jboolean, jbyteArray, jint, jintArray, jlong, jobjectArray, jstring};
 use jni::JNIEnv;
-use jni::objects::{JClass, JObject, JString, JByteArray};
-use jni::sys::{jlong, jint, jboolean, jstring, jbyteArray, jintArray, jobjectArray};
 
 use crate::component::Component;
 use crate::error::jni_utils;
@@ -31,7 +31,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeLoadC
     wasm_bytes: jbyteArray,
 ) -> jlong {
     // Extract data before moving env into jni_try_ptr
-    let wasm_data_result = env.convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) })
+    let wasm_data_result = env
+        .convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) })
         .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
             message: format!("Failed to convert Java byte array: {}", e),
         });
@@ -39,7 +40,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeLoadC
     jni_utils::jni_try_ptr(&mut env, || {
         // Use enhanced component engine since nativeCreateComponentEngine creates EnhancedComponentEngine
         let engine = unsafe {
-            crate::component_core::core::get_enhanced_component_engine_ref(engine_ptr as *const std::os::raw::c_void)?
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
         };
 
         // Get byte array data from extracted result
@@ -59,9 +62,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
 ) -> jlong {
     jni_utils::jni_try_with_default(&mut env, 0, || {
         // Use EnhancedComponentEngine which stores instances in HashMap
-        let engine = unsafe {
-            &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
-        };
+        let engine =
+            unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
         let component = unsafe {
             crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
@@ -111,7 +113,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeExpor
         }
     };
 
-    if component.exports_interface(&interface_str) { 1 } else { 0 }
+    if component.exports_interface(&interface_str) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if component imports an interface
@@ -137,7 +143,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeImpor
         }
     };
 
-    if component.imports_interface(&interface_str) { 1 } else { 0 }
+    if component.imports_interface(&interface_str) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Get active component instances count
@@ -197,7 +207,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestr
 ) {
     unsafe {
         // Use enhanced component engine since nativeCreateComponentEngine creates EnhancedComponentEngine
-        crate::component_core::core::destroy_enhanced_component_engine(engine_ptr as *mut std::os::raw::c_void);
+        crate::component_core::core::destroy_enhanced_component_engine(
+            engine_ptr as *mut std::os::raw::c_void,
+        );
     }
 }
 
@@ -226,13 +238,20 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestr
 ) {
     use std::io::Write;
     let log = |msg: &str| {
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open("/tmp/wasmtime4j_debug.log") {
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/wasmtime4j_debug.log")
+        {
             let _ = writeln!(f, "[nativeDestroyComponentInstance] {}", msg);
             let _ = f.flush();
         }
     };
 
-    log(&format!("called: engine_ptr={}, instance_id={}", engine_ptr, instance_id));
+    log(&format!(
+        "called: engine_ptr={}, instance_id={}",
+        engine_ptr, instance_id
+    ));
 
     // Validate parameters
     if engine_ptr == 0 {
@@ -245,9 +264,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestr
     }
 
     // Get engine reference and remove instance from HashMap
-    let engine = unsafe {
-        &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
-    };
+    let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
 
     log("About to call engine.remove_instance()");
     let result = engine.remove_instance(instance_id as u64);
@@ -287,24 +304,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
 
         // Get engine and look up instance from HashMap
         // This maintains proper Wasmtime ownership (Engine/Store/Instance stay together)
-        let engine = unsafe {
-            &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
-        };
+        let engine =
+            unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
 
         // Lock the instances HashMap and get mutable reference
-        let mut instances = engine.instances.write()
+        let mut instances = engine
+            .instances
+            .write()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire instances write lock".to_string(),
             })?;
 
-        let handle = instances.get_mut(&(instance_id as u64))
-            .ok_or_else(|| WasmtimeError::InvalidParameter {
+        let handle = instances.get_mut(&(instance_id as u64)).ok_or_else(|| {
+            WasmtimeError::InvalidParameter {
                 message: format!("Instance ID {} not found in engine", instance_id),
-            })?;
+            }
+        })?;
 
         // Convert function name
         let func_name_jstring: JString = unsafe { JString::from_raw(function_name) };
-        let func_name: String = env.get_string(&func_name_jstring)
+        let func_name: String = env
+            .get_string(&func_name_jstring)
             .map_err(|e| WasmtimeError::InvalidParameter {
                 message: format!("Failed to convert function name: {}", e),
             })?
@@ -319,9 +339,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
                     message: format!("Failed to get type discriminators: {}", e),
                 })?
         };
-        let discriminators: Vec<i32> = unsafe {
-            std::slice::from_raw_parts(discriminators.as_ptr(), discriminators.len())
-        }.to_vec();
+        let discriminators: Vec<i32> =
+            unsafe { std::slice::from_raw_parts(discriminators.as_ptr(), discriminators.len()) }
+                .to_vec();
 
         let param_count = discriminators.len();
 
@@ -332,16 +352,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         // Deserialize parameters to Val
         let mut params = Vec::with_capacity(param_count);
         for i in 0..param_count {
-            let data_obj = env.get_object_array_element(&param_data_typed, i as i32)
+            let data_obj = env
+                .get_object_array_element(&param_data_typed, i as i32)
                 .map_err(|e| WasmtimeError::InvalidParameter {
                     message: format!("Failed to get parameter {} data: {}", i, e),
                 })?;
 
             let data_array = jni::objects::JByteArray::from(data_obj);
-            let data_bytes = env.convert_byte_array(data_array)
-                .map_err(|e| WasmtimeError::InvalidParameter {
+            let data_bytes = env.convert_byte_array(data_array).map_err(|e| {
+                WasmtimeError::InvalidParameter {
                     message: format!("Failed to convert parameter {} data: {}", i, e),
-                })?;
+                }
+            })?;
 
             let val = crate::wit_value_marshal::deserialize_to_val(discriminators[i], &data_bytes)
                 .map_err(|e| WasmtimeError::Runtime {
@@ -361,7 +383,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         let handle_ref = &mut *handle;
 
         // Get the function using disjoint field borrows
-        let func: Func = handle_ref.instance.get_func(&mut handle_ref.store, &func_name)
+        let func: Func = handle_ref
+            .instance
+            .get_func(&mut handle_ref.store, &func_name)
             .ok_or_else(|| WasmtimeError::ImportExport {
                 message: format!("Function '{}' not found in component exports", func_name),
             })?;
@@ -390,33 +414,47 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         }
 
         // Serialize first result
-        let (result_discriminator, result_data) = crate::wit_value_marshal::serialize_from_val(&results[0])
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to serialize result: {}", e),
-                backtrace: None,
+        let (result_discriminator, result_data) =
+            crate::wit_value_marshal::serialize_from_val(&results[0]).map_err(|e| {
+                WasmtimeError::Runtime {
+                    message: format!("Failed to serialize result: {}", e),
+                    backtrace: None,
+                }
             })?;
 
         // Create Java Object array with [discriminator, data]
-        let object_class = env.find_class("java/lang/Object")
+        let object_class = env
+            .find_class("java/lang/Object")
             .map_err(|e| WasmtimeError::JniError(format!("Failed to find Object class: {}", e)))?;
 
-        let result_array = env.new_object_array(2, object_class, jni::objects::JObject::null())
-            .map_err(|e| WasmtimeError::JniError(format!("Failed to create result array: {}", e)))?;
+        let result_array = env
+            .new_object_array(2, object_class, jni::objects::JObject::null())
+            .map_err(|e| {
+                WasmtimeError::JniError(format!("Failed to create result array: {}", e))
+            })?;
 
         // Set discriminator (as Integer)
-        let integer_class = env.find_class("java/lang/Integer")
+        let integer_class = env
+            .find_class("java/lang/Integer")
             .map_err(|e| WasmtimeError::JniError(format!("Failed to find Integer class: {}", e)))?;
-        let integer_obj = env.new_object(
-            integer_class,
-            "(I)V",
-            &[jni::objects::JValue::Int(result_discriminator)],
-        ).map_err(|e| WasmtimeError::JniError(format!("Failed to create Integer object: {}", e)))?;
+        let integer_obj = env
+            .new_object(
+                integer_class,
+                "(I)V",
+                &[jni::objects::JValue::Int(result_discriminator)],
+            )
+            .map_err(|e| {
+                WasmtimeError::JniError(format!("Failed to create Integer object: {}", e))
+            })?;
 
         env.set_object_array_element(&result_array, 0, integer_obj)
-            .map_err(|e| WasmtimeError::JniError(format!("Failed to set discriminator in array: {}", e)))?;
+            .map_err(|e| {
+                WasmtimeError::JniError(format!("Failed to set discriminator in array: {}", e))
+            })?;
 
         // Set data (as byte array)
-        let data_jarray = env.byte_array_from_slice(&result_data)
+        let data_jarray = env
+            .byte_array_from_slice(&result_data)
             .map_err(|e| WasmtimeError::JniError(format!("Failed to create byte array: {}", e)))?;
 
         env.set_object_array_element(&result_array, 1, jni::objects::JObject::from(data_jarray))

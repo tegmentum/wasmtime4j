@@ -4,8 +4,8 @@
 //! from module bytecode, enabling memory.init() operations. Uses a hybrid design where
 //! only passive data segments are cached (active segments are applied during instantiation).
 
-use std::sync::{Arc, Mutex};
 use crate::error::{WasmtimeError, WasmtimeResult};
+use std::sync::{Arc, Mutex};
 
 /// Type of data segment
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,7 +37,10 @@ impl DataSegment {
     /// Create a new active data segment
     pub fn new_active(data: Vec<u8>, memory_index: u32, offset: i32) -> Self {
         Self {
-            mode: DataMode::Active { memory_index, offset },
+            mode: DataMode::Active {
+                memory_index,
+                offset,
+            },
             data,
         }
     }
@@ -88,11 +91,11 @@ impl DataSegmentManager {
     /// Get data slice from segment
     pub fn get_data(&self, segment_index: u32, offset: u32, len: u32) -> WasmtimeResult<Vec<u8>> {
         // Check if segment exists
-        let segment = self.segments
-            .get(segment_index as usize)
-            .ok_or_else(|| WasmtimeError::InvalidParameter {
+        let segment = self.segments.get(segment_index as usize).ok_or_else(|| {
+            WasmtimeError::InvalidParameter {
                 message: format!("Data segment index {} out of bounds", segment_index),
-            })?;
+            }
+        })?;
 
         // Check if segment is available (Some = passive segment cached, None = active not cached)
         let segment = segment.as_ref().ok_or_else(|| WasmtimeError::Runtime {
@@ -104,9 +107,12 @@ impl DataSegmentManager {
         })?;
 
         // Check if segment has been dropped
-        let dropped_vec = self.dropped.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock dropped segments: {}", e),
-        })?;
+        let dropped_vec = self
+            .dropped
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock dropped segments: {}", e),
+            })?;
 
         if *dropped_vec.get(segment_index as usize).unwrap_or(&false) {
             return Err(WasmtimeError::Runtime {
@@ -116,7 +122,8 @@ impl DataSegmentManager {
         }
 
         // Get data slice
-        let data_slice = segment.get_slice(offset as usize, len as usize)
+        let data_slice = segment
+            .get_slice(offset as usize, len as usize)
             .ok_or_else(|| WasmtimeError::Runtime {
                 message: format!(
                     "Data offset {} + length {} exceeds segment {} size ({})",
@@ -133,9 +140,12 @@ impl DataSegmentManager {
 
     /// Drop a data segment
     pub fn drop_segment(&self, segment_index: u32) -> WasmtimeResult<()> {
-        let mut dropped_vec = self.dropped.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock dropped segments: {}", e),
-        })?;
+        let mut dropped_vec = self
+            .dropped
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock dropped segments: {}", e),
+            })?;
 
         if segment_index >= dropped_vec.len() as u32 {
             return Err(WasmtimeError::InvalidParameter {
@@ -150,9 +160,12 @@ impl DataSegmentManager {
 
     /// Check if a segment is dropped
     pub fn is_dropped(&self, segment_index: u32) -> WasmtimeResult<bool> {
-        let dropped_vec = self.dropped.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock dropped segments: {}", e),
-        })?;
+        let dropped_vec = self
+            .dropped
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock dropped segments: {}", e),
+            })?;
 
         Ok(*dropped_vec.get(segment_index as usize).unwrap_or(&false))
     }

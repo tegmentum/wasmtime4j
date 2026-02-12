@@ -3,22 +3,17 @@
 //! This module provides comprehensive linker functionality for defining host functions,
 //! binding imports, and resolving module dependencies before instantiation.
 
-use std::sync::{Arc, Mutex};
-use std::collections::{HashMap, VecDeque};
-use std::time::Instant;
-use wasmtime::{
-    Linker as WasmtimeLinker,
-    FuncType,
-    ImportType as WasmtimeImportType,
-    ExternType,
-};
 use crate::engine::Engine;
-use crate::store::{Store, StoreData};
-use crate::module::Module;
-use crate::instance::Instance;
+use crate::error::{debug_log, ffi_utils, WasmtimeError, WasmtimeResult};
 use crate::hostfunc::HostFunction;
+use crate::instance::Instance;
 use crate::memory::Memory as WasmMemory;
-use crate::error::{WasmtimeError, WasmtimeResult, ffi_utils, debug_log};
+use crate::module::Module;
+use crate::store::{Store, StoreData};
+use std::collections::{HashMap, VecDeque};
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
+use wasmtime::{ExternType, FuncType, ImportType as WasmtimeImportType, Linker as WasmtimeLinker};
 
 /// Thread-safe wrapper around Wasmtime linker with comprehensive host binding support
 #[derive(Debug)]
@@ -346,28 +341,34 @@ impl Linker {
         function_type: FuncType,
         host_function: HostFunction,
     ) -> WasmtimeResult<()> {
-        debug_log(&format!("define_host_function: {}::{}", module_name, function_name));
+        debug_log(&format!(
+            "define_host_function: {}::{}",
+            module_name, function_name
+        ));
 
         if self.metadata.disposed {
             debug_log("define_host_function: linker disposed");
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
         debug_log("define_host_function: acquiring inner lock...");
-        let _linker = self.inner.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock linker: {}", e),
-                backtrace: None
-            })?;
+        let _linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
         debug_log("define_host_function: inner lock acquired");
 
         // Use the host function to create a proper Wasmtime function
         // This will be handled through the HostFunction callback system
         // For now, we just register the metadata and defer actual function creation
-        log::debug!("Registering host function for later instantiation: {}::{}", module_name, function_name);
+        log::debug!(
+            "Registering host function for later instantiation: {}::{}",
+            module_name,
+            function_name
+        );
 
         // Record the host function definition
         let key = format!("{}::{}", module_name, function_name);
@@ -403,11 +404,14 @@ impl Linker {
     ///
     /// # Errors
     /// Returns WasmtimeError if host function instantiation fails
-    pub fn instantiate_host_functions(&mut self, store: &mut wasmtime::Store<StoreData>) -> WasmtimeResult<()> {
+    pub fn instantiate_host_functions(
+        &mut self,
+        store: &mut wasmtime::Store<StoreData>,
+    ) -> WasmtimeResult<()> {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
@@ -419,7 +423,9 @@ impl Linker {
 
         // Collect host function definitions first (without holding linker lock)
         // This prevents deadlock with HOST_FUNCTION_REGISTRY lock ordering
-        let definitions: Vec<_> = self.host_functions.iter()
+        let definitions: Vec<_> = self
+            .host_functions
+            .iter()
             .map(|(key, def)| (key.clone(), def.clone()))
             .collect();
 
@@ -429,33 +435,41 @@ impl Linker {
         for (key, definition) in &definitions {
             log::debug!("Creating host function: {}", key);
             let wasmtime_func = definition.host_function.create_wasmtime_func(store)?;
-            created_funcs.push((definition.module_name.clone(), definition.function_name.clone(), wasmtime_func));
+            created_funcs.push((
+                definition.module_name.clone(),
+                definition.function_name.clone(),
+                wasmtime_func,
+            ));
         }
 
         // Now acquire linker lock and define all functions
-        let mut linker = self.inner.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock linker: {}", e),
-                backtrace: None
-            })?;
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
 
         for (module_name, function_name, wasmtime_func) in created_funcs {
             log::debug!("Defining host function: {}:{}", module_name, function_name);
-            linker.define(
-                &mut *store,
-                &module_name,
-                &function_name,
-                wasmtime::Extern::Func(wasmtime_func)
-            ).map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to define host function in linker: {}", e),
-                backtrace: None
-            })?;
+            linker
+                .define(
+                    &mut *store,
+                    &module_name,
+                    &function_name,
+                    wasmtime::Extern::Func(wasmtime_func),
+                )
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to define host function in linker: {}", e),
+                    backtrace: None,
+                })?;
         }
 
         // Mark host functions as instantiated
         self.metadata.host_functions_instantiated = true;
         drop(linker);
-        log::debug!("Successfully instantiated {} host functions", self.host_functions.len());
+        log::debug!(
+            "Successfully instantiated {} host functions",
+            self.host_functions.len()
+        );
         Ok(())
     }
 
@@ -478,15 +492,14 @@ impl Linker {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
-        let mut linker = self.inner.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock linker: {}", e),
-                backtrace: None
-            })?;
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
 
         // Handle both regular and shared memory
         store.with_context(|ctx| {
@@ -497,14 +510,15 @@ impl Linker {
             } else {
                 return Err(WasmtimeError::Runtime {
                     message: "Memory has invalid variant".to_string(),
-                    backtrace: None
+                    backtrace: None,
                 });
             };
 
-            linker.define(ctx, module_name, memory_name, extern_memory)
+            linker
+                .define(ctx, module_name, memory_name, extern_memory)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to define memory: {}", e),
-                    backtrace: None
+                    backtrace: None,
                 })
         })?;
 
@@ -531,15 +545,14 @@ impl Linker {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
-        let mut linker = self.inner.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock linker: {}", e),
-                backtrace: None
-            })?;
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
 
         #[cfg(feature = "wasi")]
         {
@@ -548,7 +561,7 @@ impl Linker {
             wasmtime_wasi::p1::add_to_linker_sync(&mut *linker, |data: &mut StoreData| {
                 data.wasi_ctx.as_mut().expect(
                     "Store does not have a WASI context attached. \
-                     Call wasi_ctx_add_to_store before instantiating modules that require WASI."
+                     Call wasi_ctx_add_to_store before instantiating modules that require WASI.",
                 )
             })
             .map_err(|e| WasmtimeError::Wasi {
@@ -571,7 +584,7 @@ impl Linker {
         {
             return Err(WasmtimeError::Runtime {
                 message: "WASI support not compiled in".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
@@ -590,15 +603,14 @@ impl Linker {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
-        let mut linker = self.inner.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock linker: {}", e),
-                backtrace: None
-            })?;
+        let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })?;
 
         // Add WASI-NN imports to the linker
         wasmtime_wasi_nn::witx::add_to_linker(&mut *linker, |data: &mut StoreData| {
@@ -774,7 +786,7 @@ impl Linker {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
@@ -799,7 +811,7 @@ impl Linker {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
@@ -833,16 +845,22 @@ impl Linker {
     ///
     /// # Errors
     /// Returns WasmtimeError if dependency analysis fails
-    pub fn resolve_dependencies<'a>(&self, modules: &'a [Module]) -> WasmtimeResult<DependencyGraph<'a>> {
+    pub fn resolve_dependencies<'a>(
+        &self,
+        modules: &'a [Module],
+    ) -> WasmtimeResult<DependencyGraph<'a>> {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
         let start_time = Instant::now();
-        log::debug!("Starting dependency resolution for {} modules", modules.len());
+        log::debug!(
+            "Starting dependency resolution for {} modules",
+            modules.len()
+        );
 
         // Build dependency graph
         let mut graph = self.build_dependency_graph(modules)?;
@@ -873,11 +891,14 @@ impl Linker {
     ///
     /// # Errors
     /// Returns WasmtimeError if validation fails
-    pub fn validate_imports(&self, modules: &[Module]) -> WasmtimeResult<Vec<ImportValidationIssue>> {
+    pub fn validate_imports(
+        &self,
+        modules: &[Module],
+    ) -> WasmtimeResult<Vec<ImportValidationIssue>> {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
@@ -893,7 +914,11 @@ impl Linker {
         }
 
         let elapsed = start_time.elapsed();
-        log::debug!("Import validation completed in {:?}, found {} issues", elapsed, issues.len());
+        log::debug!(
+            "Import validation completed in {:?}, found {} issues",
+            elapsed,
+            issues.len()
+        );
 
         Ok(issues)
     }
@@ -912,7 +937,10 @@ impl Linker {
     }
 
     /// Builds a dependency graph for the given modules
-    fn build_dependency_graph<'a>(&self, modules: &'a [Module]) -> WasmtimeResult<DependencyGraph<'a>> {
+    fn build_dependency_graph<'a>(
+        &self,
+        modules: &'a [Module],
+    ) -> WasmtimeResult<DependencyGraph<'a>> {
         let mut graph = DependencyGraph {
             nodes: Vec::new(),
             edges: Vec::new(),
@@ -947,13 +975,15 @@ impl Linker {
                         continue; // Skip self-references
                     }
 
-                    if self.node_exports_import(&to_node, &import.module_name, &import.import_name) {
+                    if self.node_exports_import(&to_node, &import.module_name, &import.import_name)
+                    {
                         let edge = DependencyEdge {
                             from_node: from_idx,
                             to_node: to_idx,
                             import_module: import.module_name.clone(),
                             import_name: import.import_name.clone(),
-                            dependency_type: self.wasmtime_type_to_dependency_type(&import.import_type),
+                            dependency_type: self
+                                .wasmtime_type_to_dependency_type(&import.import_type),
                             resolved: true,
                         };
                         graph.edges.push(edge);
@@ -966,7 +996,10 @@ impl Linker {
     }
 
     /// Detects circular dependencies in the graph
-    fn detect_circular_dependencies(&self, graph: &mut DependencyGraph) -> WasmtimeResult<Vec<String>> {
+    fn detect_circular_dependencies(
+        &self,
+        graph: &mut DependencyGraph,
+    ) -> WasmtimeResult<Vec<String>> {
         let mut circular_chains = Vec::new();
         let mut stack = Vec::new();
 
@@ -989,13 +1022,19 @@ impl Linker {
     }
 
     /// Performs DFS to detect cycles
-    fn dfs_detect_cycle(&self, graph: &mut DependencyGraph, node_idx: usize, stack: &mut Vec<usize>) -> WasmtimeResult<Option<String>> {
+    fn dfs_detect_cycle(
+        &self,
+        graph: &mut DependencyGraph,
+        node_idx: usize,
+        stack: &mut Vec<usize>,
+    ) -> WasmtimeResult<Option<String>> {
         graph.nodes[node_idx].visited = true;
         graph.nodes[node_idx].processing = true;
         stack.push(node_idx);
 
         // Collect outgoing edges to avoid borrowing conflict
-        let outgoing_edges: Vec<usize> = graph.edges
+        let outgoing_edges: Vec<usize> = graph
+            .edges
             .iter()
             .filter(|edge| edge.from_node == node_idx)
             .map(|edge| edge.to_node)
@@ -1008,7 +1047,14 @@ impl Linker {
                 let cycle_start = stack.iter().position(|&x| x == next_idx).unwrap();
                 let cycle_nodes: Vec<String> = stack[cycle_start..]
                     .iter()
-                    .map(|&idx| graph.nodes[idx].module.metadata.name.clone().unwrap_or_else(|| format!("module_{}", idx)))
+                    .map(|&idx| {
+                        graph.nodes[idx]
+                            .module
+                            .metadata
+                            .name
+                            .clone()
+                            .unwrap_or_else(|| format!("module_{}", idx))
+                    })
                     .collect();
 
                 // Add the first node again to complete the cycle
@@ -1071,8 +1117,9 @@ impl Linker {
 
         if result.len() != graph.nodes.len() {
             return Err(WasmtimeError::Runtime {
-                message: "Cannot compute topological order: circular dependencies detected".to_string(),
-                backtrace: None
+                message: "Cannot compute topological order: circular dependencies detected"
+                    .to_string(),
+                backtrace: None,
             });
         }
 
@@ -1080,7 +1127,10 @@ impl Linker {
     }
 
     /// Extracts imports from a module
-    fn extract_module_imports<'a>(&self, module: &'a Module) -> WasmtimeResult<Vec<ModuleImport<'a>>> {
+    fn extract_module_imports<'a>(
+        &self,
+        module: &'a Module,
+    ) -> WasmtimeResult<Vec<ModuleImport<'a>>> {
         let wasmtime_module = module.inner();
         let mut imports = Vec::new();
 
@@ -1114,7 +1164,12 @@ impl Linker {
     }
 
     /// Checks if a node exports a specific import
-    fn node_exports_import(&self, node: &DependencyNode, module_name: &str, import_name: &str) -> bool {
+    fn node_exports_import(
+        &self,
+        node: &DependencyNode,
+        module_name: &str,
+        import_name: &str,
+    ) -> bool {
         // For now, assume the module name matches the node's module name
         // In a more sophisticated implementation, this would handle module aliasing
         if let Some(node_module_name) = node.module.metadata.name.as_ref() {
@@ -1138,7 +1193,10 @@ impl Linker {
     }
 
     /// Validates imports for a single module
-    fn validate_module_imports(&self, module: &Module) -> WasmtimeResult<Vec<ImportValidationIssue>> {
+    fn validate_module_imports(
+        &self,
+        module: &Module,
+    ) -> WasmtimeResult<Vec<ImportValidationIssue>> {
         let mut issues = Vec::new();
         let wasmtime_module = module.inner();
 
@@ -1153,7 +1211,10 @@ impl Linker {
                     issue_type: ImportIssueType::MissingImport,
                     module_name: module_name.to_string(),
                     import_name: import_name.to_string(),
-                    message: format!("Import {}::{} is not available in the linker", module_name, import_name),
+                    message: format!(
+                        "Import {}::{} is not available in the linker",
+                        module_name, import_name
+                    ),
                     expected_type: Some(format!("{:?}", import.ty())),
                     actual_type: None,
                 });
@@ -1176,15 +1237,14 @@ impl Linker {
         if self.metadata.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
-                backtrace: None
+                backtrace: None,
             });
         }
 
-        self.inner.lock()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to lock linker: {}", e),
-                backtrace: None
-            })
+        self.inner.lock().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to lock linker: {}", e),
+            backtrace: None,
+        })
     }
 }
 
@@ -1201,16 +1261,16 @@ impl Drop for Linker {
 // Native C exports for JNI and Panama FFI consumption
 //
 
-use std::os::raw::{c_void, c_char, c_int};
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 use std::ffi::CStr;
-use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+use std::os::raw::{c_char, c_int, c_void};
 
 /// Linker core functions for interface implementations
 pub mod core {
     use super::*;
-    use std::os::raw::c_void;
     use crate::error::ffi_utils;
     use crate::validate_ptr_not_null;
+    use std::os::raw::c_void;
 
     /// Core function to create linker with engine
     pub fn create_linker(engine: &Engine) -> WasmtimeResult<Box<Linker>> {
@@ -1218,7 +1278,10 @@ pub mod core {
     }
 
     /// Core function to create linker with configuration
-    pub fn create_linker_with_config(engine: &Engine, config: LinkerConfig) -> WasmtimeResult<Box<Linker>> {
+    pub fn create_linker_with_config(
+        engine: &Engine,
+        config: LinkerConfig,
+    ) -> WasmtimeResult<Box<Linker>> {
         Linker::with_config(engine, config).map(Box::new)
     }
 
@@ -1256,7 +1319,9 @@ pub mod core {
             if !store.has_wasi_context() {
                 let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
                 store.set_wasi_context(wasi_ctx, fd_manager)?;
-                log::debug!("Attached linker's WASI context to store before instantiation (FFI path)");
+                log::debug!(
+                    "Attached linker's WASI context to store before instantiation (FFI path)"
+                );
             } else {
                 log::debug!("Store already has WASI context, skipping linker context attachment");
             }
@@ -1329,11 +1394,9 @@ pub mod core {
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_new(engine_ptr: *const c_void) -> *mut c_void {
     match crate::engine::core::get_engine_ref(engine_ptr) {
-        Ok(engine) => {
-            match core::create_linker(engine) {
-                Ok(linker) => Box::into_raw(linker) as *mut c_void,
-                Err(_) => std::ptr::null_mut(),
-            }
+        Ok(engine) => match core::create_linker(engine) {
+            Ok(linker) => Box::into_raw(linker) as *mut c_void,
+            Err(_) => std::ptr::null_mut(),
         },
         Err(_) => std::ptr::null_mut(),
     }
@@ -1357,13 +1420,13 @@ pub unsafe extern "C" fn wasmtime4j_linker_new_with_config(
                 enable_wasi: false, // Default to false for now
                 allow_shadowing: allow_shadowing != 0,
                 max_host_functions: Some(1000), // Reasonable default
-                validate_signatures: true, // Default to true for safety
+                validate_signatures: true,      // Default to true for safety
             };
             match core::create_linker_with_config(engine, config) {
                 Ok(linker) => Box::into_raw(linker) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1424,13 +1487,11 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
     };
 
     match core::instantiate_module(linker, store, module) {
-        Ok(result) => {
-            Box::into_raw(Box::new(result.instance)) as *mut c_void
-        },
+        Ok(result) => Box::into_raw(Box::new(result.instance)) as *mut c_void,
         Err(e) => {
             ffi_utils::set_last_error(e);
             std::ptr::null_mut()
-        },
+        }
     }
 }
 
@@ -1442,7 +1503,13 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_is_valid(linker_ptr: *const c_void) -> c_int {
     match core::get_linker_ref(linker_ptr) {
-        Ok(linker) => if core::is_valid(linker) { 1 } else { 0 },
+        Ok(linker) => {
+            if core::is_valid(linker) {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => FFI_ERROR,
     }
 }
@@ -1458,7 +1525,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_dispose(linker_ptr: *mut c_void) -> c
         Ok(linker) => {
             core::dispose_linker(linker);
             FFI_SUCCESS
-        },
+        }
         Err(_) => FFI_ERROR,
     }
 }
@@ -1510,7 +1577,13 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiation_count(linker_ptr: *cons
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_linker_wasi_enabled(linker_ptr: *const c_void) -> c_int {
     match core::get_linker_ref(linker_ptr) {
-        Ok(linker) => if core::get_metadata(linker).wasi_enabled { 1 } else { 0 },
+        Ok(linker) => {
+            if core::get_metadata(linker).wasi_enabled {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => FFI_ERROR,
     }
 }
@@ -1525,9 +1598,8 @@ pub unsafe extern "C" fn wasmtime4j_linker_created_at_micros(linker_ptr: *const 
     match core::get_linker_ref(linker_ptr) {
         Ok(linker) => {
             let metadata = core::get_metadata(linker);
-            metadata.created_at.elapsed()
-                .as_micros() as u64
-        },
+            metadata.created_at.elapsed().as_micros() as u64
+        }
         Err(_) => 0,
     }
 }
@@ -1562,7 +1634,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_resolve_dependencies(
                 Ok(graph) => Box::into_raw(Box::new(graph)) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1604,7 +1676,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_validate_imports(
                         *issue_count_out = issues.len();
                     }
                     Box::into_raw(Box::new(issues)) as *mut c_void
-                },
+                }
                 Err(_) => {
                     if !issue_count_out.is_null() {
                         *issue_count_out = 0;
@@ -1612,7 +1684,7 @@ pub unsafe extern "C" fn wasmtime4j_linker_validate_imports(
                     std::ptr::null_mut()
                 }
             }
-        },
+        }
         Err(_) => {
             if !issue_count_out.is_null() {
                 *issue_count_out = 0;
@@ -1641,13 +1713,17 @@ pub unsafe extern "C" fn wasmtime4j_linker_has_import(
         Ok(linker) => {
             if let (Ok(mod_name), Ok(imp_name)) = (
                 CStr::from_ptr(module_name).to_str(),
-                CStr::from_ptr(import_name).to_str()
+                CStr::from_ptr(import_name).to_str(),
             ) {
-                if linker.has_import(mod_name, imp_name) { 1 } else { 0 }
+                if linker.has_import(mod_name, imp_name) {
+                    1
+                } else {
+                    0
+                }
             } else {
                 FFI_ERROR
             }
-        },
+        }
         Err(_) => FFI_ERROR,
     }
 }
@@ -1728,7 +1804,8 @@ impl InstancePreWrapper {
         let duration = start.elapsed().as_nanos() as u64;
 
         self.instance_count.fetch_add(1, Ordering::Relaxed);
-        self.total_instantiation_time_ns.fetch_add(duration, Ordering::Relaxed);
+        self.total_instantiation_time_ns
+            .fetch_add(duration, Ordering::Relaxed);
 
         match result {
             Ok(wasmtime_instance) => {
@@ -1837,12 +1914,10 @@ pub unsafe extern "C" fn wasmtime4j_instance_pre_instantiate(
 
     let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
     match crate::store::core::get_store_mut(store_ptr) {
-        Ok(store) => {
-            match wrapper.instantiate(store) {
-                Ok(instance) => Box::into_raw(Box::new(instance)) as *mut c_void,
-                Err(_) => std::ptr::null_mut(),
-            }
-        }
+        Ok(store) => match wrapper.instantiate(store) {
+            Ok(instance) => Box::into_raw(Box::new(instance)) as *mut c_void,
+            Err(_) => std::ptr::null_mut(),
+        },
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -1860,7 +1935,11 @@ pub unsafe extern "C" fn wasmtime4j_instance_pre_is_valid(
         return 0;
     }
     let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
-    if wrapper.is_valid() { 1 } else { 0 }
+    if wrapper.is_valid() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Get instance count from InstancePre
@@ -2032,8 +2111,8 @@ mod tests {
         "#;
 
         println!("Compiling module...");
-        let module = crate::module::Module::compile_wat(&engine, wat)
-            .expect("Failed to compile WAT module");
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile WAT module");
 
         println!("Instantiating module with linker...");
         let result = core::instantiate_module(&mut linker, &mut store, &module);
@@ -2081,7 +2160,10 @@ mod tests {
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
         let host_funcs = linker.host_functions();
-        assert!(host_funcs.is_empty(), "New linker should have no host functions");
+        assert!(
+            host_funcs.is_empty(),
+            "New linker should have no host functions"
+        );
     }
 
     #[test]
@@ -2112,10 +2194,16 @@ mod tests {
         let mut linker = Linker::new(&engine).expect("Failed to create linker");
 
         let result = linker.set_allow_unknown_exports(true);
-        assert!(result.is_ok(), "set_allow_unknown_exports(true) should succeed");
+        assert!(
+            result.is_ok(),
+            "set_allow_unknown_exports(true) should succeed"
+        );
 
         let result = linker.set_allow_unknown_exports(false);
-        assert!(result.is_ok(), "set_allow_unknown_exports(false) should succeed");
+        assert!(
+            result.is_ok(),
+            "set_allow_unknown_exports(false) should succeed"
+        );
     }
 
     #[test]
@@ -2136,9 +2224,15 @@ mod tests {
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
         let metadata = linker.metadata();
-        assert!(!metadata.wasi_enabled, "WASI should not be enabled by default");
+        assert!(
+            !metadata.wasi_enabled,
+            "WASI should not be enabled by default"
+        );
         assert!(!metadata.disposed, "Linker should not be disposed");
-        assert_eq!(metadata.host_function_count, 0, "Should have 0 host functions");
+        assert_eq!(
+            metadata.host_function_count, 0,
+            "Should have 0 host functions"
+        );
         assert_eq!(metadata.import_count, 0, "Should have 0 imports");
     }
 
@@ -2148,8 +2242,10 @@ mod tests {
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
         // New linker should not have any imports
-        assert!(!linker.has_import("env", "nonexistent"),
-            "Should not have nonexistent import");
+        assert!(
+            !linker.has_import("env", "nonexistent"),
+            "Should not have nonexistent import"
+        );
     }
 
     #[test]
@@ -2164,8 +2260,8 @@ mod tests {
               (func (export "test") (result i32)
                 call 0))
         "#;
-        let module = crate::module::Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let result = linker.define_unknown_imports_as_traps(&module);
         assert!(result.is_ok(), "Should define unknown imports as traps");
@@ -2176,7 +2272,10 @@ mod tests {
         let engine = shared_engine();
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
-        assert!(!linker.metadata().wasi_enabled, "WASI should not be enabled by default");
+        assert!(
+            !linker.metadata().wasi_enabled,
+            "WASI should not be enabled by default"
+        );
     }
 
     #[test]
@@ -2224,11 +2323,17 @@ mod tests {
         let engine = shared_engine();
         let mut linker = Linker::new(&engine).expect("Failed to create linker");
 
-        assert!(core::is_valid(&linker), "Linker should be valid before dispose");
+        assert!(
+            core::is_valid(&linker),
+            "Linker should be valid before dispose"
+        );
 
         core::dispose_linker(&mut linker);
 
-        assert!(!core::is_valid(&linker), "Linker should be invalid after dispose");
+        assert!(
+            !core::is_valid(&linker),
+            "Linker should be invalid after dispose"
+        );
     }
 
     #[test]
@@ -2236,7 +2341,11 @@ mod tests {
         let engine = shared_engine();
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
-        assert_eq!(core::host_function_count(&linker), 0, "Should start with 0 host functions");
+        assert_eq!(
+            core::host_function_count(&linker),
+            0,
+            "Should start with 0 host functions"
+        );
     }
 
     #[test]
@@ -2244,7 +2353,11 @@ mod tests {
         let engine = shared_engine();
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
-        assert_eq!(core::import_count(&linker), 0, "Should start with 0 imports");
+        assert_eq!(
+            core::import_count(&linker),
+            0,
+            "Should start with 0 imports"
+        );
     }
 
     #[test]
@@ -2254,8 +2367,8 @@ mod tests {
         let mut store = crate::store::Store::new(&engine).expect("Failed to create store");
 
         let wat = "(module (func (export \"test\") (result i32) i32.const 42))";
-        let module = crate::module::Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let result = core::instantiate_module(&mut linker, &mut store, &module);
         assert!(result.is_ok(), "Should instantiate simple module");
@@ -2274,8 +2387,8 @@ mod tests {
                      (memory (export \"mem\") 1)
                      (func (export \"get_size\") (result i32)
                        memory.size))";
-        let module = crate::module::Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let result = core::instantiate_module(&mut linker, &mut store, &module);
         assert!(result.is_ok(), "Should instantiate module with memory");
@@ -2286,15 +2399,20 @@ mod tests {
         let engine = shared_engine();
         let mut linker = Linker::new(&engine).expect("Failed to create linker");
 
-        assert!(linker.get_wasi_context().is_none(), "Should not have WASI context initially");
+        assert!(
+            linker.get_wasi_context().is_none(),
+            "Should not have WASI context initially"
+        );
 
         // Create a simple WASI context
-        let wasi_ctx = crate::wasi::WasiContext::new()
-            .expect("Failed to create WASI context");
+        let wasi_ctx = crate::wasi::WasiContext::new().expect("Failed to create WASI context");
 
         linker.set_wasi_context(wasi_ctx);
 
-        assert!(linker.get_wasi_context().is_some(), "Should have WASI context after set");
+        assert!(
+            linker.get_wasi_context().is_some(),
+            "Should have WASI context after set"
+        );
     }
 
     #[test]
@@ -2303,11 +2421,16 @@ mod tests {
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
         let wat = "(module)";
-        let module = crate::module::Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
-        let issues = linker.validate_imports(&[module]).expect("Failed to validate imports");
-        assert!(issues.is_empty(), "Empty module should have no import issues");
+        let issues = linker
+            .validate_imports(&[module])
+            .expect("Failed to validate imports");
+        assert!(
+            issues.is_empty(),
+            "Empty module should have no import issues"
+        );
     }
 
     #[test]
@@ -2316,16 +2439,20 @@ mod tests {
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
         let wat = "(module)";
-        let module = crate::module::Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let modules = [module];
-        let graph = linker.resolve_dependencies(&modules)
+        let graph = linker
+            .resolve_dependencies(&modules)
             .expect("Failed to resolve dependencies");
 
         // DependencyGraph for a single module should have one node
         assert_eq!(graph.nodes.len(), 1, "Should have 1 node");
-        assert!(graph.circular_chains.is_empty(), "Should have no circular chains");
+        assert!(
+            graph.circular_chains.is_empty(),
+            "Should have no circular chains"
+        );
     }
 
     #[test]
@@ -2334,11 +2461,12 @@ mod tests {
         let linker = Linker::new(&engine).expect("Failed to create linker");
 
         let wat = "(module)";
-        let module = crate::module::Module::compile_wat(&engine, wat)
-            .expect("Failed to compile module");
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile module");
 
         let modules = [module];
-        let graph = linker.resolve_dependencies(&modules)
+        let graph = linker
+            .resolve_dependencies(&modules)
             .expect("Failed to resolve dependencies");
 
         // Check that the graph is validated

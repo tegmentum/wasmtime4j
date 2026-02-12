@@ -4,12 +4,12 @@
 //! allowing Java code to be notified when WebAssembly execution runs out of fuel
 //! and optionally add more fuel to continue execution.
 
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock};
-use std::os::raw::{c_void, c_int};
-use once_cell::sync::Lazy;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::os::raw::{c_int, c_void};
+use std::sync::{Arc, Mutex, RwLock};
 
 /// Fuel exhaustion event types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -57,7 +57,8 @@ impl Default for FuelExhaustionResult {
 }
 
 /// Callback function type for fuel exhaustion events
-pub type FuelExhaustionCallback = Box<dyn Fn(&FuelExhaustionContext) -> FuelExhaustionResult + Send + Sync>;
+pub type FuelExhaustionCallback =
+    Box<dyn Fn(&FuelExhaustionContext) -> FuelExhaustionResult + Send + Sync>;
 
 /// Fuel callback handler with statistics tracking
 pub struct FuelCallbackHandler {
@@ -130,11 +131,12 @@ impl FuelCallbackHandler {
         config: FuelCallbackConfig,
     ) -> WasmtimeResult<Self> {
         let id = {
-            let mut counter = CALLBACK_ID_COUNTER.lock().map_err(|e| {
-                WasmtimeError::Concurrency {
-                    message: format!("Failed to acquire ID counter: {}", e),
-                }
-            })?;
+            let mut counter =
+                CALLBACK_ID_COUNTER
+                    .lock()
+                    .map_err(|e| WasmtimeError::Concurrency {
+                        message: format!("Failed to acquire ID counter: {}", e),
+                    })?;
             let id = *counter;
             *counter += 1;
             id
@@ -249,11 +251,12 @@ pub mod core {
         let id = handler.id();
         let handler_arc = Arc::new(handler);
 
-        let mut registry = FUEL_CALLBACK_REGISTRY.write().map_err(|e| {
-            WasmtimeError::Concurrency {
-                message: format!("Failed to acquire callback registry: {}", e),
-            }
-        })?;
+        let mut registry =
+            FUEL_CALLBACK_REGISTRY
+                .write()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to acquire callback registry: {}", e),
+                })?;
 
         registry.insert(id, handler_arc);
         Ok(id)
@@ -261,26 +264,28 @@ pub mod core {
 
     /// Get a handler by ID
     pub fn get_handler(handler_id: u64) -> WasmtimeResult<Arc<FuelCallbackHandler>> {
-        let registry = FUEL_CALLBACK_REGISTRY.read().map_err(|e| {
-            WasmtimeError::Concurrency {
+        let registry = FUEL_CALLBACK_REGISTRY
+            .read()
+            .map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to acquire callback registry: {}", e),
-            }
-        })?;
+            })?;
 
-        registry.get(&handler_id).cloned().ok_or_else(|| {
-            WasmtimeError::InvalidParameter {
+        registry
+            .get(&handler_id)
+            .cloned()
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
                 message: format!("Fuel callback handler {} not found", handler_id),
-            }
-        })
+            })
     }
 
     /// Unregister a handler
     pub fn unregister_handler(handler_id: u64) -> WasmtimeResult<()> {
-        let mut registry = FUEL_CALLBACK_REGISTRY.write().map_err(|e| {
-            WasmtimeError::Concurrency {
-                message: format!("Failed to acquire callback registry: {}", e),
-            }
-        })?;
+        let mut registry =
+            FUEL_CALLBACK_REGISTRY
+                .write()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to acquire callback registry: {}", e),
+                })?;
 
         registry.remove(&handler_id);
         Ok(())
@@ -294,11 +299,11 @@ pub mod core {
         exhaustion_count: u32,
     ) -> WasmtimeResult<FuelExhaustionResult> {
         // Find handler for this store
-        let registry = FUEL_CALLBACK_REGISTRY.read().map_err(|e| {
-            WasmtimeError::Concurrency {
+        let registry = FUEL_CALLBACK_REGISTRY
+            .read()
+            .map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to acquire callback registry: {}", e),
-            }
-        })?;
+            })?;
 
         for handler in registry.values() {
             if handler.store_id() == store_id {
@@ -561,7 +566,8 @@ mod tests {
     fn test_fuel_callback_creation() {
         let config = FuelCallbackConfig::default();
         let callback: FuelExhaustionCallback = Box::new(|_| FuelExhaustionResult::default());
-        let handler = FuelCallbackHandler::new(1, callback, config).expect("Failed to create handler");
+        let handler =
+            FuelCallbackHandler::new(1, callback, config).expect("Failed to create handler");
         assert!(handler.id() > 0);
         assert_eq!(handler.store_id(), 1);
     }
@@ -574,7 +580,8 @@ mod tests {
             ..Default::default()
         };
         let callback: FuelExhaustionCallback = Box::new(|_| FuelExhaustionResult::default());
-        let handler = FuelCallbackHandler::new(1, callback, config).expect("Failed to create handler");
+        let handler =
+            FuelCallbackHandler::new(1, callback, config).expect("Failed to create handler");
 
         let context = FuelExhaustionContext {
             store_id: 1,
@@ -603,7 +610,8 @@ mod tests {
             ..Default::default()
         };
         let callback: FuelExhaustionCallback = Box::new(|_| FuelExhaustionResult::default());
-        let handler = FuelCallbackHandler::new(1, callback, config).expect("Failed to create handler");
+        let handler =
+            FuelCallbackHandler::new(1, callback, config).expect("Failed to create handler");
 
         // Third exhaustion (count=2) should trap
         let context = FuelExhaustionContext {
@@ -634,7 +642,8 @@ mod tests {
                 }
             }
         });
-        let handler = FuelCallbackHandler::new(1, callback, config).expect("Failed to create handler");
+        let handler =
+            FuelCallbackHandler::new(1, callback, config).expect("Failed to create handler");
 
         // Should continue
         let context1 = FuelExhaustionContext {
@@ -664,7 +673,8 @@ mod tests {
     fn test_handler_registration() {
         let config = FuelCallbackConfig::default();
         let callback: FuelExhaustionCallback = Box::new(|_| FuelExhaustionResult::default());
-        let handler = FuelCallbackHandler::new(42, callback, config).expect("Failed to create handler");
+        let handler =
+            FuelCallbackHandler::new(42, callback, config).expect("Failed to create handler");
 
         let handler_id = core::register_handler(handler).expect("Failed to register handler");
         assert!(handler_id > 0);

@@ -556,7 +556,11 @@ impl WasiHttpStatsImpl {
     /// Get min request duration in milliseconds
     pub fn min_duration_ms(&self) -> u64 {
         let val = self.min_duration_ms.load(Ordering::Relaxed);
-        if val == u64::MAX { 0 } else { val }
+        if val == u64::MAX {
+            0
+        } else {
+            val
+        }
     }
 
     /// Get max request duration in milliseconds
@@ -621,7 +625,8 @@ impl WasiHttpStatsImpl {
 
     /// Record request duration
     pub fn record_duration(&self, duration_ms: u64) {
-        self.total_duration_ms.fetch_add(duration_ms, Ordering::Relaxed);
+        self.total_duration_ms
+            .fetch_add(duration_ms, Ordering::Relaxed);
 
         // Update min (using compare-and-swap loop)
         let mut current = self.min_duration_ms.load(Ordering::Relaxed);
@@ -782,8 +787,8 @@ impl Drop for WasiHttpContext {
 // FFI Functions for Java Integration
 // ============================================================================
 
-use std::os::raw::{c_char, c_int, c_void};
 use crate::error::ffi_utils;
+use std::os::raw::{c_char, c_int, c_void};
 
 /// Create a new WASI HTTP config builder
 #[no_mangle]
@@ -799,7 +804,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_allow_host(
     host: *const c_char,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         let host_str = ffi_utils::c_str_to_string(host, "host")?;
         builder.allowed_hosts.insert(host_str);
         Ok(())
@@ -813,7 +819,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_block_host(
     host: *const c_char,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         let host_str = ffi_utils::c_str_to_string(host, "host")?;
         builder.blocked_hosts.insert(host_str);
         Ok(())
@@ -827,7 +834,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_allow_all_hosts(
     allow: c_int,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.allow_all_hosts = allow != 0;
         Ok(())
     })
@@ -840,7 +848,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_connect_timeout(
     timeout_ms: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.connect_timeout = if timeout_ms > 0 {
             Some(Duration::from_millis(timeout_ms))
         } else {
@@ -857,7 +866,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_read_timeout(
     timeout_ms: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.read_timeout = if timeout_ms > 0 {
             Some(Duration::from_millis(timeout_ms))
         } else {
@@ -874,7 +884,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_write_timeout(
     timeout_ms: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.write_timeout = if timeout_ms > 0 {
             Some(Duration::from_millis(timeout_ms))
         } else {
@@ -891,7 +902,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_max_connections(
     max: u32,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.max_connections = if max > 0 { Some(max) } else { None };
         Ok(())
     })
@@ -904,7 +916,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_max_connections_per_host(
     max: u32,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.max_connections_per_host = if max > 0 { Some(max) } else { None };
         Ok(())
     })
@@ -917,7 +930,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_max_request_body_size(
     size: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.max_request_body_size = if size > 0 { Some(size) } else { None };
         Ok(())
     })
@@ -930,7 +944,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_max_response_body_size(
     size: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.max_response_body_size = if size > 0 { Some(size) } else { None };
         Ok(())
     })
@@ -943,7 +958,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_https_required(
     required: c_int,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.https_required = required != 0;
         Ok(())
     })
@@ -956,7 +972,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_certificate_validation(
     enabled: c_int,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.certificate_validation = enabled != 0;
         Ok(())
     })
@@ -969,7 +986,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_http2_enabled(
     enabled: c_int,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.http2_enabled = enabled != 0;
         Ok(())
     })
@@ -982,7 +1000,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_connection_pooling(
     enabled: c_int,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.connection_pooling = enabled != 0;
         Ok(())
     })
@@ -995,7 +1014,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_follow_redirects(
     follow: c_int,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.follow_redirects = follow != 0;
         Ok(())
     })
@@ -1008,7 +1028,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_max_redirects(
     max: u32,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         builder.max_redirects = if max > 0 { Some(max) } else { None };
         Ok(())
     })
@@ -1021,7 +1042,8 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_user_agent(
     user_agent: *const c_char,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let builder = ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
+        let builder =
+            ffi_utils::deref_ptr_mut::<WasiHttpConfigBuilder>(builder_ptr, "config builder")?;
         if user_agent.is_null() {
             builder.user_agent = None;
         } else {
@@ -1034,9 +1056,7 @@ pub unsafe extern "C" fn wasi_http_config_builder_set_user_agent(
 
 /// Build the config from builder (consumes builder)
 #[no_mangle]
-pub unsafe extern "C" fn wasi_http_config_builder_build(
-    builder_ptr: *mut c_void,
-) -> *mut c_void {
+pub unsafe extern "C" fn wasi_http_config_builder_build(builder_ptr: *mut c_void) -> *mut c_void {
     if builder_ptr.is_null() {
         return std::ptr::null_mut();
     }
@@ -1115,7 +1135,11 @@ pub unsafe extern "C" fn wasi_http_ctx_is_valid(ctx_ptr: *const c_void) -> c_int
         return 0;
     }
     let ctx = &*(ctx_ptr as *const WasiHttpContext);
-    if ctx.is_valid() { 1 } else { 0 }
+    if ctx.is_valid() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if host is allowed
@@ -1132,7 +1156,11 @@ pub unsafe extern "C" fn wasi_http_ctx_is_host_allowed(
         Ok(s) => s,
         Err(_) => return 0,
     };
-    if ctx.is_host_allowed(&host_str) { 1 } else { 0 }
+    if ctx.is_host_allowed(&host_str) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Reset statistics
@@ -1556,7 +1584,11 @@ mod tests {
     #[test]
     fn test_builder_allow_hosts_batch() {
         let config = WasiHttpConfig::builder()
-            .allow_hosts(vec!["api.example.com", "www.example.com", "cdn.example.com"])
+            .allow_hosts(vec![
+                "api.example.com",
+                "www.example.com",
+                "cdn.example.com",
+            ])
             .build();
 
         assert_eq!(config.allowed_hosts().len(), 3);
@@ -1608,9 +1640,7 @@ mod tests {
 
     #[test]
     fn test_builder_require_https() {
-        let config = WasiHttpConfig::builder()
-            .require_https(true)
-            .build();
+        let config = WasiHttpConfig::builder().require_https(true).build();
 
         assert!(config.is_https_required());
     }
@@ -1626,9 +1656,7 @@ mod tests {
 
     #[test]
     fn test_builder_disable_http2() {
-        let config = WasiHttpConfig::builder()
-            .with_http2(false)
-            .build();
+        let config = WasiHttpConfig::builder().with_http2(false).build();
 
         assert!(!config.is_http2_enabled());
     }
@@ -1644,18 +1672,14 @@ mod tests {
 
     #[test]
     fn test_builder_disable_redirects() {
-        let config = WasiHttpConfig::builder()
-            .follow_redirects(false)
-            .build();
+        let config = WasiHttpConfig::builder().follow_redirects(false).build();
 
         assert!(!config.is_follow_redirects());
     }
 
     #[test]
     fn test_builder_max_redirects() {
-        let config = WasiHttpConfig::builder()
-            .with_max_redirects(5)
-            .build();
+        let config = WasiHttpConfig::builder().with_max_redirects(5).build();
 
         assert_eq!(config.max_redirects(), Some(5));
     }
@@ -1721,9 +1745,7 @@ mod tests {
 
     #[test]
     fn test_config_allowed_hosts_accessor() {
-        let config = WasiHttpConfig::builder()
-            .allow_host("test.com")
-            .build();
+        let config = WasiHttpConfig::builder().allow_host("test.com").build();
 
         let hosts = config.allowed_hosts();
         assert!(hosts.contains("test.com"));
@@ -1866,9 +1888,7 @@ mod tests {
 
     #[test]
     fn test_host_allowed_all_hosts() {
-        let config = WasiHttpConfig::builder()
-            .allow_all_hosts()
-            .build();
+        let config = WasiHttpConfig::builder().allow_all_hosts().build();
 
         let ctx = WasiHttpContext::new(config).expect("Failed to create context");
 
@@ -1879,9 +1899,7 @@ mod tests {
 
     #[test]
     fn test_host_allowed_empty_blocklist() {
-        let config = WasiHttpConfig::builder()
-            .allow_host("allowed.com")
-            .build();
+        let config = WasiHttpConfig::builder().allow_host("allowed.com").build();
 
         let ctx = WasiHttpContext::new(config).expect("Failed to create context");
 

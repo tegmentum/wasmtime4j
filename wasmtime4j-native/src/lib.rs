@@ -26,11 +26,13 @@
 // Remaining suppressions have documented justifications:
 
 #![allow(missing_docs)] // Large codebase - docs added incrementally
-#![allow(unused_imports)] // Reduced 62% (116→44); remaining are platform/test-specific
+#![allow(unused_imports)]
+// Reduced 62% (116→44); remaining are platform/test-specific
 // Note: dead_code warnings addressed file-by-file; removed blanket suppression
 #![allow(unused_mut)] // Required: JNI env parameters need mut for API calls
 #![allow(non_snake_case)] // Required: JNI functions follow Java naming conventions
-#![allow(private_interfaces)] // Required: FFI functions expose private types in signatures
+#![allow(private_interfaces)]
+// Required: FFI functions expose private types in signatures
 
 // Phase 5 REMOVED (issues fixed):
 // - unused_unsafe: Removed 3 unnecessary unsafe blocks
@@ -38,32 +40,31 @@
 // - unused_doc_comments: Converted to regular comments
 // - private_bounds: No issues found
 // - elided_lifetimes_in_paths: No issues found
-
 #![warn(clippy::all)]
 
 use std::os::raw::c_char;
 
 // Core modules - foundational WebAssembly runtime components
-pub mod error;
-pub mod interop;  // FFI interop utilities
-pub mod engine;
-pub mod module;
-pub mod store;
-pub mod instance;
-pub mod hostfunc;
-pub mod typed_func;  // Typed function wrapper for zero-cost calls
-pub mod memory;
-pub mod global;
-pub mod table;
-pub mod element_segment;  // Element segment management for table.init()
-pub mod data_segment;  // Data segment management for memory.init()
-pub mod element_segment_parser;  // Element and data segment parser using wasmparser
-pub mod linker;
-pub mod wast_runner;  // WAST test execution
 pub mod caller;
+pub mod data_segment; // Data segment management for memory.init()
+pub mod element_segment; // Element segment management for table.init()
+pub mod element_segment_parser; // Element and data segment parser using wasmparser
+pub mod engine;
+pub mod error;
+pub mod global;
+pub mod hostfunc;
+pub mod instance;
+pub mod interop; // FFI interop utilities
+pub mod linker;
+pub mod memory;
+pub mod module;
 pub mod serialization;
-pub mod value_serialization;  // WASM value serialization for thread execution
+pub mod store;
+pub mod table;
 pub mod threading;
+pub mod typed_func; // Typed function wrapper for zero-cost calls
+pub mod value_serialization; // WASM value serialization for thread execution
+pub mod wast_runner; // WAST test execution
 
 // Additional core functionality for comprehensive API coverage
 
@@ -71,7 +72,6 @@ pub mod threading;
 // DISABLED: Requires platform optimization modules (398 type definitions needed)
 // #[cfg(test)]
 // pub mod platform_optimization_integration_test;
-
 
 // Shared FFI architecture with trait-based conversions
 pub mod shared_ffi;
@@ -87,63 +87,63 @@ pub mod test_runtime_completion;
 #[cfg(feature = "jni-bindings")]
 pub mod jni;
 #[cfg(feature = "jni-bindings")]
+pub mod jni_component_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_gc_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_module_cache_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_pooling_allocator_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_profiler_bindings;
+#[cfg(feature = "jni-bindings")]
 pub mod jni_thread_bindings;
 #[cfg(feature = "jni-bindings")]
+pub mod jni_typed_func_bindings;
+#[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_wasi_io_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_wasi_filesystem_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_cli_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_clocks_bindings;
 #[cfg(feature = "jni-bindings")]
-pub mod jni_wasi_random_bindings;
+pub mod jni_wasi_filesystem_bindings;
+#[cfg(feature = "jni-bindings")]
+pub mod jni_wasi_io_bindings;
 #[cfg(all(feature = "jni-bindings", feature = "wasi-keyvalue"))]
 pub mod jni_wasi_keyvalue_bindings;
 #[cfg(feature = "jni-bindings")]
-pub mod jni_gc_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_typed_func_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod platform_memory_jni;
+pub mod jni_wasi_random_bindings;
+#[cfg(all(feature = "jni-bindings", feature = "wasi-threads"))]
+pub mod jni_wasi_threads_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wast_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wit_value_bindings;
-#[cfg(all(feature = "jni-bindings", feature = "wasi-threads"))]
-pub mod jni_wasi_threads_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_component_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_module_cache_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_profiler_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_pooling_allocator_bindings;
 #[cfg(feature = "panama-ffi")]
 pub mod panama;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_wasi_io_ffi;
+pub mod panama_exception_ffi;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_wasi_filesystem_ffi;
+pub mod panama_gc_ffi;
+#[cfg(feature = "panama-ffi")]
+pub mod panama_simd_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_cli_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_clocks_ffi;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_wasi_random_ffi;
+pub mod panama_wasi_filesystem_ffi;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_gc_ffi;
-#[cfg(feature = "panama-ffi")]
-pub mod panama_simd_ffi;
-#[cfg(all(feature = "panama-ffi", feature = "wasi-threads"))]
-pub mod panama_wasi_threads_ffi;
+pub mod panama_wasi_io_ffi;
 #[cfg(all(feature = "panama-ffi", feature = "wasi-keyvalue"))]
 pub mod panama_wasi_keyvalue_ffi;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_exception_ffi;
+pub mod panama_wasi_random_ffi;
+#[cfg(all(feature = "panama-ffi", feature = "wasi-threads"))]
+pub mod panama_wasi_threads_ffi;
+#[cfg(feature = "jni-bindings")]
+pub mod platform_memory_jni;
 
 // Advanced modules - will be implemented in later tasks
 #[cfg(feature = "wasi")]
@@ -159,7 +159,6 @@ pub mod wasi_threads;
 
 // Experimental WebAssembly features (committee-stage proposals)
 pub mod experimental_features;
-
 
 // Async runtime for async WebAssembly operations
 pub mod async_runtime;
@@ -182,7 +181,6 @@ pub mod wasi_clocks_helpers;
 // Shared helper functions for WASI random operations (used by both JNI and Panama FFI)
 pub mod wasi_random_helpers;
 
-
 // Shared helper functions for WASI keyvalue operations (used by both JNI and Panama FFI)
 #[cfg(feature = "wasi-keyvalue")]
 pub mod wasi_keyvalue_helpers;
@@ -196,11 +194,11 @@ pub mod component;
 #[cfg(feature = "component-model")]
 pub mod component_core;
 #[cfg(feature = "component-model")]
-pub mod version_types;
-#[cfg(feature = "component-model")]
 pub mod component_resources;
 #[cfg(feature = "component-model")]
 pub mod resource_dynamic;
+#[cfg(feature = "component-model")]
+pub mod version_types;
 
 // SIMD support
 pub mod simd;
@@ -221,100 +219,106 @@ pub mod epoch_callback;
 pub mod guest_profiler;
 
 // WebAssembly GC implementation
-pub mod gc_types;
+pub mod gc;
 pub mod gc_heap;
 pub mod gc_operations;
-pub mod gc;
+pub mod gc_types;
 
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};
-pub use error::{WasmtimeError, WasmtimeResult, ErrorCode};
-pub use module::{Module, ModuleMetadata, ModuleValueType, ImportKind, ExportKind, FunctionSignature};
-pub use store::{Store, StoreBuilder, StoreData, StoreMetadata, ResourceLimits, ExecutionState, MemoryUsage};
-pub use instance::{Instance, InstanceMetadata, ImportBinding, ExportBinding, WasmValue, ExecutionResult};
+pub use error::{ErrorCode, WasmtimeError, WasmtimeResult};
+pub use global::{Global, GlobalMetadata, GlobalValue, ReferenceType as GlobalReferenceType};
 pub use hostfunc::{HostFunction, HostFunctionBuilder, HostFunctionCallback, MarshallingResult};
-pub use memory::{Memory, MemoryBuilder, MemoryConfig, MemoryMetadata, MemoryUsage as MemUsage, MemoryDataType, MemoryRegistry, MemoryError};
-pub use global::{Global, GlobalValue, GlobalMetadata, ReferenceType as GlobalReferenceType};
+pub use instance::{
+    ExecutionResult, ExportBinding, ImportBinding, Instance, InstanceMetadata, WasmValue,
+};
+pub use linker::{
+    HostFunctionDefinition, ImportDefinition, ImportType, Linker, LinkerConfig,
+    LinkerInstantiationResult, LinkerMetadata,
+};
+pub use memory::{
+    Memory, MemoryBuilder, MemoryConfig, MemoryDataType, MemoryError, MemoryMetadata,
+    MemoryRegistry, MemoryUsage as MemUsage,
+};
+pub use module::{
+    ExportKind, FunctionSignature, ImportKind, Module, ModuleMetadata, ModuleValueType,
+};
+pub use store::{
+    ExecutionState, MemoryUsage, ResourceLimits, Store, StoreBuilder, StoreData, StoreMetadata,
+};
 pub use table::{Table, TableElement, TableMetadata};
-pub use linker::{Linker, LinkerMetadata, LinkerConfig, LinkerInstantiationResult, HostFunctionDefinition, ImportDefinition, ImportType};
 
 // Re-export additional core functionality
 pub use caller::{CallerContext, CallerExport, CallerExportType, ExportCounts};
 pub use serialization::{
-    ModuleSerializer, SerializationConfig, ModuleSizeInfo, SerializationStats, CacheInfo, ValidationLevel
+    CacheInfo, ModuleSerializer, ModuleSizeInfo, SerializationConfig, SerializationStats,
+    ValidationLevel,
 };
 
 // Optional re-exports based on features
 #[cfg(feature = "wasi")]
 pub use wasi::{
-    WasiContext, WasiConfig, EnvironmentPolicy, DirectoryMapping,
-    WasiDirPermissions, WasiFilePermissions, StdioConfig, StdioSource, StdioSink,
-    WasiExecutionResult, WasiCapabilitiesSummary, WasiFileDescriptorManager,
-    WasiFileDescriptor, WasiDirectoryDescriptor, WasiDirectoryEntry, WasiFilestat
+    DirectoryMapping, EnvironmentPolicy, StdioConfig, StdioSink, StdioSource,
+    WasiCapabilitiesSummary, WasiConfig, WasiContext, WasiDirPermissions, WasiDirectoryDescriptor,
+    WasiDirectoryEntry, WasiExecutionResult, WasiFileDescriptor, WasiFileDescriptorManager,
+    WasiFilePermissions, WasiFilestat,
 };
 
 // Re-export async runtime functionality
 pub use async_runtime::{
-    AsyncOperation, AsyncOperationType, AsyncOperationStatus,
-    AsyncFunctionCallContext, AsyncCompilationContext, CompilationOptions,
-    get_async_runtime, get_runtime_handle, execute_async_function_call,
-    compile_module_async, cancel_async_operation, get_operation_status,
-    wait_for_operation
+    cancel_async_operation, compile_module_async, execute_async_function_call, get_async_runtime,
+    get_operation_status, get_runtime_handle, wait_for_operation, AsyncCompilationContext,
+    AsyncFunctionCallContext, AsyncOperation, AsyncOperationStatus, AsyncOperationType,
+    CompilationOptions,
 };
 
 // Re-export WASI Preview 2 functionality
 pub use wasi_preview2::{
-    WasiPreview2Context, WasiPreview2Config, WasiStream, WasiStreamType,
-    AsyncWasiOperation, AsyncWasiOperationType
+    AsyncWasiOperation, AsyncWasiOperationType, WasiPreview2Config, WasiPreview2Context,
+    WasiStream, WasiStreamType,
 };
 
 // Component model re-exports
 #[cfg(feature = "component-model")]
 pub use component::{
-    ComponentEngine, Component, ComponentMetadata, ComponentStoreData,
-    InterfaceDefinition, FunctionDefinition, Parameter, TypeDefinition, ResourceDefinition,
-    ComponentValueType, ComponentTypeKind, FieldType, CaseType,
-    ResourceManager, HostInterface, InstanceInfo, ComponentLinker, WasiP2Config,
-    ComponentInstanceWrapper, ComponentInstanceMetadata, ComponentInstanceState,
-    ComponentValue, ComponentHostCallback, ComponentHostFunctionEntry, WitParser
+    CaseType, Component, ComponentEngine, ComponentHostCallback, ComponentHostFunctionEntry,
+    ComponentInstanceMetadata, ComponentInstanceState, ComponentInstanceWrapper, ComponentLinker,
+    ComponentMetadata, ComponentStoreData, ComponentTypeKind, ComponentValue, ComponentValueType,
+    FieldType, FunctionDefinition, HostInterface, InstanceInfo, InterfaceDefinition, Parameter,
+    ResourceDefinition, ResourceManager, TypeDefinition, WasiP2Config, WitParser,
 };
 
 #[cfg(feature = "component-model")]
-pub use component_core::{
-    EnhancedComponentEngine, ComponentInstanceHandle, ComponentMetrics
-};
+pub use component_core::{ComponentInstanceHandle, ComponentMetrics, EnhancedComponentEngine};
 
 #[cfg(feature = "component-model")]
 pub use version_types::{ComponentId, SemanticVersion, VersionConstraint};
 
 #[cfg(feature = "component-model")]
 pub use component_resources::{
-    ComponentResourceManager, ManagedResource, ResourceHandle, ResourcePermissions,
-    ResourceState, AccessType, ResourceQuotas, UsageTracking
+    AccessType, ComponentResourceManager, ManagedResource, ResourceHandle, ResourcePermissions,
+    ResourceQuotas, ResourceState, UsageTracking,
 };
 
 // Re-export WebAssembly GC types for garbage collection support
 pub use gc::{
-    WasmGcRuntime, StructOperationResult, ArrayOperationResult, RefOperationResult, WasmtimeGcRef
+    ArrayOperationResult, RefOperationResult, StructOperationResult, WasmGcRuntime, WasmtimeGcRef,
 };
 
-pub use gc_types::{
-    GcReferenceType, StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType as GcFieldType,
-    GcValue, GcTypeRegistry
-};
 pub use gc_heap::{
-    GcHeap, GcHeapConfig, GcHeapStats, ObjectId,
-    GcCollectionResult, GcWeakReference, CollectionTrigger
+    CollectionTrigger, GcCollectionResult, GcHeap, GcHeapConfig, GcHeapStats, GcWeakReference,
+    ObjectId,
+};
+pub use gc_types::{
+    ArrayTypeDefinition, FieldDefinition, FieldType as GcFieldType, GcReferenceType,
+    GcTypeRegistry, GcValue, StructTypeDefinition,
 };
 
 // Re-export shared FFI utilities for interface implementations
 pub use shared_ffi::{
-    ParameterConverter, ReturnValueConverter,
-    FFI_SUCCESS, FFI_ERROR,
-    FfiStrategy, FfiOptLevel, FfiWasmFeature,
-    BooleanReturnConverter, IntegerReturnConverter, PointerReturnConverter,
-    convert_wasm_features, validate_wasm_features,
-    validation, error_mapping
+    convert_wasm_features, error_mapping, validate_wasm_features, validation,
+    BooleanReturnConverter, FfiOptLevel, FfiStrategy, FfiWasmFeature, IntegerReturnConverter,
+    ParameterConverter, PointerReturnConverter, ReturnValueConverter, FFI_ERROR, FFI_SUCCESS,
 };
 
 /// Library version information
@@ -335,7 +339,10 @@ pub const WASMTIME_VERSION: &str = "41.0.3";
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_init() -> i32 {
     env_logger::try_init().unwrap_or(());
-    log::info!("Wasmtime4j native library initialized (version {})", VERSION);
+    log::info!(
+        "Wasmtime4j native library initialized (version {})",
+        VERSION
+    );
     0 // Success
 }
 

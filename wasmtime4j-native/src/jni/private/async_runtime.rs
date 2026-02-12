@@ -34,7 +34,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniAsyncRuntime_nativeAs
     _class: JClass,
 ) -> jstring {
     let handle = get_runtime_handle();
-    let info = format!("Tokio runtime with {} workers", handle.metrics().num_workers());
+    let info = format!(
+        "Tokio runtime with {} workers",
+        handle.metrics().num_workers()
+    );
     match env.new_string(&info) {
         Ok(s) => s.into_raw(),
         Err(_) => std::ptr::null_mut(),
@@ -121,7 +124,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniAsyncRuntime_nativeMo
         return -1;
     }
 
-    log::info!("Async module compilation requested for {} bytes", bytes.len());
+    log::info!(
+        "Async module compilation requested for {} bytes",
+        bytes.len()
+    );
 
     // Get JavaVM for thread-safe callback invocation
     let jvm = match env.get_java_vm() {
@@ -136,7 +142,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniAsyncRuntime_nativeMo
     let completion_global = match env.new_global_ref(&completion_callback) {
         Ok(g) => g,
         Err(e) => {
-            log::error!("Failed to create global ref for completion callback: {:?}", e);
+            log::error!(
+                "Failed to create global ref for completion callback: {:?}",
+                e
+            );
             return -1;
         }
     };
@@ -191,10 +200,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniAsyncRuntime_nativeMo
         match compile_result {
             Ok(_module) => {
                 log::info!("Async compilation succeeded for operation {}", operation_id);
-                invoke_completion_callback(&mut guard, &completion_global, true, "Compilation successful");
+                invoke_completion_callback(
+                    &mut guard,
+                    &completion_global,
+                    true,
+                    "Compilation successful",
+                );
             }
             Err(e) => {
-                log::error!("Async compilation failed for operation {}: {:?}", operation_id, e);
+                log::error!(
+                    "Async compilation failed for operation {}: {:?}",
+                    operation_id,
+                    e
+                );
                 invoke_completion_callback(
                     &mut guard,
                     &completion_global,
@@ -216,13 +234,14 @@ fn invoke_completion_callback(
     message: &str,
 ) {
     // Find OperationStatus enum class
-    let status_class = match env.find_class("ai/tegmentum/wasmtime4j/async/AsyncRuntime$OperationStatus") {
-        Ok(c) => c,
-        Err(e) => {
-            log::error!("Failed to find OperationStatus class: {:?}", e);
-            return;
-        }
-    };
+    let status_class =
+        match env.find_class("ai/tegmentum/wasmtime4j/async/AsyncRuntime$OperationStatus") {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to find OperationStatus class: {:?}", e);
+                return;
+            }
+        };
 
     // Get the appropriate enum value (COMPLETED or FAILED)
     let status_field_name = if success { "COMPLETED" } else { "FAILED" };
@@ -236,19 +255,24 @@ fn invoke_completion_callback(
             }
         },
         Err(e) => {
-            log::error!("Failed to get OperationStatus.{}: {:?}", status_field_name, e);
+            log::error!(
+                "Failed to get OperationStatus.{}: {:?}",
+                status_field_name,
+                e
+            );
             return;
         }
     };
 
     // Find the AsyncResult class (nested inside AsyncRuntime)
-    let result_class = match env.find_class("ai/tegmentum/wasmtime4j/async/AsyncRuntime$AsyncResult") {
-        Ok(c) => c,
-        Err(e) => {
-            log::error!("Failed to find AsyncResult class: {:?}", e);
-            return;
-        }
-    };
+    let result_class =
+        match env.find_class("ai/tegmentum/wasmtime4j/async/AsyncRuntime$AsyncResult") {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to find AsyncResult class: {:?}", e);
+                return;
+            }
+        };
 
     // Create message string
     let message_jstr = match env.new_string(message) {

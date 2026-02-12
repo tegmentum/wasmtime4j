@@ -4,23 +4,25 @@
 //! Each store maintains its own isolated execution environment with resource limits,
 //! fuel tracking, and comprehensive cleanup capabilities.
 
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
-use wasmtime::{Store as WasmtimeStore, StoreContext, StoreContextMut, AsContext, AsContextMut, FuncType, Func};
-use wasmtime_wasi::p1::WasiP1Ctx;
-use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
-#[cfg(feature = "wasi-http")]
-use wasmtime_wasi_http::WasiHttpCtx;
-#[cfg(feature = "wasi-http")]
-use wasmtime::component::ResourceTable;
-#[cfg(feature = "wasi-nn")]
-use wasmtime_wasi_nn::witx::WasiNnCtx;
 use crate::engine::Engine;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
 use crate::interop::ReentrantLock;
 use crate::module::Module;
 use once_cell::sync::Lazy;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+#[cfg(feature = "wasi-http")]
+use wasmtime::component::ResourceTable;
+use wasmtime::{
+    AsContext, AsContextMut, Func, FuncType, Store as WasmtimeStore, StoreContext, StoreContextMut,
+};
+use wasmtime_wasi::p1::WasiP1Ctx;
+use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
+#[cfg(feature = "wasi-http")]
+use wasmtime_wasi_http::WasiHttpCtx;
+#[cfg(feature = "wasi-nn")]
+use wasmtime_wasi_nn::witx::WasiNnCtx;
 
 /// Store ID counter for unique identification
 static STORE_ID_COUNTER: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(1));
@@ -93,15 +95,30 @@ impl std::fmt::Debug for StoreData {
             .field("resource_limits", &self.resource_limits)
             .field("execution_state", &self.execution_state)
             .field("wasi_ctx", &self.wasi_ctx.as_ref().map(|_| "<WasiP1Ctx>"))
-            .field("wasi_stdout_pipe", &self.wasi_stdout_pipe.as_ref().map(|_| "<pipe>"))
-            .field("wasi_stderr_pipe", &self.wasi_stderr_pipe.as_ref().map(|_| "<pipe>"))
-            .field("wasi_fd_manager", &self.wasi_fd_manager.as_ref().map(|_| "<fd_manager>"));
+            .field(
+                "wasi_stdout_pipe",
+                &self.wasi_stdout_pipe.as_ref().map(|_| "<pipe>"),
+            )
+            .field(
+                "wasi_stderr_pipe",
+                &self.wasi_stderr_pipe.as_ref().map(|_| "<pipe>"),
+            )
+            .field(
+                "wasi_fd_manager",
+                &self.wasi_fd_manager.as_ref().map(|_| "<fd_manager>"),
+            );
         #[cfg(feature = "wasi-http")]
         debug
-            .field("wasi_http_ctx", &self.wasi_http_ctx.as_ref().map(|_| "<WasiHttpCtx>"))
+            .field(
+                "wasi_http_ctx",
+                &self.wasi_http_ctx.as_ref().map(|_| "<WasiHttpCtx>"),
+            )
             .field("resource_table", &"<ResourceTable>");
         #[cfg(feature = "wasi-nn")]
-        debug.field("wasi_nn_ctx", &self.wasi_nn_ctx.as_ref().map(|_| "<WasiNnCtx>"));
+        debug.field(
+            "wasi_nn_ctx",
+            &self.wasi_nn_ctx.as_ref().map(|_| "<WasiNnCtx>"),
+        );
         debug.finish()
     }
 }
@@ -210,7 +227,11 @@ impl Store {
     /// This should be called at the start of any method that accesses self.inner.
     #[inline]
     fn check_not_closed(&self) -> WasmtimeResult<()> {
-        if self.metadata.is_closed.load(std::sync::atomic::Ordering::SeqCst) {
+        if self
+            .metadata
+            .is_closed
+            .load(std::sync::atomic::Ordering::SeqCst)
+        {
             return Err(WasmtimeError::Store {
                 message: format!("Store {} has been closed and cannot be used", self.id),
             });
@@ -220,7 +241,9 @@ impl Store {
 
     /// Check if this store has been closed
     pub fn is_closed(&self) -> bool {
-        self.metadata.is_closed.load(std::sync::atomic::Ordering::SeqCst)
+        self.metadata
+            .is_closed
+            .load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Get a reference to the engine used by this store
@@ -247,7 +270,11 @@ impl Store {
     /// # Panics
     /// Panics if the store has been closed, to prevent use-after-free crashes.
     pub fn lock_store(&self) -> crate::interop::ReentrantLockGuard<'_, WasmtimeStore<StoreData>> {
-        if self.metadata.is_closed.load(std::sync::atomic::Ordering::SeqCst) {
+        if self
+            .metadata
+            .is_closed
+            .load(std::sync::atomic::Ordering::SeqCst)
+        {
             panic!("Store {} has been closed and cannot be used", self.id);
         }
         self.inner.lock()
@@ -257,7 +284,9 @@ impl Store {
     ///
     /// Returns an error if the store has been closed.
     /// Use this method when you need to handle the closed case gracefully.
-    pub fn try_lock_store(&self) -> WasmtimeResult<crate::interop::ReentrantLockGuard<'_, WasmtimeStore<StoreData>>> {
+    pub fn try_lock_store(
+        &self,
+    ) -> WasmtimeResult<crate::interop::ReentrantLockGuard<'_, WasmtimeStore<StoreData>>> {
         self.check_not_closed()?;
         Ok(self.inner.lock())
     }
@@ -331,10 +360,12 @@ impl Store {
         let current_fuel = store.get_fuel().unwrap_or(0);
         let new_fuel = current_fuel.saturating_add(fuel);
 
-        store.set_fuel(new_fuel).map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to add fuel: {}", e),
-            backtrace: None,
-        })?;
+        store
+            .set_fuel(new_fuel)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to add fuel: {}", e),
+                backtrace: None,
+            })?;
 
         Ok(())
     }
@@ -376,10 +407,12 @@ impl Store {
 
         let current_fuel = store.get_fuel().unwrap_or(0);
         if current_fuel >= fuel {
-            store.set_fuel(current_fuel - fuel).map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to consume fuel: {}", e),
-                backtrace: None,
-            })?;
+            store
+                .set_fuel(current_fuel - fuel)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to consume fuel: {}", e),
+                    backtrace: None,
+                })?;
             Ok(fuel)
         } else {
             store.set_fuel(0).map_err(|e| WasmtimeError::Runtime {
@@ -481,10 +514,12 @@ impl Store {
     pub fn fuel_async_yield_interval(&self, interval: Option<u64>) -> WasmtimeResult<()> {
         self.check_not_closed()?;
         let mut store = self.inner.lock();
-        store.fuel_async_yield_interval(interval).map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to set fuel async yield interval: {}", e),
-            backtrace: None,
-        })
+        store
+            .fuel_async_yield_interval(interval)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to set fuel async yield interval: {}", e),
+                backtrace: None,
+            })
     }
 
     /// Set epoch deadline with async yield and update
@@ -569,12 +604,19 @@ impl Store {
         // Configure the Wasmtime epoch deadline callback
         // The callback receives StoreContextMut and returns Result<UpdateDeadline, Error>
         store.epoch_deadline_callback(move |_store_ctx| {
-            log::trace!("Epoch deadline reached, invoking callback: callback_id={}", callback_id);
+            log::trace!(
+                "Epoch deadline reached, invoking callback: callback_id={}",
+                callback_id
+            );
 
             // Invoke the external callback
             let result = callback_fn(callback_id, 0); // epoch counter not easily accessible here
 
-            log::trace!("Epoch callback returned: result={}, callback_id={}", result, callback_id);
+            log::trace!(
+                "Epoch callback returned: result={}, callback_id={}",
+                result,
+                callback_id
+            );
 
             if result > 0 {
                 // Continue execution with the returned delta
@@ -883,9 +925,11 @@ impl StoreBuilder {
         // Configure fuel if specified OR if Engine requires it
         if engine.fuel_enabled() {
             let fuel = self.fuel_limit.unwrap_or(u64::MAX);
-            wasmtime_store.set_fuel(fuel).map_err(|e| WasmtimeError::Store {
-                message: format!("Failed to set initial fuel: {}", e),
-            })?;
+            wasmtime_store
+                .set_fuel(fuel)
+                .map_err(|e| WasmtimeError::Store {
+                    message: format!("Failed to set initial fuel: {}", e),
+                })?;
         }
 
         let metadata = StoreMetadata {
@@ -972,9 +1016,11 @@ impl StoreBuilder {
         // Check via the module's engine reference
         if module.engine().fuel_enabled() {
             let fuel = self.fuel_limit.unwrap_or(u64::MAX);
-            wasmtime_store.set_fuel(fuel).map_err(|e| WasmtimeError::Store {
-                message: format!("Failed to set initial fuel: {}", e),
-            })?;
+            wasmtime_store
+                .set_fuel(fuel)
+                .map_err(|e| WasmtimeError::Store {
+                    message: format!("Failed to set initial fuel: {}", e),
+                })?;
         }
 
         let metadata = StoreMetadata {
@@ -1039,22 +1085,21 @@ impl Drop for Store {
 }
 
 /// Shared core functions for store operations used by both JNI and Panama interfaces
-/// 
+///
 /// These functions eliminate code duplication and provide consistent behavior
 /// across interface implementations while maintaining defensive programming practices.
 pub mod core {
     use super::*;
+    use crate::engine::Engine;
+    use crate::validate_ptr_not_null;
     use std::os::raw::c_void;
     use std::time::Duration;
-    use crate::validate_ptr_not_null;
-    use crate::engine::Engine;
-    
+
     /// Core function to create a new store with default configuration
     pub fn create_store(engine: &Engine) -> WasmtimeResult<Box<Store>> {
         let store = Store::new(engine)?;
         Ok(Box::new(store))
     }
-
 
     /// Get store ID from pointer
     pub fn get_store_id(store_ptr: *const c_void) -> WasmtimeResult<u64> {
@@ -1062,7 +1107,7 @@ pub mod core {
         let store_ref = unsafe { &*(store_ptr as *const Store) };
         Ok(store_ref.id())
     }
-    
+
     /// Core function to create a store with custom configuration
     pub fn create_store_with_config(
         engine: &Engine,
@@ -1074,31 +1119,31 @@ pub mod core {
         max_functions: Option<usize>,
     ) -> WasmtimeResult<Box<Store>> {
         let mut builder = Store::builder();
-        
+
         if let Some(fuel) = fuel_limit {
             builder = builder.fuel_limit(fuel);
         }
-        
+
         if let Some(memory) = memory_limit_bytes {
             builder = builder.memory_limit(memory);
         }
-        
+
         if let Some(timeout_secs) = execution_timeout_secs {
             builder = builder.execution_timeout(Duration::from_secs(timeout_secs));
         }
-        
+
         if let Some(instances) = max_instances {
             builder = builder.max_instances(instances);
         }
-        
+
         if let Some(table_elements) = max_table_elements {
             builder = builder.max_table_elements(table_elements);
         }
-        
+
         if let Some(functions) = max_functions {
             builder = builder.max_functions(functions);
         }
-        
+
         builder.build(engine).map(Box::new)
     }
 
@@ -1117,13 +1162,13 @@ pub mod core {
         validate_ptr_not_null!(store_ptr, "store");
         Ok(&*(store_ptr as *const Store))
     }
-    
+
     /// Core function to validate store pointer and get mutable reference
     pub unsafe fn get_store_mut(store_ptr: *mut c_void) -> WasmtimeResult<&'static mut Store> {
         validate_ptr_not_null!(store_ptr, "store");
         Ok(&mut *(store_ptr as *mut Store))
     }
-    
+
     /// Core function to add fuel to a store
     pub fn add_fuel(store: &Store, fuel: u64) -> WasmtimeResult<()> {
         store.add_fuel(fuel)
@@ -1138,12 +1183,12 @@ pub mod core {
     pub fn get_fuel_remaining(store: &Store) -> WasmtimeResult<u64> {
         store.fuel_remaining().map(|opt| opt.unwrap_or(0))
     }
-    
+
     /// Core function to consume fuel from a store
     pub fn consume_fuel(store: &Store, fuel: u64) -> WasmtimeResult<u64> {
         store.consume_fuel(fuel)
     }
-    
+
     /// Core function to set epoch deadline for interruption
     pub fn set_epoch_deadline(store: &Store, ticks: u64) {
         store.set_epoch_deadline(ticks)
@@ -1183,27 +1228,27 @@ pub mod core {
     pub fn get_execution_stats(store: &Store) -> WasmtimeResult<ExecutionState> {
         store.execution_stats()
     }
-    
+
     /// Core function to get memory usage statistics
     pub fn get_memory_usage(store: &Store) -> WasmtimeResult<MemoryUsage> {
         store.memory_usage()
     }
-    
+
     /// Core function to force garbage collection
     pub fn garbage_collect(store: &Store) -> WasmtimeResult<()> {
         store.gc()
     }
-    
+
     /// Core function to get store metadata
     pub fn get_store_metadata(store: &Store) -> &StoreMetadata {
         store.metadata()
     }
-    
+
     /// Core function to validate store functionality
     pub fn validate_store(store: &Store) -> WasmtimeResult<()> {
         store.validate()
     }
-    
+
     /// Core function to destroy a store (safe cleanup)
     ///
     /// Uses the consolidated `safe_destroy` utility from `ffi_common::resource_destruction`
@@ -1212,7 +1257,7 @@ pub mod core {
         use crate::ffi_common::resource_destruction::safe_destroy;
         let _ = safe_destroy::<Store>(store_ptr, "Store");
     }
-    
+
     /// Core function to execute with store context
     pub fn with_store_context<T, F>(store: &Store, func: F) -> WasmtimeResult<T>
     where
@@ -1220,7 +1265,7 @@ pub mod core {
     {
         store.with_context(func)
     }
-    
+
     /// Core function to execute with read-only store context
     pub fn with_store_context_ro<T, F>(store: &Store, func: F) -> WasmtimeResult<T>
     where
@@ -1228,12 +1273,12 @@ pub mod core {
     {
         store.with_context_ro(func)
     }
-    
+
     /// Core function to get current fuel level
     pub fn get_fuel_level(store: &Store) -> WasmtimeResult<Option<u64>> {
         store.fuel_remaining()
     }
-    
+
     /// Core function to set fuel level
     pub fn set_fuel_level(store: &Store, fuel: u64) -> WasmtimeResult<()> {
         store.set_fuel(fuel)
@@ -1251,7 +1296,10 @@ pub mod core {
     pub fn set_memory_limit(_store: &Store, limit: Option<u64>) -> WasmtimeResult<()> {
         // Note: Wasmtime stores don't support runtime memory limit changes
         // This validates the request but doesn't apply the limit
-        log::debug!("Memory limit change requested: {:?} (validation only)", limit);
+        log::debug!(
+            "Memory limit change requested: {:?} (validation only)",
+            limit
+        );
 
         if let Some(bytes) = limit {
             if bytes > (usize::MAX as u64) {
@@ -1269,7 +1317,10 @@ pub mod core {
     pub fn set_table_element_limit(_store: &Store, limit: Option<u64>) -> WasmtimeResult<()> {
         // Note: Wasmtime stores don't support runtime table element limit changes
         // This validates the request but doesn't apply the limit
-        log::debug!("Table element limit change requested: {:?} (validation only)", limit);
+        log::debug!(
+            "Table element limit change requested: {:?} (validation only)",
+            limit
+        );
 
         if let Some(elements) = limit {
             if elements > (u32::MAX as u64) {
@@ -1287,7 +1338,10 @@ pub mod core {
     pub fn set_instance_limit(_store: &Store, limit: Option<u32>) -> WasmtimeResult<()> {
         // Note: Wasmtime stores don't support runtime instance limit changes
         // This validates the request but doesn't apply the limit
-        log::debug!("Instance limit change requested: {:?} (validation only)", limit);
+        log::debug!(
+            "Instance limit change requested: {:?} (validation only)",
+            limit
+        );
 
         // Validation only - limits are typically set during store creation
         // Return success but note that limit cannot be changed at runtime
@@ -1327,7 +1381,10 @@ mod tests {
         assert!(store.validate().is_ok());
         assert_eq!(store.metadata().fuel_limit, Some(1000));
         assert_eq!(store.metadata().memory_limit_bytes, Some(1024 * 1024));
-        assert_eq!(store.metadata().execution_timeout, Some(Duration::from_secs(30)));
+        assert_eq!(
+            store.metadata().execution_timeout,
+            Some(Duration::from_secs(30))
+        );
     }
 
     #[test]
@@ -1343,11 +1400,13 @@ mod tests {
 
         // Test adding fuel
         assert!(store.add_fuel(500).is_ok());
-        
+
         // Test fuel remaining
-        let remaining = store.fuel_remaining().expect("Failed to get fuel remaining");
+        let remaining = store
+            .fuel_remaining()
+            .expect("Failed to get fuel remaining");
         assert!(remaining.is_some());
-        
+
         // Test consuming fuel
         let consumed = store.consume_fuel(100).expect("Failed to consume fuel");
         assert_eq!(consumed, 100);
@@ -1358,9 +1417,7 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        let result = store.with_context(|_ctx| {
-            Ok(42i32)
-        });
+        let result = store.with_context(|_ctx| Ok(42i32));
 
         assert_eq!(result.unwrap(), 42);
 
@@ -1390,49 +1447,50 @@ mod tests {
     #[test]
     fn test_store_core_functions() {
         use crate::store::core;
-        
+
         let engine = shared_engine();
-        
+
         // Test core store creation
         let store = core::create_store(&engine).expect("Failed to create store via core");
-        
+
         // Test core store validation
-        let store_ref = unsafe { 
+        let store_ref = unsafe {
             core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
-                .expect("Failed to get store reference") 
+                .expect("Failed to get store reference")
         };
         assert!(core::validate_store(store_ref).is_ok());
-        
+
         // Test core metadata access
         let metadata = core::get_store_metadata(store_ref);
         assert!(metadata.fuel_limit.is_none()); // Default store has no fuel limit
-        
+
         // Test core garbage collection
         assert!(core::garbage_collect(store_ref).is_ok());
     }
 
-    #[test] 
+    #[test]
     fn test_store_with_config_core() {
         use crate::store::core;
-        
+
         let engine = shared_engine();
-        
+
         // Test core store creation with config
         let store = core::create_store_with_config(
             &engine,
-            Some(2000),     // fuel_limit
-            Some(2 * 1024 * 1024),  // memory_limit_bytes
-            Some(60),       // execution_timeout_secs
-            Some(20),       // max_instances
-            Some(5000),     // max_table_elements
-            Some(500),      // max_functions
-        ).expect("Failed to create store with config via core");
-        
-        let store_ref = unsafe { 
+            Some(2000),            // fuel_limit
+            Some(2 * 1024 * 1024), // memory_limit_bytes
+            Some(60),              // execution_timeout_secs
+            Some(20),              // max_instances
+            Some(5000),            // max_table_elements
+            Some(500),             // max_functions
+        )
+        .expect("Failed to create store with config via core");
+
+        let store_ref = unsafe {
             core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
-                .expect("Failed to get store reference") 
+                .expect("Failed to get store reference")
         };
-        
+
         // Verify configuration was applied
         let metadata = core::get_store_metadata(store_ref);
         assert_eq!(metadata.fuel_limit, Some(2000));
@@ -1448,28 +1506,26 @@ mod tests {
             .fuel_enabled(true)
             .build()
             .expect("Failed to create engine with fuel enabled");
-        let store = core::create_store_with_config(
-            &engine,
-            Some(1000),
-            None, None, None, None, None,
-        ).expect("Failed to create store with fuel");
-        
-        let store_ref = unsafe { 
+        let store =
+            core::create_store_with_config(&engine, Some(1000), None, None, None, None, None)
+                .expect("Failed to create store with fuel");
+
+        let store_ref = unsafe {
             core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
-                .expect("Failed to get store reference") 
+                .expect("Failed to get store reference")
         };
-        
+
         // Test adding fuel through core
         assert!(core::add_fuel(store_ref, 500).is_ok());
-        
+
         // Test getting remaining fuel
         let remaining = core::get_fuel_remaining(store_ref).expect("Failed to get fuel remaining");
         assert!(remaining > 0);
-        
+
         // Test consuming fuel
         let consumed = core::consume_fuel(store_ref, 100).expect("Failed to consume fuel");
         assert_eq!(consumed, 100);
-        
+
         // Test setting epoch deadline
         core::set_epoch_deadline(store_ref, 1000);
     }
@@ -1477,42 +1533,44 @@ mod tests {
     #[test]
     fn test_execution_statistics_core() {
         use crate::store::core;
-        
+
         let engine = shared_engine();
         let store = core::create_store(&engine).expect("Failed to create store");
-        
-        let store_ref = unsafe { 
+
+        let store_ref = unsafe {
             core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
-                .expect("Failed to get store reference") 
+                .expect("Failed to get store reference")
         };
-        
+
         // Initially, execution count should be 0
         let initial_stats = core::get_execution_stats(store_ref).expect("Failed to get stats");
         let initial_count = initial_stats.execution_count;
-        
+
         // Execute something with the store context
-        let result = core::with_store_context(store_ref, |_ctx| {
-            Ok(42i32)
-        });
+        let result = core::with_store_context(store_ref, |_ctx| Ok(42i32));
         assert_eq!(result.unwrap(), 42);
-        
+
         // Execution count should have increased
-        let updated_stats = core::get_execution_stats(store_ref).expect("Failed to get updated stats");
+        let updated_stats =
+            core::get_execution_stats(store_ref).expect("Failed to get updated stats");
         assert!(updated_stats.execution_count > initial_count);
-        
+
         // Test memory usage stats
         let memory_usage = core::get_memory_usage(store_ref).expect("Failed to get memory usage");
-        assert_eq!(memory_usage.instance_count, updated_stats.execution_count as usize);
+        assert_eq!(
+            memory_usage.instance_count,
+            updated_stats.execution_count as usize
+        );
     }
 
     #[test]
     fn test_defensive_pointer_validation() {
         use crate::store::core;
-        
+
         // Test null pointer handling
         let result = unsafe { core::get_store_ref(std::ptr::null()) };
         assert!(result.is_err());
-        
+
         let result = unsafe { core::get_store_mut(std::ptr::null_mut()) };
         assert!(result.is_err());
     }
@@ -1520,16 +1578,16 @@ mod tests {
     #[test]
     fn test_store_destroy() {
         use crate::store::core;
-        
+
         let engine = shared_engine();
         let store = core::create_store(&engine).expect("Failed to create store");
         let store_ptr = Box::into_raw(store) as *mut std::os::raw::c_void;
-        
+
         // Test safe destruction
         unsafe {
             core::destroy_store(store_ptr);
         }
-        
+
         // Test destroying null pointer (should not crash)
         unsafe {
             core::destroy_store(std::ptr::null_mut());
@@ -1552,7 +1610,7 @@ mod tests {
         let metadata = store.metadata();
         assert_eq!(metadata.fuel_limit, Some(5000));
         assert_eq!(metadata.memory_limit_bytes, Some(4 * 1024 * 1024));
-        
+
         // Test store validation passes
         assert!(store.validate().is_ok());
     }
@@ -1578,11 +1636,15 @@ mod tests {
             .expect("Failed to build store with fuel");
 
         // Test consuming more fuel than available
-        let consumed = store.consume_fuel(150).expect("Should handle over-consumption gracefully");
+        let consumed = store
+            .consume_fuel(150)
+            .expect("Should handle over-consumption gracefully");
         assert!(consumed <= 100); // Should consume what's available, not more
 
         // Test fuel remaining after over-consumption
-        let remaining = store.fuel_remaining().expect("Failed to get fuel remaining");
+        let remaining = store
+            .fuel_remaining()
+            .expect("Failed to get fuel remaining");
         assert_eq!(remaining, Some(0)); // Should be 0 after consuming all available fuel
     }
 
@@ -1640,7 +1702,8 @@ mod tests {
         let engine = shared_engine();
 
         // A simple WebAssembly module that exports an add function
-        let wasm_bytes = wat::parse_str(r#"
+        let wasm_bytes = wat::parse_str(
+            r#"
             (module
                 (func $add (param $a i32) (param $b i32) (result i32)
                     local.get $a
@@ -1648,15 +1711,15 @@ mod tests {
                     i32.add)
                 (export "add" (func $add))
             )
-        "#).expect("Failed to parse WAT");
+        "#,
+        )
+        .expect("Failed to parse WAT");
 
         // Compile module
-        let module = Module::compile(&engine, &wasm_bytes)
-            .expect("Failed to compile module");
+        let module = Module::compile(&engine, &wasm_bytes).expect("Failed to compile module");
 
         // Create store using for_module - this should ensure Arc compatibility
-        let mut store = Store::for_module(&module)
-            .expect("Failed to create store for module");
+        let mut store = Store::for_module(&module).expect("Failed to create store for module");
 
         // Verify store is valid
         assert!(store.validate().is_ok(), "Store should be valid");
@@ -1669,7 +1732,10 @@ mod tests {
 
         // Verify we can get the export
         let exports = instance.exports(&mut store).expect("Failed to get exports");
-        assert!(exports.contains(&"add".to_string()), "Should have 'add' export");
+        assert!(
+            exports.contains(&"add".to_string()),
+            "Should have 'add' export"
+        );
     }
 
     #[test]
@@ -1679,16 +1745,18 @@ mod tests {
         let engine = shared_engine();
 
         // A simple WebAssembly module
-        let wasm_bytes = wat::parse_str(r#"
+        let wasm_bytes = wat::parse_str(
+            r#"
             (module
                 (func $nop)
                 (export "nop" (func $nop))
             )
-        "#).expect("Failed to parse WAT");
+        "#,
+        )
+        .expect("Failed to parse WAT");
 
         // Compile module
-        let module = Module::compile(&engine, &wasm_bytes)
-            .expect("Failed to compile module");
+        let module = Module::compile(&engine, &wasm_bytes).expect("Failed to compile module");
 
         // Create store using builder with for_module
         let mut store = Store::builder()
@@ -1715,13 +1783,21 @@ mod tests {
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Initially no wasi-nn context
-        assert!(!store.has_wasi_nn_context(), "Store should not have wasi-nn context initially");
+        assert!(
+            !store.has_wasi_nn_context(),
+            "Store should not have wasi-nn context initially"
+        );
 
         // Set wasi-nn context
-        store.set_wasi_nn_context().expect("Failed to set wasi-nn context");
+        store
+            .set_wasi_nn_context()
+            .expect("Failed to set wasi-nn context");
 
         // Now should have context
-        assert!(store.has_wasi_nn_context(), "Store should have wasi-nn context after setting");
+        assert!(
+            store.has_wasi_nn_context(),
+            "Store should have wasi-nn context after setting"
+        );
 
         // List available backends
         let backends = wasmtime_wasi_nn::backend::list();
@@ -1740,11 +1816,15 @@ mod tests {
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Set wasi-nn context first
-        store.set_wasi_nn_context().expect("Failed to set wasi-nn context");
+        store
+            .set_wasi_nn_context()
+            .expect("Failed to set wasi-nn context");
 
         // Create linker and enable wasi-nn
         let mut linker = Linker::new(&engine).expect("Failed to create linker");
-        linker.enable_wasi_nn().expect("Failed to enable wasi-nn on linker");
+        linker
+            .enable_wasi_nn()
+            .expect("Failed to enable wasi-nn on linker");
 
         println!("WASI-NN successfully integrated with linker");
     }
@@ -1756,7 +1836,9 @@ mod tests {
     #[test]
     fn test_store_builder_default() {
         let engine = shared_engine();
-        let store = Store::builder().build(&engine).expect("Failed to build store");
+        let store = Store::builder()
+            .build(&engine)
+            .expect("Failed to build store");
 
         // Default store should have no limits
         let metadata = store.metadata();
@@ -1799,7 +1881,10 @@ mod tests {
             .build(&engine)
             .expect("Failed to build store");
 
-        assert_eq!(store.metadata().execution_timeout, Some(Duration::from_millis(1)));
+        assert_eq!(
+            store.metadata().execution_timeout,
+            Some(Duration::from_millis(1))
+        );
     }
 
     #[test]
@@ -1957,9 +2042,15 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        store.with_context(|_ctx| Ok(())).expect("Failed to execute");
-        store.with_context(|_ctx| Ok(())).expect("Failed to execute");
-        store.with_context(|_ctx| Ok(())).expect("Failed to execute");
+        store
+            .with_context(|_ctx| Ok(()))
+            .expect("Failed to execute");
+        store
+            .with_context(|_ctx| Ok(()))
+            .expect("Failed to execute");
+        store
+            .with_context(|_ctx| Ok(()))
+            .expect("Failed to execute");
 
         let stats = store.execution_stats().expect("Failed to get stats");
         assert_eq!(stats.execution_count, 3);
@@ -1970,10 +2061,12 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        store.with_context(|_ctx| {
-            std::thread::sleep(Duration::from_millis(1));
-            Ok(())
-        }).expect("Failed to execute");
+        store
+            .with_context(|_ctx| {
+                std::thread::sleep(Duration::from_millis(1));
+                Ok(())
+            })
+            .expect("Failed to execute");
 
         let stats = store.execution_stats().expect("Failed to get stats");
         assert!(stats.total_execution_time >= Duration::from_millis(1));
@@ -2004,8 +2097,8 @@ mod tests {
 // Native C exports for JNI and Panama FFI consumption
 //
 
-use std::os::raw::{c_void, c_int};
-use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
+use std::os::raw::{c_int, c_void};
 
 /// Create a new store with engine
 ///
@@ -2016,11 +2109,9 @@ use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_store_new(engine_ptr: *const c_void) -> *mut c_void {
     match crate::engine::core::get_engine_ref(engine_ptr) {
-        Ok(engine) => {
-            match core::create_store(engine) {
-                Ok(store) => Box::into_raw(store) as *mut c_void,
-                Err(_) => std::ptr::null_mut(),
-            }
+        Ok(engine) => match core::create_store(engine) {
+            Ok(store) => Box::into_raw(store) as *mut c_void,
+            Err(_) => std::ptr::null_mut(),
         },
         Err(_) => std::ptr::null_mut(),
     }
@@ -2041,15 +2132,35 @@ pub unsafe extern "C" fn wasmtime4j_store_new_with_config(
 ) -> *mut c_void {
     match crate::engine::core::get_engine_ref(engine_ptr) {
         Ok(engine) => {
-            let opt_fuel = if fuel_limit == 0 { None } else { Some(fuel_limit) };
-            let opt_memory = if memory_limit_bytes == 0 { None } else { Some(memory_limit_bytes) };
-            let opt_timeout = if execution_timeout_seconds == 0 { None } else { Some(execution_timeout_seconds) };
+            let opt_fuel = if fuel_limit == 0 {
+                None
+            } else {
+                Some(fuel_limit)
+            };
+            let opt_memory = if memory_limit_bytes == 0 {
+                None
+            } else {
+                Some(memory_limit_bytes)
+            };
+            let opt_timeout = if execution_timeout_seconds == 0 {
+                None
+            } else {
+                Some(execution_timeout_seconds)
+            };
 
-            match core::create_store_with_config(engine, opt_fuel, opt_memory, opt_timeout, None, None, None) {
+            match core::create_store_with_config(
+                engine,
+                opt_fuel,
+                opt_memory,
+                opt_timeout,
+                None,
+                None,
+                None,
+            ) {
                 Ok(store) => Box::into_raw(store) as *mut c_void,
                 Err(_) => std::ptr::null_mut(),
             }
-        },
+        }
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -2117,10 +2228,7 @@ pub unsafe extern "C" fn wasmtime4j_store_validate(store_ptr: *const c_void) -> 
 ///
 /// store_ptr must be a valid pointer from wasmtime4j_store_new
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_add_fuel(
-    store_ptr: *const c_void,
-    fuel: u64,
-) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_store_add_fuel(store_ptr: *const c_void, fuel: u64) -> c_int {
     match core::get_store_ref(store_ptr) {
         Ok(store) => match core::add_fuel(store, fuel) {
             Ok(_) => FFI_SUCCESS,
@@ -2137,10 +2245,7 @@ pub unsafe extern "C" fn wasmtime4j_store_add_fuel(
 /// store_ptr must be a valid pointer from wasmtime4j_store_new
 /// Returns amount of fuel actually consumed, or 0 on error
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_consume_fuel(
-    store_ptr: *const c_void,
-    fuel: u64,
-) -> u64 {
+pub unsafe extern "C" fn wasmtime4j_store_consume_fuel(store_ptr: *const c_void, fuel: u64) -> u64 {
     match core::get_store_ref(store_ptr) {
         Ok(store) => match core::consume_fuel(store, fuel) {
             Ok(consumed) => consumed,
@@ -2202,7 +2307,9 @@ pub unsafe extern "C" fn wasmtime4j_store_fuel_consumed(store_ptr: *const c_void
 ///
 /// store_ptr must be a valid pointer from wasmtime4j_store_new
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_total_execution_time_micros(store_ptr: *const c_void) -> u64 {
+pub unsafe extern "C" fn wasmtime4j_store_total_execution_time_micros(
+    store_ptr: *const c_void,
+) -> u64 {
     match core::get_store_ref(store_ptr) {
         Ok(store) => match core::get_execution_stats(store) {
             Ok(stats) => stats.total_execution_time.as_micros() as u64,

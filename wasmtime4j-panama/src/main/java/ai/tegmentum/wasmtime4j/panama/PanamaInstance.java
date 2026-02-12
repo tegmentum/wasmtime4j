@@ -1613,12 +1613,12 @@ public final class PanamaInstance implements Instance {
    * @param memory the memory to query
    * @return size in pages
    */
-  int getMemorySize(final PanamaMemory memory) {
+  long getMemorySize(final PanamaMemory memory) {
     ensureNotClosed();
     try (final Arena tempArena = Arena.ofConfined()) {
       final MemorySegment nameSegment =
           tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
           NATIVE_BINDINGS.instanceGetMemorySizePages(
@@ -1628,7 +1628,7 @@ public final class PanamaInstance implements Instance {
         throw new RuntimeException("Failed to get memory size: error code " + result);
       }
 
-      return sizeOut.get(ValueLayout.JAVA_INT, 0);
+      return sizeOut.get(ValueLayout.JAVA_LONG, 0);
     }
   }
 
@@ -1675,22 +1675,22 @@ public final class PanamaInstance implements Instance {
    * @param pages number of pages to grow
    * @return previous size in pages, or -1 if growth failed
    */
-  int growMemory(final PanamaMemory memory, final int pages) {
+  long growMemory(final PanamaMemory memory, final long pages) {
     ensureNotClosed();
     try (final Arena tempArena = Arena.ofConfined()) {
       final MemorySegment nameSegment =
           tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
           NATIVE_BINDINGS.instanceGrowMemory(
               nativeInstance, store.getNativeStore(), nameSegment, pages, previousPagesOut);
 
       if (result != 0) {
-        return -1; // Growth failed
+        return -1L; // Growth failed
       }
 
-      return previousPagesOut.get(ValueLayout.JAVA_INT, 0);
+      return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
     }
   }
 

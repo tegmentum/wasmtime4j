@@ -3,16 +3,16 @@
 #![allow(unused_variables)]
 
 #[cfg(feature = "jni-bindings")]
+use jni::objects::{JClass, JObject, JString, JValue};
+#[cfg(feature = "jni-bindings")]
+use jni::sys::{jboolean, jint, jlong, jobject, jobjectArray, jstring};
+#[cfg(feature = "jni-bindings")]
 use jni::JNIEnv;
-#[cfg(feature = "jni-bindings")]
-use jni::objects::{JClass, JString, JObject, JValue};
-#[cfg(feature = "jni-bindings")]
-use jni::sys::{jlong, jint, jboolean, jstring, jobject, jobjectArray};
 
 #[cfg(feature = "jni-bindings")]
-use crate::wast_runner::{execute_wast_file, execute_wast_buffer, WastExecutionResult};
-#[cfg(feature = "jni-bindings")]
 use crate::error::jni_utils;
+#[cfg(feature = "jni-bindings")]
+use crate::wast_runner::{execute_wast_buffer, execute_wast_file, WastExecutionResult};
 
 /// Execute a WAST file and return results
 ///
@@ -32,7 +32,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeExec
     let file_path_str: String = match env.get_string(&file_path) {
         Ok(s) => s.into(),
         Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &crate::error::WasmtimeError::JniError(format!("Failed to get file path: {}", e)));
+            jni_utils::throw_jni_exception(
+                &mut env,
+                &crate::error::WasmtimeError::JniError(format!("Failed to get file path: {}", e)),
+            );
             return std::ptr::null_mut();
         }
     };
@@ -41,7 +44,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeExec
     let result = match execute_wast_file(&file_path_str) {
         Ok(r) => r,
         Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &crate::error::WasmtimeError::WastExecutionError(format!("WAST execution failed: {}", e)));
+            jni_utils::throw_jni_exception(
+                &mut env,
+                &crate::error::WasmtimeError::WastExecutionError(format!(
+                    "WAST execution failed: {}",
+                    e
+                )),
+            );
             return std::ptr::null_mut();
         }
     };
@@ -76,7 +85,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeExec
     let filename_str: String = match env.get_string(&filename) {
         Ok(s) => s.into(),
         Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &crate::error::WasmtimeError::JniError(format!("Failed to get filename: {}", e)));
+            jni_utils::throw_jni_exception(
+                &mut env,
+                &crate::error::WasmtimeError::JniError(format!("Failed to get filename: {}", e)),
+            );
             return std::ptr::null_mut();
         }
     };
@@ -85,7 +97,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeExec
     let content_bytes = match env.convert_byte_array(&content) {
         Ok(bytes) => bytes,
         Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &crate::error::WasmtimeError::JniError(format!("Failed to get content: {}", e)));
+            jni_utils::throw_jni_exception(
+                &mut env,
+                &crate::error::WasmtimeError::JniError(format!("Failed to get content: {}", e)),
+            );
             return std::ptr::null_mut();
         }
     };
@@ -94,7 +109,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeExec
     let result = match execute_wast_buffer(&filename_str, &content_bytes) {
         Ok(r) => r,
         Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &crate::error::WasmtimeError::WastExecutionError(format!("WAST execution failed: {}", e)));
+            jni_utils::throw_jni_exception(
+                &mut env,
+                &crate::error::WasmtimeError::WastExecutionError(format!(
+                    "WAST execution failed: {}",
+                    e
+                )),
+            );
             return std::ptr::null_mut();
         }
     };
@@ -111,19 +132,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeExec
 
 /// Convert WastExecutionResult to Java object
 #[cfg(feature = "jni-bindings")]
-fn wast_result_to_java<'local>(env: &mut JNIEnv<'local>, result: WastExecutionResult) -> crate::error::WasmtimeResult<jobject> {
+fn wast_result_to_java<'local>(
+    env: &mut JNIEnv<'local>,
+    result: WastExecutionResult,
+) -> crate::error::WasmtimeResult<jobject> {
     // Find WastExecutionResult class
-    let result_class = env.find_class("ai/tegmentum/wasmtime4j/jni/WastExecutionResult")
-        .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to find WastExecutionResult class: {}", e)))?;
+    let result_class = env
+        .find_class("ai/tegmentum/wasmtime4j/jni/WastExecutionResult")
+        .map_err(|e| {
+            crate::error::WasmtimeError::JniError(format!(
+                "Failed to find WastExecutionResult class: {}",
+                e
+            ))
+        })?;
 
     // Create Java string for file path
-    let file_path_jstring = env.new_string(&result.file_path)
-        .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to create file path string: {}", e)))?;
+    let file_path_jstring = env.new_string(&result.file_path).map_err(|e| {
+        crate::error::WasmtimeError::JniError(format!("Failed to create file path string: {}", e))
+    })?;
 
     // Create Java string for execution error (if present) or null
     let error_jstring_obj: JObject = if let Some(ref error) = result.execution_error {
         env.new_string(error)
-            .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to create error string: {}", e)))?
+            .map_err(|e| {
+                crate::error::WasmtimeError::JniError(format!(
+                    "Failed to create error string: {}",
+                    e
+                ))
+            })?
             .into()
     } else {
         JObject::null()
@@ -134,8 +170,11 @@ fn wast_result_to_java<'local>(env: &mut JNIEnv<'local>, result: WastExecutionRe
 
     // Find constructor
     let ctor_sig = "(Ljava/lang/String;IIILjava/lang/String;[Lai/tegmentum/wasmtime4j/jni/WastDirectiveResult;)V";
-    let ctor = env.get_method_id(&result_class, "<init>", ctor_sig)
-        .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to find constructor: {}", e)))?;
+    let ctor = env
+        .get_method_id(&result_class, "<init>", ctor_sig)
+        .map_err(|e| {
+            crate::error::WasmtimeError::JniError(format!("Failed to find constructor: {}", e))
+        })?;
 
     // Create Java object
     let file_path_obj: JObject = file_path_jstring.into();
@@ -153,7 +192,12 @@ fn wast_result_to_java<'local>(env: &mut JNIEnv<'local>, result: WastExecutionRe
                 JValue::Object(&directive_array_obj).as_jni(),
             ],
         )
-        .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to create WastExecutionResult object: {}", e)))?
+        .map_err(|e| {
+            crate::error::WasmtimeError::JniError(format!(
+                "Failed to create WastExecutionResult object: {}",
+                e
+            ))
+        })?
     };
 
     Ok(java_result.into_raw())
@@ -166,25 +210,48 @@ fn directive_results_to_java_array<'local>(
     results: &[crate::wast_runner::WastDirectiveResult],
 ) -> crate::error::WasmtimeResult<JObject<'local>> {
     // Find WastDirectiveResult class
-    let directive_class = env.find_class("ai/tegmentum/wasmtime4j/jni/WastDirectiveResult")
-        .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to find WastDirectiveResult class: {}", e)))?;
+    let directive_class = env
+        .find_class("ai/tegmentum/wasmtime4j/jni/WastDirectiveResult")
+        .map_err(|e| {
+            crate::error::WasmtimeError::JniError(format!(
+                "Failed to find WastDirectiveResult class: {}",
+                e
+            ))
+        })?;
 
     // Create array
     let array_len = results.len() as i32;
-    let array = env.new_object_array(array_len, &directive_class, JObject::null())
-        .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to create directive results array: {}", e)))?;
+    let array = env
+        .new_object_array(array_len, &directive_class, JObject::null())
+        .map_err(|e| {
+            crate::error::WasmtimeError::JniError(format!(
+                "Failed to create directive results array: {}",
+                e
+            ))
+        })?;
 
     // Find constructor
     let ctor_sig = "(IZLjava/lang/String;)V";
-    let ctor = env.get_method_id(&directive_class, "<init>", ctor_sig)
-        .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to find WastDirectiveResult constructor: {}", e)))?;
+    let ctor = env
+        .get_method_id(&directive_class, "<init>", ctor_sig)
+        .map_err(|e| {
+            crate::error::WasmtimeError::JniError(format!(
+                "Failed to find WastDirectiveResult constructor: {}",
+                e
+            ))
+        })?;
 
     // Populate array
     for (i, directive_result) in results.iter().enumerate() {
         // Create error message string (if present) or null
         let error_msg_obj: JObject = if let Some(ref error) = directive_result.error_message {
             env.new_string(error)
-                .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to create error message: {}", e)))?
+                .map_err(|e| {
+                    crate::error::WasmtimeError::JniError(format!(
+                        "Failed to create error message: {}",
+                        e
+                    ))
+                })?
                 .into()
         } else {
             JObject::null()
@@ -201,12 +268,19 @@ fn directive_results_to_java_array<'local>(
                     JValue::Object(&error_msg_obj).as_jni(),
                 ],
             )
-            .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to create WastDirectiveResult object: {}", e)))?
+            .map_err(|e| {
+                crate::error::WasmtimeError::JniError(format!(
+                    "Failed to create WastDirectiveResult object: {}",
+                    e
+                ))
+            })?
         };
 
         // Set array element
         env.set_object_array_element(&array, i as i32, directive_obj)
-            .map_err(|e| crate::error::WasmtimeError::JniError(format!("Failed to set array element: {}", e)))?;
+            .map_err(|e| {
+                crate::error::WasmtimeError::JniError(format!("Failed to set array element: {}", e))
+            })?;
     }
 
     Ok(array.into())

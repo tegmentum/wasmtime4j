@@ -20,7 +20,7 @@ macro_rules! validate_and_deref {
         if $ptr == 0 {
             let _ = $env.throw_new(
                 "java/lang/IllegalStateException",
-                format!("{} pointer is null", $name)
+                format!("{} pointer is null", $name),
             );
             return Default::default();
         }
@@ -30,11 +30,11 @@ macro_rules! validate_and_deref {
         if $ptr == 0 {
             let _ = $env.throw_new(
                 "java/lang/IllegalStateException",
-                format!("{} pointer is null", $name)
+                format!("{} pointer is null", $name),
             );
             return Default::default();
         }
-        unsafe { &*($ptr as *const $type) }  // Use const reference, not mut, for Store
+        unsafe { &*($ptr as *const $type) } // Use const reference, not mut, for Store
     }};
 }
 
@@ -66,7 +66,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
     let sig_str: String = match env.get_string(&signature.into()) {
         Ok(s) => s.into(),
         Err(e) => {
-            let _ = env.throw_new("java/lang/IllegalArgumentException", format!("Invalid signature: {}", e));
+            let _ = env.throw_new(
+                "java/lang/IllegalArgumentException",
+                format!("Invalid signature: {}", e),
+            );
             return 0;
         }
     };
@@ -74,7 +77,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
     // Create a TypedFuncHandle that stores func_ptr, NOT the Func itself
     // This prevents Store binding issues - we get fresh Func reference on each call
     let handle = Box::new(TypedFuncHandle {
-        func_ptr,  // Store pointer, not cloned Func
+        func_ptr, // Store pointer, not cloned Func
         signature: sig_str,
     });
 
@@ -98,7 +101,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToI
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0;
     }
@@ -109,7 +112,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToI
     match call_typed_i32_to_i32(func, store, param) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0
         }
     }
@@ -133,7 +139,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0;
     }
@@ -144,7 +150,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     match call_typed_i32i32_to_i32(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0
         }
     }
@@ -167,7 +176,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0;
     }
@@ -178,7 +187,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
     match call_typed_i64_to_i64(func, store, param) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0
         }
     }
@@ -202,7 +214,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0;
     }
@@ -213,7 +225,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     match call_typed_i64i64_to_i64(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0
         }
     }
@@ -236,7 +251,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32ToF
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0.0;
     }
@@ -247,7 +262,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32ToF
     match call_typed_f32_to_f32(func, store, param) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0.0
         }
     }
@@ -270,7 +288,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64ToF
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0.0;
     }
@@ -281,7 +299,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64ToF
     match call_typed_f64_to_f64(func, store, param) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0.0
         }
     }
@@ -303,7 +324,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallVoidTo
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return;
     }
@@ -312,7 +333,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallVoidTo
     let func = unsafe { &*(handle.func_ptr as *const Func) };
 
     if let Err(e) = call_typed_void_to_void(func, store) {
-        let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            format!("{}", e),
+        );
     }
 }
 
@@ -333,7 +357,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToV
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return;
     }
@@ -342,7 +366,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToV
     let func = unsafe { &*(handle.func_ptr as *const Func) };
 
     if let Err(e) = call_typed_i32_to_void(func, store, param) {
-        let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            format!("{}", e),
+        );
     }
 }
 
@@ -364,7 +391,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return;
     }
@@ -373,7 +400,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     let func = unsafe { &*(handle.func_ptr as *const Func) };
 
     if let Err(e) = call_typed_i32i32_to_void(func, store, param1, param2) {
-        let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            format!("{}", e),
+        );
     }
 }
 
@@ -394,7 +424,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToV
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return;
     }
@@ -403,7 +433,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToV
     let func = unsafe { &*(handle.func_ptr as *const Func) };
 
     if let Err(e) = call_typed_i64_to_void(func, store, param) {
-        let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            format!("{}", e),
+        );
     }
 }
 
@@ -425,7 +458,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return;
     }
@@ -434,7 +467,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     let func = unsafe { &*(handle.func_ptr as *const Func) };
 
     if let Err(e) = call_typed_i64i64_to_void(func, store, param1, param2) {
-        let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            format!("{}", e),
+        );
     }
 }
 
@@ -456,7 +492,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0.0;
     }
@@ -467,7 +503,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
     match call_typed_f32f32_to_f32(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0.0
         }
     }
@@ -491,7 +530,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0.0;
     }
@@ -502,7 +541,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
     match call_typed_f64f64_to_f64(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0.0
         }
     }
@@ -527,7 +569,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0;
     }
@@ -538,7 +580,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     match call_typed_i32i32i32_to_i32(func, store, param1, param2, param3) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0
         }
     }
@@ -563,7 +608,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0;
     }
@@ -574,7 +619,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
     match call_typed_i64i64i64_to_i64(func, store, param1, param2, param3) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0
         }
     }
@@ -599,7 +647,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0.0;
     }
@@ -610,7 +658,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
     match call_typed_f32f32f32_to_f32(func, store, param1, param2, param3) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0.0
         }
     }
@@ -635,7 +686,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0.0;
     }
@@ -646,7 +697,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
     match call_typed_f64f64f64_to_f64(func, store, param1, param2, param3) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0.0
         }
     }
@@ -670,7 +724,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0;
     }
@@ -681,7 +735,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
     match call_typed_i32i32_to_i64(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0
         }
     }
@@ -704,7 +761,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0;
     }
@@ -715,7 +772,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
     match call_typed_i64_to_i32(func, store, param) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0
         }
     }
@@ -739,7 +799,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32F32
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0.0;
     }
@@ -750,7 +810,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32F32
     match call_typed_i32f32_to_f32(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0.0
         }
     }
@@ -774,7 +837,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32I32
     if let Err(e) = store.validate() {
         let _ = env.throw_new(
             "java/lang/IllegalStateException",
-            format!("Store is invalid or closed: {}", e)
+            format!("Store is invalid or closed: {}", e),
         );
         return 0.0;
     }
@@ -785,7 +848,10 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32I32
     match call_typed_f32i32_to_f32(func, store, param1, param2) {
         Ok(result) => result,
         Err(e) => {
-            let _ = env.throw_new("ai/tegmentum/wasmtime4j/WasmRuntimeException", format!("{}", e));
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                format!("{}", e),
+            );
             0.0
         }
     }
@@ -810,7 +876,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeDestroy(
 /// CRITICAL: Does NOT store Func directly because Func is Store-bound.
 /// Instead stores func_ptr to get fresh Func reference on each call.
 struct TypedFuncHandle {
-    func_ptr: jlong,  // Pointer to Func, not the Func itself
+    func_ptr: jlong, // Pointer to Func, not the Func itself
     signature: String,
 }
 
@@ -822,7 +888,12 @@ fn call_typed_i32_to_i32(func: &Func, store: &WasmStore, param: i32) -> Wasmtime
     typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i32i32_to_i32(func: &Func, store: &WasmStore, p1: i32, p2: i32) -> WasmtimeResult<i32> {
+fn call_typed_i32i32_to_i32(
+    func: &Func,
+    store: &WasmStore,
+    p1: i32,
+    p2: i32,
+) -> WasmtimeResult<i32> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(i32, i32), i32>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))
@@ -834,7 +905,12 @@ fn call_typed_i64_to_i64(func: &Func, store: &WasmStore, param: i64) -> Wasmtime
     typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i64i64_to_i64(func: &Func, store: &WasmStore, p1: i64, p2: i64) -> WasmtimeResult<i64> {
+fn call_typed_i64i64_to_i64(
+    func: &Func,
+    store: &WasmStore,
+    p1: i64,
+    p2: i64,
+) -> WasmtimeResult<i64> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(i64, i64), i64>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))
@@ -864,7 +940,12 @@ fn call_typed_i32_to_void(func: &Func, store: &WasmStore, param: i32) -> Wasmtim
     typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i32i32_to_void(func: &Func, store: &WasmStore, p1: i32, p2: i32) -> WasmtimeResult<()> {
+fn call_typed_i32i32_to_void(
+    func: &Func,
+    store: &WasmStore,
+    p1: i32,
+    p2: i32,
+) -> WasmtimeResult<()> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(i32, i32), ()>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))
@@ -876,49 +957,93 @@ fn call_typed_i64_to_void(func: &Func, store: &WasmStore, param: i64) -> Wasmtim
     typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i64i64_to_void(func: &Func, store: &WasmStore, p1: i64, p2: i64) -> WasmtimeResult<()> {
+fn call_typed_i64i64_to_void(
+    func: &Func,
+    store: &WasmStore,
+    p1: i64,
+    p2: i64,
+) -> WasmtimeResult<()> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(i64, i64), ()>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_f32f32_to_f32(func: &Func, store: &WasmStore, p1: f32, p2: f32) -> WasmtimeResult<f32> {
+fn call_typed_f32f32_to_f32(
+    func: &Func,
+    store: &WasmStore,
+    p1: f32,
+    p2: f32,
+) -> WasmtimeResult<f32> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(f32, f32), f32>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_f64f64_to_f64(func: &Func, store: &WasmStore, p1: f64, p2: f64) -> WasmtimeResult<f64> {
+fn call_typed_f64f64_to_f64(
+    func: &Func,
+    store: &WasmStore,
+    p1: f64,
+    p2: f64,
+) -> WasmtimeResult<f64> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(f64, f64), f64>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_i32i32i32_to_i32(func: &Func, store: &WasmStore, p1: i32, p2: i32, p3: i32) -> WasmtimeResult<i32> {
+fn call_typed_i32i32i32_to_i32(
+    func: &Func,
+    store: &WasmStore,
+    p1: i32,
+    p2: i32,
+    p3: i32,
+) -> WasmtimeResult<i32> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(i32, i32, i32), i32>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2, p3))
 }
 
-fn call_typed_i64i64i64_to_i64(func: &Func, store: &WasmStore, p1: i64, p2: i64, p3: i64) -> WasmtimeResult<i64> {
+fn call_typed_i64i64i64_to_i64(
+    func: &Func,
+    store: &WasmStore,
+    p1: i64,
+    p2: i64,
+    p3: i64,
+) -> WasmtimeResult<i64> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(i64, i64, i64), i64>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2, p3))
 }
 
-fn call_typed_f32f32f32_to_f32(func: &Func, store: &WasmStore, p1: f32, p2: f32, p3: f32) -> WasmtimeResult<f32> {
+fn call_typed_f32f32f32_to_f32(
+    func: &Func,
+    store: &WasmStore,
+    p1: f32,
+    p2: f32,
+    p3: f32,
+) -> WasmtimeResult<f32> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(f32, f32, f32), f32>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2, p3))
 }
 
-fn call_typed_f64f64f64_to_f64(func: &Func, store: &WasmStore, p1: f64, p2: f64, p3: f64) -> WasmtimeResult<f64> {
+fn call_typed_f64f64f64_to_f64(
+    func: &Func,
+    store: &WasmStore,
+    p1: f64,
+    p2: f64,
+    p3: f64,
+) -> WasmtimeResult<f64> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(f64, f64, f64), f64>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2, p3))
 }
 
-fn call_typed_i32i32_to_i64(func: &Func, store: &WasmStore, p1: i32, p2: i32) -> WasmtimeResult<i64> {
+fn call_typed_i32i32_to_i64(
+    func: &Func,
+    store: &WasmStore,
+    p1: i32,
+    p2: i32,
+) -> WasmtimeResult<i64> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(i32, i32), i64>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))
@@ -930,13 +1055,23 @@ fn call_typed_i64_to_i32(func: &Func, store: &WasmStore, param: i64) -> Wasmtime
     typed.call(&mut *store_guard, param)
 }
 
-fn call_typed_i32f32_to_f32(func: &Func, store: &WasmStore, p1: i32, p2: f32) -> WasmtimeResult<f32> {
+fn call_typed_i32f32_to_f32(
+    func: &Func,
+    store: &WasmStore,
+    p1: i32,
+    p2: f32,
+) -> WasmtimeResult<f32> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(i32, f32), f32>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))
 }
 
-fn call_typed_f32i32_to_f32(func: &Func, store: &WasmStore, p1: f32, p2: i32) -> WasmtimeResult<f32> {
+fn call_typed_f32i32_to_f32(
+    func: &Func,
+    store: &WasmStore,
+    p1: f32,
+    p2: i32,
+) -> WasmtimeResult<f32> {
     let mut store_guard = store.try_lock_store()?;
     let typed = CustomTypedFunc::<(f32, i32), f32>::new(&mut *store_guard, func)?;
     typed.call(&mut *store_guard, (p1, p2))

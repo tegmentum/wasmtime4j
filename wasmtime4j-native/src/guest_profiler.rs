@@ -130,28 +130,37 @@ lazy_static::lazy_static! {
 /// Register a profiler and return its ID
 pub fn register_profiler(profiler: StoredProfiler) -> WasmtimeResult<u64> {
     let id = NEXT_PROFILER_ID.fetch_add(1, Ordering::SeqCst);
-    let mut registry = PROFILER_REGISTRY.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire profiler registry lock".to_string(),
-    })?;
+    let mut registry = PROFILER_REGISTRY
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire profiler registry lock".to_string(),
+        })?;
     registry.insert(id, Arc::new(RwLock::new(profiler)));
     Ok(id)
 }
 
 /// Get a profiler by ID
 pub fn get_profiler(id: u64) -> WasmtimeResult<Arc<RwLock<StoredProfiler>>> {
-    let registry = PROFILER_REGISTRY.read().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire profiler registry lock".to_string(),
-    })?;
-    registry.get(&id).cloned().ok_or_else(|| WasmtimeError::GuestProfiler {
-        message: format!("Profiler with ID {} not found", id),
-    })
+    let registry = PROFILER_REGISTRY
+        .read()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire profiler registry lock".to_string(),
+        })?;
+    registry
+        .get(&id)
+        .cloned()
+        .ok_or_else(|| WasmtimeError::GuestProfiler {
+            message: format!("Profiler with ID {} not found", id),
+        })
 }
 
 /// Remove a profiler from the registry
 pub fn unregister_profiler(id: u64) -> WasmtimeResult<()> {
-    let mut registry = PROFILER_REGISTRY.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire profiler registry lock".to_string(),
-    })?;
+    let mut registry = PROFILER_REGISTRY
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire profiler registry lock".to_string(),
+        })?;
     registry.remove(&id);
     Ok(())
 }
@@ -252,7 +261,11 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_create_with_module(
     let interval = Duration::from_micros(interval_us as u64);
 
     // Get module name from metadata
-    let module_name = module.metadata.name.clone().unwrap_or_else(|| "unknown".to_string());
+    let module_name = module
+        .metadata
+        .name
+        .clone()
+        .unwrap_or_else(|| "unknown".to_string());
 
     // Create profiler with the module - need to clone the inner wasmtime::Module
     // Note: wasmtime 40.0.1 requires Engine reference and returns Result
@@ -481,7 +494,9 @@ mod tests {
     #[test]
     fn test_profiler_registry() {
         // Test that registry works properly via Rust API
-        let registry = PROFILER_REGISTRY.write().expect("Failed to acquire registry lock");
+        let registry = PROFILER_REGISTRY
+            .write()
+            .expect("Failed to acquire registry lock");
         // Registry should be accessible
         let _count = registry.len();
     }

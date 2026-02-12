@@ -4,11 +4,11 @@
 //! to access WASI-Threads functionality for spawning WebAssembly threads.
 
 #[cfg(feature = "jni-bindings")]
-use jni::JNIEnv;
-#[cfg(feature = "jni-bindings")]
 use jni::objects::JClass;
 #[cfg(feature = "jni-bindings")]
 use jni::sys::{jboolean, jint, jlong};
+#[cfg(feature = "jni-bindings")]
+use jni::JNIEnv;
 
 #[cfg(all(feature = "jni-bindings", feature = "wasi-threads"))]
 use crate::wasi_threads::WasiThreadsContext;
@@ -91,9 +91,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_threads_JniWasiThre
     _linker_handle: jlong,
     _store_handle: jlong,
 ) -> jlong {
-    let error = crate::error::WasmtimeError::from_string(
-        "WASI-Threads support is not compiled in",
-    );
+    let error = crate::error::WasmtimeError::from_string("WASI-Threads support is not compiled in");
     jni_utils::throw_jni_exception(&mut env, &error);
     0
 }
@@ -151,9 +149,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_threads_JniWasiThre
     _context_handle: jlong,
     _thread_start_arg: jint,
 ) -> jint {
-    let error = crate::error::WasmtimeError::from_string(
-        "WASI-Threads support is not compiled in",
-    );
+    let error = crate::error::WasmtimeError::from_string("WASI-Threads support is not compiled in");
     jni_utils::throw_jni_exception(&mut env, &error);
     -1
 }
@@ -219,9 +215,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_threads_JniWasiThre
 
     #[cfg(not(feature = "wasi-threads"))]
     {
-        let error = crate::error::WasmtimeError::from_string(
-            "WASI-Threads support is not compiled in",
-        );
+        let error =
+            crate::error::WasmtimeError::from_string("WASI-Threads support is not compiled in");
         jni_utils::throw_jni_exception(&mut env, &error);
     }
 }

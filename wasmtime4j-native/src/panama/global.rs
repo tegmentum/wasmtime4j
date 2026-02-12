@@ -3,11 +3,11 @@
 //! This module provides C-compatible functions for creating, getting, setting,
 //! and managing WebAssembly global variables through the Panama Foreign Function Interface.
 
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
+use crate::error::ffi_utils;
 use crate::global::core;
 use crate::store::Store;
-use crate::error::ffi_utils;
-use wasmtime::{ValType, Mutability, RefType};
+use std::os::raw::{c_char, c_int, c_ulong, c_void};
+use wasmtime::{Mutability, RefType, ValType};
 
 /// Create a new WebAssembly global variable (Panama FFI version)
 #[no_mangle]
@@ -36,20 +36,28 @@ pub extern "C" fn wasmtime4j_panama_global_create(
             4 => ValType::V128,
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
-            _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: format!("Invalid value type: {}", value_type),
-            }),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid value type: {}", value_type),
+                })
+            }
         };
 
         let mutability_enum = match mutability {
             0 => Mutability::Const,
             1 => Mutability::Var,
-            _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: format!("Invalid mutability: {}", mutability),
-            }),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid mutability: {}", mutability),
+                })
+            }
         };
 
-        let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+        let ref_id_opt = if ref_id_present != 0 {
+            Some(ref_id)
+        } else {
+            None
+        };
 
         // Extract V128 bytes if provided
         let v128_bytes = if !v128_bytes_ptr.is_null() {
@@ -115,12 +123,24 @@ pub extern "C" fn wasmtime4j_panama_global_get(
         };
 
         unsafe {
-            if !i32_value.is_null() { *i32_value = i32_val; }
-            if !i64_value.is_null() { *i64_value = i64_val as c_ulong; }
-            if !f32_value.is_null() { *f32_value = f32_val as f64; }
-            if !f64_value.is_null() { *f64_value = f64_val; }
-            if !ref_id_present.is_null() { *ref_id_present = if ref_id_opt.is_some() { 1 } else { 0 }; }
-            if !ref_id.is_null() { *ref_id = ref_id_opt.unwrap_or(0); }
+            if !i32_value.is_null() {
+                *i32_value = i32_val;
+            }
+            if !i64_value.is_null() {
+                *i64_value = i64_val as c_ulong;
+            }
+            if !f32_value.is_null() {
+                *f32_value = f32_val as f64;
+            }
+            if !f64_value.is_null() {
+                *f64_value = f64_val;
+            }
+            if !ref_id_present.is_null() {
+                *ref_id_present = if ref_id_opt.is_some() { 1 } else { 0 };
+            }
+            if !ref_id.is_null() {
+                *ref_id = ref_id_opt.unwrap_or(0);
+            }
             if !v128_bytes_ptr.is_null() {
                 if let Some(bytes) = v128_bytes {
                     std::ptr::copy_nonoverlapping(bytes.as_ptr(), v128_bytes_ptr, 16);
@@ -158,12 +178,18 @@ pub extern "C" fn wasmtime4j_panama_global_set(
             4 => ValType::V128,
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
-            _ => return Err(crate::error::WasmtimeError::InvalidParameter {
-                message: format!("Invalid value type: {}", value_type),
-            }),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid value type: {}", value_type),
+                })
+            }
         };
 
-        let ref_id_opt = if ref_id_present != 0 { Some(ref_id) } else { None };
+        let ref_id_opt = if ref_id_present != 0 {
+            Some(ref_id)
+        } else {
+            None
+        };
 
         // Extract V128 bytes if provided
         let v128_bytes = if !v128_bytes_ptr.is_null() {
@@ -215,19 +241,19 @@ pub extern "C" fn wasmtime4j_panama_global_metadata(
                     ValType::Ref(ref_type) => {
                         // Check the heap type to determine funcref vs externref
                         match ref_type.heap_type() {
-                            wasmtime::HeapType::Func => 5,     // FUNCREF
-                            wasmtime::HeapType::Extern => 6,   // EXTERNREF
-                            wasmtime::HeapType::Any => 7,      // ANYREF
-                            wasmtime::HeapType::Eq => 8,       // EQREF
-                            wasmtime::HeapType::I31 => 9,      // I31REF
-                            wasmtime::HeapType::Struct => 10,  // STRUCTREF
-                            wasmtime::HeapType::Array => 11,   // ARRAYREF
-                            wasmtime::HeapType::None => 12,    // NULLREF
-                            wasmtime::HeapType::NoFunc => 13,  // NULLFUNCREF
+                            wasmtime::HeapType::Func => 5,      // FUNCREF
+                            wasmtime::HeapType::Extern => 6,    // EXTERNREF
+                            wasmtime::HeapType::Any => 7,       // ANYREF
+                            wasmtime::HeapType::Eq => 8,        // EQREF
+                            wasmtime::HeapType::I31 => 9,       // I31REF
+                            wasmtime::HeapType::Struct => 10,   // STRUCTREF
+                            wasmtime::HeapType::Array => 11,    // ARRAYREF
+                            wasmtime::HeapType::None => 12,     // NULLREF
+                            wasmtime::HeapType::NoFunc => 13,   // NULLFUNCREF
                             wasmtime::HeapType::NoExtern => 14, // NULLEXTERNREF
                             _ => 6, // Default to EXTERNREF for other/unknown types
                         }
-                    },
+                    }
                 };
             }
             if !mutability.is_null() {

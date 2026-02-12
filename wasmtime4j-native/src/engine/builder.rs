@@ -3,8 +3,8 @@
 //! This module provides the EngineBuilder and EngineConfigSummary types
 //! for creating and configuring Wasmtime engines with various options.
 
-use std::sync::{Arc, RwLock};
 use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, RwLock};
 
 use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
 
@@ -144,7 +144,11 @@ impl EngineConfigSummary {
         hasher.update(self.opt_level.as_bytes());
         hasher.update(if self.debug_info { b"1" } else { b"0" });
         hasher.update(if self.wasm_threads { b"1" } else { b"0" });
-        hasher.update(if self.wasm_reference_types { b"1" } else { b"0" });
+        hasher.update(if self.wasm_reference_types {
+            b"1"
+        } else {
+            b"0"
+        });
         hasher.update(if self.wasm_simd { b"1" } else { b"0" });
         hasher.update(if self.wasm_bulk_memory { b"1" } else { b"0" });
         hasher.update(if self.wasm_multi_value { b"1" } else { b"0" });
@@ -160,14 +164,26 @@ impl EngineConfigSummary {
         hasher.update(if self.wasm_exceptions { b"1" } else { b"0" });
         hasher.update(if self.wasm_memory64 { b"1" } else { b"0" });
         hasher.update(if self.wasm_extended_const { b"1" } else { b"0" });
-        hasher.update(if self.wasm_component_model { b"1" } else { b"0" });
+        hasher.update(if self.wasm_component_model {
+            b"1"
+        } else {
+            b"0"
+        });
         hasher.update(if self.wasm_custom_page_sizes {
             b"1"
         } else {
             b"0"
         });
-        hasher.update(if self.wasm_wide_arithmetic { b"1" } else { b"0" });
-        hasher.update(if self.wasm_stack_switching { b"1" } else { b"0" });
+        hasher.update(if self.wasm_wide_arithmetic {
+            b"1"
+        } else {
+            b"0"
+        });
+        hasher.update(if self.wasm_stack_switching {
+            b"1"
+        } else {
+            b"0"
+        });
         hasher.update(if self.wasm_shared_everything_threads {
             b"1"
         } else {
@@ -237,8 +253,16 @@ impl EngineConfigSummary {
             b"0"
         });
         hasher.update(if self.async_stack_zeroing { b"1" } else { b"0" });
-        hasher.update(if self.parallel_compilation { b"1" } else { b"0" });
-        hasher.update(if self.macos_use_mach_ports { b"1" } else { b"0" });
+        hasher.update(if self.parallel_compilation {
+            b"1"
+        } else {
+            b"0"
+        });
+        hasher.update(if self.macos_use_mach_ports {
+            b"1"
+        } else {
+            b"0"
+        });
         hasher.update(self.module_version_strategy.as_bytes());
         hasher.update(self.allocation_strategy.as_bytes());
 
@@ -256,61 +280,61 @@ impl EngineConfigSummary {
         // Note: Wasmtime Config doesn't expose all settings for introspection
         // We track what we can and make reasonable assumptions
         EngineConfigSummary {
-            strategy: "Cranelift".to_string(), // Default assumption
-            opt_level: "Speed".to_string(),    // Default assumption
-            debug_info: false,                 // Default assumption
-            wasm_threads: true,                // Common default
-            wasm_reference_types: true,        // Commonly enabled
-            wasm_simd: true,                   // Commonly enabled
-            wasm_bulk_memory: true,            // Commonly enabled
-            wasm_multi_value: true,            // Commonly enabled
-            wasm_multi_memory: false,          // Tier 3 feature - off by default
-            wasm_tail_call: false,             // Tier 3 feature - off by default
-            wasm_relaxed_simd: false,          // Tier 3 feature - off by default
-            wasm_function_references: false,   // Tier 3 feature - off by default
-            wasm_gc: false,                    // Tier 3 feature - off by default
-            wasm_exceptions: false,            // Tier 3 feature - off by default
-            wasm_memory64: true,               // Tier 1 feature - on by default
-            wasm_extended_const: true,         // Tier 1 feature - on by default
-            wasm_component_model: true,        // Tier 1 feature - on by default
-            wasm_custom_page_sizes: false,     // Tier 3 feature - off by default
-            wasm_wide_arithmetic: false,       // Tier 3 feature - off by default
-            wasm_stack_switching: false,       // Tier 3 feature - off by default
-            wasm_shared_everything_threads: false, // Tier 3 feature - off by default
+            strategy: "Cranelift".to_string(),          // Default assumption
+            opt_level: "Speed".to_string(),             // Default assumption
+            debug_info: false,                          // Default assumption
+            wasm_threads: true,                         // Common default
+            wasm_reference_types: true,                 // Commonly enabled
+            wasm_simd: true,                            // Commonly enabled
+            wasm_bulk_memory: true,                     // Commonly enabled
+            wasm_multi_value: true,                     // Commonly enabled
+            wasm_multi_memory: false,                   // Tier 3 feature - off by default
+            wasm_tail_call: false,                      // Tier 3 feature - off by default
+            wasm_relaxed_simd: false,                   // Tier 3 feature - off by default
+            wasm_function_references: false,            // Tier 3 feature - off by default
+            wasm_gc: false,                             // Tier 3 feature - off by default
+            wasm_exceptions: false,                     // Tier 3 feature - off by default
+            wasm_memory64: true,                        // Tier 1 feature - on by default
+            wasm_extended_const: true,                  // Tier 1 feature - on by default
+            wasm_component_model: true,                 // Tier 1 feature - on by default
+            wasm_custom_page_sizes: false,              // Tier 3 feature - off by default
+            wasm_wide_arithmetic: false,                // Tier 3 feature - off by default
+            wasm_stack_switching: false,                // Tier 3 feature - off by default
+            wasm_shared_everything_threads: false,      // Tier 3 feature - off by default
             wasm_component_model_async: false, // Component model extension - off by default
             wasm_component_model_async_builtins: false, // Component model extension - off by default
             wasm_component_model_async_stackful: false, // Component model extension - off by default
             wasm_component_model_error_context: false, // Component model extension - off by default
-            wasm_component_model_gc: false,    // Component model extension - off by default
-            fuel_enabled: true,                // Default assumption (enabled for Store operations)
-            max_memory_pages: None,            // No limit by default
-            max_stack_size: None,              // No limit by default
-            epoch_interruption: false,         // Default assumption
-            max_instances: None,               // No limit by default
-            async_support: false,              // Off by default
-            coredump_on_trap: false,           // Off by default
-            memory_reservation: None,          // No custom reservation by default
-            memory_guard_size: None,           // No custom guard size by default
+            wasm_component_model_gc: false,            // Component model extension - off by default
+            fuel_enabled: true, // Default assumption (enabled for Store operations)
+            max_memory_pages: None, // No limit by default
+            max_stack_size: None, // No limit by default
+            epoch_interruption: false, // Default assumption
+            max_instances: None, // No limit by default
+            async_support: false, // Off by default
+            coredump_on_trap: false, // Off by default
+            memory_reservation: None, // No custom reservation by default
+            memory_guard_size: None, // No custom guard size by default
             memory_reservation_for_growth: None, // No custom growth reservation by default
-            max_memory_size: None,             // No custom max memory by default
-            cranelift_debug_verifier: false,   // Off by default
+            max_memory_size: None, // No custom max memory by default
+            cranelift_debug_verifier: false, // Off by default
             cranelift_nan_canonicalization: false, // Off by default
-            cranelift_pcc: false,              // Off by default
+            cranelift_pcc: false, // Off by default
             cranelift_regalloc_algorithm: "Backtracking".to_string(), // Default algorithm
-            wmemcheck_enabled: false,          // Off by default (requires wmemcheck feature)
-            table_lazy_init: true,             // On by default (wasmtime default)
+            wmemcheck_enabled: false, // Off by default (requires wmemcheck feature)
+            table_lazy_init: true, // On by default (wasmtime default)
             // New config options with wasmtime defaults
-            gc_support: true,                         // GC support - on by default
-            collector: "Auto".to_string(),            // Collector - Auto by default
-            memory_may_move: true,                    // Memory may move - on by default
-            guard_before_linear_memory: true,         // Guard before memory - on by default
-            memory_init_cow: true,                    // CoW memory init - on by default
-            wasm_component_model_threading: false,    // Component threading - off (experimental)
-            relaxed_simd_deterministic: false,        // Relaxed SIMD deterministic - off by default
-            async_stack_zeroing: false,               // Async stack zeroing - off by default
-            async_stack_size: None,                   // Async stack size - use default
-            parallel_compilation: true,               // Parallel compilation - on by default
-            macos_use_mach_ports: true,               // Mach ports on macOS - on by default
+            gc_support: true,                      // GC support - on by default
+            collector: "Auto".to_string(),         // Collector - Auto by default
+            memory_may_move: true,                 // Memory may move - on by default
+            guard_before_linear_memory: true,      // Guard before memory - on by default
+            memory_init_cow: true,                 // CoW memory init - on by default
+            wasm_component_model_threading: false, // Component threading - off (experimental)
+            relaxed_simd_deterministic: false,     // Relaxed SIMD deterministic - off by default
+            async_stack_zeroing: false,            // Async stack zeroing - off by default
+            async_stack_size: None,                // Async stack size - use default
+            parallel_compilation: true,            // Parallel compilation - on by default
+            macos_use_mach_ports: true,            // Mach ports on macOS - on by default
             module_version_strategy: "WasmtimeVersion".to_string(), // Use wasmtime version
             allocation_strategy: "OnDemand".to_string(), // On-demand allocation by default
         }
@@ -568,45 +592,45 @@ impl EngineBuilder {
             wasm_function_references: true, // Tier 2 - enable for ref.func support
             wasm_gc: false,
             wasm_exceptions: false,
-            wasm_memory64: true,         // Tier 1 - on by default
-            wasm_extended_const: true,   // Tier 1 - on by default
-            wasm_component_model: true,  // Tier 1 - on by default
-            wasm_custom_page_sizes: false, // Tier 3 - off by default
-            wasm_wide_arithmetic: false, // Tier 3 - off by default
-            wasm_stack_switching: false, // Tier 3 - off by default
-            wasm_shared_everything_threads: false, // Tier 3 - off by default
+            wasm_memory64: true,                        // Tier 1 - on by default
+            wasm_extended_const: true,                  // Tier 1 - on by default
+            wasm_component_model: true,                 // Tier 1 - on by default
+            wasm_custom_page_sizes: false,              // Tier 3 - off by default
+            wasm_wide_arithmetic: false,                // Tier 3 - off by default
+            wasm_stack_switching: false,                // Tier 3 - off by default
+            wasm_shared_everything_threads: false,      // Tier 3 - off by default
             wasm_component_model_async: false, // Component model extension - off by default
             wasm_component_model_async_builtins: false, // Component model extension - off by default
             wasm_component_model_async_stackful: false, // Component model extension - off by default
             wasm_component_model_error_context: false, // Component model extension - off by default
-            wasm_component_model_gc: false, // Component model extension - off by default
-            async_support: false,        // Async execution support - off by default
-            coredump_on_trap: false,     // Coredump on trap - off by default
-            memory_reservation: None,    // Memory reservation - use Wasmtime default
-            memory_guard_size: None,     // Memory guard size - use Wasmtime default
+            wasm_component_model_gc: false,            // Component model extension - off by default
+            async_support: false,                      // Async execution support - off by default
+            coredump_on_trap: false,                   // Coredump on trap - off by default
+            memory_reservation: None,                  // Memory reservation - use Wasmtime default
+            memory_guard_size: None,                   // Memory guard size - use Wasmtime default
             memory_reservation_for_growth: None, // Memory reservation for growth - use Wasmtime default
-            max_memory_size: None,       // Max memory size - use Wasmtime default
-            cranelift_debug_verifier: false, // Cranelift debug verifier - off by default
+            max_memory_size: None,               // Max memory size - use Wasmtime default
+            cranelift_debug_verifier: false,     // Cranelift debug verifier - off by default
             cranelift_nan_canonicalization: false, // Cranelift NaN canonicalization - off by default
-            cranelift_pcc: false,        // Cranelift proof-carrying code - off by default
-            cranelift_regalloc_algorithm: None, // Cranelift regalloc algorithm - use default
+            cranelift_pcc: false,                  // Cranelift proof-carrying code - off by default
+            cranelift_regalloc_algorithm: None,    // Cranelift regalloc algorithm - use default
             #[cfg(feature = "wmemcheck")]
             wmemcheck_enabled: false, // wmemcheck - off by default
-            table_lazy_init: true,    // Table lazy init - on by default (wasmtime default)
+            table_lazy_init: true, // Table lazy init - on by default (wasmtime default)
             // New config options with wasmtime defaults
-            gc_support: true,                  // GC support - on by default (enables GC infrastructure)
-            collector: None,                   // Collector - use wasmtime default (Auto)
-            memory_may_move: true,             // Memory may move - on by default
-            guard_before_linear_memory: true,  // Guard before memory - on by default
-            memory_init_cow: true,             // CoW memory init - on by default
+            gc_support: true, // GC support - on by default (enables GC infrastructure)
+            collector: None,  // Collector - use wasmtime default (Auto)
+            memory_may_move: true, // Memory may move - on by default
+            guard_before_linear_memory: true, // Guard before memory - on by default
+            memory_init_cow: true, // CoW memory init - on by default
             wasm_component_model_threading: false, // Component threading - off (experimental)
             relaxed_simd_deterministic: false, // Relaxed SIMD deterministic - off by default
-            async_stack_zeroing: false,        // Async stack zeroing - off by default
-            async_stack_size: None,            // Async stack size - use wasmtime default
-            parallel_compilation: true,        // Parallel compilation - on by default
-            macos_use_mach_ports: true,        // Mach ports on macOS - on by default
+            async_stack_zeroing: false, // Async stack zeroing - off by default
+            async_stack_size: None, // Async stack size - use wasmtime default
+            parallel_compilation: true, // Parallel compilation - on by default
+            macos_use_mach_ports: true, // Mach ports on macOS - on by default
             module_version_strategy: None, // Module version - use wasmtime default
-            allocation_strategy: None,     // Allocation strategy - use wasmtime default (OnDemand)
+            allocation_strategy: None, // Allocation strategy - use wasmtime default (OnDemand)
         }
     }
 

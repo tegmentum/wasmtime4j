@@ -99,12 +99,9 @@ fn test_memory_size_pages() {
     );
     assert!(!memory_ptr.is_null());
 
-    let mut size: u32 = 0;
-    let result = memory::wasmtime4j_panama_memory_size_pages(
-        memory_ptr,
-        store_ptr,
-        &mut size as *mut u32,
-    );
+    let mut size: u64 = 0;
+    let result =
+        memory::wasmtime4j_panama_memory_size_pages(memory_ptr, store_ptr, &mut size as *mut u64);
 
     assert_eq!(result, 0, "Get size should succeed");
     assert_eq!(size, 1, "Memory should have 1 page initially");
@@ -136,11 +133,8 @@ fn test_memory_size_bytes() {
     );
 
     let mut size: usize = 0;
-    let result = memory::wasmtime4j_panama_memory_size_bytes(
-        memory_ptr,
-        store_ptr,
-        &mut size as *mut usize,
-    );
+    let result =
+        memory::wasmtime4j_panama_memory_size_bytes(memory_ptr, store_ptr, &mut size as *mut usize);
 
     assert_eq!(result, 0, "Get size should succeed");
     assert_eq!(size, 65536, "1 page = 65536 bytes");
@@ -172,11 +166,8 @@ fn test_memory_is_64bit() {
     );
 
     let mut is_64bit: i32 = -1;
-    let result = memory::wasmtime4j_panama_memory_is_64bit(
-        memory_ptr,
-        store_ptr,
-        &mut is_64bit as *mut i32,
-    );
+    let result =
+        memory::wasmtime4j_panama_memory_is_64bit(memory_ptr, store_ptr, &mut is_64bit as *mut i32);
 
     assert_eq!(result, 0, "Query should succeed");
     assert_eq!(is_64bit, 0, "Default memory is 32-bit");
@@ -283,19 +274,19 @@ fn test_memory_grow() {
         memory_name.as_ptr(),
     );
 
-    let mut previous_pages: u32 = 0;
+    let mut previous_pages: u64 = 0;
     let result = memory::wasmtime4j_panama_memory_grow(
         memory_ptr,
         store_ptr,
-        1, // grow by 1 page
-        &mut previous_pages as *mut u32,
+        1u64, // grow by 1 page
+        &mut previous_pages as *mut u64,
     );
 
     assert_eq!(result, 0, "Grow should succeed");
     assert_eq!(previous_pages, 1, "Previous size should be 1 page");
 
     // Verify new size
-    let mut new_size: u32 = 0;
+    let mut new_size: u64 = 0;
     memory::wasmtime4j_panama_memory_size_pages(memory_ptr, store_ptr, &mut new_size);
     assert_eq!(new_size, 2, "New size should be 2 pages");
 
@@ -332,12 +323,12 @@ fn test_memory_grow_beyond_max() {
     );
 
     // Try to grow by 10 pages (beyond max of 2)
-    let mut previous_pages: u32 = 0;
+    let mut previous_pages: u64 = 0;
     let result = memory::wasmtime4j_panama_memory_grow(
         memory_ptr,
         store_ptr,
-        10, // try to grow by 10 pages
-        &mut previous_pages as *mut u32,
+        10u64, // try to grow by 10 pages
+        &mut previous_pages as *mut u64,
     );
 
     // Should fail (return non-zero or previous_pages == u32::MAX)
@@ -395,7 +386,10 @@ fn test_memory_write_and_read_bytes() {
         read_buffer.as_mut_ptr(),
     );
     assert_eq!(read_result, 0, "Read should succeed");
-    assert_eq!(read_buffer, data_to_write, "Read data should match written data");
+    assert_eq!(
+        read_buffer, data_to_write,
+        "Read data should match written data"
+    );
 
     instance::wasmtime4j_panama_instance_destroy(instance_ptr);
     store::wasmtime4j_panama_store_destroy(store_ptr);
@@ -520,7 +514,10 @@ fn test_memory_write_and_read_u32() {
         &mut read_value as *mut u32,
     );
     assert_eq!(read_result, 0, "Read u32 should succeed");
-    assert_eq!(read_value, value_to_write, "Read value should match written value");
+    assert_eq!(
+        read_value, value_to_write,
+        "Read value should match written value"
+    );
 
     instance::wasmtime4j_panama_instance_destroy(instance_ptr);
     store::wasmtime4j_panama_store_destroy(store_ptr);
@@ -550,9 +547,7 @@ fn test_memory_fill() {
 
     // Fill 8 bytes with 0xAB starting at offset 0
     let fill_result = table::wasmtime4j_panama_memory_fill(
-        memory_ptr,
-        store_ptr,
-        0,    // offset
+        memory_ptr, store_ptr, 0,    // offset
         0xAB, // value
         8,    // length
     );
@@ -597,19 +592,11 @@ fn test_memory_copy() {
 
     // Write source data at offset 0
     let source_data: [u8; 4] = [0x11, 0x22, 0x33, 0x44];
-    memory::wasmtime4j_panama_memory_write_bytes(
-        memory_ptr,
-        store_ptr,
-        0,
-        4,
-        source_data.as_ptr(),
-    );
+    memory::wasmtime4j_panama_memory_write_bytes(memory_ptr, store_ptr, 0, 4, source_data.as_ptr());
 
     // Copy from offset 0 to offset 100
     let copy_result = table::wasmtime4j_panama_memory_copy(
-        memory_ptr,
-        store_ptr,
-        100, // dest_offset
+        memory_ptr, store_ptr, 100, // dest_offset
         0,   // src_offset
         4,   // length
     );
@@ -674,11 +661,11 @@ fn test_memory_get_data() {
 /// Test memory operations with null pointers.
 #[test]
 fn test_memory_operations_null_pointers() {
-    let mut size: u32 = 0;
+    let mut size: u64 = 0;
     let result = memory::wasmtime4j_panama_memory_size_pages(
         ptr::null_mut(),
         ptr::null_mut(),
-        &mut size as *mut u32,
+        &mut size as *mut u64,
     );
     assert_ne!(result, 0, "Null memory pointer should fail");
 
@@ -806,12 +793,8 @@ fn test_gc_struct_new_and_get() {
 
     // Create struct instance with values [10, 20]
     let field_values: [i64; 2] = [10, 20];
-    let object_id = panama_gc_ffi::wasmtime4j_gc_struct_new(
-        runtime_handle,
-        type_id,
-        field_values.as_ptr(),
-        2,
-    );
+    let object_id =
+        panama_gc_ffi::wasmtime4j_gc_struct_new(runtime_handle, type_id, field_values.as_ptr(), 2);
     assert_ne!(object_id, 0, "Struct creation should succeed");
 
     // Get field 0 (x)
@@ -869,12 +852,8 @@ fn test_gc_struct_set() {
 
     // Create struct with initial value 0
     let field_values: [i64; 1] = [0];
-    let object_id = panama_gc_ffi::wasmtime4j_gc_struct_new(
-        runtime_handle,
-        type_id,
-        field_values.as_ptr(),
-        1,
-    );
+    let object_id =
+        panama_gc_ffi::wasmtime4j_gc_struct_new(runtime_handle, type_id, field_values.as_ptr(), 1);
 
     // Set field to 42
     let set_result = panama_gc_ffi::wasmtime4j_gc_struct_set(
@@ -928,12 +907,8 @@ fn test_gc_struct_invalid_field_index() {
     );
 
     let field_values: [i64; 1] = [0];
-    let object_id = panama_gc_ffi::wasmtime4j_gc_struct_new(
-        runtime_handle,
-        type_id,
-        field_values.as_ptr(),
-        1,
-    );
+    let object_id =
+        panama_gc_ffi::wasmtime4j_gc_struct_new(runtime_handle, type_id, field_values.as_ptr(), 1);
 
     // Try to access field index 5 (out of bounds)
     let mut result_value: i64 = 0;
@@ -994,12 +969,8 @@ fn test_gc_array_new_and_get() {
 
     // Create array with elements [1, 2, 3, 4, 5]
     let elements: [i64; 5] = [1, 2, 3, 4, 5];
-    let object_id = panama_gc_ffi::wasmtime4j_gc_array_new(
-        runtime_handle,
-        type_id,
-        elements.as_ptr(),
-        5,
-    );
+    let object_id =
+        panama_gc_ffi::wasmtime4j_gc_array_new(runtime_handle, type_id, elements.as_ptr(), 5);
     assert_ne!(object_id, 0, "Array creation should succeed");
 
     // Check length
@@ -1039,12 +1010,8 @@ fn test_gc_array_set() {
     );
 
     let elements: [i64; 3] = [0, 0, 0];
-    let object_id = panama_gc_ffi::wasmtime4j_gc_array_new(
-        runtime_handle,
-        type_id,
-        elements.as_ptr(),
-        3,
-    );
+    let object_id =
+        panama_gc_ffi::wasmtime4j_gc_array_new(runtime_handle, type_id, elements.as_ptr(), 3);
 
     // Set element at index 1 to 99
     let set_result = panama_gc_ffi::wasmtime4j_gc_array_set(
@@ -1088,12 +1055,8 @@ fn test_gc_array_out_of_bounds() {
     );
 
     let elements: [i64; 3] = [1, 2, 3];
-    let object_id = panama_gc_ffi::wasmtime4j_gc_array_new(
-        runtime_handle,
-        type_id,
-        elements.as_ptr(),
-        3,
-    );
+    let object_id =
+        panama_gc_ffi::wasmtime4j_gc_array_new(runtime_handle, type_id, elements.as_ptr(), 3);
 
     // Try to get element at index 10 (out of bounds)
     let mut result_value: i64 = 0;
@@ -1172,7 +1135,10 @@ fn test_gc_ref_eq() {
     // Different objects with same value may or may not be equal depending on implementation
     let eq_other = panama_gc_ffi::wasmtime4j_gc_ref_eq(runtime_handle, obj1, obj2);
     // Just verify it returns a valid boolean (0 or 1)
-    assert!(eq_other == 0 || eq_other == 1, "Should return valid boolean");
+    assert!(
+        eq_other == 0 || eq_other == 1,
+        "Should return valid boolean"
+    );
 
     panama_gc_ffi::wasmtime4j_gc_destroy_runtime(runtime_handle);
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);

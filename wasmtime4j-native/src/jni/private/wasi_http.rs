@@ -42,7 +42,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpCon
     }
 
     let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
-    if ctx.is_valid() { 1 } else { 0 }
+    if ctx.is_valid() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Reset WASI HTTP context statistics

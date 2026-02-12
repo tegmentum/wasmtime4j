@@ -20,17 +20,17 @@
 //! - Graceful error handling and resource cleanup
 //! - Thread-safe callback dispatch to Java
 
+use jni::JavaVM;
+use log::{debug, error, info, warn};
+use once_cell::sync::Lazy;
 use std::ffi::{c_char, c_void, CStr, CString};
 use std::mem::ManuallyDrop;
 use std::os::raw::{c_int, c_uint, c_ulong};
 use std::ptr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tokio::runtime::{Runtime, Handle};
+use tokio::runtime::{Handle, Runtime};
 use tokio::sync::oneshot;
-use once_cell::sync::Lazy;
-use log::{debug, error, info, warn};
-use jni::JavaVM;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::{Instance, WasmValue};
@@ -43,7 +43,9 @@ fn wasm_value_to_val(value: &WasmValue) -> WasmtimeResult<wasmtime::Val> {
         WasmValue::I64(v) => wasmtime::Val::I64(*v),
         WasmValue::F32(v) => wasmtime::Val::F32(v.to_bits()),
         WasmValue::F64(v) => wasmtime::Val::F64(v.to_bits()),
-        WasmValue::V128(bytes) => wasmtime::Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes))),
+        WasmValue::V128(bytes) => {
+            wasmtime::Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes)))
+        }
         WasmValue::ExternRef(_) => wasmtime::Val::null_extern_ref(),
         WasmValue::FuncRef(_) => wasmtime::Val::null_func_ref(),
     })
@@ -70,7 +72,10 @@ static ASYNC_RUNTIME: Lazy<ManuallyDrop<Arc<Runtime>>> = Lazy::new(|| {
             Arc::new(runtime)
         }
         Err(e) => {
-            warn!("Failed to create optimal async runtime ({}), trying current thread fallback", e);
+            warn!(
+                "Failed to create optimal async runtime ({}), trying current thread fallback",
+                e
+            );
 
             // Fallback to current thread runtime
             tokio::runtime::Builder::new_current_thread()
@@ -212,7 +217,6 @@ pub struct AsyncCompilationContext {
 // - SendableUserData(usize) is Send (usize is Send)
 unsafe impl Send for AsyncCompilationContext {}
 
-
 /// Options for async module compilation
 #[derive(Default)]
 pub struct CompilationOptions {
@@ -264,10 +268,15 @@ fn next_operation_id() -> u64 {
 ///
 /// This function validates all inputs and handles errors gracefully to prevent JVM crashes.
 /// The callback will be invoked on completion, error, or timeout using JavaVM for thread-safe JNI access.
-pub fn execute_async_function_call(context: AsyncFunctionCallContext) -> WasmtimeResult<AsyncOperation> {
+pub fn execute_async_function_call(
+    context: AsyncFunctionCallContext,
+) -> WasmtimeResult<AsyncOperation> {
     let operation_id = next_operation_id();
 
-    debug!("Starting async function call operation {} for function '{}'", operation_id, context.function_name);
+    debug!(
+        "Starting async function call operation {} for function '{}'",
+        operation_id, context.function_name
+    );
 
     // Create cancellation channel
     let (cancel_tx, mut cancel_rx) = oneshot::channel::<()>();
@@ -453,7 +462,11 @@ pub fn execute_async_function_call(context: AsyncFunctionCallContext) -> Wasmtim
 pub fn compile_module_async(context: AsyncCompilationContext) -> WasmtimeResult<AsyncOperation> {
     let operation_id = next_operation_id();
 
-    debug!("Starting async module compilation operation {} for {} bytes", operation_id, context.module_bytes.len());
+    debug!(
+        "Starting async module compilation operation {} for {} bytes",
+        operation_id,
+        context.module_bytes.len()
+    );
 
     // Create cancellation channel
     let (cancel_tx, mut cancel_rx) = oneshot::channel::<()>();
@@ -697,21 +710,33 @@ pub fn cancel_async_operation(operation: &mut AsyncOperation) -> WasmtimeResult<
                     Ok(())
                 }
                 Err(_) => {
-                    error!("Failed to acquire status lock for operation {}", operation.id);
+                    error!(
+                        "Failed to acquire status lock for operation {}",
+                        operation.id
+                    );
                     Err(WasmtimeError::Concurrency {
-                        message: "Failed to update operation status due to lock poisoning".to_string()
+                        message: "Failed to update operation status due to lock poisoning"
+                            .to_string(),
                     })
                 }
             }
         } else {
-            warn!("Failed to send cancellation signal for operation {}", operation.id);
+            warn!(
+                "Failed to send cancellation signal for operation {}",
+                operation.id
+            );
             Err(WasmtimeError::Internal {
-                message: "Failed to cancel operation - may have already completed".to_string()
+                message: "Failed to cancel operation - may have already completed".to_string(),
             })
         }
     } else {
-        warn!("Attempted to cancel operation {} that has no cancellation channel", operation.id);
-        Err(WasmtimeError::invalid_parameter("Operation cannot be cancelled"))
+        warn!(
+            "Attempted to cancel operation {} that has no cancellation channel",
+            operation.id
+        );
+        Err(WasmtimeError::invalid_parameter(
+            "Operation cannot be cancelled",
+        ))
     }
 }
 
@@ -728,7 +753,10 @@ pub fn get_operation_status(operation: &AsyncOperation) -> AsyncOperationStatus 
     match operation.status.lock() {
         Ok(status) => status.clone(),
         Err(_) => {
-            error!("Failed to acquire status lock for operation {}: Lock poisoning detected", operation.id);
+            error!(
+                "Failed to acquire status lock for operation {}: Lock poisoning detected",
+                operation.id
+            );
             // Return error status if we can't read the lock
             AsyncOperationStatus::Failed
         }
@@ -745,8 +773,14 @@ pub fn get_operation_status(operation: &AsyncOperation) -> AsyncOperationStatus 
 /// # Returns
 ///
 /// Result indicating completion status or timeout
-pub fn wait_for_operation(operation: &AsyncOperation, timeout_ms: u64) -> WasmtimeResult<AsyncOperationStatus> {
-    debug!("Waiting for async operation {} to complete (timeout: {}ms)", operation.id, timeout_ms);
+pub fn wait_for_operation(
+    operation: &AsyncOperation,
+    timeout_ms: u64,
+) -> WasmtimeResult<AsyncOperationStatus> {
+    debug!(
+        "Waiting for async operation {} to complete (timeout: {}ms)",
+        operation.id, timeout_ms
+    );
 
     let timeout_duration = Duration::from_millis(timeout_ms);
     let start_time = std::time::Instant::now();
@@ -756,9 +790,13 @@ pub fn wait_for_operation(operation: &AsyncOperation, timeout_ms: u64) -> Wasmti
             let status_guard = match operation.status.lock() {
                 Ok(guard) => guard,
                 Err(_) => {
-                    error!("Failed to acquire status lock for operation {}", operation.id);
+                    error!(
+                        "Failed to acquire status lock for operation {}",
+                        operation.id
+                    );
                     return Err(WasmtimeError::Concurrency {
-                        message: "Failed to check operation status due to lock poisoning".to_string()
+                        message: "Failed to check operation status due to lock poisoning"
+                            .to_string(),
                     });
                 }
             };
@@ -766,18 +804,24 @@ pub fn wait_for_operation(operation: &AsyncOperation, timeout_ms: u64) -> Wasmti
         };
 
         match status {
-            AsyncOperationStatus::Completed |
-            AsyncOperationStatus::Failed |
-            AsyncOperationStatus::Cancelled |
-            AsyncOperationStatus::TimedOut => {
-                debug!("Async operation {} completed with status: {:?}", operation.id, status);
+            AsyncOperationStatus::Completed
+            | AsyncOperationStatus::Failed
+            | AsyncOperationStatus::Cancelled
+            | AsyncOperationStatus::TimedOut => {
+                debug!(
+                    "Async operation {} completed with status: {:?}",
+                    operation.id, status
+                );
                 return Ok(status);
-            },
+            }
             AsyncOperationStatus::Pending | AsyncOperationStatus::Running => {
                 if start_time.elapsed() >= timeout_duration {
-                    warn!("Timed out waiting for async operation {} after {}ms", operation.id, timeout_ms);
+                    warn!(
+                        "Timed out waiting for async operation {} after {}ms",
+                        operation.id, timeout_ms
+                    );
                     return Err(WasmtimeError::Internal {
-                        message: "Timeout waiting for operation to complete".to_string()
+                        message: "Timeout waiting for operation to complete".to_string(),
                     });
                 }
 
@@ -812,8 +856,10 @@ pub unsafe extern "C" fn wasmtime4j_async_runtime_init() -> c_int {
 /// Returns information about the current async runtime state
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_async_runtime_info() -> *const c_char {
-    let info = format!("Tokio runtime with {} workers",
-                      get_runtime_handle().metrics().num_workers());
+    let info = format!(
+        "Tokio runtime with {} workers",
+        get_runtime_handle().metrics().num_workers()
+    );
     let info_cstring = CString::new(info).unwrap_or_default();
     info_cstring.into_raw()
 }
@@ -860,12 +906,15 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
     args_len: c_uint,
     timeout_ms: c_ulong,
     callback: AsyncCallback,
-    user_data: *mut c_void
+    user_data: *mut c_void,
 ) -> c_int {
     // Validate inputs
     if instance_ptr.is_null() || store_ptr.is_null() || function_name.is_null() {
-        error!("Invalid parameters for async function call: instance_ptr={:?}, store_ptr={:?}",
-               instance_ptr.is_null(), store_ptr.is_null());
+        error!(
+            "Invalid parameters for async function call: instance_ptr={:?}, store_ptr={:?}",
+            instance_ptr.is_null(),
+            store_ptr.is_null()
+        );
         return -1;
     }
 
@@ -908,47 +957,57 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
 
     // Generate operation ID
     let operation_id = next_operation_id();
-    debug!("Starting async function call operation {} for function '{}'", operation_id, function_name_str);
+    debug!(
+        "Starting async function call operation {} for function '{}'",
+        operation_id, function_name_str
+    );
 
     // Create raw pointers that are Send-safe by converting to usize
     let instance_addr = instance_ptr as usize;
     let store_addr = store_ptr as usize;
     let user_data_addr = user_data as usize;
     let function_name_owned = function_name_str.clone();
-    let timeout = if timeout_ms > 0 { timeout_ms as u64 } else { 30000 }; // Default 30s timeout
+    let timeout = if timeout_ms > 0 {
+        timeout_ms as u64
+    } else {
+        30000
+    }; // Default 30s timeout
 
     // Spawn async task on the global runtime
     get_async_runtime().spawn(async move {
-        let result = tokio::time::timeout(
-            Duration::from_millis(timeout),
-            async {
-                // Defensive validation: ensure addresses are non-zero before dereferencing.
-                // A zero address would indicate a programming error (null pointer passed).
-                if instance_addr == 0 || store_addr == 0 {
-                    error!("Null pointer detected in async function call: instance_addr={}, store_addr={}",
-                           instance_addr, store_addr);
-                    return Err(WasmtimeError::InvalidParameter {
-                        message: "Null pointer in async call".to_string(),
-                    });
-                }
-
-                // SAFETY: The caller has validated these pointers before this async block was spawned.
-                // The caller is contractually responsible for ensuring these pointers remain valid
-                // for the duration of this async operation. The defensive check above catches
-                // obvious programming errors (null pointers) but cannot detect use-after-free.
-                let instance = unsafe { &mut *(instance_addr as *mut Instance) };
-                let store = unsafe { &mut *(store_addr as *mut Store) };
-
-                // Call the function
-                instance.call_export_function(store, &function_name_owned, &arguments)
+        let result = tokio::time::timeout(Duration::from_millis(timeout), async {
+            // Defensive validation: ensure addresses are non-zero before dereferencing.
+            // A zero address would indicate a programming error (null pointer passed).
+            if instance_addr == 0 || store_addr == 0 {
+                error!(
+                    "Null pointer detected in async function call: instance_addr={}, store_addr={}",
+                    instance_addr, store_addr
+                );
+                return Err(WasmtimeError::InvalidParameter {
+                    message: "Null pointer in async call".to_string(),
+                });
             }
-        ).await;
+
+            // SAFETY: The caller has validated these pointers before this async block was spawned.
+            // The caller is contractually responsible for ensuring these pointers remain valid
+            // for the duration of this async operation. The defensive check above catches
+            // obvious programming errors (null pointers) but cannot detect use-after-free.
+            let instance = unsafe { &mut *(instance_addr as *mut Instance) };
+            let store = unsafe { &mut *(store_addr as *mut Store) };
+
+            // Call the function
+            instance.call_export_function(store, &function_name_owned, &arguments)
+        })
+        .await;
 
         // Invoke callback with result
         let (status_code, message) = match result {
             Ok(Ok(call_result)) => {
-                info!("Async function '{}' completed successfully with {} results",
-                      function_name_owned, call_result.values.len());
+                info!(
+                    "Async function '{}' completed successfully with {} results",
+                    function_name_owned,
+                    call_result.values.len()
+                );
                 (0, "Success".to_string())
             }
             Ok(Err(e)) => {
@@ -956,14 +1015,22 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
                 (-1, format!("Error: {}", e))
             }
             Err(_) => {
-                warn!("Async function '{}' timed out after {}ms", function_name_owned, timeout);
+                warn!(
+                    "Async function '{}' timed out after {}ms",
+                    function_name_owned, timeout
+                );
                 (-2, format!("Timeout after {}ms", timeout))
             }
         };
 
         // Call the C callback
-        let c_message = CString::new(message).unwrap_or_else(|_| CString::new("Unknown error").unwrap());
-        callback(user_data_addr as *mut c_void, status_code, c_message.as_ptr());
+        let c_message =
+            CString::new(message).unwrap_or_else(|_| CString::new("Unknown error").unwrap());
+        callback(
+            user_data_addr as *mut c_void,
+            status_code,
+            c_message.as_ptr(),
+        );
     });
 
     operation_id as c_int
@@ -1000,7 +1067,10 @@ mod tests {
             status: Arc::new(Mutex::new(AsyncOperationStatus::Pending)),
         };
 
-        assert_eq!(get_operation_status(&operation), AsyncOperationStatus::Pending);
+        assert_eq!(
+            get_operation_status(&operation),
+            AsyncOperationStatus::Pending
+        );
     }
 
     #[test]
@@ -1031,7 +1101,12 @@ mod tests {
     #[test]
     fn test_invalid_function_call_parameters() {
         unsafe {
-            extern "C" fn dummy_callback(_user_data: *mut c_void, _status: c_int, _message: *const c_char) {}
+            extern "C" fn dummy_callback(
+                _user_data: *mut c_void,
+                _status: c_int,
+                _message: *const c_char,
+            ) {
+            }
 
             // Test null instance
             let result = wasmtime4j_func_call_async(
@@ -1042,7 +1117,7 @@ mod tests {
                 0,
                 1000,
                 dummy_callback,
-                ptr::null_mut()
+                ptr::null_mut(),
             );
             assert_eq!(result, -1);
 
@@ -1056,7 +1131,7 @@ mod tests {
                 0,
                 1000,
                 dummy_callback,
-                ptr::null_mut()
+                ptr::null_mut(),
             );
             assert_eq!(result, -1);
 
@@ -1070,10 +1145,9 @@ mod tests {
                 0,
                 1000,
                 dummy_callback,
-                ptr::null_mut()
+                ptr::null_mut(),
             );
             assert_eq!(result, -1);
         }
     }
-
 }

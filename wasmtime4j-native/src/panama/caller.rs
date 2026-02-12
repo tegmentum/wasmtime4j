@@ -4,10 +4,10 @@
 //! execution context from host functions, enabling memory access, fuel
 //! management, and export introspection.
 
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
 use crate::caller::core;
 use crate::error::ffi_utils;
 use crate::store::StoreData;
+use std::os::raw::{c_char, c_int, c_ulong, c_void};
 use wasmtime::Caller as WasmtimeCaller;
 
 /// Get fuel consumed by the caller if fuel metering is enabled (Panama FFI version)
@@ -24,7 +24,9 @@ pub extern "C" fn wasmtime4j_panama_caller_get_fuel(
         let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
         match core::caller_get_fuel(caller)? {
             Some(fuel) => {
-                unsafe { *fuel_out = fuel; }
+                unsafe {
+                    *fuel_out = fuel;
+                }
                 Ok(0) // Success
             }
             None => Ok(-1), // Fuel metering not enabled
@@ -54,7 +56,9 @@ pub extern "C" fn wasmtime4j_panama_caller_get_fuel_remaining(
         let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
         match core::caller_get_fuel_remaining(caller)? {
             Some(fuel) => {
-                unsafe { *fuel_out = fuel; }
+                unsafe {
+                    *fuel_out = fuel;
+                }
                 Ok(()) // Success
             }
             None => Ok(()), // Fuel metering not enabled
@@ -98,18 +102,16 @@ pub extern "C" fn wasmtime4j_panama_caller_set_epoch_deadline(
 
 /// Check if the caller has an active epoch deadline (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_caller_has_epoch_deadline(
-    caller_ptr: *mut c_void,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_caller_has_epoch_deadline(caller_ptr: *mut c_void) -> c_int {
     if caller_ptr.is_null() {
         return -1; // Error: null pointer
     }
 
     let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
     match core::caller_has_epoch_deadline(caller) {
-        Ok(true) => 1, // Has deadline
+        Ok(true) => 1,  // Has deadline
         Ok(false) => 0, // No deadline
-        Err(_) => -1, // Error occurred
+        Err(_) => -1,   // Error occurred
     }
 }
 
@@ -130,9 +132,9 @@ pub extern "C" fn wasmtime4j_panama_caller_has_export(
     };
 
     match core::caller_has_export(caller, name_str) {
-        Ok(true) => 1, // Has export
+        Ok(true) => 1,  // Has export
         Ok(false) => 0, // No export
-        Err(_) => -1, // Error occurred
+        Err(_) => -1,   // Error occurred
     }
 }
 
@@ -155,11 +157,15 @@ pub extern "C" fn wasmtime4j_panama_caller_get_memory(
 
     match core::caller_get_memory(caller, name_str) {
         Ok(Some(memory)) => {
-            unsafe { *memory_out = Box::into_raw(Box::new(memory)) as *mut c_void; }
+            unsafe {
+                *memory_out = Box::into_raw(Box::new(memory)) as *mut c_void;
+            }
             1 // Memory found
         }
         Ok(None) => {
-            unsafe { *memory_out = std::ptr::null_mut(); }
+            unsafe {
+                *memory_out = std::ptr::null_mut();
+            }
             0 // No memory export with this name
         }
         Err(_) => -1, // Error occurred
@@ -179,16 +185,23 @@ pub extern "C" fn wasmtime4j_panama_caller_get_function(
 
     ffi_utils::ffi_try_code(|| {
         let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
-        let name_str = unsafe { std::ffi::CStr::from_ptr(name) }.to_str()
-            .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+        let name_str = unsafe { std::ffi::CStr::from_ptr(name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
 
         match core::caller_get_function(caller, name_str)? {
             Some(function) => {
-                unsafe { *function_out = Box::into_raw(Box::new(function)) as *mut c_void; }
+                unsafe {
+                    *function_out = Box::into_raw(Box::new(function)) as *mut c_void;
+                }
                 Ok(()) // Success
             }
             None => {
-                unsafe { *function_out = std::ptr::null_mut(); }
+                unsafe {
+                    *function_out = std::ptr::null_mut();
+                }
                 Ok(()) // No function export with this name
             }
         }
@@ -208,16 +221,23 @@ pub extern "C" fn wasmtime4j_panama_caller_get_global(
 
     ffi_utils::ffi_try_code(|| {
         let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
-        let name_str = unsafe { std::ffi::CStr::from_ptr(name) }.to_str()
-            .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+        let name_str = unsafe { std::ffi::CStr::from_ptr(name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
 
         match core::caller_get_global(caller, name_str)? {
             Some(global) => {
-                unsafe { *global_out = Box::into_raw(Box::new(global)) as *mut c_void; }
+                unsafe {
+                    *global_out = Box::into_raw(Box::new(global)) as *mut c_void;
+                }
                 Ok(()) // Success
             }
             None => {
-                unsafe { *global_out = std::ptr::null_mut(); }
+                unsafe {
+                    *global_out = std::ptr::null_mut();
+                }
                 Ok(()) // No global export with this name
             }
         }
@@ -237,16 +257,23 @@ pub extern "C" fn wasmtime4j_panama_caller_get_table(
 
     ffi_utils::ffi_try_code(|| {
         let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
-        let name_str = unsafe { std::ffi::CStr::from_ptr(name) }.to_str()
-            .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+        let name_str = unsafe { std::ffi::CStr::from_ptr(name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
 
         match core::caller_get_table(caller, name_str)? {
             Some(table) => {
-                unsafe { *table_out = Box::into_raw(Box::new(table)) as *mut c_void; }
+                unsafe {
+                    *table_out = Box::into_raw(Box::new(table)) as *mut c_void;
+                }
                 Ok(()) // Success
             }
             None => {
-                unsafe { *table_out = std::ptr::null_mut(); }
+                unsafe {
+                    *table_out = std::ptr::null_mut();
+                }
                 Ok(()) // No table export with this name
             }
         }

@@ -8,9 +8,9 @@ use jni::sys::{jboolean, jint, jlong, jobjectArray, jstring};
 use jni::JNIEnv;
 
 use crate::error::jni_utils;
-use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_filesystem_helpers;
-use crate::{jni_validate_handle, jni_validate_handles, jni_validate_non_negative, jni_get_ref};
+use crate::wasi_preview2::WasiPreview2Context;
+use crate::{jni_get_ref, jni_validate_handle, jni_validate_handles, jni_validate_non_negative};
 
 /// Read from descriptor via stream
 ///
@@ -30,7 +30,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", 0);
 
     // Call helper function
-    match wasi_filesystem_helpers::read_via_stream(context, descriptor_handle as u64, offset as u64) {
+    match wasi_filesystem_helpers::read_via_stream(context, descriptor_handle as u64, offset as u64)
+    {
         Ok(stream_id) => stream_id as jlong,
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
@@ -57,7 +58,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", 0);
 
     // Call helper function
-    match wasi_filesystem_helpers::write_via_stream(context, descriptor_handle as u64, offset as u64) {
+    match wasi_filesystem_helpers::write_via_stream(
+        context,
+        descriptor_handle as u64,
+        offset as u64,
+    ) {
         Ok(stream_id) => stream_id as jlong,
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
@@ -253,7 +258,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     let combined_flags = (path_flags as u32) | (open_flags as u32) | (descriptor_flags as u32);
 
     // Call helper function
-    match wasi_filesystem_helpers::open_at(context, descriptor_handle as u64, &path_str, combined_flags, 0) {
+    match wasi_filesystem_helpers::open_at(
+        context,
+        descriptor_handle as u64,
+        &path_str,
+        combined_flags,
+        0,
+    ) {
         Ok(new_descriptor_id) => new_descriptor_id as jlong,
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
@@ -291,7 +302,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Call helper function
-    match wasi_filesystem_helpers::create_directory_at(context, descriptor_handle as u64, &path_str) {
+    match wasi_filesystem_helpers::create_directory_at(context, descriptor_handle as u64, &path_str)
+    {
         Ok(()) => 0,
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
@@ -315,7 +327,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
 
     // Validate parameters using macros
     jni_validate_handles!(env, null_result, context_handle => "context", descriptor_handle => "descriptor");
-    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", null_result);
+    let context = jni_get_ref!(
+        env,
+        context_handle,
+        WasiPreview2Context,
+        "context",
+        null_result
+    );
 
     // Call helper function to get directory entries
     match wasi_filesystem_helpers::read_directory(context, descriptor_handle as u64) {
@@ -324,31 +342,44 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
             let string_class = match env.find_class("java/lang/String") {
                 Ok(cls) => cls,
                 Err(e) => {
-                    let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to find String class: {:?}", e));
+                    let _ = env.throw_new(
+                        "java/lang/RuntimeException",
+                        &format!("Failed to find String class: {:?}", e),
+                    );
                     return JObject::null().into_raw();
                 }
             };
 
-            let result = match env.new_object_array(entries.len() as i32, &string_class, JObject::null()) {
-                Ok(arr) => arr,
-                Err(e) => {
-                    let _ = env.throw_new("java/lang/OutOfMemoryError", &format!("Failed to create array: {:?}", e));
-                    return JObject::null().into_raw();
-                }
-            };
+            let result =
+                match env.new_object_array(entries.len() as i32, &string_class, JObject::null()) {
+                    Ok(arr) => arr,
+                    Err(e) => {
+                        let _ = env.throw_new(
+                            "java/lang/OutOfMemoryError",
+                            &format!("Failed to create array: {:?}", e),
+                        );
+                        return JObject::null().into_raw();
+                    }
+                };
 
             // Populate array with file names (ignoring entry types for now)
             for (i, (name, _entry_type)) in entries.iter().enumerate() {
                 let jstring = match env.new_string(name) {
                     Ok(s) => s,
                     Err(e) => {
-                        let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to create string: {:?}", e));
+                        let _ = env.throw_new(
+                            "java/lang/RuntimeException",
+                            &format!("Failed to create string: {:?}", e),
+                        );
                         return JObject::null().into_raw();
                     }
                 };
 
                 if let Err(e) = env.set_object_array_element(&result, i as i32, jstring) {
-                    let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to set array element: {:?}", e));
+                    let _ = env.throw_new(
+                        "java/lang/RuntimeException",
+                        &format!("Failed to set array element: {:?}", e),
+                    );
                     return JObject::null().into_raw();
                 }
             }
@@ -378,7 +409,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
 
     // Validate parameters using macros
     jni_validate_handles!(env, null_result, context_handle => "context", descriptor_handle => "descriptor");
-    let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", null_result);
+    let context = jni_get_ref!(
+        env,
+        context_handle,
+        WasiPreview2Context,
+        "context",
+        null_result
+    );
 
     // Get path string
     let path_str: String = match env.get_string(&path) {
@@ -397,7 +434,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
         Ok(target) => match env.new_string(&target) {
             Ok(jstr) => jstr.into_raw(),
             Err(e) => {
-                let _ = env.throw_new("java/lang/RuntimeException", &format!("Failed to create string: {}", e));
+                let _ = env.throw_new(
+                    "java/lang/RuntimeException",
+                    &format!("Failed to create string: {}", e),
+                );
                 null_result
             }
         },
@@ -475,7 +515,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Call helper function
-    match wasi_filesystem_helpers::remove_directory_at(context, descriptor_handle as u64, &path_str) {
+    match wasi_filesystem_helpers::remove_directory_at(context, descriptor_handle as u64, &path_str)
+    {
         Ok(()) => 0,
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
@@ -527,7 +568,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Call helper function
-    match wasi_filesystem_helpers::rename_at(context, descriptor_handle as u64, &old_path_str, new_descriptor_handle as u64, &new_path_str) {
+    match wasi_filesystem_helpers::rename_at(
+        context,
+        descriptor_handle as u64,
+        &old_path_str,
+        new_descriptor_handle as u64,
+        &new_path_str,
+    ) {
         Ok(()) => 0,
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
@@ -578,7 +625,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     };
 
     // Call helper function
-    match wasi_filesystem_helpers::symlink_at(context, descriptor_handle as u64, &old_path_str, &new_path_str) {
+    match wasi_filesystem_helpers::symlink_at(
+        context,
+        descriptor_handle as u64,
+        &old_path_str,
+        &new_path_str,
+    ) {
         Ok(()) => 0,
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
@@ -632,7 +684,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
 
     // Call helper function (note: flags parameter is ignored in MVP)
     let _ = old_path_flags; // Acknowledge flags parameter but don't use it in MVP
-    match wasi_filesystem_helpers::link_at(context, descriptor_handle as u64, &old_path_str, new_descriptor_handle as u64, &new_path_str) {
+    match wasi_filesystem_helpers::link_at(
+        context,
+        descriptor_handle as u64,
+        &old_path_str,
+        new_descriptor_handle as u64,
+        &new_path_str,
+    ) {
         Ok(()) => 0,
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
@@ -658,8 +716,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_filesystem_JniWasiD
     let context = jni_get_ref!(env, context_handle, WasiPreview2Context, "context", 0);
 
     // Call helper function
-    match wasi_filesystem_helpers::is_same_object(context, descriptor_handle as u64, other_descriptor_handle as u64) {
-        Ok(same) => if same { 1 } else { 0 },
+    match wasi_filesystem_helpers::is_same_object(
+        context,
+        descriptor_handle as u64,
+        other_descriptor_handle as u64,
+    ) {
+        Ok(same) => {
+            if same {
+                1
+            } else {
+                0
+            }
+        }
         Err(e) => {
             let _ = env.throw_new("java/io/IOException", &format!("{:?}", e));
             0

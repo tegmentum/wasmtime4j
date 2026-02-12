@@ -1,8 +1,8 @@
 //! JNI bindings for ResourceLimiter operations
 
-use jni::JNIEnv;
 use jni::objects::JClass;
-use jni::sys::{jlong, jint, jstring};
+use jni::sys::{jint, jlong, jstring};
+use jni::JNIEnv;
 
 use crate::store_limiter;
 
@@ -36,9 +36,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLim
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    unsafe {
-        store_limiter::wasmtime4j_limiter_create_default()
-    }
+    unsafe { store_limiter::wasmtime4j_limiter_create_default() }
 }
 
 /// JNI binding for JniResourceLimiter.nativeFree
@@ -48,9 +46,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLim
     _class: JClass,
     limiter_id: jlong,
 ) -> jint {
-    unsafe {
-        store_limiter::wasmtime4j_limiter_free(limiter_id)
-    }
+    unsafe { store_limiter::wasmtime4j_limiter_free(limiter_id) }
 }
 
 /// JNI binding for JniResourceLimiter.nativeAllowMemoryGrow
@@ -63,7 +59,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLim
     requested_pages: jlong,
 ) -> jint {
     unsafe {
-        store_limiter::wasmtime4j_limiter_allow_memory_grow(limiter_id, current_pages, requested_pages)
+        store_limiter::wasmtime4j_limiter_allow_memory_grow(
+            limiter_id,
+            current_pages,
+            requested_pages,
+        )
     }
 }
 
@@ -77,7 +77,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLim
     requested_elements: jlong,
 ) -> jint {
     unsafe {
-        store_limiter::wasmtime4j_limiter_allow_table_grow(limiter_id, current_elements, requested_elements)
+        store_limiter::wasmtime4j_limiter_allow_table_grow(
+            limiter_id,
+            current_elements,
+            requested_elements,
+        )
     }
 }
 
@@ -96,7 +100,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLim
 
         let c_str = std::ffi::CStr::from_ptr(json_ptr);
         let result = match c_str.to_str() {
-            Ok(s) => env.new_string(s).map(|js| js.into_raw()).unwrap_or(std::ptr::null_mut()),
+            Ok(s) => env
+                .new_string(s)
+                .map(|js| js.into_raw())
+                .unwrap_or(std::ptr::null_mut()),
             Err(_) => std::ptr::null_mut(),
         };
 
@@ -114,9 +121,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLim
     _class: JClass,
     limiter_id: jlong,
 ) -> jint {
-    unsafe {
-        store_limiter::wasmtime4j_limiter_reset_stats(limiter_id)
-    }
+    unsafe { store_limiter::wasmtime4j_limiter_reset_stats(limiter_id) }
 }
 
 /// JNI binding for JniResourceLimiter.nativeGetCount
@@ -125,7 +130,5 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_execution_JniResourceLim
     _env: JNIEnv,
     _class: JClass,
 ) -> jint {
-    unsafe {
-        store_limiter::wasmtime4j_limiter_get_count()
-    }
+    unsafe { store_limiter::wasmtime4j_limiter_get_count() }
 }

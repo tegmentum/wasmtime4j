@@ -16,7 +16,9 @@ pub fn create_input_stream(
     _descriptor_id: u64,
     _offset: u64,
 ) -> WasmtimeResult<u64> {
-    let stream_id = context.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+    let stream_id = context
+        .next_operation_id
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
 
     let stream = WasiStream {
         id: stream_id,
@@ -40,11 +42,12 @@ pub fn read_from_stream(
     _blocking: bool,
 ) -> WasmtimeResult<Vec<u8>> {
     let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get_mut(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if matches!(stream.status, WasiStreamStatus::Closed) {
         return Err(WasmtimeError::Wasi {
@@ -65,11 +68,12 @@ pub fn skip_in_stream(
     _blocking: bool,
 ) -> WasmtimeResult<u64> {
     let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get_mut(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if matches!(stream.status, WasiStreamStatus::Closed) {
         return Err(WasmtimeError::Wasi {
@@ -95,11 +99,12 @@ pub fn close_stream(context: &WasiPreview2Context, stream_id: u64) -> WasmtimeRe
 /// Check write capacity for an output stream
 pub fn check_write_capacity(context: &WasiPreview2Context, stream_id: u64) -> WasmtimeResult<u64> {
     let streams = context.streams.read().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if matches!(stream.status, WasiStreamStatus::Closed) {
         return Err(WasmtimeError::Wasi {
@@ -118,11 +123,12 @@ pub fn write_to_stream(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get_mut(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if matches!(stream.status, WasiStreamStatus::Closed) {
         return Err(WasmtimeError::Wasi {
@@ -141,11 +147,12 @@ pub fn flush_stream(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     let streams = context.streams.read().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if matches!(stream.status, WasiStreamStatus::Closed) {
         return Err(WasmtimeError::Wasi {
@@ -164,11 +171,12 @@ pub fn write_zeroes_to_stream(
     _blocking: bool,
 ) -> WasmtimeResult<()> {
     let mut streams = context.streams.write().unwrap_or_else(|e| e.into_inner());
-    let stream = streams.get_mut(&(stream_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Stream {} not found", stream_id),
-        }
-    })?;
+    let stream =
+        streams
+            .get_mut(&(stream_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Stream {} not found", stream_id),
+            })?;
 
     if matches!(stream.status, WasiStreamStatus::Closed) {
         return Err(WasmtimeError::Wasi {
@@ -176,7 +184,9 @@ pub fn write_zeroes_to_stream(
         });
     }
 
-    stream.buffer.resize(stream.buffer.len() + length as usize, 0);
+    stream
+        .buffer
+        .resize(stream.buffer.len() + length as usize, 0);
     Ok(())
 }
 
@@ -222,7 +232,10 @@ pub fn splice_streams(
 }
 
 /// Create a pollable for an output stream
-pub fn create_output_stream_pollable(context: &WasiPreview2Context, stream_id: u64) -> WasmtimeResult<u64> {
+pub fn create_output_stream_pollable(
+    context: &WasiPreview2Context,
+    stream_id: u64,
+) -> WasmtimeResult<u64> {
     // Verify the stream exists
     {
         let streams = context.streams.read().unwrap_or_else(|e| e.into_inner());
@@ -249,7 +262,10 @@ pub fn create_output_stream_pollable(context: &WasiPreview2Context, stream_id: u
 }
 
 /// Create a pollable for an input stream
-pub fn create_input_stream_pollable(context: &WasiPreview2Context, stream_id: u64) -> WasmtimeResult<u64> {
+pub fn create_input_stream_pollable(
+    context: &WasiPreview2Context,
+    stream_id: u64,
+) -> WasmtimeResult<u64> {
     // Verify the stream exists
     {
         let streams = context.streams.read().unwrap_or_else(|e| e.into_inner());
@@ -276,13 +292,17 @@ pub fn create_input_stream_pollable(context: &WasiPreview2Context, stream_id: u6
 }
 
 /// Check if a pollable is ready
-pub fn check_pollable_ready(context: &WasiPreview2Context, pollable_id: u64) -> WasmtimeResult<bool> {
+pub fn check_pollable_ready(
+    context: &WasiPreview2Context,
+    pollable_id: u64,
+) -> WasmtimeResult<bool> {
     let pollables = context.pollables.read().unwrap_or_else(|e| e.into_inner());
-    let pollable = pollables.get(&(pollable_id as u32)).ok_or_else(|| {
-        WasmtimeError::InvalidParameter {
-            message: format!("Pollable {} not found", pollable_id),
-        }
-    })?;
+    let pollable =
+        pollables
+            .get(&(pollable_id as u32))
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Pollable {} not found", pollable_id),
+            })?;
 
     // If already marked ready, return true
     if pollable.ready {
@@ -367,10 +387,7 @@ pub fn close_pollable(context: &WasiPreview2Context, pollable_id: u64) -> Wasmti
 }
 
 /// Poll multiple pollables at once, returning the indices of ready pollables
-pub fn poll_many(
-    context: &WasiPreview2Context,
-    pollable_ids: &[u64],
-) -> WasmtimeResult<Vec<u32>> {
+pub fn poll_many(context: &WasiPreview2Context, pollable_ids: &[u64]) -> WasmtimeResult<Vec<u32>> {
     let mut ready_indices = Vec::new();
 
     for (index, &pollable_id) in pollable_ids.iter().enumerate() {
@@ -475,7 +492,10 @@ mod tests {
             status: WasiStreamStatus::Ready,
             resource_id: None,
         };
-        ctx.streams.write().unwrap_or_else(|e| e.into_inner()).insert(42, stream);
+        ctx.streams
+            .write()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(42, stream);
 
         // Close the stream
         let close_result = close_stream(&ctx, 42);
@@ -488,7 +508,9 @@ mod tests {
         // Verify the stream is marked Closed
         {
             let streams = ctx.streams.read().unwrap_or_else(|e| e.into_inner());
-            let stream = streams.get(&42).expect("Stream 42 should still exist after close");
+            let stream = streams
+                .get(&42)
+                .expect("Stream 42 should still exist after close");
             assert!(
                 matches!(stream.status, WasiStreamStatus::Closed),
                 "Stream status should be Closed after close_stream, got: {:?}",
@@ -528,7 +550,10 @@ mod tests {
             status: WasiStreamStatus::Ready,
             resource_id: None,
         };
-        ctx.streams.write().unwrap_or_else(|e| e.into_inner()).insert(50, stream);
+        ctx.streams
+            .write()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(50, stream);
 
         let result = check_write_capacity(&ctx, 50);
         assert!(
@@ -597,7 +622,10 @@ mod tests {
             status: WasiStreamStatus::Closed,
             resource_id: None,
         };
-        ctx.streams.write().unwrap_or_else(|e| e.into_inner()).insert(60, stream);
+        ctx.streams
+            .write()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(60, stream);
 
         let result = read_from_stream(&ctx, 60, 10, false);
         assert!(
@@ -625,7 +653,10 @@ mod tests {
             status: WasiStreamStatus::Ready,
             resource_id: None,
         };
-        ctx.streams.write().unwrap_or_else(|e| e.into_inner()).insert(70, stream);
+        ctx.streams
+            .write()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(70, stream);
 
         let result = create_output_stream_pollable(&ctx, 70);
         assert!(
@@ -634,10 +665,7 @@ mod tests {
             result.err()
         );
         let pollable_id = result.unwrap();
-        println!(
-            "Created output stream pollable with id: {}",
-            pollable_id
-        );
+        println!("Created output stream pollable with id: {}", pollable_id);
 
         // Verify the pollable exists
         let pollables = ctx.pollables.read().unwrap_or_else(|e| e.into_inner());
@@ -722,7 +750,9 @@ mod tests {
             "close_pollable for non-existent pollable should succeed (no-op), got: {:?}",
             result.err()
         );
-        println!("close_pollable for non-existent pollable returned Ok as expected (no-op removal)");
+        println!(
+            "close_pollable for non-existent pollable returned Ok as expected (no-op removal)"
+        );
     }
 
     #[test]

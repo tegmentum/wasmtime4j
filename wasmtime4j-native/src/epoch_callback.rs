@@ -4,11 +4,11 @@
 //! allowing Java code to be notified when WebAssembly execution exceeds its epoch deadline
 //! and optionally extend the deadline to continue execution.
 
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock};
-use std::os::raw::c_void;
-use once_cell::sync::Lazy;
 use crate::error::{WasmtimeError, WasmtimeResult};
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::os::raw::c_void;
+use std::sync::{Arc, Mutex, RwLock};
 
 /// Epoch deadline exceeded action types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,7 +52,8 @@ impl Default for EpochDeadlineResult {
 }
 
 /// Callback function type for epoch deadline events
-pub type EpochDeadlineCallback = Box<dyn Fn(&EpochDeadlineContext) -> EpochDeadlineResult + Send + Sync>;
+pub type EpochDeadlineCallback =
+    Box<dyn Fn(&EpochDeadlineContext) -> EpochDeadlineResult + Send + Sync>;
 
 /// Epoch deadline callback handler with statistics tracking
 pub struct EpochCallbackHandler {
@@ -122,8 +123,9 @@ impl EpochCallbackHandler {
         config: EpochCallbackConfig,
     ) -> WasmtimeResult<Self> {
         let id = {
-            let mut counter = CALLBACK_ID_COUNTER.lock()
-                .map_err(|_| WasmtimeError::resource_error("Failed to acquire callback ID counter".to_string()))?;
+            let mut counter = CALLBACK_ID_COUNTER.lock().map_err(|_| {
+                WasmtimeError::resource_error("Failed to acquire callback ID counter".to_string())
+            })?;
             let id = *counter;
             *counter += 1;
             id
@@ -219,8 +221,9 @@ impl EpochCallbackHandler {
         let id = handler.id;
         let handler = Arc::new(handler);
 
-        let mut registry = EPOCH_CALLBACK_REGISTRY.write()
-            .map_err(|_| WasmtimeError::resource_error("Failed to acquire epoch callback registry".to_string()))?;
+        let mut registry = EPOCH_CALLBACK_REGISTRY.write().map_err(|_| {
+            WasmtimeError::resource_error("Failed to acquire epoch callback registry".to_string())
+        })?;
         registry.insert(id, handler);
 
         Ok(id)
@@ -228,20 +231,23 @@ impl EpochCallbackHandler {
 
     /// Get a handler by ID
     pub fn get_handler(handler_id: u64) -> WasmtimeResult<Arc<EpochCallbackHandler>> {
-        let registry = EPOCH_CALLBACK_REGISTRY.read()
-            .map_err(|_| WasmtimeError::resource_error("Failed to acquire epoch callback registry".to_string()))?;
+        let registry = EPOCH_CALLBACK_REGISTRY.read().map_err(|_| {
+            WasmtimeError::resource_error("Failed to acquire epoch callback registry".to_string())
+        })?;
 
-        registry.get(&handler_id)
-            .cloned()
-            .ok_or_else(|| WasmtimeError::resource_error(
-                format!("Epoch callback handler {} not found", handler_id)
+        registry.get(&handler_id).cloned().ok_or_else(|| {
+            WasmtimeError::resource_error(format!(
+                "Epoch callback handler {} not found",
+                handler_id
             ))
+        })
     }
 
     /// Remove a handler from the registry
     pub fn unregister_handler(handler_id: u64) -> WasmtimeResult<()> {
-        let mut registry = EPOCH_CALLBACK_REGISTRY.write()
-            .map_err(|_| WasmtimeError::resource_error("Failed to acquire epoch callback registry".to_string()))?;
+        let mut registry = EPOCH_CALLBACK_REGISTRY.write().map_err(|_| {
+            WasmtimeError::resource_error("Failed to acquire epoch callback registry".to_string())
+        })?;
 
         registry.remove(&handler_id);
         Ok(())
@@ -267,7 +273,10 @@ pub fn create_epoch_callback_handler(
 }
 
 /// Invoke epoch deadline callback for a given handler
-pub fn invoke_epoch_callback(handler_id: u64, context: &EpochDeadlineContext) -> WasmtimeResult<EpochDeadlineResult> {
+pub fn invoke_epoch_callback(
+    handler_id: u64,
+    context: &EpochDeadlineContext,
+) -> WasmtimeResult<EpochDeadlineResult> {
     let handler = EpochCallbackHandler::get_handler(handler_id)?;
     Ok(handler.handle_deadline_exceeded(context))
 }
@@ -287,8 +296,8 @@ pub fn destroy_epoch_callback_handler(handler_id: u64) -> WasmtimeResult<()> {
 // FFI Functions for Panama/JNI
 // =============================================================================
 
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 use std::os::raw::c_int;
-use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
 
 /// Create an epoch deadline callback handler with a function pointer
 ///
@@ -485,11 +494,9 @@ mod tests {
 
     #[test]
     fn test_epoch_callback_handler_creation() {
-        let callback: EpochDeadlineCallback = Box::new(|_ctx| {
-            EpochDeadlineResult {
-                action: EpochDeadlineAction::Continue,
-                delta: 10,
-            }
+        let callback: EpochDeadlineCallback = Box::new(|_ctx| EpochDeadlineResult {
+            action: EpochDeadlineAction::Continue,
+            delta: 10,
         });
 
         let config = EpochCallbackConfig::default();
@@ -500,11 +507,9 @@ mod tests {
 
     #[test]
     fn test_epoch_callback_invocation() {
-        let callback: EpochDeadlineCallback = Box::new(|ctx| {
-            EpochDeadlineResult {
-                action: EpochDeadlineAction::Continue,
-                delta: ctx.current_epoch + 5,
-            }
+        let callback: EpochDeadlineCallback = Box::new(|ctx| EpochDeadlineResult {
+            action: EpochDeadlineAction::Continue,
+            delta: ctx.current_epoch + 5,
         });
 
         let config = EpochCallbackConfig::default();
@@ -523,9 +528,7 @@ mod tests {
 
     #[test]
     fn test_auto_extend() {
-        let callback: EpochDeadlineCallback = Box::new(|_| {
-            EpochDeadlineResult::default()
-        });
+        let callback: EpochDeadlineCallback = Box::new(|_| EpochDeadlineResult::default());
 
         let config = EpochCallbackConfig {
             auto_extend: true,
@@ -548,11 +551,9 @@ mod tests {
 
     #[test]
     fn test_max_extensions_limit() {
-        let callback: EpochDeadlineCallback = Box::new(|_| {
-            EpochDeadlineResult {
-                action: EpochDeadlineAction::Continue,
-                delta: 10,
-            }
+        let callback: EpochDeadlineCallback = Box::new(|_| EpochDeadlineResult {
+            action: EpochDeadlineAction::Continue,
+            delta: 10,
         });
 
         let config = EpochCallbackConfig {

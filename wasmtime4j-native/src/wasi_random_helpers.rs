@@ -100,7 +100,10 @@ mod tests {
         let bytes2 = generate_random_bytes(32);
 
         // With 32 bytes, probability of collision is negligible (2^-256)
-        assert_ne!(bytes1, bytes2, "Different calls should produce different results");
+        assert_ne!(
+            bytes1, bytes2,
+            "Different calls should produce different results"
+        );
     }
 
     #[test]
@@ -116,7 +119,10 @@ mod tests {
         // With 10000 bytes, expected count per value is ~39
         // All values should appear at least once (extremely high probability)
         let appeared_count = counts.iter().filter(|&&c| c > 0).count();
-        assert!(appeared_count > 200, "Most byte values should appear at least once");
+        assert!(
+            appeared_count > 200,
+            "Most byte values should appear at least once"
+        );
     }
 
     #[test]
@@ -130,7 +136,10 @@ mod tests {
                 break;
             }
         }
-        assert!(found_non_zero, "Should generate at least one non-zero value");
+        assert!(
+            found_non_zero,
+            "Should generate at least one non-zero value"
+        );
     }
 
     #[test]
@@ -143,7 +152,10 @@ mod tests {
         }
 
         // With 100 random u64 values, collision probability is negligible
-        assert!(values.len() >= 99, "All values should be unique (or at most 1 collision)");
+        assert!(
+            values.len() >= 99,
+            "All values should be unique (or at most 1 collision)"
+        );
     }
 
     #[test]
@@ -166,7 +178,10 @@ mod tests {
         }
 
         // Should see both high and low values (with high probability)
-        assert!(high_bit_seen || low_bit_seen, "Should generate values across range");
+        assert!(
+            high_bit_seen || low_bit_seen,
+            "Should generate values across range"
+        );
     }
 
     #[test]

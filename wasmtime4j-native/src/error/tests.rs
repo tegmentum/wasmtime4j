@@ -5,7 +5,7 @@ use super::*;
 #[test]
 fn test_error_codes() {
     let error = WasmtimeError::Compilation {
-        message: "test".to_string()
+        message: "test".to_string(),
     };
     assert!(matches!(error.to_error_code(), ErrorCode::CompilationError));
 }
@@ -26,7 +26,7 @@ fn test_ffi_error_handling() {
 
     let result: (ErrorCode, ()) = ffi_try(|| {
         Err(WasmtimeError::InvalidParameter {
-            message: "test".to_string()
+            message: "test".to_string(),
         })
     });
 
@@ -43,57 +43,59 @@ fn test_ffi_error_handling() {
 #[test]
 fn test_thread_safety_error_handling() {
     use ffi_utils::*;
-    use std::thread;
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+    use std::thread;
 
     // Test concurrent error setting and retrieval across multiple threads
     let error_count = Arc::new(AtomicUsize::new(0));
     let success_count = Arc::new(AtomicUsize::new(0));
 
-    let handles: Vec<_> = (0..10).map(|i| {
-        let error_count = Arc::clone(&error_count);
-        let success_count = Arc::clone(&success_count);
+    let handles: Vec<_> = (0..10)
+        .map(|i| {
+            let error_count = Arc::clone(&error_count);
+            let success_count = Arc::clone(&success_count);
 
-        thread::spawn(move || {
-            // Each thread performs multiple error operations
-            for j in 0..100 {
-                // Set an error
-                let result: (ErrorCode, ()) = ffi_try(|| {
-                    if (i + j) % 3 == 0 {
-                        Err(WasmtimeError::InvalidParameter {
-                            message: format!("Thread {} iteration {}", i, j)
-                        })
-                    } else {
-                        Ok(())
+            thread::spawn(move || {
+                // Each thread performs multiple error operations
+                for j in 0..100 {
+                    // Set an error
+                    let result: (ErrorCode, ()) = ffi_try(|| {
+                        if (i + j) % 3 == 0 {
+                            Err(WasmtimeError::InvalidParameter {
+                                message: format!("Thread {} iteration {}", i, j),
+                            })
+                        } else {
+                            Ok(())
+                        }
+                    });
+
+                    match result.0 {
+                        ErrorCode::Success => {
+                            success_count.fetch_add(1, Ordering::SeqCst);
+                            // Verify no error is pending
+                            assert!(!has_pending_error());
+                        }
+                        ErrorCode::InvalidParameterError => {
+                            error_count.fetch_add(1, Ordering::SeqCst);
+                            // Verify error is pending
+                            assert!(has_pending_error());
+
+                            // Get error stats
+                            let (has_error, stats) = get_error_stats();
+                            assert!(has_error);
+                            assert!(stats.contains("Thread"));
+
+                            // Clear error
+                            clear_last_error();
+                            assert!(!has_pending_error());
+                        }
+                        _ => panic!("Unexpected error code: {:?}", result.0),
                     }
-                });
-
-                match result.0 {
-                    ErrorCode::Success => {
-                        success_count.fetch_add(1, Ordering::SeqCst);
-                        // Verify no error is pending
-                        assert!(!has_pending_error());
-                    }
-                    ErrorCode::InvalidParameterError => {
-                        error_count.fetch_add(1, Ordering::SeqCst);
-                        // Verify error is pending
-                        assert!(has_pending_error());
-
-                        // Get error stats
-                        let (has_error, stats) = get_error_stats();
-                        assert!(has_error);
-                        assert!(stats.contains("Thread"));
-
-                        // Clear error
-                        clear_last_error();
-                        assert!(!has_pending_error());
-                    }
-                    _ => panic!("Unexpected error code: {:?}", result.0),
                 }
-            }
+            })
         })
-    }).collect();
+        .collect();
 
     // Wait for all threads to complete
     for handle in handles {
@@ -146,10 +148,10 @@ fn test_error_aggregation() {
 
     // Add multiple errors
     collector.add_error(WasmtimeError::Compilation {
-        message: "Compilation failed".to_string()
+        message: "Compilation failed".to_string(),
     });
     collector.add_error(WasmtimeError::Validation {
-        message: "Validation failed".to_string()
+        message: "Validation failed".to_string(),
     });
 
     assert!(collector.has_errors());
@@ -185,7 +187,7 @@ fn test_error_aggregation_single_error() {
 #[test]
 fn test_error_recovery_time_estimates() {
     let compilation_error = WasmtimeError::Compilation {
-        message: "Test".to_string()
+        message: "Test".to_string(),
     };
     let runtime_error = WasmtimeError::Runtime {
         message: "Test".to_string(),
@@ -193,11 +195,14 @@ fn test_error_recovery_time_estimates() {
     };
 
     // Compilation errors should take longer to recover
-    assert!(compilation_error.get_recovery_time_estimate() > runtime_error.get_recovery_time_estimate());
+    assert!(
+        compilation_error.get_recovery_time_estimate() > runtime_error.get_recovery_time_estimate()
+    );
 
     // Multiple errors should sum recovery times
     let multiple = WasmtimeError::multiple(vec![compilation_error.clone(), runtime_error.clone()]);
-    let expected_time = compilation_error.get_recovery_time_estimate() + runtime_error.get_recovery_time_estimate();
+    let expected_time =
+        compilation_error.get_recovery_time_estimate() + runtime_error.get_recovery_time_estimate();
     assert_eq!(multiple.get_recovery_time_estimate(), expected_time);
 }
 
@@ -219,14 +224,18 @@ fn test_try_all_operations() {
     // Test operations with failures
     let operations_with_failures = vec![
         || -> WasmtimeResult<i32> { Ok(1) },
-        || -> WasmtimeResult<i32> { Err(WasmtimeError::Runtime {
-            message: "Error 1".to_string(),
-            backtrace: None,
-        }) },
+        || -> WasmtimeResult<i32> {
+            Err(WasmtimeError::Runtime {
+                message: "Error 1".to_string(),
+                backtrace: None,
+            })
+        },
         || -> WasmtimeResult<i32> { Ok(3) },
-        || -> WasmtimeResult<i32> { Err(WasmtimeError::Validation {
-            message: "Error 2".to_string(),
-        }) },
+        || -> WasmtimeResult<i32> {
+            Err(WasmtimeError::Validation {
+                message: "Error 2".to_string(),
+            })
+        },
     ];
 
     let result = try_all(operations_with_failures);
@@ -245,14 +254,18 @@ fn test_try_all_continue_operations() {
 
     let operations = vec![
         || -> WasmtimeResult<i32> { Ok(1) },
-        || -> WasmtimeResult<i32> { Err(WasmtimeError::Runtime {
-            message: "Error 1".to_string(),
-            backtrace: None,
-        }) },
+        || -> WasmtimeResult<i32> {
+            Err(WasmtimeError::Runtime {
+                message: "Error 1".to_string(),
+                backtrace: None,
+            })
+        },
         || -> WasmtimeResult<i32> { Ok(3) },
-        || -> WasmtimeResult<i32> { Err(WasmtimeError::Validation {
-            message: "Error 2".to_string(),
-        }) },
+        || -> WasmtimeResult<i32> {
+            Err(WasmtimeError::Validation {
+                message: "Error 2".to_string(),
+            })
+        },
     ];
 
     let (results, error) = try_all_continue(operations);
@@ -332,7 +345,10 @@ fn test_error_variant_engine_config() {
     let error = WasmtimeError::EngineConfig {
         message: "Invalid config".to_string(),
     };
-    assert!(matches!(error.to_error_code(), ErrorCode::EngineConfigError));
+    assert!(matches!(
+        error.to_error_code(),
+        ErrorCode::EngineConfigError
+    ));
 }
 
 #[test]
@@ -372,7 +388,10 @@ fn test_error_variant_import_export() {
     let error = WasmtimeError::ImportExport {
         message: "Missing import".to_string(),
     };
-    assert!(matches!(error.to_error_code(), ErrorCode::ImportExportError));
+    assert!(matches!(
+        error.to_error_code(),
+        ErrorCode::ImportExportError
+    ));
 }
 
 #[test]
@@ -390,8 +409,12 @@ fn test_error_variant_type() {
 #[test]
 fn test_is_multiple_true() {
     let error = WasmtimeError::multiple(vec![
-        WasmtimeError::Compilation { message: "Error 1".to_string() },
-        WasmtimeError::Validation { message: "Error 2".to_string() },
+        WasmtimeError::Compilation {
+            message: "Error 1".to_string(),
+        },
+        WasmtimeError::Validation {
+            message: "Error 2".to_string(),
+        },
     ]);
     assert!(error.is_multiple());
 }
@@ -416,9 +439,16 @@ fn test_error_count_single() {
 #[test]
 fn test_error_count_multiple() {
     let error = WasmtimeError::multiple(vec![
-        WasmtimeError::Compilation { message: "1".to_string() },
-        WasmtimeError::Validation { message: "2".to_string() },
-        WasmtimeError::Runtime { message: "3".to_string(), backtrace: None },
+        WasmtimeError::Compilation {
+            message: "1".to_string(),
+        },
+        WasmtimeError::Validation {
+            message: "2".to_string(),
+        },
+        WasmtimeError::Runtime {
+            message: "3".to_string(),
+            backtrace: None,
+        },
     ]);
     assert_eq!(error.error_count(), 3);
 }
@@ -435,8 +465,12 @@ fn test_get_individual_errors_single() {
 #[test]
 fn test_get_individual_errors_multiple() {
     let error = WasmtimeError::multiple(vec![
-        WasmtimeError::Compilation { message: "1".to_string() },
-        WasmtimeError::Validation { message: "2".to_string() },
+        WasmtimeError::Compilation {
+            message: "1".to_string(),
+        },
+        WasmtimeError::Validation {
+            message: "2".to_string(),
+        },
     ]);
     let individuals = error.get_individual_errors();
     assert_eq!(individuals.len(), 2);
@@ -452,11 +486,21 @@ fn test_multiple_with_empty_errors() {
 #[test]
 fn test_multiple_summary_truncation() {
     let error = WasmtimeError::multiple(vec![
-        WasmtimeError::Compilation { message: "Error 1".to_string() },
-        WasmtimeError::Compilation { message: "Error 2".to_string() },
-        WasmtimeError::Compilation { message: "Error 3".to_string() },
-        WasmtimeError::Compilation { message: "Error 4".to_string() },
-        WasmtimeError::Compilation { message: "Error 5".to_string() },
+        WasmtimeError::Compilation {
+            message: "Error 1".to_string(),
+        },
+        WasmtimeError::Compilation {
+            message: "Error 2".to_string(),
+        },
+        WasmtimeError::Compilation {
+            message: "Error 3".to_string(),
+        },
+        WasmtimeError::Compilation {
+            message: "Error 4".to_string(),
+        },
+        WasmtimeError::Compilation {
+            message: "Error 5".to_string(),
+        },
     ]);
 
     if let WasmtimeError::Multiple { summary, .. } = error {
@@ -474,14 +518,55 @@ fn test_multiple_summary_truncation() {
 #[test]
 fn test_to_error_code_all_variants() {
     let mappings = [
-        (WasmtimeError::Compilation { message: String::new() }, ErrorCode::CompilationError),
-        (WasmtimeError::Validation { message: String::new() }, ErrorCode::ValidationError),
-        (WasmtimeError::Runtime { message: String::new(), backtrace: None }, ErrorCode::RuntimeError),
-        (WasmtimeError::Store { message: String::new() }, ErrorCode::StoreError),
-        (WasmtimeError::Instance { message: String::new() }, ErrorCode::InstanceError),
-        (WasmtimeError::Memory { message: String::new() }, ErrorCode::MemoryError),
-        (WasmtimeError::Function { message: String::new() }, ErrorCode::FunctionError),
-        (WasmtimeError::Security { message: String::new() }, ErrorCode::SecurityError),
+        (
+            WasmtimeError::Compilation {
+                message: String::new(),
+            },
+            ErrorCode::CompilationError,
+        ),
+        (
+            WasmtimeError::Validation {
+                message: String::new(),
+            },
+            ErrorCode::ValidationError,
+        ),
+        (
+            WasmtimeError::Runtime {
+                message: String::new(),
+                backtrace: None,
+            },
+            ErrorCode::RuntimeError,
+        ),
+        (
+            WasmtimeError::Store {
+                message: String::new(),
+            },
+            ErrorCode::StoreError,
+        ),
+        (
+            WasmtimeError::Instance {
+                message: String::new(),
+            },
+            ErrorCode::InstanceError,
+        ),
+        (
+            WasmtimeError::Memory {
+                message: String::new(),
+            },
+            ErrorCode::MemoryError,
+        ),
+        (
+            WasmtimeError::Function {
+                message: String::new(),
+            },
+            ErrorCode::FunctionError,
+        ),
+        (
+            WasmtimeError::Security {
+                message: String::new(),
+            },
+            ErrorCode::SecurityError,
+        ),
     ];
 
     for (error, expected_code) in mappings {
@@ -609,8 +694,12 @@ fn test_clone_runtime_error() {
 #[test]
 fn test_clone_multiple_error() {
     let error = WasmtimeError::multiple(vec![
-        WasmtimeError::Compilation { message: "1".to_string() },
-        WasmtimeError::Validation { message: "2".to_string() },
+        WasmtimeError::Compilation {
+            message: "1".to_string(),
+        },
+        WasmtimeError::Validation {
+            message: "2".to_string(),
+        },
     ]);
     let cloned = error.clone();
     assert_eq!(error.error_count(), cloned.error_count());
@@ -685,5 +774,8 @@ fn test_linker_error() {
     let error = WasmtimeError::Linker {
         message: "Linker error".to_string(),
     };
-    assert!(matches!(error.to_error_code(), ErrorCode::ImportExportError));
+    assert!(matches!(
+        error.to_error_code(),
+        ErrorCode::ImportExportError
+    ));
 }

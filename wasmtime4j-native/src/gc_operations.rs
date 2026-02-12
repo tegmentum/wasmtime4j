@@ -17,15 +17,14 @@
 //! All operations use Wasmtime's native GC system for memory management and type safety.
 //! Comprehensive validation and defensive programming patterns ensure robust operation.
 
-use std::collections::HashMap;
-use wasmtime::*;
-use std::sync::Arc;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::gc_types::{
-    StructTypeDefinition, ArrayTypeDefinition, FieldDefinition, FieldType,
-    GcValue, GcReferenceType
-};
 use crate::gc_heap::ObjectId;
+use crate::gc_types::{
+    ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
+};
+use std::collections::HashMap;
+use std::sync::Arc;
+use wasmtime::*;
 
 /// Enum to hold different types of GC objects while preserving type information
 /// Stores OwnedRooted GC references for persistent storage beyond scope lifetimes
@@ -118,7 +117,10 @@ impl WasmtimeGcOperations {
     }
 
     /// Register a struct type with Wasmtime's GC type system
-    pub fn register_struct_type(&mut self, definition: &StructTypeDefinition) -> WasmtimeResult<wasmtime::HeapType> {
+    pub fn register_struct_type(
+        &mut self,
+        definition: &StructTypeDefinition,
+    ) -> WasmtimeResult<wasmtime::HeapType> {
         // Convert field definitions to Wasmtime struct type
         let mut wasmtime_fields = Vec::new();
 
@@ -135,10 +137,11 @@ impl WasmtimeGcOperations {
         // Create Wasmtime struct type
         let struct_type = wasmtime::StructType::new(
             self.store.engine(),
-            wasmtime_fields.into_iter()
-        ).map_err(|e| WasmtimeError::from_string(&format!(
-            "Failed to create Wasmtime struct type: {}", e
-        )))?;
+            wasmtime_fields.into_iter(),
+        )
+        .map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to create Wasmtime struct type: {}", e))
+        })?;
 
         let heap_type = wasmtime::HeapType::ConcreteStruct(struct_type);
         self.gc_types.insert(definition.type_id, heap_type.clone());
@@ -147,7 +150,10 @@ impl WasmtimeGcOperations {
     }
 
     /// Register an array type with Wasmtime's GC type system
-    pub fn register_array_type(&mut self, definition: &ArrayTypeDefinition) -> WasmtimeResult<wasmtime::HeapType> {
+    pub fn register_array_type(
+        &mut self,
+        definition: &ArrayTypeDefinition,
+    ) -> WasmtimeResult<wasmtime::HeapType> {
         // Convert element type to Wasmtime array type
         let storage_type = self.convert_field_type_to_storage_type(&definition.element_type)?;
 
@@ -159,10 +165,7 @@ impl WasmtimeGcOperations {
         let field_type = wasmtime::FieldType::new(mutability, storage_type);
 
         // Create Wasmtime array type
-        let array_type = wasmtime::ArrayType::new(
-            self.store.engine(),
-            field_type
-        );
+        let array_type = wasmtime::ArrayType::new(self.store.engine(), field_type);
 
         let heap_type = wasmtime::HeapType::ConcreteArray(array_type);
         self.gc_types.insert(definition.type_id, heap_type.clone());
@@ -218,7 +221,10 @@ impl WasmtimeGcOperations {
             for (i, value) in field_values.iter().enumerate() {
                 // Get field definition to check expected type
                 let field_def = &type_def.fields.get(i).ok_or_else(|| {
-                    WasmtimeError::from_string(&format!("Field {} not found in struct definition", i))
+                    WasmtimeError::from_string(&format!(
+                        "Field {} not found in struct definition",
+                        i
+                    ))
                 });
 
                 // FIX: For reference fields, convert I32(object_id) to I64(object_id)
@@ -237,10 +243,14 @@ impl WasmtimeGcOperations {
                     value.clone()
                 };
 
-                match Self::convert_gc_value_to_wasmtime_in_scope(&self.gc_objects, &mut scope, &effective_value) {
+                match Self::convert_gc_value_to_wasmtime_in_scope(
+                    &self.gc_objects,
+                    &mut scope,
+                    &effective_value,
+                ) {
                     Ok(val) => {
                         wasmtime_values.push(val);
-                    },
+                    }
                     Err(e) => {
                         return RealStructOperationResult {
                             success: false,
@@ -257,7 +267,7 @@ impl WasmtimeGcOperations {
                 Ok(struct_ref) => {
                     // Convert to OwnedRooted before scope ends for persistent storage
                     struct_ref.to_owned_rooted(&mut scope)
-                },
+                }
                 Err(e) => Err(e),
             }
         };
@@ -282,7 +292,7 @@ impl WasmtimeGcOperations {
                     value: None,
                     error: None,
                 }
-            },
+            }
             Err(e) => RealStructOperationResult {
                 success: false,
                 gc_object: None,
@@ -294,7 +304,11 @@ impl WasmtimeGcOperations {
     }
 
     /// Get a struct field value using Wasmtime's GC system
-    pub fn struct_get(&mut self, object_id: ObjectId, field_index: u32) -> RealStructOperationResult {
+    pub fn struct_get(
+        &mut self,
+        object_id: ObjectId,
+        field_index: u32,
+    ) -> RealStructOperationResult {
         // Get the GC object from storage
         let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
@@ -339,66 +353,77 @@ impl WasmtimeGcOperations {
                         wasmtime::Val::V128(v) => {
                             let bytes = v.as_u128().to_le_bytes();
                             (Ok(GcValue::V128(bytes)), None)
-                        },
+                        }
                         wasmtime::Val::AnyRef(any_ref) => {
                             if let Some(any) = any_ref {
                                 // Generate a unique object ID (use current size + random offset to avoid collisions)
-                                let new_object_id = (self.gc_objects.len() as u64 + 1) * 1000 + (std::time::SystemTime::now()
-                                    .duration_since(std::time::UNIX_EPOCH)
-                                    .unwrap()
-                                    .as_nanos() % 1000) as u64;
+                                let new_object_id = (self.gc_objects.len() as u64 + 1) * 1000
+                                    + (std::time::SystemTime::now()
+                                        .duration_since(std::time::UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_nanos()
+                                        % 1000) as u64;
 
                                 // Try to convert to specific reference types and store
                                 if let Ok(Some(struct_ref)) = any.as_struct(&mut scope) {
                                     match struct_ref.to_owned_rooted(&mut scope) {
                                         Ok(owned) => {
-                                            self.gc_objects.insert(new_object_id, GcObjectRef::Struct(owned));
+                                            self.gc_objects
+                                                .insert(new_object_id, GcObjectRef::Struct(owned));
                                             // Return Null for value, object_id carries the reference
                                             (Ok(GcValue::Null), Some(new_object_id))
                                         }
-                                        Err(e) => (Err(format!("Failed to root struct reference: {}", e)), None),
+                                        Err(e) => (
+                                            Err(format!("Failed to root struct reference: {}", e)),
+                                            None,
+                                        ),
                                     }
                                 } else if let Ok(Some(array_ref)) = any.as_array(&mut scope) {
                                     match array_ref.to_owned_rooted(&mut scope) {
                                         Ok(owned) => {
-                                            self.gc_objects.insert(new_object_id, GcObjectRef::Array(owned));
+                                            self.gc_objects
+                                                .insert(new_object_id, GcObjectRef::Array(owned));
                                             // Return Null for value, object_id carries the reference
                                             (Ok(GcValue::Null), Some(new_object_id))
                                         }
-                                        Err(e) => (Err(format!("Failed to root array reference: {}", e)), None),
+                                        Err(e) => (
+                                            Err(format!("Failed to root array reference: {}", e)),
+                                            None,
+                                        ),
                                     }
                                 } else {
                                     // Generic AnyRef - store as Any variant
                                     match any.to_owned_rooted(&mut scope) {
                                         Ok(owned) => {
-                                            self.gc_objects.insert(new_object_id, GcObjectRef::Any(owned));
+                                            self.gc_objects
+                                                .insert(new_object_id, GcObjectRef::Any(owned));
                                             // Return Null for value, object_id carries the reference
                                             (Ok(GcValue::Null), Some(new_object_id))
                                         }
-                                        Err(e) => (Err(format!("Failed to root anyref: {}", e)), None),
+                                        Err(e) => {
+                                            (Err(format!("Failed to root anyref: {}", e)), None)
+                                        }
                                     }
                                 }
                             } else {
                                 (Ok(GcValue::Null), None)
                             }
-                        },
+                        }
                         _ => (Ok(GcValue::Null), None),
                     }
-                },
+                }
                 Err(e) => (Err(format!("Failed to get struct field: {}", e)), None),
             }
         };
 
         // Now handle the conversion result
         match gc_value {
-            Ok(gc_val) => {
-                RealStructOperationResult {
-                    success: true,
-                    gc_object: None,
-                    object_id: ref_object_id,
-                    value: Some(gc_val),
-                    error: None,
-                }
+            Ok(gc_val) => RealStructOperationResult {
+                success: true,
+                gc_object: None,
+                object_id: ref_object_id,
+                value: Some(gc_val),
+                error: None,
             },
             Err(e) => RealStructOperationResult {
                 success: false,
@@ -583,12 +608,15 @@ impl WasmtimeGcOperations {
                                     object_id: None,
                                     value: None,
                                     length: None,
-                                    error: Some(format!("Failed to set array element {}: {}", i, e)),
+                                    error: Some(format!(
+                                        "Failed to set array element {}: {}",
+                                        i, e
+                                    )),
                                 };
                             }
                         }
                         array_ref
-                    },
+                    }
                     Err(e) => {
                         return RealArrayOperationResult {
                             success: false,
@@ -627,7 +655,7 @@ impl WasmtimeGcOperations {
                     length: Some(elements.len() as u32),
                     error: None,
                 }
-            },
+            }
             Err(e) => RealArrayOperationResult {
                 success: false,
                 gc_array: None,
@@ -640,7 +668,11 @@ impl WasmtimeGcOperations {
     }
 
     /// Get an array element using Wasmtime's GC system
-    pub fn array_get(&mut self, object_id: ObjectId, element_index: u32) -> RealArrayOperationResult {
+    pub fn array_get(
+        &mut self,
+        object_id: ObjectId,
+        element_index: u32,
+    ) -> RealArrayOperationResult {
         // Get the GC object from storage
         let gc_ref = match self.gc_objects.get(&object_id) {
             Some(r) => r,
@@ -679,25 +711,23 @@ impl WasmtimeGcOperations {
         };
 
         match result {
-            Ok(val) => {
-                match self.convert_wasmtime_to_gc_value(&val) {
-                    Ok(gc_value) => RealArrayOperationResult {
-                        success: true,
-                        gc_array: None,
-                        object_id: None,
-                        value: Some(gc_value),
-                        length: None,
-                        error: None,
-                    },
-                    Err(e) => RealArrayOperationResult {
-                        success: false,
-                        gc_array: None,
-                        object_id: None,
-                        value: None,
-                        length: None,
-                        error: Some(format!("Failed to convert element value: {}", e)),
-                    },
-                }
+            Ok(val) => match self.convert_wasmtime_to_gc_value(&val) {
+                Ok(gc_value) => RealArrayOperationResult {
+                    success: true,
+                    gc_array: None,
+                    object_id: None,
+                    value: Some(gc_value),
+                    length: None,
+                    error: None,
+                },
+                Err(e) => RealArrayOperationResult {
+                    success: false,
+                    gc_array: None,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some(format!("Failed to convert element value: {}", e)),
+                },
             },
             Err(e) => RealArrayOperationResult {
                 success: false,
@@ -987,7 +1017,7 @@ impl WasmtimeGcOperations {
                             error: Some(format!("Array copy failed at element {}: {}", i, e)),
                         };
                     }
-                },
+                }
                 Err(e) => {
                     return RealArrayOperationResult {
                         success: false,
@@ -1095,7 +1125,8 @@ impl WasmtimeGcOperations {
 
         // Fill array elements using Wasmtime's GC APIs
         for i in 0..length {
-            if let Err(e) = array_ref.set(&mut self.store, start_index + i, wasmtime_value.clone()) {
+            if let Err(e) = array_ref.set(&mut self.store, start_index + i, wasmtime_value.clone())
+            {
                 return RealArrayOperationResult {
                     success: false,
                     gc_array: None,
@@ -1129,7 +1160,10 @@ impl WasmtimeGcOperations {
                 eq_result: None,
                 is_null: None,
                 value: None,
-                error: Some(format!("I31 value {} out of range (must fit in 31 bits signed)", value)),
+                error: Some(format!(
+                    "I31 value {} out of range (must fit in 31 bits signed)",
+                    value
+                )),
             };
         }
 
@@ -1156,7 +1190,7 @@ impl WasmtimeGcOperations {
                             value: None,
                             error: None,
                         }
-                    },
+                    }
                     Err(e) => RealRefOperationResult {
                         success: false,
                         cast_result: None,
@@ -1168,7 +1202,7 @@ impl WasmtimeGcOperations {
                         error: Some(format!("Failed to convert I31 to OwnedRooted: {}", e)),
                     },
                 }
-            },
+            }
             None => RealRefOperationResult {
                 success: false,
                 cast_result: None,
@@ -1238,7 +1272,7 @@ impl WasmtimeGcOperations {
                     value: Some(GcValue::I32(value)),
                     error: None,
                 }
-            },
+            }
             Err(_) => RealRefOperationResult {
                 success: false,
                 cast_result: None,
@@ -1281,7 +1315,7 @@ impl WasmtimeGcOperations {
         if cast_valid {
             RealRefOperationResult {
                 success: true,
-                cast_result: None,  // We return the object_id instead
+                cast_result: None, // We return the object_id instead
                 cast_object_id: Some(object_id),
                 test_result: None,
                 eq_result: None,
@@ -1368,7 +1402,7 @@ impl WasmtimeGcOperations {
                 // In Wasmtime 37.0.2, GC references are never null when rooted
                 // A missing object_id indicates null
                 false
-            },
+            }
             None => true,
         };
 
@@ -1386,15 +1420,18 @@ impl WasmtimeGcOperations {
 
     /// Convert field type to Wasmtime's ValType
     /// Convert FieldType to Wasmtime StorageType for struct/array fields
-    fn convert_field_type_to_storage_type(&self, field_type: &FieldType) -> WasmtimeResult<StorageType> {
+    fn convert_field_type_to_storage_type(
+        &self,
+        field_type: &FieldType,
+    ) -> WasmtimeResult<StorageType> {
         match field_type {
             FieldType::I32 => Ok(ValType::I32.into()),
             FieldType::I64 => Ok(ValType::I64.into()),
             FieldType::F32 => Ok(ValType::F32.into()),
             FieldType::F64 => Ok(ValType::F64.into()),
             FieldType::V128 => Ok(ValType::V128.into()),
-            FieldType::V256 => Ok(ValType::V128.into()),  // V256 not yet in Wasmtime, use V128
-            FieldType::V512 => Ok(ValType::V128.into()),  // V512 not yet in Wasmtime, use V128
+            FieldType::V256 => Ok(ValType::V128.into()), // V256 not yet in Wasmtime, use V128
+            FieldType::V512 => Ok(ValType::V128.into()), // V512 not yet in Wasmtime, use V128
             FieldType::PackedI8 => Ok(StorageType::I8),
             FieldType::PackedI16 => Ok(StorageType::I16),
             FieldType::Reference(ref_type) => {
@@ -1409,19 +1446,21 @@ impl WasmtimeGcOperations {
                     GcReferenceType::NullExternRef => HeapType::NoExtern,
                     GcReferenceType::StructRef(struct_def) => {
                         // Use registered struct type or fallback to Struct
-                        self.gc_types.get(&struct_def.type_id)
+                        self.gc_types
+                            .get(&struct_def.type_id)
                             .cloned()
                             .unwrap_or(HeapType::Struct)
-                    },
+                    }
                     GcReferenceType::ArrayRef(array_def) => {
                         // Use registered array type or fallback to Array
-                        self.gc_types.get(&array_def.type_id)
+                        self.gc_types
+                            .get(&array_def.type_id)
                             .cloned()
                             .unwrap_or(HeapType::Array)
-                    },
+                    }
                 };
                 Ok(ValType::Ref(RefType::new(true, heap_type)).into())
-            },
+            }
         }
     }
 
@@ -1432,8 +1471,8 @@ impl WasmtimeGcOperations {
             FieldType::F32 => Ok(ValType::F32),
             FieldType::F64 => Ok(ValType::F64),
             FieldType::V128 => Ok(ValType::V128),
-            FieldType::V256 => Ok(ValType::V128),  // V256 not yet in Wasmtime, use V128
-            FieldType::V512 => Ok(ValType::V128),  // V512 not yet in Wasmtime, use V128
+            FieldType::V256 => Ok(ValType::V128), // V256 not yet in Wasmtime, use V128
+            FieldType::V512 => Ok(ValType::V128), // V512 not yet in Wasmtime, use V128
             FieldType::PackedI8 | FieldType::PackedI16 => Ok(ValType::I32),
             FieldType::Reference(ref_type) => {
                 let heap_type = match ref_type {
@@ -1447,25 +1486,31 @@ impl WasmtimeGcOperations {
                     GcReferenceType::NullExternRef => HeapType::NoExtern,
                     GcReferenceType::StructRef(struct_def) => {
                         // Use registered struct type or fallback to Struct
-                        self.gc_types.get(&struct_def.type_id)
+                        self.gc_types
+                            .get(&struct_def.type_id)
                             .cloned()
                             .unwrap_or(HeapType::Struct)
-                    },
+                    }
                     GcReferenceType::ArrayRef(array_def) => {
                         // Use registered array type or fallback to Array
-                        self.gc_types.get(&array_def.type_id)
+                        self.gc_types
+                            .get(&array_def.type_id)
                             .cloned()
                             .unwrap_or(HeapType::Array)
-                    },
+                    }
                 };
                 Ok(ValType::Ref(RefType::new(true, heap_type)))
-            },
+            }
         }
     }
 
     /// Convert GC value to Wasmtime Val within a RootScope (for struct/array field values)
     /// This version takes a scope to ensure GC references remain rooted
-    fn convert_gc_value_to_wasmtime_in_scope<T>(gc_objects: &HashMap<ObjectId, GcObjectRef>, scope: &mut wasmtime::RootScope<T>, gc_value: &GcValue) -> WasmtimeResult<Val>
+    fn convert_gc_value_to_wasmtime_in_scope<T>(
+        gc_objects: &HashMap<ObjectId, GcObjectRef>,
+        scope: &mut wasmtime::RootScope<T>,
+        gc_value: &GcValue,
+    ) -> WasmtimeResult<Val>
     where
         T: wasmtime::AsContextMut,
     {
@@ -1481,15 +1526,15 @@ impl WasmtimeGcOperations {
                         GcObjectRef::Struct(owned_struct) => {
                             let struct_rooted = owned_struct.to_rooted(scope);
                             Ok(struct_rooted.to_anyref())
-                        },
+                        }
                         GcObjectRef::Array(owned_array) => {
                             let array_rooted = owned_array.to_rooted(scope);
                             Ok(array_rooted.to_anyref())
-                        },
+                        }
                         GcObjectRef::Any(owned_any) => {
                             let any_rooted = owned_any.to_rooted(scope);
                             Ok(any_rooted)
-                        },
+                        }
                         GcObjectRef::ExnRef(_owned_exn) => {
                             // ExnRef cannot be converted to AnyRef directly
                             // Return an error for now
@@ -1497,20 +1542,20 @@ impl WasmtimeGcOperations {
                                 message: "ExnRef cannot be converted to AnyRef".to_string(),
                                 backtrace: None,
                             })
-                        },
+                        }
                     };
                     any_ref.map(|a| Val::AnyRef(Some(a)))
                 } else {
                     // Not an object ID, treat as regular i64
                     Ok(Val::I64(*i))
                 }
-            },
+            }
             GcValue::F32(f) => Ok(Val::F32(f.to_bits())),
             GcValue::F64(f) => Ok(Val::F64(f.to_bits())),
             GcValue::V128(bytes) => {
                 let value = u128::from_le_bytes(*bytes);
                 Ok(Val::V128(value.into()))
-            },
+            }
             GcValue::V256(bytes) => {
                 // V256 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
                 // V256 is [u8; 32], so slicing first 16 bytes is always valid
@@ -1519,7 +1564,7 @@ impl WasmtimeGcOperations {
                     .expect("V256 is 32 bytes, slicing 16 always valid");
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
-            },
+            }
             GcValue::V512(bytes) => {
                 // V512 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
                 // V512 is [u8; 64], so slicing first 16 bytes is always valid
@@ -1528,11 +1573,11 @@ impl WasmtimeGcOperations {
                     .expect("V512 is 64 bytes, slicing 16 always valid");
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
-            },
+            }
             GcValue::Reference => {
                 // Reference types are handled through gc_operations, return null as placeholder
                 Ok(Val::null_any_ref())
-            },
+            }
             GcValue::Null => Ok(Val::null_any_ref()),
         }
     }
@@ -1552,35 +1597,35 @@ impl WasmtimeGcOperations {
                         GcObjectRef::Struct(owned_struct) => {
                             let struct_rooted = owned_struct.to_rooted(&mut scope);
                             Ok(struct_rooted.to_anyref())
-                        },
+                        }
                         GcObjectRef::Array(owned_array) => {
                             let array_rooted = owned_array.to_rooted(&mut scope);
                             Ok(array_rooted.to_anyref())
-                        },
+                        }
                         GcObjectRef::Any(owned_any) => {
                             let any_rooted = owned_any.to_rooted(&mut scope);
                             Ok(any_rooted)
-                        },
+                        }
                         GcObjectRef::ExnRef(_owned_exn) => {
                             // ExnRef cannot be converted to AnyRef directly
                             Err(crate::error::WasmtimeError::Runtime {
                                 message: "ExnRef cannot be converted to AnyRef".to_string(),
                                 backtrace: None,
                             })
-                        },
+                        }
                     };
                     any_ref.map(|a| Val::AnyRef(Some(a)))
                 } else {
                     // Not an object ID, treat as regular i64
                     Ok(Val::I64(*i))
                 }
-            },
+            }
             GcValue::F32(f) => Ok(Val::F32(f.to_bits())),
             GcValue::F64(f) => Ok(Val::F64(f.to_bits())),
             GcValue::V128(bytes) => {
                 let value = u128::from_le_bytes(*bytes);
                 Ok(Val::V128(value.into()))
-            },
+            }
             GcValue::V256(bytes) => {
                 // V256 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
                 // V256 is [u8; 32], so slicing first 16 bytes is always valid
@@ -1589,7 +1634,7 @@ impl WasmtimeGcOperations {
                     .expect("V256 is 32 bytes, slicing 16 always valid");
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
-            },
+            }
             GcValue::V512(bytes) => {
                 // V512 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
                 // V512 is [u8; 64], so slicing first 16 bytes is always valid
@@ -1598,11 +1643,11 @@ impl WasmtimeGcOperations {
                     .expect("V512 is 64 bytes, slicing 16 always valid");
                 let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
-            },
+            }
             GcValue::Reference => {
                 // Reference types are handled through gc_operations, return null as placeholder
                 Ok(Val::null_any_ref())
-            },
+            }
             GcValue::Null => Ok(Val::null_any_ref()),
         }
     }
@@ -1617,7 +1662,7 @@ impl WasmtimeGcOperations {
             Val::V128(v) => {
                 let bytes = v.as_u128().to_le_bytes();
                 Ok(GcValue::V128(bytes))
-            },
+            }
             Val::AnyRef(any_ref) => {
                 if let Some(_ref_val) = any_ref {
                     // Convert Wasmtime reference to our GC object
@@ -1626,20 +1671,16 @@ impl WasmtimeGcOperations {
                 } else {
                     Ok(GcValue::Null)
                 }
-            },
+            }
             Val::FuncRef(_) => Ok(GcValue::Null),
-            Val::ExternRef(_) => Ok(GcValue::Null),  // Extern reference - map to null for now
-            Val::ExnRef(_) => Ok(GcValue::Null),     // Exception reference - map to null for now
-            Val::ContRef(_) => Ok(GcValue::Null),    // Continuation reference - map to null for now
+            Val::ExternRef(_) => Ok(GcValue::Null), // Extern reference - map to null for now
+            Val::ExnRef(_) => Ok(GcValue::Null),    // Exception reference - map to null for now
+            Val::ContRef(_) => Ok(GcValue::Null),   // Continuation reference - map to null for now
         }
     }
 
     /// Validate reference cast using Wasmtime's type system
-    fn validate_reference_cast(
-        &self,
-        gc_ref: &GcObjectRef,
-        target_type: &GcReferenceType,
-    ) -> bool {
+    fn validate_reference_cast(&self, gc_ref: &GcObjectRef, target_type: &GcReferenceType) -> bool {
         match target_type {
             GcReferenceType::AnyRef => true, // Everything is a subtype of anyref
             GcReferenceType::EqRef => {
@@ -1649,10 +1690,10 @@ impl WasmtimeGcOperations {
                     GcObjectRef::Any(any_ref) => {
                         // Check if it's an I31 reference
                         (*any_ref).unwrap_i31(&self.store).is_ok()
-                    },
+                    }
                     GcObjectRef::ExnRef(_) => false, // ExnRef is not eq-comparable
                 }
-            },
+            }
             GcReferenceType::I31Ref => {
                 // I31 is stored as Any variant
                 if let GcObjectRef::Any(any_ref) = gc_ref {
@@ -1660,7 +1701,7 @@ impl WasmtimeGcOperations {
                 } else {
                     false
                 }
-            },
+            }
             GcReferenceType::StructRef(_) => matches!(gc_ref, GcObjectRef::Struct(_)),
             GcReferenceType::ArrayRef(_) => matches!(gc_ref, GcObjectRef::Array(_)),
             // ExternRef - only extern references are valid
@@ -1668,11 +1709,13 @@ impl WasmtimeGcOperations {
             // FuncRef - only function references are valid
             GcReferenceType::FuncRef => false, // GcObjectRef doesn't have func variant yet
             // Null reference types - these match null values only
-            GcReferenceType::NullRef | GcReferenceType::NullFuncRef | GcReferenceType::NullExternRef => {
+            GcReferenceType::NullRef
+            | GcReferenceType::NullFuncRef
+            | GcReferenceType::NullExternRef => {
                 // Null references can only be validated from null values
                 // This should be handled at the call site
                 false
-            },
+            }
         }
     }
 }
@@ -1701,14 +1744,12 @@ mod tests {
 
         let struct_def = StructTypeDefinition {
             type_id: 1,
-            fields: vec![
-                FieldDefinition {
-                    name: Some("x".to_string()),
-                    field_type: FieldType::I32,
-                    mutable: true,
-                    index: 0,
-                },
-            ],
+            fields: vec![FieldDefinition {
+                name: Some("x".to_string()),
+                field_type: FieldType::I32,
+                mutable: true,
+                index: 0,
+            }],
             name: Some("TestStruct".to_string()),
             supertype: None,
         };
@@ -1914,7 +1955,10 @@ mod tests {
         };
 
         let result = ops.register_struct_type(&struct_def);
-        assert!(result.is_ok(), "Should register struct with multiple fields");
+        assert!(
+            result.is_ok(),
+            "Should register struct with multiple fields"
+        );
     }
 
     #[test]
@@ -1980,7 +2024,11 @@ mod tests {
         // Different objects should not be equal
         let eq_result = ops.ref_eq(1, 2);
         assert!(eq_result.success);
-        assert_eq!(eq_result.eq_result, Some(false), "Different objects should not be equal");
+        assert_eq!(
+            eq_result.eq_result,
+            Some(false),
+            "Different objects should not be equal"
+        );
     }
 
     #[test]
@@ -2033,14 +2081,12 @@ mod tests {
 
         let struct_def = StructTypeDefinition {
             type_id: 1,
-            fields: vec![
-                FieldDefinition {
-                    name: Some("value".to_string()),
-                    field_type: FieldType::I32,
-                    mutable: true,
-                    index: 0,
-                },
-            ],
+            fields: vec![FieldDefinition {
+                name: Some("value".to_string()),
+                field_type: FieldType::I32,
+                mutable: true,
+                index: 0,
+            }],
             name: Some("SimpleStruct".to_string()),
             supertype: None,
         };
@@ -2069,14 +2115,12 @@ mod tests {
 
         let struct_def = StructTypeDefinition {
             type_id: 1,
-            fields: vec![
-                FieldDefinition {
-                    name: Some("value".to_string()),
-                    field_type: FieldType::I32,
-                    mutable: true,
-                    index: 0,
-                },
-            ],
+            fields: vec![FieldDefinition {
+                name: Some("value".to_string()),
+                field_type: FieldType::I32,
+                mutable: true,
+                index: 0,
+            }],
             name: Some("MutableStruct".to_string()),
             supertype: None,
         };
@@ -2180,7 +2224,12 @@ mod tests {
 
                 let len_result = ops.array_len((size + 1) as ObjectId);
                 assert!(len_result.success);
-                assert_eq!(len_result.length, Some(size as u32), "Array length should be {}", size);
+                assert_eq!(
+                    len_result.length,
+                    Some(size as u32),
+                    "Array length should be {}",
+                    size
+                );
             }
         }
     }

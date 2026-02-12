@@ -4,10 +4,10 @@
 //! and interacting with WebAssembly stores. Stores hold the runtime state
 //! for WebAssembly instances including fuel, epoch deadlines, and garbage collection.
 
-use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
 use crate::error::ffi_utils;
 use crate::store::core;
 use crate::WasmtimeResult;
+use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
 use wasmtime::{FuncType, RefType, ValType};
 
 /// Create a new WebAssembly store with default configuration (Panama FFI version)
@@ -35,23 +35,47 @@ pub extern "C" fn wasmtime4j_panama_store_create(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_create_with_config(
     engine_ptr: *mut c_void,
-    fuel_limit: c_ulong,        // 0 = no limit
-    memory_limit_bytes: c_ulong, // 0 = no limit
+    fuel_limit: c_ulong,             // 0 = no limit
+    memory_limit_bytes: c_ulong,     // 0 = no limit
     execution_timeout_secs: c_ulong, // 0 = no timeout
-    max_instances: c_uint,      // 0 = no limit
-    max_table_elements: c_uint, // 0 = no limit
-    max_functions: c_uint,      // 0 = no limit
+    max_instances: c_uint,           // 0 = no limit
+    max_table_elements: c_uint,      // 0 = no limit
+    max_functions: c_uint,           // 0 = no limit
     store_ptr: *mut *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
 
-        let fuel_limit_opt = if fuel_limit == 0 { None } else { Some(fuel_limit as u64) };
-        let memory_limit_opt = if memory_limit_bytes == 0 { None } else { Some(memory_limit_bytes as usize) };
-        let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs) };
-        let max_instances_opt = if max_instances == 0 { None } else { Some(max_instances as usize) };
-        let max_table_elements_opt = if max_table_elements == 0 { None } else { Some(max_table_elements) };
-        let max_functions_opt = if max_functions == 0 { None } else { Some(max_functions as usize) };
+        let fuel_limit_opt = if fuel_limit == 0 {
+            None
+        } else {
+            Some(fuel_limit as u64)
+        };
+        let memory_limit_opt = if memory_limit_bytes == 0 {
+            None
+        } else {
+            Some(memory_limit_bytes as usize)
+        };
+        let timeout_opt = if execution_timeout_secs == 0 {
+            None
+        } else {
+            Some(execution_timeout_secs)
+        };
+        let max_instances_opt = if max_instances == 0 {
+            None
+        } else {
+            Some(max_instances as usize)
+        };
+        let max_table_elements_opt = if max_table_elements == 0 {
+            None
+        } else {
+            Some(max_table_elements)
+        };
+        let max_functions_opt = if max_functions == 0 {
+            None
+        } else {
+            Some(max_functions as usize)
+        };
 
         let store = core::create_store_with_config(
             engine,
@@ -75,10 +99,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_with_config(
 
 /// Add fuel to the store for execution limiting (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_store_add_fuel(
-    store_ptr: *mut c_void,
-    fuel: c_ulong,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_store_add_fuel(store_ptr: *mut c_void, fuel: c_ulong) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
         core::add_fuel(store, fuel as u64)?;
@@ -134,9 +155,7 @@ pub extern "C" fn wasmtime4j_panama_store_set_epoch_deadline(
 
 /// Configure epoch deadline trap behavior (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_store_epoch_deadline_trap(
-    store_ptr: *mut c_void,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_store_epoch_deadline_trap(store_ptr: *mut c_void) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
         core::epoch_deadline_trap(store)?;
@@ -309,9 +328,8 @@ pub extern "C" fn wasmtime4j_panama_store_get_metadata(
         unsafe {
             *fuel_limit_ptr = metadata.fuel_limit.unwrap_or(0) as c_ulong;
             *memory_limit_bytes_ptr = metadata.memory_limit_bytes.unwrap_or(0) as c_ulong;
-            *execution_timeout_secs_ptr = metadata.execution_timeout
-                .map(|d| d.as_secs())
-                .unwrap_or(0) as c_ulong;
+            *execution_timeout_secs_ptr =
+                metadata.execution_timeout.map(|d| d.as_secs()).unwrap_or(0) as c_ulong;
             *instance_count_ptr = metadata.instance_count as c_ulong;
         }
 
@@ -383,20 +401,27 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
 
         // Convert parameter types
         let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
-        let param_val_types: Vec<ValType> = param_slice.iter()
+        let param_val_types: Vec<ValType> = param_slice
+            .iter()
             .map(|&t| store_int_to_valtype(t))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Convert return types
-        let return_slice = unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
-        let return_val_types: Vec<ValType> = return_slice.iter()
+        let return_slice =
+            unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
+        let return_val_types: Vec<ValType> = return_slice
+            .iter()
             .map(|&t| store_int_to_valtype(t))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Create FuncType using the Store's engine
         let func_type = store.with_context(|ctx| {
             let engine = ctx.engine();
-            Ok(FuncType::new(engine, param_val_types.clone(), return_val_types.clone()))
+            Ok(FuncType::new(
+                engine,
+                param_val_types.clone(),
+                return_val_types.clone(),
+            ))
         })?;
 
         // Create callback implementation that calls the Panama callback
@@ -413,13 +438,20 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
                     self.callback_id, params.len(), self.result_count);
 
                 // Convert internal WasmValue to FFI-safe format
-                let ffi_params: Vec<crate::instance::FfiWasmValue> = params.iter()
+                let ffi_params: Vec<crate::instance::FfiWasmValue> = params
+                    .iter()
                     .map(crate::instance::FfiWasmValue::from_wasm_value)
                     .collect();
 
                 // Allocate result buffer in FFI-safe format
                 let expected_results = self.result_count;
-                let mut ffi_results = vec![crate::instance::FfiWasmValue { tag: 0, value: [0u8; 16] }; expected_results];
+                let mut ffi_results = vec![
+                    crate::instance::FfiWasmValue {
+                        tag: 0,
+                        value: [0u8; 16]
+                    };
+                    expected_results
+                ];
 
                 // Allocate error message buffer
                 const ERROR_BUFFER_SIZE: usize = 1024;
@@ -438,13 +470,18 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
 
                 if result_code != 0 {
                     // Extract error message from buffer (safe operations on the stack buffer)
-                    let len = error_message_buffer.iter()
+                    let len = error_message_buffer
+                        .iter()
                         .position(|&b| b == 0)
                         .unwrap_or(ERROR_BUFFER_SIZE);
-                    let error_message = String::from_utf8_lossy(&error_message_buffer[..len]).to_string();
+                    let error_message =
+                        String::from_utf8_lossy(&error_message_buffer[..len]).to_string();
 
                     let final_message = if error_message.is_empty() {
-                        format!("Panama host function callback failed with code: {}", result_code)
+                        format!(
+                            "Panama host function callback failed with code: {}",
+                            result_code
+                        )
                     } else {
                         error_message
                     };
@@ -456,10 +493,14 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
                 }
 
                 // Convert FFI results back to internal WasmValue
-                let results: Vec<WasmValue> = ffi_results.iter()
+                let results: Vec<WasmValue> = ffi_results
+                    .iter()
                     .map(crate::instance::FfiWasmValue::to_wasm_value)
                     .collect();
-                log::debug!("[STORE_CB] Converted {} results, execute complete", results.len());
+                log::debug!(
+                    "[STORE_CB] Converted {} results, execute complete",
+                    results.len()
+                );
 
                 Ok(results)
             }
@@ -496,7 +537,11 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
             *func_ref_id_out = func_ref_id;
         }
 
-        log::debug!("Created Panama host function with callback_id={}, func_ref_id={}", callback_id, func_ref_id);
+        log::debug!(
+            "Created Panama host function with callback_id={}, func_ref_id={}",
+            callback_id,
+            func_ref_id
+        );
 
         Ok(())
     })
@@ -509,13 +554,23 @@ pub extern "C" fn wasmtime4j_panama_destroy_host_function(func_ref_id: c_ulong) 
         if func_ref_id != 0 {
             match crate::table::core::remove_function_reference(func_ref_id) {
                 Ok(Some(_)) => {
-                    log::debug!("Removed function reference {} from table registry", func_ref_id);
+                    log::debug!(
+                        "Removed function reference {} from table registry",
+                        func_ref_id
+                    );
                 }
                 Ok(None) => {
-                    log::debug!("Function reference {} was not in table registry", func_ref_id);
+                    log::debug!(
+                        "Function reference {} was not in table registry",
+                        func_ref_id
+                    );
                 }
                 Err(e) => {
-                    log::warn!("Failed to remove function reference {} from table registry: {}", func_ref_id, e);
+                    log::warn!(
+                        "Failed to remove function reference {} from table registry: {}",
+                        func_ref_id,
+                        e
+                    );
                 }
             }
         }
@@ -616,10 +671,7 @@ pub extern "C" fn wasmtime4j_panama_store_gc(store_ptr: *mut c_void) -> c_int {
 
 /// Set fuel for a WebAssembly store (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_store_set_fuel(
-    store_ptr: *mut c_void,
-    fuel: c_ulong,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_store_set_fuel(store_ptr: *mut c_void, fuel: c_ulong) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
         crate::store::core::set_fuel_level(store, fuel as u64)?;

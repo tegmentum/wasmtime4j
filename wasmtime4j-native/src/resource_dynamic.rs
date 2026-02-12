@@ -15,7 +15,7 @@ use std::os::raw::{c_int, c_void};
 use wasmtime::component::ResourceDynamic;
 
 use crate::error::WasmtimeResult;
-use crate::shared_ffi::{FFI_SUCCESS, FFI_ERROR};
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 
 /// Wrapper around ResourceDynamic for FFI
 #[derive(Debug)]
@@ -140,7 +140,11 @@ pub unsafe extern "C" fn wasmtime4j_resource_dynamic_owned(ptr: *const c_void) -
         return 0;
     }
     let wrapper = &*(ptr as *const ResourceDynamicWrapper);
-    if wrapper.owned() { 1 } else { 0 }
+    if wrapper.owned() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Destroy a ResourceDynamic

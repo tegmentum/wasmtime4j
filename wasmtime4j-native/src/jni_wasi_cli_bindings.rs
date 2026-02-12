@@ -10,8 +10,8 @@ use jni::sys::{jint, jlong, jobjectArray, jstring};
 use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};
-use crate::{jni_validate_handle, jni_deref_ptr};
+use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamStatusInfo, WasiStreamTypeInfo};
+use crate::{jni_deref_ptr, jni_validate_handle};
 
 /// Minimum valid pointer value - pointers below this are almost certainly invalid
 /// as they fall within the first page which is never mapped on most systems.
@@ -31,7 +31,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 ) -> jobjectArray {
     // Validate and get context using macros
     jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
-    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(
+        env,
+        context_handle,
+        WasiContext,
+        "Context",
+        JObject::null().into_raw()
+    );
 
     // Get environment variables from context
     let env_map = match context.environment_rw.read() {
@@ -63,7 +69,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
         }
     };
 
-    let array = match env.new_object_array(env_strings.len() as i32, string_class, JObject::null()) {
+    let array = match env.new_object_array(env_strings.len() as i32, string_class, JObject::null())
+    {
         Ok(arr) => arr,
         Err(e) => {
             let _ = env.throw_new(
@@ -112,7 +119,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 ) -> jstring {
     // Validate and get context using macros
     jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
-    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(
+        env,
+        context_handle,
+        WasiContext,
+        "Context",
+        JObject::null().into_raw()
+    );
 
     // Get name string
     let name_str: String = match env.get_string(&name) {
@@ -140,18 +153,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 
     // Look up the variable
     match env_map.get(&name_str) {
-        Some(value) => {
-            match env.new_string(value) {
-                Ok(java_str) => java_str.into_raw(),
-                Err(e) => {
-                    let _ = env.throw_new(
-                        "java/lang/RuntimeException",
-                        format!("Failed to create string: {}", e),
-                    );
-                    JObject::null().into_raw()
-                }
+        Some(value) => match env.new_string(value) {
+            Ok(java_str) => java_str.into_raw(),
+            Err(e) => {
+                let _ = env.throw_new(
+                    "java/lang/RuntimeException",
+                    format!("Failed to create string: {}", e),
+                );
+                JObject::null().into_raw()
             }
-        }
+        },
         None => JObject::null().into_raw(),
     }
 }
@@ -168,7 +179,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 ) -> jobjectArray {
     // Validate and get context using macros
     jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
-    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(
+        env,
+        context_handle,
+        WasiContext,
+        "Context",
+        JObject::null().into_raw()
+    );
 
     // Get arguments from context
     let args = match context.arguments_rw.read() {
@@ -242,7 +259,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 ) -> jstring {
     // Validate and get context using macros
     jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
-    let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(
+        env,
+        context_handle,
+        WasiContext,
+        "Context",
+        JObject::null().into_raw()
+    );
 
     // Get initial_cwd from context
     let cwd = match context.initial_cwd.read() {
@@ -258,18 +281,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
 
     // Return the cwd if set, or null
     match cwd.as_ref() {
-        Some(path) => {
-            match env.new_string(path) {
-                Ok(java_str) => java_str.into_raw(),
-                Err(e) => {
-                    let _ = env.throw_new(
-                        "java/lang/RuntimeException",
-                        format!("Failed to create string: {}", e),
-                    );
-                    JObject::null().into_raw()
-                }
+        Some(path) => match env.new_string(path) {
+            Ok(java_str) => java_str.into_raw(),
+            Err(e) => {
+                let _ = env.throw_new(
+                    "java/lang/RuntimeException",
+                    format!("Failed to create string: {}", e),
+                );
+                JObject::null().into_raw()
             }
-        }
+        },
         None => JObject::null().into_raw(),
     }
 }

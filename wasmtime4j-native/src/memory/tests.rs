@@ -57,7 +57,9 @@ fn test_memory_statistics() {
 
     // Perform some operations
     memory.read_bytes(&store, 0, 100).expect("Read failed");
-    memory.write_bytes(&mut store, 0, &[1, 2, 3, 4]).expect("Write failed");
+    memory
+        .write_bytes(&mut store, 0, &[1, 2, 3, 4])
+        .expect("Write failed");
 
     let usage = memory.get_usage(&store).expect("Failed to get usage");
     assert_eq!(usage.current_pages, 1);
@@ -72,12 +74,16 @@ fn test_memory_registry() {
     let registry = MemoryRegistry::new();
 
     let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
-    let memory_id = registry.register(memory).expect("Failed to register memory");
+    let memory_id = registry
+        .register(memory)
+        .expect("Failed to register memory");
 
     let retrieved = registry.get(memory_id).expect("Failed to get memory");
     assert_eq!(retrieved.size_pages(&store).unwrap(), 1);
 
-    registry.unregister(memory_id).expect("Failed to unregister memory");
+    registry
+        .unregister(memory_id)
+        .expect("Failed to unregister memory");
     assert!(registry.get(memory_id).is_err());
 }
 
@@ -92,9 +98,7 @@ fn test_memory_handle_validation() {
 
     // Validate the handle works
     unsafe {
-        assert!(
-            core::validate_memory_handle(validated_ptr as *const std::os::raw::c_void).is_ok()
-        );
+        assert!(core::validate_memory_handle(validated_ptr as *const std::os::raw::c_void).is_ok());
         let memory_ref = core::get_memory_ref(validated_ptr as *const std::os::raw::c_void);
         assert!(memory_ref.is_ok());
     }
@@ -179,8 +183,14 @@ fn test_handle_registry_diagnostics() {
         core::create_validated_memory(memory2).expect("Failed to create validated memory 2");
 
     // Verify handles are valid and accessible
-    assert!(!validated_ptr1.is_null(), "validated_ptr1 should not be null");
-    assert!(!validated_ptr2.is_null(), "validated_ptr2 should not be null");
+    assert!(
+        !validated_ptr1.is_null(),
+        "validated_ptr1 should not be null"
+    );
+    assert!(
+        !validated_ptr2.is_null(),
+        "validated_ptr2 should not be null"
+    );
 
     // Access the memories to verify they work
     unsafe {
@@ -230,9 +240,7 @@ fn test_corrupted_handle_detection() {
 
     unsafe {
         // First validate it works
-        assert!(
-            core::validate_memory_handle(validated_ptr as *const std::os::raw::c_void).is_ok()
-        );
+        assert!(core::validate_memory_handle(validated_ptr as *const std::os::raw::c_void).is_ok());
 
         // Corrupt the magic number by directly manipulating memory
         let validated_memory_ptr = validated_ptr as *mut u64; // First field is magic
@@ -268,8 +276,7 @@ fn test_thread_safety_basic() {
             let ptr = ptr_copy;
             thread::spawn(move || unsafe {
                 for _ in 0..10 {
-                    let result =
-                        core::validate_memory_handle(ptr as *const std::os::raw::c_void);
+                    let result = core::validate_memory_handle(ptr as *const std::os::raw::c_void);
                     // We don't assert success here because the memory might be destroyed
                     // by another thread, but validation should not crash
                     let _ = result;
@@ -298,7 +305,9 @@ fn test_read_typed_u8() {
 
     let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
 
-    memory.write_bytes(&mut store, 0, &[42u8]).expect("Write failed");
+    memory
+        .write_bytes(&mut store, 0, &[42u8])
+        .expect("Write failed");
     let value: u8 = memory
         .read_typed(&store, 0, MemoryDataType::U8)
         .expect("Read failed");
@@ -319,7 +328,10 @@ fn test_read_typed_u16() {
     let value: u16 = memory
         .read_typed(&store, 0, MemoryDataType::U16Le)
         .expect("Read failed");
-    assert_eq!(value, test_value, "U16 read should return the written value");
+    assert_eq!(
+        value, test_value,
+        "U16 read should return the written value"
+    );
 }
 
 #[test]
@@ -336,7 +348,10 @@ fn test_read_typed_u32() {
     let value: u32 = memory
         .read_typed(&store, 0, MemoryDataType::U32Le)
         .expect("Read failed");
-    assert_eq!(value, test_value, "U32 read should return the written value");
+    assert_eq!(
+        value, test_value,
+        "U32 read should return the written value"
+    );
 }
 
 #[test]
@@ -353,7 +368,10 @@ fn test_read_typed_u64() {
     let value: u64 = memory
         .read_typed(&store, 8, MemoryDataType::U64Le)
         .expect("Read failed");
-    assert_eq!(value, test_value, "U64 read should return the written value");
+    assert_eq!(
+        value, test_value,
+        "U64 read should return the written value"
+    );
 }
 
 #[test]
@@ -638,6 +656,7 @@ fn test_memory_limits() {
         initial_pages: 1,
         maximum_pages: Some(10),
         is_shared: false,
+        is_64: false,
         memory_index: 0,
         name: Some("limited".to_string()),
     };
@@ -725,6 +744,7 @@ fn test_registry_list_memories() {
         initial_pages: 1,
         maximum_pages: None,
         is_shared: false,
+        is_64: false,
         memory_index: 0,
         name: Some("memory0".to_string()),
     };
@@ -732,17 +752,20 @@ fn test_registry_list_memories() {
         initial_pages: 1,
         maximum_pages: None,
         is_shared: false,
+        is_64: false,
         memory_index: 1,
         name: Some("memory1".to_string()),
     };
 
-    let memory1 =
-        Memory::new_with_config(&mut store, config1).expect("Failed to create memory 1");
-    let memory2 =
-        Memory::new_with_config(&mut store, config2).expect("Failed to create memory 2");
+    let memory1 = Memory::new_with_config(&mut store, config1).expect("Failed to create memory 1");
+    let memory2 = Memory::new_with_config(&mut store, config2).expect("Failed to create memory 2");
 
-    let id1 = registry.register(memory1).expect("Failed to register memory 1");
-    let id2 = registry.register(memory2).expect("Failed to register memory 2");
+    let id1 = registry
+        .register(memory1)
+        .expect("Failed to register memory 1");
+    let id2 = registry
+        .register(memory2)
+        .expect("Failed to register memory 2");
 
     assert_eq!(id1, 0, "Memory 1 should have index 0");
     assert_eq!(id2, 1, "Memory 2 should have index 1");
@@ -751,8 +774,12 @@ fn test_registry_list_memories() {
     assert!(ids.contains(&id1), "Registry should contain memory 0");
     assert!(ids.contains(&id2), "Registry should contain memory 1");
 
-    registry.unregister(id1).expect("Failed to unregister memory 0");
-    registry.unregister(id2).expect("Failed to unregister memory 1");
+    registry
+        .unregister(id1)
+        .expect("Failed to unregister memory 0");
+    registry
+        .unregister(id2)
+        .expect("Failed to unregister memory 1");
 }
 
 #[test]
@@ -766,6 +793,7 @@ fn test_registry_multiple_registrations() {
             initial_pages: 1,
             maximum_pages: None,
             is_shared: false,
+            is_64: false,
             memory_index: 0,
             name: None,
         },
@@ -773,6 +801,7 @@ fn test_registry_multiple_registrations() {
             initial_pages: 1,
             maximum_pages: None,
             is_shared: false,
+            is_64: false,
             memory_index: 1,
             name: None,
         },
@@ -780,6 +809,7 @@ fn test_registry_multiple_registrations() {
             initial_pages: 1,
             maximum_pages: None,
             is_shared: false,
+            is_64: false,
             memory_index: 2,
             name: None,
         },
@@ -787,6 +817,7 @@ fn test_registry_multiple_registrations() {
             initial_pages: 1,
             maximum_pages: None,
             is_shared: false,
+            is_64: false,
             memory_index: 3,
             name: None,
         },
@@ -795,7 +826,9 @@ fn test_registry_multiple_registrations() {
     let mut ids = Vec::new();
     for config in configs {
         let memory = Memory::new_with_config(&mut store, config).expect("Failed to create memory");
-        let id = registry.register(memory).expect("Failed to register memory");
+        let id = registry
+            .register(memory)
+            .expect("Failed to register memory");
         ids.push(id);
     }
 
@@ -808,7 +841,9 @@ fn test_registry_multiple_registrations() {
     assert_eq!(ids, vec![0, 1, 2, 3], "IDs should match memory indices");
 
     for id in ids {
-        registry.unregister(id).expect("Failed to unregister memory");
+        registry
+            .unregister(id)
+            .expect("Failed to unregister memory");
     }
 }
 
@@ -823,6 +858,7 @@ fn test_memory_growth_exceeds_limit() {
         initial_pages: 1,
         maximum_pages: Some(2),
         is_shared: false,
+        is_64: false,
         memory_index: 0,
         name: None,
     };
@@ -844,6 +880,7 @@ fn test_memory_config_validation_initial_exceeds_max() {
         initial_pages: 10,
         maximum_pages: Some(5),
         is_shared: false,
+        is_64: false,
         memory_index: 0,
         name: None,
     };
@@ -861,6 +898,7 @@ fn test_memory_config_validation_zero_initial() {
         initial_pages: 0,
         maximum_pages: None,
         is_shared: false,
+        is_64: false,
         memory_index: 0,
         name: None,
     };
@@ -975,11 +1013,15 @@ fn test_core_memory_copy() {
     let memory = Memory::new(&mut store, 1).expect("Failed to create memory");
 
     let data = vec![10, 20, 30, 40, 50];
-    memory.write_bytes(&mut store, 0, &data).expect("Failed to write bytes");
+    memory
+        .write_bytes(&mut store, 0, &data)
+        .expect("Failed to write bytes");
 
     core::memory_copy(&memory, &mut store, 100, 0, 5).expect("Failed to copy memory");
 
-    let copied = memory.read_bytes(&store, 100, 5).expect("Failed to read bytes");
+    let copied = memory
+        .read_bytes(&store, 100, 5)
+        .expect("Failed to read bytes");
     assert_eq!(copied, data, "Copied data should match original");
 }
 
@@ -992,7 +1034,9 @@ fn test_core_memory_fill() {
 
     core::memory_fill(&memory, &mut store, 50, 0xAB, 10).expect("Failed to fill memory");
 
-    let filled = memory.read_bytes(&store, 50, 10).expect("Failed to read bytes");
+    let filled = memory
+        .read_bytes(&store, 50, 10)
+        .expect("Failed to read bytes");
     assert!(
         filled.iter().all(|&b| b == 0xAB),
         "All bytes should be 0xAB"

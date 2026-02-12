@@ -19,23 +19,22 @@ use anyhow::{anyhow, Result};
 use log::{debug, info, warn};
 
 use super::types::{
-    AllocationInfo, PageSize, PlatformMemoryConfig, PlatformMemoryInfo,
-    PlatformMemoryLeak, PlatformMemoryPool, PlatformMemoryPoolStats,
-    PlatformMemoryLeakDetector, PlatformNumaNode, PlatformNumaTopology,
+    AllocationInfo, PageSize, PlatformMemoryConfig, PlatformMemoryInfo, PlatformMemoryLeak,
+    PlatformMemoryLeakDetector, PlatformMemoryPool, PlatformMemoryPoolStats, PlatformNumaNode,
+    PlatformNumaTopology,
 };
 
 // Platform-specific imports
 #[cfg(target_os = "linux")]
 use libc::{
-    madvise, mbind, mmap, munmap, sysconf, MADV_HUGEPAGE, MADV_NORMAL,
-    MAP_ANONYMOUS, MAP_HUGETLB, MAP_PRIVATE, MPOL_BIND, PROT_READ, PROT_WRITE,
-    _SC_PAGESIZE, _SC_PHYS_PAGES,
+    madvise, mbind, mmap, munmap, sysconf, MADV_HUGEPAGE, MADV_NORMAL, MAP_ANONYMOUS, MAP_HUGETLB,
+    MAP_PRIVATE, MPOL_BIND, PROT_READ, PROT_WRITE, _SC_PAGESIZE, _SC_PHYS_PAGES,
 };
 
 #[cfg(target_os = "macos")]
 use libc::{
-    madvise, mmap, munmap, sysconf, MADV_NORMAL, MAP_ANONYMOUS, MAP_PRIVATE,
-    PROT_READ, PROT_WRITE, _SC_PAGESIZE, _SC_PHYS_PAGES,
+    madvise, mmap, munmap, sysconf, MADV_NORMAL, MAP_ANONYMOUS, MAP_PRIVATE, PROT_READ, PROT_WRITE,
+    _SC_PAGESIZE, _SC_PHYS_PAGES,
 };
 
 #[cfg(target_os = "windows")]
@@ -176,7 +175,9 @@ impl PlatformMemoryAllocator {
 
     #[cfg(target_os = "windows")]
     fn gather_windows_memory_info() -> Result<PlatformMemoryInfo> {
-        use winapi::um::sysinfoapi::{GetSystemInfo, GlobalMemoryStatusEx, MEMORYSTATUSEX, SYSTEM_INFO};
+        use winapi::um::sysinfoapi::{
+            GetSystemInfo, GlobalMemoryStatusEx, MEMORYSTATUSEX, SYSTEM_INFO,
+        };
 
         let mut sys_info: SYSTEM_INFO = unsafe { std::mem::zeroed() };
         let mut mem_status: MEMORYSTATUSEX = unsafe { std::mem::zeroed() };
@@ -225,7 +226,13 @@ impl PlatformMemoryAllocator {
         let ptr = self.platform_allocate(allocation_size, alignment, page_type, numa_node)?;
 
         // Record allocation for tracking and leak detection
-        self.record_allocation(ptr.as_ptr(), allocation_size, alignment, page_type, numa_node)?;
+        self.record_allocation(
+            ptr.as_ptr(),
+            allocation_size,
+            alignment,
+            page_type,
+            numa_node,
+        )?;
 
         // Update statistics
         self.update_allocation_stats(allocation_size);
@@ -631,8 +638,11 @@ impl PlatformMemoryAllocator {
         hasher.update(data);
         let hash = hasher.finalize();
         // SHA256 hash is always 32 bytes, so this slice is always valid
-        let hash_u64 =
-            u64::from_le_bytes(hash[..8].try_into().expect("SHA256 hash is always at least 8 bytes"));
+        let hash_u64 = u64::from_le_bytes(
+            hash[..8]
+                .try_into()
+                .expect("SHA256 hash is always at least 8 bytes"),
+        );
 
         let mut dedup_map = self
             .deduplication_map
@@ -643,8 +653,9 @@ impl PlatformMemoryAllocator {
         if let Some((existing_ptr, existing_size)) = dedup_map.get(&hash_u64) {
             if *existing_size == data.len() {
                 // Verify data matches
-                let existing_data =
-                    unsafe { std::slice::from_raw_parts(*existing_ptr as *const u8, *existing_size) };
+                let existing_data = unsafe {
+                    std::slice::from_raw_parts(*existing_ptr as *const u8, *existing_size)
+                };
 
                 if existing_data == data {
                     // Update statistics

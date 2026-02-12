@@ -10,14 +10,14 @@ use std::ptr;
 
 // Import the Panama FFI functions
 use wasmtime4j::panama::engine;
+use wasmtime4j::panama::instance;
 use wasmtime4j::panama::module;
 use wasmtime4j::panama::store;
-use wasmtime4j::panama::instance;
 
 // Import test fixtures
 use crate::common::fixtures::{
-    ARITHMETIC_MODULE_WAT, EMPTY_MODULE_WAT, GLOBALS_MODULE_WAT, MEMORY_MODULE_WAT,
-    MINIMAL_MODULE, NOP_MODULE_WAT, TRAP_MODULE_WAT, generate_many_exports,
+    generate_many_exports, ARITHMETIC_MODULE_WAT, EMPTY_MODULE_WAT, GLOBALS_MODULE_WAT,
+    MEMORY_MODULE_WAT, MINIMAL_MODULE, NOP_MODULE_WAT, TRAP_MODULE_WAT,
 };
 
 // =============================================================================
@@ -28,7 +28,10 @@ use crate::common::fixtures::{
 #[test]
 fn test_engine_create_returns_valid_pointer() {
     let engine_ptr = engine::wasmtime4j_panama_engine_create();
-    assert!(!engine_ptr.is_null(), "Engine creation should return non-null pointer");
+    assert!(
+        !engine_ptr.is_null(),
+        "Engine creation should return non-null pointer"
+    );
 
     // Cleanup
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
@@ -52,7 +55,10 @@ fn test_engine_create_with_config_all_features() {
         1,  // epoch_interruption: true
         -1, // max_instances: default
     );
-    assert!(!engine_ptr.is_null(), "Engine with config should return non-null pointer");
+    assert!(
+        !engine_ptr.is_null(),
+        "Engine with config should return non-null pointer"
+    );
 
     // Cleanup
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
@@ -203,8 +209,7 @@ fn test_engine_get_reference_count() {
 #[test]
 fn test_engine_supports_feature() {
     let engine_ptr = engine::wasmtime4j_panama_engine_create_with_config(
-        0, 1, 0,
-        1, // threads
+        0, 1, 0, 1, // threads
         1, // simd
         1, // reference_types
         1, // bulk_memory
@@ -214,17 +219,13 @@ fn test_engine_supports_feature() {
     assert!(!engine_ptr.is_null());
 
     let simd_feature = CString::new("SIMD").unwrap();
-    let result = engine::wasmtime4j_panama_engine_supports_feature(
-        engine_ptr,
-        simd_feature.as_ptr(),
-    );
+    let result =
+        engine::wasmtime4j_panama_engine_supports_feature(engine_ptr, simd_feature.as_ptr());
     assert!(result == 0 || result == 1, "Should return valid boolean");
 
     let invalid_feature = CString::new("INVALID_FEATURE").unwrap();
-    let result = engine::wasmtime4j_panama_engine_supports_feature(
-        engine_ptr,
-        invalid_feature.as_ptr(),
-    );
+    let result =
+        engine::wasmtime4j_panama_engine_supports_feature(engine_ptr, invalid_feature.as_ptr());
     assert_eq!(result, -1, "Invalid feature should return -1");
 
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
@@ -278,11 +279,8 @@ fn test_module_compile_wat_valid() {
     let wat = CString::new(ARITHMETIC_MODULE_WAT).unwrap();
     let mut module_ptr: *mut c_void = ptr::null_mut();
 
-    let result = module::wasmtime4j_panama_module_compile_wat(
-        engine_ptr,
-        wat.as_ptr(),
-        &mut module_ptr,
-    );
+    let result =
+        module::wasmtime4j_panama_module_compile_wat(engine_ptr, wat.as_ptr(), &mut module_ptr);
 
     assert_eq!(result, 0, "WAT compilation should succeed");
     assert!(!module_ptr.is_null(), "Module pointer should be non-null");
@@ -327,10 +325,8 @@ fn test_module_destroy_null_twice_safe() {
 /// Test module validate with valid WASM.
 #[test]
 fn test_module_validate_valid_wasm() {
-    let result = module::wasmtime4j_panama_module_validate(
-        MINIMAL_MODULE.as_ptr(),
-        MINIMAL_MODULE.len(),
-    );
+    let result =
+        module::wasmtime4j_panama_module_validate(MINIMAL_MODULE.as_ptr(), MINIMAL_MODULE.len());
     assert_eq!(result, 0, "Valid WASM should pass validation");
 }
 
@@ -338,10 +334,8 @@ fn test_module_validate_valid_wasm() {
 #[test]
 fn test_module_validate_invalid_wasm() {
     let invalid_wasm: [u8; 4] = [0x00, 0x01, 0x02, 0x03];
-    let result = module::wasmtime4j_panama_module_validate(
-        invalid_wasm.as_ptr(),
-        invalid_wasm.len(),
-    );
+    let result =
+        module::wasmtime4j_panama_module_validate(invalid_wasm.as_ptr(), invalid_wasm.len());
     assert_ne!(result, 0, "Invalid WASM should fail validation");
 }
 
@@ -360,7 +354,10 @@ fn test_module_compile_invalid_wasm_returns_error() {
     );
 
     assert_ne!(result, 0, "Invalid WASM compilation should fail");
-    assert!(module_ptr.is_null(), "Module pointer should be null on error");
+    assert!(
+        module_ptr.is_null(),
+        "Module pointer should be null on error"
+    );
 
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
 }
@@ -371,12 +368,8 @@ fn test_module_compile_null_bytes_returns_error() {
     let engine_ptr = engine::wasmtime4j_panama_engine_create();
     let mut module_ptr: *mut c_void = ptr::null_mut();
 
-    let result = module::wasmtime4j_panama_module_compile(
-        engine_ptr,
-        ptr::null(),
-        0,
-        &mut module_ptr,
-    );
+    let result =
+        module::wasmtime4j_panama_module_compile(engine_ptr, ptr::null(), 0, &mut module_ptr);
 
     assert_ne!(result, 0, "Null bytes should fail compilation");
 
@@ -435,11 +428,8 @@ fn test_module_serialize_deserialize() {
     // Serialize
     let mut data_ptr: *mut u8 = ptr::null_mut();
     let mut len: usize = 0;
-    let serialize_result = module::wasmtime4j_panama_module_serialize(
-        module_ptr,
-        &mut data_ptr,
-        &mut len,
-    );
+    let serialize_result =
+        module::wasmtime4j_panama_module_serialize(module_ptr, &mut data_ptr, &mut len);
     assert_eq!(serialize_result, 0, "Serialization should succeed");
     assert!(!data_ptr.is_null());
     assert!(len > 0, "Serialized data should have length");
@@ -506,7 +496,10 @@ fn test_module_validate_functionality() {
     assert!(!module_ptr.is_null());
 
     let result = module::wasmtime4j_panama_module_validate_functionality(module_ptr);
-    assert_eq!(result, 0, "Valid module should pass functionality validation");
+    assert_eq!(
+        result, 0,
+        "Valid module should pass functionality validation"
+    );
 
     module::wasmtime4j_panama_module_destroy(module_ptr);
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
@@ -543,12 +536,12 @@ fn test_store_create_with_config() {
     let mut store_ptr: *mut c_void = ptr::null_mut();
     let result = store::wasmtime4j_panama_store_create_with_config(
         engine_ptr,
-        0,     // fuel_limit: no fuel (0 = none)
-        0,     // memory_limit_bytes: default
-        0,     // execution_timeout_secs: default
-        0,     // max_instances: default
-        0,     // max_table_elements: default
-        0,     // max_functions: default
+        0, // fuel_limit: no fuel (0 = none)
+        0, // memory_limit_bytes: default
+        0, // execution_timeout_secs: default
+        0, // max_instances: default
+        0, // max_table_elements: default
+        0, // max_functions: default
         &mut store_ptr,
     );
 
@@ -796,14 +789,14 @@ fn test_instance_create_no_imports() {
     store::wasmtime4j_panama_store_create(engine_ptr, &mut store_ptr);
 
     let mut instance_ptr: *mut c_void = ptr::null_mut();
-    let result = instance::wasmtime4j_panama_instance_create(
-        store_ptr,
-        module_ptr,
-        &mut instance_ptr,
-    );
+    let result =
+        instance::wasmtime4j_panama_instance_create(store_ptr, module_ptr, &mut instance_ptr);
 
     assert_eq!(result, 0, "Instance creation should succeed");
-    assert!(!instance_ptr.is_null(), "Instance pointer should be non-null");
+    assert!(
+        !instance_ptr.is_null(),
+        "Instance pointer should be non-null"
+    );
 
     // Cleanup
     instance::wasmtime4j_panama_instance_destroy(instance_ptr);
@@ -863,10 +856,8 @@ fn test_instance_get_export_function() {
     instance::wasmtime4j_panama_instance_create(store_ptr, module_ptr, &mut instance_ptr);
 
     let export_name = CString::new("nop").unwrap();
-    let result = instance::wasmtime4j_panama_instance_has_export(
-        instance_ptr,
-        export_name.as_ptr(),
-    );
+    let result =
+        instance::wasmtime4j_panama_instance_has_export(instance_ptr, export_name.as_ptr());
     assert_eq!(result, 1, "Instance should have 'nop' export");
 
     instance::wasmtime4j_panama_instance_destroy(instance_ptr);
@@ -916,10 +907,8 @@ fn test_instance_get_export_nonexistent() {
     instance::wasmtime4j_panama_instance_create(store_ptr, module_ptr, &mut instance_ptr);
 
     let missing_name = CString::new("nonexistent").unwrap();
-    let result = instance::wasmtime4j_panama_instance_has_export(
-        instance_ptr,
-        missing_name.as_ptr(),
-    );
+    let result =
+        instance::wasmtime4j_panama_instance_has_export(instance_ptr, missing_name.as_ptr());
     assert_eq!(result, 0, "Instance should not have 'nonexistent' export");
 
     instance::wasmtime4j_panama_instance_destroy(instance_ptr);
@@ -1093,7 +1082,10 @@ fn test_instance_dispose_and_is_disposed() {
 
     // Now should be disposed
     let is_disposed_after = instance::wasmtime4j_panama_instance_is_disposed(instance_ptr);
-    assert_eq!(is_disposed_after, 1, "Instance should be disposed after dispose()");
+    assert_eq!(
+        is_disposed_after, 1,
+        "Instance should be disposed after dispose()"
+    );
 
     instance::wasmtime4j_panama_instance_destroy(instance_ptr);
     store::wasmtime4j_panama_store_destroy(store_ptr);

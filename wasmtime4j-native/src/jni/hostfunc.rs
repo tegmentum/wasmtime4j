@@ -5,14 +5,14 @@
 //!
 //! It exports `unmarshal_function_type` for use by other modules.
 
+use jni::objects::{JByteArray, JClass, JString};
+use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
-use jni::objects::{JClass, JString, JByteArray};
-use jni::sys::{jlong, jbyteArray};
 
 use crate::error::jni_utils;
 use crate::{WasmtimeError, WasmtimeResult};
-use wasmtime::{ValType, FuncType};
 use std::os::raw::c_void;
+use wasmtime::{FuncType, ValType};
 
 /// Create a new host function (JNI version)
 #[no_mangle]
@@ -30,10 +30,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCr
         Err(_) => return 0 as jlong,
     };
 
-    let type_data_bytes = match env.convert_byte_array(unsafe { JByteArray::from_raw(function_type_data) }) {
-        Ok(data) => data,
-        Err(_) => return 0 as jlong,
-    };
+    let type_data_bytes =
+        match env.convert_byte_array(unsafe { JByteArray::from_raw(function_type_data) }) {
+            Ok(data) => data,
+            Err(_) => return 0 as jlong,
+        };
 
     // Get JVM reference for callback - needed before entering jni_try_ptr closure
     let jvm = match env.get_java_vm() {
@@ -66,7 +67,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCr
         });
 
         // Use Store's create_host_function method which handles weak references properly
-        let (host_function_id, wasmtime_func) = store.create_host_function(name, func_type, callback)?;
+        let (host_function_id, wasmtime_func) =
+            store.create_host_function(name, func_type, callback)?;
 
         // Register the wasmtime_func in the function reference registry so it can be
         // retrieved later for table.set() operations
@@ -125,13 +127,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeDe
         if func_ref_id != 0 {
             match crate::table::core::remove_function_reference(func_ref_id) {
                 Ok(Some(_)) => {
-                    log::debug!("Removed function reference {} from table registry", func_ref_id);
+                    log::debug!(
+                        "Removed function reference {} from table registry",
+                        func_ref_id
+                    );
                 }
                 Ok(None) => {
-                    log::debug!("Function reference {} was not in table registry", func_ref_id);
+                    log::debug!(
+                        "Function reference {} was not in table registry",
+                        func_ref_id
+                    );
                 }
                 Err(e) => {
-                    log::warn!("Failed to remove function reference {} from table registry: {}", func_ref_id, e);
+                    log::warn!(
+                        "Failed to remove function reference {} from table registry: {}",
+                        func_ref_id,
+                        e
+                    );
                 }
             }
         }
@@ -169,7 +181,7 @@ pub fn unmarshal_function_type(engine: &wasmtime::Engine, data: &[u8]) -> Wasmti
         data[return_count_offset],
         data[return_count_offset + 1],
         data[return_count_offset + 2],
-        data[return_count_offset + 3]
+        data[return_count_offset + 3],
     ]) as usize;
 
     if data.len() < return_count_offset + 4 + return_count {
@@ -187,9 +199,11 @@ pub fn unmarshal_function_type(engine: &wasmtime::Engine, data: &[u8]) -> Wasmti
             2 => ValType::F32,
             3 => ValType::F64,
             4 => ValType::V128,
-            _ => return Err(WasmtimeError::Validation {
-                message: format!("Invalid parameter type: {}", data[4 + i]),
-            }),
+            _ => {
+                return Err(WasmtimeError::Validation {
+                    message: format!("Invalid parameter type: {}", data[4 + i]),
+                })
+            }
         };
         param_types.push(val_type);
     }
@@ -203,9 +217,11 @@ pub fn unmarshal_function_type(engine: &wasmtime::Engine, data: &[u8]) -> Wasmti
             2 => ValType::F32,
             3 => ValType::F64,
             4 => ValType::V128,
-            _ => return Err(WasmtimeError::Validation {
-                message: format!("Invalid return type: {}", data[return_count_offset + 4 + i]),
-            }),
+            _ => {
+                return Err(WasmtimeError::Validation {
+                    message: format!("Invalid return type: {}", data[return_count_offset + 4 + i]),
+                })
+            }
         };
         return_types.push(val_type);
     }

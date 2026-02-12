@@ -3,10 +3,10 @@
 //! This module parses WebAssembly element and data sections from module bytecode,
 //! extracting passive segments for table.init() and memory.init() operations.
 
-use wasmparser::{Parser, Payload, ElementKind, ElementItems, DataKind};
-use crate::element_segment::{ElementSegment, ElementItem};
 use crate::data_segment::DataSegment;
+use crate::element_segment::{ElementItem, ElementSegment};
 use crate::error::{WasmtimeError, WasmtimeResult};
+use wasmparser::{DataKind, ElementItems, ElementKind, Parser, Payload};
 use wasmtime::ValType;
 
 /// Parse element segments from WebAssembly module bytecode
@@ -40,9 +40,7 @@ pub fn parse_element_segments(module_bytes: &[u8]) -> WasmtimeResult<Vec<Option<
 }
 
 /// Parse a single element segment
-fn parse_element_segment(
-    element: wasmparser::Element,
-) -> WasmtimeResult<Option<ElementSegment>> {
+fn parse_element_segment(element: wasmparser::Element) -> WasmtimeResult<Option<ElementSegment>> {
     // Determine element type from items
     let elem_type = match &element.items {
         ElementItems::Functions(_) => {
@@ -122,9 +120,7 @@ fn parse_element_items(items: ElementItems) -> WasmtimeResult<Vec<ElementItem>> 
 }
 
 /// Parse a constant expression to an ElementItem
-fn parse_const_expr(
-    expr: wasmparser::ConstExpr,
-) -> WasmtimeResult<ElementItem> {
+fn parse_const_expr(expr: wasmparser::ConstExpr) -> WasmtimeResult<ElementItem> {
     // Get the expression reader
     let mut reader = expr.get_operators_reader();
 
@@ -159,9 +155,12 @@ mod tests {
     #[test]
     fn test_parse_empty_module() {
         // Minimal valid WASM module with no element section
-        let wasm = wat::parse_str(r#"
+        let wasm = wat::parse_str(
+            r#"
             (module)
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         let segments = parse_element_segments(&wasm).unwrap();
         assert_eq!(segments.len(), 0);
@@ -170,13 +169,16 @@ mod tests {
     #[test]
     fn test_parse_active_element_segment() {
         // Module with an active element segment
-        let wasm = wat::parse_str(r#"
+        let wasm = wat::parse_str(
+            r#"
             (module
                 (table 10 funcref)
                 (func $f1)
                 (elem (i32.const 0) $f1)
             )
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         let segments = parse_element_segments(&wasm).unwrap();
 
@@ -190,12 +192,15 @@ mod tests {
     #[test]
     fn test_parse_passive_data_segment() {
         // Module with a passive data segment
-        let wasm = wat::parse_str(r#"
+        let wasm = wat::parse_str(
+            r#"
             (module
                 (memory 1)
                 (data "hello")
             )
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         let segments = parse_data_segments(&wasm).unwrap();
 
@@ -214,12 +219,15 @@ mod tests {
     #[test]
     fn test_parse_active_data_segment() {
         // Module with an active data segment
-        let wasm = wat::parse_str(r#"
+        let wasm = wat::parse_str(
+            r#"
             (module
                 (memory 1)
                 (data (i32.const 0) "world")
             )
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         let segments = parse_data_segments(&wasm).unwrap();
 
@@ -262,9 +270,7 @@ pub fn parse_data_segments(module_bytes: &[u8]) -> WasmtimeResult<Vec<Option<Dat
 }
 
 /// Parse a single data segment
-fn parse_data_segment(
-    data: wasmparser::Data,
-) -> WasmtimeResult<Option<DataSegment>> {
+fn parse_data_segment(data: wasmparser::Data) -> WasmtimeResult<Option<DataSegment>> {
     match data.kind {
         DataKind::Passive => {
             // Passive segment - cache it for memory.init()

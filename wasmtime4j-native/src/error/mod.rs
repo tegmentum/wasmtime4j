@@ -16,8 +16,8 @@ mod tests;
 
 // Re-export commonly used types and functions for backward compatibility
 pub use ffi_utils::{
-    clear_last_error, free_error_message, get_last_error_message, set_last_error,
-    ErrorCollector, ErrorContext, PerformanceLogger, ResourceHandle,
+    clear_last_error, free_error_message, get_last_error_message, set_last_error, ErrorCollector,
+    ErrorContext, PerformanceLogger, ResourceHandle,
 };
 
 /// Comprehensive error types for wasmtime4j operations
@@ -27,21 +27,21 @@ pub enum WasmtimeError {
     #[error("Compilation failed: {message}")]
     Compilation {
         /// Error message describing the compilation failure
-        message: String
+        message: String,
     },
 
     /// WebAssembly validation errors
     #[error("Module validation failed: {message}")]
     Validation {
         /// Error message describing the validation failure
-        message: String
+        message: String,
     },
 
     /// WebAssembly module errors
     #[error("Module error: {message}")]
     Module {
         /// Error message describing the module error
-        message: String
+        message: String,
     },
 
     /// WebAssembly runtime errors and traps
@@ -57,21 +57,21 @@ pub enum WasmtimeError {
     #[error("Engine configuration error: {message}")]
     EngineConfig {
         /// Error message describing the engine configuration issue
-        message: String
+        message: String,
     },
 
     /// Store creation and management errors
     #[error("Store error: {message}")]
     Store {
         /// Error message describing the store-related error
-        message: String
+        message: String,
     },
 
     /// WebAssembly instance creation and management errors
     #[error("Instance error: {message}")]
     Instance {
         /// Error message describing the instance-related error
-        message: String
+        message: String,
     },
 
     /// WebAssembly function errors
@@ -109,26 +109,25 @@ pub enum WasmtimeError {
         message: String,
     },
 
-
     /// Import/Export resolution errors
     #[error("Import/Export error: {message}")]
     ImportExport {
         /// Error message describing the import/export resolution error
-        message: String
+        message: String,
     },
 
     /// Type conversion and validation errors
     #[error("Type error: {message}")]
     Type {
         /// Error message describing the type conversion or validation error
-        message: String
+        message: String,
     },
 
     /// Resource management errors
     #[error("Resource error: {message}")]
     Resource {
         /// Error message describing the resource management error
-        message: String
+        message: String,
     },
 
     /// I/O and file system errors
@@ -136,91 +135,91 @@ pub enum WasmtimeError {
     Io {
         #[from]
         /// The underlying I/O error that occurred
-        source: std::io::Error
+        source: std::io::Error,
     },
 
     /// Null pointer or invalid parameter errors
     #[error("Invalid parameter: {message}")]
     InvalidParameter {
         /// Error message describing the invalid parameter
-        message: String
+        message: String,
     },
 
     /// Threading and concurrency errors
     #[error("Concurrency error: {message}")]
     Concurrency {
         /// Error message describing the concurrency issue
-        message: String
+        message: String,
     },
 
     /// WASI-specific errors (for future use)
     #[error("WASI error: {message}")]
     Wasi {
         /// Error message describing the WASI-related error
-        message: String
+        message: String,
     },
 
     /// Security and permission violations
     #[error("Security error: {message}")]
     Security {
         /// Error message describing the security violation
-        message: String
+        message: String,
     },
 
     /// Component model specific errors
     #[error("Component error: {message}")]
     Component {
         /// Error message describing the component-related error
-        message: String
+        message: String,
     },
 
     /// WIT interface definition and binding errors
     #[error("Interface error: {message}")]
     Interface {
         /// Error message describing the interface-related error
-        message: String
+        message: String,
     },
 
     /// Unexpected internal errors
     #[error("Internal error: {message}")]
     Internal {
         /// Error message describing the internal system error
-        message: String
+        message: String,
     },
 
     /// WebAssembly coredump errors
     #[error("Coredump error: {message}")]
     Coredump {
         /// Error message describing the coredump-related error
-        message: String
+        message: String,
     },
 
     /// Call hook errors
     #[error("Call hook error: {message}")]
     CallHook {
         /// Error message describing the call hook error
-        message: String
+        message: String,
     },
 
     /// Guest profiler errors
     #[error("Guest profiler error: {message}")]
     GuestProfiler {
         /// Error message describing the profiler error
-        message: String
+        message: String,
     },
 
     /// Function execution errors
     #[error("Function execution failed: {message}")]
     Execution {
         /// Error message describing the execution error
-        message: String
+        message: String,
     },
 
     /// Export not found errors
     #[error("Export not found: {name}")]
     ExportNotFound {
         /// Name of the export that was not found
-        name: String
+        name: String,
     },
 
     /// Multiple errors that occurred during complex operations
@@ -271,7 +270,6 @@ pub enum WasmtimeError {
 
     // Note: ExecutionError was removed - use Execution instead
     // Note: SerializationError was removed - use Serialization instead
-
     /// Invalid state errors
     #[error("Invalid state: {message}")]
     InvalidState {
@@ -288,7 +286,6 @@ pub enum WasmtimeError {
 
     // Note: ValidationError was removed - use Validation instead
     // Note: RuntimeError was removed - use Runtime { message, backtrace: None } instead
-
     /// Invalid data errors
     #[error("Invalid data: {message}")]
     InvalidData {
@@ -374,7 +371,6 @@ pub enum WasmtimeError {
     },
 
     // Note: CompilationError was removed - use Compilation instead
-
     /// Deadlock detection error
     #[error("Operation would cause deadlock: {message}")]
     WouldDeadlock {
@@ -394,68 +390,169 @@ pub enum WasmtimeError {
 impl Clone for WasmtimeError {
     fn clone(&self) -> Self {
         match self {
-            WasmtimeError::Compilation { message } => WasmtimeError::Compilation { message: message.clone() },
-            WasmtimeError::Validation { message } => WasmtimeError::Validation { message: message.clone() },
-            WasmtimeError::Module { message } => WasmtimeError::Module { message: message.clone() },
+            WasmtimeError::Compilation { message } => WasmtimeError::Compilation {
+                message: message.clone(),
+            },
+            WasmtimeError::Validation { message } => WasmtimeError::Validation {
+                message: message.clone(),
+            },
+            WasmtimeError::Module { message } => WasmtimeError::Module {
+                message: message.clone(),
+            },
             // WasmBacktrace doesn't implement Clone, so we preserve backtrace info in the message
             WasmtimeError::Runtime { message, backtrace } => {
                 let full_message = match backtrace {
                     Some(bt) => format!("{}\nBacktrace: {:?}", message, bt),
                     None => message.clone(),
                 };
-                WasmtimeError::Runtime { message: full_message, backtrace: None }
+                WasmtimeError::Runtime {
+                    message: full_message,
+                    backtrace: None,
+                }
+            }
+            WasmtimeError::EngineConfig { message } => WasmtimeError::EngineConfig {
+                message: message.clone(),
             },
-            WasmtimeError::EngineConfig { message } => WasmtimeError::EngineConfig { message: message.clone() },
-            WasmtimeError::Store { message } => WasmtimeError::Store { message: message.clone() },
-            WasmtimeError::Instance { message } => WasmtimeError::Instance { message: message.clone() },
-            WasmtimeError::Function { message } => WasmtimeError::Function { message: message.clone() },
-            WasmtimeError::Memory { message } => WasmtimeError::Memory { message: message.clone() },
-            WasmtimeError::Table { message } => WasmtimeError::Table { message: message.clone() },
-            WasmtimeError::Global { message } => WasmtimeError::Global { message: message.clone() },
-            WasmtimeError::Linker { message } => WasmtimeError::Linker { message: message.clone() },
-            WasmtimeError::Component { message } => WasmtimeError::Component { message: message.clone() },
-            WasmtimeError::Interface { message } => WasmtimeError::Interface { message: message.clone() },
-            WasmtimeError::Internal { message } => WasmtimeError::Internal { message: message.clone() },
-            WasmtimeError::Execution { message } => WasmtimeError::Execution { message: message.clone() },
-            WasmtimeError::ExportNotFound { name } => WasmtimeError::ExportNotFound { name: name.clone() },
-            WasmtimeError::Multiple { summary, errors } => WasmtimeError::Multiple { summary: summary.clone(), errors: errors.clone() },
-            WasmtimeError::Instantiation { message } => WasmtimeError::Instantiation { message: message.clone() },
-            WasmtimeError::Network { message } => WasmtimeError::Network { message: message.clone() },
-            WasmtimeError::Process { message } => WasmtimeError::Process { message: message.clone() },
-            WasmtimeError::CallerContextError { message } => WasmtimeError::CallerContextError { message: message.clone() },
-            WasmtimeError::TypeMismatch { expected, actual } => WasmtimeError::TypeMismatch { expected: expected.clone(), actual: actual.clone() },
-            WasmtimeError::InvalidState { message } => WasmtimeError::InvalidState { message: message.clone() },
-            WasmtimeError::InvalidData { message } => WasmtimeError::InvalidData { message: message.clone() },
-            WasmtimeError::IO { message } => WasmtimeError::IO { message: message.clone() },
-            WasmtimeError::Utf8Error { message } => WasmtimeError::Utf8Error { message: message.clone() },
-            WasmtimeError::InvalidOperation { message } => WasmtimeError::InvalidOperation { message: message.clone() },
-            WasmtimeError::AccessDenied { message } => WasmtimeError::AccessDenied { message: message.clone() },
-            WasmtimeError::Timeout { message } => WasmtimeError::Timeout { message: message.clone() },
-            WasmtimeError::ResourceLimit { message } => WasmtimeError::ResourceLimit { message: message.clone() },
-            WasmtimeError::Cryptographic { message } => WasmtimeError::Cryptographic { message: message.clone() },
-            WasmtimeError::Serialization { message } => WasmtimeError::Serialization { message: message.clone() },
-            WasmtimeError::QuotaExceeded { message } => WasmtimeError::QuotaExceeded { message: message.clone() },
-            WasmtimeError::UnsupportedFeature { message } => WasmtimeError::UnsupportedFeature { message: message.clone() },
-            WasmtimeError::SystemError { message } => WasmtimeError::SystemError { message: message.clone() },
+            WasmtimeError::Store { message } => WasmtimeError::Store {
+                message: message.clone(),
+            },
+            WasmtimeError::Instance { message } => WasmtimeError::Instance {
+                message: message.clone(),
+            },
+            WasmtimeError::Function { message } => WasmtimeError::Function {
+                message: message.clone(),
+            },
+            WasmtimeError::Memory { message } => WasmtimeError::Memory {
+                message: message.clone(),
+            },
+            WasmtimeError::Table { message } => WasmtimeError::Table {
+                message: message.clone(),
+            },
+            WasmtimeError::Global { message } => WasmtimeError::Global {
+                message: message.clone(),
+            },
+            WasmtimeError::Linker { message } => WasmtimeError::Linker {
+                message: message.clone(),
+            },
+            WasmtimeError::Component { message } => WasmtimeError::Component {
+                message: message.clone(),
+            },
+            WasmtimeError::Interface { message } => WasmtimeError::Interface {
+                message: message.clone(),
+            },
+            WasmtimeError::Internal { message } => WasmtimeError::Internal {
+                message: message.clone(),
+            },
+            WasmtimeError::Execution { message } => WasmtimeError::Execution {
+                message: message.clone(),
+            },
+            WasmtimeError::ExportNotFound { name } => {
+                WasmtimeError::ExportNotFound { name: name.clone() }
+            }
+            WasmtimeError::Multiple { summary, errors } => WasmtimeError::Multiple {
+                summary: summary.clone(),
+                errors: errors.clone(),
+            },
+            WasmtimeError::Instantiation { message } => WasmtimeError::Instantiation {
+                message: message.clone(),
+            },
+            WasmtimeError::Network { message } => WasmtimeError::Network {
+                message: message.clone(),
+            },
+            WasmtimeError::Process { message } => WasmtimeError::Process {
+                message: message.clone(),
+            },
+            WasmtimeError::CallerContextError { message } => WasmtimeError::CallerContextError {
+                message: message.clone(),
+            },
+            WasmtimeError::TypeMismatch { expected, actual } => WasmtimeError::TypeMismatch {
+                expected: expected.clone(),
+                actual: actual.clone(),
+            },
+            WasmtimeError::InvalidState { message } => WasmtimeError::InvalidState {
+                message: message.clone(),
+            },
+            WasmtimeError::InvalidData { message } => WasmtimeError::InvalidData {
+                message: message.clone(),
+            },
+            WasmtimeError::IO { message } => WasmtimeError::IO {
+                message: message.clone(),
+            },
+            WasmtimeError::Utf8Error { message } => WasmtimeError::Utf8Error {
+                message: message.clone(),
+            },
+            WasmtimeError::InvalidOperation { message } => WasmtimeError::InvalidOperation {
+                message: message.clone(),
+            },
+            WasmtimeError::AccessDenied { message } => WasmtimeError::AccessDenied {
+                message: message.clone(),
+            },
+            WasmtimeError::Timeout { message } => WasmtimeError::Timeout {
+                message: message.clone(),
+            },
+            WasmtimeError::ResourceLimit { message } => WasmtimeError::ResourceLimit {
+                message: message.clone(),
+            },
+            WasmtimeError::Cryptographic { message } => WasmtimeError::Cryptographic {
+                message: message.clone(),
+            },
+            WasmtimeError::Serialization { message } => WasmtimeError::Serialization {
+                message: message.clone(),
+            },
+            WasmtimeError::QuotaExceeded { message } => WasmtimeError::QuotaExceeded {
+                message: message.clone(),
+            },
+            WasmtimeError::UnsupportedFeature { message } => WasmtimeError::UnsupportedFeature {
+                message: message.clone(),
+            },
+            WasmtimeError::SystemError { message } => WasmtimeError::SystemError {
+                message: message.clone(),
+            },
             // FIX: Clone Io properly - convert to IO variant preserving the error message
             // (std::io::Error doesn't implement Clone, so we convert to the message-based IO variant)
             WasmtimeError::Io { source } => WasmtimeError::IO {
-                message: format!("{} (kind: {:?})", source, source.kind())
+                message: format!("{} (kind: {:?})", source, source.kind()),
             },
-            WasmtimeError::ImportExport { message } => WasmtimeError::ImportExport { message: message.clone() },
-            WasmtimeError::Type { message } => WasmtimeError::Type { message: message.clone() },
-            WasmtimeError::Resource { message } => WasmtimeError::Resource { message: message.clone() },
-            WasmtimeError::InvalidParameter { message } => WasmtimeError::InvalidParameter { message: message.clone() },
-            WasmtimeError::Concurrency { message } => WasmtimeError::Concurrency { message: message.clone() },
-            WasmtimeError::Wasi { message } => WasmtimeError::Wasi { message: message.clone() },
-            WasmtimeError::Security { message } => WasmtimeError::Security { message: message.clone() },
-            WasmtimeError::WouldDeadlock { message } => WasmtimeError::WouldDeadlock { message: message.clone() },
-            WasmtimeError::WastExecutionError(message) => WasmtimeError::WastExecutionError(message.clone()),
+            WasmtimeError::ImportExport { message } => WasmtimeError::ImportExport {
+                message: message.clone(),
+            },
+            WasmtimeError::Type { message } => WasmtimeError::Type {
+                message: message.clone(),
+            },
+            WasmtimeError::Resource { message } => WasmtimeError::Resource {
+                message: message.clone(),
+            },
+            WasmtimeError::InvalidParameter { message } => WasmtimeError::InvalidParameter {
+                message: message.clone(),
+            },
+            WasmtimeError::Concurrency { message } => WasmtimeError::Concurrency {
+                message: message.clone(),
+            },
+            WasmtimeError::Wasi { message } => WasmtimeError::Wasi {
+                message: message.clone(),
+            },
+            WasmtimeError::Security { message } => WasmtimeError::Security {
+                message: message.clone(),
+            },
+            WasmtimeError::WouldDeadlock { message } => WasmtimeError::WouldDeadlock {
+                message: message.clone(),
+            },
+            WasmtimeError::WastExecutionError(message) => {
+                WasmtimeError::WastExecutionError(message.clone())
+            }
             WasmtimeError::JniError(message) => WasmtimeError::JniError(message.clone()),
-            WasmtimeError::Coredump { message } => WasmtimeError::Coredump { message: message.clone() },
-            WasmtimeError::CallHook { message } => WasmtimeError::CallHook { message: message.clone() },
-            WasmtimeError::GuestProfiler { message } => WasmtimeError::GuestProfiler { message: message.clone() },
-            WasmtimeError::WouldBlock { message } => WasmtimeError::WouldBlock { message: message.clone() },
+            WasmtimeError::Coredump { message } => WasmtimeError::Coredump {
+                message: message.clone(),
+            },
+            WasmtimeError::CallHook { message } => WasmtimeError::CallHook {
+                message: message.clone(),
+            },
+            WasmtimeError::GuestProfiler { message } => WasmtimeError::GuestProfiler {
+                message: message.clone(),
+            },
+            WasmtimeError::WouldBlock { message } => WasmtimeError::WouldBlock {
+                message: message.clone(),
+            },
         }
     }
 }
@@ -546,8 +643,7 @@ impl WasmtimeError {
     /// Get error message as C string for FFI
     pub fn to_c_string(&self) -> CString {
         CString::new(self.to_string()).unwrap_or_else(|_| {
-            CString::new("Error message contains null bytes")
-                .unwrap_or_else(|_| CString::default())
+            CString::new("Error message contains null bytes").unwrap_or_else(|_| CString::default())
         })
     }
 
@@ -655,13 +751,16 @@ impl WasmtimeError {
         } else if error_vec.len() == 1 {
             error_vec[0].to_string()
         } else {
-            format!("{} errors: {}", error_vec.len(),
-                error_vec.iter()
+            format!(
+                "{} errors: {}",
+                error_vec.len(),
+                error_vec
+                    .iter()
                     .take(3)
                     .map(|e| e.to_string())
                     .collect::<Vec<_>>()
                     .join("; ")
-                + if error_vec.len() > 3 { "..." } else { "" }
+                    + if error_vec.len() > 3 { "..." } else { "" }
             )
         };
 
@@ -732,13 +831,23 @@ impl WasmtimeError {
     pub fn log_error_with_context(&self, operation: &str, context: &str) {
         match self {
             WasmtimeError::Security { .. } => {
-                log::error!("SECURITY VIOLATION in '{}' [{}]: {}", operation, context, self);
+                log::error!(
+                    "SECURITY VIOLATION in '{}' [{}]: {}",
+                    operation,
+                    context,
+                    self
+                );
             }
             WasmtimeError::Internal { .. } | WasmtimeError::Concurrency { .. } => {
                 log::error!("Critical error in '{}' [{}]: {}", operation, context, self);
             }
             WasmtimeError::Multiple { summary, errors } => {
-                log::error!("Multiple errors in '{}' [{}]: {}", operation, context, summary);
+                log::error!(
+                    "Multiple errors in '{}' [{}]: {}",
+                    operation,
+                    context,
+                    summary
+                );
                 for (i, error) in errors.iter().enumerate() {
                     log::error!("  {} Error {}: {}", context, i + 1, error);
                 }
@@ -770,7 +879,8 @@ impl WasmtimeError {
             }
             WasmtimeError::Multiple { errors, .. } => {
                 // Multiple errors - sum of individual recovery times
-                errors.iter()
+                errors
+                    .iter()
                     .map(|e| e.get_recovery_time_estimate())
                     .fold(std::time::Duration::ZERO, |acc, time| acc + time)
             }
@@ -802,9 +912,10 @@ impl WasmtimeError {
 macro_rules! validate_not_null {
     ($ptr:expr, $name:expr) => {
         if $ptr.is_null() {
-            return Err(WasmtimeError::invalid_parameter(
-                format!("{} cannot be null", $name)
-            ));
+            return Err(WasmtimeError::invalid_parameter(format!(
+                "{} cannot be null",
+                $name
+            )));
         }
     };
 }
@@ -828,10 +939,12 @@ macro_rules! validate_not_null {
 macro_rules! validate_slice_bounds {
     ($slice:expr, $offset:expr, $length:expr) => {
         if $offset + $length > $slice.len() {
-            return Err(WasmtimeError::invalid_parameter(
-                format!("Slice bounds check failed: offset {} + length {} > slice length {}",
-                    $offset, $length, $slice.len())
-            ));
+            return Err(WasmtimeError::invalid_parameter(format!(
+                "Slice bounds check failed: offset {} + length {} > slice length {}",
+                $offset,
+                $length,
+                $slice.len()
+            )));
         }
     };
 }
@@ -854,7 +967,7 @@ macro_rules! validate_ptr_not_null {
     ($ptr:expr, $name:expr) => {
         if $ptr.is_null() {
             return Err(WasmtimeError::InvalidParameter {
-                message: format!("{} pointer cannot be null", $name)
+                message: format!("{} pointer cannot be null", $name),
             });
         }
     };
@@ -874,7 +987,7 @@ macro_rules! validate_ptr_not_null_c {
         if $ptr.is_null() {
             log::error!("{} pointer cannot be null", $name);
             let error = WasmtimeError::InvalidParameter {
-                message: format!("{} pointer cannot be null", $name)
+                message: format!("{} pointer cannot be null", $name),
             };
             return error.to_error_code() as i32;
         }
@@ -898,9 +1011,10 @@ macro_rules! validate_ptr_not_null_c {
 macro_rules! validate_not_empty {
     ($collection:expr, $name:expr) => {
         if $collection.is_empty() {
-            return Err(WasmtimeError::invalid_parameter(
-                format!("{} cannot be empty", $name)
-            ));
+            return Err(WasmtimeError::invalid_parameter(format!(
+                "{} cannot be empty",
+                $name
+            )));
         }
     };
 }
@@ -922,9 +1036,10 @@ macro_rules! validate_not_empty {
 macro_rules! validate_handle {
     ($handle:expr, $name:expr) => {
         if $handle == 0 {
-            return Err(WasmtimeError::invalid_parameter(
-                format!("{} handle is invalid", $name)
-            ));
+            return Err(WasmtimeError::invalid_parameter(format!(
+                "{} handle is invalid",
+                $name
+            )));
         }
     };
 }
@@ -949,7 +1064,7 @@ macro_rules! jni_validate_handle {
         if $handle == 0 {
             let _ = $env.throw_new(
                 "java/lang/IllegalArgumentException",
-                concat!("Invalid ", $name, " handle: null")
+                concat!("Invalid ", $name, " handle: null"),
             );
             return Default::default();
         }
@@ -958,7 +1073,7 @@ macro_rules! jni_validate_handle {
         if $handle == 0 {
             let _ = $env.throw_new(
                 "java/lang/IllegalArgumentException",
-                concat!("Invalid ", $name, " handle: null")
+                concat!("Invalid ", $name, " handle: null"),
             );
             return $ret;
         }
@@ -1000,7 +1115,7 @@ macro_rules! jni_validate_non_negative {
         if $value < 0 {
             let _ = $env.throw_new(
                 "java/lang/IllegalArgumentException",
-                concat!($name, " cannot be negative")
+                concat!($name, " cannot be negative"),
             );
             return Default::default();
         }
@@ -1009,7 +1124,7 @@ macro_rules! jni_validate_non_negative {
         if $value < 0 {
             let _ = $env.throw_new(
                 "java/lang/IllegalArgumentException",
-                concat!($name, " cannot be negative")
+                concat!($name, " cannot be negative"),
             );
             return $ret;
         }
@@ -1034,7 +1149,7 @@ macro_rules! jni_deref_ptr {
         if ptr.is_null() {
             let _ = $env.throw_new(
                 "java/lang/NullPointerException",
-                concat!($name, " pointer is null")
+                concat!($name, " pointer is null"),
             );
             return Default::default();
         }
@@ -1045,7 +1160,7 @@ macro_rules! jni_deref_ptr {
         if ptr.is_null() {
             let _ = $env.throw_new(
                 "java/lang/NullPointerException",
-                concat!($name, " pointer is null")
+                concat!($name, " pointer is null"),
             );
             return $ret;
         }
@@ -1056,7 +1171,7 @@ macro_rules! jni_deref_ptr {
         if ptr.is_null() {
             let _ = $env.throw_new(
                 "java/lang/NullPointerException",
-                concat!($name, " pointer is null")
+                concat!($name, " pointer is null"),
             );
             return Default::default();
         }
@@ -1067,7 +1182,7 @@ macro_rules! jni_deref_ptr {
         if ptr.is_null() {
             let _ = $env.throw_new(
                 "java/lang/NullPointerException",
-                concat!($name, " pointer is null")
+                concat!($name, " pointer is null"),
             );
             return $ret;
         }
@@ -1092,7 +1207,7 @@ macro_rules! jni_get_ref {
         if $handle == 0 {
             let _ = $env.throw_new(
                 "java/lang/IllegalArgumentException",
-                concat!("Invalid ", $name, " handle: null")
+                concat!("Invalid ", $name, " handle: null"),
             );
             return Default::default();
         }
@@ -1100,7 +1215,7 @@ macro_rules! jni_get_ref {
         if ptr.is_null() {
             let _ = $env.throw_new(
                 "java/lang/NullPointerException",
-                concat!(stringify!($type), " pointer is null")
+                concat!(stringify!($type), " pointer is null"),
             );
             return Default::default();
         }
@@ -1110,7 +1225,7 @@ macro_rules! jni_get_ref {
         if $handle == 0 {
             let _ = $env.throw_new(
                 "java/lang/IllegalArgumentException",
-                concat!("Invalid ", $name, " handle: null")
+                concat!("Invalid ", $name, " handle: null"),
             );
             return $ret;
         }
@@ -1118,7 +1233,7 @@ macro_rules! jni_get_ref {
         if ptr.is_null() {
             let _ = $env.throw_new(
                 "java/lang/NullPointerException",
-                concat!(stringify!($type), " pointer is null")
+                concat!(stringify!($type), " pointer is null"),
             );
             return $ret;
         }
@@ -1141,7 +1256,7 @@ macro_rules! jni_try {
             Err(e) => {
                 let _ = $env.throw_new(
                     "ai/tegmentum/wasmtime4j/exception/WasmException",
-                    format!("{}", e)
+                    format!("{}", e),
                 );
                 return Default::default();
             }
@@ -1153,7 +1268,7 @@ macro_rules! jni_try {
             Err(e) => {
                 let _ = $env.throw_new(
                     "ai/tegmentum/wasmtime4j/exception/WasmException",
-                    format!("{}", e)
+                    format!("{}", e),
                 );
                 return $ret;
             }
@@ -1182,11 +1297,17 @@ pub fn debug_log(msg: &str) {
     if let Ok(mut file) = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open(&log_path) {
-        let _ = writeln!(file, "[{}] {}", std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0), msg);
+        .open(&log_path)
+    {
+        let _ = writeln!(
+            file,
+            "[{}] {}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
+            msg
+        );
         let _ = file.flush();
     }
 }

@@ -10,9 +10,9 @@ use std::ptr;
 
 // Import the Panama FFI functions
 use wasmtime4j::panama::engine;
+use wasmtime4j::panama::instance;
 use wasmtime4j::panama::module;
 use wasmtime4j::panama::store;
-use wasmtime4j::panama::instance;
 
 // Import the ffi_common module for destroyed pointers registry
 use wasmtime4j::ffi_common::resource_destruction::{
@@ -104,20 +104,36 @@ fn test_destroy_order_store_before_engine() {
 fn test_resource_leak_100_cycles() {
     for i in 0..100 {
         let engine_ptr = engine::wasmtime4j_panama_engine_create();
-        assert!(!engine_ptr.is_null(), "Engine creation failed at iteration {}", i);
+        assert!(
+            !engine_ptr.is_null(),
+            "Engine creation failed at iteration {}",
+            i
+        );
 
         let mut store_ptr: *mut c_void = ptr::null_mut();
         store::wasmtime4j_panama_store_create(engine_ptr, &mut store_ptr);
-        assert!(!store_ptr.is_null(), "Store creation failed at iteration {}", i);
+        assert!(
+            !store_ptr.is_null(),
+            "Store creation failed at iteration {}",
+            i
+        );
 
         let wat = CString::new(NOP_MODULE_WAT).unwrap();
         let mut module_ptr: *mut c_void = ptr::null_mut();
         module::wasmtime4j_panama_module_compile_wat(engine_ptr, wat.as_ptr(), &mut module_ptr);
-        assert!(!module_ptr.is_null(), "Module compilation failed at iteration {}", i);
+        assert!(
+            !module_ptr.is_null(),
+            "Module compilation failed at iteration {}",
+            i
+        );
 
         let mut instance_ptr: *mut c_void = ptr::null_mut();
         instance::wasmtime4j_panama_instance_create(store_ptr, module_ptr, &mut instance_ptr);
-        assert!(!instance_ptr.is_null(), "Instance creation failed at iteration {}", i);
+        assert!(
+            !instance_ptr.is_null(),
+            "Instance creation failed at iteration {}",
+            i
+        );
 
         // Cleanup
         instance::wasmtime4j_panama_instance_destroy(instance_ptr);
@@ -247,7 +263,10 @@ fn test_fake_pointer_detection_low_address() {
     // Addresses at or above MIN_VALID_ADDRESS might be valid
     // (but we can't be certain without the magic prefix check)
     // These should not be flagged as fake unless they have the magic prefix
-    assert!(!is_fake_pointer(0x10000000), "High address without magic should not be fake");
+    assert!(
+        !is_fake_pointer(0x10000000),
+        "High address without magic should not be fake"
+    );
 }
 
 /// Test fake pointer detection for magic prefix.
@@ -256,7 +275,10 @@ fn test_fake_pointer_detection_magic_prefix() {
     // Addresses with the magic prefix should be detected as fake
     const FAKE_POINTER_MAGIC: usize = 0x1234560000000000;
 
-    assert!(is_fake_pointer(FAKE_POINTER_MAGIC | 1), "Magic prefix address should be fake");
+    assert!(
+        is_fake_pointer(FAKE_POINTER_MAGIC | 1),
+        "Magic prefix address should be fake"
+    );
     assert!(
         is_fake_pointer(FAKE_POINTER_MAGIC | 0xFFFF),
         "Magic prefix address should be fake"
@@ -275,7 +297,11 @@ fn test_multiple_stores_same_engine() {
     for (i, store_ptr) in store_ptrs.iter_mut().enumerate() {
         let result = store::wasmtime4j_panama_store_create(engine_ptr, store_ptr);
         assert_eq!(result, 0, "Store {} creation should succeed", i);
-        assert!(!store_ptr.is_null(), "Store {} pointer should be non-null", i);
+        assert!(
+            !store_ptr.is_null(),
+            "Store {} pointer should be non-null",
+            i
+        );
     }
 
     // Destroy all stores
@@ -299,9 +325,14 @@ fn test_multiple_modules_same_engine() {
     let mut module_ptrs: [*mut c_void; 5] = [ptr::null_mut(); 5];
 
     for (i, module_ptr) in module_ptrs.iter_mut().enumerate() {
-        let result = module::wasmtime4j_panama_module_compile_wat(engine_ptr, wat.as_ptr(), module_ptr);
+        let result =
+            module::wasmtime4j_panama_module_compile_wat(engine_ptr, wat.as_ptr(), module_ptr);
         assert_eq!(result, 0, "Module {} compilation should succeed", i);
-        assert!(!module_ptr.is_null(), "Module {} pointer should be non-null", i);
+        assert!(
+            !module_ptr.is_null(),
+            "Module {} pointer should be non-null",
+            i
+        );
     }
 
     // Destroy all modules
@@ -364,7 +395,10 @@ fn test_error_code_success_is_zero() {
     // Create a valid engine - result should be non-null (success)
     let engine_ptr = engine::wasmtime4j_panama_engine_create();
     // For functions that return pointers, non-null is success
-    assert!(!engine_ptr.is_null(), "Success should return non-null pointer");
+    assert!(
+        !engine_ptr.is_null(),
+        "Success should return non-null pointer"
+    );
 
     // For functions that return int codes
     let mut store_ptr: *mut c_void = ptr::null_mut();
@@ -404,7 +438,10 @@ fn test_error_code_compilation_error() {
     );
 
     assert_ne!(result, 0, "Compilation error should return non-zero code");
-    assert!(module_ptr.is_null(), "Failed compilation should return null module");
+    assert!(
+        module_ptr.is_null(),
+        "Failed compilation should return null module"
+    );
 
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
 }
@@ -413,10 +450,22 @@ fn test_error_code_compilation_error() {
 #[test]
 fn test_validate_pointer_null() {
     // All these should handle null gracefully
-    assert_eq!(engine::wasmtime4j_panama_engine_is_fuel_enabled(ptr::null_mut()), -1);
-    assert_eq!(engine::wasmtime4j_panama_engine_validate(ptr::null_mut()), -1);
-    assert_eq!(module::wasmtime4j_panama_module_get_export_count(ptr::null_mut()), -1);
-    assert_eq!(instance::wasmtime4j_panama_instance_has_export(ptr::null(), ptr::null()), -1);
+    assert_eq!(
+        engine::wasmtime4j_panama_engine_is_fuel_enabled(ptr::null_mut()),
+        -1
+    );
+    assert_eq!(
+        engine::wasmtime4j_panama_engine_validate(ptr::null_mut()),
+        -1
+    );
+    assert_eq!(
+        module::wasmtime4j_panama_module_get_export_count(ptr::null_mut()),
+        -1
+    );
+    assert_eq!(
+        instance::wasmtime4j_panama_instance_has_export(ptr::null(), ptr::null()),
+        -1
+    );
 }
 
 /// Test that accessing a freed pointer is not safe to test.
@@ -443,11 +492,8 @@ fn test_validate_string_null() {
 
     // Compile with null WAT string
     let mut module_ptr: *mut c_void = ptr::null_mut();
-    let result = module::wasmtime4j_panama_module_compile_wat(
-        engine_ptr,
-        ptr::null(),
-        &mut module_ptr,
-    );
+    let result =
+        module::wasmtime4j_panama_module_compile_wat(engine_ptr, ptr::null(), &mut module_ptr);
     assert_ne!(result, 0, "Null string should fail compilation");
 
     // Has export with null name
@@ -471,12 +517,8 @@ fn test_validate_byte_array_null() {
     let mut module_ptr: *mut c_void = ptr::null_mut();
 
     // Compile with null bytes
-    let result = module::wasmtime4j_panama_module_compile(
-        engine_ptr,
-        ptr::null(),
-        0,
-        &mut module_ptr,
-    );
+    let result =
+        module::wasmtime4j_panama_module_compile(engine_ptr, ptr::null(), 0, &mut module_ptr);
     assert_ne!(result, 0, "Null bytes should fail compilation");
     assert!(module_ptr.is_null(), "Module should be null on failure");
 
@@ -540,7 +582,10 @@ fn test_store_create_null_engine() {
     let mut store_ptr: *mut c_void = ptr::null_mut();
     let result = store::wasmtime4j_panama_store_create(ptr::null_mut(), &mut store_ptr);
     assert_ne!(result, 0, "Store creation with null engine should fail");
-    assert!(store_ptr.is_null(), "Store pointer should be null on failure");
+    assert!(
+        store_ptr.is_null(),
+        "Store pointer should be null on failure"
+    );
 }
 
 /// Test module operations with null engine pointer.
@@ -555,7 +600,10 @@ fn test_module_compile_null_engine() {
         &mut module_ptr,
     );
     assert_ne!(result, 0, "Module compilation with null engine should fail");
-    assert!(module_ptr.is_null(), "Module pointer should be null on failure");
+    assert!(
+        module_ptr.is_null(),
+        "Module pointer should be null on failure"
+    );
 }
 
 /// Test instance operations with null pointers.
@@ -571,11 +619,13 @@ fn test_instance_create_null_pointers() {
 
     // Null store
     let mut instance_ptr: *mut c_void = ptr::null_mut();
-    let result = instance::wasmtime4j_panama_instance_create(ptr::null_mut(), module_ptr, &mut instance_ptr);
+    let result =
+        instance::wasmtime4j_panama_instance_create(ptr::null_mut(), module_ptr, &mut instance_ptr);
     assert_ne!(result, 0, "Instance creation with null store should fail");
 
     // Null module
-    let result = instance::wasmtime4j_panama_instance_create(store_ptr, ptr::null_mut(), &mut instance_ptr);
+    let result =
+        instance::wasmtime4j_panama_instance_create(store_ptr, ptr::null_mut(), &mut instance_ptr);
     assert_ne!(result, 0, "Instance creation with null module should fail");
 
     store::wasmtime4j_panama_store_destroy(store_ptr);

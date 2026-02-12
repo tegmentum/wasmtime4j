@@ -1926,7 +1926,7 @@ public final class NativeFunctionBindings {
       final MemorySegment instancePtr,
       final MemorySegment storePtr,
       final MemorySegment name,
-      final int pages,
+      final long pages,
       final MemorySegment previousPagesOut) {
     validatePointer(instancePtr, "instancePtr");
     validatePointer(storePtr, "storePtr");
@@ -3669,7 +3669,7 @@ public final class NativeFunctionBindings {
   public int panamaMemoryGrow(
       final MemorySegment memoryPtr,
       final MemorySegment storePtr,
-      final int additionalPages,
+      final long additionalPages,
       final MemorySegment previousPagesOutPtr) {
     validatePointer(memoryPtr, "memoryPtr");
     validatePointer(storePtr, "storePtr");
@@ -4937,7 +4937,7 @@ public final class NativeFunctionBindings {
             ValueLayout.ADDRESS, // instance_ptr
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.ADDRESS, // name (C string)
-            ValueLayout.JAVA_INT, // pages
+            ValueLayout.JAVA_LONG, // pages (u64)
             ValueLayout.ADDRESS)); // previous_pages_out
 
     addFunctionBinding(
@@ -5426,9 +5426,10 @@ public final class NativeFunctionBindings {
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.JAVA_INT, // initial_pages
-            ValueLayout.JAVA_INT, // maximum_pages
+            ValueLayout.JAVA_LONG, // initial_pages (u64)
+            ValueLayout.JAVA_LONG, // maximum_pages (u64)
             ValueLayout.JAVA_INT, // is_shared
+            ValueLayout.JAVA_INT, // is_64
             ValueLayout.JAVA_INT, // memory_index
             ValueLayout.ADDRESS, // name
             ValueLayout.ADDRESS)); // memory_ptr_out
@@ -5447,7 +5448,7 @@ public final class NativeFunctionBindings {
             ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // memory_ptr
             ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.JAVA_INT, // additional_pages
+            ValueLayout.JAVA_LONG, // additional_pages (u64)
             ValueLayout.ADDRESS)); // previous_pages_out
 
     addFunctionBinding(

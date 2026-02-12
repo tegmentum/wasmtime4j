@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use once_cell::sync::Lazy;
 use wasmtime::Engine as WasmtimeEngine;
 
-use super::{Engine, safe_wasmtime_config};
+use super::{safe_wasmtime_config, Engine};
 use crate::error::WasmtimeResult;
 
 /// Maximum number of engines to keep in the pool.

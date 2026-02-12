@@ -130,7 +130,9 @@ impl StoreLimiter {
         }
 
         // Update stats
-        stats.total_memory_bytes = stats.total_memory_bytes.saturating_add(requested_pages * 65536);
+        stats.total_memory_bytes = stats
+            .total_memory_bytes
+            .saturating_add(requested_pages * 65536);
         true
     }
 
@@ -157,7 +159,9 @@ impl StoreLimiter {
         }
 
         // Update stats
-        stats.total_table_elements = stats.total_table_elements.saturating_add(requested_elements);
+        stats.total_table_elements = stats
+            .total_table_elements
+            .saturating_add(requested_elements);
         true
     }
 
@@ -171,28 +175,37 @@ impl StoreLimiter {
 /// Register a limiter in the global registry
 pub fn register_limiter(limiter: StoreLimiter) -> WasmtimeResult<u64> {
     let id = limiter.id();
-    let mut registry = LIMITER_REGISTRY.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire limiter registry lock".to_string(),
-    })?;
+    let mut registry = LIMITER_REGISTRY
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire limiter registry lock".to_string(),
+        })?;
     registry.insert(id, Arc::new(limiter));
     Ok(id)
 }
 
 /// Get a limiter from the registry
 pub fn get_limiter(id: u64) -> WasmtimeResult<Arc<StoreLimiter>> {
-    let registry = LIMITER_REGISTRY.read().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire limiter registry lock".to_string(),
-    })?;
-    registry.get(&id).cloned().ok_or_else(|| WasmtimeError::InvalidParameter {
-        message: format!("Limiter with ID {} not found", id),
-    })
+    let registry = LIMITER_REGISTRY
+        .read()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire limiter registry lock".to_string(),
+        })?;
+    registry
+        .get(&id)
+        .cloned()
+        .ok_or_else(|| WasmtimeError::InvalidParameter {
+            message: format!("Limiter with ID {} not found", id),
+        })
 }
 
 /// Remove a limiter from the registry
 pub fn unregister_limiter(id: u64) -> WasmtimeResult<()> {
-    let mut registry = LIMITER_REGISTRY.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire limiter registry lock".to_string(),
-    })?;
+    let mut registry = LIMITER_REGISTRY
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire limiter registry lock".to_string(),
+        })?;
     registry.remove(&id);
     Ok(())
 }
@@ -215,12 +228,36 @@ pub unsafe extern "C" fn wasmtime4j_limiter_create(
     max_memories: c_int,
 ) -> c_longlong {
     let config = ResourceLimiterConfig {
-        max_memory_bytes: if max_memory_bytes < 0 { None } else { Some(max_memory_bytes as u64) },
-        max_memory_pages: if max_memory_pages < 0 { None } else { Some(max_memory_pages as u64) },
-        max_table_elements: if max_table_elements < 0 { None } else { Some(max_table_elements as u64) },
-        max_instances: if max_instances < 0 { None } else { Some(max_instances as u32) },
-        max_tables: if max_tables < 0 { None } else { Some(max_tables as u32) },
-        max_memories: if max_memories < 0 { None } else { Some(max_memories as u32) },
+        max_memory_bytes: if max_memory_bytes < 0 {
+            None
+        } else {
+            Some(max_memory_bytes as u64)
+        },
+        max_memory_pages: if max_memory_pages < 0 {
+            None
+        } else {
+            Some(max_memory_pages as u64)
+        },
+        max_table_elements: if max_table_elements < 0 {
+            None
+        } else {
+            Some(max_table_elements as u64)
+        },
+        max_instances: if max_instances < 0 {
+            None
+        } else {
+            Some(max_instances as u32)
+        },
+        max_tables: if max_tables < 0 {
+            None
+        } else {
+            Some(max_tables as u32)
+        },
+        max_memories: if max_memories < 0 {
+            None
+        } else {
+            Some(max_memories as u32)
+        },
     };
 
     let limiter = StoreLimiter::new(config);
@@ -315,7 +352,9 @@ pub unsafe extern "C" fn wasmtime4j_limiter_allow_table_grow(
 /// # Safety
 /// This function is unsafe because it's called from FFI
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_limiter_get_stats_json(limiter_id: c_longlong) -> *mut std::ffi::c_char {
+pub unsafe extern "C" fn wasmtime4j_limiter_get_stats_json(
+    limiter_id: c_longlong,
+) -> *mut std::ffi::c_char {
     if limiter_id < 0 {
         return std::ptr::null_mut();
     }
@@ -387,7 +426,9 @@ pub unsafe extern "C" fn wasmtime4j_limiter_get_count() -> c_int {
 /// # Safety
 /// This function is unsafe because it's called from FFI
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_limiter_get_config_json(limiter_id: c_longlong) -> *mut std::ffi::c_char {
+pub unsafe extern "C" fn wasmtime4j_limiter_get_config_json(
+    limiter_id: c_longlong,
+) -> *mut std::ffi::c_char {
     if limiter_id < 0 {
         return std::ptr::null_mut();
     }
@@ -420,7 +461,7 @@ mod tests {
     fn test_limiter_creation() {
         let config = ResourceLimiterConfig {
             max_memory_bytes: Some(1024 * 1024), // 1MB
-            max_memory_pages: Some(16), // 1MB in pages
+            max_memory_pages: Some(16),          // 1MB in pages
             max_table_elements: Some(1000),
             max_instances: Some(10),
             max_tables: Some(5),

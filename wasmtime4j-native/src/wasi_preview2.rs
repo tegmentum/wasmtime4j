@@ -11,19 +11,19 @@
 //! - Proper stdout/stderr capture via MemoryOutputPipe
 
 use std::collections::HashMap;
+use std::os::raw::{c_int, c_void};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
-use std::os::raw::{c_int, c_void};
 
-use wasmtime::component::{Component, Instance, Linker, ResourceTable};
-use wasmtime::{Engine, Store};
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView, WasiCtxView};
-use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 use tokio::sync::oneshot;
 use tokio::time::timeout;
+use wasmtime::component::{Component, Instance, Linker, ResourceTable};
+use wasmtime::{Engine, Store};
+use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
+use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
-use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::async_runtime::get_runtime_handle;
+use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// WASI Preview 2 context with component model support
 pub struct WasiPreview2Context {
@@ -198,7 +198,11 @@ impl crate::wasi_stream_ops::WasiStreamEntry for WasiStream {
 impl crate::wasi_stream_ops::WasiStreamContext for WasiPreview2Context {
     type StreamEntry = WasiStream;
 
-    fn streams_read(&self) -> crate::error::WasmtimeResult<std::sync::RwLockReadGuard<'_, std::collections::HashMap<u32, Self::StreamEntry>>> {
+    fn streams_read(
+        &self,
+    ) -> crate::error::WasmtimeResult<
+        std::sync::RwLockReadGuard<'_, std::collections::HashMap<u32, Self::StreamEntry>>,
+    > {
         self.streams.read().map_err(|e| {
             // Poisoned lock - recover the inner value
             log::warn!("Streams RwLock poisoned, recovering: {:?}", e);
@@ -208,7 +212,11 @@ impl crate::wasi_stream_ops::WasiStreamContext for WasiPreview2Context {
         })
     }
 
-    fn streams_write(&self) -> crate::error::WasmtimeResult<std::sync::RwLockWriteGuard<'_, std::collections::HashMap<u32, Self::StreamEntry>>> {
+    fn streams_write(
+        &self,
+    ) -> crate::error::WasmtimeResult<
+        std::sync::RwLockWriteGuard<'_, std::collections::HashMap<u32, Self::StreamEntry>>,
+    > {
         self.streams.write().map_err(|e| {
             // Poisoned lock - recover the inner value
             log::warn!("Streams RwLock poisoned, recovering: {:?}", e);
@@ -459,10 +467,8 @@ impl WasiPreview2Context {
         // Add WASI Preview 2 component model imports
         // This uses the wasmtime_wasi::p2 module's add_to_linker_async which provides
         // all WASI interfaces for component model instances
-        wasmtime_wasi::p2::add_to_linker_async(&mut linker).map_err(|e| {
-            WasmtimeError::Wasi {
-                message: format!("Failed to add WASI Preview 2 imports: {}", e),
-            }
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to add WASI Preview 2 imports: {}", e),
         })?;
 
         let resource_table = Arc::new(Mutex::new(ResourceTable::new()));
@@ -493,7 +499,9 @@ impl WasiPreview2Context {
 
     /// Compile a component with WASI Preview 2 support
     pub async fn compile_component(&self, wasm_bytes: &[u8]) -> WasmtimeResult<u64> {
-        let component_id = self.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let component_id = self
+            .next_operation_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let component = Component::from_binary(&self.engine, wasm_bytes).map_err(|e| {
             WasmtimeError::Compilation {
@@ -510,11 +518,12 @@ impl WasiPreview2Context {
     /// Instantiate a component with WASI Preview 2 support
     pub async fn instantiate_component(&self, component_id: u64) -> WasmtimeResult<u64> {
         let components = self.components.read().unwrap_or_else(|e| e.into_inner());
-        let component = components.get(&component_id).ok_or_else(|| {
-            WasmtimeError::InvalidParameter {
-                message: format!("Component {} not found", component_id),
-            }
-        })?;
+        let component =
+            components
+                .get(&component_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Component {} not found", component_id),
+                })?;
 
         // Build WasiCtx with proper stdio configuration
         const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
@@ -574,13 +583,17 @@ impl WasiPreview2Context {
 
         let mut store = Store::new(&self.engine, store_data);
 
-        let instance = self.linker.instantiate_async(&mut store, component).await.map_err(|e| {
-            WasmtimeError::Instantiation {
+        let instance = self
+            .linker
+            .instantiate_async(&mut store, component)
+            .await
+            .map_err(|e| WasmtimeError::Instantiation {
                 message: format!("Failed to instantiate component: {}", e),
-            }
-        })?;
+            })?;
 
-        let instance_id = self.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let instance_id = self
+            .next_operation_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let component_instance = ComponentInstance {
             instance,
@@ -598,8 +611,14 @@ impl WasiPreview2Context {
     }
 
     /// Create an async input stream
-    pub async fn create_input_stream(&self, instance_id: u64, resource_id: Option<u64>) -> WasmtimeResult<u32> {
-        let stream_id = self.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+    pub async fn create_input_stream(
+        &self,
+        instance_id: u64,
+        resource_id: Option<u64>,
+    ) -> WasmtimeResult<u32> {
+        let stream_id = self
+            .next_operation_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
 
         let stream = WasiStream {
             id: stream_id,
@@ -612,7 +631,12 @@ impl WasiPreview2Context {
         // Add stream to instance state
         let mut instances = self.instances.write().unwrap_or_else(|e| e.into_inner());
         if let Some(instance) = instances.get_mut(&instance_id) {
-            instance.store.data_mut().preview2_state.streams.insert(stream_id, stream);
+            instance
+                .store
+                .data_mut()
+                .preview2_state
+                .streams
+                .insert(stream_id, stream);
             Ok(stream_id)
         } else {
             Err(WasmtimeError::InvalidParameter {
@@ -622,8 +646,14 @@ impl WasiPreview2Context {
     }
 
     /// Create an async output stream
-    pub async fn create_output_stream(&self, instance_id: u64, resource_id: Option<u64>) -> WasmtimeResult<u32> {
-        let stream_id = self.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+    pub async fn create_output_stream(
+        &self,
+        instance_id: u64,
+        resource_id: Option<u64>,
+    ) -> WasmtimeResult<u32> {
+        let stream_id = self
+            .next_operation_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
 
         let stream = WasiStream {
             id: stream_id,
@@ -636,7 +666,12 @@ impl WasiPreview2Context {
         // Add stream to instance state
         let mut instances = self.instances.write().unwrap_or_else(|e| e.into_inner());
         if let Some(instance) = instances.get_mut(&instance_id) {
-            instance.store.data_mut().preview2_state.streams.insert(stream_id, stream);
+            instance
+                .store
+                .data_mut()
+                .preview2_state
+                .streams
+                .insert(stream_id, stream);
             Ok(stream_id)
         } else {
             Err(WasmtimeError::InvalidParameter {
@@ -646,8 +681,15 @@ impl WasiPreview2Context {
     }
 
     /// Read from an async stream
-    pub async fn stream_read(&self, instance_id: u64, stream_id: u32, buffer: &mut [u8]) -> WasmtimeResult<usize> {
-        let operation_id = self.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    pub async fn stream_read(
+        &self,
+        instance_id: u64,
+        stream_id: u32,
+        buffer: &mut [u8],
+    ) -> WasmtimeResult<usize> {
+        let operation_id = self
+            .next_operation_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         // Create async operation tracking
         let (cancel_tx, cancel_rx) = oneshot::channel();
@@ -661,7 +703,10 @@ impl WasiPreview2Context {
         };
 
         {
-            let mut operations = self.async_operations.write().unwrap_or_else(|e| e.into_inner());
+            let mut operations = self
+                .async_operations
+                .write()
+                .unwrap_or_else(|e| e.into_inner());
             operations.insert(operation_id, operation);
         }
 
@@ -674,16 +719,24 @@ impl WasiPreview2Context {
 
             let mut instances = self.instances.write().unwrap_or_else(|e| e.into_inner());
             if let Some(instance) = instances.get_mut(&instance_id) {
-                if let Some(stream) = instance.store.data_mut().preview2_state.streams.get_mut(&stream_id) {
-                    if stream.stream_type == WasiStreamType::InputStream && stream.status == WasiStreamStatus::Ready {
+                if let Some(stream) = instance
+                    .store
+                    .data_mut()
+                    .preview2_state
+                    .streams
+                    .get_mut(&stream_id)
+                {
+                    if stream.stream_type == WasiStreamType::InputStream
+                        && stream.status == WasiStreamStatus::Ready
+                    {
                         // For demonstration, copy from stream buffer to output buffer
                         let copy_len = std::cmp::min(buffer.len(), stream.buffer.len());
                         if copy_len > 0 {
                             buffer[..copy_len].copy_from_slice(&stream.buffer[..copy_len]);
                             stream.buffer.drain(..copy_len);
-                    Ok(copy_len)
+                            Ok(copy_len)
                         } else {
-                    Ok(0)
+                            Ok(0)
                         }
                     } else {
                         Err(WasmtimeError::Wasi {
@@ -733,10 +786,13 @@ impl WasiPreview2Context {
 
         // Update operation status based on result
         {
-            let mut operations = self.async_operations.write().unwrap_or_else(|e| e.into_inner());
+            let mut operations = self
+                .async_operations
+                .write()
+                .unwrap_or_else(|e| e.into_inner());
             if let Some(op) = operations.get_mut(&operation_id) {
                 match &result {
-            Ok(_) => op.status = AsyncWasiOperationStatus::Completed,
+                    Ok(_) => op.status = AsyncWasiOperationStatus::Completed,
                     Err(e) => op.status = AsyncWasiOperationStatus::Failed(e.to_string()),
                 }
             }
@@ -746,8 +802,15 @@ impl WasiPreview2Context {
     }
 
     /// Write to an async stream
-    pub async fn stream_write(&self, instance_id: u64, stream_id: u32, data: &[u8]) -> WasmtimeResult<usize> {
-        let operation_id = self.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    pub async fn stream_write(
+        &self,
+        instance_id: u64,
+        stream_id: u32,
+        data: &[u8],
+    ) -> WasmtimeResult<usize> {
+        let operation_id = self
+            .next_operation_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         // Create async operation tracking
         let (cancel_tx, cancel_rx) = oneshot::channel();
@@ -761,7 +824,10 @@ impl WasiPreview2Context {
         };
 
         {
-            let mut operations = self.async_operations.write().unwrap_or_else(|e| e.into_inner());
+            let mut operations = self
+                .async_operations
+                .write()
+                .unwrap_or_else(|e| e.into_inner());
             operations.insert(operation_id, operation);
         }
 
@@ -773,11 +839,19 @@ impl WasiPreview2Context {
 
             let mut instances = self.instances.write().unwrap_or_else(|e| e.into_inner());
             if let Some(instance) = instances.get_mut(&instance_id) {
-                if let Some(stream) = instance.store.data_mut().preview2_state.streams.get_mut(&stream_id) {
-                    if stream.stream_type == WasiStreamType::OutputStream && stream.status == WasiStreamStatus::Ready {
+                if let Some(stream) = instance
+                    .store
+                    .data_mut()
+                    .preview2_state
+                    .streams
+                    .get_mut(&stream_id)
+                {
+                    if stream.stream_type == WasiStreamType::OutputStream
+                        && stream.status == WasiStreamStatus::Ready
+                    {
                         // For demonstration, write to stream buffer
                         stream.buffer.extend_from_slice(data);
-                Ok(data.len())
+                        Ok(data.len())
                     } else {
                         Err(WasmtimeError::Wasi {
                             message: "Stream not ready for writing".to_string(),
@@ -824,10 +898,13 @@ impl WasiPreview2Context {
 
         // Update operation status
         {
-            let mut operations = self.async_operations.write().unwrap_or_else(|e| e.into_inner());
+            let mut operations = self
+                .async_operations
+                .write()
+                .unwrap_or_else(|e| e.into_inner());
             if let Some(op) = operations.get_mut(&operation_id) {
                 match &result {
-            Ok(_) => op.status = AsyncWasiOperationStatus::Completed,
+                    Ok(_) => op.status = AsyncWasiOperationStatus::Completed,
                     Err(e) => op.status = AsyncWasiOperationStatus::Failed(e.to_string()),
                 }
             }
@@ -838,12 +915,15 @@ impl WasiPreview2Context {
 
     /// Cancel an async operation
     pub fn cancel_operation(&self, operation_id: u64) -> WasmtimeResult<()> {
-        let mut operations = self.async_operations.write().unwrap_or_else(|e| e.into_inner());
+        let mut operations = self
+            .async_operations
+            .write()
+            .unwrap_or_else(|e| e.into_inner());
         if let Some(operation) = operations.get_mut(&operation_id) {
             if let Some(cancel_tx) = operation.cancel_tx.take() {
                 let _ = cancel_tx.send(());
                 operation.status = AsyncWasiOperationStatus::Cancelled;
-        Ok(())
+                Ok(())
             } else {
                 Err(WasmtimeError::Wasi {
                     message: "Operation cannot be cancelled".to_string(),
@@ -858,7 +938,10 @@ impl WasiPreview2Context {
 
     /// Get operation status
     pub fn get_operation_status(&self, operation_id: u64) -> Option<AsyncWasiOperationStatus> {
-        let operations = self.async_operations.read().unwrap_or_else(|e| e.into_inner());
+        let operations = self
+            .async_operations
+            .read()
+            .unwrap_or_else(|e| e.into_inner());
         operations.get(&operation_id).map(|op| op.status.clone())
     }
 
@@ -866,9 +949,15 @@ impl WasiPreview2Context {
     pub fn close_stream(&self, instance_id: u64, stream_id: u32) -> WasmtimeResult<()> {
         let mut instances = self.instances.write().unwrap_or_else(|e| e.into_inner());
         if let Some(instance) = instances.get_mut(&instance_id) {
-            if let Some(stream) = instance.store.data_mut().preview2_state.streams.get_mut(&stream_id) {
+            if let Some(stream) = instance
+                .store
+                .data_mut()
+                .preview2_state
+                .streams
+                .get_mut(&stream_id)
+            {
                 stream.status = WasiStreamStatus::Closed;
-        Ok(())
+                Ok(())
             } else {
                 Err(WasmtimeError::InvalidParameter {
                     message: format!("Stream {} not found", stream_id),
@@ -883,17 +972,20 @@ impl WasiPreview2Context {
 
     /// Clean up completed operations
     pub fn cleanup_operations(&self) {
-        let mut operations = self.async_operations.write().unwrap_or_else(|e| e.into_inner());
+        let mut operations = self
+            .async_operations
+            .write()
+            .unwrap_or_else(|e| e.into_inner());
         let now = Instant::now();
         operations.retain(|_, operation| {
             match operation.status {
-                AsyncWasiOperationStatus::Completed |
-                AsyncWasiOperationStatus::Failed(_) |
-                AsyncWasiOperationStatus::Cancelled |
-                AsyncWasiOperationStatus::TimedOut => {
+                AsyncWasiOperationStatus::Completed
+                | AsyncWasiOperationStatus::Failed(_)
+                | AsyncWasiOperationStatus::Cancelled
+                | AsyncWasiOperationStatus::TimedOut => {
                     // Keep completed operations for 5 minutes for status queries
                     now.duration_since(operation.started_at) < Duration::from_secs(300)
-                },
+                }
                 _ => true,
             }
         });
@@ -1062,7 +1154,7 @@ pub unsafe extern "C" fn wasi_preview2_create_input_stream(
     let handle = get_runtime_handle();
     match handle.block_on(ctx.create_input_stream(instance_id, None)) {
         Ok(stream_id) => {
-                    *stream_id_out = stream_id as u64;
+            *stream_id_out = stream_id as u64;
             0 // FFI_SUCCESS
         }
         Err(_) => -1, // FFI_ERROR
@@ -1085,7 +1177,7 @@ pub unsafe extern "C" fn wasi_preview2_create_output_stream(
     let handle = get_runtime_handle();
     match handle.block_on(ctx.create_output_stream(instance_id, None)) {
         Ok(stream_id) => {
-                    *stream_id_out = stream_id as u64;
+            *stream_id_out = stream_id as u64;
             0 // FFI_SUCCESS
         }
         Err(_) => -1, // FFI_ERROR
@@ -1112,7 +1204,7 @@ pub unsafe extern "C" fn wasi_preview2_stream_read(
     let handle = get_runtime_handle();
     match handle.block_on(ctx.stream_read(instance_id, stream_id as u32, buffer_slice)) {
         Ok(bytes_read) => {
-                    *bytes_read_out = bytes_read;
+            *bytes_read_out = bytes_read;
             0 // FFI_SUCCESS
         }
         Err(_) => -1, // FFI_ERROR
@@ -1139,7 +1231,7 @@ pub unsafe extern "C" fn wasi_preview2_stream_write(
     let handle = get_runtime_handle();
     match handle.block_on(ctx.stream_write(instance_id, stream_id as u32, buffer_slice)) {
         Ok(bytes_written) => {
-                    *bytes_written_out = bytes_written;
+            *bytes_written_out = bytes_written;
             0 // FFI_SUCCESS
         }
         Err(_) => -1, // FFI_ERROR
@@ -1226,7 +1318,10 @@ pub unsafe extern "C" fn wasi_preview2_get_operation_count(ctx_ptr: *const c_voi
     }
 
     let ctx = &*(ctx_ptr as *const WasiPreview2Context);
-    ctx.async_operations.read().unwrap_or_else(|e| e.into_inner()).len()
+    ctx.async_operations
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .len()
 }
 
 /// Check if networking is enabled
@@ -1237,7 +1332,11 @@ pub unsafe extern "C" fn wasi_preview2_networking_enabled(ctx_ptr: *const c_void
     }
 
     let ctx = &*(ctx_ptr as *const WasiPreview2Context);
-    if ctx.config.enable_networking { 1 } else { 0 }
+    if ctx.config.enable_networking {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if filesystem is enabled
@@ -1248,7 +1347,11 @@ pub unsafe extern "C" fn wasi_preview2_filesystem_enabled(ctx_ptr: *const c_void
     }
 
     let ctx = &*(ctx_ptr as *const WasiPreview2Context);
-    if ctx.config.enable_filesystem { 1 } else { 0 }
+    if ctx.config.enable_filesystem {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if process spawning is enabled
@@ -1259,7 +1362,11 @@ pub unsafe extern "C" fn wasi_preview2_process_enabled(ctx_ptr: *const c_void) -
     }
 
     let ctx = &*(ctx_ptr as *const WasiPreview2Context);
-    if ctx.config.enable_process { 1 } else { 0 }
+    if ctx.config.enable_process {
+        1
+    } else {
+        0
+    }
 }
 
 /// Get the number of compiled components
@@ -1270,7 +1377,10 @@ pub unsafe extern "C" fn wasi_preview2_get_component_count(ctx_ptr: *const c_voi
     }
 
     let ctx = &*(ctx_ptr as *const WasiPreview2Context);
-    ctx.components.read().unwrap_or_else(|e| e.into_inner()).len()
+    ctx.components
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .len()
 }
 
 /// Get the number of active component instances
@@ -1281,7 +1391,10 @@ pub unsafe extern "C" fn wasi_preview2_get_instance_count(ctx_ptr: *const c_void
     }
 
     let ctx = &*(ctx_ptr as *const WasiPreview2Context);
-    ctx.instances.read().unwrap_or_else(|e| e.into_inner()).len()
+    ctx.instances
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .len()
 }
 
 /// Enable output capture for future instances
@@ -1408,7 +1521,11 @@ pub unsafe extern "C" fn wasi_preview2_has_stdout_capture(
     }
 
     let ctx = &*(ctx_ptr as *const WasiPreview2Context);
-    if ctx.has_stdout_capture(instance_id) { 1 } else { 0 }
+    if ctx.has_stdout_capture(instance_id) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if stderr capture is enabled for an instance
@@ -1425,7 +1542,11 @@ pub unsafe extern "C" fn wasi_preview2_has_stderr_capture(
     }
 
     let ctx = &*(ctx_ptr as *const WasiPreview2Context);
-    if ctx.has_stderr_capture(instance_id) { 1 } else { 0 }
+    if ctx.has_stderr_capture(instance_id) {
+        1
+    } else {
+        0
+    }
 }
 
 #[cfg(test)]
@@ -1481,7 +1602,8 @@ mod tests {
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
         // Test with minimal valid component
-        let minimal_component = wat::parse_str(r#"
+        let minimal_component = wat::parse_str(
+            r#"
             (component
                 (core module $m
                     (func (export "test") (result i32)
@@ -1492,7 +1614,9 @@ mod tests {
                 (func $f (result s32) (canon lift (core func $i "test")))
                 (export "test" (func $f))
             )
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         let result = context.compile_component(&minimal_component).await;
         assert!(result.is_ok());
@@ -1506,23 +1630,35 @@ mod tests {
         let context = WasiPreview2Context::new(engine, config).unwrap();
 
         // Create a minimal component and instance for testing
-        let minimal_component = wat::parse_str(r#"
+        let minimal_component = wat::parse_str(
+            r#"
             (component
                 (core module $m)
                 (core instance $i (instantiate $m))
             )
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         let component_id = context.compile_component(&minimal_component).await.unwrap();
         let instance_id = context.instantiate_component(component_id).await.unwrap();
 
         // Test stream creation
-        let input_stream_id = context.create_input_stream(instance_id, None).await.unwrap();
-        let output_stream_id = context.create_output_stream(instance_id, None).await.unwrap();
+        let input_stream_id = context
+            .create_input_stream(instance_id, None)
+            .await
+            .unwrap();
+        let output_stream_id = context
+            .create_output_stream(instance_id, None)
+            .await
+            .unwrap();
 
         // Test stream operations
         let test_data = b"test data";
-        let write_result = context.stream_write(instance_id, output_stream_id, test_data).await.unwrap();
+        let write_result = context
+            .stream_write(instance_id, output_stream_id, test_data)
+            .await
+            .unwrap();
         assert_eq!(write_result, test_data.len());
 
         // Test stream cleanup
@@ -1552,7 +1688,10 @@ mod tests {
 
         // Insert the operation
         {
-            let mut operations = context.async_operations.write().unwrap_or_else(|e| e.into_inner());
+            let mut operations = context
+                .async_operations
+                .write()
+                .unwrap_or_else(|e| e.into_inner());
             operations.insert(operation_id, operation);
         }
 
@@ -1572,31 +1711,43 @@ mod tests {
         // Add some completed operations
         let now = Instant::now();
         {
-            let mut operations = context.async_operations.write().unwrap_or_else(|e| e.into_inner());
-            operations.insert(1, AsyncWasiOperation {
-                id: 1,
-                operation_type: AsyncWasiOperationType::Read,
-                started_at: now - Duration::from_secs(400), // Old operation
-                timeout: None,
-                cancel_tx: None,
-                status: AsyncWasiOperationStatus::Completed,
-            });
-            operations.insert(2, AsyncWasiOperation {
-                id: 2,
-                operation_type: AsyncWasiOperationType::Write,
-                started_at: now,
-                timeout: None,
-                cancel_tx: None,
-                status: AsyncWasiOperationStatus::Running,
-            });
+            let mut operations = context
+                .async_operations
+                .write()
+                .unwrap_or_else(|e| e.into_inner());
+            operations.insert(
+                1,
+                AsyncWasiOperation {
+                    id: 1,
+                    operation_type: AsyncWasiOperationType::Read,
+                    started_at: now - Duration::from_secs(400), // Old operation
+                    timeout: None,
+                    cancel_tx: None,
+                    status: AsyncWasiOperationStatus::Completed,
+                },
+            );
+            operations.insert(
+                2,
+                AsyncWasiOperation {
+                    id: 2,
+                    operation_type: AsyncWasiOperationType::Write,
+                    started_at: now,
+                    timeout: None,
+                    cancel_tx: None,
+                    status: AsyncWasiOperationStatus::Running,
+                },
+            );
         }
 
         // Run cleanup
         context.cleanup_operations();
 
         // Check that old completed operation is removed, running operation remains
-        let operations = context.async_operations.read().unwrap_or_else(|e| e.into_inner());
+        let operations = context
+            .async_operations
+            .read()
+            .unwrap_or_else(|e| e.into_inner());
         assert!(!operations.contains_key(&1)); // Old completed operation should be removed
-        assert!(operations.contains_key(&2));  // Running operation should remain
+        assert!(operations.contains_key(&2)); // Running operation should remain
     }
 }

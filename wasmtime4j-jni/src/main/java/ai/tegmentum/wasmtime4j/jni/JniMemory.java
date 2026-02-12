@@ -1288,7 +1288,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public long getSize64() {
     ensureNotClosed();
-    return sizeInPages();
+    return sizeInBytes() / 65536L;
   }
 
   @Override
@@ -1539,12 +1539,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
     final long storeHandle = store.getNativeHandle();
     try {
       final ByteBuffer buffer = getBuffer();
-      if (buffer != null && buffer.capacity() >= offset + length) {
+      // ByteBuffer.position() only supports int offsets, so skip fast path for large offsets
+      if (buffer != null && offset <= Integer.MAX_VALUE && buffer.capacity() >= offset + length) {
         // Use direct memory access for performance
-        buffer.position((int) Math.min(offset, Integer.MAX_VALUE));
+        buffer.position((int) offset);
         buffer.get(dest, destOffset, length);
       } else {
-        // Fallback to regular read if buffer is not available or too small
+        // Fallback to native read for large offsets or unavailable buffer
         final byte[] tempBuffer = new byte[length];
         nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
         System.arraycopy(tempBuffer, 0, dest, destOffset, length);
@@ -1571,12 +1572,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
     final long storeHandle = store.getNativeHandle();
     try {
       final ByteBuffer buffer = getBuffer();
-      if (buffer != null && buffer.capacity() >= offset + length) {
+      // ByteBuffer.position() only supports int offsets, so skip fast path for large offsets
+      if (buffer != null && offset <= Integer.MAX_VALUE && buffer.capacity() >= offset + length) {
         // Use direct memory access for performance
-        buffer.position((int) Math.min(offset, Integer.MAX_VALUE));
+        buffer.position((int) offset);
         buffer.put(src, srcOffset, length);
       } else {
-        // Fallback to regular write if buffer is not available or too small
+        // Fallback to native write for large offsets or unavailable buffer
         final byte[] tempBuffer = new byte[length];
         System.arraycopy(src, srcOffset, tempBuffer, 0, length);
         nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);

@@ -5,10 +5,10 @@
 #[cfg(test)]
 mod tests {
     use crate::engine::Engine;
-    use crate::store::Store;
-    use crate::module::Module;
-    use crate::instance::{Instance, WasmValue};
     use crate::error::WasmtimeError;
+    use crate::instance::{Instance, WasmValue};
+    use crate::module::Module;
+    use crate::store::Store;
 
     // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
     fn shared_engine() -> Engine {
@@ -48,7 +48,9 @@ mod tests {
         let consumed = store.consume_fuel(100).expect("Failed to consume fuel");
         assert_eq!(consumed, 100);
 
-        let remaining = store.fuel_remaining().expect("Failed to get remaining fuel");
+        let remaining = store
+            .fuel_remaining()
+            .expect("Failed to get remaining fuel");
         assert_eq!(remaining.unwrap(), 900);
     }
 
@@ -71,11 +73,12 @@ mod tests {
         "#;
 
         let module = Module::compile_wat(&engine, wat).expect("Failed to compile module");
-        let mut instance = Instance::new_without_imports(&mut store, &module)
-            .expect("Failed to create instance");
+        let mut instance =
+            Instance::new_without_imports(&mut store, &module).expect("Failed to create instance");
 
         // Test i32 function
-        let result = instance.call_export_function(&mut store, "test_i32", &[])
+        let result = instance
+            .call_export_function(&mut store, "test_i32", &[])
             .expect("Failed to call test_i32");
         assert_eq!(result.values.len(), 1);
         match &result.values[0] {
@@ -84,14 +87,15 @@ mod tests {
         }
 
         // Test multi-value function (tests proper result vector initialization)
-        let result = instance.call_export_function(&mut store, "test_multi", &[])
+        let result = instance
+            .call_export_function(&mut store, "test_multi", &[])
             .expect("Failed to call test_multi");
         assert_eq!(result.values.len(), 2);
         match (&result.values[0], &result.values[1]) {
             (WasmValue::I32(val1), WasmValue::I64(val2)) => {
                 assert_eq!(*val1, 10);
                 assert_eq!(*val2, 20);
-            },
+            }
             _ => panic!("Expected I32 and I64 results"),
         }
 
@@ -116,7 +120,8 @@ mod tests {
         // Create a WASI context and attach it to the store
         let wasi_ctx = WasiContext::new().expect("Failed to create WASI context");
         let fd_manager = WasiFileDescriptorManager::new();
-        store.set_wasi_context(&wasi_ctx, fd_manager)
+        store
+            .set_wasi_context(&wasi_ctx, fd_manager)
             .expect("Failed to add WASI context to store");
 
         // After attaching, store should report having WASI context
@@ -132,15 +137,16 @@ mod tests {
         let engine = shared_engine();
         let mut store = Store::new(&engine).expect("Failed to create store");
 
-        let memory = crate::memory::Memory::new(&mut store, 1)
-            .expect("Failed to create memory");
+        let memory = crate::memory::Memory::new(&mut store, 1).expect("Failed to create memory");
 
         // Test memory operations work (not stubbed)
         let test_data = vec![1, 2, 3, 4, 5];
-        memory.write_bytes(&mut store, 0, &test_data)
+        memory
+            .write_bytes(&mut store, 0, &test_data)
             .expect("Failed to write memory");
 
-        let read_data = memory.read_bytes(&store, 0, 5)
+        let read_data = memory
+            .read_bytes(&store, 0, 5)
             .expect("Failed to read memory");
         assert_eq!(read_data, test_data);
 
@@ -149,8 +155,7 @@ mod tests {
         assert!(result.is_err());
 
         // Test memory growth
-        let previous_pages = memory.grow(&mut store, 1)
-            .expect("Failed to grow memory");
+        let previous_pages = memory.grow(&mut store, 1).expect("Failed to grow memory");
         assert_eq!(previous_pages, 1);
         assert_eq!(memory.size_pages(&store).unwrap(), 2);
 
@@ -232,15 +237,16 @@ fn test_complete_runtime_integration() {
                 i32.load))
     "#;
 
-    let module = crate::module::Module::compile_wat(&engine, wat)
-        .expect("Failed to compile complex module");
+    let module =
+        crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile complex module");
 
     let mut instance = crate::instance::Instance::new_without_imports(&mut store, &module)
         .expect("Failed to create instance");
 
     // Test factorial function (tests recursion and fuel consumption)
     let params = vec![crate::instance::WasmValue::I32(5)];
-    let result = instance.call_export_function(&mut store, "factorial", &params)
+    let result = instance
+        .call_export_function(&mut store, "factorial", &params)
         .expect("Failed to call factorial");
 
     match &result.values[0] {
@@ -253,7 +259,8 @@ fn test_complete_runtime_integration() {
     assert!(result.execution_time_ns > 0);
 
     // Test memory access function
-    let memory = instance.get_memory(&mut store, "memory")
+    let memory = instance
+        .get_memory(&mut store, "memory")
         .expect("Failed to get memory")
         .expect("Memory export not found");
 
@@ -261,7 +268,8 @@ fn test_complete_runtime_integration() {
         crate::instance::WasmValue::I32(100), // address
         crate::instance::WasmValue::I32(42),  // value
     ];
-    let result = instance.call_export_function(&mut store, "write_read", &params)
+    let result = instance
+        .call_export_function(&mut store, "write_read", &params)
         .expect("Failed to call write_read");
 
     match &result.values[0] {

@@ -3,10 +3,10 @@
 //! This module provides safe access to WebAssembly execution context from host functions,
 //! enabling memory access, fuel management, and export introspection.
 
+use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::store::StoreData;
 use std::sync::Arc;
 use wasmtime::{Caller as WasmtimeCaller, Extern, Func, Global, Memory, Table, Val};
-use crate::store::StoreData;
-use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Safe wrapper around Wasmtime's Caller for host function context access
 pub struct CallerContext {
@@ -35,7 +35,7 @@ pub enum CallerExportType {
     /// Function export
     Function {
         /// Function signature information
-        signature: String
+        signature: String,
     },
     /// Memory export
     Memory {
@@ -121,14 +121,21 @@ impl CallerContext {
     }
 
     /// Get fuel remaining if fuel metering is enabled
-    pub fn fuel_remaining(&self, _caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>) -> Option<u64> {
+    pub fn fuel_remaining(
+        &self,
+        _caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>,
+    ) -> Option<u64> {
         // Fuel operations in wasmtime 36.0.2 are typically done through the store context
         // For now, return None to indicate fuel information is not available through caller
         None
     }
 
     /// Add fuel to the caller
-    pub fn add_fuel(&self, _caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>, _fuel: u64) -> WasmtimeResult<()> {
+    pub fn add_fuel(
+        &self,
+        _caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>,
+        _fuel: u64,
+    ) -> WasmtimeResult<()> {
         // Fuel operations in wasmtime 36.0.2 are typically done through the store context
         // For now, return an error indicating the operation is not supported through caller
         Err(WasmtimeError::CallerContextError {
@@ -137,7 +144,11 @@ impl CallerContext {
     }
 
     /// Get export value by name and type
-    pub fn get_export_value(&self, name: &str, caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>) -> WasmtimeResult<Option<Extern>> {
+    pub fn get_export_value(
+        &self,
+        name: &str,
+        caller: &mut WasmtimeCaller<'_, impl Clone + Send + Sync + 'static>,
+    ) -> WasmtimeResult<Option<Extern>> {
         Ok(caller.get_export(name))
     }
 
@@ -158,30 +169,30 @@ impl CallerContext {
 
     /// Get function export by name
     pub fn get_function(&self, name: &str) -> Option<&CallerExport> {
-        self.exports.iter().find(|e| {
-            e.name == name && matches!(e.export_type, CallerExportType::Function { .. })
-        })
+        self.exports
+            .iter()
+            .find(|e| e.name == name && matches!(e.export_type, CallerExportType::Function { .. }))
     }
 
     /// Get memory export by name
     pub fn get_memory(&self, name: &str) -> Option<&CallerExport> {
-        self.exports.iter().find(|e| {
-            e.name == name && matches!(e.export_type, CallerExportType::Memory { .. })
-        })
+        self.exports
+            .iter()
+            .find(|e| e.name == name && matches!(e.export_type, CallerExportType::Memory { .. }))
     }
 
     /// Get table export by name
     pub fn get_table(&self, name: &str) -> Option<&CallerExport> {
-        self.exports.iter().find(|e| {
-            e.name == name && matches!(e.export_type, CallerExportType::Table { .. })
-        })
+        self.exports
+            .iter()
+            .find(|e| e.name == name && matches!(e.export_type, CallerExportType::Table { .. }))
     }
 
     /// Get global export by name
     pub fn get_global(&self, name: &str) -> Option<&CallerExport> {
-        self.exports.iter().find(|e| {
-            e.name == name && matches!(e.export_type, CallerExportType::Global { .. })
-        })
+        self.exports
+            .iter()
+            .find(|e| e.name == name && matches!(e.export_type, CallerExportType::Global { .. }))
     }
 
     /// Get current fuel consumption if fuel metering is enabled
@@ -227,8 +238,8 @@ impl CallerContext {
         // accesses the caller directly rather than using cached exports
         for export in &self.exports {
             if export.name.is_empty() {
-                return Err(WasmtimeError::CallerContextError { message:
-                    "Export has empty name".to_string()
+                return Err(WasmtimeError::CallerContextError {
+                    message: "Export has empty name".to_string(),
                 });
             }
         }
@@ -280,7 +291,9 @@ pub mod core {
     }
 
     /// Get fuel remaining in the caller if fuel metering is enabled
-    pub fn caller_get_fuel_remaining<T>(caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<Option<u64>>
+    pub fn caller_get_fuel_remaining<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+    ) -> WasmtimeResult<Option<u64>>
     where
         T: Send + 'static,
     {
@@ -299,9 +312,11 @@ pub mod core {
         match caller.get_fuel() {
             Ok(current) => {
                 let new_fuel = current.saturating_add(fuel);
-                caller.set_fuel(new_fuel).map_err(|e| WasmtimeError::CallerContextError {
-                    message: format!("Failed to set fuel: {}", e),
-                })
+                caller
+                    .set_fuel(new_fuel)
+                    .map_err(|e| WasmtimeError::CallerContextError {
+                        message: format!("Failed to set fuel: {}", e),
+                    })
             }
             Err(e) => Err(WasmtimeError::CallerContextError {
                 message: format!("Fuel metering not enabled: {}", e),
@@ -310,7 +325,10 @@ pub mod core {
     }
 
     /// Set epoch deadline for the caller
-    pub fn caller_set_epoch_deadline<T>(caller: &mut WasmtimeCaller<'_, T>, deadline: u64) -> WasmtimeResult<()>
+    pub fn caller_set_epoch_deadline<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+        deadline: u64,
+    ) -> WasmtimeResult<()>
     where
         T: Send + 'static,
     {
@@ -332,7 +350,10 @@ pub mod core {
     }
 
     /// Get export from caller by name
-    pub fn caller_get_export<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Extern>>
+    pub fn caller_get_export<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Extern>>
     where
         T: Send + 'static,
     {
@@ -340,55 +361,70 @@ pub mod core {
     }
 
     /// Get memory export from caller by name
-    pub fn caller_get_memory<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Memory>>
+    pub fn caller_get_memory<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Memory>>
     where
         T: Send + 'static,
     {
         match caller_get_export(caller, name)? {
             Some(Extern::Memory(memory)) => Ok(Some(memory)),
             Some(_) => Ok(None), // Export exists but is not a memory
-            None => Ok(None), // Export does not exist
+            None => Ok(None),    // Export does not exist
         }
     }
 
     /// Get function export from caller by name
-    pub fn caller_get_function<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Func>>
+    pub fn caller_get_function<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Func>>
     where
         T: Send + 'static,
     {
         match caller_get_export(caller, name)? {
             Some(Extern::Func(func)) => Ok(Some(func)),
             Some(_) => Ok(None), // Export exists but is not a function
-            None => Ok(None), // Export does not exist
+            None => Ok(None),    // Export does not exist
         }
     }
 
     /// Get global export from caller by name
-    pub fn caller_get_global<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Global>>
+    pub fn caller_get_global<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Global>>
     where
         T: Send + 'static,
     {
         match caller_get_export(caller, name)? {
             Some(Extern::Global(global)) => Ok(Some(global)),
             Some(_) => Ok(None), // Export exists but is not a global
-            None => Ok(None), // Export does not exist
+            None => Ok(None),    // Export does not exist
         }
     }
 
     /// Get table export from caller by name
-    pub fn caller_get_table<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<Option<Table>>
+    pub fn caller_get_table<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<Option<Table>>
     where
         T: Send + 'static,
     {
         match caller_get_export(caller, name)? {
             Some(Extern::Table(table)) => Ok(Some(table)),
             Some(_) => Ok(None), // Export exists but is not a table
-            None => Ok(None), // Export does not exist
+            None => Ok(None),    // Export does not exist
         }
     }
 
     /// Check if caller has an export with the given name
-    pub fn caller_has_export<T>(caller: &mut WasmtimeCaller<'_, T>, name: &str) -> WasmtimeResult<bool>
+    pub fn caller_has_export<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+        name: &str,
+    ) -> WasmtimeResult<bool>
     where
         T: Send + 'static,
     {
@@ -397,10 +433,12 @@ pub mod core {
 }
 
 /// Host function with caller context support
-pub type HostFunctionWithCaller = dyn Fn(&mut CallerContext, &[Val]) -> WasmtimeResult<Vec<Val>> + Send + Sync;
+pub type HostFunctionWithCaller =
+    dyn Fn(&mut CallerContext, &[Val]) -> WasmtimeResult<Vec<Val>> + Send + Sync;
 
 /// Multi-value host function with caller context support
-pub type MultiValueHostFunctionWithCaller = dyn Fn(&mut CallerContext, &[Val]) -> WasmtimeResult<Vec<Val>> + Send + Sync;
+pub type MultiValueHostFunctionWithCaller =
+    dyn Fn(&mut CallerContext, &[Val]) -> WasmtimeResult<Vec<Val>> + Send + Sync;
 
 /// Enhanced multi-value operations for caller context
 impl CallerContext {
@@ -431,7 +469,9 @@ impl CallerContext {
                 });
             }
 
-            for (i, (result, expected_type)) in results.iter().zip(expected_result_types.iter()).enumerate() {
+            for (i, (result, expected_type)) in
+                results.iter().zip(expected_result_types.iter()).enumerate()
+            {
                 if !self.val_matches_type(result, expected_type) {
                     return Err(WasmtimeError::TypeMismatch {
                         expected: format!("result {} of type {:?}", i, expected_type),
@@ -452,9 +492,7 @@ impl CallerContext {
             (Val::F32(_), wasmtime::ValType::F32) => true,
             (Val::F64(_), wasmtime::ValType::F64) => true,
             (Val::V128(_), wasmtime::ValType::V128) => true,
-            (Val::FuncRef(_), wasmtime::ValType::Ref(ref_type)) => {
-                ref_type.heap_type().is_func()
-            }
+            (Val::FuncRef(_), wasmtime::ValType::Ref(ref_type)) => ref_type.heap_type().is_func(),
             (Val::ExternRef(_), wasmtime::ValType::Ref(ref_type)) => {
                 ref_type.heap_type().is_extern()
             }
@@ -494,13 +532,18 @@ impl CallerContext {
         let results = operation(self, caller)?;
 
         // Check fuel consumption if limits are set
-        if let (Some(max_consumed), Some(initial), Some(remaining)) =
-            (max_fuel_consumed, initial_fuel, core::caller_get_fuel_remaining(caller)?) {
-
+        if let (Some(max_consumed), Some(initial), Some(remaining)) = (
+            max_fuel_consumed,
+            initial_fuel,
+            core::caller_get_fuel_remaining(caller)?,
+        ) {
             let consumed = initial - remaining;
             if consumed > max_consumed {
                 return Err(WasmtimeError::Execution {
-                    message: format!("Function consumed {} fuel, exceeded limit of {}", consumed, max_consumed),
+                    message: format!(
+                        "Function consumed {} fuel, exceeded limit of {}",
+                        consumed, max_consumed
+                    ),
                 });
             }
         }
@@ -555,7 +598,8 @@ pub struct HostFunctionDefinition {
     /// Function signature description
     pub signature: String,
     /// Function implementation
-    pub implementation: Arc<dyn Fn(&mut CallerContext, &[Val]) -> WasmtimeResult<Vec<Val>> + Send + Sync>,
+    pub implementation:
+        Arc<dyn Fn(&mut CallerContext, &[Val]) -> WasmtimeResult<Vec<Val>> + Send + Sync>,
 }
 
 impl HostFunctionDefinition {
@@ -658,7 +702,11 @@ mod tests {
 
         assert_eq!(export.name, "table");
         match &export.export_type {
-            CallerExportType::Table { current_size, max_size, element_type } => {
+            CallerExportType::Table {
+                current_size,
+                max_size,
+                element_type,
+            } => {
                 assert_eq!(*current_size, 10);
                 assert_eq!(*max_size, Some(100));
                 assert_eq!(element_type, "funcref");
@@ -680,7 +728,11 @@ mod tests {
 
         assert_eq!(export.name, "counter");
         match &export.export_type {
-            CallerExportType::Global { value_type, mutable, current_value } => {
+            CallerExportType::Global {
+                value_type,
+                mutable,
+                current_value,
+            } => {
                 assert_eq!(value_type, "i32");
                 assert!(*mutable);
                 assert_eq!(current_value.as_deref(), Some("42"));
@@ -700,7 +752,10 @@ mod tests {
         };
 
         match &export.export_type {
-            CallerExportType::Memory { current_pages, max_pages } => {
+            CallerExportType::Memory {
+                current_pages,
+                max_pages,
+            } => {
                 assert_eq!(*current_pages, 5);
                 assert!(max_pages.is_none());
             }
@@ -756,8 +811,7 @@ mod tests {
 
     #[test]
     fn test_host_function_builder_no_signature() {
-        let func_def = HostFunctionBuilder::new("env", "abort")
-            .build(|_caller, _args| Ok(vec![]));
+        let func_def = HostFunctionBuilder::new("env", "abort").build(|_caller, _args| Ok(vec![]));
 
         assert_eq!(func_def.name, "abort");
         assert_eq!(func_def.module, "env");

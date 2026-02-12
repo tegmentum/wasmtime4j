@@ -3,16 +3,15 @@
 //! This module provides the ComponentLinker for binding host functions to WIT interfaces
 //! and instantiating WebAssembly components.
 
+use super::{Component, ComponentStoreData};
+use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use wasmtime::{
-    Engine as WasmtimeEngine,
-    Store,
-    component::{Linker, Instance as ComponentInstance, ResourceTable}
+    component::{Instance as ComponentInstance, Linker, ResourceTable},
+    Engine as WasmtimeEngine, Store,
 };
-use crate::error::{WasmtimeError, WasmtimeResult};
-use super::{Component, ComponentStoreData};
 
 /// Component Model value representation for host function communication
 #[derive(Debug, Clone)]
@@ -50,13 +49,20 @@ pub enum ComponentValue {
     /// Tuple of values
     Tuple(Vec<ComponentValue>),
     /// Variant (tagged union)
-    Variant { case_name: String, payload: Option<Box<ComponentValue>> },
+    Variant {
+        case_name: String,
+        payload: Option<Box<ComponentValue>>,
+    },
     /// Enum case name
     Enum(String),
     /// Optional value
     Option(Option<Box<ComponentValue>>),
     /// Result type
-    Result { ok: Option<Box<ComponentValue>>, err: Option<Box<ComponentValue>>, is_ok: bool },
+    Result {
+        ok: Option<Box<ComponentValue>>,
+        err: Option<Box<ComponentValue>>,
+        is_ok: bool,
+    },
     /// Flags (set of enabled flag names)
     Flags(Vec<String>),
     /// Resource handle (own)
@@ -75,10 +81,14 @@ pub trait ComponentHostCallback: Send + Sync {
 }
 
 /// Registry for Component Model host function callbacks
-pub static COMPONENT_HOST_FUNCTION_REGISTRY: std::sync::OnceLock<Mutex<HashMap<u64, Arc<ComponentHostFunctionEntry>>>> = std::sync::OnceLock::new();
-pub static NEXT_COMPONENT_HOST_FUNCTION_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+pub static COMPONENT_HOST_FUNCTION_REGISTRY: std::sync::OnceLock<
+    Mutex<HashMap<u64, Arc<ComponentHostFunctionEntry>>>,
+> = std::sync::OnceLock::new();
+pub static NEXT_COMPONENT_HOST_FUNCTION_ID: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(1);
 
-pub fn get_component_host_function_registry() -> &'static Mutex<HashMap<u64, Arc<ComponentHostFunctionEntry>>> {
+pub fn get_component_host_function_registry(
+) -> &'static Mutex<HashMap<u64, Arc<ComponentHostFunctionEntry>>> {
     COMPONENT_HOST_FUNCTION_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
@@ -212,7 +222,9 @@ impl ComponentLinker {
 
     /// Add a preopened directory
     pub fn add_wasi_preopen_dir(&mut self, host_path: String, guest_path: String, read_only: bool) {
-        self.wasi_p2_config.preopened_dirs.push((host_path, guest_path, read_only));
+        self.wasi_p2_config
+            .preopened_dirs
+            .push((host_path, guest_path, read_only));
     }
 
     /// Set whether network access is allowed
@@ -244,7 +256,12 @@ impl ComponentLinker {
 
         // Set args
         if !self.wasi_p2_config.args.is_empty() {
-            let args_refs: Vec<&str> = self.wasi_p2_config.args.iter().map(|s| s.as_str()).collect();
+            let args_refs: Vec<&str> = self
+                .wasi_p2_config
+                .args
+                .iter()
+                .map(|s| s.as_str())
+                .collect();
             builder.args(&args_refs);
         }
 
@@ -252,7 +269,9 @@ impl ComponentLinker {
         if self.wasi_p2_config.inherit_env {
             builder.inherit_env();
         } else if !self.wasi_p2_config.env.is_empty() {
-            let env_refs: Vec<(&str, &str)> = self.wasi_p2_config.env
+            let env_refs: Vec<(&str, &str)> = self
+                .wasi_p2_config
+                .env
                 .iter()
                 .map(|(k, v)| (k.as_str(), v.as_str()))
                 .collect();
@@ -310,20 +329,26 @@ impl ComponentLinker {
 
         // Register in global registry
         {
-            let mut registry = get_component_host_function_registry().lock()
-                .map_err(|e| WasmtimeError::Concurrency {
+            let mut registry = get_component_host_function_registry().lock().map_err(|e| {
+                WasmtimeError::Concurrency {
                     message: format!("Failed to lock component host function registry: {}", e),
-                })?;
+                }
+            })?;
             registry.insert(id, entry);
         }
 
         // Build WIT path key
-        let wit_path = format!("{}:{}/{}#{}",
-            interface_namespace, interface_name, interface_name, function_name);
+        let wit_path = format!(
+            "{}:{}/{}#{}",
+            interface_namespace, interface_name, interface_name, function_name
+        );
         self.host_functions.insert(wit_path.clone(), id);
 
         // Track in defined interfaces
-        let interface_key = format!("{}:{}/{}", interface_namespace, interface_name, interface_name);
+        let interface_key = format!(
+            "{}:{}/{}",
+            interface_namespace, interface_name, interface_name
+        );
         self.defined_interfaces
             .entry(interface_key)
             .or_insert_with(Vec::new)
@@ -362,10 +387,11 @@ impl ComponentLinker {
 
         // Register in global registry
         {
-            let mut registry = get_component_host_function_registry().lock()
-                .map_err(|e| WasmtimeError::Concurrency {
+            let mut registry = get_component_host_function_registry().lock().map_err(|e| {
+                WasmtimeError::Concurrency {
                     message: format!("Failed to lock component host function registry: {}", e),
-                })?;
+                }
+            })?;
             registry.insert(id, entry);
         }
 
@@ -378,20 +404,35 @@ impl ComponentLinker {
             .or_insert_with(Vec::new)
             .push(function);
 
-        log::debug!("Defined component host function by path: {} (id={})", wit_path, id);
+        log::debug!(
+            "Defined component host function by path: {} (id={})",
+            wit_path,
+            id
+        );
 
         Ok(id)
     }
 
     /// Check if a specific interface is defined
     pub fn has_interface(&self, interface_namespace: &str, interface_name: &str) -> bool {
-        let key = format!("{}:{}/{}", interface_namespace, interface_name, interface_name);
+        let key = format!(
+            "{}:{}/{}",
+            interface_namespace, interface_name, interface_name
+        );
         self.defined_interfaces.contains_key(&key)
     }
 
     /// Check if a specific function is defined
-    pub fn has_function(&self, interface_namespace: &str, interface_name: &str, function_name: &str) -> bool {
-        let key = format!("{}:{}/{}", interface_namespace, interface_name, interface_name);
+    pub fn has_function(
+        &self,
+        interface_namespace: &str,
+        interface_name: &str,
+        function_name: &str,
+    ) -> bool {
+        let key = format!(
+            "{}:{}/{}",
+            interface_namespace, interface_name, interface_name
+        );
         if let Some(functions) = self.defined_interfaces.get(&key) {
             functions.contains(&function_name.to_string())
         } else {
@@ -405,9 +446,19 @@ impl ComponentLinker {
     }
 
     /// Get all functions defined for an interface
-    pub fn get_defined_functions(&self, interface_namespace: &str, interface_name: &str) -> Vec<String> {
-        let key = format!("{}:{}/{}", interface_namespace, interface_name, interface_name);
-        self.defined_interfaces.get(&key).cloned().unwrap_or_default()
+    pub fn get_defined_functions(
+        &self,
+        interface_namespace: &str,
+        interface_name: &str,
+    ) -> Vec<String> {
+        let key = format!(
+            "{}:{}/{}",
+            interface_namespace, interface_name, interface_name
+        );
+        self.defined_interfaces
+            .get(&key)
+            .cloned()
+            .unwrap_or_default()
     }
 
     /// Enable WASI Preview 2 support
@@ -426,10 +477,11 @@ impl ComponentLinker {
 
         // Add WASI Preview 2 to the linker using p2 module
         // The closure extracts the WasiCtx from ComponentStoreData
-        wasmtime_wasi::p2::add_to_linker_sync(&mut self.linker)
-            .map_err(|e| WasmtimeError::Wasi {
+        wasmtime_wasi::p2::add_to_linker_sync(&mut self.linker).map_err(|e| {
+            WasmtimeError::Wasi {
                 message: format!("Failed to enable WASI Preview 2: {}", e),
-            })?;
+            }
+        })?;
 
         self.wasi_p2_enabled = true;
         log::debug!("WASI Preview 2 enabled in component linker");
@@ -472,10 +524,11 @@ impl ComponentLinker {
 
         // Add WASI HTTP to the linker - use add_only_http_to_linker_sync
         // since WASI P2 is already added
-        wasmtime_wasi_http::add_only_http_to_linker_sync(&mut self.linker)
-            .map_err(|e| WasmtimeError::Wasi {
+        wasmtime_wasi_http::add_only_http_to_linker_sync(&mut self.linker).map_err(|e| {
+            WasmtimeError::Wasi {
                 message: format!("Failed to enable WASI HTTP: {}", e),
-            })?;
+            }
+        })?;
 
         self.wasi_http_enabled = true;
         log::debug!("WASI HTTP enabled in component linker");
@@ -514,7 +567,11 @@ impl ComponentLinker {
                 resource_table: ResourceTable::new(),
                 wasi_ctx: self.build_wasi_ctx(),
                 #[cfg(feature = "wasi-http")]
-                wasi_http_ctx: if self.wasi_http_enabled { Some(wasmtime_wasi_http::WasiHttpCtx::new()) } else { None },
+                wasi_http_ctx: if self.wasi_http_enabled {
+                    Some(wasmtime_wasi_http::WasiHttpCtx::new())
+                } else {
+                    None
+                },
                 start_time: Instant::now(),
             }
         } else {
@@ -534,7 +591,9 @@ impl ComponentLinker {
 
         let mut store = Store::new(&self.engine, store_data);
 
-        let instance = self.linker.instantiate(&mut store, component.wasmtime_component())
+        let instance = self
+            .linker
+            .instantiate(&mut store, component.wasmtime_component())
             .map_err(|e| WasmtimeError::Instance {
                 message: format!("Failed to instantiate component: {}", e),
             })?;
@@ -624,23 +683,29 @@ pub fn parse_wit_path(wit_path: &str) -> WasmtimeResult<(String, String, String)
 /// Core functions for component linker operations
 pub mod component_linker_core {
     use super::*;
-    use std::os::raw::c_void;
     use crate::error::ffi_utils;
     use crate::validate_ptr_not_null;
+    use std::os::raw::c_void;
 
     /// Create a new component linker
-    pub fn create_component_linker(engine: &WasmtimeEngine) -> WasmtimeResult<Box<ComponentLinker>> {
+    pub fn create_component_linker(
+        engine: &WasmtimeEngine,
+    ) -> WasmtimeResult<Box<ComponentLinker>> {
         ComponentLinker::new(engine).map(Box::new)
     }
 
     /// Get component linker reference from pointer
-    pub unsafe fn get_component_linker_ref(linker_ptr: *const c_void) -> WasmtimeResult<&'static ComponentLinker> {
+    pub unsafe fn get_component_linker_ref(
+        linker_ptr: *const c_void,
+    ) -> WasmtimeResult<&'static ComponentLinker> {
         validate_ptr_not_null!(linker_ptr, "component linker");
         Ok(&*(linker_ptr as *const ComponentLinker))
     }
 
     /// Get component linker mutable reference from pointer
-    pub unsafe fn get_component_linker_mut(linker_ptr: *mut c_void) -> WasmtimeResult<&'static mut ComponentLinker> {
+    pub unsafe fn get_component_linker_mut(
+        linker_ptr: *mut c_void,
+    ) -> WasmtimeResult<&'static mut ComponentLinker> {
         validate_ptr_not_null!(linker_ptr, "component linker");
         Ok(&mut *(linker_ptr as *mut ComponentLinker))
     }
@@ -685,36 +750,44 @@ pub mod component_linker_core {
 
     /// Get host function from registry
     pub fn get_host_function(id: u64) -> WasmtimeResult<Arc<ComponentHostFunctionEntry>> {
-        let registry = get_component_host_function_registry().lock()
-            .map_err(|e| WasmtimeError::Concurrency {
+        let registry = get_component_host_function_registry().lock().map_err(|e| {
+            WasmtimeError::Concurrency {
                 message: format!("Failed to lock component host function registry: {}", e),
-            })?;
+            }
+        })?;
 
-        registry.get(&id).cloned().ok_or_else(|| WasmtimeError::InvalidParameter {
-            message: format!("Component host function not found: {}", id),
-        })
+        registry
+            .get(&id)
+            .cloned()
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Component host function not found: {}", id),
+            })
     }
 
     /// Remove host function from registry
     pub fn remove_host_function(id: u64) -> WasmtimeResult<()> {
-        let mut registry = get_component_host_function_registry().lock()
-            .map_err(|e| WasmtimeError::Concurrency {
+        let mut registry = get_component_host_function_registry().lock().map_err(|e| {
+            WasmtimeError::Concurrency {
                 message: format!("Failed to lock component host function registry: {}", e),
-            })?;
-
-        registry.remove(&id).ok_or_else(|| WasmtimeError::InvalidParameter {
-            message: format!("Component host function not found for removal: {}", id),
+            }
         })?;
+
+        registry
+            .remove(&id)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Component host function not found for removal: {}", id),
+            })?;
 
         Ok(())
     }
 
     /// Get registry statistics
     pub fn get_registry_stats() -> WasmtimeResult<(usize, u64)> {
-        let registry = get_component_host_function_registry().lock()
-            .map_err(|e| WasmtimeError::Concurrency {
+        let registry = get_component_host_function_registry().lock().map_err(|e| {
+            WasmtimeError::Concurrency {
                 message: format!("Failed to lock component host function registry: {}", e),
-            })?;
+            }
+        })?;
 
         let count = registry.len();
         let next_id = NEXT_COMPONENT_HOST_FUNCTION_ID.load(std::sync::atomic::Ordering::SeqCst);
@@ -727,9 +800,9 @@ pub mod component_linker_core {
 // Component Linker FFI Functions
 //
 
-use std::os::raw::{c_char, c_int, c_void};
-use std::ffi::{CStr, CString};
 use super::ComponentEngine;
+use std::ffi::{CStr, CString};
+use std::os::raw::{c_char, c_int, c_void};
 
 const FFI_SUCCESS: c_int = 0;
 const FFI_ERROR: c_int = -1;
@@ -761,7 +834,9 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new(engine_ptr: *const c_vo
 /// This function uses defensive programming to prevent JVM crashes.
 /// All pointer operations are validated before use.
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(engine_ptr: *const c_void) -> *mut c_void {
+pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(
+    engine_ptr: *const c_void,
+) -> *mut c_void {
     if engine_ptr.is_null() {
         log::error!("wasmtime4j_component_linker_new_with_engine: engine_ptr is null");
         return std::ptr::null_mut();
@@ -782,7 +857,10 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(engine_ptr:
         let fresh_engine = match WasmtimeEngine::new(&config) {
             Ok(e) => e,
             Err(err) => {
-                log::error!("Failed to create fresh engine for component linker: {}", err);
+                log::error!(
+                    "Failed to create fresh engine for component linker: {}",
+                    err
+                );
                 return std::ptr::null_mut();
             }
         };
@@ -807,8 +885,10 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(engine_ptr:
     match result {
         Ok(ptr) => ptr,
         Err(e) => {
-            log::error!("wasmtime4j_component_linker_new_with_engine: panic caught: {:?}",
-                e.downcast_ref::<&str>().unwrap_or(&"unknown panic"));
+            log::error!(
+                "wasmtime4j_component_linker_new_with_engine: panic caught: {:?}",
+                e.downcast_ref::<&str>().unwrap_or(&"unknown panic")
+            );
             std::ptr::null_mut()
         }
     }
@@ -830,7 +910,11 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_is_valid(linker_ptr: *const
     }
 
     let linker = &*(linker_ptr as *const ComponentLinker);
-    if linker.is_valid() { 1 } else { 0 }
+    if linker.is_valid() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Dispose component linker resources
@@ -868,7 +952,11 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_has_interface(
         Err(_) => return FFI_ERROR,
     };
 
-    if linker.has_interface(ns_str, iface_str) { 1 } else { 0 }
+    if linker.has_interface(ns_str, iface_str) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if a function is defined in the linker
@@ -879,7 +967,11 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_has_function(
     interface_name: *const c_char,
     function_name: *const c_char,
 ) -> c_int {
-    if linker_ptr.is_null() || namespace.is_null() || interface_name.is_null() || function_name.is_null() {
+    if linker_ptr.is_null()
+        || namespace.is_null()
+        || interface_name.is_null()
+        || function_name.is_null()
+    {
         return FFI_ERROR;
     }
 
@@ -900,12 +992,18 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_has_function(
         Err(_) => return FFI_ERROR,
     };
 
-    if linker.has_function(ns_str, iface_str, func_str) { 1 } else { 0 }
+    if linker.has_function(ns_str, iface_str, func_str) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Get number of defined host functions
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_host_function_count(linker_ptr: *const c_void) -> usize {
+pub unsafe extern "C" fn wasmtime4j_component_linker_host_function_count(
+    linker_ptr: *const c_void,
+) -> usize {
     if linker_ptr.is_null() {
         return 0;
     }
@@ -916,7 +1014,9 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_host_function_count(linker_
 
 /// Get number of defined interfaces
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_interface_count(linker_ptr: *const c_void) -> usize {
+pub unsafe extern "C" fn wasmtime4j_component_linker_interface_count(
+    linker_ptr: *const c_void,
+) -> usize {
     if linker_ptr.is_null() {
         return 0;
     }
@@ -927,18 +1027,26 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_interface_count(linker_ptr:
 
 /// Check if WASI Preview 2 is enabled
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_wasi_p2_enabled(linker_ptr: *const c_void) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_component_linker_wasi_p2_enabled(
+    linker_ptr: *const c_void,
+) -> c_int {
     if linker_ptr.is_null() {
         return FFI_ERROR;
     }
 
     let linker = &*(linker_ptr as *const ComponentLinker);
-    if linker.is_wasi_p2_enabled() { 1 } else { 0 }
+    if linker.is_wasi_p2_enabled() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Enable WASI Preview 2
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_p2(linker_ptr: *mut c_void) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_p2(
+    linker_ptr: *mut c_void,
+) -> c_int {
     if linker_ptr.is_null() {
         return FFI_ERROR;
     }
@@ -1119,7 +1227,9 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_random(
 /// This enables HTTP request/response functionality in WebAssembly components.
 /// WASI Preview 2 must be enabled first for this to work.
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_http(linker_ptr: *mut c_void) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_http(
+    linker_ptr: *mut c_void,
+) -> c_int {
     if linker_ptr.is_null() {
         return FFI_ERROR;
     }
@@ -1137,13 +1247,19 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_http(linker_ptr
 
 /// Check if WASI HTTP is enabled
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_wasi_http_enabled(linker_ptr: *const c_void) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_component_linker_wasi_http_enabled(
+    linker_ptr: *const c_void,
+) -> c_int {
     if linker_ptr.is_null() {
         return FFI_ERROR;
     }
 
     let linker = &*(linker_ptr as *const ComponentLinker);
-    if linker.is_wasi_http_enabled() { 1 } else { 0 }
+    if linker.is_wasi_http_enabled() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Instantiate a component using the linker
@@ -1186,8 +1302,10 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_get_interfaces(
     let interfaces = linker.get_defined_interfaces();
 
     // Build JSON array
-    let json_str = format!("[{}]",
-        interfaces.iter()
+    let json_str = format!(
+        "[{}]",
+        interfaces
+            .iter()
             .map(|s| format!("\"{}\"", s))
             .collect::<Vec<_>>()
             .join(",")
@@ -1210,7 +1328,8 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_get_functions(
     interface_name: *const c_char,
     json_out: *mut *mut c_char,
 ) -> c_int {
-    if linker_ptr.is_null() || namespace.is_null() || interface_name.is_null() || json_out.is_null() {
+    if linker_ptr.is_null() || namespace.is_null() || interface_name.is_null() || json_out.is_null()
+    {
         return FFI_ERROR;
     }
 
@@ -1229,8 +1348,10 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_get_functions(
     let functions = linker.get_defined_functions(ns_str, iface_str);
 
     // Build JSON array
-    let json_str = format!("[{}]",
-        functions.iter()
+    let json_str = format!(
+        "[{}]",
+        functions
+            .iter()
             .map(|s| format!("\"{}\"", s))
             .collect::<Vec<_>>()
             .join(",")

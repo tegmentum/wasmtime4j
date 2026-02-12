@@ -10,10 +10,10 @@ pub mod assertions;
 pub mod fixtures;
 
 use wasmtime4j::engine::Engine;
-use wasmtime4j::store::Store;
-use wasmtime4j::module::Module;
-use wasmtime4j::instance::Instance;
 use wasmtime4j::error::WasmtimeError;
+use wasmtime4j::instance::Instance;
+use wasmtime4j::module::Module;
+use wasmtime4j::store::Store;
 
 /// A test harness that manages Engine, Store, and optional Module lifecycle.
 ///
@@ -35,7 +35,9 @@ impl TestEngine {
     }
 
     /// Create a new test engine with custom configuration.
-    pub fn with_config(config_fn: impl FnOnce(&mut wasmtime::Config)) -> Result<Self, WasmtimeError> {
+    pub fn with_config(
+        config_fn: impl FnOnce(&mut wasmtime::Config),
+    ) -> Result<Self, WasmtimeError> {
         let mut config = wasmtime::Config::new();
         config_fn(&mut config);
         let engine = Engine::with_config(config)?;
@@ -65,9 +67,7 @@ impl TestEngine {
 
     /// Create a store with fuel enabled.
     pub fn store_with_fuel(&mut self, fuel: u64) -> Result<&mut Store, WasmtimeError> {
-        self.store = Some(Store::builder()
-            .fuel_limit(fuel)
-            .build(&self.engine)?);
+        self.store = Some(Store::builder().fuel_limit(fuel).build(&self.engine)?);
         Ok(self.store.as_mut().unwrap())
     }
 
@@ -115,8 +115,7 @@ impl Default for TestEngine {
 #[macro_export]
 macro_rules! compile_wat {
     ($engine:expr, $wat:expr) => {
-        wasmtime4j::module::Module::compile_wat($engine, $wat)
-            .expect("Failed to compile WAT")
+        wasmtime4j::module::Module::compile_wat($engine, $wat).expect("Failed to compile WAT")
     };
 }
 
@@ -152,7 +151,10 @@ macro_rules! assert_wasm_trap {
                     e
                 );
             }
-            Ok(result) => panic!("Expected a trap containing '{}', but got success: {:?}", $trap_msg, result),
+            Ok(result) => panic!(
+                "Expected a trap containing '{}', but got success: {:?}",
+                $trap_msg, result
+            ),
         }
     };
 }
@@ -179,7 +181,12 @@ macro_rules! assert_wasm_value {
     ($value:expr, f32, $expected:expr) => {
         match $value {
             wasmtime4j::instance::WasmValue::F32(v) => {
-                assert!((v - $expected).abs() < f32::EPSILON, "F32 value mismatch: {} != {}", v, $expected);
+                assert!(
+                    (v - $expected).abs() < f32::EPSILON,
+                    "F32 value mismatch: {} != {}",
+                    v,
+                    $expected
+                );
             }
             other => panic!("Expected F32, got: {:?}", other),
         }
@@ -187,7 +194,12 @@ macro_rules! assert_wasm_value {
     ($value:expr, f64, $expected:expr) => {
         match $value {
             wasmtime4j::instance::WasmValue::F64(v) => {
-                assert!((v - $expected).abs() < f64::EPSILON, "F64 value mismatch: {} != {}", v, $expected);
+                assert!(
+                    (v - $expected).abs() < f64::EPSILON,
+                    "F64 value mismatch: {} != {}",
+                    v,
+                    $expected
+                );
             }
             other => panic!("Expected F64, got: {:?}", other),
         }
@@ -235,7 +247,10 @@ mod tests {
                         if let wasmtime::ValType::Ref(ref_type) = result {
                             println!("      RefType: {:?}", ref_type);
                             println!("      HeapType: {:?}", ref_type.heap_type());
-                            println!("      Is HeapType::None: {}", matches!(ref_type.heap_type(), wasmtime::HeapType::None));
+                            println!(
+                                "      Is HeapType::None: {}",
+                                matches!(ref_type.heap_type(), wasmtime::HeapType::None)
+                            );
                         }
                     }
                 }
@@ -243,7 +258,10 @@ mod tests {
                     println!("  Table type:");
                     println!("    Element: {:?}", table_type.element());
                     println!("    HeapType: {:?}", table_type.element().heap_type());
-                    println!("    Is HeapType::None: {}", matches!(table_type.element().heap_type(), wasmtime::HeapType::None));
+                    println!(
+                        "    Is HeapType::None: {}",
+                        matches!(table_type.element().heap_type(), wasmtime::HeapType::None)
+                    );
                 }
                 _ => {}
             }

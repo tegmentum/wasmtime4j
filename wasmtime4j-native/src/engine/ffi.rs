@@ -660,7 +660,9 @@ pub unsafe extern "C" fn wasmtime4j_managed_engine_from_shared() -> *mut c_void 
 ///
 /// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_managed_engine_get(managed_ptr: *const c_void) -> *const c_void {
+pub unsafe extern "C" fn wasmtime4j_managed_engine_get(
+    managed_ptr: *const c_void,
+) -> *const c_void {
     if managed_ptr.is_null() {
         return std::ptr::null();
     }

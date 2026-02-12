@@ -9,8 +9,8 @@
 use std::os::raw::{c_int, c_longlong, c_uchar, c_void};
 use std::ptr;
 
-use crate::wasi_random_helpers;
 use crate::wasi_preview2::WasiPreview2Context;
+use crate::wasi_random_helpers;
 use crate::{ffi_boundary_i32, ffi_boundary_void};
 
 /// Get cryptographically-secure random bytes

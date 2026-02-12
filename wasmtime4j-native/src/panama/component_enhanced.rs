@@ -4,11 +4,11 @@
 //! It offers C-compatible functions for loading, instantiating, and invoking
 //! WebAssembly components using the Component Model specification.
 
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
 use crate::component::Component;
 use crate::component_core::EnhancedComponentEngine;
 use crate::error::ffi_utils;
 use crate::wit_value_marshal;
+use std::os::raw::{c_char, c_int, c_ulong, c_void};
 use wasmtime::component::Val;
 
 /// WitValueFFI structure for passing WIT values across FFI boundary
@@ -40,7 +40,8 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_load_from_bytes(
     component_out: *mut *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let engine = unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
+        let engine =
+            unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
         let wasm_data = unsafe {
             if wasm_bytes.is_null() || wasm_size == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -76,18 +77,19 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instantiate(
         .open("/tmp/wasmtime4j_debug.log")
         .and_then(|mut log| {
             writeln!(log, "\n===== RUST FFI ENTRY POINT =====")?;
-            writeln!(log, "RUST: Function called with engine_ptr={:?}", engine_ptr)?;
+            writeln!(
+                log,
+                "RUST: Function called with engine_ptr={:?}",
+                engine_ptr
+            )?;
             writeln!(log, "RUST: component_ptr={:?}", component_ptr)
         });
 
     let result = ffi_utils::ffi_try_code(|| {
-        let engine = unsafe {
-            ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")?
-        };
+        let engine =
+            unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
 
-        let component = unsafe {
-            ffi_utils::deref_ptr::<Component>(component_ptr, "component")?
-        };
+        let component = unsafe { ffi_utils::deref_ptr::<Component>(component_ptr, "component")? };
 
         let instance_id = engine.instantiate_component(component)?;
 
@@ -102,9 +104,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instantiate(
         .create(true)
         .append(true)
         .open("/tmp/wasmtime4j_debug.log")
-        .and_then(|mut log| {
-            writeln!(log, "RUST: Result = {:?}", result)
-        });
+        .and_then(|mut log| writeln!(log, "RUST: Result = {:?}", result));
 
     result
 }
@@ -121,15 +121,14 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_invoke(
     results_count_out: *mut c_int,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let engine = unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
+        let engine =
+            unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
 
         let func_name = unsafe {
             std::ffi::CStr::from_ptr(function_name)
                 .to_str()
-                .map_err(|e| {
-                    crate::error::WasmtimeError::InvalidParameter {
-                        message: format!("Invalid function name: {}", e),
-                    }
+                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid function name: {}", e),
                 })?
         };
 
@@ -143,10 +142,8 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_invoke(
                         param_ffi.data_ptr,
                         param_ffi.data_length as usize,
                     );
-                    let val = wit_value_marshal::deserialize_to_val(
-                        param_ffi.type_discriminator,
-                        data,
-                    )?;
+                    let val =
+                        wit_value_marshal::deserialize_to_val(param_ffi.type_discriminator, data)?;
                     params.push(val);
                 }
             }
@@ -213,7 +210,8 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_get_exports(
     count_out: *mut c_int,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let engine = unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
+        let engine =
+            unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
 
         let function_names = engine.get_exported_function_names(instance_id)?;
 
@@ -222,10 +220,11 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_get_exports(
         let mut c_strings: Vec<*mut c_char> = Vec::with_capacity(count);
 
         for name in function_names {
-            let c_string = std::ffi::CString::new(name)
-                .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+            let c_string = std::ffi::CString::new(name).map_err(|e| {
+                crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid function name: {}", e),
-                })?;
+                }
+            })?;
             c_strings.push(c_string.into_raw());
         }
 

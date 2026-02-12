@@ -12,10 +12,10 @@ use std::sync::Arc;
 use std::thread;
 
 use wasmtime4j::engine::Engine;
-use wasmtime4j::store::Store;
-use wasmtime4j::module::Module;
-use wasmtime4j::instance::Instance;
 use wasmtime4j::error::WasmtimeError;
+use wasmtime4j::instance::Instance;
+use wasmtime4j::module::Module;
+use wasmtime4j::store::Store;
 
 /// Test that engine creation is thread-safe.
 #[test]
@@ -341,7 +341,9 @@ fn test_fuel_exhaustion_handling() {
     // The important thing is that we don't crash
     if result.is_ok() {
         // Fuel tracking might not be fully implemented yet - that's okay for this test
-        println!("Note: Fuel exhaustion did not trigger - fuel tracking may not be fully implemented");
+        println!(
+            "Note: Fuel exhaustion did not trigger - fuel tracking may not be fully implemented"
+        );
     }
 }
 
@@ -395,14 +397,17 @@ fn test_cleanup_on_drop() {
 #[test]
 fn test_shared_engine_thread_safety() {
     let engine = Arc::new(Engine::new().expect("Failed to create engine"));
-    let wat = Arc::new(r#"(module (func (export "id") (param i32) (result i32) local.get 0))"#.to_string());
+    let wat = Arc::new(
+        r#"(module (func (export "id") (param i32) (result i32) local.get 0))"#.to_string(),
+    );
 
     let handles: Vec<_> = (0..4)
         .map(|thread_id| {
             let engine = Arc::clone(&engine);
             let wat = Arc::clone(&wat);
             thread::spawn(move || {
-                let module = Module::compile_wat(&engine, &wat).expect("Compilation should succeed");
+                let module =
+                    Module::compile_wat(&engine, &wat).expect("Compilation should succeed");
                 let mut store = Store::new(&engine).expect("Store creation should succeed");
                 let mut instance = Instance::new_without_imports(&mut store, &module)
                     .expect("Instance creation should succeed");

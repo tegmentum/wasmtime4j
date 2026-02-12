@@ -8,16 +8,16 @@
 //! - Network socket support (where available in Wasmtime)
 //! - Proper security sandboxing and permission enforcement
 
-use std::sync::{Arc, Mutex, RwLock};
+use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::linker::Linker as WasmtimeLinker;
+use crate::store::Store;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, DirPerms, FilePerms};
+use std::sync::{Arc, Mutex, RwLock};
+use wasmtime::Linker;
 use wasmtime_wasi::p1::WasiP1Ctx;
 use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
-use wasmtime::Linker;
-use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::store::Store;
-use crate::linker::Linker as WasmtimeLinker;
+use wasmtime_wasi::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder};
 
 /// Thread-safe wrapper around WASI context with comprehensive configuration
 pub struct WasiContext {
@@ -60,7 +60,7 @@ pub struct WasiContext {
 impl Clone for WasiContext {
     fn clone(&self) -> Self {
         WasiContext {
-            inner: Arc::clone(&self.inner),  // Arc is cheap to clone
+            inner: Arc::clone(&self.inner), // Arc is cheap to clone
             config: self.config.clone(),
             directory_mappings: self.directory_mappings.clone(),
             environment: self.environment.clone(),
@@ -77,7 +77,8 @@ impl Clone for WasiContext {
             arguments_rw: Arc::clone(&self.arguments_rw),
             initial_cwd: Arc::clone(&self.initial_cwd),
             next_operation_id: std::sync::atomic::AtomicU64::new(
-                self.next_operation_id.load(std::sync::atomic::Ordering::SeqCst)
+                self.next_operation_id
+                    .load(std::sync::atomic::Ordering::SeqCst),
             ),
         }
     }
@@ -91,8 +92,14 @@ impl std::fmt::Debug for WasiContext {
             .field("environment", &self.environment)
             .field("arguments", &self.arguments)
             .field("stdio_config", &self.stdio_config)
-            .field("stdout_pipe", &self.stdout_pipe.as_ref().map(|_| "<MemoryOutputPipe>"))
-            .field("stderr_pipe", &self.stderr_pipe.as_ref().map(|_| "<MemoryOutputPipe>"))
+            .field(
+                "stdout_pipe",
+                &self.stdout_pipe.as_ref().map(|_| "<MemoryOutputPipe>"),
+            )
+            .field(
+                "stderr_pipe",
+                &self.stderr_pipe.as_ref().map(|_| "<MemoryOutputPipe>"),
+            )
             .field("streams", &"<streams>")
             .field("stdin_handle", &"<stdin_handle>")
             .field("stdout_handle", &"<stdout_handle>")
@@ -156,7 +163,7 @@ pub struct WasiDirPermissions {
 }
 
 /// WASI file permissions wrapper
-#[derive(Debug, Clone)]  
+#[derive(Debug, Clone)]
 pub struct WasiFilePermissions {
     /// Can read file contents
     pub read: bool,
@@ -286,16 +293,27 @@ impl crate::wasi_stream_ops::WasiStreamEntry for WasiStreamInfo {
 impl crate::wasi_stream_ops::WasiStreamContext for WasiContext {
     type StreamEntry = WasiStreamInfo;
 
-    fn streams_read(&self) -> crate::error::WasmtimeResult<std::sync::RwLockReadGuard<'_, HashMap<u32, Self::StreamEntry>>> {
-        self.streams.read().map_err(|_| crate::error::WasmtimeError::Wasi {
-            message: "Failed to lock streams".to_string(),
-        })
+    fn streams_read(
+        &self,
+    ) -> crate::error::WasmtimeResult<std::sync::RwLockReadGuard<'_, HashMap<u32, Self::StreamEntry>>>
+    {
+        self.streams
+            .read()
+            .map_err(|_| crate::error::WasmtimeError::Wasi {
+                message: "Failed to lock streams".to_string(),
+            })
     }
 
-    fn streams_write(&self) -> crate::error::WasmtimeResult<std::sync::RwLockWriteGuard<'_, HashMap<u32, Self::StreamEntry>>> {
-        self.streams.write().map_err(|_| crate::error::WasmtimeError::Wasi {
-            message: "Failed to lock streams".to_string(),
-        })
+    fn streams_write(
+        &self,
+    ) -> crate::error::WasmtimeResult<
+        std::sync::RwLockWriteGuard<'_, HashMap<u32, Self::StreamEntry>>,
+    > {
+        self.streams
+            .write()
+            .map_err(|_| crate::error::WasmtimeError::Wasi {
+                message: "Failed to lock streams".to_string(),
+            })
     }
 }
 
@@ -392,7 +410,7 @@ impl WasiContext {
 
         // Build the WASI Preview 1 context
         let wasi_ctx = builder.build_p1();
-        
+
         let default_args = vec!["wasmtime4j".to_string()];
         Ok(WasiContext {
             inner: Arc::new(Mutex::new(wasi_ctx)),
@@ -434,7 +452,7 @@ impl WasiContext {
     ) -> WasmtimeResult<()> {
         let host_path = host_path.as_ref().to_path_buf();
         let guest_path = guest_path.as_ref().to_string();
-        
+
         // Validate that the host path exists
         if !host_path.exists() {
             return Err(WasmtimeError::Wasi {
@@ -444,28 +462,32 @@ impl WasiContext {
 
         // Create new WASI context with the directory mapping
         let mut builder = WasiCtxBuilder::new();
-        
+
         // Re-add existing mappings
         for (guest, mapping) in &self.directory_mappings {
-            builder.preopened_dir(
-                &mapping.host_path,
-                guest,
-                mapping.dir_perms.to_wasmtime_perms(),
-                mapping.file_perms.to_wasmtime_perms(),
-            ).map_err(|e| WasmtimeError::Wasi {
-                message: format!("Failed to add directory mapping {}: {}", guest, e),
-            })?;
+            builder
+                .preopened_dir(
+                    &mapping.host_path,
+                    guest,
+                    mapping.dir_perms.to_wasmtime_perms(),
+                    mapping.file_perms.to_wasmtime_perms(),
+                )
+                .map_err(|e| WasmtimeError::Wasi {
+                    message: format!("Failed to add directory mapping {}: {}", guest, e),
+                })?;
         }
-        
+
         // Add the new mapping
-        builder.preopened_dir(
-            &host_path,
-            &guest_path,
-            dir_perms.to_wasmtime_perms(),
-            file_perms.to_wasmtime_perms(),
-        ).map_err(|e| WasmtimeError::Wasi {
-            message: format!("Failed to add directory mapping {}: {}", guest_path, e),
-        })?;
+        builder
+            .preopened_dir(
+                &host_path,
+                &guest_path,
+                dir_perms.to_wasmtime_perms(),
+                file_perms.to_wasmtime_perms(),
+            )
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to add directory mapping {}: {}", guest_path, e),
+            })?;
 
         // Re-add environment and arguments
         for (key, value) in &self.environment {
@@ -478,12 +500,12 @@ impl WasiContext {
 
         // Build and update context
         let new_ctx = builder.build_p1();
-        
+
         let mut inner = self.inner.lock().map_err(|_| WasmtimeError::Concurrency {
             message: "Failed to acquire WASI context lock".to_string(),
         })?;
         *inner = new_ctx;
-        
+
         // Store the mapping
         let mapping = DirectoryMapping {
             host_path,
@@ -492,7 +514,7 @@ impl WasiContext {
             file_perms,
         };
         self.directory_mappings.insert(guest_path, mapping);
-        
+
         Ok(())
     }
 
@@ -504,7 +526,7 @@ impl WasiContext {
     ) -> WasmtimeResult<()> {
         let key = key.as_ref().to_string();
         let value = value.as_ref().to_string();
-        
+
         // Validate environment access policy
         match &self.config.env_policy {
             EnvironmentPolicy::AllowList(allowed) => {
@@ -523,10 +545,10 @@ impl WasiContext {
             }
             _ => {} // Custom and Inherit allow all
         }
-        
+
         self.environment.insert(key, value);
         self.rebuild_context()?;
-        
+
         Ok(())
     }
 
@@ -546,7 +568,7 @@ impl WasiContext {
     ) -> WasmtimeResult<()> {
         self.stdio_config = StdioConfig {
             stdin,
-            stdout, 
+            stdout,
             stderr,
         };
         self.rebuild_context()?;
@@ -565,10 +587,11 @@ impl WasiContext {
         get_ctx: impl Fn(&mut T) -> &mut WasiP1Ctx + Send + Sync + Copy + 'static,
     ) -> WasmtimeResult<()> {
         // Use wasmtime-wasi's built-in function to add all WASI Preview 1 imports to the linker
-        wasmtime_wasi::p1::add_to_linker_sync(linker, get_ctx)
-            .map_err(|e| WasmtimeError::Wasi {
+        wasmtime_wasi::p1::add_to_linker_sync(linker, get_ctx).map_err(|e| {
+            WasmtimeError::Wasi {
                 message: format!("Failed to add WASI to linker: {}", e),
-            })?;
+            }
+        })?;
 
         log::debug!("WASI Preview 1 imports successfully added to linker");
         Ok(())
@@ -577,14 +600,14 @@ impl WasiContext {
     /// Check if a path is allowed based on current directory mappings
     pub fn is_path_allowed<P: AsRef<Path>>(&self, path: P) -> bool {
         let path = path.as_ref();
-        
+
         // Check if path falls within any mapped directory
         for mapping in self.directory_mappings.values() {
             if path.starts_with(&mapping.host_path) {
                 return true;
             }
         }
-        
+
         // Check if arbitrary filesystem access is allowed
         self.config.allow_arbitrary_fs
     }
@@ -612,44 +635,52 @@ impl WasiContext {
     /// Rebuild the WASI context with current configuration
     fn rebuild_context(&mut self) -> WasmtimeResult<()> {
         let mut builder = WasiCtxBuilder::new();
-        
+
         // Add directory mappings
         for (guest_path, mapping) in &self.directory_mappings {
-            builder.preopened_dir(
-                &mapping.host_path,
-                guest_path,
-                mapping.dir_perms.to_wasmtime_perms(),
-                mapping.file_perms.to_wasmtime_perms(),
-            ).map_err(|e| WasmtimeError::Wasi {
-                message: format!("Failed to add directory mapping {}: {}", guest_path, e),
-            })?;
+            builder
+                .preopened_dir(
+                    &mapping.host_path,
+                    guest_path,
+                    mapping.dir_perms.to_wasmtime_perms(),
+                    mapping.file_perms.to_wasmtime_perms(),
+                )
+                .map_err(|e| WasmtimeError::Wasi {
+                    message: format!("Failed to add directory mapping {}: {}", guest_path, e),
+                })?;
         }
-        
+
         // Add environment variables
         for (key, value) in &self.environment {
             builder.env(key, value);
         }
-        
+
         // Add command line arguments
         builder.args(&self.arguments);
-        
+
         // Configure stdio
         self.configure_stdio(&mut builder)?;
-        
+
         // Build new context
         let new_ctx = builder.build_p1();
-        
+
         let mut inner = self.inner.lock().map_err(|_| WasmtimeError::Concurrency {
             message: "Failed to acquire WASI context lock".to_string(),
         })?;
         *inner = new_ctx;
-        
+
         Ok(())
     }
 
     /// Build a fresh WasiP1Ctx from current configuration without modifying self
     /// Returns the context along with any output pipes for stdout/stderr capture
-    pub fn build_fresh_p1_ctx(&self) -> WasmtimeResult<(WasiP1Ctx, Option<MemoryOutputPipe>, Option<MemoryOutputPipe>)> {
+    pub fn build_fresh_p1_ctx(
+        &self,
+    ) -> WasmtimeResult<(
+        WasiP1Ctx,
+        Option<MemoryOutputPipe>,
+        Option<MemoryOutputPipe>,
+    )> {
         use wasmtime_wasi::p2::pipe::MemoryInputPipe;
         const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
 
@@ -659,14 +690,16 @@ impl WasiContext {
 
         // Add directory mappings
         for (guest_path, mapping) in &self.directory_mappings {
-            builder.preopened_dir(
-                &mapping.host_path,
-                guest_path,
-                mapping.dir_perms.to_wasmtime_perms(),
-                mapping.file_perms.to_wasmtime_perms(),
-            ).map_err(|e| WasmtimeError::Wasi {
-                message: format!("Failed to add directory mapping {}: {}", guest_path, e),
-            })?;
+            builder
+                .preopened_dir(
+                    &mapping.host_path,
+                    guest_path,
+                    mapping.dir_perms.to_wasmtime_perms(),
+                    mapping.file_perms.to_wasmtime_perms(),
+                )
+                .map_err(|e| WasmtimeError::Wasi {
+                    message: format!("Failed to add directory mapping {}: {}", guest_path, e),
+                })?;
         }
 
         // Add environment variables
@@ -834,13 +867,17 @@ impl WasiContext {
     /// Get captured stdout data
     /// Returns None if stdout was not configured for buffer capture
     pub fn get_stdout_capture(&self) -> Option<Vec<u8>> {
-        self.stdout_pipe.as_ref().map(|pipe| pipe.contents().to_vec())
+        self.stdout_pipe
+            .as_ref()
+            .map(|pipe| pipe.contents().to_vec())
     }
 
     /// Get captured stderr data
     /// Returns None if stderr was not configured for buffer capture
     pub fn get_stderr_capture(&self) -> Option<Vec<u8>> {
-        self.stderr_pipe.as_ref().map(|pipe| pipe.contents().to_vec())
+        self.stderr_pipe
+            .as_ref()
+            .map(|pipe| pipe.contents().to_vec())
     }
 
     /// Check if stdout is configured for buffer capture
@@ -910,9 +947,9 @@ impl Default for WasiContext {
     }
 }
 
+use crate::error::ffi_utils;
 /// Native FFI functions for WASI operations
 use std::os::raw::{c_char, c_int, c_void};
-use crate::error::ffi_utils;
 
 /// Create a new WASI context with default configuration
 #[no_mangle]
@@ -935,8 +972,16 @@ pub unsafe extern "C" fn wasi_ctx_new_with_config(
         let config = WasiConfig {
             allow_network: allow_network != 0,
             allow_arbitrary_fs: allow_arbitrary_fs != 0,
-            max_file_size: if max_file_size > 0 { Some(max_file_size) } else { None },
-            max_open_files: if max_open_files > 0 { Some(max_open_files) } else { None },
+            max_file_size: if max_file_size > 0 {
+                Some(max_file_size)
+            } else {
+                None
+            },
+            max_open_files: if max_open_files > 0 {
+                Some(max_open_files)
+            } else {
+                None
+            },
             env_policy: EnvironmentPolicy::Custom,
         };
         let ctx = WasiContext::with_config(config)?;
@@ -962,20 +1007,20 @@ pub unsafe extern "C" fn wasi_ctx_add_dir(
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
         let host_path_str = ffi_utils::c_str_to_string(host_path, "host path")?;
         let guest_path_str = ffi_utils::c_str_to_string(guest_path, "guest path")?;
-        
+
         let dir_perms = WasiDirPermissions {
             create: can_create != 0,
             read: can_read != 0,
             remove: can_remove != 0,
         };
-        
+
         let file_perms = WasiFilePermissions {
             read: file_read != 0,
             write: file_write != 0,
             create: file_create != 0,
             truncate: file_truncate != 0,
         };
-        
+
         ctx.add_directory_mapping(&host_path_str, &guest_path_str, dir_perms, file_perms)?;
         Ok(())
     })
@@ -1007,20 +1052,20 @@ pub unsafe extern "C" fn wasi_ctx_set_args(
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
-        
+
         if args.is_null() || args_len == 0 {
             ctx.set_arguments(vec!["wasmtime4j".to_string()])?;
             return Ok(());
         }
-        
+
         let args_slice = ffi_utils::slice_from_raw_parts(args, args_len, "arguments array")?;
         let mut arg_strings = Vec::with_capacity(args_len);
-        
+
         for &arg_ptr in args_slice {
             let arg_str = ffi_utils::c_str_to_string(arg_ptr, "argument")?;
             arg_strings.push(arg_str);
         }
-        
+
         ctx.set_arguments(arg_strings)?;
         Ok(())
     })
@@ -1039,7 +1084,7 @@ pub unsafe extern "C" fn wasi_ctx_configure_stdio(
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
-        
+
         // Configure stdin
         let stdin = match stdin_type {
             0 => StdioSource::Inherit,
@@ -1061,7 +1106,7 @@ pub unsafe extern "C" fn wasi_ctx_configure_stdio(
             }
             _ => StdioSource::Null,
         };
-        
+
         // Configure stdout
         let stdout = match stdout_type {
             0 => StdioSink::Inherit,
@@ -1076,7 +1121,7 @@ pub unsafe extern "C" fn wasi_ctx_configure_stdio(
             }
             _ => StdioSink::Null,
         };
-        
+
         // Configure stderr
         let stderr = match stderr_type {
             0 => StdioSink::Inherit,
@@ -1091,7 +1136,7 @@ pub unsafe extern "C" fn wasi_ctx_configure_stdio(
             }
             _ => StdioSink::Null,
         };
-        
+
         ctx.configure_stdio_streams(stdin, stdout, stderr)?;
         Ok(())
     })
@@ -1184,9 +1229,7 @@ pub unsafe extern "C" fn wasi_ctx_add_to_store(
 /// Get the WASI context from a Store if one is attached
 /// Returns null pointer if no WASI context is attached (this is not an error)
 #[no_mangle]
-pub unsafe extern "C" fn wasi_ctx_get_from_store(
-    store_ptr: *const c_void,
-) -> *mut c_void {
+pub unsafe extern "C" fn wasi_ctx_get_from_store(store_ptr: *const c_void) -> *mut c_void {
     // Check for null store pointer
     if store_ptr.is_null() {
         ffi_utils::set_last_error(WasmtimeError::InvalidParameter {
@@ -1218,9 +1261,7 @@ pub unsafe extern "C" fn wasi_ctx_get_from_store(
 
 /// Check if a Store has a WASI context attached
 #[no_mangle]
-pub unsafe extern "C" fn wasi_ctx_store_has_wasi(
-    store_ptr: *const c_void,
-) -> c_int {
+pub unsafe extern "C" fn wasi_ctx_store_has_wasi(store_ptr: *const c_void) -> c_int {
     let result = ffi_utils::ffi_try(|| {
         if store_ptr.is_null() {
             return Err(WasmtimeError::InvalidParameter {
@@ -1231,7 +1272,10 @@ pub unsafe extern "C" fn wasi_ctx_store_has_wasi(
         // Cast to Store and check for WASI context
         let store = &*(store_ptr as *const crate::store::Store);
         let has_wasi = store.has_wasi_context();
-        log::debug!("Checking for WASI context in Store - has_wasi: {}", has_wasi);
+        log::debug!(
+            "Checking for WASI context in Store - has_wasi: {}",
+            has_wasi
+        );
         Ok(if has_wasi { 1 } else { 0 })
     });
     result.1
@@ -1291,11 +1335,11 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_inherit_env(ctx_ptr: *mut c_voi
 pub unsafe extern "C" fn wasmtime4j_wasi_context_inherit_stdio(ctx_ptr: *mut c_void) -> c_int {
     wasi_ctx_configure_stdio(
         ctx_ptr,
-        0,  // stdin: Inherit
+        0, // stdin: Inherit
         std::ptr::null(),
-        0,  // stdout: Inherit
+        0, // stdout: Inherit
         std::ptr::null(),
-        0,  // stderr: Inherit
+        0, // stderr: Inherit
         std::ptr::null(),
     )
 }
@@ -1308,11 +1352,11 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdin(
 ) -> c_int {
     wasi_ctx_configure_stdio(
         ctx_ptr,
-        2,  // stdin: File
+        2, // stdin: File
         path,
-        0,  // stdout: Inherit (keep current)
+        0, // stdout: Inherit (keep current)
         std::ptr::null(),
-        0,  // stderr: Inherit (keep current)
+        0, // stderr: Inherit (keep current)
         std::ptr::null(),
     )
 }
@@ -1360,11 +1404,11 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdout(
 ) -> c_int {
     wasi_ctx_configure_stdio(
         ctx_ptr,
-        0,  // stdin: Inherit (keep current)
+        0, // stdin: Inherit (keep current)
         std::ptr::null(),
-        2,  // stdout: File
+        2, // stdout: File
         path,
-        0,  // stderr: Inherit (keep current)
+        0, // stderr: Inherit (keep current)
         std::ptr::null(),
     )
 }
@@ -1377,11 +1421,11 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stderr(
 ) -> c_int {
     wasi_ctx_configure_stdio(
         ctx_ptr,
-        0,  // stdin: Inherit (keep current)
+        0, // stdin: Inherit (keep current)
         std::ptr::null(),
-        0,  // stdout: Inherit (keep current)
+        0, // stdout: Inherit (keep current)
         std::ptr::null(),
-        2,  // stderr: File
+        2, // stderr: File
         path,
     )
 }
@@ -1540,7 +1584,13 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_has_stdout_capture(
     }
 
     match ffi_utils::deref_ptr::<WasiContext>(ctx_ptr as *mut c_void, "WASI context") {
-        Ok(ctx) => if ctx.has_stdout_capture() { 1 } else { 0 },
+        Ok(ctx) => {
+            if ctx.has_stdout_capture() {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => -1,
     }
 }
@@ -1561,7 +1611,13 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_has_stderr_capture(
     }
 
     match ffi_utils::deref_ptr::<WasiContext>(ctx_ptr as *mut c_void, "WASI context") {
-        Ok(ctx) => if ctx.has_stderr_capture() { 1 } else { 0 },
+        Ok(ctx) => {
+            if ctx.has_stderr_capture() {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => -1,
     }
 }
@@ -1574,16 +1630,13 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir(
     guest_path: *const c_char,
 ) -> c_int {
     wasi_ctx_add_dir(
-        ctx_ptr,
-        host_path,
-        guest_path,
-        1,  // can_create
-        1,  // can_read
-        1,  // can_remove
-        1,  // file_read
-        1,  // file_write
-        1,  // file_create
-        1,  // file_truncate
+        ctx_ptr, host_path, guest_path, 1, // can_create
+        1, // can_read
+        1, // can_remove
+        1, // file_read
+        1, // file_write
+        1, // file_create
+        1, // file_truncate
     )
 }
 
@@ -1595,16 +1648,13 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir_readonly(
     guest_path: *const c_char,
 ) -> c_int {
     wasi_ctx_add_dir(
-        ctx_ptr,
-        host_path,
-        guest_path,
-        0,  // can_create: false
-        1,  // can_read: true
-        0,  // can_remove: false
-        1,  // file_read: true
-        0,  // file_write: false
-        0,  // file_create: false
-        0,  // file_truncate: false
+        ctx_ptr, host_path, guest_path, 0, // can_create: false
+        1, // can_read: true
+        0, // can_remove: false
+        1, // file_read: true
+        0, // file_write: false
+        0, // file_create: false
+        0, // file_truncate: false
     )
 }
 
@@ -1619,16 +1669,9 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir_with_perms(
     can_create: c_int,
 ) -> c_int {
     wasi_ctx_add_dir(
-        ctx_ptr,
-        host_path,
-        guest_path,
-        can_create,
-        can_read,
-        can_create,  // can_remove matches can_create
-        can_read,
-        can_write,
-        can_create,
-        can_write,   // file_truncate matches can_write
+        ctx_ptr, host_path, guest_path, can_create, can_read,
+        can_create, // can_remove matches can_create
+        can_read, can_write, can_create, can_write, // file_truncate matches can_write
     )
 }
 
@@ -1641,9 +1684,7 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir_with_perms(
 /// This function is unsafe because it deals with raw pointers from FFI.
 /// Caller must ensure linker_ptr is a valid pointer.
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_linker_add_wasi(
-    linker_ptr: *mut c_void,
-) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_linker_add_wasi(linker_ptr: *mut c_void) -> c_int {
     ffi_utils::ffi_try_code(|| {
         use crate::linker::Linker;
 
@@ -1661,15 +1702,15 @@ pub unsafe extern "C" fn wasmtime4j_linker_add_wasi(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
     use std::ffi::CString;
+    use std::fs;
     use tempfile::TempDir;
 
     #[test]
     fn test_wasi_context_creation() {
         let ctx = WasiContext::new();
         assert!(ctx.is_ok());
-        
+
         let ctx = ctx.unwrap();
         assert_eq!(ctx.get_environment().len(), 0);
         assert_eq!(ctx.get_arguments().len(), 1);
@@ -1686,10 +1727,10 @@ mod tests {
             max_open_files: Some(10),
             env_policy: EnvironmentPolicy::Custom,
         };
-        
+
         let ctx = WasiContext::with_config(config);
         assert!(ctx.is_ok());
-        
+
         let ctx = ctx.unwrap();
         assert!(ctx.get_config().allow_network);
         assert!(ctx.get_config().allow_arbitrary_fs);
@@ -1700,11 +1741,13 @@ mod tests {
     #[test]
     fn test_environment_variables() {
         let mut ctx = WasiContext::new().unwrap();
-        
+
         // Test setting environment variables
-        assert!(ctx.set_environment_variable("TEST_VAR", "test_value").is_ok());
+        assert!(ctx
+            .set_environment_variable("TEST_VAR", "test_value")
+            .is_ok());
         assert!(ctx.set_environment_variable("PATH", "/usr/bin").is_ok());
-        
+
         let env = ctx.get_environment();
         assert_eq!(env.get("TEST_VAR"), Some(&"test_value".to_string()));
         assert_eq!(env.get("PATH"), Some(&"/usr/bin".to_string()));
@@ -1717,16 +1760,19 @@ mod tests {
             env_policy: EnvironmentPolicy::AllowList(vec!["ALLOWED_VAR".to_string()]),
             ..WasiConfig::default()
         };
-        
+
         let mut ctx = WasiContext::with_config(config).unwrap();
-        
+
         // Should allow setting variables in the allow list
         assert!(ctx.set_environment_variable("ALLOWED_VAR", "value").is_ok());
-        
+
         // Should reject variables not in the allow list
         let result = ctx.set_environment_variable("FORBIDDEN_VAR", "value");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not in allow list"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not in allow list"));
     }
 
     #[test]
@@ -1735,12 +1781,12 @@ mod tests {
             env_policy: EnvironmentPolicy::DenyList(vec!["FORBIDDEN_VAR".to_string()]),
             ..WasiConfig::default()
         };
-        
+
         let mut ctx = WasiContext::with_config(config).unwrap();
-        
+
         // Should allow setting variables not in the deny list
         assert!(ctx.set_environment_variable("ALLOWED_VAR", "value").is_ok());
-        
+
         // Should reject variables in the deny list
         let result = ctx.set_environment_variable("FORBIDDEN_VAR", "value");
         assert!(result.is_err());
@@ -1750,14 +1796,14 @@ mod tests {
     #[test]
     fn test_command_line_arguments() {
         let mut ctx = WasiContext::new().unwrap();
-        
+
         let args = vec![
             "my_program".to_string(),
             "--flag".to_string(),
             "value".to_string(),
             "/path/to/file".to_string(),
         ];
-        
+
         assert!(ctx.set_arguments(args.clone()).is_ok());
         assert_eq!(ctx.get_arguments(), args);
     }
@@ -1766,37 +1812,34 @@ mod tests {
     fn test_directory_mapping() {
         let temp_dir = TempDir::new().unwrap();
         let host_path = temp_dir.path();
-        
+
         // Create a test file
         let test_file = host_path.join("test.txt");
         fs::write(&test_file, "test content").unwrap();
-        
+
         let mut ctx = WasiContext::new().unwrap();
-        
+
         let dir_perms = WasiDirPermissions {
             create: true,
             read: true,
             remove: false,
         };
-        
+
         let file_perms = WasiFilePermissions {
             read: true,
             write: true,
             create: true,
             truncate: false,
         };
-        
-        assert!(ctx.add_directory_mapping(
-            host_path,
-            "/sandbox",
-            dir_perms.clone(),
-            file_perms.clone()
-        ).is_ok());
-        
+
+        assert!(ctx
+            .add_directory_mapping(host_path, "/sandbox", dir_perms.clone(), file_perms.clone())
+            .is_ok());
+
         let mappings = ctx.get_directory_mappings();
         assert_eq!(mappings.len(), 1);
         assert!(mappings.contains_key("/sandbox"));
-        
+
         let mapping = &mappings["/sandbox"];
         assert_eq!(mapping.guest_path, "/sandbox");
         assert_eq!(mapping.dir_perms.create, dir_perms.create);
@@ -1808,14 +1851,14 @@ mod tests {
     #[test]
     fn test_directory_mapping_nonexistent_path() {
         let mut ctx = WasiContext::new().unwrap();
-        
+
         let result = ctx.add_directory_mapping(
             "/nonexistent/path",
             "/sandbox",
             WasiDirPermissions::default(),
             WasiFilePermissions::default(),
         );
-        
+
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
@@ -1824,22 +1867,24 @@ mod tests {
     fn test_path_allowed_with_mapping() {
         let temp_dir = TempDir::new().unwrap();
         let host_path = temp_dir.path();
-        
+
         let mut ctx = WasiContext::new().unwrap();
-        
+
         // Add directory mapping
-        assert!(ctx.add_directory_mapping(
-            host_path,
-            "/sandbox",
-            WasiDirPermissions::default(),
-            WasiFilePermissions::default()
-        ).is_ok());
-        
+        assert!(ctx
+            .add_directory_mapping(
+                host_path,
+                "/sandbox",
+                WasiDirPermissions::default(),
+                WasiFilePermissions::default()
+            )
+            .is_ok());
+
         // Test allowed paths
         assert!(ctx.is_path_allowed(host_path));
         assert!(ctx.is_path_allowed(host_path.join("subdir")));
         assert!(ctx.is_path_allowed(host_path.join("file.txt")));
-        
+
         // Test disallowed paths
         assert!(!ctx.is_path_allowed("/tmp/other"));
         assert!(!ctx.is_path_allowed("/etc/passwd"));
@@ -1851,9 +1896,9 @@ mod tests {
             allow_arbitrary_fs: true,
             ..WasiConfig::default()
         };
-        
+
         let ctx = WasiContext::with_config(config).unwrap();
-        
+
         // Should allow any path when arbitrary FS access is enabled
         assert!(ctx.is_path_allowed("/tmp/test"));
         assert!(ctx.is_path_allowed("/etc/passwd"));
@@ -1863,14 +1908,14 @@ mod tests {
     #[test]
     fn test_stdio_configuration() {
         let mut ctx = WasiContext::new().unwrap();
-        
+
         // Test configuring stdio streams
         let stdin = StdioSource::Buffer(b"test input".to_vec());
         let stdout = StdioSink::Buffer;
         let stderr = StdioSink::Buffer;
-        
+
         assert!(ctx.configure_stdio_streams(stdin, stdout, stderr).is_ok());
-        
+
         // The configuration should be stored internally
         // (We can't easily test the actual wasmtime configuration without running a WASM module)
     }
@@ -1882,18 +1927,18 @@ mod tests {
             read: true,
             remove: false,
         };
-        
+
         let wasi_perms = dir_perms.to_wasmtime_perms();
         assert!(wasi_perms.contains(DirPerms::READ));
         // Note: CREATE and REMOVE permissions might not be available in this version
-        
+
         let file_perms = WasiFilePermissions {
             read: true,
             write: false,
             create: false,
             truncate: false,
         };
-        
+
         let wasi_perms = file_perms.to_wasmtime_perms();
         assert!(wasi_perms.contains(FilePerms::READ));
         assert!(!wasi_perms.contains(FilePerms::WRITE));
@@ -1906,18 +1951,18 @@ mod tests {
         assert!(!config.allow_arbitrary_fs);
         assert_eq!(config.max_file_size, Some(100 * 1024 * 1024));
         assert_eq!(config.max_open_files, Some(1024));
-        
+
         let dir_perms = WasiDirPermissions::default();
         assert!(!dir_perms.create);
         assert!(dir_perms.read);
         assert!(!dir_perms.remove);
-        
+
         let file_perms = WasiFilePermissions::default();
         assert!(file_perms.read);
         assert!(!file_perms.write);
         assert!(!file_perms.create);
         assert!(!file_perms.truncate);
-        
+
         let stdio_config = StdioConfig::default();
         assert!(matches!(stdio_config.stdin, StdioSource::Null));
         assert!(matches!(stdio_config.stdout, StdioSink::Buffer));
@@ -1947,17 +1992,17 @@ mod tests {
         unsafe {
             let ctx_ptr = wasi_ctx_new();
             assert!(!ctx_ptr.is_null());
-            
+
             // Test setting environment variable
             let key = CString::new("TEST_VAR").unwrap();
             let value = CString::new("test_value").unwrap();
             let result = wasi_ctx_set_env(ctx_ptr, key.as_ptr(), value.as_ptr());
             assert_eq!(result, 0); // Success
-            
+
             // Test getting environment count
             let count = wasi_ctx_get_env_count(ctx_ptr);
             assert_eq!(count, 1);
-            
+
             wasi_ctx_destroy(ctx_ptr);
         }
     }
@@ -1967,20 +2012,20 @@ mod tests {
         unsafe {
             let ctx_ptr = wasi_ctx_new();
             assert!(!ctx_ptr.is_null());
-            
+
             // Test setting arguments
             let arg1 = CString::new("program").unwrap();
             let arg2 = CString::new("--flag").unwrap();
             let arg3 = CString::new("value").unwrap();
-            
+
             let args = vec![arg1.as_ptr(), arg2.as_ptr(), arg3.as_ptr()];
             let result = wasi_ctx_set_args(ctx_ptr, args.as_ptr(), args.len());
             assert_eq!(result, 0); // Success
-            
+
             // Test getting argument count
             let count = wasi_ctx_get_args_count(ctx_ptr);
             assert_eq!(count, 3);
-            
+
             wasi_ctx_destroy(ctx_ptr);
         }
     }
@@ -1989,37 +2034,42 @@ mod tests {
     fn test_ffi_directory_operations() {
         let temp_dir = TempDir::new().unwrap();
         let host_path_str = temp_dir.path().to_str().unwrap();
-        
+
         unsafe {
             let ctx_ptr = wasi_ctx_new();
             assert!(!ctx_ptr.is_null());
-            
+
             // Test adding directory mapping
             let host_path = CString::new(host_path_str).unwrap();
             let guest_path = CString::new("/sandbox").unwrap();
-            
+
             let result = wasi_ctx_add_dir(
                 ctx_ptr,
                 host_path.as_ptr(),
                 guest_path.as_ptr(),
-                0, 1, 0, // dir perms: no create, read, no remove
-                1, 0, 0, 0, // file perms: read only
+                0,
+                1,
+                0, // dir perms: no create, read, no remove
+                1,
+                0,
+                0,
+                0, // file perms: read only
             );
             assert_eq!(result, 0); // Success
-            
+
             // Test getting directory count
             let count = wasi_ctx_get_dir_count(ctx_ptr);
             assert_eq!(count, 1);
-            
+
             // Test path allowance
             let test_path = CString::new(host_path_str).unwrap();
             let allowed = wasi_ctx_is_path_allowed(ctx_ptr, test_path.as_ptr());
             assert_eq!(allowed, 1); // Allowed
-            
+
             let forbidden_path = CString::new("/tmp/other").unwrap();
             let not_allowed = wasi_ctx_is_path_allowed(ctx_ptr, forbidden_path.as_ptr());
             assert_eq!(not_allowed, 0); // Not allowed
-            
+
             wasi_ctx_destroy(ctx_ptr);
         }
     }
@@ -2029,17 +2079,20 @@ mod tests {
         unsafe {
             let ctx_ptr = wasi_ctx_new();
             assert!(!ctx_ptr.is_null());
-            
+
             // Test configuring stdio with buffer input
             let stdin_data = CString::new("test input").unwrap();
             let result = wasi_ctx_configure_stdio(
                 ctx_ptr,
-                1, stdin_data.as_ptr(), // stdin: buffer with data
-                1, std::ptr::null(),    // stdout: buffer
-                1, std::ptr::null(),    // stderr: buffer
+                1,
+                stdin_data.as_ptr(), // stdin: buffer with data
+                1,
+                std::ptr::null(), // stdout: buffer
+                1,
+                std::ptr::null(), // stderr: buffer
             );
             assert_eq!(result, 0); // Success
-            
+
             wasi_ctx_destroy(ctx_ptr);
         }
     }
@@ -2048,11 +2101,7 @@ mod tests {
     fn test_ffi_error_handling() {
         unsafe {
             // Test with null pointer
-            let result = wasi_ctx_set_env(
-                std::ptr::null_mut(),
-                std::ptr::null(),
-                std::ptr::null(),
-            );
+            let result = wasi_ctx_set_env(std::ptr::null_mut(), std::ptr::null(), std::ptr::null());
             assert_ne!(result, 0); // Should fail
 
             // Test adding directory with invalid path
@@ -2065,8 +2114,13 @@ mod tests {
                 ctx_ptr,
                 invalid_path.as_ptr(),
                 guest_path.as_ptr(),
-                1, 1, 1, // dir perms
-                1, 1, 1, 1, // file perms
+                1,
+                1,
+                1, // dir perms
+                1,
+                1,
+                1,
+                1, // file perms
             );
             assert_ne!(result, 0); // Should fail
 
@@ -2123,19 +2177,23 @@ mod tests {
 
         let mut ctx = WasiContext::new().unwrap();
 
-        assert!(ctx.add_directory_mapping(
-            temp_dir1.path(),
-            "/sandbox1",
-            WasiDirPermissions::default(),
-            WasiFilePermissions::default()
-        ).is_ok());
+        assert!(ctx
+            .add_directory_mapping(
+                temp_dir1.path(),
+                "/sandbox1",
+                WasiDirPermissions::default(),
+                WasiFilePermissions::default()
+            )
+            .is_ok());
 
-        assert!(ctx.add_directory_mapping(
-            temp_dir2.path(),
-            "/sandbox2",
-            WasiDirPermissions::default(),
-            WasiFilePermissions::default()
-        ).is_ok());
+        assert!(ctx
+            .add_directory_mapping(
+                temp_dir2.path(),
+                "/sandbox2",
+                WasiDirPermissions::default(),
+                WasiFilePermissions::default()
+            )
+            .is_ok());
 
         let mappings = ctx.get_directory_mappings();
         assert_eq!(mappings.len(), 2);
@@ -2146,11 +2204,15 @@ mod tests {
     #[test]
     fn test_wasi_context_clone() {
         let mut ctx = WasiContext::new().unwrap();
-        ctx.set_environment_variable("TEST_KEY", "test_value").unwrap();
+        ctx.set_environment_variable("TEST_KEY", "test_value")
+            .unwrap();
 
         let cloned = ctx.clone();
 
-        assert_eq!(cloned.get_environment().get("TEST_KEY"), Some(&"test_value".to_string()));
+        assert_eq!(
+            cloned.get_environment().get("TEST_KEY"),
+            Some(&"test_value".to_string())
+        );
     }
 
     #[test]
@@ -2186,7 +2248,7 @@ mod tests {
 
         // Just verify the variants can be created and matched
         match null_source {
-            StdioSource::Null => {},
+            StdioSource::Null => {}
             _ => panic!("Expected Null"),
         }
 
@@ -2202,12 +2264,12 @@ mod tests {
         let buffer_sink = StdioSink::Buffer;
 
         match null_sink {
-            StdioSink::Null => {},
+            StdioSink::Null => {}
             _ => panic!("Expected Null"),
         }
 
         match buffer_sink {
-            StdioSink::Buffer => {},
+            StdioSink::Buffer => {}
             _ => panic!("Expected Buffer"),
         }
     }
@@ -2236,8 +2298,9 @@ mod tests {
             temp_dir.path(),
             "/sandbox",
             WasiDirPermissions::default(),
-            WasiFilePermissions::default()
-        ).unwrap();
+            WasiFilePermissions::default(),
+        )
+        .unwrap();
 
         let summary = ctx.get_capabilities_summary();
 
@@ -2276,7 +2339,10 @@ mod tests {
         let mut ctx = WasiContext::new().unwrap();
 
         assert!(ctx.set_environment_variable("EMPTY_VAR", "").is_ok());
-        assert_eq!(ctx.get_environment().get("EMPTY_VAR"), Some(&"".to_string()));
+        assert_eq!(
+            ctx.get_environment().get("EMPTY_VAR"),
+            Some(&"".to_string())
+        );
     }
 
     #[test]
@@ -2289,8 +2355,8 @@ mod tests {
 }
 
 /// WASI Preview 1 filesystem operations implementation
-use std::fs::{self, File, OpenOptions, Metadata};
-use std::io::{Read, Write, Seek, SeekFrom};
+use std::fs::{self, File, Metadata, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::SystemTime;
 
@@ -2403,7 +2469,11 @@ impl WasiDirectoryDescriptor {
             })?;
 
             let metadata = entry.metadata().map_err(|e| WasmtimeError::Wasi {
-                message: format!("Failed to get metadata for {}: {}", entry.path().display(), e),
+                message: format!(
+                    "Failed to get metadata for {}: {}",
+                    entry.path().display(),
+                    e
+                ),
             })?;
 
             let file_type = if metadata.is_dir() {
@@ -2418,8 +2488,7 @@ impl WasiDirectoryDescriptor {
             let size = metadata.len();
 
             // Convert times to nanoseconds since epoch
-            let (access_time, modification_time, creation_time) =
-                Self::extract_times(&metadata);
+            let (access_time, modification_time, creation_time) = Self::extract_times(&metadata);
 
             entries.push(WasiDirectoryEntry {
                 name,
@@ -2441,19 +2510,22 @@ impl WasiDirectoryDescriptor {
     }
 
     fn extract_times(metadata: &Metadata) -> (u64, u64, u64) {
-        let access_time = metadata.accessed()
+        let access_time = metadata
+            .accessed()
             .ok()
             .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
             .map(|d| d.as_nanos() as u64)
             .unwrap_or(0);
 
-        let modification_time = metadata.modified()
+        let modification_time = metadata
+            .modified()
             .ok()
             .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
             .map(|d| d.as_nanos() as u64)
             .unwrap_or(0);
 
-        let creation_time = metadata.created()
+        let creation_time = metadata
+            .created()
             .ok()
             .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
             .map(|d| d.as_nanos() as u64)
@@ -2504,39 +2576,49 @@ impl WasiContext {
         let mut open_opts = OpenOptions::new();
 
         // Handle creation and directory flags
-        if (oflags & 0x01) != 0 { // O_CREAT
+        if (oflags & 0x01) != 0 {
+            // O_CREAT
             open_opts.create(true);
         }
-        if (oflags & 0x02) != 0 { // O_DIRECTORY
+        if (oflags & 0x02) != 0 {
+            // O_DIRECTORY
             return self.open_directory(fd_manager, &full_path, rights);
         }
-        if (oflags & 0x04) != 0 { // O_EXCL
+        if (oflags & 0x04) != 0 {
+            // O_EXCL
             open_opts.create_new(true);
         }
-        if (oflags & 0x08) != 0 { // O_TRUNC
+        if (oflags & 0x08) != 0 {
+            // O_TRUNC
             open_opts.truncate(true);
         }
 
         // Set read/write permissions based on rights
-        if (rights & 0x02) != 0 { // FD_READ
+        if (rights & 0x02) != 0 {
+            // FD_READ
             open_opts.read(true);
         }
-        if (rights & 0x40) != 0 { // FD_WRITE
+        if (rights & 0x40) != 0 {
+            // FD_WRITE
             open_opts.write(true);
         }
-        if (rights & 0x20) != 0 { // FD_APPEND
+        if (rights & 0x20) != 0 {
+            // FD_APPEND
             open_opts.append(true);
         }
 
         // Validate we have at least read or write permissions
-        if (rights & 0x42) == 0 { // Neither FD_READ nor FD_WRITE
+        if (rights & 0x42) == 0 {
+            // Neither FD_READ nor FD_WRITE
             open_opts.read(true); // Default to read-only
         }
 
         // Open the file
-        let file = open_opts.open(&full_path).map_err(|e| WasmtimeError::Wasi {
-            message: format!("Failed to open file {}: {}", full_path, e),
-        })?;
+        let file = open_opts
+            .open(&full_path)
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to open file {}: {}", full_path, e),
+            })?;
 
         // Create file descriptor
         let fd = fd_manager.allocate_fd();
@@ -2559,22 +2641,27 @@ impl WasiContext {
         fd: u32,
         buffer: &mut [u8],
     ) -> WasmtimeResult<usize> {
-        let file_desc = fd_manager.get_file_mut(fd)
+        let file_desc = fd_manager
+            .get_file_mut(fd)
             .ok_or_else(|| WasmtimeError::Wasi {
                 message: format!("Invalid file descriptor: {}", fd),
             })?;
 
         // Check read permissions
-        if (file_desc.rights & 0x02) == 0 { // FD_READ
+        if (file_desc.rights & 0x02) == 0 {
+            // FD_READ
             return Err(WasmtimeError::Wasi {
                 message: format!("File descriptor {} does not have read permissions", fd),
             });
         }
 
         // Read from file
-        file_desc.file.read(buffer).map_err(|e| WasmtimeError::Wasi {
-            message: format!("Failed to read from file {}: {}", file_desc.path, e),
-        })
+        file_desc
+            .file
+            .read(buffer)
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to read from file {}: {}", file_desc.path, e),
+            })
     }
 
     /// Write to a file descriptor
@@ -2584,22 +2671,27 @@ impl WasiContext {
         fd: u32,
         buffer: &[u8],
     ) -> WasmtimeResult<usize> {
-        let file_desc = fd_manager.get_file_mut(fd)
+        let file_desc = fd_manager
+            .get_file_mut(fd)
             .ok_or_else(|| WasmtimeError::Wasi {
                 message: format!("Invalid file descriptor: {}", fd),
             })?;
 
         // Check write permissions
-        if (file_desc.rights & 0x40) == 0 { // FD_WRITE
+        if (file_desc.rights & 0x40) == 0 {
+            // FD_WRITE
             return Err(WasmtimeError::Wasi {
                 message: format!("File descriptor {} does not have write permissions", fd),
             });
         }
 
         // Write to file
-        file_desc.file.write(buffer).map_err(|e| WasmtimeError::Wasi {
-            message: format!("Failed to write to file {}: {}", file_desc.path, e),
-        })
+        file_desc
+            .file
+            .write(buffer)
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to write to file {}: {}", file_desc.path, e),
+            })
     }
 
     /// Flush a file descriptor
@@ -2608,7 +2700,8 @@ impl WasiContext {
         fd_manager: &mut WasiFileDescriptorManager,
         fd: u32,
     ) -> WasmtimeResult<()> {
-        let file_desc = fd_manager.get_file_mut(fd)
+        let file_desc = fd_manager
+            .get_file_mut(fd)
             .ok_or_else(|| WasmtimeError::Wasi {
                 message: format!("Invalid file descriptor: {}", fd),
             })?;
@@ -2626,13 +2719,15 @@ impl WasiContext {
         offset: i64,
         whence: u8,
     ) -> WasmtimeResult<u64> {
-        let file_desc = fd_manager.get_file_mut(fd)
+        let file_desc = fd_manager
+            .get_file_mut(fd)
             .ok_or_else(|| WasmtimeError::Wasi {
                 message: format!("Invalid file descriptor: {}", fd),
             })?;
 
         // Check seek permissions
-        if (file_desc.rights & 0x08) == 0 { // FD_SEEK
+        if (file_desc.rights & 0x08) == 0 {
+            // FD_SEEK
             return Err(WasmtimeError::Wasi {
                 message: format!("File descriptor {} does not have seek permissions", fd),
             });
@@ -2642,14 +2737,19 @@ impl WasiContext {
             0 => SeekFrom::Start(offset as u64), // SEEK_SET
             1 => SeekFrom::Current(offset),      // SEEK_CUR
             2 => SeekFrom::End(offset),          // SEEK_END
-            _ => return Err(WasmtimeError::Wasi {
-                message: format!("Invalid seek whence value: {}", whence),
-            }),
+            _ => {
+                return Err(WasmtimeError::Wasi {
+                    message: format!("Invalid seek whence value: {}", whence),
+                })
+            }
         };
 
-        file_desc.file.seek(seek_from).map_err(|e| WasmtimeError::Wasi {
-            message: format!("Failed to seek in file {}: {}", file_desc.path, e),
-        })
+        file_desc
+            .file
+            .seek(seek_from)
+            .map_err(|e| WasmtimeError::Wasi {
+                message: format!("Failed to seek in file {}: {}", file_desc.path, e),
+            })
     }
 
     /// Close a file descriptor
@@ -2666,7 +2766,8 @@ impl WasiContext {
         }
 
         // Remove from file manager (file is automatically closed when dropped)
-        fd_manager.close_file(fd)
+        fd_manager
+            .close_file(fd)
             .ok_or_else(|| WasmtimeError::Wasi {
                 message: format!("Invalid file descriptor: {}", fd),
             })?;
@@ -2680,7 +2781,9 @@ impl WasiContext {
         fd_manager: &WasiFileDescriptorManager,
         fd: u32,
     ) -> WasmtimeResult<WasiFilestat> {
-        let file_desc = fd_manager.open_files.get(&fd)
+        let file_desc = fd_manager
+            .open_files
+            .get(&fd)
             .ok_or_else(|| WasmtimeError::Wasi {
                 message: format!("Invalid file descriptor: {}", fd),
             })?;
@@ -2753,13 +2856,15 @@ impl WasiContext {
         fd: u32,
         cookie: u64,
     ) -> WasmtimeResult<Vec<WasiDirectoryEntry>> {
-        let dir_desc = fd_manager.get_directory_mut(fd)
+        let dir_desc = fd_manager
+            .get_directory_mut(fd)
             .ok_or_else(|| WasmtimeError::Wasi {
                 message: format!("Invalid directory descriptor: {}", fd),
             })?;
 
         // Check read permissions
-        if (dir_desc.rights & 0x02) == 0 { // FD_READ
+        if (dir_desc.rights & 0x02) == 0 {
+            // FD_READ
             return Err(WasmtimeError::Wasi {
                 message: format!("Directory descriptor {} does not have read permissions", fd),
             });
@@ -2776,11 +2881,7 @@ impl WasiContext {
     }
 
     /// Create a directory
-    pub fn path_create_directory(
-        &self,
-        _dir_fd: u32,
-        path: &str,
-    ) -> WasmtimeResult<()> {
+    pub fn path_create_directory(&self, _dir_fd: u32, path: &str) -> WasmtimeResult<()> {
         // Validate path is allowed
         if !self.is_path_allowed(path) {
             return Err(WasmtimeError::Wasi {
@@ -2794,11 +2895,7 @@ impl WasiContext {
     }
 
     /// Remove a directory
-    pub fn path_remove_directory(
-        &self,
-        _dir_fd: u32,
-        path: &str,
-    ) -> WasmtimeResult<()> {
+    pub fn path_remove_directory(&self, _dir_fd: u32, path: &str) -> WasmtimeResult<()> {
         // Validate path is allowed
         if !self.is_path_allowed(path) {
             return Err(WasmtimeError::Wasi {
@@ -2878,11 +2975,7 @@ impl WasiContext {
     }
 
     /// Unlink a file
-    pub fn path_unlink_file(
-        &self,
-        _dir_fd: u32,
-        path: &str,
-    ) -> WasmtimeResult<()> {
+    pub fn path_unlink_file(&self, _dir_fd: u32, path: &str) -> WasmtimeResult<()> {
         // Validate path is allowed
         if !self.is_path_allowed(path) {
             return Err(WasmtimeError::Wasi {
@@ -2915,37 +3008,30 @@ impl WasiContext {
                     std::env::var(key).ok()
                 }
             }
-            EnvironmentPolicy::Custom => {
-                self.environment.get(key).cloned()
-            }
+            EnvironmentPolicy::Custom => self.environment.get(key).cloned(),
         }
     }
 
     /// Get all environment variables as key=value pairs
     pub fn environ_sizes_get(&self) -> (usize, usize) {
         let env_vars = match &self.config.env_policy {
-            EnvironmentPolicy::Inherit => {
-                std::env::vars().collect::<Vec<_>>()
-            }
-            EnvironmentPolicy::AllowList(allowed) => {
-                std::env::vars()
-                    .filter(|(k, _)| allowed.contains(k))
-                    .collect()
-            }
-            EnvironmentPolicy::DenyList(denied) => {
-                std::env::vars()
-                    .filter(|(k, _)| !denied.contains(k))
-                    .collect()
-            }
-            EnvironmentPolicy::Custom => {
-                self.environment.iter()
-                    .map(|(k, v)| (k.clone(), v.clone()))
-                    .collect()
-            }
+            EnvironmentPolicy::Inherit => std::env::vars().collect::<Vec<_>>(),
+            EnvironmentPolicy::AllowList(allowed) => std::env::vars()
+                .filter(|(k, _)| allowed.contains(k))
+                .collect(),
+            EnvironmentPolicy::DenyList(denied) => std::env::vars()
+                .filter(|(k, _)| !denied.contains(k))
+                .collect(),
+            EnvironmentPolicy::Custom => self
+                .environment
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
         };
 
         let environ_count = env_vars.len();
-        let environ_size: usize = env_vars.iter()
+        let environ_size: usize = env_vars
+            .iter()
             .map(|(k, v)| k.len() + v.len() + 2) // key=value\0
             .sum();
 
@@ -2955,7 +3041,9 @@ impl WasiContext {
     /// Get command line arguments count and total size
     pub fn args_sizes_get(&self) -> (usize, usize) {
         let args_count = self.arguments.len();
-        let args_size: usize = self.arguments.iter()
+        let args_size: usize = self
+            .arguments
+            .iter()
             .map(|arg| arg.len() + 1) // arg\0
             .sum();
 
@@ -2979,8 +3067,8 @@ impl WasiContext {
     /// Get clock resolution for specified clock
     pub fn clock_res_get(&self, clock_id: u32) -> WasmtimeResult<u64> {
         match clock_id {
-            0 => Ok(1), // REALTIME - nanosecond resolution
-            1 => Ok(1), // MONOTONIC - nanosecond resolution
+            0 => Ok(1),    // REALTIME - nanosecond resolution
+            1 => Ok(1),    // MONOTONIC - nanosecond resolution
             2 => Ok(1000), // PROCESS_CPUTIME - microsecond resolution
             3 => Ok(1000), // THREAD_CPUTIME - microsecond resolution
             _ => Err(WasmtimeError::Wasi {
@@ -3041,9 +3129,11 @@ impl WasiContext {
                 message: format!("Failed to open /dev/urandom: {}", e),
             })?;
 
-            urandom.read_exact(buffer).map_err(|e| WasmtimeError::Wasi {
-                message: format!("Failed to read random bytes: {}", e),
-            })?;
+            urandom
+                .read_exact(buffer)
+                .map_err(|e| WasmtimeError::Wasi {
+                    message: format!("Failed to read random bytes: {}", e),
+                })?;
         }
 
         #[cfg(windows)]
@@ -3083,7 +3173,6 @@ impl WasiContext {
 
         Ok(())
     }
-
 }
 
 /// Native FFI functions for WASI filesystem operations
@@ -3147,11 +3236,10 @@ pub unsafe extern "C" fn wasi_path_filestat_get(
         }
 
         let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
-        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let path_str =
+            std::str::from_utf8(path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in path".to_string(),
-            }
-        })?;
+            })?;
 
         // For now, just return empty file stats
         // In full implementation, we would get actual file statistics for the path
@@ -3166,7 +3254,12 @@ pub unsafe extern "C" fn wasi_path_filestat_get(
             ctim: 0,
         };
 
-        log::debug!("Getting file stats for path: {} (dir_fd: {}, flags: {})", path_str, dir_fd, flags);
+        log::debug!(
+            "Getting file stats for path: {} (dir_fd: {}, flags: {})",
+            path_str,
+            dir_fd,
+            flags
+        );
         Ok(())
     })
 }
@@ -3193,7 +3286,12 @@ pub unsafe extern "C" fn wasi_fd_readdir(
         // For now, just write 0 bytes
         // In full implementation, we would read directory entries
         *bytes_written = 0;
-        log::debug!("Reading directory for descriptor: {} (cookie: {}, buffer_len: {})", fd, cookie, buffer_len);
+        log::debug!(
+            "Reading directory for descriptor: {} (cookie: {}, buffer_len: {})",
+            fd,
+            cookie,
+            buffer_len
+        );
         Ok(())
     })
 }
@@ -3216,11 +3314,10 @@ pub unsafe extern "C" fn wasi_path_create_directory(
         }
 
         let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
-        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let path_str =
+            std::str::from_utf8(path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in path".to_string(),
-            }
-        })?;
+            })?;
 
         log::debug!("Creating directory: {} (dir_fd: {})", path_str, dir_fd);
         // In full implementation, we would create the directory
@@ -3246,11 +3343,10 @@ pub unsafe extern "C" fn wasi_path_remove_directory(
         }
 
         let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
-        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let path_str =
+            std::str::from_utf8(path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in path".to_string(),
-            }
-        })?;
+            })?;
 
         log::debug!("Removing directory: {} (dir_fd: {})", path_str, dir_fd);
         // In full implementation, we would remove the directory
@@ -3279,21 +3375,24 @@ pub unsafe extern "C" fn wasi_path_rename(
         }
 
         let old_path_bytes = slice::from_raw_parts(old_path as *const u8, old_path_len);
-        let old_path_str = std::str::from_utf8(old_path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let old_path_str =
+            std::str::from_utf8(old_path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in old path".to_string(),
-            }
-        })?;
+            })?;
 
         let new_path_bytes = slice::from_raw_parts(new_path as *const u8, new_path_len);
-        let new_path_str = std::str::from_utf8(new_path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let new_path_str =
+            std::str::from_utf8(new_path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in new path".to_string(),
-            }
-        })?;
+            })?;
 
-        log::debug!("Renaming {} -> {} (old_dir_fd: {}, new_dir_fd: {})",
-                   old_path_str, new_path_str, old_dir_fd, new_dir_fd);
+        log::debug!(
+            "Renaming {} -> {} (old_dir_fd: {}, new_dir_fd: {})",
+            old_path_str,
+            new_path_str,
+            old_dir_fd,
+            new_dir_fd
+        );
         // In full implementation, we would rename the file/directory
         Ok(())
     })
@@ -3317,11 +3416,10 @@ pub unsafe extern "C" fn wasi_path_unlink_file(
         }
 
         let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
-        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let path_str =
+            std::str::from_utf8(path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in path".to_string(),
-            }
-        })?;
+            })?;
 
         log::debug!("Unlinking file: {} (dir_fd: {})", path_str, dir_fd);
         // In full implementation, we would unlink the file
@@ -3349,20 +3447,23 @@ pub unsafe extern "C" fn wasi_path_symlink(
         }
 
         let old_path_bytes = slice::from_raw_parts(old_path as *const u8, old_path_len);
-        let old_path_str = std::str::from_utf8(old_path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let old_path_str =
+            std::str::from_utf8(old_path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in old path".to_string(),
-            }
-        })?;
+            })?;
 
         let new_path_bytes = slice::from_raw_parts(new_path as *const u8, new_path_len);
-        let new_path_str = std::str::from_utf8(new_path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let new_path_str =
+            std::str::from_utf8(new_path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in new path".to_string(),
-            }
-        })?;
+            })?;
 
-        log::debug!("Creating symlink {} -> {} (dir_fd: {})", old_path_str, new_path_str, dir_fd);
+        log::debug!(
+            "Creating symlink {} -> {} (dir_fd: {})",
+            old_path_str,
+            new_path_str,
+            dir_fd
+        );
         // In full implementation, we would create the symbolic link
         Ok(())
     })
@@ -3389,16 +3490,20 @@ pub unsafe extern "C" fn wasi_path_readlink(
         }
 
         let path_bytes = slice::from_raw_parts(path as *const u8, path_len);
-        let path_str = std::str::from_utf8(path_bytes).map_err(|_| {
-            WasmtimeError::InvalidParameter {
+        let path_str =
+            std::str::from_utf8(path_bytes).map_err(|_| WasmtimeError::InvalidParameter {
                 message: "Invalid UTF-8 in path".to_string(),
-            }
-        })?;
+            })?;
 
         // For now, just write 0 bytes
         // In full implementation, we would read the symbolic link target
         *bytes_written = 0;
-        log::debug!("Reading symlink: {} (dir_fd: {}, buffer_len: {})", path_str, dir_fd, buffer_len);
+        log::debug!(
+            "Reading symlink: {} (dir_fd: {}, buffer_len: {})",
+            path_str,
+            dir_fd,
+            buffer_len
+        );
         Ok(())
     })
 }
@@ -3467,7 +3572,9 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOp
             break;
         }
         // LCG PRNG
-        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        state = state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         let rand_val = (state >> 33) as u8;
         *buffer_addr.wrapping_add(offset + i) = rand_val;
     }
@@ -3517,12 +3624,17 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiRandomOp
     let mut state = seed;
     for _ in 0..length {
         // LCG PRNG
-        state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        state = state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         random_bytes.push((state >> 33) as i8);
     }
 
     // Set the byte array data
-    if jni_env.set_byte_array_region(&array, 0, &random_bytes).is_err() {
+    if jni_env
+        .set_byte_array_region(&array, 0, &random_bytes)
+        .is_err()
+    {
         return -1;
     }
 
@@ -3539,11 +3651,11 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiTimeOper
 ) -> jni::sys::jlong {
     // Return basic clock resolution based on clock type
     match clock_id {
-        0 => 1, // REALTIME - nanosecond resolution
-        1 => 1, // MONOTONIC - nanosecond resolution  
+        0 => 1,    // REALTIME - nanosecond resolution
+        1 => 1,    // MONOTONIC - nanosecond resolution
         2 => 1000, // PROCESS_CPUTIME - microsecond resolution
         3 => 1000, // THREAD_CPUTIME - microsecond resolution
-        _ => -1, // Invalid clock ID
+        _ => -1,   // Invalid clock ID
     }
 }
 
@@ -3557,7 +3669,7 @@ pub unsafe extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiTimeOper
     _precision: jni::sys::jlong,
 ) -> jni::sys::jlong {
     use std::time::{SystemTime, UNIX_EPOCH};
-    
+
     match clock_id {
         0 | 1 | 2 | 3 => {
             // Return current system time for all valid clock types
@@ -3591,11 +3703,10 @@ impl WasiContext {
         #[cfg(feature = "wasi")]
         {
             // Get the linker guard
-            let mut linker_guard = linker.inner()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get linker: {}", e),
-                    backtrace: None,
-                })?;
+            let mut linker_guard = linker.inner().map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to get linker: {}", e),
+                backtrace: None,
+            })?;
 
             // First, ensure the Store has the WASI context from this WasiContext
             // The wasmtime_wasi add_to_linker expects to extract WasiP1Ctx from StoreData
@@ -3604,19 +3715,24 @@ impl WasiContext {
                     // Clone our WasiP1Ctx into the store's data
                     // Note: WasiP1Ctx doesn't implement Clone, so we need to build a new one
                     // with the same configuration. For now, log a warning if not set.
-                    log::warn!("Store does not have WASI context. Call store.set_wasi_context() first.");
+                    log::warn!(
+                        "Store does not have WASI context. Call store.set_wasi_context() first."
+                    );
                 }
                 Ok(())
             })?;
 
             // Add WASI Preview 1 imports to the linker
             // The closure extracts the WasiP1Ctx directly from StoreData
-            wasmtime_wasi::p1::add_to_linker_sync(&mut *linker_guard, |data: &mut crate::store::StoreData| {
-                data.wasi_ctx.as_mut().expect(
-                    "Store does not have a WASI context attached. \
-                     Call store.set_wasi_context() before adding WASI to linker."
-                )
-            })
+            wasmtime_wasi::p1::add_to_linker_sync(
+                &mut *linker_guard,
+                |data: &mut crate::store::StoreData| {
+                    data.wasi_ctx.as_mut().expect(
+                        "Store does not have a WASI context attached. \
+                     Call store.set_wasi_context() before adding WASI to linker.",
+                    )
+                },
+            )
             .map_err(|e| WasmtimeError::Wasi {
                 message: format!("Failed to add WASI to linker: {}", e),
             })?;
@@ -3643,10 +3759,7 @@ impl WasiContext {
     ///
     /// # Returns
     /// Ok if standard I/O imports were successfully added
-    pub fn add_stdio_imports(
-        &self,
-        linker: &mut WasmtimeLinker,
-    ) -> WasmtimeResult<()> {
+    pub fn add_stdio_imports(&self, linker: &mut WasmtimeLinker) -> WasmtimeResult<()> {
         // Add basic WASI Preview 1 stdio functions
         self.add_wasi_import(linker, "wasi_snapshot_preview1", "fd_write")?;
         self.add_wasi_import(linker, "wasi_snapshot_preview1", "fd_read")?;
@@ -3665,10 +3778,7 @@ impl WasiContext {
     ///
     /// # Returns
     /// Ok if filesystem imports were successfully added
-    pub fn add_filesystem_imports(
-        &self,
-        linker: &mut WasmtimeLinker,
-    ) -> WasmtimeResult<()> {
+    pub fn add_filesystem_imports(&self, linker: &mut WasmtimeLinker) -> WasmtimeResult<()> {
         // Add basic WASI Preview 1 filesystem functions
         self.add_wasi_import(linker, "wasi_snapshot_preview1", "path_open")?;
         self.add_wasi_import(linker, "wasi_snapshot_preview1", "path_filestat_get")?;
@@ -3690,10 +3800,7 @@ impl WasiContext {
     ///
     /// # Returns
     /// Ok if environment imports were successfully added
-    pub fn add_environment_imports(
-        &self,
-        linker: &mut WasmtimeLinker,
-    ) -> WasmtimeResult<()> {
+    pub fn add_environment_imports(&self, linker: &mut WasmtimeLinker) -> WasmtimeResult<()> {
         // Add basic WASI Preview 1 environment and process functions
         self.add_wasi_import(linker, "wasi_snapshot_preview1", "environ_sizes_get")?;
         self.add_wasi_import(linker, "wasi_snapshot_preview1", "environ_get")?;
@@ -3713,10 +3820,7 @@ impl WasiContext {
     ///
     /// # Returns
     /// Ok if time/random imports were successfully added
-    pub fn add_time_random_imports(
-        &self,
-        linker: &mut WasmtimeLinker,
-    ) -> WasmtimeResult<()> {
+    pub fn add_time_random_imports(&self, linker: &mut WasmtimeLinker) -> WasmtimeResult<()> {
         // Add basic WASI Preview 1 time and random functions
         self.add_wasi_import(linker, "wasi_snapshot_preview1", "clock_res_get")?;
         self.add_wasi_import(linker, "wasi_snapshot_preview1", "clock_time_get")?;
@@ -3786,7 +3890,8 @@ impl WasiContext {
     pub fn get_capabilities_summary(&self) -> WasiCapabilitiesSummary {
         WasiCapabilitiesSummary {
             network_enabled: self.config.allow_network,
-            filesystem_enabled: !self.directory_mappings.is_empty() || self.config.allow_arbitrary_fs,
+            filesystem_enabled: !self.directory_mappings.is_empty()
+                || self.config.allow_arbitrary_fs,
             environment_count: self.environment.len(),
             directory_mappings_count: self.directory_mappings.len(),
             stdio_configured: true, // Always true for basic stdio

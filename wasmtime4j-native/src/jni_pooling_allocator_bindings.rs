@@ -3,9 +3,9 @@
 //! This module provides JNI bindings that wrap wasmtime's PoolingAllocationConfig
 //! and InstanceAllocationStrategy with custom instance tracking for statistics.
 
-use jni::JNIEnv;
 use jni::objects::JClass;
 use jni::sys::{jboolean, jfloat, jint, jlong, jlongArray, JNI_FALSE, JNI_TRUE};
+use jni::JNIEnv;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::RwLock;
@@ -271,8 +271,7 @@ impl JniPoolingAllocatorWrapper {
         }
 
         let start = Instant::now();
-        let warm_count =
-            ((self.instance_pool_size as f32) * self.pool_warming_percentage) as u32;
+        let warm_count = ((self.instance_pool_size as f32) * self.pool_warming_percentage) as u32;
 
         // Pre-allocate and immediately release instances to warm the pool
         for _ in 0..warm_count {
@@ -297,7 +296,8 @@ impl JniPoolingAllocatorWrapper {
 
         // Count active instances for memory usage
         let instances = self.instances.read().map_err(|e| e.to_string())?;
-        let active_count = instances.values()
+        let active_count = instances
+            .values()
             .filter(|(_, state)| *state == InstanceState::Active)
             .count();
         drop(instances);
@@ -305,7 +305,8 @@ impl JniPoolingAllocatorWrapper {
         // Update memory usage estimate based on active instances
         {
             let mut stats = self.stats.write().map_err(|e| e.to_string())?;
-            stats.current_memory_usage = (active_count as u64) * (self.max_memory_per_instance as u64);
+            stats.current_memory_usage =
+                (active_count as u64) * (self.max_memory_per_instance as u64);
         }
 
         Ok(())
@@ -420,7 +421,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator
 
 /// Get statistics from the allocator
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator_nativeGetStatistics<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator_nativeGetStatistics<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     allocator_handle: jlong,
@@ -528,15 +531,15 @@ mod tests {
     #[test]
     fn test_create_pooling_allocator() {
         let wrapper = JniPoolingAllocatorWrapper::new(
-            100,      // instance_pool_size
-            1 << 20,  // max_memory_per_instance (1MB)
-            1 << 16,  // stack_size (64KB)
-            100,      // max_stacks
-            10,       // max_tables_per_instance
-            1000,     // max_tables
-            true,     // memory_decommit_enabled
-            true,     // pool_warming_enabled
-            0.1,      // pool_warming_percentage
+            100,     // instance_pool_size
+            1 << 20, // max_memory_per_instance (1MB)
+            1 << 16, // stack_size (64KB)
+            100,     // max_stacks
+            10,      // max_tables_per_instance
+            1000,    // max_tables
+            true,    // memory_decommit_enabled
+            true,    // pool_warming_enabled
+            0.1,     // pool_warming_percentage
         );
 
         assert!(wrapper.is_ok());
@@ -546,10 +549,9 @@ mod tests {
 
     #[test]
     fn test_allocate_and_release_instance() {
-        let wrapper = JniPoolingAllocatorWrapper::new(
-            100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0,
-        )
-        .unwrap();
+        let wrapper =
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+                .unwrap();
 
         // Allocate an instance
         let id = wrapper.allocate_instance().unwrap();
@@ -571,10 +573,9 @@ mod tests {
 
     #[test]
     fn test_reuse_instance() {
-        let wrapper = JniPoolingAllocatorWrapper::new(
-            100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0,
-        )
-        .unwrap();
+        let wrapper =
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+                .unwrap();
 
         // Allocate an instance
         let id = wrapper.allocate_instance().unwrap();
@@ -602,10 +603,9 @@ mod tests {
 
     #[test]
     fn test_warm_pools() {
-        let wrapper = JniPoolingAllocatorWrapper::new(
-            100, 1 << 20, 1 << 16, 100, 10, 1000, true, true, 0.1,
-        )
-        .unwrap();
+        let wrapper =
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, true, 0.1)
+                .unwrap();
 
         // Warm pools
         let result = wrapper.warm_pools();
@@ -618,10 +618,9 @@ mod tests {
 
     #[test]
     fn test_reset_statistics() {
-        let wrapper = JniPoolingAllocatorWrapper::new(
-            100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0,
-        )
-        .unwrap();
+        let wrapper =
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+                .unwrap();
 
         // Allocate some instances
         wrapper.allocate_instance().unwrap();
@@ -641,10 +640,9 @@ mod tests {
 
     #[test]
     fn test_closed_allocator_rejects_operations() {
-        let wrapper = JniPoolingAllocatorWrapper::new(
-            100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0,
-        )
-        .unwrap();
+        let wrapper =
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+                .unwrap();
 
         // Close the allocator
         wrapper.close();
@@ -657,10 +655,9 @@ mod tests {
 
     #[test]
     fn test_get_allocation_strategy() {
-        let wrapper = JniPoolingAllocatorWrapper::new(
-            100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0,
-        )
-        .unwrap();
+        let wrapper =
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+                .unwrap();
 
         let strategy = wrapper.get_allocation_strategy();
         match strategy {

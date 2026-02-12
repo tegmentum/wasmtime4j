@@ -4,10 +4,10 @@
 //! patterns inspired by kawamuray/wasmtime-java to ensure safe access across
 //! the native interface boundary.
 
+use parking_lot::Mutex;
 use std::cell::UnsafeCell;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicU64, Ordering};
-use parking_lot::Mutex;
 use std::thread;
 
 /// Thread-safe, reentrant lock for Rust objects exposed via FFI
@@ -62,7 +62,10 @@ impl<T> ReentrantLock<T> {
         if owner == current_thread_id {
             // Reentrant lock - just increment count
             self.lock_count.fetch_add(1, Ordering::Relaxed);
-            return ReentrantLockGuard { lock: self, _guard: None };
+            return ReentrantLockGuard {
+                lock: self,
+                _guard: None,
+            };
         }
 
         // Need to acquire the lock
@@ -72,7 +75,10 @@ impl<T> ReentrantLock<T> {
         self.owner.store(current_thread_id, Ordering::Release);
         self.lock_count.store(1, Ordering::Relaxed);
 
-        ReentrantLockGuard { lock: self, _guard: Some(guard) }
+        ReentrantLockGuard {
+            lock: self,
+            _guard: Some(guard),
+        }
     }
 
     /// Try to lock without blocking
@@ -86,7 +92,10 @@ impl<T> ReentrantLock<T> {
         if owner == current_thread_id {
             // Reentrant lock - just increment count
             self.lock_count.fetch_add(1, Ordering::Relaxed);
-            return Some(ReentrantLockGuard { lock: self, _guard: None });
+            return Some(ReentrantLockGuard {
+                lock: self,
+                _guard: None,
+            });
         }
 
         // Try to acquire the lock
@@ -96,7 +105,10 @@ impl<T> ReentrantLock<T> {
         self.owner.store(current_thread_id, Ordering::Release);
         self.lock_count.store(1, Ordering::Relaxed);
 
-        Some(ReentrantLockGuard { lock: self, _guard: Some(guard) })
+        Some(ReentrantLockGuard {
+            lock: self,
+            _guard: Some(guard),
+        })
     }
 
     /// Unlock the reentrant lock (called by guard drop)

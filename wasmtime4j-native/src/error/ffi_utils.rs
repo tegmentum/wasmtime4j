@@ -73,8 +73,9 @@ thread_local! {
 pub type ResourceHandle = u64;
 
 /// Thread-safe resource registry for managing native resources
-static RESOURCE_REGISTRY: once_cell::sync::Lazy<Arc<Mutex<HashMap<ResourceHandle, Box<dyn std::any::Any + Send + Sync>>>>> =
-    once_cell::sync::Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+static RESOURCE_REGISTRY: once_cell::sync::Lazy<
+    Arc<Mutex<HashMap<ResourceHandle, Box<dyn std::any::Any + Send + Sync>>>>,
+> = once_cell::sync::Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 static NEXT_HANDLE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
@@ -82,52 +83,55 @@ static NEXT_HANDLE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64:
 pub fn register_resource<T: 'static + Send + Sync>(resource: T) -> WasmtimeResult<ResourceHandle> {
     let handle = NEXT_HANDLE.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
-    let mut registry = RESOURCE_REGISTRY.lock().map_err(|_| {
-        WasmtimeError::Concurrency {
+    let mut registry = RESOURCE_REGISTRY
+        .lock()
+        .map_err(|_| WasmtimeError::Concurrency {
             message: "Failed to acquire resource registry lock".to_string(),
-        }
-    })?;
+        })?;
 
     registry.insert(handle, Box::new(resource));
     Ok(handle)
 }
 
 /// Get a resource by handle with thread-safe access
-pub fn get_resource<T: 'static + Send + Sync>(handle: ResourceHandle) -> WasmtimeResult<Arc<Mutex<T>>> {
-    let registry = RESOURCE_REGISTRY.lock().map_err(|_| {
-        WasmtimeError::Concurrency {
+pub fn get_resource<T: 'static + Send + Sync>(
+    handle: ResourceHandle,
+) -> WasmtimeResult<Arc<Mutex<T>>> {
+    let registry = RESOURCE_REGISTRY
+        .lock()
+        .map_err(|_| WasmtimeError::Concurrency {
             message: "Failed to acquire resource registry lock".to_string(),
-        }
-    })?;
+        })?;
 
-    let resource = registry.get(&handle).ok_or_else(|| {
-        WasmtimeError::Resource {
+    let resource = registry
+        .get(&handle)
+        .ok_or_else(|| WasmtimeError::Resource {
             message: format!("Resource handle {} not found", handle),
-        }
-    })?;
+        })?;
 
-    let typed_resource = resource.downcast_ref::<Arc<Mutex<T>>>().ok_or_else(|| {
-        WasmtimeError::Type {
-            message: "Resource type mismatch".to_string(),
-        }
-    })?;
+    let typed_resource =
+        resource
+            .downcast_ref::<Arc<Mutex<T>>>()
+            .ok_or_else(|| WasmtimeError::Type {
+                message: "Resource type mismatch".to_string(),
+            })?;
 
     Ok(Arc::clone(typed_resource))
 }
 
 /// Remove a resource by handle
 pub fn unregister_resource(handle: ResourceHandle) -> WasmtimeResult<()> {
-    let mut registry = RESOURCE_REGISTRY.lock().map_err(|_| {
-        WasmtimeError::Concurrency {
+    let mut registry = RESOURCE_REGISTRY
+        .lock()
+        .map_err(|_| WasmtimeError::Concurrency {
             message: "Failed to acquire resource registry lock".to_string(),
-        }
-    })?;
+        })?;
 
-    registry.remove(&handle).ok_or_else(|| {
-        WasmtimeError::Resource {
+    registry
+        .remove(&handle)
+        .ok_or_else(|| WasmtimeError::Resource {
             message: format!("Resource handle {} not found", handle),
-        }
-    })?;
+        })?;
 
     Ok(())
 }
@@ -164,10 +168,18 @@ impl PerformanceLogger {
     pub fn finish_success(self) {
         let duration = self.start_time.elapsed();
         if self.context.is_empty() {
-            log::info!("Operation '{}' completed successfully in {:?}", self.operation, duration);
+            log::info!(
+                "Operation '{}' completed successfully in {:?}",
+                self.operation,
+                duration
+            );
         } else {
-            log::info!("Operation '{}' [{}] completed successfully in {:?}",
-                self.operation, self.context, duration);
+            log::info!(
+                "Operation '{}' [{}] completed successfully in {:?}",
+                self.operation,
+                self.context,
+                duration
+            );
         }
     }
 
@@ -175,10 +187,20 @@ impl PerformanceLogger {
     pub fn finish_error(self, error: &WasmtimeError) {
         let duration = self.start_time.elapsed();
         if self.context.is_empty() {
-            log::warn!("Operation '{}' failed after {:?}: {}", self.operation, duration, error);
+            log::warn!(
+                "Operation '{}' failed after {:?}: {}",
+                self.operation,
+                duration,
+                error
+            );
         } else {
-            log::warn!("Operation '{}' [{}] failed after {:?}: {}",
-                self.operation, self.context, duration, error);
+            log::warn!(
+                "Operation '{}' [{}] failed after {:?}: {}",
+                self.operation,
+                self.context,
+                duration,
+                error
+            );
         }
 
         // Log the error with appropriate level
@@ -189,10 +211,20 @@ impl PerformanceLogger {
     pub fn checkpoint(&self, message: &str) {
         let duration = self.start_time.elapsed();
         if self.context.is_empty() {
-            log::debug!("Operation '{}' checkpoint at {:?}: {}", self.operation, duration, message);
+            log::debug!(
+                "Operation '{}' checkpoint at {:?}: {}",
+                self.operation,
+                duration,
+                message
+            );
         } else {
-            log::debug!("Operation '{}' [{}] checkpoint at {:?}: {}",
-                self.operation, self.context, duration, message);
+            log::debug!(
+                "Operation '{}' [{}] checkpoint at {:?}: {}",
+                self.operation,
+                self.context,
+                duration,
+                message
+            );
         }
     }
 
@@ -201,11 +233,20 @@ impl PerformanceLogger {
         let duration = self.start_time.elapsed();
         if duration > warning_threshold {
             if self.context.is_empty() {
-                log::warn!("Operation '{}' is taking longer than expected: {:?} > {:?}",
-                    self.operation, duration, warning_threshold);
+                log::warn!(
+                    "Operation '{}' is taking longer than expected: {:?} > {:?}",
+                    self.operation,
+                    duration,
+                    warning_threshold
+                );
             } else {
-                log::warn!("Operation '{}' [{}] is taking longer than expected: {:?} > {:?}",
-                    self.operation, self.context, duration, warning_threshold);
+                log::warn!(
+                    "Operation '{}' [{}] is taking longer than expected: {:?} > {:?}",
+                    self.operation,
+                    self.context,
+                    duration,
+                    warning_threshold
+                );
             }
         }
     }
@@ -225,7 +266,9 @@ macro_rules! timed_operation {
     }};
     ($operation:expr, $context:expr, $body:expr) => {{
         let logger = crate::error::ffi_utils::PerformanceLogger::start_with_context(
-            $operation.to_string(), $context.to_string());
+            $operation.to_string(),
+            $context.to_string(),
+        );
         let result = $body;
         match &result {
             Ok(_) => logger.finish_success(),
@@ -262,18 +305,14 @@ pub fn set_last_error(error: WasmtimeError) {
 /// Returns null if no error or if error retrieval fails
 pub fn get_last_error_message() -> *mut c_char {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        LAST_ERROR.with(|e| {
-            match e.try_borrow() {
-                Ok(error_ref) => {
-                    match error_ref.as_ref() {
-                        Some(error) => error.to_c_string().into_raw(),
-                        None => std::ptr::null_mut(),
-                    }
-                }
-                Err(_) => {
-                    log::warn!("Failed to get last error due to borrow check failure");
-                    std::ptr::null_mut()
-                }
+        LAST_ERROR.with(|e| match e.try_borrow() {
+            Ok(error_ref) => match error_ref.as_ref() {
+                Some(error) => error.to_c_string().into_raw(),
+                None => std::ptr::null_mut(),
+            },
+            Err(_) => {
+                log::warn!("Failed to get last error due to borrow check failure");
+                std::ptr::null_mut()
             }
         })
     }));
@@ -290,14 +329,12 @@ pub fn get_last_error_message() -> *mut c_char {
 /// Clear last error with defensive error handling
 pub fn clear_last_error() {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        LAST_ERROR.with(|e| {
-            match e.try_borrow_mut() {
-                Ok(mut error_ref) => {
-                    *error_ref = None;
-                }
-                Err(_) => {
-                    log::warn!("Failed to clear last error due to borrow check failure");
-                }
+        LAST_ERROR.with(|e| match e.try_borrow_mut() {
+            Ok(mut error_ref) => {
+                *error_ref = None;
+            }
+            Err(_) => {
+                log::warn!("Failed to clear last error due to borrow check failure");
             }
         });
     }));
@@ -322,7 +359,10 @@ pub unsafe fn free_error_message(message: *mut c_char) {
     }));
 
     if result.is_err() {
-        log::error!("Panic occurred while freeing error message at {:p} - potential memory leak", message);
+        log::error!(
+            "Panic occurred while freeing error message at {:p} - potential memory leak",
+            message
+        );
     }
 }
 
@@ -330,13 +370,11 @@ pub unsafe fn free_error_message(message: *mut c_char) {
 /// This is useful for debugging thread safety issues
 pub fn has_pending_error() -> bool {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        LAST_ERROR.with(|e| {
-            match e.try_borrow() {
-                Ok(error_ref) => error_ref.is_some(),
-                Err(_) => {
-                    log::warn!("Failed to check pending error due to borrow check failure");
-                    false
-                }
+        LAST_ERROR.with(|e| match e.try_borrow() {
+            Ok(error_ref) => error_ref.is_some(),
+            Err(_) => {
+                log::warn!("Failed to check pending error due to borrow check failure");
+                false
             }
         })
     }));
@@ -353,18 +391,18 @@ pub fn has_pending_error() -> bool {
 /// Get error statistics for debugging thread safety issues
 pub fn get_error_stats() -> (bool, String) {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        LAST_ERROR.with(|e| {
-            match e.try_borrow() {
-                Ok(error_ref) => {
-                    match error_ref.as_ref() {
-                        Some(error) => (true, format!("Error: {} (Code: {:?})", error, error.to_error_code())),
-                        None => (false, "No error".to_string()),
-                    }
-                }
-                Err(_) => {
-                    (false, "Borrow check failed - potential threading issue".to_string())
-                }
-            }
+        LAST_ERROR.with(|e| match e.try_borrow() {
+            Ok(error_ref) => match error_ref.as_ref() {
+                Some(error) => (
+                    true,
+                    format!("Error: {} (Code: {:?})", error, error.to_error_code()),
+                ),
+                None => (false, "No error".to_string()),
+            },
+            Err(_) => (
+                false,
+                "Borrow check failed - potential threading issue".to_string(),
+            ),
         })
     }));
 
@@ -547,13 +585,11 @@ where
 /// Get the enhanced error context if available
 pub fn get_error_context() -> Option<ErrorContext> {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        LAST_ERROR_CONTEXT.with(|ctx| {
-            match ctx.try_borrow() {
-                Ok(context_ref) => context_ref.clone(),
-                Err(_) => {
-                    log::warn!("Failed to get error context due to borrow check failure");
-                    None
-                }
+        LAST_ERROR_CONTEXT.with(|ctx| match ctx.try_borrow() {
+            Ok(context_ref) => context_ref.clone(),
+            Err(_) => {
+                log::warn!("Failed to get error context due to borrow check failure");
+                None
             }
         })
     }));
@@ -586,8 +622,7 @@ pub fn clear_error_context() {
 #[macro_export]
 macro_rules! error_context {
     ($error:expr) => {
-        ErrorContext::new($error)
-            .with_location(file!().to_string(), line!())
+        ErrorContext::new($error).with_location(file!().to_string(), line!())
     };
     ($error:expr, $operation:expr) => {
         ErrorContext::new($error)
@@ -710,9 +745,10 @@ where
 /// The caller must ensure that `ptr` points to a valid value of type `T`.
 pub unsafe fn deref_ptr<T>(ptr: *const c_void, name: &str) -> WasmtimeResult<&'static T> {
     if ptr.is_null() {
-        return Err(WasmtimeError::invalid_parameter(
-            format!("{} pointer cannot be null", name)
-        ));
+        return Err(WasmtimeError::invalid_parameter(format!(
+            "{} pointer cannot be null",
+            name
+        )));
     }
     Ok(&*(ptr as *const T))
 }
@@ -723,9 +759,10 @@ pub unsafe fn deref_ptr<T>(ptr: *const c_void, name: &str) -> WasmtimeResult<&'s
 /// The caller must ensure that `ptr` points to a valid value of type `T`.
 pub unsafe fn deref_ptr_mut<T>(ptr: *mut c_void, name: &str) -> WasmtimeResult<&'static mut T> {
     if ptr.is_null() {
-        return Err(WasmtimeError::invalid_parameter(
-            format!("{} pointer cannot be null", name)
-        ));
+        return Err(WasmtimeError::invalid_parameter(format!(
+            "{} pointer cannot be null",
+            name
+        )));
     }
     Ok(&mut *(ptr as *mut T))
 }
@@ -737,28 +774,27 @@ pub unsafe fn deref_ptr_mut<T>(ptr: *mut c_void, name: &str) -> WasmtimeResult<&
 pub unsafe fn slice_from_raw_parts<T>(
     ptr: *const T,
     len: usize,
-    name: &str
+    name: &str,
 ) -> WasmtimeResult<&'static [T]> {
     if ptr.is_null() {
-        return Err(WasmtimeError::invalid_parameter(
-            format!("{} pointer cannot be null", name)
-        ));
+        return Err(WasmtimeError::invalid_parameter(format!(
+            "{} pointer cannot be null",
+            name
+        )));
     }
     if len == 0 {
-        return Err(WasmtimeError::invalid_parameter(
-            format!("{} length cannot be zero", name)
-        ));
+        return Err(WasmtimeError::invalid_parameter(format!(
+            "{} length cannot be zero",
+            name
+        )));
     }
     Ok(std::slice::from_raw_parts(ptr, len))
 }
 
 // Re-export resource destruction utilities from ffi_common for backwards compatibility
 pub use crate::ffi_common::resource_destruction::{
+    clear_destroyed_pointers, is_fake_pointer, safe_destroy, safe_destroy_no_fake_check,
     DESTROYED_POINTERS,
-    clear_destroyed_pointers,
-    safe_destroy,
-    safe_destroy_no_fake_check,
-    is_fake_pointer,
 };
 
 /// Safely destroy a boxed resource from raw pointer with double-free protection.
@@ -804,7 +840,9 @@ pub fn cleanup_test_state() -> (usize, usize, usize) {
 
     log::debug!(
         "Test cleanup: cleared {} destroyed pointers, {} memory handles, {} store handles",
-        destroyed_count, memory_count, store_count
+        destroyed_count,
+        memory_count,
+        store_count
     );
 
     (destroyed_count, memory_count, store_count)
@@ -842,7 +880,11 @@ impl Drop for TestCleanupGuard {
     fn drop(&mut self) {
         let (destroyed, _memory, _store) = cleanup_test_state();
         if destroyed > 0 {
-            log::debug!("TestCleanupGuard({}): cleaned up {} destroyed pointers", self.test_name, destroyed);
+            log::debug!(
+                "TestCleanupGuard({}): cleaned up {} destroyed pointers",
+                self.test_name,
+                destroyed
+            );
         }
     }
 }
@@ -853,9 +895,10 @@ impl Drop for TestCleanupGuard {
 /// The caller must ensure that `c_str` points to a valid null-terminated C string.
 pub unsafe fn c_str_to_string(c_str: *const c_char, name: &str) -> WasmtimeResult<String> {
     if c_str.is_null() {
-        return Err(WasmtimeError::invalid_parameter(
-            format!("{} C string cannot be null", name)
-        ));
+        return Err(WasmtimeError::invalid_parameter(format!(
+            "{} C string cannot be null",
+            name
+        )));
     }
 
     std::ffi::CStr::from_ptr(c_str)
@@ -925,9 +968,10 @@ macro_rules! ffi_boundary_i32 {
                     "Unknown panic occurred in native code".to_string()
                 };
                 log::error!("Native panic in FFI call: {}", panic_msg);
-                let error = $crate::error::WasmtimeError::from_string(
-                    format!("Native panic: {}", panic_msg)
-                );
+                let error = $crate::error::WasmtimeError::from_string(format!(
+                    "Native panic: {}",
+                    panic_msg
+                ));
                 $crate::error::ffi_utils::set_last_error(error);
                 $crate::error::ErrorCode::RuntimeError as i32
             }
@@ -952,9 +996,10 @@ macro_rules! ffi_boundary_isize {
                     "Unknown panic occurred in native code".to_string()
                 };
                 log::error!("Native panic in FFI call: {}", panic_msg);
-                let error = $crate::error::WasmtimeError::from_string(
-                    format!("Native panic: {}", panic_msg)
-                );
+                let error = $crate::error::WasmtimeError::from_string(format!(
+                    "Native panic: {}",
+                    panic_msg
+                ));
                 $crate::error::ffi_utils::set_last_error(error);
                 -1isize
             }
@@ -990,9 +1035,10 @@ macro_rules! ffi_boundary_ptr {
                     "Unknown panic occurred in native code".to_string()
                 };
                 log::error!("Native panic in FFI call: {}", panic_msg);
-                let error = $crate::error::WasmtimeError::from_string(
-                    format!("Native panic: {}", panic_msg)
-                );
+                let error = $crate::error::WasmtimeError::from_string(format!(
+                    "Native panic: {}",
+                    panic_msg
+                ));
                 $crate::error::ffi_utils::set_last_error(error);
                 std::ptr::null_mut()
             }
@@ -1015,9 +1061,8 @@ macro_rules! ffi_boundary_void {
                 "Unknown panic occurred in native code".to_string()
             };
             log::error!("Native panic in FFI call: {}", panic_msg);
-            let error = $crate::error::WasmtimeError::from_string(
-                format!("Native panic: {}", panic_msg)
-            );
+            let error =
+                $crate::error::WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
             $crate::error::ffi_utils::set_last_error(error);
         }
     }};
@@ -1040,9 +1085,10 @@ macro_rules! ffi_boundary_bool {
                     "Unknown panic occurred in native code".to_string()
                 };
                 log::error!("Native panic in FFI call: {}", panic_msg);
-                let error = $crate::error::WasmtimeError::from_string(
-                    format!("Native panic: {}", panic_msg)
-                );
+                let error = $crate::error::WasmtimeError::from_string(format!(
+                    "Native panic: {}",
+                    panic_msg
+                ));
                 $crate::error::ffi_utils::set_last_error(error);
                 false
             }
@@ -1085,9 +1131,10 @@ macro_rules! ffi_boundary_result {
                     "Unknown panic occurred in native code".to_string()
                 };
                 log::error!("Native panic in FFI call: {}", panic_msg);
-                let error = $crate::error::WasmtimeError::from_string(
-                    format!("Native panic: {}", panic_msg)
-                );
+                let error = $crate::error::WasmtimeError::from_string(format!(
+                    "Native panic: {}",
+                    panic_msg
+                ));
                 $crate::error::ffi_utils::set_last_error(error);
                 $default
             }
@@ -1096,9 +1143,9 @@ macro_rules! ffi_boundary_result {
 }
 
 // Re-export macros at module level for easier access
+pub use crate::ffi_boundary_bool;
 pub use crate::ffi_boundary_i32;
 pub use crate::ffi_boundary_isize;
 pub use crate::ffi_boundary_ptr;
-pub use crate::ffi_boundary_void;
-pub use crate::ffi_boundary_bool;
 pub use crate::ffi_boundary_result;
+pub use crate::ffi_boundary_void;

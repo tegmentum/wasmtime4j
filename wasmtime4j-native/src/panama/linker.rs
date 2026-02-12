@@ -3,12 +3,12 @@
 //! This module provides C-compatible functions for linking WebAssembly modules
 //! with host functions, globals, tables, and memories.
 
-use std::ffi::CStr;
-use std::os::raw::{c_char, c_int, c_uint, c_void};
 use crate::error::ffi_utils;
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
 use crate::instance::{FfiWasmValue, WasmValue};
 use crate::linker::core as linker_core;
+use std::ffi::CStr;
+use std::os::raw::{c_char, c_int, c_uint, c_void};
 use wasmtime::{FuncType, RefType, ValType};
 
 /// Type for Panama callback function pointer
@@ -45,13 +45,18 @@ struct PanamaHostFunctionCallbackImpl {
 impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
     fn execute(&self, params: &[WasmValue]) -> crate::WasmtimeResult<Vec<WasmValue>> {
         // Convert internal WasmValue to FFI-safe format
-        let ffi_params: Vec<FfiWasmValue> = params.iter()
-            .map(FfiWasmValue::from_wasm_value)
-            .collect();
+        let ffi_params: Vec<FfiWasmValue> =
+            params.iter().map(FfiWasmValue::from_wasm_value).collect();
 
         // Allocate result buffer in FFI-safe format
         let expected_results = self.result_count;
-        let mut ffi_results = vec![FfiWasmValue { tag: 0, value: [0u8; 16] }; expected_results];
+        let mut ffi_results = vec![
+            FfiWasmValue {
+                tag: 0,
+                value: [0u8; 16]
+            };
+            expected_results
+        ];
 
         // Allocate error message buffer (1024 bytes should be sufficient)
         const ERROR_BUFFER_SIZE: usize = 1024;
@@ -70,13 +75,17 @@ impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
 
         if result_code != 0 {
             // Extract error message from buffer (safe operations on the stack buffer)
-            let len = error_message_buffer.iter()
+            let len = error_message_buffer
+                .iter()
                 .position(|&b| b == 0)
                 .unwrap_or(ERROR_BUFFER_SIZE);
             let error_message = String::from_utf8_lossy(&error_message_buffer[..len]).to_string();
 
             let final_message = if error_message.is_empty() {
-                format!("Panama host function callback failed with code: {}", result_code)
+                format!(
+                    "Panama host function callback failed with code: {}",
+                    result_code
+                )
             } else {
                 error_message
             };
@@ -87,7 +96,8 @@ impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
         }
 
         // Convert FFI results back to internal WasmValue
-        let results: Vec<WasmValue> = ffi_results.iter()
+        let results: Vec<WasmValue> = ffi_results
+            .iter()
             .map(FfiWasmValue::to_wasm_value)
             .collect();
 
@@ -136,20 +146,27 @@ pub extern "C" fn wasmtime4j_panama_linker_define_host_function(
         // Convert C strings
         let module_name_str = unsafe { CStr::from_ptr(module_name) }
             .to_str()
-            .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-        let name_str = unsafe { CStr::from_ptr(name) }
-            .to_str()
-            .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+        let name_str = unsafe { CStr::from_ptr(name) }.to_str().map_err(|e| {
+            crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            }
+        })?;
 
         // Convert parameter types
         let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
-        let param_val_types: Vec<ValType> = param_slice.iter()
+        let param_val_types: Vec<ValType> = param_slice
+            .iter()
             .map(|&t| int_to_valtype(t))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Convert return types
-        let return_slice = unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
-        let return_val_types: Vec<ValType> = return_slice.iter()
+        let return_slice =
+            unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
+        let return_val_types: Vec<ValType> = return_slice
+            .iter()
             .map(|&t| int_to_valtype(t))
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -164,11 +181,7 @@ pub extern "C" fn wasmtime4j_panama_linker_define_host_function(
         let engine = linker_lock.engine();
 
         // Create function type
-        let func_type = FuncType::new(
-            engine,
-            param_val_types,
-            return_val_types
-        );
+        let func_type = FuncType::new(engine, param_val_types, return_val_types);
 
         // Drop lock before creating host function
         drop(linker_lock);
@@ -189,7 +202,12 @@ pub extern "C" fn wasmtime4j_panama_linker_define_host_function(
 
         // Register host function
         let host_func_clone = (*host_func).clone();
-        linker.define_host_function(module_name_str, name_str, host_func.func_type().clone(), host_func_clone)?;
+        linker.define_host_function(
+            module_name_str,
+            name_str,
+            host_func.func_type().clone(),
+            host_func_clone,
+        )?;
 
         Ok(())
     })
@@ -207,26 +225,38 @@ pub extern "C" fn wasmtime4j_panama_linker_alias(
     ffi_utils::ffi_try_code(|| {
         unsafe {
             // Validate pointers
-            if linker_ptr.is_null() || from_module.is_null() || from_name.is_null()
-                || to_module.is_null() || to_name.is_null() {
+            if linker_ptr.is_null()
+                || from_module.is_null()
+                || from_name.is_null()
+                || to_module.is_null()
+                || to_name.is_null()
+            {
                 return Err(crate::error::WasmtimeError::Linker {
                     message: "Null pointer in linker alias parameters".to_string(),
                 });
             }
 
             // Convert C strings to Rust strings
-            let from_module_str = CStr::from_ptr(from_module)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-            let from_name_str = CStr::from_ptr(from_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-            let to_module_str = CStr::from_ptr(to_module)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-            let to_name_str = CStr::from_ptr(to_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+            let from_module_str = CStr::from_ptr(from_module).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let from_name_str = CStr::from_ptr(from_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let to_module_str = CStr::from_ptr(to_module).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let to_name_str = CStr::from_ptr(to_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
 
             // Get linker reference
             let linker = linker_core::get_linker_ref(linker_ptr)?;
@@ -235,10 +265,13 @@ pub extern "C" fn wasmtime4j_panama_linker_alias(
             let mut linker_lock = linker.inner()?;
 
             // Use Wasmtime's alias method
-            linker_lock.alias(from_module_str, from_name_str, to_module_str, to_name_str)
+            linker_lock
+                .alias(from_module_str, from_name_str, to_module_str, to_name_str)
                 .map_err(|e| crate::error::WasmtimeError::Linker {
-                    message: format!("Failed to create alias from {}::{} to {}::{}: {}",
-                        from_module_str, from_name_str, to_module_str, to_name_str, e),
+                    message: format!(
+                        "Failed to create alias from {}::{} to {}::{}: {}",
+                        from_module_str, from_name_str, to_module_str, to_name_str, e
+                    ),
                 })?;
 
             Ok(())
@@ -374,12 +407,10 @@ pub extern "C" fn wasmtime4j_panama_linker_allow_shadowing(
     linker_ptr: *mut c_void,
     allow: c_int,
 ) -> c_int {
-    ffi_utils::ffi_try_code(|| {
-        unsafe {
-            let linker = linker_core::get_linker_mut(linker_ptr)?;
-            linker.set_allow_shadowing(allow != 0)?;
-            Ok(())
-        }
+    ffi_utils::ffi_try_code(|| unsafe {
+        let linker = linker_core::get_linker_mut(linker_ptr)?;
+        linker.set_allow_shadowing(allow != 0)?;
+        Ok(())
     })
 }
 
@@ -398,12 +429,10 @@ pub extern "C" fn wasmtime4j_panama_linker_allow_unknown_exports(
     linker_ptr: *mut c_void,
     allow: c_int,
 ) -> c_int {
-    ffi_utils::ffi_try_code(|| {
-        unsafe {
-            let linker = linker_core::get_linker_mut(linker_ptr)?;
-            linker.set_allow_unknown_exports(allow != 0)?;
-            Ok(())
-        }
+    ffi_utils::ffi_try_code(|| unsafe {
+        let linker = linker_core::get_linker_mut(linker_ptr)?;
+        linker.set_allow_unknown_exports(allow != 0)?;
+        Ok(())
     })
 }
 
@@ -421,12 +450,16 @@ pub extern "C" fn wasmtime4j_panama_linker_define_global(
     ffi_utils::ffi_try_code(|| {
         unsafe {
             // Convert C strings to Rust strings
-            let module_name_str = CStr::from_ptr(module_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-            let name_str = CStr::from_ptr(name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+            let module_name_str = CStr::from_ptr(module_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let name_str = CStr::from_ptr(name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
 
             // Get linker reference
             let linker = linker_core::get_linker_ref(linker_ptr)?;
@@ -440,21 +473,27 @@ pub extern "C" fn wasmtime4j_panama_linker_define_global(
             // Lock linker and global
             let mut linker_lock = linker.inner()?;
             let wasmtime_global_arc = global.wasmtime_global();
-            let wasmtime_global_lock = wasmtime_global_arc.lock()
-                .map_err(|e| crate::error::WasmtimeError::Concurrency {
+            let wasmtime_global_lock = wasmtime_global_arc.lock().map_err(|e| {
+                crate::error::WasmtimeError::Concurrency {
                     message: format!("Failed to lock global: {}", e),
-                })?;
+                }
+            })?;
 
             // Lock store and define global
             let mut store_lock = store.try_lock_store()?;
-            linker_lock.define(
-                &mut (*store_lock).as_context_mut(),
-                module_name_str,
-                name_str,
-                wasmtime::Extern::Global(*wasmtime_global_lock),
-            ).map_err(|e| crate::error::WasmtimeError::Linker {
-                message: format!("Failed to define global '{}::{}': {}", module_name_str, name_str, e),
-            })?;
+            linker_lock
+                .define(
+                    &mut (*store_lock).as_context_mut(),
+                    module_name_str,
+                    name_str,
+                    wasmtime::Extern::Global(*wasmtime_global_lock),
+                )
+                .map_err(|e| crate::error::WasmtimeError::Linker {
+                    message: format!(
+                        "Failed to define global '{}::{}': {}",
+                        module_name_str, name_str, e
+                    ),
+                })?;
 
             Ok(())
         }
@@ -475,12 +514,16 @@ pub extern "C" fn wasmtime4j_panama_linker_define_table(
     ffi_utils::ffi_try_code(|| {
         unsafe {
             // Convert C strings to Rust strings
-            let module_name_str = CStr::from_ptr(module_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-            let name_str = CStr::from_ptr(name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+            let module_name_str = CStr::from_ptr(module_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let name_str = CStr::from_ptr(name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
 
             // Get linker reference
             let linker = linker_core::get_linker_ref(linker_ptr)?;
@@ -494,21 +537,27 @@ pub extern "C" fn wasmtime4j_panama_linker_define_table(
             // Lock linker and table
             let mut linker_lock = linker.inner()?;
             let wasmtime_table_arc = table.wasmtime_table();
-            let wasmtime_table_lock = wasmtime_table_arc.lock()
-                .map_err(|e| crate::error::WasmtimeError::Concurrency {
+            let wasmtime_table_lock = wasmtime_table_arc.lock().map_err(|e| {
+                crate::error::WasmtimeError::Concurrency {
                     message: format!("Failed to lock table: {}", e),
-                })?;
+                }
+            })?;
 
             // Lock store and define table
             let mut store_lock = store.try_lock_store()?;
-            linker_lock.define(
-                &mut (*store_lock).as_context_mut(),
-                module_name_str,
-                name_str,
-                wasmtime::Extern::Table(*wasmtime_table_lock),
-            ).map_err(|e| crate::error::WasmtimeError::Linker {
-                message: format!("Failed to define table '{}::{}': {}", module_name_str, name_str, e),
-            })?;
+            linker_lock
+                .define(
+                    &mut (*store_lock).as_context_mut(),
+                    module_name_str,
+                    name_str,
+                    wasmtime::Extern::Table(*wasmtime_table_lock),
+                )
+                .map_err(|e| crate::error::WasmtimeError::Linker {
+                    message: format!(
+                        "Failed to define table '{}::{}': {}",
+                        module_name_str, name_str, e
+                    ),
+                })?;
 
             Ok(())
         }
@@ -547,12 +596,16 @@ pub extern "C" fn wasmtime4j_panama_linker_define_memory(
             }
 
             // Convert C strings to Rust strings
-            let module_name_str = CStr::from_ptr(module_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-            let name_str = CStr::from_ptr(name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+            let module_name_str = CStr::from_ptr(module_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let name_str = CStr::from_ptr(name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
 
             // Get linker reference
             let linker = linker_core::get_linker_ref(linker_ptr)?;
@@ -576,7 +629,8 @@ pub extern "C" fn wasmtime4j_panama_linker_define_memory(
             }
 
             // The memory_ptr is a pointer to our Memory wrapper (from instanceGetMemoryByName)
-            let memory = crate::memory::core::get_memory_ref(memory_ptr as *const std::ffi::c_void)?;
+            let memory =
+                crate::memory::core::get_memory_ref(memory_ptr as *const std::ffi::c_void)?;
 
             // Lock linker
             let mut linker_lock = linker.inner()?;
@@ -589,14 +643,20 @@ pub extern "C" fn wasmtime4j_panama_linker_define_memory(
                     wasmtime::Extern::SharedMemory(wasmtime_shared_memory.clone())
                 } else {
                     return Err(crate::error::WasmtimeError::Linker {
-                        message: format!("Memory '{}::{}' has invalid variant", module_name_str, name_str),
+                        message: format!(
+                            "Memory '{}::{}' has invalid variant",
+                            module_name_str, name_str
+                        ),
                     });
                 };
 
                 linker_lock
                     .define(ctx, module_name_str, name_str, extern_memory)
                     .map_err(|e| crate::error::WasmtimeError::Linker {
-                        message: format!("Failed to define memory '{}::{}': {}", module_name_str, name_str, e),
+                        message: format!(
+                            "Failed to define memory '{}::{}': {}",
+                            module_name_str, name_str, e
+                        ),
                     })
             })?;
 
@@ -635,20 +695,27 @@ pub extern "C" fn wasmtime4j_panama_linker_define_memory_from_instance(
             // Validate pointers
             if linker_ptr.is_null() || store_ptr.is_null() || instance_ptr.is_null() {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: "Null pointer passed to linker_define_memory_from_instance".to_string(),
+                    message: "Null pointer passed to linker_define_memory_from_instance"
+                        .to_string(),
                 });
             }
 
             // Convert C strings to Rust strings
-            let module_name_str = CStr::from_ptr(module_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-            let memory_name_str = CStr::from_ptr(memory_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
-            let export_name_str = CStr::from_ptr(export_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+            let module_name_str = CStr::from_ptr(module_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let memory_name_str = CStr::from_ptr(memory_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let export_name_str = CStr::from_ptr(export_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
 
             // Get linker reference
             let linker = linker_core::get_linker_ref(linker_ptr)?;
@@ -669,27 +736,43 @@ pub extern "C" fn wasmtime4j_panama_linker_define_memory_from_instance(
             if let Some(shared_memory) = instance.get_shared_memory(store, export_name_str)? {
                 // SharedMemory is store-independent; define it in the linker
                 store.with_context(|ctx| {
-                    linker_lock.define(ctx, module_name_str, memory_name_str,
-                        wasmtime::Extern::SharedMemory(shared_memory))
+                    linker_lock
+                        .define(
+                            ctx,
+                            module_name_str,
+                            memory_name_str,
+                            wasmtime::Extern::SharedMemory(shared_memory),
+                        )
                         .map_err(|e| crate::error::WasmtimeError::Linker {
-                            message: format!("Failed to define shared memory '{}::{}': {}",
-                                module_name_str, memory_name_str, e),
+                            message: format!(
+                                "Failed to define shared memory '{}::{}': {}",
+                                module_name_str, memory_name_str, e
+                            ),
                         })
                 })?;
             } else if let Some(memory) = instance.get_memory(store, export_name_str)? {
                 // Regular memory - use the standard approach
                 store.with_context(|ctx| {
-                    linker_lock.define(ctx, module_name_str, memory_name_str,
-                        wasmtime::Extern::Memory(memory))
+                    linker_lock
+                        .define(
+                            ctx,
+                            module_name_str,
+                            memory_name_str,
+                            wasmtime::Extern::Memory(memory),
+                        )
                         .map_err(|e| crate::error::WasmtimeError::Linker {
-                            message: format!("Failed to define memory '{}::{}': {}",
-                                module_name_str, memory_name_str, e),
+                            message: format!(
+                                "Failed to define memory '{}::{}': {}",
+                                module_name_str, memory_name_str, e
+                            ),
                         })
                 })?;
             } else {
                 return Err(crate::error::WasmtimeError::Linker {
-                    message: format!("Memory '{}' not found in instance (neither shared nor regular)",
-                        export_name_str),
+                    message: format!(
+                        "Memory '{}' not found in instance (neither shared nor regular)",
+                        export_name_str
+                    ),
                 });
             }
 
@@ -709,9 +792,11 @@ pub extern "C" fn wasmtime4j_panama_linker_define_instance(
     ffi_utils::ffi_try_code(|| {
         unsafe {
             // Convert C string to Rust string
-            let module_name_str = CStr::from_ptr(module_name)
-                .to_str()
-                .map_err(|e| crate::error::WasmtimeError::Utf8Error { message: e.to_string() })?;
+            let module_name_str = CStr::from_ptr(module_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
 
             // Get linker reference
             let linker = linker_core::get_linker_ref(linker_ptr)?;
@@ -733,7 +818,8 @@ pub extern "C" fn wasmtime4j_panama_linker_define_instance(
 
             // Use with_context to let the store manage its own locking
             store.with_context(|ctx| {
-                linker_lock.instance(ctx, module_name_str, wasmtime_instance)
+                linker_lock
+                    .instance(ctx, module_name_str, wasmtime_instance)
                     .map_err(|e| crate::error::WasmtimeError::Linker {
                         message: format!("Failed to define instance '{}': {}", module_name_str, e),
                     })
@@ -785,9 +871,8 @@ pub extern "C" fn wasmtime4j_panama_function_reference_create(
 
         // Build function type from parameter and return type arrays
         let param_val_types: Vec<ValType> = if param_count > 0 && !param_types.is_null() {
-            let param_slice = unsafe {
-                std::slice::from_raw_parts(param_types, param_count as usize)
-            };
+            let param_slice =
+                unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
             param_slice
                 .iter()
                 .map(|&t| int_to_valtype(t))
@@ -797,9 +882,8 @@ pub extern "C" fn wasmtime4j_panama_function_reference_create(
         };
 
         let return_val_types: Vec<ValType> = if return_count > 0 && !return_types.is_null() {
-            let return_slice = unsafe {
-                std::slice::from_raw_parts(return_types, return_count as usize)
-            };
+            let return_slice =
+                unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
             return_slice
                 .iter()
                 .map(|&t| int_to_valtype(t))
@@ -812,11 +896,7 @@ pub extern "C" fn wasmtime4j_panama_function_reference_create(
 
         // Get wasmtime engine from store to create FuncType
         let wasmtime_engine = store.engine().inner();
-        let func_type = FuncType::new(
-            wasmtime_engine,
-            param_val_types,
-            return_val_types,
-        );
+        let func_type = FuncType::new(wasmtime_engine, param_val_types, return_val_types);
 
         // Create Panama callback wrapper
         let callback = PanamaHostFunctionCallbackImpl {
@@ -848,9 +928,7 @@ pub extern "C" fn wasmtime4j_panama_function_reference_create(
 /// # Returns
 /// 0 on success, non-zero error code on failure
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_function_reference_destroy(
-    registry_id: u64,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_function_reference_destroy(registry_id: u64) -> c_int {
     ffi_utils::ffi_try_code(|| {
         // Remove the function reference from the table registry
         crate::table::core::remove_function_reference(registry_id)?;
@@ -866,9 +944,7 @@ pub extern "C" fn wasmtime4j_panama_function_reference_destroy(
 /// # Returns
 /// 1 if valid, 0 if invalid
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_function_reference_is_valid(
-    registry_id: u64,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_function_reference_is_valid(registry_id: u64) -> c_int {
     match crate::table::core::get_function_reference(registry_id) {
         Ok(Some(_)) => 1,
         _ => 0,

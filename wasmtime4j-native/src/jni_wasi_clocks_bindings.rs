@@ -8,9 +8,9 @@ use jni::sys::{jint, jlong, jlongArray};
 use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_clocks_helpers;
-use crate::{jni_validate_handle, jni_deref_ptr};
+use crate::wasi_preview2::WasiPreview2Context;
+use crate::{jni_deref_ptr, jni_validate_handle};
 
 /// Get the current monotonic clock instant in nanoseconds
 ///
@@ -140,7 +140,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiWallC
 ) -> jlongArray {
     // Validate and get context using macros
     jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
-    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(
+        env,
+        context_handle,
+        WasiPreview2Context,
+        "Context",
+        JObject::null().into_raw()
+    );
 
     // Call helper function
     let datetime = match wasi_clocks_helpers::wall_clock_now(context) {
@@ -192,7 +198,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiWallC
 ) -> jlongArray {
     // Validate and get context using macros
     jni_validate_handle!(env, context_handle, "context", JObject::null().into_raw());
-    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", JObject::null().into_raw());
+    let context = jni_deref_ptr!(
+        env,
+        context_handle,
+        WasiPreview2Context,
+        "Context",
+        JObject::null().into_raw()
+    );
 
     // Call helper function
     let datetime = match wasi_clocks_helpers::wall_clock_resolution(context) {
@@ -237,7 +249,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiWallC
 /// # Safety
 /// This function is called from Java via JNI and must handle all edge cases safely.
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiTimezone_nativeDisplay<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiTimezone_nativeDisplay<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     context_handle: jlong,
@@ -246,7 +260,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiTimez
 ) -> JObject<'local> {
     // Validate and get context using macros
     jni_validate_handle!(env, context_handle, "context", JObject::null());
-    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", JObject::null());
+    let context = jni_deref_ptr!(
+        env,
+        context_handle,
+        WasiPreview2Context,
+        "Context",
+        JObject::null()
+    );
 
     // Create DateTime
     let datetime = wasi_clocks_helpers::DateTime {
@@ -295,7 +315,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_clocks_JniWasiTimez
         &[
             jni::objects::JValue::from(display.utc_offset_seconds),
             jni::objects::JValue::from(&name_jstring),
-            jni::objects::JValue::from(if display.in_daylight_saving_time { 1u8 } else { 0u8 }),
+            jni::objects::JValue::from(if display.in_daylight_saving_time {
+                1u8
+            } else {
+                0u8
+            }),
         ],
     ) {
         Ok(obj) => obj,

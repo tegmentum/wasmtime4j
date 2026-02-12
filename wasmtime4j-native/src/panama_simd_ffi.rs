@@ -5,19 +5,15 @@
 //
 // All FFI functions are wrapped with catch_unwind to prevent panics from crashing the JVM.
 
-use crate::simd::{SIMDConfig, SIMDOperations, V128};
 use crate::error::WasmtimeError;
 use crate::ffi_boundary_i32;
+use crate::simd::{SIMDConfig, SIMDOperations, V128};
 
 /// Helper to safely execute a binary SIMD operation with panic protection
-fn simd_binary_op<F>(
-    a_data: *const u8,
-    b_data: *const u8,
-    result_data: *mut u8,
-    op: F,
-) -> i32
+fn simd_binary_op<F>(a_data: *const u8, b_data: *const u8, result_data: *mut u8, op: F) -> i32
 where
-    F: FnOnce(&SIMDOperations, &V128, &V128) -> Result<V128, WasmtimeError> + std::panic::UnwindSafe,
+    F: FnOnce(&SIMDOperations, &V128, &V128) -> Result<V128, WasmtimeError>
+        + std::panic::UnwindSafe,
 {
     ffi_boundary_i32!({
         if a_data.is_null() || b_data.is_null() || result_data.is_null() {
@@ -38,8 +34,8 @@ where
             let b_v128 = V128 { data: b_bytes };
 
             let config = SIMDConfig::default();
-            let simd_ops = SIMDOperations::new(config).map_err(|_| {
-                WasmtimeError::Internal { message: "SIMD initialization failed".to_string() }
+            let simd_ops = SIMDOperations::new(config).map_err(|_| WasmtimeError::Internal {
+                message: "SIMD initialization failed".to_string(),
             })?;
 
             match op(&simd_ops, &a_v128, &b_v128) {
@@ -54,11 +50,7 @@ where
 }
 
 /// Helper to safely execute a unary SIMD operation with panic protection
-fn simd_unary_op<F>(
-    a_data: *const u8,
-    result_data: *mut u8,
-    op: F,
-) -> i32
+fn simd_unary_op<F>(a_data: *const u8, result_data: *mut u8, op: F) -> i32
 where
     F: FnOnce(&SIMDOperations, &V128) -> Result<V128, WasmtimeError> + std::panic::UnwindSafe,
 {
@@ -77,8 +69,8 @@ where
             let a_v128 = V128 { data: a_bytes };
 
             let config = SIMDConfig::default();
-            let simd_ops = SIMDOperations::new(config).map_err(|_| {
-                WasmtimeError::Internal { message: "SIMD initialization failed".to_string() }
+            let simd_ops = SIMDOperations::new(config).map_err(|_| WasmtimeError::Internal {
+                message: "SIMD initialization failed".to_string(),
             })?;
 
             match op(&simd_ops, &a_v128) {
@@ -101,7 +93,8 @@ fn simd_ternary_op<F>(
     op: F,
 ) -> i32
 where
-    F: FnOnce(&SIMDOperations, &V128, &V128, &V128) -> Result<V128, WasmtimeError> + std::panic::UnwindSafe,
+    F: FnOnce(&SIMDOperations, &V128, &V128, &V128) -> Result<V128, WasmtimeError>
+        + std::panic::UnwindSafe,
 {
     ffi_boundary_i32!({
         if a_data.is_null() || b_data.is_null() || c_data.is_null() || result_data.is_null() {
@@ -126,8 +119,8 @@ where
             let c_v128 = V128 { data: c_bytes };
 
             let config = SIMDConfig::default();
-            let simd_ops = SIMDOperations::new(config).map_err(|_| {
-                WasmtimeError::Internal { message: "SIMD initialization failed".to_string() }
+            let simd_ops = SIMDOperations::new(config).map_err(|_| WasmtimeError::Internal {
+                message: "SIMD initialization failed".to_string(),
             })?;
 
             match op(&simd_ops, &a_v128, &b_v128, &c_v128) {
@@ -142,11 +135,7 @@ where
 }
 
 /// Helper to safely execute a reduction operation with panic protection
-fn simd_reduce_op<F>(
-    a_data: *const u8,
-    result: *mut i32,
-    op: F,
-) -> i32
+fn simd_reduce_op<F>(a_data: *const u8, result: *mut i32, op: F) -> i32
 where
     F: FnOnce(&SIMDOperations, &V128) -> Result<i32, WasmtimeError> + std::panic::UnwindSafe,
 {
@@ -164,8 +153,8 @@ where
             let a_v128 = V128 { data: a_bytes };
 
             let config = SIMDConfig::default();
-            let simd_ops = SIMDOperations::new(config).map_err(|_| {
-                WasmtimeError::Internal { message: "SIMD initialization failed".to_string() }
+            let simd_ops = SIMDOperations::new(config).map_err(|_| WasmtimeError::Internal {
+                message: "SIMD initialization failed".to_string(),
             })?;
 
             match op(&simd_ops, &a_v128) {
@@ -301,7 +290,9 @@ pub extern "C" fn wasmtime4j_panama_simd_greater_than(
     b_data: *const u8,
     result_data: *mut u8,
 ) -> i32 {
-    simd_binary_op(a_data, b_data, result_data, |ops, a, b| ops.greater_than(a, b))
+    simd_binary_op(a_data, b_data, result_data, |ops, a, b| {
+        ops.greater_than(a, b)
+    })
 }
 
 /// SIMD saturated addition (Panama FFI export)
@@ -312,7 +303,9 @@ pub extern "C" fn wasmtime4j_panama_simd_add_saturated(
     b_data: *const u8,
     result_data: *mut u8,
 ) -> i32 {
-    simd_binary_op(a_data, b_data, result_data, |ops, a, b| ops.add_saturated(a, b))
+    simd_binary_op(a_data, b_data, result_data, |ops, a, b| {
+        ops.add_saturated(a, b)
+    })
 }
 
 /// SIMD square root (Panama FFI export)
@@ -354,7 +347,9 @@ pub extern "C" fn wasmtime4j_panama_simd_fma(
     c_data: *const u8,
     result_data: *mut u8,
 ) -> i32 {
-    simd_ternary_op(a_data, b_data, c_data, result_data, |ops, a, b, c| ops.fma(a, b, c))
+    simd_ternary_op(a_data, b_data, c_data, result_data, |ops, a, b, c| {
+        ops.fma(a, b, c)
+    })
 }
 
 /// SIMD fused multiply-subtract (Panama FFI export)
@@ -366,7 +361,9 @@ pub extern "C" fn wasmtime4j_panama_simd_fms(
     c_data: *const u8,
     result_data: *mut u8,
 ) -> i32 {
-    simd_ternary_op(a_data, b_data, c_data, result_data, |ops, a, b, c| ops.fms(a, b, c))
+    simd_ternary_op(a_data, b_data, c_data, result_data, |ops, a, b, c| {
+        ops.fms(a, b, c)
+    })
 }
 
 /// SIMD shuffle (Panama FFI export)
@@ -400,8 +397,8 @@ pub extern "C" fn wasmtime4j_panama_simd_shuffle(
             let b_v128 = V128 { data: b_bytes };
 
             let config = SIMDConfig::default();
-            let simd_ops = SIMDOperations::new(config).map_err(|_| {
-                WasmtimeError::Internal { message: "SIMD initialization failed".to_string() }
+            let simd_ops = SIMDOperations::new(config).map_err(|_| WasmtimeError::Internal {
+                message: "SIMD initialization failed".to_string(),
             })?;
 
             match simd_ops.shuffle(&a_v128, &b_v128, &indices_bytes) {
@@ -423,7 +420,9 @@ pub extern "C" fn wasmtime4j_panama_simd_relaxed_add(
     b_data: *const u8,
     result_data: *mut u8,
 ) -> i32 {
-    simd_binary_op(a_data, b_data, result_data, |ops, a, b| ops.relaxed_add(a, b))
+    simd_binary_op(a_data, b_data, result_data, |ops, a, b| {
+        ops.relaxed_add(a, b)
+    })
 }
 
 /// SIMD extract lane i32 (Panama FFI export)
@@ -452,8 +451,8 @@ pub extern "C" fn wasmtime4j_panama_simd_extract_lane_i32(
             let a_v128 = V128 { data: a_bytes };
 
             let config = SIMDConfig::default();
-            let simd_ops = SIMDOperations::new(config).map_err(|_| {
-                WasmtimeError::Internal { message: "SIMD initialization failed".to_string() }
+            let simd_ops = SIMDOperations::new(config).map_err(|_| WasmtimeError::Internal {
+                message: "SIMD initialization failed".to_string(),
             })?;
 
             match simd_ops.extract_lane_i32(&a_v128, lane_index as u8) {
@@ -495,8 +494,8 @@ pub extern "C" fn wasmtime4j_panama_simd_replace_lane_i32(
             let a_v128 = V128 { data: a_bytes };
 
             let config = SIMDConfig::default();
-            let simd_ops = SIMDOperations::new(config).map_err(|_| {
-                WasmtimeError::Internal { message: "SIMD initialization failed".to_string() }
+            let simd_ops = SIMDOperations::new(config).map_err(|_| WasmtimeError::Internal {
+                message: "SIMD initialization failed".to_string(),
             })?;
 
             match simd_ops.replace_lane_i32(&a_v128, lane_index as u8, value) {

@@ -225,11 +225,12 @@ impl TypedFuncRegistry {
         result_types: &[ValType],
     ) -> WasmtimeResult<u64> {
         let key = Self::signature_key(param_types, result_types);
-        let mut cache = self.signature_cache.write().map_err(|_| {
-            WasmtimeError::Concurrency {
+        let mut cache = self
+            .signature_cache
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire signature cache lock".to_string(),
-            }
-        })?;
+            })?;
 
         let next_id = cache.len() as u64;
         // or_insert returns a reference to the value (existing or newly inserted)
@@ -239,11 +240,12 @@ impl TypedFuncRegistry {
 
     /// Get the number of registered signatures
     pub fn signature_count(&self) -> WasmtimeResult<usize> {
-        let cache = self.signature_cache.read().map_err(|_| {
-            WasmtimeError::Concurrency {
+        let cache = self
+            .signature_cache
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire signature cache lock".to_string(),
-            }
-        })?;
+            })?;
         Ok(cache.len())
     }
 }
@@ -313,14 +315,22 @@ mod tests {
             .register_signature(&[ValType::I64], &[ValType::I64])
             .unwrap();
 
-        assert_eq!(registry.signature_count().unwrap(), 2, "Expected 2 registered signatures");
+        assert_eq!(
+            registry.signature_count().unwrap(),
+            2,
+            "Expected 2 registered signatures"
+        );
 
         // Registering same signature again should return same ID
         let id3 = registry
             .register_signature(&[ValType::I32, ValType::I32], &[ValType::I32])
             .unwrap();
         assert_eq!(id1, id3, "Same signature should return same ID");
-        assert_eq!(registry.signature_count().unwrap(), 2, "Count should still be 2 after duplicate registration");
+        assert_eq!(
+            registry.signature_count().unwrap(),
+            2,
+            "Count should still be 2 after duplicate registration"
+        );
 
         // Verify IDs are sequential for different signatures
         assert_eq!(id1, 0, "First signature should have ID 0");
@@ -329,8 +339,7 @@ mod tests {
 
     #[test]
     fn test_signature_key_generation() {
-        let key1 =
-            TypedFuncRegistry::signature_key(&[ValType::I32, ValType::I32], &[ValType::I32]);
+        let key1 = TypedFuncRegistry::signature_key(&[ValType::I32, ValType::I32], &[ValType::I32]);
         // Wasmtime's ValType Debug format uses lowercase (i32, i64, etc.)
         assert_eq!(key1, "(i32,i32) -> (i32)");
 
@@ -357,10 +366,18 @@ mod tests {
         let registry = TypedFuncRegistry::new();
 
         // Register different signatures
-        let id1 = registry.register_signature(&[ValType::I32], &[ValType::I32]).unwrap();
-        let id2 = registry.register_signature(&[ValType::I64], &[ValType::I64]).unwrap();
-        let id3 = registry.register_signature(&[ValType::F32], &[ValType::F32]).unwrap();
-        let id4 = registry.register_signature(&[ValType::F64], &[ValType::F64]).unwrap();
+        let id1 = registry
+            .register_signature(&[ValType::I32], &[ValType::I32])
+            .unwrap();
+        let id2 = registry
+            .register_signature(&[ValType::I64], &[ValType::I64])
+            .unwrap();
+        let id3 = registry
+            .register_signature(&[ValType::F32], &[ValType::F32])
+            .unwrap();
+        let id4 = registry
+            .register_signature(&[ValType::F64], &[ValType::F64])
+            .unwrap();
 
         assert_eq!(registry.signature_count().unwrap(), 4);
 
@@ -388,10 +405,12 @@ mod tests {
         let registry = TypedFuncRegistry::new();
 
         // Complex signature with multiple params and results
-        let id = registry.register_signature(
-            &[ValType::I32, ValType::I64, ValType::F32, ValType::F64],
-            &[ValType::I32, ValType::I64],
-        ).unwrap();
+        let id = registry
+            .register_signature(
+                &[ValType::I32, ValType::I64, ValType::F32, ValType::F64],
+                &[ValType::I32, ValType::I64],
+            )
+            .unwrap();
 
         assert_eq!(id, 0);
         assert_eq!(registry.signature_count().unwrap(), 1);
@@ -432,9 +451,15 @@ mod tests {
         let registry = TypedFuncRegistry::new();
 
         // Register a signature multiple times
-        let id1 = registry.register_signature(&[ValType::I32], &[ValType::I32]).unwrap();
-        let id2 = registry.register_signature(&[ValType::I32], &[ValType::I32]).unwrap();
-        let id3 = registry.register_signature(&[ValType::I32], &[ValType::I32]).unwrap();
+        let id1 = registry
+            .register_signature(&[ValType::I32], &[ValType::I32])
+            .unwrap();
+        let id2 = registry
+            .register_signature(&[ValType::I32], &[ValType::I32])
+            .unwrap();
+        let id3 = registry
+            .register_signature(&[ValType::I32], &[ValType::I32])
+            .unwrap();
 
         // All should return the same ID
         assert_eq!(id1, id2);

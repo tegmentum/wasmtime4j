@@ -293,7 +293,8 @@ pub fn generate_globals_module(mut_count: usize, immut_count: usize) -> String {
     for i in 0..immut_count {
         wat.push_str(&format!(
             "    (global $const_{} i32 (i32.const {}))\n",
-            i, i + 100
+            i,
+            i + 100
         ));
         wat.push_str(&format!(
             "    (func (export \"get_const_{}\") (result i32) global.get $const_{})\n",

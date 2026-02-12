@@ -15,7 +15,7 @@
 //! - **Performance Monitoring**: Real-time resource usage tracking and analytics
 
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 use wasmtime::component::ResourceAny;
@@ -644,10 +644,12 @@ impl ComponentResourceManager {
         self.check_quotas(&owner, &resource_type)?;
 
         let handle = {
-            let mut registry = self.resource_registry.write()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire resource registry write lock".to_string(),
-                })?;
+            let mut registry =
+                self.resource_registry
+                    .write()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire resource registry write lock".to_string(),
+                    })?;
 
             let handle = registry.next_handle;
             registry.next_handle += 1;
@@ -669,11 +671,13 @@ impl ComponentResourceManager {
             };
 
             registry.resources.insert(handle, managed_resource);
-            registry.resources_by_type
+            registry
+                .resources_by_type
                 .entry(resource_type.clone())
                 .or_insert_with(HashSet::new)
                 .insert(handle);
-            registry.resources_by_owner
+            registry
+                .resources_by_owner
                 .entry(owner.clone())
                 .or_insert_with(HashSet::new)
                 .insert(handle);
@@ -711,25 +715,31 @@ impl ComponentResourceManager {
         self.check_access_permission(handle, component_id, &access_type)?;
 
         let resource = {
-            let mut registry = self.resource_registry.write()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire resource registry write lock".to_string(),
-                })?;
+            let mut registry =
+                self.resource_registry
+                    .write()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire resource registry write lock".to_string(),
+                    })?;
 
-            let resource = registry.resources.get_mut(&handle)
-                .ok_or_else(|| WasmtimeError::InvalidParameter {
+            let resource = registry.resources.get_mut(&handle).ok_or_else(|| {
+                WasmtimeError::InvalidParameter {
                     message: format!("Resource handle {} not found", handle),
-                })?;
+                }
+            })?;
 
             // Update access tracking
             resource.last_accessed = Instant::now();
 
             // Increment reference count
             {
-                let mut ref_count = resource.ref_count.lock()
-                    .map_err(|_| WasmtimeError::Concurrency {
-                        message: "Failed to acquire resource ref count lock".to_string(),
-                    })?;
+                let mut ref_count =
+                    resource
+                        .ref_count
+                        .lock()
+                        .map_err(|_| WasmtimeError::Concurrency {
+                            message: "Failed to acquire resource ref count lock".to_string(),
+                        })?;
                 *ref_count += 1;
             }
 
@@ -738,7 +748,10 @@ impl ComponentResourceManager {
 
             // Use Wasmtime's resource table for actual resource access
             // Simplified resource access for current wasmtime API compatibility
-            log::debug!("Accessing Wasmtime resource: {:?}", resource.wasmtime_resource);
+            log::debug!(
+                "Accessing Wasmtime resource: {:?}",
+                resource.wasmtime_resource
+            );
 
             // Return a reference to the managed resource
             Arc::new(ManagedResource {
@@ -788,14 +801,19 @@ impl ComponentResourceManager {
         self.verify_sharing_permission(handle, owner)?;
 
         {
-            let mut registry = self.resource_registry.write()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire resource registry write lock".to_string(),
-                })?;
+            let mut registry =
+                self.resource_registry
+                    .write()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire resource registry write lock".to_string(),
+                    })?;
 
             let shared_resource = SharedResource {
                 handle,
-                owners: [owner.to_string(), target.to_string()].iter().cloned().collect(),
+                owners: [owner.to_string(), target.to_string()]
+                    .iter()
+                    .cloned()
+                    .collect(),
                 sharing_policy: policy,
                 access_log: Vec::new(),
                 expires_at: None,
@@ -823,18 +841,23 @@ impl ComponentResourceManager {
         _component_id: &str,
     ) -> WasmtimeResult<()> {
         let should_cleanup = {
-            let mut registry = self.resource_registry.write()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire resource registry write lock".to_string(),
-                })?;
+            let mut registry =
+                self.resource_registry
+                    .write()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire resource registry write lock".to_string(),
+                    })?;
 
             if let Some(resource) = registry.resources.get_mut(&handle) {
                 // Decrement reference count
                 let ref_count = {
-                    let mut ref_count = resource.ref_count.lock()
-                        .map_err(|_| WasmtimeError::Concurrency {
-                            message: "Failed to acquire resource ref count lock".to_string(),
-                        })?;
+                    let mut ref_count =
+                        resource
+                            .ref_count
+                            .lock()
+                            .map_err(|_| WasmtimeError::Concurrency {
+                                message: "Failed to acquire resource ref count lock".to_string(),
+                            })?;
                     *ref_count = ref_count.saturating_sub(1);
                     *ref_count
                 };
@@ -859,7 +882,9 @@ impl ComponentResourceManager {
     ///
     /// Returns current resource usage tracking data.
     pub fn get_usage_statistics(&self) -> WasmtimeResult<UsageTracking> {
-        let quota_manager = self.quota_manager.read()
+        let quota_manager = self
+            .quota_manager
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire quota manager read lock".to_string(),
             })?;
@@ -872,7 +897,9 @@ impl ComponentResourceManager {
     ///
     /// Returns cleanup metrics for the operation.
     pub fn garbage_collect(&self) -> WasmtimeResult<CleanupMetrics> {
-        let gc = self.garbage_collector.read()
+        let gc = self
+            .garbage_collector
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire garbage collector read lock".to_string(),
             })?;
@@ -890,8 +917,13 @@ impl ComponentResourceManager {
     /// # Returns
     ///
     /// Returns resource metrics if available.
-    pub fn get_resource_metrics(&self, handle: ResourceHandle) -> WasmtimeResult<Option<ResourceMetrics>> {
-        let monitor = self.monitor.read()
+    pub fn get_resource_metrics(
+        &self,
+        handle: ResourceHandle,
+    ) -> WasmtimeResult<Option<ResourceMetrics>> {
+        let monitor = self
+            .monitor
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire monitor read lock".to_string(),
             })?;
@@ -913,12 +945,16 @@ impl ComponentResourceManager {
         component_id: &str,
         quotas: ResourceQuotas,
     ) -> WasmtimeResult<()> {
-        let mut quota_manager = self.quota_manager.write()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire quota manager write lock".to_string(),
-            })?;
+        let mut quota_manager =
+            self.quota_manager
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire quota manager write lock".to_string(),
+                })?;
 
-        quota_manager.component_quotas.insert(component_id.to_string(), quotas);
+        quota_manager
+            .component_quotas
+            .insert(component_id.to_string(), quotas);
         Ok(())
     }
 
@@ -926,7 +962,9 @@ impl ComponentResourceManager {
 
     /// Check resource quotas before creation
     fn check_quotas(&self, owner: &str, _resource_type: &str) -> WasmtimeResult<()> {
-        let quota_manager = self.quota_manager.read()
+        let quota_manager = self
+            .quota_manager
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire quota manager read lock".to_string(),
             })?;
@@ -934,7 +972,8 @@ impl ComponentResourceManager {
         // Check component quotas
         if let Some(component_quotas) = quota_manager.component_quotas.get(owner) {
             if let Some(max_count) = component_quotas.max_resource_count {
-                let current_count = quota_manager.usage_tracking
+                let current_count = quota_manager
+                    .usage_tracking
                     .component_usage
                     .get(owner)
                     .map(|usage| usage.resource_count)
@@ -969,7 +1008,9 @@ impl ComponentResourceManager {
 
     /// Get default permissions for a resource type
     fn get_default_permissions(&self, resource_type: &str) -> WasmtimeResult<ResourcePermissions> {
-        let type_registry = self.type_registry.read()
+        let type_registry = self
+            .type_registry
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire type registry read lock".to_string(),
             })?;
@@ -997,10 +1038,12 @@ impl ComponentResourceManager {
         component_id: &str,
         access_type: &AccessType,
     ) -> WasmtimeResult<()> {
-        let access_control = self.access_control.read()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire access control read lock".to_string(),
-            })?;
+        let access_control =
+            self.access_control
+                .read()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire access control read lock".to_string(),
+                })?;
 
         // Check ACL
         if let Some(acl) = access_control.acls.get(&handle) {
@@ -1052,7 +1095,9 @@ impl ComponentResourceManager {
 
     /// Verify sharing permissions
     fn verify_sharing_permission(&self, handle: ResourceHandle, owner: &str) -> WasmtimeResult<()> {
-        let registry = self.resource_registry.read()
+        let registry = self
+            .resource_registry
+            .read()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire resource registry read lock".to_string(),
             })?;
@@ -1069,10 +1114,7 @@ impl ComponentResourceManager {
 
             if !resource.permissions.share {
                 return Err(WasmtimeError::AccessDenied {
-                    message: format!(
-                        "Resource {} does not allow sharing",
-                        handle
-                    ),
+                    message: format!("Resource {} does not allow sharing", handle),
                 });
             }
         } else {
@@ -1085,42 +1127,56 @@ impl ComponentResourceManager {
     }
 
     /// Update usage tracking
-    fn update_usage_tracking(&self, owner: &str, resource_type: &str, delta: i32) -> WasmtimeResult<()> {
-        let mut quota_manager = self.quota_manager.write()
-            .map_err(|_| WasmtimeError::Concurrency {
-                message: "Failed to acquire quota manager write lock".to_string(),
-            })?;
+    fn update_usage_tracking(
+        &self,
+        owner: &str,
+        resource_type: &str,
+        delta: i32,
+    ) -> WasmtimeResult<()> {
+        let mut quota_manager =
+            self.quota_manager
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire quota manager write lock".to_string(),
+                })?;
 
         // Update global usage
         if delta > 0 {
             quota_manager.usage_tracking.global_usage.resource_count += delta as u32;
         } else {
-            quota_manager.usage_tracking.global_usage.resource_count =
-                quota_manager.usage_tracking.global_usage.resource_count.saturating_sub((-delta) as u32);
+            quota_manager.usage_tracking.global_usage.resource_count = quota_manager
+                .usage_tracking
+                .global_usage
+                .resource_count
+                .saturating_sub((-delta) as u32);
         }
 
         // Update component usage
-        let component_usage = quota_manager.usage_tracking.component_usage
+        let component_usage = quota_manager
+            .usage_tracking
+            .component_usage
             .entry(owner.to_string())
             .or_insert_with(ResourceUsage::default);
 
         if delta > 0 {
             component_usage.resource_count += delta as u32;
         } else {
-            component_usage.resource_count =
-                component_usage.resource_count.saturating_sub((-delta) as u32);
+            component_usage.resource_count = component_usage
+                .resource_count
+                .saturating_sub((-delta) as u32);
         }
 
         // Update type usage
-        let type_usage = quota_manager.usage_tracking.type_usage
+        let type_usage = quota_manager
+            .usage_tracking
+            .type_usage
             .entry(resource_type.to_string())
             .or_insert_with(ResourceUsage::default);
 
         if delta > 0 {
             type_usage.resource_count += delta as u32;
         } else {
-            type_usage.resource_count =
-                type_usage.resource_count.saturating_sub((-delta) as u32);
+            type_usage.resource_count = type_usage.resource_count.saturating_sub((-delta) as u32);
         }
 
         Ok(())
@@ -1152,12 +1208,17 @@ impl ComponentResourceManager {
 
     /// Update access metrics for monitoring
     fn update_access_metrics(&self, handle: ResourceHandle) -> WasmtimeResult<()> {
-        let mut monitor = self.monitor.write()
+        let mut monitor = self
+            .monitor
+            .write()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire monitor write lock".to_string(),
             })?;
 
-        let metrics = monitor.metrics.entry(handle).or_insert_with(ResourceMetrics::default);
+        let metrics = monitor
+            .metrics
+            .entry(handle)
+            .or_insert_with(ResourceMetrics::default);
         metrics.access_count += 1;
         metrics.last_access = Some(Instant::now());
 
@@ -1166,7 +1227,9 @@ impl ComponentResourceManager {
 
     /// Start monitoring for a resource
     fn start_monitoring(&self, handle: ResourceHandle) -> WasmtimeResult<()> {
-        let mut monitor = self.monitor.write()
+        let mut monitor = self
+            .monitor
+            .write()
             .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire monitor write lock".to_string(),
             })?;
@@ -1179,10 +1242,12 @@ impl ComponentResourceManager {
     fn schedule_cleanup(&self, handle: ResourceHandle) -> WasmtimeResult<()> {
         // Mark resource for cleanup
         {
-            let mut registry = self.resource_registry.write()
-                .map_err(|_| WasmtimeError::Concurrency {
-                    message: "Failed to acquire resource registry write lock".to_string(),
-                })?;
+            let mut registry =
+                self.resource_registry
+                    .write()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire resource registry write lock".to_string(),
+                    })?;
 
             if let Some(resource) = registry.resources.get_mut(&handle) {
                 resource.state = ResourceState::PendingDeletion;
@@ -1227,7 +1292,7 @@ impl ResourceMonitor {
                 memory_threshold: Some(100 * 1024 * 1024), // 100MB
                 access_time_threshold: Some(Duration::from_millis(1000)),
                 error_rate_threshold: Some(0.1), // 10%
-                health_threshold: Some(0.5), // 50%
+                health_threshold: Some(0.5),     // 50%
             },
             active_alerts: Vec::new(),
         }

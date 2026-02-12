@@ -5,13 +5,13 @@
 //!
 //! It exports `VecByteArrayConverter` and `JStringConverter` for use by other modules.
 
-use jni::JNIEnv;
-use jni::objects::{JClass, JString, JObject, JValue, JByteArray};
-use jni::sys::{jlong, jboolean, jbyteArray, jstring, jobject, jobjectArray};
+use jni::objects::{JByteArray, JClass, JObject, JString, JValue};
 use jni::strings::JavaStr;
+use jni::sys::{jboolean, jbyteArray, jlong, jobject, jobjectArray, jstring};
+use jni::JNIEnv;
 
-use crate::module::core;
 use crate::error::jni_utils;
+use crate::module::core;
 use crate::shared_ffi::module::{ByteArrayConverter, StringConverter};
 
 /// Vec<u8> byte array converter implementation for JNI
@@ -44,11 +44,11 @@ pub struct JStringConverter {
 impl JStringConverter {
     /// Creates a new JStringConverter from JavaStr
     pub fn new(java_str: JavaStr) -> crate::error::WasmtimeResult<Self> {
-        let string = java_str.to_str()
-            .map(|s| s.to_string())
-            .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+        let string = java_str.to_str().map(|s| s.to_string()).map_err(|e| {
+            crate::error::WasmtimeError::InvalidParameter {
                 message: format!("Failed to convert Java string to Rust string: {}", e),
-            })?;
+            }
+        })?;
         Ok(Self { data: string })
     }
 }
@@ -63,7 +63,6 @@ impl StringConverter for JStringConverter {
     }
 }
 
-
 /// Instantiate a module within a store context
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModule(
@@ -74,7 +73,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstanti
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
-        let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        let store =
+            unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
         crate::instance::core::create_instance(store, module)
     }) as jlong
 }
@@ -90,7 +90,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstanti
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
-        let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        let store =
+            unsafe { crate::store::core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
         // For now, ignore imports - this would need proper ImportMap implementation
         crate::instance::core::create_instance(store, module)
     }) as jlong
@@ -183,7 +184,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExpor
             let mut table_names = Vec::new();
 
             for export in &metadata.exports {
-                if matches!(export.export_type, crate::module::ExportKind::Table(_, _, _)) {
+                if matches!(
+                    export.export_type,
+                    crate::module::ExportKind::Table(_, _, _)
+                ) {
                     table_names.push(export.name.as_str());
                 }
             }
@@ -296,7 +300,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeValidate
     bytecode: jbyteArray,
 ) -> jboolean {
     // Extract data first
-    let wasm_data_result = env.convert_byte_array(unsafe { JByteArray::from_raw(bytecode) })
+    let wasm_data_result = env
+        .convert_byte_array(unsafe { JByteArray::from_raw(bytecode) })
         .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
             message: format!("Failed to convert Java byte array: {}", e),
         });
@@ -320,7 +325,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
     _class: JClass,
     module_ptr: jlong,
 ) -> jlong {
-    let result = crate::shared_ffi::module::get_module_size_shared(module_ptr as *mut std::os::raw::c_void);
+    let result =
+        crate::shared_ffi::module::get_module_size_shared(module_ptr as *mut std::os::raw::c_void);
     let (_, size) = crate::shared_ffi::module::size_result_to_ffi_result(result);
     size as jlong
 }
@@ -510,13 +516,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeSerializ
     _class: JClass,
     module_ptr: jlong,
 ) -> jbyteArray {
-    match crate::shared_ffi::module::serialize_module_shared(module_ptr as *mut std::os::raw::c_void) {
-        Ok(bytes) => {
-            match env.byte_array_from_slice(&bytes) {
-                Ok(jarray) => jarray.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
-        }
+    match crate::shared_ffi::module::serialize_module_shared(
+        module_ptr as *mut std::os::raw::c_void,
+    ) {
+        Ok(bytes) => match env.byte_array_from_slice(&bytes) {
+            Ok(jarray) => jarray.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -532,9 +538,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserial
     // Convert byte array to Vec<u8> before moving env
     let data = match (|| -> Result<Vec<u8>, jni::errors::Error> {
         let byte_array = unsafe { JByteArray::from_raw(serialized_data) };
-        let array_elements = unsafe { env.get_array_elements(&byte_array, jni::objects::ReleaseMode::NoCopyBack)? };
+        let array_elements =
+            unsafe { env.get_array_elements(&byte_array, jni::objects::ReleaseMode::NoCopyBack)? };
         let len = env.get_array_length(&byte_array)? as usize;
-        let slice = unsafe { std::slice::from_raw_parts(array_elements.as_ptr() as *const u8, len) };
+        let slice =
+            unsafe { std::slice::from_raw_parts(array_elements.as_ptr() as *const u8, len) };
         Ok(slice.to_vec())
     })() {
         Ok(data) => data,
@@ -542,7 +550,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserial
     };
 
     jni_utils::jni_try_ptr(&mut env, || {
-        let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        let engine = unsafe {
+            crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)?
+        };
         let byte_converter = VecByteArrayConverter::new(data);
         crate::shared_ffi::module::deserialize_module_shared(engine, byte_converter)
     }) as jlong
@@ -565,7 +575,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserial
     };
 
     jni_utils::jni_try_ptr(&mut env, || {
-        let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        let engine = unsafe {
+            crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)?
+        };
         crate::shared_ffi::module::deserialize_module_file_shared(engine, &path_str)
     }) as jlong
 }
@@ -626,12 +638,21 @@ fn module_value_type_to_java_enum(value_type: &crate::module::ModuleValueType) -
 }
 
 /// Helper: Get WasmValueType enum value
-fn get_wasm_value_type_enum<'a>(env: &mut JNIEnv<'a>, value_type: &crate::module::ModuleValueType) -> Result<JObject<'a>, String> {
-    let enum_class = env.find_class("ai/tegmentum/wasmtime4j/WasmValueType")
+fn get_wasm_value_type_enum<'a>(
+    env: &mut JNIEnv<'a>,
+    value_type: &crate::module::ModuleValueType,
+) -> Result<JObject<'a>, String> {
+    let enum_class = env
+        .find_class("ai/tegmentum/wasmtime4j/WasmValueType")
         .map_err(|e| format!("Failed to find WasmValueType class: {}", e))?;
 
     let enum_name = module_value_type_to_java_enum(value_type);
-    let enum_value = env.get_static_field(enum_class, enum_name, "Lai/tegmentum/wasmtime4j/WasmValueType;")
+    let enum_value = env
+        .get_static_field(
+            enum_class,
+            enum_name,
+            "Lai/tegmentum/wasmtime4j/WasmValueType;",
+        )
         .map_err(|e| format!("Failed to get enum value {}: {}", enum_name, e))?;
 
     match enum_value {
@@ -654,24 +675,37 @@ fn create_jni_func_type<'a>(
     // Add param types
     for param in params {
         if let Ok(enum_val) = get_wasm_value_type_enum(env, param) {
-            let _ = env.call_method(&params_list, "add", "(Ljava/lang/Object;)Z", &[JValue::Object(&enum_val)]);
+            let _ = env.call_method(
+                &params_list,
+                "add",
+                "(Ljava/lang/Object;)Z",
+                &[JValue::Object(&enum_val)],
+            );
         }
     }
 
     // Add return types
     for ret in returns {
         if let Ok(enum_val) = get_wasm_value_type_enum(env, ret) {
-            let _ = env.call_method(&results_list, "add", "(Ljava/lang/Object;)Z", &[JValue::Object(&enum_val)]);
+            let _ = env.call_method(
+                &results_list,
+                "add",
+                "(Ljava/lang/Object;)Z",
+                &[JValue::Object(&enum_val)],
+            );
         }
     }
 
     // Create JniFuncType
-    let func_type_class = env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniFuncType").ok()?;
+    let func_type_class = env
+        .find_class("ai/tegmentum/wasmtime4j/jni/type/JniFuncType")
+        .ok()?;
     env.new_object(
         func_type_class,
         "(Ljava/util/List;Ljava/util/List;)V",
         &[JValue::Object(&params_list), JValue::Object(&results_list)],
-    ).ok()
+    )
+    .ok()
 }
 
 /// Helper: Create JniGlobalType from value type and mutability
@@ -681,12 +715,15 @@ fn create_jni_global_type<'a>(
     mutable: bool,
 ) -> Option<JObject<'a>> {
     let enum_val = get_wasm_value_type_enum(env, val_type).ok()?;
-    let global_type_class = env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniGlobalType").ok()?;
+    let global_type_class = env
+        .find_class("ai/tegmentum/wasmtime4j/jni/type/JniGlobalType")
+        .ok()?;
     env.new_object(
         global_type_class,
         "(Lai/tegmentum/wasmtime4j/WasmValueType;Z)V",
         &[JValue::Object(&enum_val), JValue::Bool(mutable as jboolean)],
-    ).ok()
+    )
+    .ok()
 }
 
 /// Helper: Create JniMemoryType from initial, max, is_64, and shared
@@ -697,12 +734,15 @@ fn create_jni_memory_type<'a>(
     is_64: bool,
     shared: bool,
 ) -> Option<JObject<'a>> {
-    let memory_type_class = env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniMemoryType").ok()?;
+    let memory_type_class = env
+        .find_class("ai/tegmentum/wasmtime4j/jni/type/JniMemoryType")
+        .ok()?;
 
     // Create boxed Long for maximum, or null if None
     let max_obj: JObject = if let Some(max_val) = max {
         let long_class = env.find_class("java/lang/Long").ok()?;
-        env.new_object(long_class, "(J)V", &[JValue::Long(max_val as i64)]).ok()?
+        env.new_object(long_class, "(J)V", &[JValue::Long(max_val as i64)])
+            .ok()?
     } else {
         JObject::null()
     };
@@ -717,7 +757,8 @@ fn create_jni_memory_type<'a>(
             JValue::Bool(is_64 as jboolean),
             JValue::Bool(shared as jboolean),
         ],
-    ).ok()
+    )
+    .ok()
 }
 
 /// Helper: Create JniTableType from element type, initial, and max
@@ -728,19 +769,23 @@ fn create_jni_table_type<'a>(
     max: Option<u32>,
 ) -> Option<JObject<'a>> {
     let enum_val = get_wasm_value_type_enum(env, elem_type).ok()?;
-    let table_type_class = env.find_class("ai/tegmentum/wasmtime4j/jni/type/JniTableType").ok()?;
+    let table_type_class = env
+        .find_class("ai/tegmentum/wasmtime4j/jni/type/JniTableType")
+        .ok()?;
 
     // Create boxed Long for maximum using valueOf (null if None)
     let max_obj: JObject = match max {
         Some(m) => {
             let long_class = env.find_class("java/lang/Long").ok()?;
             // Use Long.valueOf(long) instead of constructor (more compatible)
-            let result = env.call_static_method(
-                long_class,
-                "valueOf",
-                "(J)Ljava/lang/Long;",
-                &[JValue::Long(m as i64)],
-            ).ok()?;
+            let result = env
+                .call_static_method(
+                    long_class,
+                    "valueOf",
+                    "(J)Ljava/lang/Long;",
+                    &[JValue::Long(m as i64)],
+                )
+                .ok()?;
             match result {
                 jni::objects::JValueGen::Object(obj) => obj,
                 _ => return None,
@@ -758,7 +803,8 @@ fn create_jni_table_type<'a>(
             JValue::Long(initial as i64),
             JValue::Object(&max_obj),
         ],
-    ).ok()
+    )
+    .ok()
 }
 
 /// Get module exports with type information
@@ -774,13 +820,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
 
     // Extract export data with type information
     let exports_data: Vec<(String, crate::module::ExportKind)> = {
-        let module = match unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+        let module = match unsafe {
+            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)
+        } {
             Ok(m) => m,
             Err(_) => return std::ptr::null_mut(),
         };
         let metadata = crate::module::core::get_metadata(module);
         // Extract name and type info, then drop the module reference
-        metadata.exports.iter().map(|exp| (exp.name.clone(), exp.export_type.clone())).collect()
+        metadata
+            .exports
+            .iter()
+            .map(|exp| (exp.name.clone(), exp.export_type.clone()))
+            .collect()
     };
 
     // Create ArrayList
@@ -827,8 +879,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             Ok(c) => c,
             Err(_) => continue,
         };
-        let export_type_obj = match env.new_object(export_type_class, "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/WasmType;)V",
-            &[JValue::Object(&name_jstring), JValue::Object(&wasm_type_obj)]) {
+        let export_type_obj = match env.new_object(
+            export_type_class,
+            "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/WasmType;)V",
+            &[
+                JValue::Object(&name_jstring),
+                JValue::Object(&wasm_type_obj),
+            ],
+        ) {
             Ok(obj) => obj,
             Err(_) => continue,
         };
@@ -838,14 +896,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             Ok(c) => c,
             Err(_) => continue,
         };
-        let module_export_obj = match env.new_object(module_export_class, "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/ExportType;)V",
-            &[JValue::Object(&name_jstring), JValue::Object(&export_type_obj)]) {
+        let module_export_obj = match env.new_object(
+            module_export_class,
+            "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/ExportType;)V",
+            &[
+                JValue::Object(&name_jstring),
+                JValue::Object(&export_type_obj),
+            ],
+        ) {
             Ok(obj) => obj,
             Err(_) => continue,
         };
 
         // Add to ArrayList
-        let _ = env.call_method(&array_list, "add", "(Ljava/lang/Object;)Z", &[JValue::Object(&module_export_obj)]);
+        let _ = env.call_method(
+            &array_list,
+            "add",
+            "(Ljava/lang/Object;)Z",
+            &[JValue::Object(&module_export_obj)],
+        );
     }
 
     array_list.into_raw()
@@ -864,13 +933,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
 
     // Extract import data with type information
     let imports_data: Vec<(String, String, crate::module::ImportKind)> = {
-        let module = match unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+        let module = match unsafe {
+            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)
+        } {
             Ok(m) => m,
             Err(_) => return std::ptr::null_mut(),
         };
         let metadata = crate::module::core::get_metadata(module);
         // Extract module name, field name, and type info
-        metadata.imports.iter().map(|imp| (imp.module.clone(), imp.name.clone(), imp.import_type.clone())).collect()
+        metadata
+            .imports
+            .iter()
+            .map(|imp| {
+                (
+                    imp.module.clone(),
+                    imp.name.clone(),
+                    imp.import_type.clone(),
+                )
+            })
+            .collect()
     };
 
     // Create ArrayList
@@ -928,8 +1009,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             Ok(c) => c,
             Err(_) => continue,
         };
-        let import_type_obj = match env.new_object(import_type_class, "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/WasmType;)V",
-            &[JValue::Object(&module_name_jstring), JValue::Object(&field_name_jstring), JValue::Object(&wasm_type_obj)]) {
+        let import_type_obj = match env.new_object(
+            import_type_class,
+            "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/WasmType;)V",
+            &[
+                JValue::Object(&module_name_jstring),
+                JValue::Object(&field_name_jstring),
+                JValue::Object(&wasm_type_obj),
+            ],
+        ) {
             Ok(obj) => obj,
             Err(_) => continue,
         };
@@ -939,14 +1027,26 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             Ok(c) => c,
             Err(_) => continue,
         };
-        let module_import_obj = match env.new_object(module_import_class, "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/ImportType;)V",
-            &[JValue::Object(&module_name_jstring), JValue::Object(&field_name_jstring), JValue::Object(&import_type_obj)]) {
+        let module_import_obj = match env.new_object(
+            module_import_class,
+            "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/ImportType;)V",
+            &[
+                JValue::Object(&module_name_jstring),
+                JValue::Object(&field_name_jstring),
+                JValue::Object(&import_type_obj),
+            ],
+        ) {
             Ok(obj) => obj,
             Err(_) => continue,
         };
 
         // Add to ArrayList
-        let _ = env.call_method(&array_list, "add", "(Ljava/lang/Object;)Z", &[JValue::Object(&module_import_obj)]);
+        let _ = env.call_method(
+            &array_list,
+            "add",
+            "(Ljava/lang/Object;)Z",
+            &[JValue::Object(&module_import_obj)],
+        );
     }
 
     array_list.into_raw()
@@ -967,7 +1067,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasExpor
     match env.get_string(&export_name) {
         Ok(name_str) => {
             let name: String = name_str.into();
-            match unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            match unsafe {
+                crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)
+            } {
                 Ok(module) => {
                     let metadata = crate::module::core::get_metadata(module);
                     for export in &metadata.exports {
@@ -1001,7 +1103,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasImpor
         (Ok(mod_name_str), Ok(fld_name_str)) => {
             let mod_name: String = mod_name_str.into();
             let fld_name: String = fld_name_str.into();
-            match unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+            match unsafe {
+                crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)
+            } {
                 Ok(module) => {
                     let metadata = crate::module::core::get_metadata(module);
                     for import in &metadata.imports {
@@ -1035,7 +1139,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetCusto
             });
         }
 
-        let module = unsafe { crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
+        let module = unsafe {
+            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)?
+        };
         let metadata = crate::module::core::get_metadata(module);
 
         // Create HashMap for custom sections
@@ -1055,10 +1161,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetCusto
                 &hashmap,
                 "put",
                 "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
-                &[
-                    (&name_jstring).into(),
-                    (&data_jstring).into(),
-                ],
+                &[(&name_jstring).into(), (&data_jstring).into()],
             )?;
         }
 

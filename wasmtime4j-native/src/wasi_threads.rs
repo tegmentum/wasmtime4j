@@ -2,8 +2,8 @@
 //!
 //! This module provides basic WASI-threads support for spawning WebAssembly threads.
 
+use crate::error::{WasmtimeError, WasmtimeResult};
 use std::sync::atomic::{AtomicU32, Ordering};
-use crate::error::{WasmtimeResult, WasmtimeError};
 
 /// WASI-threads context for thread management
 #[derive(Debug, Default)]
@@ -30,9 +30,10 @@ impl WasiThreadsContext {
         let thread_id = self.next_thread_id.fetch_add(1, Ordering::SeqCst);
 
         if thread_id > MAX_THREAD_ID {
-            return Err(WasmtimeError::from_string(
-                format!("Thread ID {} exceeds maximum allowed value {}", thread_id, MAX_THREAD_ID)
-            ));
+            return Err(WasmtimeError::from_string(format!(
+                "Thread ID {} exceeds maximum allowed value {}",
+                thread_id, MAX_THREAD_ID
+            )));
         }
 
         log::debug!(

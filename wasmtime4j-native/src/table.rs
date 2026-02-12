@@ -5,15 +5,17 @@
 //! external objects, or other reference types with proper bounds checking
 //! and type validation.
 
-use std::mem::ManuallyDrop;
-use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
-use wasmtime::{Table as WasmtimeTable, TableType, Val, ValType, RefType, Ref, Func, Extern, HeapType};
-use crate::store::Store;
+use crate::element_segment::ElementItem;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::global::ReferenceType;
 use crate::instance::Instance;
-use crate::element_segment::ElementItem;
+use crate::store::Store;
+use std::collections::HashMap;
+use std::mem::ManuallyDrop;
+use std::sync::{Arc, Mutex};
+use wasmtime::{
+    Extern, Func, HeapType, Ref, RefType, Table as WasmtimeTable, TableType, Val, ValType,
+};
 
 /// Thread-safe wrapper around Wasmtime table with bounds checking
 pub struct Table {
@@ -39,9 +41,8 @@ pub struct TableMetadata {
 /// Global reference registry for managing references across table operations
 /// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
 use once_cell::sync::Lazy;
-static REFERENCE_REGISTRY: Lazy<ManuallyDrop<Arc<Mutex<ReferenceRegistry>>>> = Lazy::new(|| {
-    ManuallyDrop::new(Arc::new(Mutex::new(ReferenceRegistry::new())))
-});
+static REFERENCE_REGISTRY: Lazy<ManuallyDrop<Arc<Mutex<ReferenceRegistry>>>> =
+    Lazy::new(|| ManuallyDrop::new(Arc::new(Mutex::new(ReferenceRegistry::new()))));
 
 /// Registry for managing WebAssembly references by ID
 #[derive(Debug)]
@@ -166,26 +167,31 @@ impl Table {
             TableType::new64(ref_type, initial_size, maximum_size)
         } else {
             // For 32-bit tables, we need to validate sizes fit in u32
-            let init_size_32 = initial_size.try_into().map_err(|_| WasmtimeError::InvalidParameter {
-                message: format!(
-                    "Initial size {} exceeds u32 maximum for 32-bit table",
-                    initial_size
-                ),
-            })?;
-            let max_size_32 = maximum_size.map(|s| s.try_into()).transpose().map_err(|_| WasmtimeError::InvalidParameter {
-                message: "Maximum size exceeds u32 maximum for 32-bit table".to_string(),
-            })?;
+            let init_size_32 =
+                initial_size
+                    .try_into()
+                    .map_err(|_| WasmtimeError::InvalidParameter {
+                        message: format!(
+                            "Initial size {} exceeds u32 maximum for 32-bit table",
+                            initial_size
+                        ),
+                    })?;
+            let max_size_32 = maximum_size
+                .map(|s| s.try_into())
+                .transpose()
+                .map_err(|_| WasmtimeError::InvalidParameter {
+                    message: "Maximum size exceeds u32 maximum for 32-bit table".to_string(),
+                })?;
             TableType::new(ref_type, init_size_32, max_size_32)
         };
 
         let initial_value = Self::default_ref_for_type(&element_type)?;
 
         let wasmtime_table = store.with_context(|ctx| {
-            WasmtimeTable::new(ctx, table_type, initial_value)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to create table: {}", e),
-                    backtrace: None,
-                })
+            WasmtimeTable::new(ctx, table_type, initial_value).map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create table: {}", e),
+                backtrace: None,
+            })
         })?;
 
         let metadata = TableMetadata {
@@ -213,9 +219,7 @@ impl Table {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
 
-        store.with_context_ro(|ctx| {
-            Ok(table.size(&ctx))
-        })
+        store.with_context_ro(|ctx| Ok(table.size(&ctx)))
     }
 
     /// Get an element from the table at the specified index
@@ -256,9 +260,7 @@ impl Table {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
 
-        let table_size = store.with_context_ro(|ctx| {
-            Ok(table.size(&ctx))
-        })?;
+        let table_size = store.with_context_ro(|ctx| Ok(table.size(&ctx)))?;
 
         // Bounds check
         if index >= table_size {
@@ -274,7 +276,8 @@ impl Table {
         let wasmtime_value = Self::table_element_to_wasmtime_ref(element)?;
 
         store.with_context(|mut ctx| {
-            table.set(&mut ctx, index, wasmtime_value)
+            table
+                .set(&mut ctx, index, wasmtime_value)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to set table element at index {}: {}", index, e),
                     backtrace: None,
@@ -291,9 +294,7 @@ impl Table {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
 
-        let current_size = store.with_context_ro(|ctx| {
-            Ok(table.size(&ctx))
-        })?;
+        let current_size = store.with_context_ro(|ctx| Ok(table.size(&ctx)))?;
 
         // Check against maximum size if specified
         if let Some(max_size) = self.metadata.maximum_size {
@@ -311,7 +312,8 @@ impl Table {
         let wasmtime_init_value = Self::table_element_to_wasmtime_ref(init_value)?;
 
         store.with_context(|mut ctx| {
-            table.grow(&mut ctx, delta as u64, wasmtime_init_value)
+            table
+                .grow(&mut ctx, delta as u64, wasmtime_init_value)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to grow table: {}", e),
                     backtrace: None,
@@ -334,9 +336,7 @@ impl Table {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
 
-        let table_size = store.with_context_ro(|ctx| {
-            Ok(table.size(&ctx))
-        })?;
+        let table_size = store.with_context_ro(|ctx| Ok(table.size(&ctx)))?;
 
         // Bounds check
         if (dst as u64).saturating_add(len as u64) > table_size {
@@ -352,7 +352,8 @@ impl Table {
         let wasmtime_value = Self::table_element_to_wasmtime_ref(value)?;
 
         store.with_context(|mut ctx| {
-            table.fill(&mut ctx, dst as u64, wasmtime_value, len as u64)
+            table
+                .fill(&mut ctx, dst as u64, wasmtime_value, len as u64)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Failed to fill table: {}", e),
                     backtrace: None,
@@ -361,20 +362,12 @@ impl Table {
     }
 
     /// Copy elements within the table
-    pub fn copy_within(
-        &self,
-        store: &Store,
-        dst: u32,
-        src: u32,
-        len: u32,
-    ) -> WasmtimeResult<()> {
+    pub fn copy_within(&self, store: &Store, dst: u32, src: u32, len: u32) -> WasmtimeResult<()> {
         let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
 
-        let table_size = store.with_context_ro(|ctx| {
-            Ok(table.size(&ctx))
-        })?;
+        let table_size = store.with_context_ro(|ctx| Ok(table.size(&ctx)))?;
 
         // Bounds check
         if (dst as u64).saturating_add(len as u64) > table_size {
@@ -399,12 +392,14 @@ impl Table {
         store.with_context(|mut ctx| {
             // Manually implement table copy since direct copy might not be available
             for i in 0..len {
-                let src_elem = table.get(&mut ctx, (src + i) as u64)
-                    .ok_or_else(|| WasmtimeError::Runtime {
+                let src_elem = table.get(&mut ctx, (src + i) as u64).ok_or_else(|| {
+                    WasmtimeError::Runtime {
                         message: format!("Failed to get element at index {}", src + i),
                         backtrace: None,
-                    })?;
-                table.set(&mut ctx, (dst + i) as u64, src_elem)
+                    }
+                })?;
+                table
+                    .set(&mut ctx, (dst + i) as u64, src_elem)
                     .map_err(|e| WasmtimeError::Runtime {
                         message: format!("Failed to set element at index {}: {}", dst + i, e),
                         backtrace: None,
@@ -424,7 +419,9 @@ impl Table {
         len: u32,
     ) -> WasmtimeResult<()> {
         // Validate type compatibility
-        if format!("{:?}", self.metadata.element_type) != format!("{:?}", src_table.metadata.element_type) {
+        if format!("{:?}", self.metadata.element_type)
+            != format!("{:?}", src_table.metadata.element_type)
+        {
             return Err(WasmtimeError::Type {
                 message: format!(
                     "Table element types must match: dst={:?}, src={:?}",
@@ -437,13 +434,15 @@ impl Table {
             message: format!("Failed to acquire destination table lock: {}", e),
         })?;
 
-        let src_table_inner = src_table.inner.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to acquire source table lock: {}", e),
-        })?;
+        let src_table_inner = src_table
+            .inner
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to acquire source table lock: {}", e),
+            })?;
 
-        let (dst_table_size, src_table_size) = store.with_context_ro(|ctx| {
-            Ok((dst_table.size(&ctx), src_table_inner.size(&ctx)))
-        })?;
+        let (dst_table_size, src_table_size) =
+            store.with_context_ro(|ctx| Ok((dst_table.size(&ctx), src_table_inner.size(&ctx))))?;
 
         // Bounds check
         if (dst as u64).saturating_add(len as u64) > dst_table_size {
@@ -473,15 +472,21 @@ impl Table {
 
             // Manually copy elements since wasmtime doesn't have direct cross-table copy API
             for i in 0..count {
-                let element = src_table_inner.get(&mut ctx, src_index + i)
+                let element = src_table_inner
+                    .get(&mut ctx, src_index + i)
                     .ok_or_else(|| WasmtimeError::Runtime {
                         message: format!("Failed to get source element at index {}", src_index + i),
                         backtrace: None,
                     })?;
 
-                dst_table.set(&mut ctx, dst_index + i, element)
+                dst_table
+                    .set(&mut ctx, dst_index + i, element)
                     .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to set destination element at index {}: {}", dst_index + i, e),
+                        message: format!(
+                            "Failed to set destination element at index {}: {}",
+                            dst_index + i,
+                            e
+                        ),
                         backtrace: None,
                     })?;
             }
@@ -520,9 +525,7 @@ impl Table {
         })?;
 
         // Get table size for bounds checking
-        let table_size = store.with_context_ro(|ctx| {
-            Ok(table.size(&ctx))
-        })?;
+        let table_size = store.with_context_ro(|ctx| Ok(table.size(&ctx)))?;
 
         // Bounds check for destination
         if (dst as u64).saturating_add(len as u64) > table_size {
@@ -536,10 +539,11 @@ impl Table {
         }
 
         // Get segment info for validation
-        let segment = segment_manager.get_segment(segment_index)
-            .ok_or_else(|| WasmtimeError::InvalidParameter {
+        let segment = segment_manager.get_segment(segment_index).ok_or_else(|| {
+            WasmtimeError::InvalidParameter {
                 message: format!("Element segment index {} out of bounds", segment_index),
-            })?;
+            }
+        })?;
 
         // Check if segment is available (Some = passive, None = active/declarative)
         let segment = segment.as_ref().ok_or_else(|| WasmtimeError::Runtime {
@@ -619,9 +623,7 @@ impl Table {
             message: format!("Failed to acquire table lock: {}", e),
         })?;
 
-        store.with_context_ro(|ctx| {
-            Ok(table.ty(&ctx))
-        })
+        store.with_context_ro(|ctx| Ok(table.ty(&ctx)))
     }
 
     /// Validate that a ValType is a valid reference type for table elements
@@ -629,36 +631,42 @@ impl Table {
         match element_type {
             ValType::Ref(_) => Ok(()),
             _ => Err(WasmtimeError::Type {
-                message: format!("Invalid table element type: {:?}. Only reference types are allowed.", element_type),
+                message: format!(
+                    "Invalid table element type: {:?}. Only reference types are allowed.",
+                    element_type
+                ),
             }),
         }
     }
 
     /// Validate that a TableElement matches the expected ValType
-    fn validate_element_matches_type(element: &TableElement, expected_type: &ValType) -> WasmtimeResult<()> {
+    fn validate_element_matches_type(
+        element: &TableElement,
+        expected_type: &ValType,
+    ) -> WasmtimeResult<()> {
         let matches = match (element, expected_type) {
             (TableElement::FuncRef(_), ValType::Ref(ref_type)) => {
                 // Check if the reference type is specifically funcref
                 matches!(ref_type.heap_type(), wasmtime::HeapType::Func)
-            },
+            }
             (TableElement::ExternRef(_), ValType::Ref(ref_type)) => {
                 // Check if the reference type is specifically externref
                 matches!(ref_type.heap_type(), wasmtime::HeapType::Extern)
-            },
+            }
             (TableElement::AnyRef(_), ValType::Ref(_)) => {
                 // AnyRef should match any reference type (used for generic operations)
                 true
-            },
+            }
             _ => false,
         };
 
         if !matches {
             let element_type_name = match element {
                 TableElement::FuncRef(_) => "funcref",
-                TableElement::ExternRef(_) => "externref", 
+                TableElement::ExternRef(_) => "externref",
                 TableElement::AnyRef(_) => "anyref",
             };
-            
+
             let expected_type_name = match expected_type {
                 ValType::Ref(ref_type) => match ref_type.heap_type() {
                     wasmtime::HeapType::Func => "funcref",
@@ -667,7 +675,7 @@ impl Table {
                 },
                 _ => "non_ref",
             };
-            
+
             return Err(WasmtimeError::Type {
                 message: format!(
                     "Table element type {} does not match expected table element type {}",
@@ -684,7 +692,10 @@ impl Table {
         match element_type {
             ValType::Ref(ref_type) => Ok(ref_type.clone()),
             _ => Err(WasmtimeError::Type {
-                message: format!("Cannot convert non-reference ValType to RefType: {:?}", element_type),
+                message: format!(
+                    "Cannot convert non-reference ValType to RefType: {:?}",
+                    element_type
+                ),
             }),
         }
     }
@@ -692,9 +703,7 @@ impl Table {
     /// Get the default Ref value for a given element type
     fn default_ref_for_type(element_type: &ValType) -> WasmtimeResult<Ref> {
         match element_type {
-            ValType::Ref(ref_type) => {
-                Ok(Ref::null(ref_type.heap_type()))
-            },
+            ValType::Ref(ref_type) => Ok(Ref::null(ref_type.heap_type())),
             _ => Err(WasmtimeError::Type {
                 message: format!("No default ref for non-reference type: {:?}", element_type),
             }),
@@ -707,9 +716,12 @@ impl Table {
             TableElement::FuncRef(ref_id) => {
                 if let Some(id) = ref_id {
                     // Look up function reference in the registry
-                    let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                        message: format!("Failed to lock reference registry: {}", e),
-                    })?;
+                    let registry =
+                        REFERENCE_REGISTRY
+                            .lock()
+                            .map_err(|e| WasmtimeError::Concurrency {
+                                message: format!("Failed to lock reference registry: {}", e),
+                            })?;
 
                     if let Some(arc_func) = registry.get_function(id) {
                         Ref::from(Clone::clone(&*arc_func))
@@ -723,13 +735,16 @@ impl Table {
                 } else {
                     Ref::null(&RefType::FUNCREF.heap_type())
                 }
-            },
+            }
             TableElement::ExternRef(ref_id) => {
                 if let Some(id) = ref_id {
                     // Look up external reference in the registry
-                    let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                        message: format!("Failed to lock reference registry: {}", e),
-                    })?;
+                    let registry =
+                        REFERENCE_REGISTRY
+                            .lock()
+                            .map_err(|e| WasmtimeError::Concurrency {
+                                message: format!("Failed to lock reference registry: {}", e),
+                            })?;
 
                     if let Some(arc_external) = registry.get_external(id) {
                         // Convert Extern to Ref - this might need specific handling based on Extern type
@@ -744,13 +759,16 @@ impl Table {
                 } else {
                     Ref::null(&RefType::EXTERNREF.heap_type())
                 }
-            },
+            }
             TableElement::AnyRef(ref_id) => {
                 if let Some(id) = ref_id {
                     // Try to resolve as function first, then external
-                    let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                        message: format!("Failed to lock reference registry: {}", e),
-                    })?;
+                    let registry =
+                        REFERENCE_REGISTRY
+                            .lock()
+                            .map_err(|e| WasmtimeError::Concurrency {
+                                message: format!("Failed to lock reference registry: {}", e),
+                            })?;
 
                     if let Some(arc_func) = registry.get_function(id) {
                         Ref::from(Clone::clone(&*arc_func))
@@ -769,14 +787,17 @@ impl Table {
                 } else {
                     Ref::null(&RefType::FUNCREF.heap_type())
                 }
-            },
+            }
         };
 
         Ok(wasmtime_ref)
     }
 
     /// Convert wasmtime::Val to TableElement
-    fn wasmtime_val_to_table_element(val: Ref, element_type: &ValType) -> WasmtimeResult<TableElement> {
+    fn wasmtime_val_to_table_element(
+        val: Ref,
+        element_type: &ValType,
+    ) -> WasmtimeResult<TableElement> {
         let table_element = match element_type {
             ValType::Ref(ref_type) => {
                 // First, try to extract as a funcref using as_func()
@@ -789,9 +810,13 @@ impl Table {
                     match func_opt {
                         Some(func) => {
                             // Non-null funcref - register and return
-                            log::debug!("wasmtime_val_to_table_element: registering non-null funcref");
-                            let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-                                message: format!("Failed to lock reference registry: {}", e),
+                            log::debug!(
+                                "wasmtime_val_to_table_element: registering non-null funcref"
+                            );
+                            let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| {
+                                WasmtimeError::Concurrency {
+                                    message: format!("Failed to lock reference registry: {}", e),
+                                }
                             })?;
                             let id = registry.register_function(func.clone());
                             log::debug!("wasmtime_val_to_table_element: registered with id={}", id);
@@ -826,12 +851,20 @@ impl Table {
                     }
                 }
             }
-            _ => return Err(WasmtimeError::Type {
-                message: format!("Cannot convert Ref to TableElement for non-reference type {:?}", element_type),
-            }),
+            _ => {
+                return Err(WasmtimeError::Type {
+                    message: format!(
+                        "Cannot convert Ref to TableElement for non-reference type {:?}",
+                        element_type
+                    ),
+                })
+            }
         };
 
-        log::debug!("wasmtime_val_to_table_element: returning {:?}", table_element);
+        log::debug!(
+            "wasmtime_val_to_table_element: returning {:?}",
+            table_element
+        );
         Ok(table_element)
     }
 
@@ -841,9 +874,7 @@ impl Table {
         store: &Store,
         name: Option<String>,
     ) -> WasmtimeResult<Self> {
-        let table_type = store.with_context_ro(|ctx| {
-            Ok(wasmtime_table.ty(&ctx))
-        })?;
+        let table_type = store.with_context_ro(|ctx| Ok(wasmtime_table.ty(&ctx)))?;
 
         // Detect if the table uses 64-bit addressing
         let is_64 = table_type.is_64();
@@ -878,8 +909,8 @@ unsafe impl Sync for Table {}
 /// across interface implementations while maintaining defensive programming practices.
 pub mod core {
     use super::*;
-    use std::os::raw::c_void;
     use crate::validate_ptr_not_null;
+    use std::os::raw::c_void;
 
     /// Core function to create a new 32-bit table
     pub fn create_table(
@@ -935,7 +966,11 @@ pub mod core {
     }
 
     /// Core function to get table element
-    pub fn get_table_element(table: &Table, store: &Store, index: u32) -> WasmtimeResult<TableElement> {
+    pub fn get_table_element(
+        table: &Table,
+        store: &Store,
+        index: u32,
+    ) -> WasmtimeResult<TableElement> {
         table.get(store, index as u64)
     }
 
@@ -1024,13 +1059,9 @@ pub mod core {
                     HeapType::Func | HeapType::NoFunc | HeapType::ConcreteFunc(_) => {
                         TableElement::FuncRef(ref_id)
                     }
-                    HeapType::Extern | HeapType::NoExtern => {
-                        TableElement::ExternRef(ref_id)
-                    }
+                    HeapType::Extern | HeapType::NoExtern => TableElement::ExternRef(ref_id),
                     // GC types, exception types, continuation types - all map to AnyRef
-                    _ => {
-                        TableElement::AnyRef(ref_id)
-                    }
+                    _ => TableElement::AnyRef(ref_id),
                 }
             }
             _ => {
@@ -1060,101 +1091,125 @@ pub mod core {
             TableElement::AnyRef(_) => ReferenceType::AnyRef,
         }
     }
-    
+
     /// Validate if a ValType is compatible with table elements
     pub fn validate_table_element_type(val_type: &ValType) -> WasmtimeResult<()> {
         match val_type {
-            ValType::Ref(ref_type) => {
-                match ref_type.heap_type() {
-                    wasmtime::HeapType::Func | wasmtime::HeapType::Extern => Ok(()),
-                    _ => Err(WasmtimeError::Type {
-                        message: format!("Unsupported table element reference type: {:?}", ref_type),
-                    }),
-                }
+            ValType::Ref(ref_type) => match ref_type.heap_type() {
+                wasmtime::HeapType::Func | wasmtime::HeapType::Extern => Ok(()),
+                _ => Err(WasmtimeError::Type {
+                    message: format!("Unsupported table element reference type: {:?}", ref_type),
+                }),
             },
             _ => Err(WasmtimeError::Type {
-                message: format!("Table elements must be reference types, got: {:?}", val_type),
+                message: format!(
+                    "Table elements must be reference types, got: {:?}",
+                    val_type
+                ),
             }),
         }
     }
-    
+
     /// Create a TableElement from ValType and optional reference ID
     pub fn create_typed_table_element(
         val_type: &ValType,
-        ref_id: Option<u64>
+        ref_id: Option<u64>,
     ) -> WasmtimeResult<TableElement> {
         match val_type {
-            ValType::Ref(ref_type) => {
-                match ref_type.heap_type() {
-                    wasmtime::HeapType::Func => Ok(TableElement::FuncRef(ref_id)),
-                    wasmtime::HeapType::Extern => Ok(TableElement::ExternRef(ref_id)),
-                    _ => Ok(TableElement::AnyRef(ref_id)),
-                }
+            ValType::Ref(ref_type) => match ref_type.heap_type() {
+                wasmtime::HeapType::Func => Ok(TableElement::FuncRef(ref_id)),
+                wasmtime::HeapType::Extern => Ok(TableElement::ExternRef(ref_id)),
+                _ => Ok(TableElement::AnyRef(ref_id)),
             },
             _ => Err(WasmtimeError::Type {
-                message: format!("Cannot create TableElement from non-reference type: {:?}", val_type),
+                message: format!(
+                    "Cannot create TableElement from non-reference type: {:?}",
+                    val_type
+                ),
             }),
         }
     }
 
     /// Register a function reference and return its ID
     pub fn register_function_reference(func: Func) -> WasmtimeResult<u64> {
-        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock reference registry: {}", e),
-        })?;
+        let mut registry = REFERENCE_REGISTRY
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock reference registry: {}", e),
+            })?;
         Ok(registry.register_function(func))
     }
 
     /// Register an external reference and return its ID
     pub fn register_external_reference(external: Extern) -> WasmtimeResult<u64> {
-        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock reference registry: {}", e),
-        })?;
+        let mut registry = REFERENCE_REGISTRY
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock reference registry: {}", e),
+            })?;
         Ok(registry.register_external(external))
     }
 
     /// Get a function reference by ID
     pub fn get_function_reference(id: u64) -> WasmtimeResult<Option<Func>> {
-        let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock reference registry: {}", e),
-        })?;
+        let registry = REFERENCE_REGISTRY
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock reference registry: {}", e),
+            })?;
         // Get Arc<Func> and dereference it to get a clone of the Func
         // This is safe because Func is Clone and the Arc keeps the original alive
-        Ok(registry.get_function(id).map(|arc_func| (*arc_func).clone()))
+        Ok(registry
+            .get_function(id)
+            .map(|arc_func| (*arc_func).clone()))
     }
 
     /// Get an external reference by ID
     pub fn get_external_reference(id: u64) -> WasmtimeResult<Option<Extern>> {
-        let registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock reference registry: {}", e),
-        })?;
+        let registry = REFERENCE_REGISTRY
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock reference registry: {}", e),
+            })?;
         // Get Arc<Extern> and dereference it to get a clone of the Extern
-        Ok(registry.get_external(id).map(|arc_extern| (*arc_extern).clone()))
+        Ok(registry
+            .get_external(id)
+            .map(|arc_extern| (*arc_extern).clone()))
     }
 
     /// Remove a function reference from the registry
     pub fn remove_function_reference(id: u64) -> WasmtimeResult<Option<Func>> {
-        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock reference registry: {}", e),
-        })?;
+        let mut registry = REFERENCE_REGISTRY
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock reference registry: {}", e),
+            })?;
         // Remove returns Arc<Func>, unwrap it to return Func
-        Ok(registry.remove_function(id).map(|arc_func| Arc::try_unwrap(arc_func).unwrap_or_else(|arc| (*arc).clone())))
+        Ok(registry
+            .remove_function(id)
+            .map(|arc_func| Arc::try_unwrap(arc_func).unwrap_or_else(|arc| (*arc).clone())))
     }
 
     /// Remove an external reference from the registry
     pub fn remove_external_reference(id: u64) -> WasmtimeResult<Option<Extern>> {
-        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock reference registry: {}", e),
-        })?;
+        let mut registry = REFERENCE_REGISTRY
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock reference registry: {}", e),
+            })?;
         // Remove returns Arc<Extern>, unwrap it to return Extern
-        Ok(registry.remove_external(id).map(|arc_extern| Arc::try_unwrap(arc_extern).unwrap_or_else(|arc| (*arc).clone())))
+        Ok(registry
+            .remove_external(id)
+            .map(|arc_extern| Arc::try_unwrap(arc_extern).unwrap_or_else(|arc| (*arc).clone())))
     }
 
     /// Clear all references (useful for cleanup)
     pub fn clear_references() -> WasmtimeResult<()> {
-        let mut registry = REFERENCE_REGISTRY.lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock reference registry: {}", e),
-        })?;
+        let mut registry = REFERENCE_REGISTRY
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock reference registry: {}", e),
+            })?;
         registry.functions.clear();
         registry.externals.clear();
         Ok(())
@@ -1183,7 +1238,8 @@ mod tests {
             10,
             Some(100),
             Some("test_table".to_string()),
-        ).expect("Failed to create table");
+        )
+        .expect("Failed to create table");
 
         // Check if the table element type is a function reference - simplified check
         assert!(matches!(table.metadata().element_type, ValType::Ref(_)));
@@ -1197,13 +1253,8 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        let table = Table::new(
-            &store,
-            ValType::Ref(RefType::FUNCREF),
-            10,
-            None,
-            None,
-        ).expect("Failed to create table");
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 10, None, None)
+            .expect("Failed to create table");
 
         let size = table.size(&store).expect("Failed to get table size");
         assert_eq!(size, 10);
@@ -1214,13 +1265,8 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        let table = Table::new(
-            &store,
-            ValType::Ref(RefType::FUNCREF),
-            5,
-            None,
-            None,
-        ).expect("Failed to create table");
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 5, None, None)
+            .expect("Failed to create table");
 
         // Test accessing out of bounds element
         let result = table.get(&store, 10);
@@ -1236,19 +1282,15 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        let table = Table::new(
-            &store,
-            ValType::Ref(RefType::FUNCREF),
-            5,
-            Some(20),
-            None,
-        ).expect("Failed to create table");
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 5, Some(20), None)
+            .expect("Failed to create table");
 
         let initial_size = table.size(&store).expect("Failed to get initial size");
         assert_eq!(initial_size, 5);
 
         // Test growing table
-        let old_size = table.grow(&store, 3, TableElement::FuncRef(None))
+        let old_size = table
+            .grow(&store, 3, TableElement::FuncRef(None))
             .expect("Failed to grow table");
         assert_eq!(old_size, 5);
 
@@ -1267,7 +1309,8 @@ mod tests {
             5,
             Some(7), // Small maximum for testing
             None,
-        ).expect("Failed to create table");
+        )
+        .expect("Failed to create table");
 
         // Test growing beyond maximum
         let result = table.grow(&store, 5, TableElement::FuncRef(None));
@@ -1279,13 +1322,8 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        let table = Table::new(
-            &store,
-            ValType::Ref(RefType::FUNCREF),
-            10,
-            None,
-            None,
-        ).expect("Failed to create table");
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 10, None, None)
+            .expect("Failed to create table");
 
         // Test getting initial value (should be null funcref)
         let element = table.get(&store, 0).expect("Failed to get table element");
@@ -1297,23 +1335,31 @@ mod tests {
         }
 
         // Test setting null value explicitly
-        table.set(&store, 0, TableElement::FuncRef(None))
+        table
+            .set(&store, 0, TableElement::FuncRef(None))
             .expect("Failed to set table element to null");
 
         // Test getting the value back (should still be null)
-        let element = table.get(&store, 0).expect("Failed to get table element after set");
+        let element = table
+            .get(&store, 0)
+            .expect("Failed to get table element after set");
         match element {
             TableElement::FuncRef(ref_id) => {
-                assert_eq!(ref_id, None, "Table element should be null after setting null");
+                assert_eq!(
+                    ref_id, None,
+                    "Table element should be null after setting null"
+                );
             }
             _ => panic!("Expected FuncRef element"),
         }
 
         // Test setting and getting at different indices
         for i in 0..5 {
-            table.set(&store, i, TableElement::FuncRef(None))
+            table
+                .set(&store, i, TableElement::FuncRef(None))
                 .expect(&format!("Failed to set table element at index {}", i));
-            let element = table.get(&store, i)
+            let element = table
+                .get(&store, i)
                 .expect(&format!("Failed to get table element at index {}", i));
             match element {
                 TableElement::FuncRef(ref_id) => {
@@ -1329,16 +1375,12 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        let table = Table::new(
-            &store,
-            ValType::Ref(RefType::FUNCREF),
-            10,
-            None,
-            None,
-        ).expect("Failed to create table");
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 10, None, None)
+            .expect("Failed to create table");
 
         // Fill a range with null funcrefs
-        table.fill(&store, 2, TableElement::FuncRef(None), 3)
+        table
+            .fill(&store, 2, TableElement::FuncRef(None), 3)
             .expect("Failed to fill table with null funcrefs");
 
         // Verify the filled elements are null
@@ -1353,7 +1395,8 @@ mod tests {
         }
 
         // Fill entire table
-        table.fill(&store, 0, TableElement::FuncRef(None), 10)
+        table
+            .fill(&store, 0, TableElement::FuncRef(None), 10)
             .expect("Failed to fill entire table");
 
         // Verify all elements
@@ -1373,13 +1416,8 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        let table = Table::new(
-            &store,
-            ValType::Ref(RefType::FUNCREF),
-            5,
-            None,
-            None,
-        ).expect("Failed to create table");
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 5, None, None)
+            .expect("Failed to create table");
 
         // Test fill that would exceed bounds
         let result = table.fill(&store, 3, TableElement::FuncRef(None), 5);
@@ -1400,13 +1438,7 @@ mod tests {
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Test creating table with invalid element type (I32)
-        let result = Table::new(
-            &store,
-            ValType::I32,
-            10,
-            None,
-            None,
-        );
+        let result = Table::new(&store, ValType::I32, 10, None, None);
         assert!(result.is_err());
     }
 
@@ -1415,13 +1447,8 @@ mod tests {
         let engine = shared_engine();
         let store = Store::new(&engine).expect("Failed to create store");
 
-        let table = Table::new(
-            &store,
-            ValType::Ref(RefType::FUNCREF),
-            10,
-            None,
-            None,
-        ).expect("Failed to create table");
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 10, None, None)
+            .expect("Failed to create table");
 
         // Test setting wrong element type
         let result = table.set(&store, 0, TableElement::ExternRef(None));

@@ -25,9 +25,9 @@
 //! JVM crashes and ensure robust error handling. Input validation and null checks are
 //! performed for all parameters.
 
-use jni::JNIEnv;
 use jni::objects::{JByteArray, JClass};
 use jni::sys::{jboolean, jbyteArray, jint};
+use jni::JNIEnv;
 
 use crate::wit_value_marshal::{deserialize_to_val, serialize_from_val};
 

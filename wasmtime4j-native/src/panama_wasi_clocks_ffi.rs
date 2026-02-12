@@ -369,7 +369,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_timezone_display(
                     *out_utc_offset = display.utc_offset_seconds;
                     *out_name = name_ptr;
                     *out_name_len = name_len;
-                    *out_in_dst = if display.in_daylight_saving_time { 1 } else { 0 };
+                    *out_in_dst = if display.in_daylight_saving_time {
+                        1
+                    } else {
+                        0
+                    };
                 }
                 Ok(0)
             }

@@ -7,14 +7,14 @@
 //! - Thread-local storage
 //! - Thread pool management
 
-use std::mem::ManuallyDrop;
-use std::sync::{Arc, RwLock};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, RwLock};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 use wasmtime::{Engine, MemoryType, SharedMemory};
-use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Thread identifier type
 pub type ThreadId = u64;
@@ -93,7 +93,6 @@ pub struct WasmThreadStatistics {
     pub last_activity: Option<Instant>,
 }
 
-
 /// Atomic operation types for WebAssembly threading
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AtomicOperation {
@@ -125,7 +124,6 @@ pub struct AtomicResult {
     pub threads_notified: Option<u32>,
 }
 
-
 impl WasmThread {
     /// Create a new WebAssembly thread
     pub fn new(
@@ -152,7 +150,10 @@ impl WasmThread {
 
     /// Get current thread state
     pub fn get_state(&self) -> WasmThreadState {
-        self.state.read().map(|state| *state).unwrap_or(WasmThreadState::Error)
+        self.state
+            .read()
+            .map(|state| *state)
+            .unwrap_or(WasmThreadState::Error)
     }
 
     /// Set thread state
@@ -252,16 +253,23 @@ impl WasmThread {
     pub fn is_alive(&self) -> bool {
         matches!(
             self.get_state(),
-            WasmThreadState::New | WasmThreadState::Running | WasmThreadState::Waiting |
-            WasmThreadState::TimedWaiting | WasmThreadState::Blocked | WasmThreadState::Suspended
+            WasmThreadState::New
+                | WasmThreadState::Running
+                | WasmThreadState::Waiting
+                | WasmThreadState::TimedWaiting
+                | WasmThreadState::Blocked
+                | WasmThreadState::Suspended
         )
     }
 
     /// Get thread statistics
     pub fn get_statistics(&self) -> WasmtimeResult<WasmThreadStatistics> {
-        let stats = self.statistics.read().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire thread statistics lock".to_string(),
-        })?;
+        let stats = self
+            .statistics
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire thread statistics lock".to_string(),
+            })?;
         Ok(stats.clone())
     }
 
@@ -272,51 +280,69 @@ impl WasmThread {
 
     /// Access thread-local storage
     pub fn put_thread_local(&self, key: String, value: ThreadLocalValue) -> WasmtimeResult<()> {
-        let mut storage = self.thread_local_storage.write().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire thread-local storage lock".to_string(),
-        })?;
+        let mut storage =
+            self.thread_local_storage
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire thread-local storage lock".to_string(),
+                })?;
         storage.insert(key, value);
         Ok(())
     }
 
     /// Get from thread-local storage
     pub fn get_thread_local(&self, key: &str) -> WasmtimeResult<Option<ThreadLocalValue>> {
-        let storage = self.thread_local_storage.read().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire thread-local storage lock".to_string(),
-        })?;
+        let storage = self
+            .thread_local_storage
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire thread-local storage lock".to_string(),
+            })?;
         Ok(storage.get(key).cloned())
     }
 
     /// Remove from thread-local storage
     pub fn remove_thread_local(&self, key: &str) -> WasmtimeResult<Option<ThreadLocalValue>> {
-        let mut storage = self.thread_local_storage.write().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire thread-local storage lock".to_string(),
-        })?;
+        let mut storage =
+            self.thread_local_storage
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire thread-local storage lock".to_string(),
+                })?;
         Ok(storage.remove(key))
     }
 
     /// Clear all thread-local storage
     pub fn clear_thread_local_storage(&self) -> WasmtimeResult<()> {
-        let mut storage = self.thread_local_storage.write().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire thread-local storage lock".to_string(),
-        })?;
+        let mut storage =
+            self.thread_local_storage
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire thread-local storage lock".to_string(),
+                })?;
         storage.clear();
         Ok(())
     }
 
     /// Get thread-local storage size
     pub fn get_thread_local_storage_size(&self) -> WasmtimeResult<usize> {
-        let storage = self.thread_local_storage.read().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire thread-local storage lock".to_string(),
-        })?;
+        let storage = self
+            .thread_local_storage
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire thread-local storage lock".to_string(),
+            })?;
         Ok(storage.len())
     }
 
     /// Calculate memory usage of thread-local storage
     pub fn get_thread_local_storage_memory_usage(&self) -> WasmtimeResult<u64> {
-        let storage = self.thread_local_storage.read().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire thread-local storage lock".to_string(),
-        })?;
+        let storage = self
+            .thread_local_storage
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire thread-local storage lock".to_string(),
+            })?;
 
         let mut total_size = 0u64;
         for (key, value) in storage.iter() {
@@ -339,8 +365,8 @@ impl WasmThread {
 // FFI Exports for Panama
 //==============================================================================
 
-use std::os::raw::{c_char, c_int, c_void};
 use crate::error::ffi_utils;
+use std::os::raw::{c_char, c_int, c_void};
 
 /// Put an integer value into thread-local storage (Panama FFI)
 ///
@@ -475,9 +501,7 @@ pub unsafe extern "C" fn wasmtime4j_thread_remove_key(
 /// # Returns
 /// 0 on success, error code on failure
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_thread_clear_storage(
-    thread_ptr: *mut c_void,
-) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_thread_clear_storage(thread_ptr: *mut c_void) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_ptr, "thread")?;
         thread.clear_thread_local_storage()?;
@@ -815,7 +839,9 @@ pub unsafe extern "C" fn wasmtime4j_thread_join_timeout(
 
 /// Request thread termination (Panama FFI)
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_thread_request_termination(thread_handle: *mut c_void) -> c_int {
+pub unsafe extern "C" fn wasmtime4j_thread_request_termination(
+    thread_handle: *mut c_void,
+) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let thread = ffi_utils::deref_ptr_mut::<WasmThread>(thread_handle, "thread")?;
         thread.request_termination();
@@ -880,10 +906,7 @@ mod tests {
     fn create_test_shared_memory(engine: &wasmtime::Engine) -> Arc<SharedMemory> {
         // SharedMemory requires MemoryType::shared(), not MemoryType::new()
         let memory_type = MemoryType::shared(1, 10);
-        Arc::new(
-            SharedMemory::new(engine, memory_type)
-                .expect("Failed to create shared memory")
-        )
+        Arc::new(SharedMemory::new(engine, memory_type).expect("Failed to create shared memory"))
     }
 
     #[test]
@@ -891,8 +914,7 @@ mod tests {
         let engine = threads_engine();
         let shared_memory = create_test_shared_memory(&engine);
 
-        let thread = WasmThread::new(1, shared_memory, &engine)
-            .expect("Failed to create thread");
+        let thread = WasmThread::new(1, shared_memory, &engine).expect("Failed to create thread");
 
         assert_eq!(thread.get_id(), 1);
         assert_eq!(thread.get_state(), WasmThreadState::New);
@@ -905,18 +927,24 @@ mod tests {
         let engine = threads_engine();
         let shared_memory = create_test_shared_memory(&engine);
 
-        let thread = WasmThread::new(1, shared_memory, &engine)
-            .expect("Failed to create thread");
+        let thread = WasmThread::new(1, shared_memory, &engine).expect("Failed to create thread");
 
         // Test different value types
-        thread.put_thread_local("int_key".to_string(), ThreadLocalValue::Int(42))
+        thread
+            .put_thread_local("int_key".to_string(), ThreadLocalValue::Int(42))
             .expect("Failed to put int value");
-        thread.put_thread_local("string_key".to_string(), ThreadLocalValue::String("hello".to_string()))
+        thread
+            .put_thread_local(
+                "string_key".to_string(),
+                ThreadLocalValue::String("hello".to_string()),
+            )
             .expect("Failed to put string value");
 
-        let int_value = thread.get_thread_local("int_key")
+        let int_value = thread
+            .get_thread_local("int_key")
             .expect("Failed to get int value");
-        let string_value = thread.get_thread_local("string_key")
+        let string_value = thread
+            .get_thread_local("string_key")
             .expect("Failed to get string value");
 
         assert!(matches!(int_value, Some(ThreadLocalValue::Int(42))));
@@ -924,7 +952,9 @@ mod tests {
 
         assert_eq!(thread.get_thread_local_storage_size().unwrap(), 2);
 
-        thread.clear_thread_local_storage().expect("Failed to clear storage");
+        thread
+            .clear_thread_local_storage()
+            .expect("Failed to clear storage");
         assert_eq!(thread.get_thread_local_storage_size().unwrap(), 0);
     }
 
@@ -933,8 +963,8 @@ mod tests {
         let engine = threads_engine();
         let shared_memory = create_test_shared_memory(&engine);
 
-        let mut thread = WasmThread::new(1, shared_memory, &engine)
-            .expect("Failed to create thread");
+        let mut thread =
+            WasmThread::new(1, shared_memory, &engine).expect("Failed to create thread");
 
         assert!(!thread.is_termination_requested());
 
@@ -1126,8 +1156,7 @@ mod tests {
         let engine = threads_engine();
         let shared_memory = create_test_shared_memory(&engine);
 
-        let thread = WasmThread::new(1, shared_memory, &engine)
-            .expect("Failed to create thread");
+        let thread = WasmThread::new(1, shared_memory, &engine).expect("Failed to create thread");
 
         // New thread should be alive
         assert!(thread.is_alive());
@@ -1140,8 +1169,7 @@ mod tests {
         let shared_memory = create_test_shared_memory(&engine);
         let original_ptr = Arc::as_ptr(&shared_memory);
 
-        let thread = WasmThread::new(1, shared_memory, &engine)
-            .expect("Failed to create thread");
+        let thread = WasmThread::new(1, shared_memory, &engine).expect("Failed to create thread");
 
         let retrieved = thread.get_shared_memory();
         assert_eq!(Arc::as_ptr(&retrieved), original_ptr);

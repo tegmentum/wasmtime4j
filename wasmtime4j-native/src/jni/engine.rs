@@ -1,8 +1,8 @@
 //! JNI bindings for Engine operations
 
+use jni::objects::{JByteArray, JClass, JString};
+use jni::sys::{jboolean, jbyteArray, jint, jlong};
 use jni::JNIEnv;
-use jni::objects::{JClass, JString, JByteArray};
-use jni::sys::{jlong, jint, jboolean, jbyteArray};
 
 use crate::engine::core;
 use crate::error::{jni_utils, WasmtimeError};
@@ -37,13 +37,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
     max_instances: jint,
     async_support: jboolean,
 ) -> jlong {
-
-
     jni_utils::jni_try_ptr(&mut env, || {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
         let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
-        let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
-        let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
+        let max_memory_pages_opt =
+            parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
+        let max_stack_size_opt =
+            parameter_conversion::convert_int_to_optional_usize(max_stack_size);
         let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
 
         core::create_engine_with_config(
@@ -108,13 +108,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
     jni_utils::jni_try_ptr(&mut env, || {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
         let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
-        let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
-        let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
+        let max_memory_pages_opt =
+            parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
+        let max_stack_size_opt =
+            parameter_conversion::convert_int_to_optional_usize(max_stack_size);
         let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
 
         // Memory config: 0 means use default
-        let memory_reservation_opt = if memory_reservation > 0 { Some(memory_reservation as u64) } else { None };
-        let memory_guard_size_opt = if memory_guard_size > 0 { Some(memory_guard_size as u64) } else { None };
+        let memory_reservation_opt = if memory_reservation > 0 {
+            Some(memory_reservation as u64)
+        } else {
+            None
+        };
+        let memory_guard_size_opt = if memory_guard_size > 0 {
+            Some(memory_guard_size as u64)
+        } else {
+            None
+        };
         let memory_reservation_for_growth_opt = if memory_reservation_for_growth > 0 {
             Some(memory_reservation_for_growth as u64)
         } else {
@@ -176,7 +186,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDetectHo
     };
 
     let result = core::detect_host_feature(&feature_str);
-    if result { JNI_TRUE as jboolean } else { JNI_FALSE as jboolean }
+    if result {
+        JNI_TRUE as jboolean
+    } else {
+        JNI_FALSE as jboolean
+    }
 }
 
 /// Destroy a Wasmtime engine (JNI version)
@@ -300,7 +314,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStack
     jni_utils::jni_try(&mut env, || {
         let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
         Ok(engine.stack_size_limit().unwrap_or(0) as jlong)
-    }).1
+    })
+    .1
 }
 
 /// Get memory limit in pages (64KB per page)
@@ -313,7 +328,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemor
     jni_utils::jni_try(&mut env, || {
         let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
         Ok(engine.memory_limit_pages().unwrap_or(0) as jint)
-    }).1
+    })
+    .1
 }
 
 /// Query if a specific WebAssembly feature is supported (by feature name)
@@ -345,25 +361,37 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupports
             "TAIL_CALL" => crate::engine::WasmFeature::TailCall,
             "RELAXED_SIMD" => crate::engine::WasmFeature::RelaxedSimd,
             // Accept both Java enum name and native name
-            "FUNCTION_REFERENCES" | "TYPED_FUNCTION_REFERENCES" => crate::engine::WasmFeature::FunctionReferences,
+            "FUNCTION_REFERENCES" | "TYPED_FUNCTION_REFERENCES" => {
+                crate::engine::WasmFeature::FunctionReferences
+            }
             "GC" => crate::engine::WasmFeature::Gc,
             "EXCEPTIONS" => crate::engine::WasmFeature::Exceptions,
             "MEMORY64" => crate::engine::WasmFeature::Memory64,
             // Accept both Java enum name and native name
-            "EXTENDED_CONST" | "EXTENDED_CONST_EXPRESSIONS" => crate::engine::WasmFeature::ExtendedConst,
+            "EXTENDED_CONST" | "EXTENDED_CONST_EXPRESSIONS" => {
+                crate::engine::WasmFeature::ExtendedConst
+            }
             "COMPONENT_MODEL" => crate::engine::WasmFeature::ComponentModel,
             "CUSTOM_PAGE_SIZES" => crate::engine::WasmFeature::CustomPageSizes,
             "WIDE_ARITHMETIC" => crate::engine::WasmFeature::WideArithmetic,
             "STACK_SWITCHING" => crate::engine::WasmFeature::StackSwitching,
             "SHARED_EVERYTHING_THREADS" => crate::engine::WasmFeature::SharedEverythingThreads,
             "COMPONENT_MODEL_ASYNC" => crate::engine::WasmFeature::ComponentModelAsync,
-            "COMPONENT_MODEL_ASYNC_BUILTINS" => crate::engine::WasmFeature::ComponentModelAsyncBuiltins,
-            "COMPONENT_MODEL_ASYNC_STACKFUL" => crate::engine::WasmFeature::ComponentModelAsyncStackful,
-            "COMPONENT_MODEL_ERROR_CONTEXT" => crate::engine::WasmFeature::ComponentModelErrorContext,
+            "COMPONENT_MODEL_ASYNC_BUILTINS" => {
+                crate::engine::WasmFeature::ComponentModelAsyncBuiltins
+            }
+            "COMPONENT_MODEL_ASYNC_STACKFUL" => {
+                crate::engine::WasmFeature::ComponentModelAsyncStackful
+            }
+            "COMPONENT_MODEL_ERROR_CONTEXT" => {
+                crate::engine::WasmFeature::ComponentModelErrorContext
+            }
             "COMPONENT_MODEL_GC" => crate::engine::WasmFeature::ComponentModelGc,
-            _ => return Err(WasmtimeError::InvalidParameter {
-                message: format!("Unknown feature: {}", feature_str),
-            }),
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Unknown feature: {}", feature_str),
+                })
+            }
         };
 
         Ok(engine.supports_feature(feature))
@@ -379,7 +407,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileM
     wasm_bytes: jbyteArray,
 ) -> jlong {
     // Extract data before moving env into jni_try_ptr
-    let wasm_data_result = env.convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) })
+    let wasm_data_result = env
+        .convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) })
         .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
             message: format!("Failed to convert Java byte array: {}", e),
         });
@@ -405,10 +434,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileW
     wat_string: JString,
 ) -> jlong {
     // Extract string before moving env into jni_try_ptr
-    let wat_data_result = env.get_string(&wat_string)
-        .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
-            message: format!("Failed to convert Java string: {}", e),
-        });
+    let wat_data_result =
+        env.get_string(&wat_string)
+            .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Failed to convert Java string: {}", e),
+            });
 
     let wat_jstr = match wat_data_result {
         Ok(jstr) => jstr,
@@ -552,15 +582,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompi
     _class: JClass,
     engine_ptr: jlong,
 ) -> jbyteArray {
-    use std::hash::{Hash, Hasher};
     use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let engine = unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void) }
             .map_err(|e| format!("Invalid engine pointer: {:?}", e))?;
 
         let mut hasher = DefaultHasher::new();
-        engine.inner().precompile_compatibility_hash().hash(&mut hasher);
+        engine
+            .inner()
+            .precompile_compatibility_hash()
+            .hash(&mut hasher);
         let hash_value = hasher.finish();
 
         Ok::<u64, String>(hash_value)
@@ -595,10 +628,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDetectPr
     let result: Result<jint, crate::error::WasmtimeError> = (|| {
         let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
 
-        let byte_vec = env.convert_byte_array(bytes)
-            .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+        let byte_vec = env.convert_byte_array(bytes).map_err(|e| {
+            crate::error::WasmtimeError::InvalidParameter {
                 message: format!("Failed to convert byte array: {}", e),
-            })?;
+            }
+        })?;
 
         match engine.detect_precompiled(&byte_vec) {
             Some(value) => Ok(value),

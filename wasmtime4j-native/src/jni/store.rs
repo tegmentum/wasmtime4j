@@ -1,11 +1,11 @@
 //! JNI bindings for Store operations
 
-use jni::JNIEnv;
 use jni::objects::{JClass, JObject, JValue};
-use jni::sys::{jlong, jint, jboolean, jobject, jobjectArray};
+use jni::sys::{jboolean, jint, jlong, jobject, jobjectArray};
+use jni::JNIEnv;
 
-use crate::store::core;
 use crate::error::jni_utils;
+use crate::store::core;
 
 use std::os::raw::c_void;
 
@@ -31,22 +31,46 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSto
     mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
-    fuel_limit: jlong,           // 0 = no limit
-    memory_limit_bytes: jlong,   // 0 = no limit
+    fuel_limit: jlong,             // 0 = no limit
+    memory_limit_bytes: jlong,     // 0 = no limit
     execution_timeout_secs: jlong, // 0 = no timeout
-    max_instances: jint,         // 0 = no limit
-    max_table_elements: jint,    // 0 = no limit
-    max_functions: jint,         // 0 = no limit
+    max_instances: jint,           // 0 = no limit
+    max_table_elements: jint,      // 0 = no limit
+    max_functions: jint,           // 0 = no limit
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-        let fuel_limit_opt = if fuel_limit == 0 { None } else { Some(fuel_limit as u64) };
-        let memory_limit_opt = if memory_limit_bytes == 0 { None } else { Some(memory_limit_bytes as usize) };
-        let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs as u64) };
-        let max_instances_opt = if max_instances == 0 { None } else { Some(max_instances as usize) };
-        let max_table_elements_opt = if max_table_elements == 0 { None } else { Some(max_table_elements as u32) };
-        let max_functions_opt = if max_functions == 0 { None } else { Some(max_functions as usize) };
+        let fuel_limit_opt = if fuel_limit == 0 {
+            None
+        } else {
+            Some(fuel_limit as u64)
+        };
+        let memory_limit_opt = if memory_limit_bytes == 0 {
+            None
+        } else {
+            Some(memory_limit_bytes as usize)
+        };
+        let timeout_opt = if execution_timeout_secs == 0 {
+            None
+        } else {
+            Some(execution_timeout_secs as u64)
+        };
+        let max_instances_opt = if max_instances == 0 {
+            None
+        } else {
+            Some(max_instances as usize)
+        };
+        let max_table_elements_opt = if max_table_elements == 0 {
+            None
+        } else {
+            Some(max_table_elements as u32)
+        };
+        let max_functions_opt = if max_functions == 0 {
+            None
+        } else {
+            Some(max_functions as usize)
+        };
 
         let store = core::create_store_with_config(
             engine,
@@ -172,24 +196,41 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeEpochDead
 }
 
 // Static storage for JNI epoch callbacks
-static JNI_EPOCH_CALLBACKS: std::sync::OnceLock<std::sync::Mutex<std::collections::HashMap<i64, JniEpochCallbackContext>>> = std::sync::OnceLock::new();
+static JNI_EPOCH_CALLBACKS: std::sync::OnceLock<
+    std::sync::Mutex<std::collections::HashMap<i64, JniEpochCallbackContext>>,
+> = std::sync::OnceLock::new();
 
 struct JniEpochCallbackContext {
     jvm: std::sync::Arc<jni::JavaVM>,
     jni_store_global: jni::objects::GlobalRef,
 }
 
-fn get_jni_epoch_callbacks() -> &'static std::sync::Mutex<std::collections::HashMap<i64, JniEpochCallbackContext>> {
+fn get_jni_epoch_callbacks(
+) -> &'static std::sync::Mutex<std::collections::HashMap<i64, JniEpochCallbackContext>> {
     JNI_EPOCH_CALLBACKS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
 }
 
-fn register_jni_epoch_callback(callback_id: i64, jvm: std::sync::Arc<jni::JavaVM>, jni_store_global: jni::objects::GlobalRef) {
-    let mut callbacks = get_jni_epoch_callbacks().lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-    callbacks.insert(callback_id, JniEpochCallbackContext { jvm, jni_store_global });
+fn register_jni_epoch_callback(
+    callback_id: i64,
+    jvm: std::sync::Arc<jni::JavaVM>,
+    jni_store_global: jni::objects::GlobalRef,
+) {
+    let mut callbacks = get_jni_epoch_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks.insert(
+        callback_id,
+        JniEpochCallbackContext {
+            jvm,
+            jni_store_global,
+        },
+    );
 }
 
 pub(crate) fn unregister_jni_epoch_callback(callback_id: i64) {
-    let mut callbacks = get_jni_epoch_callbacks().lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut callbacks = get_jni_epoch_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     callbacks.remove(&callback_id);
 }
 
@@ -209,8 +250,11 @@ fn jni_epoch_callback_dispatch(callback_id: i64, _epoch: u64) -> i64 {
             Some(ctx) => {
                 // Clone the Arc<JavaVM> and store the raw pointer to the global ref
                 // We'll create a new GlobalRef from the same object in the attached thread
-                (ctx.jvm.clone(), ctx.jni_store_global.as_obj().as_raw() as usize)
-            },
+                (
+                    ctx.jvm.clone(),
+                    ctx.jni_store_global.as_obj().as_raw() as usize,
+                )
+            }
             None => {
                 log::warn!("No JNI epoch callback found for ID: {}", callback_id);
                 return -1; // Trap
@@ -223,9 +267,8 @@ fn jni_epoch_callback_dispatch(callback_id: i64, _epoch: u64) -> i64 {
         Ok(mut env) => {
             // Reconstruct the JObject from the raw pointer
             // Safety: The global ref is kept alive by the JniEpochCallbackContext
-            let jni_store_obj = unsafe {
-                jni::objects::JObject::from_raw(global_ref_ptr as jni::sys::jobject)
-            };
+            let jni_store_obj =
+                unsafe { jni::objects::JObject::from_raw(global_ref_ptr as jni::sys::jobject) };
 
             // Call onEpochDeadlineReached on the JniStore object
             match env.call_method(
@@ -268,7 +311,7 @@ fn jni_epoch_callback_dispatch(callback_id: i64, _epoch: u64) -> i64 {
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochDeadlineCallback(
     mut env: JNIEnv,
-    jni_store_obj: jni::objects::JObject,  // 'this' object for instance methods
+    jni_store_obj: jni::objects::JObject, // 'this' object for instance methods
     store_ptr: jlong,
 ) {
     // Get JavaVM reference for later callback use
@@ -312,7 +355,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochD
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearEpochDeadlineCallback(
     mut env: JNIEnv,
-    _jni_store_obj: jni::objects::JObject,  // 'this' object for instance methods
+    _jni_store_obj: jni::objects::JObject, // 'this' object for instance methods
     store_ptr: jlong,
 ) {
     // Unregister the JNI callback context
@@ -544,7 +587,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetTableE
             });
         }
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
-        core::set_table_element_limit(store, if elements == 0 { None } else { Some(elements as u64) })?;
+        core::set_table_element_limit(
+            store,
+            if elements == 0 {
+                None
+            } else {
+                Some(elements as u64)
+            },
+        )?;
         Ok(true)
     }) as jboolean
 }
@@ -582,10 +632,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlo
     // Extract values from Java array first (before entering the closure)
     let array_obj = unsafe { jni::objects::JObjectArray::from_raw(value_components) };
 
-    let i32_val = env.get_object_array_element(&array_obj, 0)
+    let i32_val = env
+        .get_object_array_element(&array_obj, 0)
         .ok()
         .and_then(|obj| {
-            if obj.is_null() { None } else {
+            if obj.is_null() {
+                None
+            } else {
                 env.call_method(&obj, "intValue", "()I", &[])
                     .ok()
                     .and_then(|v| v.i().ok())
@@ -593,10 +646,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlo
         })
         .unwrap_or(0);
 
-    let i64_val = env.get_object_array_element(&array_obj, 1)
+    let i64_val = env
+        .get_object_array_element(&array_obj, 1)
         .ok()
         .and_then(|obj| {
-            if obj.is_null() { None } else {
+            if obj.is_null() {
+                None
+            } else {
                 env.call_method(&obj, "longValue", "()J", &[])
                     .ok()
                     .and_then(|v| v.j().ok())
@@ -604,10 +660,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlo
         })
         .unwrap_or(0);
 
-    let f32_val = env.get_object_array_element(&array_obj, 2)
+    let f32_val = env
+        .get_object_array_element(&array_obj, 2)
         .ok()
         .and_then(|obj| {
-            if obj.is_null() { None } else {
+            if obj.is_null() {
+                None
+            } else {
                 env.call_method(&obj, "floatValue", "()F", &[])
                     .ok()
                     .and_then(|v| v.f().ok())
@@ -615,10 +674,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlo
         })
         .unwrap_or(0.0);
 
-    let f64_val = env.get_object_array_element(&array_obj, 3)
+    let f64_val = env
+        .get_object_array_element(&array_obj, 3)
         .ok()
         .and_then(|obj| {
-            if obj.is_null() { None } else {
+            if obj.is_null() {
+                None
+            } else {
                 env.call_method(&obj, "doubleValue", "()D", &[])
                     .ok()
                     .and_then(|v| v.d().ok())
@@ -642,7 +704,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlo
                 let byte_array: jni::objects::JByteArray = obj.into();
                 let v128 = if env.get_array_length(&byte_array).ok() == Some(16) {
                     let mut i8_bytes = [0i8; 16];
-                    env.get_byte_array_region(&byte_array, 0, &mut i8_bytes).ok();
+                    env.get_byte_array_region(&byte_array, 0, &mut i8_bytes)
+                        .ok();
                     let bytes: [u8; 16] = i8_bytes.map(|b| b as u8);
                     Some(bytes)
                 } else {
@@ -651,7 +714,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlo
                 (v128, None)
             } else {
                 // It's a Long for funcref/externref
-                let ref_val = env.call_method(&obj, "longValue", "()J", &[])
+                let ref_val = env
+                    .call_method(&obj, "longValue", "()J", &[])
                     .ok()
                     .and_then(|v| v.j().ok())
                     .map(|v| v as u64);
@@ -670,9 +734,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlo
         }
 
         // Get the store reference
-        let store = unsafe {
-            crate::store::core::get_store_ref(store_handle as *const c_void)?
-        };
+        let store = unsafe { crate::store::core::get_store_ref(store_handle as *const c_void)? };
 
         // Convert value type from int to ValType enum
         let wasm_type = match value_type {
@@ -732,8 +794,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTab
     max_size: jint,
 ) -> jlong {
     jni_utils::jni_try_with_default(&mut env, 0, || {
-        use wasmtime::{ValType, RefType};
         use crate::error::WasmtimeError;
+        use wasmtime::{RefType, ValType};
 
         // Extract store from handle
         let store = unsafe { core::get_store_mut(store_handle as *mut c_void)? };
@@ -794,6 +856,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMem
             initial_pages: initial_pages as u64,
             maximum_pages: max_pages_opt,
             is_shared: false,
+            is_64: false,
             memory_index: 0,
             name: None,
         };
@@ -825,6 +888,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSha
             initial_pages: initial_pages as u64,
             maximum_pages: Some(max_pages as u64), // Shared memory requires max pages
             is_shared: true,
+            is_64: false,
             memory_index: 0,
             name: None,
         };
@@ -844,25 +908,37 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
-    memory_size: jlong,      // 0 = no limit
-    table_elements: jlong,   // 0 = no limit
-    instances: jlong,        // 0 = no limit
+    memory_size: jlong,    // 0 = no limit
+    table_elements: jlong, // 0 = no limit
+    instances: jlong,      // 0 = no limit
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-        let memory_limit_opt = if memory_size == 0 { None } else { Some(memory_size as usize) };
-        let table_limit_opt = if table_elements == 0 { None } else { Some(table_elements as u32) };
-        let instances_limit_opt = if instances == 0 { None } else { Some(instances as usize) };
+        let memory_limit_opt = if memory_size == 0 {
+            None
+        } else {
+            Some(memory_size as usize)
+        };
+        let table_limit_opt = if table_elements == 0 {
+            None
+        } else {
+            Some(table_elements as u32)
+        };
+        let instances_limit_opt = if instances == 0 {
+            None
+        } else {
+            Some(instances as usize)
+        };
 
         let store = core::create_store_with_config(
             engine,
-            None,  // fuel_limit
+            None, // fuel_limit
             memory_limit_opt,
-            None,  // execution_timeout
+            None, // execution_timeout
             instances_limit_opt,
             table_limit_opt,
-            None,  // max_functions
+            None, // max_functions
         )?;
         let store_ptr = store.as_ref() as *const _ as *const c_void;
         crate::memory::core::register_store_handle(store_ptr)?;
@@ -876,25 +952,37 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
-    fuel_limit: jlong,           // 0 = no limit
-    memory_size: jlong,          // 0 = no limit
+    fuel_limit: jlong,             // 0 = no limit
+    memory_size: jlong,            // 0 = no limit
     execution_timeout_secs: jlong, // 0 = no timeout
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-        let fuel_limit_opt = if fuel_limit == 0 { None } else { Some(fuel_limit as u64) };
-        let memory_limit_opt = if memory_size == 0 { None } else { Some(memory_size as usize) };
-        let timeout_opt = if execution_timeout_secs == 0 { None } else { Some(execution_timeout_secs as u64) };
+        let fuel_limit_opt = if fuel_limit == 0 {
+            None
+        } else {
+            Some(fuel_limit as u64)
+        };
+        let memory_limit_opt = if memory_size == 0 {
+            None
+        } else {
+            Some(memory_size as usize)
+        };
+        let timeout_opt = if execution_timeout_secs == 0 {
+            None
+        } else {
+            Some(execution_timeout_secs as u64)
+        };
 
         let store = core::create_store_with_config(
             engine,
             fuel_limit_opt,
             memory_limit_opt,
             timeout_opt,
-            None,  // instances
-            None,  // table_elements
-            None,  // max_functions
+            None, // instances
+            None, // table_elements
+            None, // max_functions
         )?;
         let store_ptr = store.as_ref() as *const _ as *const c_void;
         crate::memory::core::register_store_handle(store_ptr)?;
@@ -938,7 +1026,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptureBa
 }
 
 #[allow(non_snake_case)]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCaptureBacktrace<'local>(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCaptureBacktrace<
+    'local,
+>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
     store_ptr: jlong,
@@ -986,11 +1076,7 @@ fn create_backtrace_object<'local>(
     force_capture: bool,
 ) -> Result<JObject<'local>, crate::error::WasmtimeError> {
     // Create ArrayList for frames
-    let frames_list = env.new_object(
-        "java/util/ArrayList",
-        "()V",
-        &[],
-    )?;
+    let frames_list = env.new_object("java/util/ArrayList", "()V", &[])?;
 
     // Convert each frame
     for frame in backtrace.frames() {
@@ -1007,7 +1093,10 @@ fn create_backtrace_object<'local>(
     let backtrace_obj = env.new_object(
         "ai/tegmentum/wasmtime4j/WasmBacktrace",
         "(Ljava/util/List;Z)V",
-        &[JValue::Object(&frames_list), JValue::Bool(force_capture as u8)],
+        &[
+            JValue::Object(&frames_list),
+            JValue::Bool(force_capture as u8),
+        ],
     )?;
 
     Ok(backtrace_obj)
@@ -1023,7 +1112,8 @@ fn create_frame_info_object<'local>(
     let module_obj = JObject::null();
 
     // Get function name - create binding to extend lifetime
-    let func_name_string = frame.func_name()
+    let func_name_string = frame
+        .func_name()
         .map(|name| env.new_string(name))
         .transpose()?;
     let null_func_name = JObject::null();
@@ -1033,7 +1123,8 @@ fn create_frame_info_object<'local>(
         .unwrap_or(JValue::Object(&null_func_name));
 
     // Get offsets - create bindings to extend lifetime
-    let module_offset_obj = frame.module_offset()
+    let module_offset_obj = frame
+        .module_offset()
         .map(|o| env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(o as i32)]))
         .transpose()?;
     let null_module_offset = JObject::null();
@@ -1042,7 +1133,8 @@ fn create_frame_info_object<'local>(
         .map(|o| JValue::Object(o))
         .unwrap_or(JValue::Object(&null_module_offset));
 
-    let func_offset_obj = frame.func_offset()
+    let func_offset_obj = frame
+        .func_offset()
         .map(|o| env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(o as i32)]))
         .transpose()?;
     let null_func_offset = JObject::null();
@@ -1085,25 +1177,22 @@ fn create_frame_symbol_object<'local>(
     symbol: &wasmtime::FrameSymbol,
 ) -> Result<JObject<'local>, crate::error::WasmtimeError> {
     // Create bindings to extend lifetime
-    let name_string = symbol.name()
-        .map(|n| env.new_string(n))
-        .transpose()?;
+    let name_string = symbol.name().map(|n| env.new_string(n)).transpose()?;
     let null_name = JObject::null();
     let name = name_string
         .as_ref()
         .map(|s| JValue::Object(s.as_ref()))
         .unwrap_or(JValue::Object(&null_name));
 
-    let file_string = symbol.file()
-        .map(|f| env.new_string(f))
-        .transpose()?;
+    let file_string = symbol.file().map(|f| env.new_string(f)).transpose()?;
     let null_file = JObject::null();
     let file = file_string
         .as_ref()
         .map(|s| JValue::Object(s.as_ref()))
         .unwrap_or(JValue::Object(&null_file));
 
-    let line_obj = symbol.line()
+    let line_obj = symbol
+        .line()
         .map(|l| env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(l as i32)]))
         .transpose()?;
     let null_line = JObject::null();
@@ -1112,7 +1201,8 @@ fn create_frame_symbol_object<'local>(
         .map(|o| JValue::Object(o))
         .unwrap_or(JValue::Object(&null_line));
 
-    let column_obj = symbol.column()
+    let column_obj = symbol
+        .column()
         .map(|c| env.new_object("java/lang/Integer", "(I)V", &[JValue::Int(c as i32)]))
         .transpose()?;
     let null_column = JObject::null();

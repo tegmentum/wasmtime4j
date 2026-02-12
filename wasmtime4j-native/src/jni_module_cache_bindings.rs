@@ -5,18 +5,18 @@
 
 #![allow(unused_variables)]
 
+use jni::objects::{JByteArray, JClass, JString};
+use jni::sys::{jboolean, jint, jlong, jstring};
 use jni::JNIEnv;
-use jni::objects::{JClass, JByteArray, JString};
-use jni::sys::{jlong, jint, jboolean, jstring};
+use sha2::{Digest, Sha256};
 use std::os::raw::c_void;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
-use sha2::{Sha256, Digest};
 
-use crate::serialization::{ModuleSerializer, SerializationConfig, ValidationLevel};
-use crate::module::ModuleMetadata;
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
+use crate::module::ModuleMetadata;
+use crate::serialization::{ModuleSerializer, SerializationConfig, ValidationLevel};
 
 /// Module cache wrapper for JNI
 ///
@@ -99,12 +99,19 @@ impl JniModuleCacheWrapper {
 
         if cache_file.exists() {
             // Try to deserialize from file
-            match self.serializer.deserialize_from_file(engine.inner(), &cache_file) {
+            match self
+                .serializer
+                .deserialize_from_file(engine.inner(), &cache_file)
+            {
                 Ok(wasmtime_module) => {
                     self.hits.fetch_add(1, Ordering::Relaxed);
                     // Wrap the module and return pointer
                     let metadata = ModuleMetadata::empty();
-                    let wrapped = crate::module::Module::from_wasmtime_module(wasmtime_module, engine.clone(), metadata);
+                    let wrapped = crate::module::Module::from_wasmtime_module(
+                        wasmtime_module,
+                        engine.clone(),
+                        metadata,
+                    );
                     return Ok(Box::into_raw(Box::new(wrapped)) as *mut c_void);
                 }
                 Err(_) => {
@@ -119,7 +126,9 @@ impl JniModuleCacheWrapper {
         let module = crate::module::core::compile_module(&engine, wasm_bytes)?;
 
         // Store in cache (best effort - ignore errors)
-        let _ = self.serializer.serialize_to_file(engine.inner(), module.inner(), &cache_file);
+        let _ = self
+            .serializer
+            .serialize_to_file(engine.inner(), module.inner(), &cache_file);
 
         // Note: compile_module already returns Box<Module>, so don't double-box
         Ok(Box::into_raw(module) as *mut c_void)
@@ -143,7 +152,8 @@ impl JniModuleCacheWrapper {
         let cache_file = self.cache_dir.join(format!("{}.wasm", cache_key));
 
         // Serialize and store
-        self.serializer.serialize_to_file(engine.inner(), module.inner(), &cache_file)?;
+        self.serializer
+            .serialize_to_file(engine.inner(), module.inner(), &cache_file)?;
 
         Ok(cache_key)
     }
@@ -234,10 +244,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeCre
     let cache_dir_result: Result<String, _> = env.get_string(&cache_dir).map(|s| s.into());
 
     jni_utils::jni_try_with_default(&mut env, 0, || {
-        let cache_dir_str = cache_dir_result
-            .map_err(|e| WasmtimeError::InvalidOperation {
-                message: format!("Failed to get cache_dir string: {:?}", e),
-            })?;
+        let cache_dir_str = cache_dir_result.map_err(|e| WasmtimeError::InvalidOperation {
+            message: format!("Failed to get cache_dir string: {:?}", e),
+        })?;
 
         let cache_path = PathBuf::from(cache_dir_str);
 
@@ -275,10 +284,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativeGet
 
         let wrapper = unsafe { &*(cache_handle as *const JniModuleCacheWrapper) };
 
-        let bytes = bytes_result
-            .map_err(|e| WasmtimeError::InvalidOperation {
-                message: format!("Failed to convert wasm bytes: {:?}", e),
-            })?;
+        let bytes = bytes_result.map_err(|e| WasmtimeError::InvalidOperation {
+            message: format!("Failed to convert wasm bytes: {:?}", e),
+        })?;
 
         let module_ptr = wrapper.get_or_compile(&bytes)?;
         Ok(module_ptr as jlong)
@@ -306,22 +314,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModuleCache_nativePre
 
         let wrapper = unsafe { &*(cache_handle as *const JniModuleCacheWrapper) };
 
-        let bytes = bytes_result
-            .map_err(|e| WasmtimeError::InvalidOperation {
-                message: format!("Failed to convert wasm bytes: {:?}", e),
-            })?;
+        let bytes = bytes_result.map_err(|e| WasmtimeError::InvalidOperation {
+            message: format!("Failed to convert wasm bytes: {:?}", e),
+        })?;
 
         wrapper.precompile(&bytes)
     })();
 
     // Then convert to Java string
     match result {
-        Ok(hash) => {
-            match env.new_string(&hash) {
-                Ok(jstr) => jstr.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
-        }
+        Ok(hash) => match env.new_string(&hash) {
+            Ok(jstr) => jstr.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
         Err(e) => {
             jni_utils::throw_jni_exception(&mut env, &e);
             std::ptr::null_mut()

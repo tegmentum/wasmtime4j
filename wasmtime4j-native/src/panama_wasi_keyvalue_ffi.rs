@@ -64,9 +64,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_create() -> *mut c_voi
 /// # Safety
 /// The context_handle must be a valid pointer returned by context_create
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_destroy(
-    context_handle: *mut c_void,
-) {
+pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_context_destroy(context_handle: *mut c_void) {
     ffi_boundary_void!({
         if !context_handle.is_null() {
             unsafe {
@@ -132,7 +130,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_get(
     out_value_len: *mut c_longlong,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || key.is_null() || out_value.is_null() || out_value_len.is_null() {
+        if context_handle.is_null()
+            || key.is_null()
+            || out_value.is_null()
+            || out_value_len.is_null()
+        {
             return Ok(-1);
         }
 
@@ -336,7 +338,9 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_increment(
 
         match context.unwrap().increment(key_str, delta) {
             Ok(new_value) => {
-                unsafe { *out_value = new_value; }
+                unsafe {
+                    *out_value = new_value;
+                }
                 Ok(0)
             }
             Err(_) => Ok(-1),
@@ -353,9 +357,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_increment(
 /// # Returns
 /// The number of entries, or -1 on error
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_size(
-    context_handle: *mut c_void,
-) -> c_longlong {
+pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_size(context_handle: *mut c_void) -> c_longlong {
     ffi_boundary_result!(-1i64, {
         let context = unsafe { get_context(context_handle) };
         match context {
@@ -373,9 +375,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_size(
 /// # Returns
 /// 0 on success, -1 on error
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_clear(
-    context_handle: *mut c_void,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_clear(context_handle: *mut c_void) -> c_int {
     ffi_boundary_i32!({
         let context = unsafe { get_context(context_handle) };
         match context {
@@ -420,7 +420,9 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_keys(
                 let json = serde_json::to_string(&keys).unwrap_or_else(|_| "[]".to_string());
                 match CString::new(json) {
                     Ok(cstr) => {
-                        unsafe { *out_json = cstr.into_raw(); }
+                        unsafe {
+                            *out_json = cstr.into_raw();
+                        }
                         Ok(0)
                     }
                     Err(_) => Ok(-1),
@@ -440,10 +442,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_keys(
 /// # Safety
 /// The pointer must have been allocated by a keyvalue function
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_bytes(
-    ptr: *mut c_uchar,
-    len: c_longlong,
-) {
+pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_bytes(ptr: *mut c_uchar, len: c_longlong) {
     ffi_boundary_void!({
         if !ptr.is_null() && len > 0 {
             unsafe {
@@ -458,9 +457,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_bytes(
 /// # Safety
 /// The pointer must have been allocated by a keyvalue function
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_string(
-    ptr: *mut c_char,
-) {
+pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_string(ptr: *mut c_char) {
     ffi_boundary_void!({
         if !ptr.is_null() {
             unsafe {
@@ -480,9 +477,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_free_string(
 /// 1 if available, 0 if not available
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_wasi_keyvalue_is_available() -> c_int {
-    ffi_boundary_i32!({
-        Ok(1)
-    })
+    ffi_boundary_i32!({ Ok(1) })
 }
 
 #[cfg(test)]
@@ -501,7 +496,9 @@ mod tests {
         let valid = wasmtime4j_panama_wasi_keyvalue_context_is_valid(ctx);
         assert_eq!(valid, 1);
 
-        unsafe { wasmtime4j_panama_wasi_keyvalue_context_destroy(ctx); }
+        unsafe {
+            wasmtime4j_panama_wasi_keyvalue_context_destroy(ctx);
+        }
     }
 
     #[test]
@@ -528,12 +525,8 @@ mod tests {
         // Get
         let mut out_value: *mut c_uchar = ptr::null_mut();
         let mut out_len: c_longlong = 0;
-        let result = wasmtime4j_panama_wasi_keyvalue_get(
-            ctx,
-            key.as_ptr(),
-            &mut out_value,
-            &mut out_len,
-        );
+        let result =
+            wasmtime4j_panama_wasi_keyvalue_get(ctx, key.as_ptr(), &mut out_value, &mut out_len);
         assert_eq!(result, 0);
         assert!(!out_value.is_null());
         assert_eq!(out_len, value.len() as c_longlong);
@@ -543,7 +536,9 @@ mod tests {
         assert_eq!(retrieved, value);
 
         // Free the retrieved value
-        unsafe { wasmtime4j_panama_wasi_keyvalue_free_bytes(out_value, out_len); }
+        unsafe {
+            wasmtime4j_panama_wasi_keyvalue_free_bytes(out_value, out_len);
+        }
 
         // Delete
         let deleted = wasmtime4j_panama_wasi_keyvalue_delete(ctx, key.as_ptr());
@@ -553,7 +548,9 @@ mod tests {
         let exists = wasmtime4j_panama_wasi_keyvalue_exists(ctx, key.as_ptr());
         assert_eq!(exists, 0);
 
-        unsafe { wasmtime4j_panama_wasi_keyvalue_context_destroy(ctx); }
+        unsafe {
+            wasmtime4j_panama_wasi_keyvalue_context_destroy(ctx);
+        }
     }
 
     #[test]
@@ -565,16 +562,20 @@ mod tests {
         let mut out_value: c_longlong = 0;
 
         // First increment (from 0)
-        let result = wasmtime4j_panama_wasi_keyvalue_increment(ctx, key.as_ptr(), 5, &mut out_value);
+        let result =
+            wasmtime4j_panama_wasi_keyvalue_increment(ctx, key.as_ptr(), 5, &mut out_value);
         assert_eq!(result, 0);
         assert_eq!(out_value, 5);
 
         // Second increment
-        let result = wasmtime4j_panama_wasi_keyvalue_increment(ctx, key.as_ptr(), 3, &mut out_value);
+        let result =
+            wasmtime4j_panama_wasi_keyvalue_increment(ctx, key.as_ptr(), 3, &mut out_value);
         assert_eq!(result, 0);
         assert_eq!(out_value, 8);
 
-        unsafe { wasmtime4j_panama_wasi_keyvalue_context_destroy(ctx); }
+        unsafe {
+            wasmtime4j_panama_wasi_keyvalue_context_destroy(ctx);
+        }
     }
 
     #[test]
@@ -591,8 +592,18 @@ mod tests {
         let key2 = CString::new("key2").unwrap();
         let value = b"value";
 
-        wasmtime4j_panama_wasi_keyvalue_set(ctx, key1.as_ptr(), value.as_ptr(), value.len() as c_longlong);
-        wasmtime4j_panama_wasi_keyvalue_set(ctx, key2.as_ptr(), value.as_ptr(), value.len() as c_longlong);
+        wasmtime4j_panama_wasi_keyvalue_set(
+            ctx,
+            key1.as_ptr(),
+            value.as_ptr(),
+            value.len() as c_longlong,
+        );
+        wasmtime4j_panama_wasi_keyvalue_set(
+            ctx,
+            key2.as_ptr(),
+            value.as_ptr(),
+            value.len() as c_longlong,
+        );
 
         let size = wasmtime4j_panama_wasi_keyvalue_size(ctx);
         assert_eq!(size, 2);
@@ -604,6 +615,8 @@ mod tests {
         let size = wasmtime4j_panama_wasi_keyvalue_size(ctx);
         assert_eq!(size, 0);
 
-        unsafe { wasmtime4j_panama_wasi_keyvalue_context_destroy(ctx); }
+        unsafe {
+            wasmtime4j_panama_wasi_keyvalue_context_destroy(ctx);
+        }
     }
 }

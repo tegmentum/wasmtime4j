@@ -102,7 +102,8 @@ public final class PanamaMemory implements WasmMemory {
   public int getSize() {
     ensureNotClosed();
     if (instance != null) {
-      return instance.getMemorySize(this);
+      final long size = instance.getMemorySize(this);
+      return (int) Math.min(size, Integer.MAX_VALUE);
     }
     // Memory created directly by store - use native memory pointer
     if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
@@ -111,7 +112,7 @@ public final class PanamaMemory implements WasmMemory {
         final int result =
             NATIVE_BINDINGS.panamaMemorySizePages(nativeMemory, store.getNativeStore(), sizeOutPtr);
         if (result == 0) {
-          return (int) sizeOutPtr.get(ValueLayout.JAVA_LONG, 0);
+          return (int) Math.min(sizeOutPtr.get(ValueLayout.JAVA_LONG, 0), Integer.MAX_VALUE);
         }
         throw new IllegalStateException("Failed to get memory size: error code " + result);
       }
@@ -126,20 +127,20 @@ public final class PanamaMemory implements WasmMemory {
     }
     ensureNotClosed();
 
-    int result;
+    long result;
     if (instance != null) {
-      result = instance.growMemory(this, pages);
+      result = instance.growMemory(this, (long) pages);
     } else if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
       // Memory created directly by store - use native memory pointer
       try (final Arena tempArena = Arena.ofConfined()) {
         final MemorySegment previousPagesOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
         final int growResult =
             NATIVE_BINDINGS.panamaMemoryGrow(
-                nativeMemory, store.getNativeStore(), pages, previousPagesOutPtr);
+                nativeMemory, store.getNativeStore(), (long) pages, previousPagesOutPtr);
         if (growResult == 0) {
-          result = (int) previousPagesOutPtr.get(ValueLayout.JAVA_LONG, 0);
+          result = previousPagesOutPtr.get(ValueLayout.JAVA_LONG, 0);
         } else {
-          result = -1; // Grow failed
+          result = -1L; // Grow failed
         }
       }
     } else {
@@ -151,7 +152,7 @@ public final class PanamaMemory implements WasmMemory {
       invalidateDirectMemoryCache();
     }
 
-    return result;
+    return (int) Math.min(result, Integer.MAX_VALUE);
   }
 
   @Override

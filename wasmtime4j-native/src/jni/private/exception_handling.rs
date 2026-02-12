@@ -236,7 +236,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeEquals(
         Ok(Tag::eq(tag1, tag2, &*store_guard))
     });
 
-    if result { JNI_TRUE } else { JNI_FALSE }
+    if result {
+        JNI_TRUE
+    } else {
+        JNI_FALSE
+    }
 }
 
 /// JNI binding for JniTag.nativeDestroy

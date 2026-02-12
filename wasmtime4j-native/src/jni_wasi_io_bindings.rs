@@ -10,13 +10,13 @@ use jni::sys::{jboolean, jbyteArray, jint, jlong};
 use jni::JNIEnv;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamTypeInfo, WasiStreamStatusInfo};
-use crate::{jni_validate_handle, jni_validate_handles, jni_validate_non_negative, jni_get_ref};
+use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamStatusInfo, WasiStreamTypeInfo};
 use crate::wasi_stream_ops::{
-    read_from_stream_generic, skip_in_stream_generic, close_stream_generic,
-    check_write_capacity_generic, write_to_stream_generic, flush_stream_generic,
-    write_zeroes_to_stream_generic, splice_streams_generic,
+    check_write_capacity_generic, close_stream_generic, flush_stream_generic,
+    read_from_stream_generic, skip_in_stream_generic, splice_streams_generic,
+    write_to_stream_generic, write_zeroes_to_stream_generic,
 };
+use crate::{jni_get_ref, jni_validate_handle, jni_validate_handles, jni_validate_non_negative};
 
 /// Create a WASI input stream
 ///
@@ -241,8 +241,9 @@ fn create_input_stream(
     _descriptor_id: u64,
     _offset: u64,
 ) -> WasmtimeResult<u64> {
-    
-    let stream_id = context.next_operation_id.fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+    let stream_id = context
+        .next_operation_id
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
 
     let stream = WasiStreamInfo {
         id: stream_id,
@@ -345,7 +346,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     // Write to stream
     if let Err(e) = write_to_stream(context, stream_id as u64, &data, false) {
         let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/exception/WasmException",
+            "ai/tegmentum/wasmtime4j/exception/WasmException",
             format!("Write failed: {}", e),
         );
     }
@@ -507,7 +508,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Splice streams
-    match splice_streams(context, stream_id as u64, source_stream_id as u64, length as u64, false) {
+    match splice_streams(
+        context,
+        stream_id as u64,
+        source_stream_id as u64,
+        length as u64,
+        false,
+    ) {
         Ok(transferred) => transferred as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -538,7 +545,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiOutputStr
     let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 
     // Blocking splice
-    match splice_streams(context, stream_id as u64, source_stream_id as u64, length as u64, true) {
+    match splice_streams(
+        context,
+        stream_id as u64,
+        source_stream_id as u64,
+        length as u64,
+        true,
+    ) {
         Ok(transferred) => transferred as jlong,
         Err(e) => {
             let _ = env.throw_new(
@@ -623,11 +636,7 @@ fn write_to_stream(
 
 /// Flush stream using generic implementation
 #[inline]
-fn flush_stream(
-    context: &WasiContext,
-    stream_id: u64,
-    blocking: bool,
-) -> WasmtimeResult<()> {
+fn flush_stream(context: &WasiContext, stream_id: u64, blocking: bool) -> WasmtimeResult<()> {
     flush_stream_generic(context, stream_id, blocking)
 }
 
@@ -701,7 +710,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
 
     // Check if pollable is ready
     match check_pollable_ready(context, pollable_id as u64) {
-        Ok(ready) => if ready { 1 } else { 0 },
+        Ok(ready) => {
+            if ready {
+                1
+            } else {
+                0
+            }
+        }
         Err(e) => {
             let _ = env.throw_new(
                 "ai/tegmentum/wasmtime4j/exception/WasmException",

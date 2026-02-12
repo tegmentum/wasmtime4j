@@ -3,10 +3,10 @@
 //! This module provides C-compatible functions for creating, inspecting,
 //! and calling WebAssembly functions through the Panama Foreign Function Interface.
 
-use std::os::raw::{c_char, c_int, c_void};
+use crate::error::ffi_utils;
 use crate::instance::core;
 use crate::store::Store;
-use crate::error::ffi_utils;
+use std::os::raw::{c_char, c_int, c_void};
 
 /// Get function from instance export (Panama FFI version)
 #[no_mangle]
@@ -30,9 +30,7 @@ pub extern "C" fn wasmtime4j_panama_func_get(
                 }
                 Ok(())
             }
-            None => Err(crate::error::WasmtimeError::ExportNotFound {
-                name: name_str,
-            }),
+            None => Err(crate::error::WasmtimeError::ExportNotFound { name: name_str }),
         }
     })
 }
@@ -117,9 +115,7 @@ pub extern "C" fn wasmtime4j_panama_func_call(
 
         // Convert parameters from C representation to Rust WasmValue
         let params = if param_count > 0 {
-            unsafe {
-                core::convert_params_from_ffi(params_ptr, param_count)?
-            }
+            unsafe { core::convert_params_from_ffi(params_ptr, param_count)? }
         } else {
             Vec::new()
         };

@@ -10,7 +10,7 @@ use jni::JNIEnv;
 use crate::error::jni_utils;
 use crate::wasi_preview2::WasiPreview2Context;
 use crate::wasi_random_helpers;
-use crate::{jni_validate_handle, jni_validate_non_negative, jni_deref_ptr};
+use crate::{jni_deref_ptr, jni_validate_handle, jni_validate_non_negative};
 
 /// Get cryptographically-secure random bytes
 ///
@@ -26,7 +26,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_random_JniWasiRando
     // Validate parameters using macros
     jni_validate_handle!(env, context_handle, "context", std::ptr::null_mut());
     jni_validate_non_negative!(env, len, "Length", std::ptr::null_mut());
-    let context = jni_deref_ptr!(env, context_handle, WasiPreview2Context, "Context", std::ptr::null_mut());
+    let context = jni_deref_ptr!(
+        env,
+        context_handle,
+        WasiPreview2Context,
+        "Context",
+        std::ptr::null_mut()
+    );
 
     // Call helper function
     let bytes = match wasi_random_helpers::get_random_bytes(context, len as u64) {

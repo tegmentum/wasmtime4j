@@ -3,7 +3,6 @@
 /// This module provides functionality to execute WAST (WebAssembly Test) files
 /// using Wasmtime's native WAST parser and test runner. This ensures 100%
 /// compatibility with Wasmtime's own test execution behavior.
-
 use anyhow::{Context, Result};
 use std::path::Path;
 use wasmtime::*;
@@ -79,8 +78,7 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
     // Configure stack size for proper overflow handling
     config.max_wasm_stack(2 * 1024 * 1024); // 2 MiB
 
-    let engine = Engine::new(&config)
-        .context("Failed to create Wasmtime engine")?;
+    let engine = Engine::new(&config).context("Failed to create Wasmtime engine")?;
 
     // Create WAST context for synchronous test execution
     let mut wast_context = WastContext::new(&engine, wasmtime_wast::Async::No, |store| {
@@ -155,8 +153,7 @@ pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> Result<WastExecuti
     // Configure stack size for proper overflow handling
     config.max_wasm_stack(2 * 1024 * 1024); // 2 MiB
 
-    let engine = Engine::new(&config)
-        .context("Failed to create Wasmtime engine")?;
+    let engine = Engine::new(&config).context("Failed to create Wasmtime engine")?;
 
     // Create WAST context for synchronous test execution
     let mut wast_context = WastContext::new(&engine, wasmtime_wast::Async::No, |store| {

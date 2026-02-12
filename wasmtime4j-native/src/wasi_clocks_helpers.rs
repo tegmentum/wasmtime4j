@@ -105,10 +105,11 @@ pub fn monotonic_subscribe_duration(
 pub fn wall_clock_now(_context: &WasiPreview2Context) -> WasmtimeResult<DateTime> {
     // Use host system time - this is the standard WASI implementation
     let now = SystemTime::now();
-    let duration = now.duration_since(UNIX_EPOCH)
-        .map_err(|e| crate::error::WasmtimeError::Wasi {
-            message: format!("System time before Unix epoch: {}", e),
-        })?;
+    let duration =
+        now.duration_since(UNIX_EPOCH)
+            .map_err(|e| crate::error::WasmtimeError::Wasi {
+                message: format!("System time before Unix epoch: {}", e),
+            })?;
 
     let seconds = duration.as_secs();
     let nanoseconds = duration.subsec_nanos();
@@ -154,10 +155,7 @@ pub fn timezone_display(
 /// Returns the number of seconds to add to UTC to get local time.
 /// Positive values are east of UTC, negative values are west.
 /// Currently returns 0 (UTC) as the default.
-pub fn timezone_utc_offset(
-    _context: &WasiPreview2Context,
-    _when: DateTime,
-) -> WasmtimeResult<i32> {
+pub fn timezone_utc_offset(_context: &WasiPreview2Context, _when: DateTime) -> WasmtimeResult<i32> {
     // Return UTC offset (0) as the default
     Ok(0)
 }

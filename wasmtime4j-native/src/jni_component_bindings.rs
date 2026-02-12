@@ -105,15 +105,17 @@ fn put_long_in_map(
     key: &str,
     value: i64,
 ) -> Result<(), crate::WasmtimeError> {
-    let key_str = env
-        .new_string(key)
-        .map_err(|e| crate::WasmtimeError::JniError(format!("Failed to create key string: {}", e)))?;
+    let key_str = env.new_string(key).map_err(|e| {
+        crate::WasmtimeError::JniError(format!("Failed to create key string: {}", e))
+    })?;
     let long_class = env
         .find_class("java/lang/Long")
         .map_err(|e| crate::WasmtimeError::JniError(format!("Failed to find Long class: {}", e)))?;
     let long_obj = env
         .new_object(long_class, "(J)V", &[JValue::Long(value)])
-        .map_err(|e| crate::WasmtimeError::JniError(format!("Failed to create Long object: {}", e)))?;
+        .map_err(|e| {
+            crate::WasmtimeError::JniError(format!("Failed to create Long object: {}", e))
+        })?;
 
     env.call_method(
         map,
@@ -140,12 +142,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentImpl_nativeG
 ) -> jobject {
     jni_utils::jni_try_object(&mut env, |env| {
         // Create a HashMap with metrics
-        let hash_map_class = env
-            .find_class("java/util/HashMap")
-            .map_err(|e| crate::WasmtimeError::JniError(format!("Failed to find HashMap class: {}", e)))?;
-        let hash_map = env
-            .new_object(hash_map_class, "()V", &[])
-            .map_err(|e| crate::WasmtimeError::JniError(format!("Failed to create HashMap: {}", e)))?;
+        let hash_map_class = env.find_class("java/util/HashMap").map_err(|e| {
+            crate::WasmtimeError::JniError(format!("Failed to find HashMap class: {}", e))
+        })?;
+        let hash_map = env.new_object(hash_map_class, "()V", &[]).map_err(|e| {
+            crate::WasmtimeError::JniError(format!("Failed to create HashMap: {}", e))
+        })?;
 
         // Populate with placeholder values - will be wired to actual metrics
         put_long_in_map(env, &hash_map, "componentsLoaded", 0)?;
@@ -158,9 +160,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentImpl_nativeG
 
         // SAFETY: We need to convert the local reference to a global reference that outlives this scope
         // The returned jobject will be managed by the JVM
-        let global = env
-            .new_global_ref(&hash_map)
-            .map_err(|e| crate::WasmtimeError::JniError(format!("Failed to create global ref: {}", e)))?;
+        let global = env.new_global_ref(&hash_map).map_err(|e| {
+            crate::WasmtimeError::JniError(format!("Failed to create global ref: {}", e))
+        })?;
 
         // Convert global reference to owned JObject for return
         // SAFETY: The global reference ensures the object stays alive across JNI boundary

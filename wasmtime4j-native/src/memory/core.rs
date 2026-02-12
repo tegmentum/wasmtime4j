@@ -83,9 +83,11 @@ impl ValidatedMemory {
 
 /// Register a memory handle as valid
 pub fn register_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
-    let mut handles = VALID_MEMORY_HANDLES.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire memory handle registry lock".to_string(),
-    })?;
+    let mut handles = VALID_MEMORY_HANDLES
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire memory handle registry lock".to_string(),
+        })?;
 
     handles.insert(ptr as usize);
     log::debug!("Registered memory handle: {:p}", ptr);
@@ -94,9 +96,11 @@ pub fn register_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
 
 /// Unregister a memory handle
 pub fn unregister_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
-    let mut handles = VALID_MEMORY_HANDLES.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire memory handle registry lock".to_string(),
-    })?;
+    let mut handles = VALID_MEMORY_HANDLES
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire memory handle registry lock".to_string(),
+        })?;
 
     if handles.remove(&(ptr as usize)) {
         log::debug!("Unregistered memory handle: {:p}", ptr);
@@ -110,9 +114,11 @@ pub fn unregister_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
 
 /// Register a store handle as valid
 pub fn register_store_handle(ptr: *const c_void) -> WasmtimeResult<()> {
-    let mut handles = VALID_STORE_HANDLES.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire store handle registry lock".to_string(),
-    })?;
+    let mut handles = VALID_STORE_HANDLES
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire store handle registry lock".to_string(),
+        })?;
 
     handles.insert(ptr as usize);
     log::debug!("Registered store handle: {:p}", ptr);
@@ -121,9 +127,11 @@ pub fn register_store_handle(ptr: *const c_void) -> WasmtimeResult<()> {
 
 /// Unregister a store handle
 pub fn unregister_store_handle(ptr: *const c_void) -> WasmtimeResult<()> {
-    let mut handles = VALID_STORE_HANDLES.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire store handle registry lock".to_string(),
-    })?;
+    let mut handles = VALID_STORE_HANDLES
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire store handle registry lock".to_string(),
+        })?;
 
     if handles.remove(&(ptr as usize)) {
         log::debug!("Unregistered store handle: {:p}", ptr);
@@ -146,17 +154,23 @@ pub fn unregister_store_handle(ptr: *const c_void) -> WasmtimeResult<()> {
 /// validation errors when those handles are accessed.
 pub fn clear_handle_registries() -> WasmtimeResult<()> {
     // Clear memory handles
-    let mut memory_handles = VALID_MEMORY_HANDLES.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire memory handle registry lock".to_string(),
-    })?;
+    let mut memory_handles =
+        VALID_MEMORY_HANDLES
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire memory handle registry lock".to_string(),
+            })?;
     let memory_count = memory_handles.len();
     memory_handles.clear();
     drop(memory_handles);
 
     // Clear store handles
-    let mut store_handles = VALID_STORE_HANDLES.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire store handle registry lock".to_string(),
-    })?;
+    let mut store_handles =
+        VALID_STORE_HANDLES
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire store handle registry lock".to_string(),
+            })?;
     let store_count = store_handles.len();
     store_handles.clear();
     drop(store_handles);
@@ -179,13 +193,18 @@ pub unsafe fn validate_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
     }
 
     // Check if handle is registered
-    let handles = VALID_MEMORY_HANDLES.read().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire memory handle registry lock".to_string(),
-    })?;
+    let handles = VALID_MEMORY_HANDLES
+        .read()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire memory handle registry lock".to_string(),
+        })?;
 
     if !handles.contains(&(ptr as usize)) {
         return Err(WasmtimeError::InvalidParameter {
-            message: format!("Memory handle {:p} is not registered or has been freed", ptr),
+            message: format!(
+                "Memory handle {:p} is not registered or has been freed",
+                ptr
+            ),
         });
     }
 
@@ -193,7 +212,10 @@ pub unsafe fn validate_memory_handle(ptr: *const c_void) -> WasmtimeResult<()> {
     let validated_memory = &*(ptr as *const ValidatedMemory);
     if validated_memory.magic != MEMORY_MAGIC {
         return Err(WasmtimeError::InvalidParameter {
-            message: format!("Memory handle {:p} has invalid magic number (corrupted)", ptr),
+            message: format!(
+                "Memory handle {:p} has invalid magic number (corrupted)",
+                ptr
+            ),
         });
     }
 
@@ -219,9 +241,11 @@ pub unsafe fn validate_store_handle(ptr: *const c_void) -> WasmtimeResult<()> {
     }
 
     // Check if handle is registered
-    let handles = VALID_STORE_HANDLES.read().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire store handle registry lock".to_string(),
-    })?;
+    let handles = VALID_STORE_HANDLES
+        .read()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire store handle registry lock".to_string(),
+        })?;
 
     if !handles.contains(&(ptr as usize)) {
         return Err(WasmtimeError::InvalidParameter {
@@ -376,7 +400,10 @@ pub unsafe fn destroy_memory(ptr: *mut c_void) {
             match unregister_memory_handle(ptr) {
                 Ok(_) => {
                     let _ = Box::from_raw(ptr as *mut ValidatedMemory);
-                    log::debug!("Destroyed corrupted but registered memory handle: {:p}", ptr);
+                    log::debug!(
+                        "Destroyed corrupted but registered memory handle: {:p}",
+                        ptr
+                    );
                 }
                 Err(unregister_err) => {
                     log::debug!(
@@ -394,12 +421,10 @@ pub unsafe fn destroy_memory(ptr: *mut c_void) {
 /// Core function to check if memory is shared
 pub fn memory_is_shared(memory: &Memory, store: &Store) -> WasmtimeResult<bool> {
     match memory.variant() {
-        MemoryVariant::Regular(mem) => {
-            store.with_context_ro(|ctx| {
-                let memory_type = mem.ty(ctx);
-                Ok(memory_type.is_shared())
-            })
-        }
+        MemoryVariant::Regular(mem) => store.with_context_ro(|ctx| {
+            let memory_type = mem.ty(ctx);
+            Ok(memory_type.is_shared())
+        }),
         MemoryVariant::Shared(_) => Ok(true),
     }
 }
@@ -1062,8 +1087,7 @@ pub fn memory_copy(
     len: usize,
 ) -> WasmtimeResult<()> {
     let memory_size = memory.size_bytes(store)?;
-    if dest_offset.saturating_add(len) > memory_size
-        || src_offset.saturating_add(len) > memory_size
+    if dest_offset.saturating_add(len) > memory_size || src_offset.saturating_add(len) > memory_size
     {
         return Err(MemoryError::BoundsViolation {
             offset: std::cmp::max(dest_offset, src_offset),
@@ -1074,24 +1098,22 @@ pub fn memory_copy(
     }
 
     match &memory.inner {
-        MemoryVariant::Regular(mem) => {
-            store.with_context(|ctx| {
-                let memory_data = mem.data_mut(ctx);
+        MemoryVariant::Regular(mem) => store.with_context(|ctx| {
+            let memory_data = mem.data_mut(ctx);
 
-                if dest_offset < src_offset && dest_offset + len > src_offset {
-                    for i in (0..len).rev() {
-                        memory_data[dest_offset + i] = memory_data[src_offset + i];
-                    }
-                } else if src_offset < dest_offset && src_offset + len > dest_offset {
-                    for i in 0..len {
-                        memory_data[dest_offset + i] = memory_data[src_offset + i];
-                    }
-                } else {
-                    memory_data.copy_within(src_offset..src_offset + len, dest_offset);
+            if dest_offset < src_offset && dest_offset + len > src_offset {
+                for i in (0..len).rev() {
+                    memory_data[dest_offset + i] = memory_data[src_offset + i];
                 }
-                Ok(())
-            })
-        }
+            } else if src_offset < dest_offset && src_offset + len > dest_offset {
+                for i in 0..len {
+                    memory_data[dest_offset + i] = memory_data[src_offset + i];
+                }
+            } else {
+                memory_data.copy_within(src_offset..src_offset + len, dest_offset);
+            }
+            Ok(())
+        }),
         MemoryVariant::Shared(mem) => {
             let mem_data = mem.data();
 
@@ -1141,13 +1163,11 @@ pub fn memory_fill(
     }
 
     match &memory.inner {
-        MemoryVariant::Regular(mem) => {
-            store.with_context(|ctx| {
-                let memory_data = mem.data_mut(ctx);
-                memory_data[offset..offset + len].fill(value);
-                Ok(())
-            })
-        }
+        MemoryVariant::Regular(mem) => store.with_context(|ctx| {
+            let memory_data = mem.data_mut(ctx);
+            memory_data[offset..offset + len].fill(value);
+            Ok(())
+        }),
         MemoryVariant::Shared(mem) => {
             let mem_data = mem.data();
             for i in 0..len {
@@ -1205,9 +1225,11 @@ pub fn data_drop(
 
 /// Get diagnostic information about memory handle validation
 pub fn get_memory_handle_diagnostics() -> WasmtimeResult<(usize, u64)> {
-    let handles = VALID_MEMORY_HANDLES.read().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire memory handle registry lock".to_string(),
-    })?;
+    let handles = VALID_MEMORY_HANDLES
+        .read()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire memory handle registry lock".to_string(),
+        })?;
 
     let handle_count = handles.len();
     let total_accesses = MEMORY_ACCESS_COUNTER.load(Ordering::Relaxed);
@@ -1217,13 +1239,19 @@ pub fn get_memory_handle_diagnostics() -> WasmtimeResult<(usize, u64)> {
 
 /// Force cleanup of all registered handles (for emergency shutdown)
 pub fn force_cleanup_all_handles() -> WasmtimeResult<usize> {
-    let mut memory_handles = VALID_MEMORY_HANDLES.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire memory handle registry lock".to_string(),
-    })?;
+    let mut memory_handles =
+        VALID_MEMORY_HANDLES
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire memory handle registry lock".to_string(),
+            })?;
 
-    let mut store_handles = VALID_STORE_HANDLES.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire store handle registry lock".to_string(),
-    })?;
+    let mut store_handles =
+        VALID_STORE_HANDLES
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire store handle registry lock".to_string(),
+            })?;
 
     let total_cleaned = memory_handles.len() + store_handles.len();
 

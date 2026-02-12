@@ -6,12 +6,12 @@
 //! All functions use C calling conventions and handle memory management appropriately.
 //! All FFI functions are wrapped with catch_unwind to prevent panics from crashing the JVM.
 
+use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_void};
 use std::ptr;
-use std::ffi::CString;
 
-use crate::wasi::WasiContext;
 use crate::ffi_boundary_i32;
+use crate::wasi::WasiContext;
 
 /// Get all environment variables
 ///
@@ -54,8 +54,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_all(
             .map(|(k, v)| format!("{}={}", k, v))
             .collect();
 
-        let json_array = format!("[{}]",
-            env_strings.iter()
+        let json_array = format!(
+            "[{}]",
+            env_strings
+                .iter()
                 .map(|s| format!("\"{}\"", s.replace("\"", "\\\"")))
                 .collect::<Vec<_>>()
                 .join(",")
@@ -98,7 +100,11 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get(
     out_value_len: *mut c_int,
 ) -> c_int {
     ffi_boundary_i32!({
-        if context_handle.is_null() || name.is_null() || out_value.is_null() || out_value_len.is_null() {
+        if context_handle.is_null()
+            || name.is_null()
+            || out_value.is_null()
+            || out_value_len.is_null()
+        {
             return Ok(-1);
         }
 
@@ -124,19 +130,17 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get(
         };
 
         match env_map.get(name_str) {
-            Some(value) => {
-                match CString::new(value.as_str()) {
-                    Ok(c_str) => {
-                        let len = c_str.as_bytes().len() as c_int;
-                        unsafe {
-                            *out_value = c_str.into_raw();
-                            *out_value_len = len;
-                        }
-                        Ok(0)
+            Some(value) => match CString::new(value.as_str()) {
+                Ok(c_str) => {
+                    let len = c_str.as_bytes().len() as c_int;
+                    unsafe {
+                        *out_value = c_str.into_raw();
+                        *out_value_len = len;
                     }
-                    Err(_) => Ok(-1),
+                    Ok(0)
                 }
-            }
+                Err(_) => Ok(-1),
+            },
             None => {
                 unsafe {
                     *out_value = ptr::null_mut();
@@ -184,7 +188,8 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_arguments(
             Err(_) => return Ok(-1),
         };
 
-        let json_array = format!("[{}]",
+        let json_array = format!(
+            "[{}]",
             args.iter()
                 .map(|s| format!("\"{}\"", s.replace("\"", "\\\"")))
                 .collect::<Vec<_>>()
@@ -242,19 +247,17 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_initial_cwd(
         };
 
         match cwd.as_ref() {
-            Some(path) => {
-                match CString::new(path.as_str()) {
-                    Ok(c_str) => {
-                        let len = c_str.as_bytes().len() as c_int;
-                        unsafe {
-                            *out_cwd = c_str.into_raw();
-                            *out_cwd_len = len;
-                        }
-                        Ok(0)
+            Some(path) => match CString::new(path.as_str()) {
+                Ok(c_str) => {
+                    let len = c_str.as_bytes().len() as c_int;
+                    unsafe {
+                        *out_cwd = c_str.into_raw();
+                        *out_cwd_len = len;
                     }
-                    Err(_) => Ok(-1),
+                    Ok(0)
                 }
-            }
+                Err(_) => Ok(-1),
+            },
             None => {
                 unsafe {
                     *out_cwd = ptr::null_mut();
@@ -293,12 +296,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stdin(
         };
 
         let stdin_handle = match context.stdin_handle.read() {
-            Ok(handle_opt) => {
-                match *handle_opt {
-                    Some(handle) => handle as usize,
-                    None => 1usize,
-                }
-            }
+            Ok(handle_opt) => match *handle_opt {
+                Some(handle) => handle as usize,
+                None => 1usize,
+            },
             Err(_) => return Ok(-1),
         };
 
@@ -336,12 +337,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stdout(
         };
 
         let stdout_handle = match context.stdout_handle.read() {
-            Ok(handle_opt) => {
-                match *handle_opt {
-                    Some(handle) => handle as usize,
-                    None => 2usize,
-                }
-            }
+            Ok(handle_opt) => match *handle_opt {
+                Some(handle) => handle as usize,
+                None => 2usize,
+            },
             Err(_) => return Ok(-1),
         };
 
@@ -379,12 +378,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stderr(
         };
 
         let stderr_handle = match context.stderr_handle.read() {
-            Ok(handle_opt) => {
-                match *handle_opt {
-                    Some(handle) => handle as usize,
-                    None => 3usize,
-                }
-            }
+            Ok(handle_opt) => match *handle_opt {
+                Some(handle) => handle as usize,
+                None => 3usize,
+            },
             Err(_) => return Ok(-1),
         };
 

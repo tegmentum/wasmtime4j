@@ -311,12 +311,10 @@ pub unsafe extern "C" fn wasmtime4j_exception_capture_stack_trace(
         let handler = &*(handler_ptr as *const ExceptionHandler);
 
         match handler.capture_stack_trace(tag_handle as u64) {
-            Some(trace) => {
-                match CString::new(trace) {
-                    Ok(c_str) => c_str.into_raw(),
-                    Err(_) => std::ptr::null_mut(),
-                }
-            }
+            Some(trace) => match CString::new(trace) {
+                Ok(c_str) => c_str.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            },
             None => std::ptr::null_mut(),
         }
     })
@@ -412,7 +410,9 @@ mod tests {
     fn test_exception_tag_lookup() {
         let handler = ExceptionHandler::new(ExceptionHandlingConfig::default());
 
-        let handle = handler.create_tag("lookup_tag", vec![WasmValueType::I64]).unwrap();
+        let handle = handler
+            .create_tag("lookup_tag", vec![WasmValueType::I64])
+            .unwrap();
 
         let tag = handler.get_tag_by_handle(handle);
         assert!(tag.is_some());
@@ -504,21 +504,13 @@ mod tests {
             let name = CString::new("ffi_test_tag").unwrap();
             let types: [u8; 2] = [0, 1]; // I32, I64
 
-            let handle = wasmtime4j_exception_tag_create(
-                handler_ptr,
-                name.as_ptr(),
-                types.as_ptr(),
-                2,
-            );
+            let handle =
+                wasmtime4j_exception_tag_create(handler_ptr, name.as_ptr(), types.as_ptr(), 2);
             assert!(handle > 0);
 
             // Duplicate should fail
-            let duplicate = wasmtime4j_exception_tag_create(
-                handler_ptr,
-                name.as_ptr(),
-                types.as_ptr(),
-                2,
-            );
+            let duplicate =
+                wasmtime4j_exception_tag_create(handler_ptr, name.as_ptr(), types.as_ptr(), 2);
             assert_eq!(duplicate, 0);
 
             wasmtime4j_exception_handler_close(handler_ptr);
@@ -531,7 +523,8 @@ mod tests {
             let handler_ptr = wasmtime4j_exception_handler_create(true, true, 1000, true);
 
             let name = CString::new("trace_tag").unwrap();
-            let handle = wasmtime4j_exception_tag_create(handler_ptr, name.as_ptr(), std::ptr::null(), 0);
+            let handle =
+                wasmtime4j_exception_tag_create(handler_ptr, name.as_ptr(), std::ptr::null(), 0);
 
             let trace_ptr = wasmtime4j_exception_capture_stack_trace(handler_ptr, handle);
             assert!(!trace_ptr.is_null());
@@ -572,7 +565,10 @@ mod tests {
             let trace = wasmtime4j_exception_capture_stack_trace(std::ptr::null_mut(), 0);
             assert!(trace.is_null());
 
-            assert!(!wasmtime4j_exception_perform_unwinding(std::ptr::null_mut(), 0));
+            assert!(!wasmtime4j_exception_perform_unwinding(
+                std::ptr::null_mut(),
+                0
+            ));
 
             // These should not crash with null
             wasmtime4j_exception_handler_close(std::ptr::null_mut());

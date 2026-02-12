@@ -5,13 +5,13 @@
 //! marshalling, type validation, and callback management with defensive programming
 //! practices throughout.
 
-use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
-use wasmtime::{Func, FuncType, Val, ValType, RefType};
-use crate::store::StoreData;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::WasmValue;
+use crate::store::StoreData;
 use crate::table::core::{get_function_reference, register_function_reference};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use wasmtime::{Func, FuncType, RefType, Val, ValType};
 
 /// Compare ValType values since they don't implement PartialEq
 fn valtype_eq(a: &ValType, b: &ValType) -> bool {
@@ -26,7 +26,8 @@ fn valtype_eq(a: &ValType, b: &ValType) -> bool {
 }
 
 /// Registry for managing host function callbacks to prevent GC
-static HOST_FUNCTION_REGISTRY: std::sync::OnceLock<Mutex<HashMap<u64, Arc<HostFunction>>>> = std::sync::OnceLock::new();
+static HOST_FUNCTION_REGISTRY: std::sync::OnceLock<Mutex<HashMap<u64, Arc<HostFunction>>>> =
+    std::sync::OnceLock::new();
 static NEXT_HOST_FUNCTION_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 fn get_host_function_registry() -> &'static Mutex<HashMap<u64, Arc<HostFunction>>> {
@@ -156,7 +157,7 @@ impl HostFunction {
             func_type,
             callback,
             CallerContextUsage::Full, // Default to full usage for backward compatibility
-            true, // Assume requires caller context by default
+            true,                     // Assume requires caller context by default
         )
     }
 
@@ -183,26 +184,39 @@ impl HostFunction {
 
         // Register to prevent GC
         {
-            let mut registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
-                message: format!("Failed to lock host function registry: {}", e),
-            })?;
+            let mut registry =
+                get_host_function_registry()
+                    .lock()
+                    .map_err(|e| WasmtimeError::Concurrency {
+                        message: format!("Failed to lock host function registry: {}", e),
+                    })?;
             registry.insert(id, Arc::clone(&host_func));
         }
 
-        log::debug!("Created host function with ID: {} (caller context: {:?}, required: {})",
-                   id, caller_context_usage, requires_caller_context);
+        log::debug!(
+            "Created host function with ID: {} (caller context: {:?}, required: {})",
+            id,
+            caller_context_usage,
+            requires_caller_context
+        );
         Ok(host_func)
     }
 
     /// Create a Wasmtime Func for this host function
-    pub fn create_wasmtime_func(&self, store: &mut wasmtime::Store<StoreData>) -> WasmtimeResult<Func> {
+    pub fn create_wasmtime_func(
+        &self,
+        store: &mut wasmtime::Store<StoreData>,
+    ) -> WasmtimeResult<Func> {
         let host_func_id = self.id;
         let func_type = self.func_type.clone();
         let requires_caller = self.requires_caller_context;
         let usage = self.caller_context_usage;
 
         let func = Func::new(store, func_type, move |mut caller, params, results| {
-            log::debug!("[HOSTFUNC] Host function callback entered, id={}", host_func_id);
+            log::debug!(
+                "[HOSTFUNC] Host function callback entered, id={}",
+                host_func_id
+            );
 
             // Look up the host function in the registry
             let host_function = {
@@ -212,40 +226,59 @@ impl HostFunction {
                 })?;
 
                 registry.get(&host_func_id).cloned().ok_or_else(|| {
-                    log::error!("[HOSTFUNC] Host function not found in registry: {}", host_func_id);
+                    log::error!(
+                        "[HOSTFUNC] Host function not found in registry: {}",
+                        host_func_id
+                    );
                     anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
                 })?
             };
 
-            log::debug!("[HOSTFUNC] Found host function, name={}", host_function.name);
+            log::debug!(
+                "[HOSTFUNC] Found host function, name={}",
+                host_function.name
+            );
 
             // Optimize execution based on caller context requirements
             if !requires_caller {
                 // Zero-overhead path: no caller context needed
-                log::debug!("[HOSTFUNC] Zero-overhead path, marshaling {} params", params.len());
+                log::debug!(
+                    "[HOSTFUNC] Zero-overhead path, marshaling {} params",
+                    params.len()
+                );
                 let wasm_params = marshal_params_from_wasmtime(params)?;
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
                     log::error!("[HOSTFUNC] Callback execution failed: {}", e);
                     anyhow::anyhow!("Host function execution failed: {}", e)
                 })?;
-                log::debug!("[HOSTFUNC] Callback returned {} results", wasm_results.len());
+                log::debug!(
+                    "[HOSTFUNC] Callback returned {} results",
+                    wasm_results.len()
+                );
                 marshal_results_to_wasmtime(&wasm_results, results)?;
             } else {
                 // Full caller context path
-                log::debug!("[HOSTFUNC] Full caller context path, marshaling {} params", params.len());
+                log::debug!(
+                    "[HOSTFUNC] Full caller context path, marshaling {} params",
+                    params.len()
+                );
                 let wasm_params = marshal_params_from_wasmtime(params)?;
 
                 // Create minimal caller context based on usage pattern
-                let _context = create_optimized_caller_context(&mut caller, usage).map_err(|e| {
-                    log::error!("[HOSTFUNC] Failed to create caller context: {}", e);
-                    anyhow::anyhow!("Failed to create caller context: {}", e)
-                })?;
+                let _context =
+                    create_optimized_caller_context(&mut caller, usage).map_err(|e| {
+                        log::error!("[HOSTFUNC] Failed to create caller context: {}", e);
+                        anyhow::anyhow!("Failed to create caller context: {}", e)
+                    })?;
 
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
                     log::error!("[HOSTFUNC] Callback execution failed: {}", e);
                     anyhow::anyhow!("Host function execution failed: {}", e)
                 })?;
-                log::debug!("[HOSTFUNC] Callback returned {} results", wasm_results.len());
+                log::debug!(
+                    "[HOSTFUNC] Callback returned {} results",
+                    wasm_results.len()
+                );
 
                 marshal_results_to_wasmtime(&wasm_results, results)?;
             }
@@ -259,7 +292,10 @@ impl HostFunction {
 
     /// Create an async Wasmtime Func for this host function
     #[cfg(feature = "async")]
-    pub fn create_wasmtime_func_async(&self, store: &mut wasmtime::Store<StoreData>) -> WasmtimeResult<Func> {
+    pub fn create_wasmtime_func_async(
+        &self,
+        store: &mut wasmtime::Store<StoreData>,
+    ) -> WasmtimeResult<Func> {
         use std::future::Future;
 
         let host_func_id = self.id;
@@ -287,9 +323,10 @@ impl HostFunction {
                     if !requires_caller {
                         // Zero-overhead path: no caller context needed
                         let wasm_params = marshal_params_from_wasmtime(params)?;
-                        let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                            anyhow::anyhow!("Host function execution failed: {}", e)
-                        })?;
+                        let wasm_results =
+                            host_function.callback.execute(&wasm_params).map_err(|e| {
+                                anyhow::anyhow!("Host function execution failed: {}", e)
+                            })?;
                         marshal_results_to_wasmtime(&wasm_results, results)?;
                     } else {
                         // Full caller context path
@@ -298,9 +335,10 @@ impl HostFunction {
                         // Create minimal caller context based on usage pattern
                         let _context = create_optimized_caller_context(&mut caller, usage)?;
 
-                        let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                            anyhow::anyhow!("Host function execution failed: {}", e)
-                        })?;
+                        let wasm_results =
+                            host_function.callback.execute(&wasm_params).map_err(|e| {
+                                anyhow::anyhow!("Host function execution failed: {}", e)
+                            })?;
 
                         marshal_results_to_wasmtime(&wasm_results, results)?;
                     }
@@ -342,7 +380,10 @@ impl Drop for HostFunction {
         // 2. Deadlock if we're holding the registry lock and the removed Arc's
         //    drop causes another HostFunction drop that tries to lock again
         if !self.is_registry_owner {
-            log::debug!("HostFunction clone {} dropped (not registry owner)", self.id);
+            log::debug!(
+                "HostFunction clone {} dropped (not registry owner)",
+                self.id
+            );
             return;
         }
 
@@ -407,10 +448,7 @@ impl HostFunctionBuilder {
     }
 
     /// Build the host function
-    pub fn build(
-        self,
-        engine: &wasmtime::Engine,
-    ) -> WasmtimeResult<Arc<HostFunction>> {
+    pub fn build(self, engine: &wasmtime::Engine) -> WasmtimeResult<Arc<HostFunction>> {
         let callback = self.callback.ok_or_else(|| WasmtimeError::Validation {
             message: "Host function callback not set".to_string(),
         })?;
@@ -424,7 +462,7 @@ impl HostFunctionBuilder {
 /// Marshal parameters from Wasmtime Val to WasmValue
 fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow::Error> {
     let mut wasm_params = Vec::with_capacity(params.len());
-    
+
     for param in params {
         let wasm_value = match param {
             Val::I32(v) => WasmValue::I32(*v),
@@ -435,10 +473,11 @@ fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow
             Val::FuncRef(func_ref) => {
                 // Extract funcref and register it to get an ID
                 if let Some(func) = func_ref {
-                    let id = register_function_reference(func.clone())
-                        .map_err(|e| WasmtimeError::Execution {
+                    let id = register_function_reference(func.clone()).map_err(|e| {
+                        WasmtimeError::Execution {
                             message: format!("Failed to register function reference: {:?}", e),
-                        })?;
+                        }
+                    })?;
                     // Convert u64 to i64 for WasmValue storage
                     WasmValue::FuncRef(Some(id as i64))
                 } else {
@@ -456,7 +495,7 @@ fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow
         };
         wasm_params.push(wasm_value);
     }
-    
+
     Ok(wasm_params)
 }
 
@@ -474,7 +513,11 @@ fn marshal_results_to_wasmtime(
     }
 
     for (wasm_result, wasmtime_result) in wasm_results.iter().zip(results.iter_mut()) {
-        log::debug!("Marshalling result: wasm_result={:?}, wasmtime_result={:?}", wasm_result, &*wasmtime_result);
+        log::debug!(
+            "Marshalling result: wasm_result={:?}, wasmtime_result={:?}",
+            wasm_result,
+            &*wasmtime_result
+        );
         *wasmtime_result = match wasm_result {
             WasmValue::I32(v) => Val::I32(*v),
             WasmValue::I64(v) => Val::I64(*v),
@@ -499,7 +542,7 @@ fn marshal_results_to_wasmtime(
             }
         };
     }
-    
+
     Ok(())
 }
 
@@ -509,7 +552,7 @@ pub fn validate_parameter_types(
     expected_types: &[ValType],
 ) -> WasmtimeResult<MarshallingResult> {
     let warnings = Vec::new();
-    
+
     if params.len() != expected_types.len() {
         return Err(WasmtimeError::Validation {
             message: format!(
@@ -589,56 +632,69 @@ pub fn validate_return_types(
 /// Shared core functions for host function operations used by both JNI and Panama interfaces
 pub mod core {
     use super::*;
-    
+
     /// Core function to create a host function builder
     pub fn create_host_function_builder(name: &str) -> Box<HostFunctionBuilder> {
         Box::new(HostFunctionBuilder::new(name))
     }
-    
+
     /// Core function to add parameter type to builder
     pub fn builder_add_param(builder: &mut HostFunctionBuilder, val_type: ValType) {
         builder.param_types.push(val_type);
     }
-    
+
     /// Core function to add return type to builder
     pub fn builder_add_result(builder: &mut HostFunctionBuilder, val_type: ValType) {
         builder.return_types.push(val_type);
     }
-    
-    
+
     /// Core function to get host function from registry
     pub fn get_host_function(id: u64) -> WasmtimeResult<Arc<HostFunction>> {
-        let registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock host function registry: {}", e),
-        })?;
-        
-        registry.get(&id).cloned().ok_or_else(|| WasmtimeError::InvalidParameter {
-            message: format!("Host function not found: {}", id),
-        })
+        let registry =
+            get_host_function_registry()
+                .lock()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to lock host function registry: {}", e),
+                })?;
+
+        registry
+            .get(&id)
+            .cloned()
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Host function not found: {}", id),
+            })
     }
-    
+
     /// Core function to remove host function from registry
     pub fn remove_host_function(id: u64) -> WasmtimeResult<()> {
-        let mut registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock host function registry: {}", e),
-        })?;
-        
-        registry.remove(&id).ok_or_else(|| WasmtimeError::InvalidParameter {
-            message: format!("Host function not found for removal: {}", id),
-        })?;
-        
+        let mut registry =
+            get_host_function_registry()
+                .lock()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to lock host function registry: {}", e),
+                })?;
+
+        registry
+            .remove(&id)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Host function not found for removal: {}", id),
+            })?;
+
         Ok(())
     }
-    
+
     /// Core function to get registry statistics
     pub fn get_registry_stats() -> WasmtimeResult<(usize, u64)> {
-        let registry = get_host_function_registry().lock().map_err(|e| WasmtimeError::Concurrency {
-            message: format!("Failed to lock host function registry: {}", e),
-        })?;
-        
+        let registry =
+            get_host_function_registry()
+                .lock()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to lock host function registry: {}", e),
+                })?;
+
         let count = registry.len();
         let next_id = NEXT_HOST_FUNCTION_ID.load(std::sync::atomic::Ordering::SeqCst);
-        
+
         Ok((count, next_id))
     }
 }
@@ -708,9 +764,7 @@ mod tests {
             }
 
             match (&params[0], &params[1]) {
-                (WasmValue::I32(a), WasmValue::I32(b)) => {
-                    Ok(vec![WasmValue::I32(a + b)])
-                }
+                (WasmValue::I32(a), WasmValue::I32(b)) => Ok(vec![WasmValue::I32(a + b)]),
                 _ => Err(WasmtimeError::Validation {
                     message: "Expected i32 parameters".to_string(),
                 }),
@@ -731,16 +785,14 @@ mod tests {
         let func_type = wasmtime::FuncType::new(
             &engine.inner(),
             vec![ValType::I32, ValType::I32],
-            vec![ValType::I32]
+            vec![ValType::I32],
         );
 
         // Create host function using Store's method
         let callback = Box::new(TestCallback);
-        let (host_func_id, _wasmtime_func) = store.create_host_function(
-            "test_add".to_string(),
-            func_type,
-            callback
-        ).expect("Failed to create host function");
+        let (host_func_id, _wasmtime_func) = store
+            .create_host_function("test_add".to_string(), func_type, callback)
+            .expect("Failed to create host function");
 
         // Verify function is in registry
         let host_func = core::get_host_function(host_func_id)
@@ -755,10 +807,10 @@ mod tests {
     fn test_parameter_validation() {
         let params = vec![WasmValue::I32(42), WasmValue::I32(100)];
         let expected_types = vec![ValType::I32, ValType::I32];
-        
+
         let result = validate_parameter_types(&params, &expected_types);
         assert!(result.is_ok());
-        
+
         let marshalling_result = result.unwrap();
         assert_eq!(marshalling_result.params.len(), 2);
         assert!(marshalling_result.warnings.is_empty());
@@ -768,7 +820,7 @@ mod tests {
     fn test_parameter_validation_type_mismatch() {
         let params = vec![WasmValue::I32(42), WasmValue::F32(1.0)];
         let expected_types = vec![ValType::I32, ValType::I32];
-        
+
         let result = validate_parameter_types(&params, &expected_types);
         assert!(result.is_err());
     }
@@ -777,7 +829,7 @@ mod tests {
     fn test_parameter_validation_count_mismatch() {
         let params = vec![WasmValue::I32(42)];
         let expected_types = vec![ValType::I32, ValType::I32];
-        
+
         let result = validate_parameter_types(&params, &expected_types);
         assert!(result.is_err());
     }
@@ -786,7 +838,7 @@ mod tests {
     fn test_return_validation() {
         let results = vec![WasmValue::I32(142)];
         let expected_types = vec![ValType::I32];
-        
+
         let result = validate_return_types(&results, &expected_types);
         assert!(result.is_ok());
     }
@@ -801,28 +853,26 @@ mod tests {
         let store = Store::new(&engine).expect("Failed to create store");
 
         // Create function type
-        let func_type = wasmtime::FuncType::new(
-            &engine.inner(),
-            vec![ValType::I32],
-            vec![ValType::I32]
-        );
+        let func_type =
+            wasmtime::FuncType::new(&engine.inner(), vec![ValType::I32], vec![ValType::I32]);
 
         // Create host function using Store's method
         let callback = Box::new(TestCallback);
-        let (host_func_id, _wasmtime_func) = store.create_host_function(
-            "test_registry_ops".to_string(),
-            func_type,
-            callback
-        ).expect("Failed to create host function");
+        let (host_func_id, _wasmtime_func) = store
+            .create_host_function("test_registry_ops".to_string(), func_type, callback)
+            .expect("Failed to create host function");
 
         // Verify function exists in registry and has correct name
-        let retrieved = core::get_host_function(host_func_id)
-            .expect("Function should exist after creation");
+        let retrieved =
+            core::get_host_function(host_func_id).expect("Function should exist after creation");
         assert_eq!(retrieved.name(), "test_registry_ops");
 
         // Remove from registry - retrieved keeps a reference so the drop doesn't
         // happen while the registry lock is held (which would cause deadlock)
-        assert!(core::remove_host_function(host_func_id).is_ok(), "Remove should succeed");
+        assert!(
+            core::remove_host_function(host_func_id).is_ok(),
+            "Remove should succeed"
+        );
 
         // Drop retrieved here - this triggers HostFunction::drop which also tries
         // to remove from registry, but the function is already gone so it's a no-op
@@ -830,7 +880,10 @@ mod tests {
 
         // Verify function no longer exists in registry
         let after_remove = core::get_host_function(host_func_id);
-        assert!(after_remove.is_err(), "Function should not exist after removal");
+        assert!(
+            after_remove.is_err(),
+            "Function should not exist after removal"
+        );
     }
 
     #[test]
@@ -842,24 +895,24 @@ mod tests {
         let func_type = wasmtime::FuncType::new(
             &engine.inner(),
             vec![ValType::I32, ValType::I32],
-            vec![ValType::I32]
+            vec![ValType::I32],
         );
 
         // Create host function
         let callback = Box::new(TestCallback);
-        let (host_func_id, _wasmtime_func) = store.create_host_function(
-            "test_add".to_string(),
-            func_type,
-            callback
-        ).expect("Failed to create host function");
+        let (host_func_id, _wasmtime_func) = store
+            .create_host_function("test_add".to_string(), func_type, callback)
+            .expect("Failed to create host function");
 
         // Get the host function and test callback execution
-        let host_func = core::get_host_function(host_func_id)
-            .expect("Failed to retrieve host function");
+        let host_func =
+            core::get_host_function(host_func_id).expect("Failed to retrieve host function");
 
         // Test callback execution
         let params = vec![WasmValue::I32(10), WasmValue::I32(20)];
-        let results = host_func.callback.execute(&params)
+        let results = host_func
+            .callback
+            .execute(&params)
             .expect("Failed to execute callback");
 
         assert_eq!(results.len(), 1);
@@ -878,19 +931,17 @@ mod tests {
         let func_type = wasmtime::FuncType::new(
             &engine.inner(),
             vec![ValType::I32, ValType::I32],
-            vec![ValType::I32]
+            vec![ValType::I32],
         );
 
         // Create host function
         let callback = Box::new(TestCallback);
-        let (host_func_id, _wasmtime_func) = store.create_host_function(
-            "test_add".to_string(),
-            func_type,
-            callback
-        ).expect("Failed to create host function");
+        let (host_func_id, _wasmtime_func) = store
+            .create_host_function("test_add".to_string(), func_type, callback)
+            .expect("Failed to create host function");
 
-        let host_func = core::get_host_function(host_func_id)
-            .expect("Failed to retrieve host function");
+        let host_func =
+            core::get_host_function(host_func_id).expect("Failed to retrieve host function");
 
         // Test with wrong parameter count
         let params = vec![WasmValue::I32(10)]; // Only one parameter
@@ -915,30 +966,23 @@ mod tests {
         let func_type1 = wasmtime::FuncType::new(
             &engine.inner(),
             vec![ValType::I32, ValType::I32],
-            vec![ValType::I32]
+            vec![ValType::I32],
         );
 
-        let func_type2 = wasmtime::FuncType::new(
-            &engine.inner(),
-            vec![ValType::I32],
-            vec![ValType::I32]
-        );
+        let func_type2 =
+            wasmtime::FuncType::new(&engine.inner(), vec![ValType::I32], vec![ValType::I32]);
 
         // Create first host function
         let callback1 = Box::new(TestCallback);
-        let (host_func_id1, _) = store.create_host_function(
-            "add_function".to_string(),
-            func_type1,
-            callback1
-        ).expect("Failed to create first host function");
+        let (host_func_id1, _) = store
+            .create_host_function("add_function".to_string(), func_type1, callback1)
+            .expect("Failed to create first host function");
 
         // Create second host function
         let callback2 = Box::new(TestCallback);
-        let (host_func_id2, _) = store.create_host_function(
-            "echo_function".to_string(),
-            func_type2,
-            callback2
-        ).expect("Failed to create second host function");
+        let (host_func_id2, _) = store
+            .create_host_function("echo_function".to_string(), func_type2, callback2)
+            .expect("Failed to create second host function");
 
         // Verify both functions exist and have different IDs
         assert_ne!(host_func_id1, host_func_id2);

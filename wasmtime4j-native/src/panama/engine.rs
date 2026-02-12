@@ -32,13 +32,13 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_config(
     epoch_interruption: c_int,
     max_instances: c_int,
 ) -> *mut c_void {
-
-
     ffi_utils::ffi_try_ptr(|| {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
         let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
-        let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
-        let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
+        let max_memory_pages_opt =
+            parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
+        let max_stack_size_opt =
+            parameter_conversion::convert_int_to_optional_usize(max_stack_size);
         let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
 
         core::create_engine_with_config(
@@ -55,7 +55,7 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_config(
             max_stack_size_opt,
             parameter_conversion::convert_int_to_bool(epoch_interruption),
             max_instances_opt,
-            false,  // async_support - TODO: add Panama parameter
+            false, // async_support - TODO: add Panama parameter
         )
     })
 }
@@ -72,25 +72,47 @@ pub extern "C" fn wasmtime4j_panama_engine_destroy(engine_ptr: *mut c_void) {
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_engine_is_fuel_enabled(engine_ptr: *mut c_void) -> c_int {
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => if engine.fuel_enabled() { 1 } else { 0 },
+        Ok(engine) => {
+            if engine.fuel_enabled() {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => -1,
     }
 }
 
 /// Check if epoch interruption is enabled (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_engine_is_epoch_interruption_enabled(engine_ptr: *mut c_void) -> c_int {
+pub extern "C" fn wasmtime4j_panama_engine_is_epoch_interruption_enabled(
+    engine_ptr: *mut c_void,
+) -> c_int {
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => if engine.epoch_interruption_enabled() { 1 } else { 0 },
+        Ok(engine) => {
+            if engine.epoch_interruption_enabled() {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => -1,
     }
 }
 
 /// Check if coredump generation on trap is enabled (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_engine_is_coredump_on_trap_enabled(engine_ptr: *mut c_void) -> c_int {
+pub extern "C" fn wasmtime4j_panama_engine_is_coredump_on_trap_enabled(
+    engine_ptr: *mut c_void,
+) -> c_int {
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => if engine.coredump_on_trap() { 1 } else { 0 },
+        Ok(engine) => {
+            if engine.coredump_on_trap() {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => -1,
     }
 }
@@ -99,7 +121,10 @@ pub extern "C" fn wasmtime4j_panama_engine_is_coredump_on_trap_enabled(engine_pt
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_engine_get_memory_limit(engine_ptr: *mut c_void) -> c_int {
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => engine.memory_limit_pages().map(|limit| limit as c_int).unwrap_or(-1),
+        Ok(engine) => engine
+            .memory_limit_pages()
+            .map(|limit| limit as c_int)
+            .unwrap_or(-1),
         Err(_) => -1,
     }
 }
@@ -108,7 +133,10 @@ pub extern "C" fn wasmtime4j_panama_engine_get_memory_limit(engine_ptr: *mut c_v
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_void) -> c_long {
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => engine.stack_size_limit().map(|limit| limit as c_long).unwrap_or(-1),
+        Ok(engine) => engine
+            .stack_size_limit()
+            .map(|limit| limit as c_long)
+            .unwrap_or(-1),
         Err(_) => -1,
     }
 }
@@ -117,7 +145,9 @@ pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_vo
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_engine_get_max_instances(engine_ptr: *mut c_void) -> c_int {
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => core::get_max_instances(engine).map(|limit| limit as c_int).unwrap_or(-1),
+        Ok(engine) => core::get_max_instances(engine)
+            .map(|limit| limit as c_int)
+            .unwrap_or(-1),
         Err(_) => -1,
     }
 }
@@ -126,7 +156,13 @@ pub extern "C" fn wasmtime4j_panama_engine_get_max_instances(engine_ptr: *mut c_
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_engine_validate(engine_ptr: *mut c_void) -> c_int {
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => if core::validate_engine(engine).is_ok() { 1 } else { 0 },
+        Ok(engine) => {
+            if core::validate_engine(engine).is_ok() {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => -1,
     }
 }
@@ -177,7 +213,13 @@ pub extern "C" fn wasmtime4j_panama_engine_supports_feature(
     };
 
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => if engine.supports_feature(feature) { 1 } else { 0 },
+        Ok(engine) => {
+            if engine.supports_feature(feature) {
+                1
+            } else {
+                0
+            }
+        }
         Err(_) => -1,
     }
 }
@@ -197,7 +239,7 @@ pub extern "C" fn wasmtime4j_panama_engine_get_reference_count(engine_ptr: *mut 
                     -1
                 }
             }
-        },
+        }
         Err(validation_error) => {
             let error_info = error_handling::validation_error_to_info(validation_error);
             log::error!("Parameter validation failed: {}", error_info.message);
@@ -215,7 +257,7 @@ pub extern "C" fn wasmtime4j_panama_engine_increment_epoch(engine_ptr: *mut c_vo
     match unsafe { core::get_engine_ref(engine_ptr) } {
         Ok(engine) => {
             engine.increment_epoch();
-        },
+        }
         Err(e) => {
             log::error!("Failed to increment epoch: {:?}", e);
         }
@@ -252,7 +294,7 @@ pub extern "C" fn wasmtime4j_panama_engine_precompile_module(
                         *out_data = data;
                         *out_len = len;
                     }
-                    0  // Success
+                    0 // Success
                 }
                 Err(e) => {
                     log::error!("Failed to precompile module: {:?}", e);
@@ -293,13 +335,16 @@ pub extern "C" fn wasmtime4j_panama_engine_precompile_compatibility_hash(
     engine_ptr: *mut c_void,
     out_hash: *mut u64,
 ) -> c_int {
-    use std::hash::{Hash, Hasher};
     use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
 
     match unsafe { core::get_engine_ref(engine_ptr) } {
         Ok(engine) => {
             let mut hasher = DefaultHasher::new();
-            engine.inner().precompile_compatibility_hash().hash(&mut hasher);
+            engine
+                .inner()
+                .precompile_compatibility_hash()
+                .hash(&mut hasher);
             let hash = hasher.finish();
 
             unsafe {
@@ -307,7 +352,7 @@ pub extern "C" fn wasmtime4j_panama_engine_precompile_compatibility_hash(
                     *out_hash = hash;
                 }
             }
-            0  // Success
+            0 // Success
         }
         Err(e) => {
             log::error!("Invalid engine pointer: {:?}", e);
@@ -366,8 +411,16 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
     let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
 
     // Memory config: 0 means use default
-    let memory_reservation_opt = if memory_reservation > 0 { Some(memory_reservation as u64) } else { None };
-    let memory_guard_size_opt = if memory_guard_size > 0 { Some(memory_guard_size as u64) } else { None };
+    let memory_reservation_opt = if memory_reservation > 0 {
+        Some(memory_reservation as u64)
+    } else {
+        None
+    };
+    let memory_guard_size_opt = if memory_guard_size > 0 {
+        Some(memory_guard_size as u64)
+    } else {
+        None
+    };
     let memory_reservation_for_growth_opt = if memory_reservation_for_growth > 0 {
         Some(memory_reservation_for_growth as u64)
     } else {
@@ -437,5 +490,9 @@ pub extern "C" fn wasmtime4j_panama_engine_detect_host_feature(
         }
     };
 
-    if core::detect_host_feature(feature_str) { 1 } else { 0 }
+    if core::detect_host_feature(feature_str) {
+        1
+    } else {
+        0
+    }
 }

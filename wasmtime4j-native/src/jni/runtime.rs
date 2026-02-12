@@ -1,8 +1,8 @@
 //! JNI bindings for JniWasmRuntime operations
 
-use jni::JNIEnv;
 use jni::objects::{JByteArray, JClass};
 use jni::sys::{jboolean, jint, jlong, jstring};
+use jni::JNIEnv;
 
 use crate::error::jni_utils;
 use std::ptr;
@@ -379,18 +379,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
 ) -> jint {
     jni_utils::jni_try_default(&mut env, -1, || {
         if runtime_handle == 0 {
-            log::error!(
-                "JNI Runtime.nativeAddWasiPreview2ToLinker: null runtime handle provided"
-            );
+            log::error!("JNI Runtime.nativeAddWasiPreview2ToLinker: null runtime handle provided");
             return Err(crate::error::WasmtimeError::InvalidParameter {
                 message: "Runtime handle cannot be null".to_string(),
             });
         }
 
         if linker_handle == 0 {
-            log::error!(
-                "JNI Runtime.nativeAddWasiPreview2ToLinker: null linker handle provided"
-            );
+            log::error!("JNI Runtime.nativeAddWasiPreview2ToLinker: null linker handle provided");
             return Err(crate::error::WasmtimeError::InvalidParameter {
                 message: "Linker handle cannot be null".to_string(),
             });
@@ -440,9 +436,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
         }
 
         if linker_handle == 0 {
-            log::error!(
-                "JNI Runtime.nativeAddComponentModelToLinker: null linker handle provided"
-            );
+            log::error!("JNI Runtime.nativeAddComponentModelToLinker: null linker handle provided");
             return Err(crate::error::WasmtimeError::InvalidParameter {
                 message: "Linker handle cannot be null".to_string(),
             });
@@ -479,7 +473,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDes
         let array_elements =
             unsafe { env.get_array_elements(&byte_array, jni::objects::ReleaseMode::NoCopyBack)? };
         let len = env.get_array_length(&byte_array)? as usize;
-        let slice = unsafe { std::slice::from_raw_parts(array_elements.as_ptr() as *const u8, len) };
+        let slice =
+            unsafe { std::slice::from_raw_parts(array_elements.as_ptr() as *const u8, len) };
         Ok(slice.to_vec())
     })() {
         Ok(data) => data,
@@ -507,8 +502,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
         use crate::linker::Linker as WasmtimeLinker;
 
         // Get engine reference
-        let engine =
-            unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
 
         // Create a new linker
         let mut linker = WasmtimeLinker::new(engine)?;

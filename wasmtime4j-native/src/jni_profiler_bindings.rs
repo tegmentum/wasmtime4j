@@ -5,9 +5,9 @@
 
 #![allow(unused_variables)]
 
-use jni::JNIEnv;
 use jni::objects::{JClass, JString};
-use jni::sys::{jlong, jboolean, jdouble};
+use jni::sys::{jboolean, jdouble, jlong};
+use jni::JNIEnv;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Instant;
 
@@ -96,21 +96,35 @@ impl JniProfilerWrapper {
     }
 
     /// Record a function execution
-    pub fn record_function(&self, _function_name: &str, execution_time_nanos: u64, memory_delta: i64) -> bool {
+    pub fn record_function(
+        &self,
+        _function_name: &str,
+        execution_time_nanos: u64,
+        memory_delta: i64,
+    ) -> bool {
         if self.closed.load(Ordering::Acquire) || !self.is_profiling.load(Ordering::Acquire) {
             return false;
         }
 
         self.total_function_calls.fetch_add(1, Ordering::Relaxed);
-        self.total_execution_time_nanos.fetch_add(execution_time_nanos, Ordering::Relaxed);
+        self.total_execution_time_nanos
+            .fetch_add(execution_time_nanos, Ordering::Relaxed);
 
         // Update memory tracking
         if memory_delta > 0 {
-            let new_memory = self.current_memory_bytes.fetch_add(memory_delta as u64, Ordering::Relaxed) + memory_delta as u64;
+            let new_memory = self
+                .current_memory_bytes
+                .fetch_add(memory_delta as u64, Ordering::Relaxed)
+                + memory_delta as u64;
             // Update peak if needed
             let mut peak = self.peak_memory_bytes.load(Ordering::Relaxed);
             while new_memory > peak {
-                match self.peak_memory_bytes.compare_exchange_weak(peak, new_memory, Ordering::Relaxed, Ordering::Relaxed) {
+                match self.peak_memory_bytes.compare_exchange_weak(
+                    peak,
+                    new_memory,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
                     Ok(_) => break,
                     Err(current) => peak = current,
                 }
@@ -119,7 +133,8 @@ impl JniProfilerWrapper {
             let decrease = (-memory_delta) as u64;
             let current = self.current_memory_bytes.load(Ordering::Relaxed);
             if current >= decrease {
-                self.current_memory_bytes.fetch_sub(decrease, Ordering::Relaxed);
+                self.current_memory_bytes
+                    .fetch_sub(decrease, Ordering::Relaxed);
             } else {
                 self.current_memory_bytes.store(0, Ordering::Relaxed);
             }
@@ -129,14 +144,22 @@ impl JniProfilerWrapper {
     }
 
     /// Record a compilation
-    pub fn record_compilation(&self, compilation_time_nanos: u64, bytecode_size: u64, cached: bool, optimized: bool) -> bool {
+    pub fn record_compilation(
+        &self,
+        compilation_time_nanos: u64,
+        bytecode_size: u64,
+        cached: bool,
+        optimized: bool,
+    ) -> bool {
         if self.closed.load(Ordering::Acquire) || !self.is_profiling.load(Ordering::Acquire) {
             return false;
         }
 
         self.modules_compiled.fetch_add(1, Ordering::Relaxed);
-        self.total_compilation_time_nanos.fetch_add(compilation_time_nanos, Ordering::Relaxed);
-        self.bytes_compiled.fetch_add(bytecode_size, Ordering::Relaxed);
+        self.total_compilation_time_nanos
+            .fetch_add(compilation_time_nanos, Ordering::Relaxed);
+        self.bytes_compiled
+            .fetch_add(bytecode_size, Ordering::Relaxed);
 
         if cached {
             self.cache_hits.fetch_add(1, Ordering::Relaxed);
@@ -231,7 +254,8 @@ impl JniProfilerWrapper {
         }
 
         self.modules_compiled.store(0, Ordering::Relaxed);
-        self.total_compilation_time_nanos.store(0, Ordering::Relaxed);
+        self.total_compilation_time_nanos
+            .store(0, Ordering::Relaxed);
         self.bytes_compiled.store(0, Ordering::Relaxed);
         self.cache_hits.store(0, Ordering::Relaxed);
         self.cache_misses.store(0, Ordering::Relaxed);
@@ -276,7 +300,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniProfiler_nativeProfil
         return 0;
     }
     let profiler = unsafe { &mut *(profiler_ptr as *mut JniProfilerWrapper) };
-    if profiler.start() { 1 } else { 0 }
+    if profiler.start() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Stop profiling
@@ -290,7 +318,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniProfiler_nativeProfil
         return 0;
     }
     let profiler = unsafe { &mut *(profiler_ptr as *mut JniProfilerWrapper) };
-    if profiler.stop() { 1 } else { 0 }
+    if profiler.stop() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Check if profiling is active
@@ -304,7 +336,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniProfiler_nativeProfil
         return 0;
     }
     let profiler = unsafe { &*(profiler_ptr as *const JniProfilerWrapper) };
-    if profiler.is_profiling() { 1 } else { 0 }
+    if profiler.is_profiling() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Record a function execution
@@ -329,7 +365,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniProfiler_nativeProfil
         Err(_) => return 0,
     };
 
-    if profiler.record_function(&name_str, execution_time_nanos as u64, memory_delta) { 1 } else { 0 }
+    if profiler.record_function(&name_str, execution_time_nanos as u64, memory_delta) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Record a compilation
@@ -353,7 +393,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniProfiler_nativeProfil
         bytecode_size as u64,
         cached != 0,
         optimized != 0,
-    ) { 1 } else { 0 }
+    ) {
+        1
+    } else {
+        0
+    }
 }
 
 /// Get modules compiled
@@ -549,7 +593,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniProfiler_nativeProfil
         return 0;
     }
     let profiler = unsafe { &*(profiler_ptr as *const JniProfilerWrapper) };
-    if profiler.reset() { 1 } else { 0 }
+    if profiler.reset() {
+        1
+    } else {
+        0
+    }
 }
 
 /// Destroy the profiler

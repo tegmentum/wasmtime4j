@@ -8,14 +8,14 @@
 //! - Error types
 
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::ffi::c_void;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant, SystemTime};
-use std::collections::VecDeque;
 
-use wasmtime::{Memory as WasmtimeMemory, MemoryType, SharedMemory as WasmtimeSharedMemory};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::store::Store;
+use wasmtime::{Memory as WasmtimeMemory, MemoryType, SharedMemory as WasmtimeSharedMemory};
 
 /// Memory variant that can hold either a regular memory or a shared memory
 ///
@@ -147,13 +147,13 @@ impl Default for PlatformMemoryConfig {
         Self {
             enable_huge_pages: true,
             numa_node: -1,
-            initial_pool_size: 64 * 1024 * 1024,  // 64MB
-            max_pool_size: 2 * 1024 * 1024 * 1024,  // 2GB
+            initial_pool_size: 64 * 1024 * 1024,   // 64MB
+            max_pool_size: 2 * 1024 * 1024 * 1024, // 2GB
             enable_compression: true,
             enable_deduplication: true,
-            prefetch_buffer_size: 4 * 1024 * 1024,  // 4MB
+            prefetch_buffer_size: 4 * 1024 * 1024, // 4MB
             enable_leak_detection: true,
-            alignment: 64,  // Cache line alignment
+            alignment: 64, // Cache line alignment
             page_size: PageSize::Default,
         }
     }
@@ -295,6 +295,8 @@ pub struct MemoryConfig {
     pub maximum_pages: Option<u64>,
     /// Whether memory is shared between threads
     pub is_shared: bool,
+    /// Whether this is a 64-bit memory (Memory64 proposal)
+    pub is_64: bool,
     /// Memory index within the module (for multi-memory support)
     pub memory_index: u32,
     /// Name of this memory (for debugging)
@@ -372,6 +374,7 @@ pub struct MemoryBuilder {
     pub(crate) initial_pages: u64,
     pub(crate) maximum_pages: Option<u64>,
     pub(crate) is_shared: bool,
+    pub(crate) is_64: bool,
     pub(crate) memory_index: u32,
     pub(crate) name: Option<String>,
     pub(crate) platform_config: Option<PlatformMemoryConfig>,
@@ -384,6 +387,7 @@ impl MemoryBuilder {
             initial_pages,
             maximum_pages: None,
             is_shared: false,
+            is_64: false,
             memory_index: 0,
             name: None,
             platform_config: None,
@@ -399,6 +403,12 @@ impl MemoryBuilder {
     /// Enable shared memory
     pub fn shared(mut self) -> Self {
         self.is_shared = true;
+        self
+    }
+
+    /// Enable 64-bit memory addressing (Memory64 proposal)
+    pub fn memory64(mut self) -> Self {
+        self.is_64 = true;
         self
     }
 
@@ -432,6 +442,7 @@ impl From<MemoryBuilder> for MemoryConfig {
             initial_pages: builder.initial_pages,
             maximum_pages: builder.maximum_pages,
             is_shared: builder.is_shared,
+            is_64: builder.is_64,
             memory_index: builder.memory_index,
             name: builder.name,
         }

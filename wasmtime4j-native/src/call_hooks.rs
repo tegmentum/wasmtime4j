@@ -7,13 +7,13 @@
 //! The call hooks integrate with Wasmtime's `Store::call_hook` and
 //! `Store::call_hook_async` APIs.
 
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::ffi::{c_char, c_int, c_long, c_void, CStr, CString};
 use std::mem::ManuallyDrop;
 use std::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
-use once_cell::sync::Lazy;
 
 use serde::{Deserialize, Serialize};
 
@@ -209,11 +209,10 @@ impl CallHookHandler {
                 }
                 depth
             }
-            CallEventType::CallEnd | CallEventType::HostCallEnd | CallEventType::CallTrap => {
-                self.current_depth
-                    .fetch_sub(1, Ordering::SeqCst)
-                    .saturating_sub(1)
-            }
+            CallEventType::CallEnd | CallEventType::HostCallEnd | CallEventType::CallTrap => self
+                .current_depth
+                .fetch_sub(1, Ordering::SeqCst)
+                .saturating_sub(1),
         };
 
         let timestamp_ns = if self.config.capture_timestamps {
@@ -265,11 +264,12 @@ impl CallHookHandler {
 
     /// Get current statistics
     pub fn get_stats(&self) -> WasmtimeResult<CallHookStats> {
-        self.stats.read().map(|s| s.clone()).map_err(|_| {
-            WasmtimeError::Concurrency {
+        self.stats
+            .read()
+            .map(|s| s.clone())
+            .map_err(|_| WasmtimeError::Concurrency {
                 message: "Failed to acquire stats lock".to_string(),
-            }
-        })
+            })
     }
 
     /// Get recent events
@@ -319,28 +319,37 @@ static NEXT_HANDLER_ID: AtomicU64 = AtomicU64::new(1);
 /// Register a call hook handler and return its ID
 pub fn register_handler(handler: CallHookHandler) -> WasmtimeResult<u64> {
     let id = handler.id();
-    let mut registry = HANDLER_REGISTRY.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire handler registry lock".to_string(),
-    })?;
+    let mut registry = HANDLER_REGISTRY
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire handler registry lock".to_string(),
+        })?;
     registry.insert(id, Arc::new(handler));
     Ok(id)
 }
 
 /// Get a handler by ID
 pub fn get_handler(id: u64) -> WasmtimeResult<Arc<CallHookHandler>> {
-    let registry = HANDLER_REGISTRY.read().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire handler registry lock".to_string(),
-    })?;
-    registry.get(&id).cloned().ok_or_else(|| WasmtimeError::CallHook {
-        message: format!("Handler with ID {} not found", id),
-    })
+    let registry = HANDLER_REGISTRY
+        .read()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire handler registry lock".to_string(),
+        })?;
+    registry
+        .get(&id)
+        .cloned()
+        .ok_or_else(|| WasmtimeError::CallHook {
+            message: format!("Handler with ID {} not found", id),
+        })
 }
 
 /// Remove a handler from the registry
 pub fn unregister_handler(id: u64) -> WasmtimeResult<()> {
-    let mut registry = HANDLER_REGISTRY.write().map_err(|_| WasmtimeError::Concurrency {
-        message: "Failed to acquire handler registry lock".to_string(),
-    })?;
+    let mut registry = HANDLER_REGISTRY
+        .write()
+        .map_err(|_| WasmtimeError::Concurrency {
+            message: "Failed to acquire handler registry lock".to_string(),
+        })?;
     registry.remove(&id);
     Ok(())
 }
@@ -425,7 +434,10 @@ pub unsafe extern "C" fn wasmtime4j_call_hook_record_event(
     };
 
     let func_name = if !func_name.is_null() {
-        CStr::from_ptr(func_name).to_str().ok().map(|s| s.to_string())
+        CStr::from_ptr(func_name)
+            .to_str()
+            .ok()
+            .map(|s| s.to_string())
     } else {
         None
     };
@@ -638,8 +650,18 @@ mod tests {
     #[test]
     fn test_call_hook_record_event() {
         let handler = CallHookHandler::with_defaults();
-        handler.record_event(CallEventType::CallStart, Some(0), Some("test".to_string()), None);
-        handler.record_event(CallEventType::CallEnd, Some(0), Some("test".to_string()), None);
+        handler.record_event(
+            CallEventType::CallStart,
+            Some(0),
+            Some("test".to_string()),
+            None,
+        );
+        handler.record_event(
+            CallEventType::CallEnd,
+            Some(0),
+            Some("test".to_string()),
+            None,
+        );
 
         let stats = handler.get_stats().unwrap();
         assert_eq!(stats.call_starts, 1);
