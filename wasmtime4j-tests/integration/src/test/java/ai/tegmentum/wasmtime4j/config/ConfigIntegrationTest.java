@@ -179,19 +179,4 @@ public class ConfigIntegrationTest {
       LOGGER.info("AdvancedConfiguration class verified");
     }
   }
-
-  @Nested
-  @DisplayName("AutoConfig Tests")
-  class AutoConfigTests {
-
-    @Test
-    @DisplayName("Should verify AutoConfig class exists")
-    void shouldVerifyAutoConfigClassExists() {
-      LOGGER.info("Testing AutoConfig class existence");
-
-      assertNotNull(AutoConfig.class, "AutoConfig class should exist");
-
-      LOGGER.info("AutoConfig class verified");
-    }
-  }
 }

@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wasi;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -26,18 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
 import ai.tegmentum.wasmtime4j.wasi.clocks.TimezoneDisplay;
-import ai.tegmentum.wasmtime4j.wasi.crypto.AsymmetricAlgorithm;
-import ai.tegmentum.wasmtime4j.wasi.crypto.CryptoErrorCode;
-import ai.tegmentum.wasmtime4j.wasi.crypto.CryptoException;
-import ai.tegmentum.wasmtime4j.wasi.crypto.CryptoKey;
-import ai.tegmentum.wasmtime4j.wasi.crypto.CryptoKeyType;
-import ai.tegmentum.wasmtime4j.wasi.crypto.EncryptionMode;
-import ai.tegmentum.wasmtime4j.wasi.crypto.HashAlgorithm;
-import ai.tegmentum.wasmtime4j.wasi.crypto.KeyDerivationAlgorithm;
-import ai.tegmentum.wasmtime4j.wasi.crypto.MacAlgorithm;
-import ai.tegmentum.wasmtime4j.wasi.crypto.PaddingScheme;
-import ai.tegmentum.wasmtime4j.wasi.crypto.SignatureAlgorithm;
-import ai.tegmentum.wasmtime4j.wasi.crypto.SymmetricAlgorithm;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.ConsistencyModel;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.EvictionPolicy;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.IsolationLevel;
@@ -59,9 +46,9 @@ import org.junit.jupiter.api.TestInfo;
 /**
  * Comprehensive functional tests for WASI subsystem classes.
  *
- * <p>Tests cover: DateTime, TimezoneDisplay, Crypto enums/exceptions, KeyValue enums/exceptions, NN
- * enums/exceptions. These tests verify actual behavior, validation, and functional correctness
- * beyond simple API structure tests.
+ * <p>Tests cover: DateTime, TimezoneDisplay, KeyValue enums/exceptions, NN enums/exceptions. These
+ * tests verify actual behavior, validation, and functional correctness beyond simple API structure
+ * tests.
  *
  * @since 1.0.0
  */
@@ -342,271 +329,6 @@ public final class WasiSubsystemIntegrationTest {
   }
 
   // ========================================================================
-  // WASI Crypto Enums Functional Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("WASI Crypto Enums Functional Tests")
-  class WasiCryptoEnumsFunctionalTests {
-
-    @Test
-    @DisplayName("SymmetricAlgorithm should have all expected algorithms")
-    void symmetricAlgorithmShouldHaveAllExpectedAlgorithms(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Actual values: AES_128, AES_192, AES_256, CHACHA20, XCHACHA20, CHACHA20_POLY1305,
-      // XCHACHA20_POLY1305
-      final Set<String> expected =
-          Set.of("AES_128", "AES_256", "CHACHA20_POLY1305", "XCHACHA20_POLY1305", "CHACHA20");
-
-      final Set<String> actual = new HashSet<>();
-      for (final SymmetricAlgorithm alg : SymmetricAlgorithm.values()) {
-        actual.add(alg.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain algorithm: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " symmetric algorithms: " + actual);
-    }
-
-    @Test
-    @DisplayName("HashAlgorithm should have all expected algorithms")
-    void hashAlgorithmShouldHaveAllExpectedAlgorithms(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Actual values: SHA_256, SHA_384, SHA_512, SHA_512_256, SHA3_256, SHA3_384, SHA3_512,
-      // BLAKE2B, BLAKE2S, BLAKE3
-      final Set<String> expected = Set.of("SHA_256", "SHA_384", "SHA_512", "SHA3_256", "SHA3_512");
-
-      final Set<String> actual = new HashSet<>();
-      for (final HashAlgorithm alg : HashAlgorithm.values()) {
-        actual.add(alg.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain algorithm: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " hash algorithms: " + actual);
-    }
-
-    @Test
-    @DisplayName("SignatureAlgorithm should have all expected algorithms")
-    void signatureAlgorithmShouldHaveAllExpectedAlgorithms(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Actual values: RSA_PKCS1_SHA256, ECDSA_P256_SHA256, ECDSA_P384_SHA384, ED25519, ED448, etc.
-      final Set<String> expected =
-          Set.of("ED25519", "ECDSA_P256_SHA256", "ECDSA_P384_SHA384", "RSA_PKCS1_SHA256");
-
-      final Set<String> actual = new HashSet<>();
-      for (final SignatureAlgorithm alg : SignatureAlgorithm.values()) {
-        actual.add(alg.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain algorithm: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " signature algorithms: " + actual);
-    }
-
-    @Test
-    @DisplayName("AsymmetricAlgorithm should have all expected algorithms")
-    void asymmetricAlgorithmShouldHaveAllExpectedAlgorithms(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Actual values: RSA_2048, RSA_3072, RSA_4096, X25519, X448, ECDH_P256, ECDH_P384, etc.
-      final Set<String> expected = Set.of("RSA_2048", "RSA_4096", "X25519", "ECDH_P256");
-
-      final Set<String> actual = new HashSet<>();
-      for (final AsymmetricAlgorithm alg : AsymmetricAlgorithm.values()) {
-        actual.add(alg.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain algorithm: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " asymmetric algorithms: " + actual);
-    }
-
-    @Test
-    @DisplayName("MacAlgorithm should have all expected algorithms")
-    void macAlgorithmShouldHaveAllExpectedAlgorithms(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final Set<String> expected = Set.of("HMAC_SHA256", "HMAC_SHA384", "HMAC_SHA512");
-
-      final Set<String> actual = new HashSet<>();
-      for (final MacAlgorithm alg : MacAlgorithm.values()) {
-        actual.add(alg.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain algorithm: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " MAC algorithms: " + actual);
-    }
-
-    @Test
-    @DisplayName("KeyDerivationAlgorithm should have all expected algorithms")
-    void keyDerivationAlgorithmShouldHaveAllExpectedAlgorithms(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Actual values: HKDF_SHA256, HKDF_SHA512, PBKDF2_HMAC_SHA256, ARGON2ID, SCRYPT, etc.
-      final Set<String> expected = Set.of("HKDF_SHA256", "HKDF_SHA512", "PBKDF2_HMAC_SHA256");
-
-      final Set<String> actual = new HashSet<>();
-      for (final KeyDerivationAlgorithm alg : KeyDerivationAlgorithm.values()) {
-        actual.add(alg.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain algorithm: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " key derivation algorithms: " + actual);
-    }
-
-    @Test
-    @DisplayName("EncryptionMode should have all expected modes")
-    void encryptionModeShouldHaveAllExpectedModes(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final Set<String> expected = Set.of("ECB", "CBC", "CTR", "GCM", "CCM");
-
-      final Set<String> actual = new HashSet<>();
-      for (final EncryptionMode mode : EncryptionMode.values()) {
-        actual.add(mode.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain mode: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " encryption modes: " + actual);
-    }
-
-    @Test
-    @DisplayName("PaddingScheme should have all expected schemes")
-    void paddingSchemeShouldHaveAllExpectedSchemes(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Actual values: NONE, PKCS1_V15, OAEP_SHA1, OAEP_SHA256, OAEP_SHA384, OAEP_SHA512, PSS
-      final Set<String> expected = Set.of("NONE", "OAEP_SHA256", "OAEP_SHA1", "PKCS1_V15", "PSS");
-
-      final Set<String> actual = new HashSet<>();
-      for (final PaddingScheme scheme : PaddingScheme.values()) {
-        actual.add(scheme.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain scheme: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " padding schemes: " + actual);
-    }
-
-    @Test
-    @DisplayName("CryptoKeyType should have all expected types")
-    void cryptoKeyTypeShouldHaveAllExpectedTypes(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final Set<String> expected = Set.of("SYMMETRIC", "PUBLIC", "PRIVATE", "KEY_PAIR");
-
-      final Set<String> actual = new HashSet<>();
-      for (final CryptoKeyType type : CryptoKeyType.values()) {
-        actual.add(type.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain type: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " key types: " + actual);
-    }
-
-    @Test
-    @DisplayName("CryptoErrorCode should have all expected codes")
-    void cryptoErrorCodeShouldHaveAllExpectedCodes(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Actual values: INVALID_KEY, UNSUPPORTED_ALGORITHM, INVALID_SIGNATURE, ENCRYPTION_FAILED,
-      // DECRYPTION_FAILED, etc.
-      final Set<String> expected =
-          Set.of(
-              "INVALID_KEY",
-              "UNSUPPORTED_ALGORITHM",
-              "INVALID_SIGNATURE",
-              "ENCRYPTION_FAILED",
-              "DECRYPTION_FAILED");
-
-      final Set<String> actual = new HashSet<>();
-      for (final CryptoErrorCode code : CryptoErrorCode.values()) {
-        actual.add(code.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain error code: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " error codes: " + actual);
-    }
-  }
-
-  // ========================================================================
-  // WASI Crypto Exception Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("WASI Crypto Exception Tests")
-  class WasiCryptoExceptionTests {
-
-    @Test
-    @DisplayName("should create CryptoException with message")
-    void shouldCreateCryptoExceptionWithMessage(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final CryptoException ex = new CryptoException("Test crypto error");
-
-      assertEquals("Test crypto error", ex.getMessage(), "Message should match");
-
-      LOGGER.info("Created CryptoException: " + ex.getMessage());
-    }
-
-    @Test
-    @DisplayName("should create CryptoException with error code")
-    void shouldCreateCryptoExceptionWithErrorCode(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final CryptoException ex = new CryptoException("Bad key", CryptoErrorCode.INVALID_KEY);
-
-      assertEquals(CryptoErrorCode.INVALID_KEY, ex.getErrorCode(), "Error code should match");
-      assertEquals("Bad key", ex.getMessage(), "Message should match");
-
-      LOGGER.info("Created CryptoException with code: " + ex.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("should create CryptoException with cause")
-    void shouldCreateCryptoExceptionWithCause(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final RuntimeException cause = new RuntimeException("Root cause");
-      final CryptoException ex = new CryptoException("Wrapper", cause);
-
-      assertEquals("Wrapper", ex.getMessage(), "Message should match");
-      assertEquals(cause, ex.getCause(), "Cause should match");
-
-      LOGGER.info("Created CryptoException with cause: " + ex.getCause().getMessage());
-    }
-  }
-
-  // ========================================================================
   // WASI KeyValue Enums Functional Tests
   // ========================================================================
 
@@ -849,54 +571,6 @@ public final class WasiSubsystemIntegrationTest {
       assertTrue(ex.getMessage().contains("Bad input"), "Message should contain description");
 
       LOGGER.info("Created NnException with code: " + ex.getErrorCode());
-    }
-  }
-
-  // ========================================================================
-  // CryptoKey Interface Contract Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("CryptoKey Interface Contract Tests")
-  class CryptoKeyInterfaceTests {
-
-    @Test
-    @DisplayName("CryptoKey interface should define required methods")
-    void cryptoKeyInterfaceShouldDefineRequiredMethods(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // CryptoKey is an interface - verify it has the expected method signatures
-      // by checking the interface class methods via reflection
-      final Class<CryptoKey> keyInterface = CryptoKey.class;
-
-      assertTrue(keyInterface.isInterface(), "CryptoKey should be an interface");
-
-      // Verify expected methods exist
-      assertDoesNotThrow(() -> keyInterface.getMethod("getId"), "Should have getId() method");
-      assertDoesNotThrow(
-          () -> keyInterface.getMethod("getKeyType"), "Should have getKeyType() method");
-      assertDoesNotThrow(
-          () -> keyInterface.getMethod("getAlgorithm"), "Should have getAlgorithm() method");
-      assertDoesNotThrow(
-          () -> keyInterface.getMethod("getKeySizeBits"), "Should have getKeySizeBits() method");
-      assertDoesNotThrow(
-          () -> keyInterface.getMethod("isExportable"), "Should have isExportable() method");
-      assertDoesNotThrow(() -> keyInterface.getMethod("isValid"), "Should have isValid() method");
-      assertDoesNotThrow(() -> keyInterface.getMethod("close"), "Should have close() method");
-
-      LOGGER.info("CryptoKey interface has all required methods");
-    }
-
-    @Test
-    @DisplayName("CryptoKey should extend AutoCloseable")
-    void cryptoKeyShouldExtendAutoCloseable(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      assertTrue(
-          AutoCloseable.class.isAssignableFrom(CryptoKey.class),
-          "CryptoKey should extend AutoCloseable");
-
-      LOGGER.info("CryptoKey extends AutoCloseable as expected");
     }
   }
 }

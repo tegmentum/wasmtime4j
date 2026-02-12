@@ -733,37 +733,6 @@ public final class ExceptionHierarchyTest {
   }
 
   @Nested
-  @DisplayName("DebugException Tests")
-  class DebugExceptionTests {
-
-    @Test
-    @DisplayName("should create exception with message")
-    void shouldCreateExceptionWithMessage() {
-      final DebugException exception = new DebugException(TEST_MESSAGE);
-
-      assertEquals(TEST_MESSAGE, exception.getMessage());
-      assertNull(exception.getCause());
-    }
-
-    @Test
-    @DisplayName("should create exception with message and cause")
-    void shouldCreateExceptionWithMessageAndCause() {
-      final Throwable cause = new java.lang.RuntimeException(TEST_CAUSE_MESSAGE);
-      final DebugException exception = new DebugException(TEST_MESSAGE, cause);
-
-      assertEquals(TEST_MESSAGE, exception.getMessage());
-      assertEquals(cause, exception.getCause());
-    }
-
-    @Test
-    @DisplayName("should extend WasmException")
-    void shouldExtendWasmException() {
-      final DebugException exception = new DebugException(TEST_MESSAGE);
-      assertTrue(exception instanceof WasmException);
-    }
-  }
-
-  @Nested
   @DisplayName("ModuleCompilationException Tests")
   class ModuleCompilationExceptionTests {
 
