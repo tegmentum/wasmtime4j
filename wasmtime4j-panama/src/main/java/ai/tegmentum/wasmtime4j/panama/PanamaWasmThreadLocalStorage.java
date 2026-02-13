@@ -2,11 +2,11 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.concurrent.WasmThreadLocalStorage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Panama FFI implementation of WebAssembly thread-local storage.
@@ -38,8 +38,8 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
   /** Memory arena for resource management. */
   private final Arena arena;
 
-  /** Whether this storage has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  /** Resource lifecycle handle for thread-safe close. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama thread-local storage instance.
@@ -59,6 +59,18 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
 
     this.nativeThreadHandle = nativeThreadHandle;
     this.arena = arena;
+
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasmThreadLocalStorage",
+            () -> {
+              // Clear all thread-local data
+              try {
+                clear();
+              } catch (final Exception ignored) {
+                // Ignore cleanup errors
+              }
+            });
   }
 
   @Override
@@ -360,16 +372,7 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
    * automatically when the associated thread is closed.
    */
   public void close() {
-    if (!closed.compareAndSet(false, true)) {
-      return; // Already closed
-    }
-
-    try {
-      // Clear all thread-local data
-      clear();
-    } catch (final Exception ignored) {
-      // Ignore cleanup errors
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -378,9 +381,7 @@ public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorag
    * @throws IllegalStateException if the storage has been closed
    */
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Thread-local storage has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**

@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
-import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiException;
@@ -54,9 +53,6 @@ public final class WasiRandomOperations {
   /** The WASI context this random operations instance belongs to. */
   private final WasiContext wasiContext;
 
-  /** Resource manager for native memory operations. */
-  private final ArenaResourceManager resourceManager;
-
   /** Native symbol lookup for WASI functions. */
   private final SymbolLookup symbolLookup;
 
@@ -80,7 +76,6 @@ public final class WasiRandomOperations {
     PanamaValidation.requireNonNull(symbolLookup, "symbolLookup");
 
     this.wasiContext = wasiContext;
-    this.resourceManager = new ArenaResourceManager();
     this.symbolLookup = symbolLookup;
     this.fallbackRandom = new SecureRandom();
 

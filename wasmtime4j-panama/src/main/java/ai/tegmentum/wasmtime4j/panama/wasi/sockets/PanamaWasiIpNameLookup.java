@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddressFamily;
 import ai.tegmentum.wasmtime4j.wasi.sockets.ResolveAddressStream;
@@ -52,7 +52,7 @@ public final class PanamaWasiIpNameLookup implements WasiIpNameLookup {
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // long wasmtime4j_panama_wasi_resolve_addresses(context_handle, network_handle, hostname,

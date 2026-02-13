@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
 import java.lang.foreign.Arena;
@@ -24,7 +25,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Panama FFI implementation of WasiContext.
@@ -39,7 +39,7 @@ public final class PanamaWasiContext implements WasiContext {
   private static final NativeWasiBindings NATIVE_BINDINGS = NativeWasiBindings.getInstance();
 
   private final MemorySegment contextHandle;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
 
   /** Creates a new Panama WASI context. */
   public PanamaWasiContext() {
@@ -47,6 +47,15 @@ public final class PanamaWasiContext implements WasiContext {
     if (contextHandle == null || contextHandle.equals(MemorySegment.NULL)) {
       throw new RuntimeException("Failed to create WASI context");
     }
+
+    // Capture handle locally for safety net (must NOT capture 'this')
+    final MemorySegment handle = this.contextHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiContext",
+            () -> NATIVE_BINDINGS.wasiContextDestroy(handle),
+            this,
+            () -> NATIVE_BINDINGS.wasiContextDestroy(handle));
   }
 
   /**
@@ -489,14 +498,10 @@ public final class PanamaWasiContext implements WasiContext {
 
   /** Closes this WASI context and releases native resources. */
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      NATIVE_BINDINGS.wasiContextDestroy(contextHandle);
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("WASI context is closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.keyvalue;
 
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.ConsistencyModel;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.EvictionPolicy;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.IsolationLevel;
@@ -62,8 +63,8 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
   /** Current consistency model. */
   private ConsistencyModel consistencyModel = ConsistencyModel.EVENTUAL;
 
-  /** Whether the store is closed. */
-  private volatile boolean closed = false;
+  /** Resource lifecycle handle. */
+  private final NativeResourceHandle resourceHandle;
 
   // Native method handles
   private static final MethodHandle CREATE_CONTEXT;
@@ -206,7 +207,45 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
         throw new KeyValueException("Failed to create keyvalue context");
       }
       this.contextHandle = handle.address();
+
+      // Capture handle values for safety net (must not capture 'this')
+      final long safetyCtxHandle = this.contextHandle;
+      final Arena safetyArena = this.arena;
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaWasiKeyValue",
+              () -> {
+                try {
+                  if (safetyCtxHandle != 0) {
+                    DESTROY_CONTEXT.invokeExact(MemorySegment.ofAddress(safetyCtxHandle));
+                  }
+                } catch (final Throwable t) {
+                  throw new Exception("Error destroying keyvalue context: " + safetyCtxHandle, t);
+                } finally {
+                  safetyArena.close();
+                }
+              },
+              this,
+              () -> {
+                try {
+                  if (safetyCtxHandle != 0) {
+                    DESTROY_CONTEXT.invokeExact(MemorySegment.ofAddress(safetyCtxHandle));
+                  }
+                } catch (final Throwable t) {
+                  LOGGER.warning(
+                      "Safety net failed to destroy keyvalue context "
+                          + safetyCtxHandle
+                          + ": "
+                          + t);
+                } finally {
+                  safetyArena.close();
+                }
+              });
+
       LOGGER.log(Level.FINE, "Created Panama WASI keyvalue context: {0}", contextHandle);
+    } catch (KeyValueException e) {
+      arena.close();
+      throw e;
     } catch (Throwable t) {
       arena.close();
       throw new KeyValueException("Failed to create keyvalue context", t);
@@ -228,7 +267,7 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
   }
 
   private void ensureOpen() throws KeyValueException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new KeyValueException("Keyvalue store is closed");
     }
   }
@@ -676,20 +715,6 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
 
   @Override
   public void close() throws KeyValueException {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      if (contextHandle != 0) {
-        DESTROY_CONTEXT.invokeExact(MemorySegment.ofAddress(contextHandle));
-        contextHandle = 0;
-      }
-    } catch (Throwable t) {
-      LOGGER.log(Level.WARNING, "Error destroying keyvalue context", t);
-    } finally {
-      arena.close();
-    }
+    resourceHandle.close();
   }
 }

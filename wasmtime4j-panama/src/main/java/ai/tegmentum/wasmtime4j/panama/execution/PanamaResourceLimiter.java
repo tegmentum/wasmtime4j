@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiterStats;
 import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.lang.foreign.MemorySegment;
@@ -41,7 +42,7 @@ public final class PanamaResourceLimiter implements ResourceLimiter {
 
   private final long limiterId;
   private final ResourceLimiterConfig config;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama resource limiter with the specified configuration.
@@ -132,6 +133,38 @@ public final class PanamaResourceLimiter implements ResourceLimiter {
   private PanamaResourceLimiter(final long limiterId, final ResourceLimiterConfig config) {
     this.limiterId = limiterId;
     this.config = config;
+
+    // Capture limiterId for safety net - do NOT capture 'this'
+    final long capturedLimiterId = limiterId;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaResourceLimiter",
+            () -> {
+              try {
+                final MethodHandle freeHandle = getHandle("wasmtime4j_limiter_free");
+                final int status = (int) freeHandle.invoke(capturedLimiterId);
+                if (status != 0) {
+                  LOGGER.warning("Failed to free resource limiter: " + capturedLimiterId);
+                } else {
+                  LOGGER.fine("Closed resource limiter: " + capturedLimiterId);
+                }
+              } catch (final Throwable t) {
+                throw new Exception("Error closing resource limiter: " + t.getMessage(), t);
+              }
+            },
+            this,
+            () -> {
+              try {
+                final MethodHandle freeHandle = getHandle("wasmtime4j_limiter_free");
+                freeHandle.invoke(capturedLimiterId);
+              } catch (final Throwable t) {
+                LOGGER.warning(
+                    "Safety net cleanup failed for resource limiter "
+                        + capturedLimiterId
+                        + ": "
+                        + t.getMessage());
+              }
+            });
   }
 
   @Override
@@ -141,18 +174,14 @@ public final class PanamaResourceLimiter implements ResourceLimiter {
 
   @Override
   public ResourceLimiterConfig getConfig() throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Limiter has been closed");
-    }
+    resourceHandle.ensureNotClosed();
     return config;
   }
 
   @Override
   public boolean allowMemoryGrow(final long currentPages, final long requestedPages)
       throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Limiter has been closed");
-    }
+    resourceHandle.ensureNotClosed();
 
     if (currentPages < 0) {
       throw new IllegalArgumentException("Current pages cannot be negative: " + currentPages);
@@ -174,9 +203,7 @@ public final class PanamaResourceLimiter implements ResourceLimiter {
   @Override
   public boolean allowTableGrow(final long currentElements, final long requestedElements)
       throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Limiter has been closed");
-    }
+    resourceHandle.ensureNotClosed();
 
     if (currentElements < 0) {
       throw new IllegalArgumentException("Current elements cannot be negative: " + currentElements);
@@ -198,9 +225,7 @@ public final class PanamaResourceLimiter implements ResourceLimiter {
 
   @Override
   public ResourceLimiterStats getStats() throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Limiter has been closed");
-    }
+    resourceHandle.ensureNotClosed();
 
     final MethodHandle statsHandle = getHandle("wasmtime4j_limiter_get_stats_json");
     final MethodHandle freeHandle = getHandle("wasmtime4j_limiter_string_free");
@@ -235,9 +260,7 @@ public final class PanamaResourceLimiter implements ResourceLimiter {
 
   @Override
   public void resetStats() throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Limiter has been closed");
-    }
+    resourceHandle.ensureNotClosed();
 
     final MethodHandle resetHandle = getHandle("wasmtime4j_limiter_reset_stats");
 
@@ -255,24 +278,8 @@ public final class PanamaResourceLimiter implements ResourceLimiter {
   }
 
   @Override
-  public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    final MethodHandle freeHandle = getHandle("wasmtime4j_limiter_free");
-
-    try {
-      final int status = (int) freeHandle.invoke(limiterId);
-      if (status != 0) {
-        LOGGER.warning("Failed to free resource limiter: " + limiterId);
-      } else {
-        LOGGER.fine("Closed resource limiter: " + limiterId);
-      }
-    } catch (final Throwable e) {
-      throw new WasmException("Error closing resource limiter: " + e.getMessage(), e);
-    }
+  public void close() {
+    resourceHandle.close();
   }
 
   /**

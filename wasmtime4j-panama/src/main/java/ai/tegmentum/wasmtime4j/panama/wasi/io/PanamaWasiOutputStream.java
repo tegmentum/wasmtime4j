@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream;
@@ -43,7 +43,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaWasiOutputStream extends PanamaResource implements WasiOutputStream {
+public final class PanamaWasiOutputStream implements WasiOutputStream, AutoCloseable {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWasiOutputStream.class.getName());
 
@@ -62,7 +62,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_output_stream_check_write(context_handle, stream_handle,
@@ -183,8 +183,9 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     }
   }
 
-  /** The native context handle. */
+  private final MemorySegment nativeHandle;
   private final MemorySegment contextHandle;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI output stream with the given native handles.
@@ -195,9 +196,35 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
    */
   public PanamaWasiOutputStream(
       final MemorySegment contextHandle, final MemorySegment streamHandle) {
-    super(streamHandle);
+    PanamaValidation.requireNonNull(streamHandle, "streamHandle");
     PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    this.nativeHandle = streamHandle;
     this.contextHandle = contextHandle;
+
+    final MemorySegment ctx = this.contextHandle;
+    final MemorySegment handle = this.nativeHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiOutputStream",
+            () -> {
+              try {
+                final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
+                if (result != 0) {
+                  LOGGER.warning("Failed to close WASI output stream (error code: " + result + ")");
+                }
+              } catch (final Throwable e) {
+                throw new Exception("Error closing WASI output stream", e);
+              }
+            },
+            this,
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(ctx, handle);
+              } catch (final Throwable e) {
+                LOGGER.warning("Safety net: error closing WASI output stream: " + e.getMessage());
+              }
+            });
+
     LOGGER.fine("Created Panama WASI output stream with handle: " + streamHandle);
   }
 
@@ -205,7 +232,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
   public long checkWrite() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -239,7 +266,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -267,7 +294,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -294,7 +321,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
   public void flush() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -316,7 +343,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
   public void blockingFlush() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -339,7 +366,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     PanamaValidation.requireNonNegative(length, "length");
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -362,7 +389,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     PanamaValidation.requireNonNegative(length, "length");
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -390,7 +417,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     PanamaValidation.requireNonNegative(length, "length");
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -402,7 +429,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     final MemorySegment sourceHandle;
     try {
       sourceHandle = ((PanamaWasiInputStream) source).getNativeHandle();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Source stream is closed: " + e.getMessage(), e);
     }
 
@@ -438,7 +465,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     PanamaValidation.requireNonNegative(length, "length");
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -450,7 +477,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     final MemorySegment sourceHandle;
     try {
       sourceHandle = ((PanamaWasiInputStream) source).getNativeHandle();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Source stream is closed: " + e.getMessage(), e);
     }
 
@@ -484,7 +511,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
   public WasiPollable subscribe() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -552,7 +579,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
 
@@ -657,7 +684,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle createHandle() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
     return new PanamaWasiResourceHandle(nativeHandle.address(), getType(), getOwner());
@@ -671,7 +698,7 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
     if (!isOwned()) {
@@ -724,20 +751,31 @@ public final class PanamaWasiOutputStream extends PanamaResource implements Wasi
     }
   }
 
-  @Override
-  protected void doClose() throws Exception {
-    try {
-      final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
-      if (result != 0) {
-        LOGGER.warning("Failed to close WASI output stream (error code: " + result + ")");
-      }
-    } catch (final Throwable e) {
-      throw new Exception("Error closing WASI output stream", e);
-    }
+  /**
+   * Returns the native stream handle.
+   *
+   * @return the native memory segment
+   */
+  public MemorySegment getNativeHandle() {
+    ensureNotClosed();
+    return nativeHandle;
+  }
+
+  /**
+   * Checks if this output stream has been closed.
+   *
+   * @return true if closed
+   */
+  public boolean isClosed() {
+    return resourceHandle.isClosed();
   }
 
   @Override
-  protected String getResourceType() {
-    return "WasiOutputStream";
+  public void close() {
+    resourceHandle.close();
+  }
+
+  private void ensureNotClosed() {
+    resourceHandle.ensureNotClosed();
   }
 }

@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResourceTracker;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiPermissionException;
 import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
@@ -45,9 +45,6 @@ public final class WasiContext implements AutoCloseable {
   /** Resource manager for native memory management. */
   private final ArenaResourceManager resourceManager;
 
-  /** Resource tracker for monitoring native resources. */
-  private final PanamaResourceTracker resourceTracker;
-
   /** Permission manager for controlling WASI capabilities. */
   private final WasiPermissionManager permissionManager;
 
@@ -66,8 +63,8 @@ public final class WasiContext implements AutoCloseable {
   /** Working directory for the WASI context. */
   private final Path workingDirectory;
 
-  /** Whether this context has been closed. */
-  private volatile boolean closed = false;
+  /** Resource handle for lifecycle management. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new WASI context with the specified configuration.
@@ -93,7 +90,6 @@ public final class WasiContext implements AutoCloseable {
 
     this.nativeHandle = nativeHandle;
     this.resourceManager = resourceManager;
-    this.resourceTracker = new PanamaResourceTracker();
     this.permissionManager = builder.getPermissionManager();
     this.securityValidator = builder.getSecurityValidator();
     this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
@@ -101,8 +97,28 @@ public final class WasiContext implements AutoCloseable {
     this.preopenedDirectories = new ConcurrentHashMap<>(builder.getPreopenedDirectories());
     this.workingDirectory = builder.getWorkingDirectory();
 
-    // Track this resource
-    resourceTracker.trackResource(this, nativeHandle);
+    // Capture handle locally for safety net (must NOT capture 'this')
+    final MemorySegment handle = this.nativeHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "WasiContext",
+            () -> {
+              LOGGER.fine("Closing Panama WASI context with handle: " + handle.address());
+
+              // Call native cleanup
+              nativeClose(handle);
+
+              // Clear local state
+              environment.clear();
+              preopenedDirectories.clear();
+
+              // Close resource manager
+              resourceManager.close();
+
+              LOGGER.info("Panama WASI context closed successfully");
+            },
+            this,
+            () -> nativeClose(handle));
 
     LOGGER.info(
         String.format(
@@ -279,7 +295,7 @@ public final class WasiContext implements AutoCloseable {
    * @return true if closed, false otherwise
    */
   public boolean isClosed() {
-    return closed;
+    return resourceHandle.isClosed();
   }
 
   /**
@@ -290,41 +306,7 @@ public final class WasiContext implements AutoCloseable {
    */
   @Override
   public void close() {
-    if (closed) {
-      return; // Already closed
-    }
-
-    synchronized (this) {
-      if (closed) {
-        return; // Double-check after acquiring lock
-      }
-
-      LOGGER.fine("Closing Panama WASI context with handle: " + nativeHandle.address());
-
-      try {
-        // Call native cleanup
-        nativeClose(nativeHandle);
-
-        // Untrack resource
-        resourceTracker.untrackResource(this);
-
-        // Clear local state
-        environment.clear();
-        preopenedDirectories.clear();
-
-        // Close resource manager
-        resourceManager.close();
-
-        closed = true;
-
-        LOGGER.info("Panama WASI context closed successfully");
-
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing Panama WASI context: " + e.getMessage());
-        // Mark as closed even if cleanup failed to prevent resource leaks
-        closed = true;
-      }
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -342,9 +324,7 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context has been closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("WASI context has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**
@@ -382,7 +362,7 @@ public final class WasiContext implements AutoCloseable {
     return String.format(
         "WasiContext{handle=%s, closed=%s, env=%d, args=%d, preopen=%d}",
         nativeHandle.address(),
-        closed,
+        resourceHandle.isClosed(),
         environment.size(),
         arguments.length,
         preopenedDirectories.size());

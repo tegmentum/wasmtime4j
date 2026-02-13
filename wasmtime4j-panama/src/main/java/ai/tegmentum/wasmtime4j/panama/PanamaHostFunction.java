@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -75,7 +76,7 @@ public final class PanamaHostFunction implements WasmFunction {
   private MemorySegment upcallStub;
   private MemorySegment ffiUpcallStub; // FFI-compatible upcall stub for native registry
   private long funcRefId = 0L; // Native reference registry ID for table operations
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Functional interface for host function implementations.
@@ -141,6 +142,37 @@ public final class PanamaHostFunction implements WasmFunction {
 
       // Register for automatic resource cleanup
       arenaManager.registerManagedNativeResource(this, upcallStub, this::closeNative);
+
+      // Initialize resource handle with cleanup logic
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaHostFunction",
+              () -> {
+                // Remove from global registry
+                hostFunctionRegistry.remove(hostFunctionId);
+
+                // Unregister from native reference registry
+                if (funcRefId != 0) {
+                  try {
+                    final MethodHandle destroyHandle =
+                        NativeInstanceBindings.getInstance().getPanamaDestroyHostFunction();
+                    if (destroyHandle != null) {
+                      destroyHandle.invoke(funcRefId);
+                    }
+                  } catch (final Throwable t) {
+                    throw new Exception(
+                        "Failed to unregister host function from native registry", t);
+                  }
+                }
+
+                // Unregister from arena manager - this will call closeNative()
+                arenaManager.unregisterManagedResource(this);
+
+                if (logger.isLoggable(Level.FINE)) {
+                  logger.fine(
+                      "Closed host function '" + functionName + "' with ID: " + hostFunctionId);
+                }
+              });
 
       if (logger.isLoggable(Level.FINE)) {
         logger.fine(
@@ -234,50 +266,12 @@ public final class PanamaHostFunction implements WasmFunction {
    * @return true if the host function has been closed
    */
   public boolean isClosed() {
-    return closed;
+    return resourceHandle.isClosed();
   }
 
   /** Closes this host function and releases its resources. */
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-
-    synchronized (this) {
-      if (closed) {
-        return;
-      }
-
-      try {
-        // Remove from global registry
-        hostFunctionRegistry.remove(hostFunctionId);
-
-        // Unregister from native reference registry
-        if (funcRefId != 0) {
-          try {
-            final MethodHandle destroyHandle =
-                NativeInstanceBindings.getInstance().getPanamaDestroyHostFunction();
-            if (destroyHandle != null) {
-              destroyHandle.invoke(funcRefId);
-            }
-          } catch (Throwable e) {
-            logger.warning("Failed to unregister host function from native registry: " + e);
-          }
-        }
-
-        // Unregister from arena manager - this will call closeNative()
-        arenaManager.unregisterManagedResource(this);
-
-        if (logger.isLoggable(Level.FINE)) {
-          logger.fine("Closed host function '" + functionName + "' with ID: " + hostFunctionId);
-        }
-      } catch (Exception e) {
-        logger.log(Level.SEVERE, "Failed to close host function: " + functionName, e);
-        throw new WasmException("Failed to close host function: " + functionName, e);
-      } finally {
-        closed = true;
-      }
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -508,7 +502,7 @@ public final class PanamaHostFunction implements WasmFunction {
     }
 
     try {
-      if (hostFunction.closed) {
+      if (hostFunction.resourceHandle.isClosed()) {
         writeErrorMessage(
             errorMessagePtr, errorMessageLen, "Host function closed: " + hostFunction.functionName);
         return 2;
@@ -839,7 +833,7 @@ public final class PanamaHostFunction implements WasmFunction {
     }
 
     try {
-      if (hostFunction.closed) {
+      if (hostFunction.resourceHandle.isClosed()) {
         logger.warning("Attempted to call closed host function: " + hostFunction.functionName);
         return null;
       }
@@ -1293,9 +1287,7 @@ public final class PanamaHostFunction implements WasmFunction {
    * @throws IllegalStateException if the host function has been closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Host function '" + functionName + "' has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**
@@ -1320,7 +1312,7 @@ public final class PanamaHostFunction implements WasmFunction {
 
   @Override
   public String toString() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return "PanamaHostFunction{name='" + functionName + "', closed=true}";
     }
 

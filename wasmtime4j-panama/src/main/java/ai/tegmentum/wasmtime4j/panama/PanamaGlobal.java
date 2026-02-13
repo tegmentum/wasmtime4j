@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.WasmTypeException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -24,7 +25,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   private final Arena arena;
   private WasmValueType type;
   private boolean mutable;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama global with a native handle.
@@ -76,6 +77,25 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
       throw new RuntimeException("Failed to create global: null pointer returned");
     }
 
+    final MemorySegment globalHandle = this.nativeGlobal;
+    final Arena globalArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaGlobal",
+            () -> {
+              if (nativeGlobal != null && !nativeGlobal.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.panamaGlobalDestroy(nativeGlobal);
+              }
+              arena.close();
+            },
+            this,
+            () -> {
+              if (globalHandle != null && !globalHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.panamaGlobalDestroy(globalHandle);
+              }
+              globalArena.close();
+            });
+
     LOGGER.fine("Created Panama global with type: " + type + ", mutable: " + mutable);
   }
 
@@ -99,6 +119,25 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
     // Query type and mutability from native global
     queryMetadata();
+
+    final MemorySegment globalHandle = this.nativeGlobal;
+    final Arena globalArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaGlobal",
+            () -> {
+              if (nativeGlobal != null && !nativeGlobal.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.panamaGlobalDestroy(nativeGlobal);
+              }
+              arena.close();
+            },
+            this,
+            () -> {
+              if (globalHandle != null && !globalHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.panamaGlobalDestroy(globalHandle);
+              }
+              globalArena.close();
+            });
 
     LOGGER.fine("Wrapped existing Panama global");
   }
@@ -132,6 +171,25 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     this.mutable = mutable;
     this.store = store;
     this.arena = Arena.ofShared();
+
+    final MemorySegment globalHandle = this.nativeGlobal;
+    final Arena globalArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaGlobal",
+            () -> {
+              if (nativeGlobal != null && !nativeGlobal.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.panamaGlobalDestroy(nativeGlobal);
+              }
+              arena.close();
+            },
+            this,
+            () -> {
+              if (globalHandle != null && !globalHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.panamaGlobalDestroy(globalHandle);
+              }
+              globalArena.close();
+            });
 
     LOGGER.fine("Wrapped existing Panama global with type: " + type + ", mutable: " + mutable);
   }
@@ -266,25 +324,12 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
    * @return true if closed, false otherwise
    */
   public boolean isClosed() {
-    return closed;
+    return resourceHandle.isClosed();
   }
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      if (nativeGlobal != null && !nativeGlobal.equals(MemorySegment.NULL)) {
-        NATIVE_BINDINGS.panamaGlobalDestroy(nativeGlobal);
-      }
-      arena.close();
-      LOGGER.fine("Closed Panama global");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing global: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /** Queries type and mutability metadata from the native global. */
@@ -346,8 +391,6 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Global has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

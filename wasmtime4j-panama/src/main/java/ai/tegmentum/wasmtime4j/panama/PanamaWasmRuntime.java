@@ -32,6 +32,7 @@ import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.TagType;
@@ -72,7 +73,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   private static final Logger LOGGER = Logger.getLogger(PanamaWasmRuntime.class.getName());
 
   private final Arena arena;
-  private volatile boolean closed;
+  private final NativeResourceHandle resourceHandle;
 
   /** Cached default GC runtime for lazy initialization. */
   private volatile ai.tegmentum.wasmtime4j.gc.GcRuntime defaultGcRuntime;
@@ -94,7 +95,23 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public PanamaWasmRuntime() throws WasmException {
     try {
       this.arena = Arena.ofShared();
-      this.closed = false;
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaWasmRuntime",
+              () -> {
+                // Note: GcRuntime does not have a close() method - it relies on engine lifecycle
+                defaultGcRuntime = null;
+
+                try {
+                  if (arena != null) {
+                    arena.close();
+                  }
+                } catch (final Exception e) {
+                  LOGGER.warning("Failed to close arena: " + e.getMessage());
+                }
+
+                LOGGER.fine("Closed Panama WebAssembly runtime");
+              });
 
       LOGGER.fine("Created Panama WebAssembly runtime");
     } catch (final Exception e) {
@@ -366,7 +383,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public boolean isValid() {
-    return !closed;
+    return !resourceHandle.isClosed();
   }
 
   @Override
@@ -646,7 +663,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public boolean isNnAvailable() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     final ai.tegmentum.wasmtime4j.panama.wasi.nn.PanaNnContextFactory factory =
@@ -656,27 +673,10 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-
-      // Note: GcRuntime does not have a close() method - it relies on engine lifecycle
-      defaultGcRuntime = null;
-
-      try {
-        if (arena != null) {
-          arena.close();
-        }
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close arena: " + e.getMessage());
-      }
-
-      LOGGER.fine("Closed Panama WebAssembly runtime");
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Panama runtime has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

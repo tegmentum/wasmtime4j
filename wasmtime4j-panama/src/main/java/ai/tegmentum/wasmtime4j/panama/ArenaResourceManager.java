@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import java.lang.foreign.Arena;
-import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.ref.Cleaner;
 import java.util.List;
@@ -29,11 +28,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Arena-based resource management foundation for Panama FFI operations.
+ * Arena-based resource management for Panama FFI operations.
  *
  * <p>This class provides automatic resource cleanup and lifecycle management for native resources
  * using Arena-based memory allocation. It ensures proper cleanup of native resources to prevent
- * memory leaks and provides comprehensive tracking capabilities.
+ * memory leaks.
  *
  * <p>The resource manager uses Java's Cleaner API as a safety net for resources that are not
  * properly closed, while encouraging explicit resource management through try-with-resources
@@ -43,10 +42,8 @@ public final class ArenaResourceManager implements AutoCloseable {
 
   private static final Logger LOGGER = Logger.getLogger(ArenaResourceManager.class.getName());
 
-  // Global cleaner for resource cleanup
   private static final Cleaner CLEANER = Cleaner.create();
 
-  // Resource tracking
   private final Arena arena;
   private final boolean ownsArena;
   private final ConcurrentHashMap<Long, ManagedResource> resources;
@@ -54,21 +51,11 @@ public final class ArenaResourceManager implements AutoCloseable {
   private final AtomicLong resourceIdGenerator;
   private final boolean trackingEnabled;
 
-  // Status tracking
   private volatile boolean closed = false;
 
-  /** Creates a new arena resource manager with a shared arena. */
+  /** Creates a new arena resource manager with a shared arena and tracking enabled. */
   public ArenaResourceManager() {
     this(Arena.ofShared(), true, true);
-  }
-
-  /**
-   * Creates a global arena resource manager with a shared arena and tracking enabled.
-   *
-   * @return new arena resource manager with global scope
-   */
-  public static ArenaResourceManager createGlobal() {
-    return new ArenaResourceManager(Arena.ofShared(), true, true);
   }
 
   /**
@@ -115,53 +102,6 @@ public final class ArenaResourceManager implements AutoCloseable {
   }
 
   /**
-   * Allocates memory in the arena with the specified layout.
-   *
-   * @param layout the memory layout to allocate
-   * @return managed memory segment
-   * @throws IllegalStateException if the manager is closed
-   */
-  public ManagedMemorySegment allocate(final MemoryLayout layout) {
-    Objects.requireNonNull(layout, "Memory layout cannot be null");
-    checkNotClosed();
-
-    try {
-      MemorySegment segment = arena.allocate(layout);
-      return createManagedSegment(segment, "allocated(" + layout + ")");
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to allocate memory with layout: " + layout, e);
-      throw e;
-    }
-  }
-
-  /**
-   * Allocates memory in the arena with the specified size and alignment.
-   *
-   * @param size the size in bytes
-   * @param alignment the alignment in bytes
-   * @return managed memory segment
-   * @throws IllegalStateException if the manager is closed
-   */
-  public ManagedMemorySegment allocate(final long size, final long alignment) {
-    if (size <= 0) {
-      throw new IllegalArgumentException("Size must be positive: " + size);
-    }
-    if (alignment <= 0) {
-      throw new IllegalArgumentException("Alignment must be positive: " + alignment);
-    }
-    checkNotClosed();
-
-    try {
-      MemorySegment segment = arena.allocate(size, alignment);
-      return createManagedSegment(segment, "allocated(" + size + "," + alignment + ")");
-    } catch (Exception e) {
-      LOGGER.log(
-          Level.WARNING, "Failed to allocate memory: size=" + size + ", alignment=" + alignment, e);
-      throw e;
-    }
-  }
-
-  /**
    * Allocates memory in the arena with the specified size.
    *
    * @param size the size in bytes
@@ -179,29 +119,6 @@ public final class ArenaResourceManager implements AutoCloseable {
       return createManagedSegment(segment, "allocated(" + size + ")");
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to allocate memory with size: " + size, e);
-      throw e;
-    }
-  }
-
-  /**
-   * Allocates memory for a null-terminated string and copies the Java string to it.
-   *
-   * @param value the string to allocate
-   * @return managed memory segment containing the null-terminated string
-   * @throws IllegalStateException if the manager is closed
-   * @throws IllegalArgumentException if value is null
-   */
-  public ManagedMemorySegment allocateString(final String value) {
-    if (value == null) {
-      throw new IllegalArgumentException("String value cannot be null");
-    }
-    checkNotClosed();
-
-    try {
-      MemorySegment segment = arena.allocateFrom(value);
-      return createManagedSegment(segment, "allocatedString(\"" + value + "\")");
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to allocate string: " + value, e);
       throw e;
     }
   }
@@ -248,60 +165,66 @@ public final class ArenaResourceManager implements AutoCloseable {
   }
 
   /**
-   * Gets the number of tracked resources.
+   * Registers a managed native resource with a cleanup action.
    *
-   * @return number of tracked resources, or -1 if tracking is disabled
+   * @param owner the resource owner
+   * @param nativeHandle the native handle
+   * @param cleanupAction the cleanup action to run when the resource is closed
+   * @return a managed native resource
    */
-  public int getResourceCount() {
-    return trackingEnabled ? resources.size() : -1;
-  }
+  public ManagedNativeResource registerManagedNativeResource(
+      final Object owner, final MemorySegment nativeHandle, final Runnable cleanupAction) {
+    checkNotClosed();
 
-  /**
-   * Gets resource tracking information.
-   *
-   * @return resource tracking info, or empty string if tracking is disabled
-   */
-  public String getResourceTrackingInfo() {
-    if (!trackingEnabled) {
-      return "Resource tracking is disabled";
+    if (owner == null) {
+      throw new IllegalArgumentException("Owner cannot be null");
+    }
+    if (nativeHandle == null || nativeHandle.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native handle cannot be null");
+    }
+    if (cleanupAction == null) {
+      throw new IllegalArgumentException("Cleanup action cannot be null");
     }
 
-    StringBuilder sb = new StringBuilder();
-    sb.append("Tracked resources (").append(resources.size()).append("):\n");
+    ManagedNativeResource resource =
+        new ManagedNativeResource(nativeHandle, cleanupAction, owner.getClass().getSimpleName());
 
-    resources.forEach(
-        (id, resource) -> {
-          long ageMs = System.currentTimeMillis() - resource.getCreationTime();
-          sb.append("  - ID ")
-              .append(id)
-              .append(": ")
-              .append(resource.getDescription())
-              .append(" (age: ")
-              .append(ageMs)
-              .append("ms)\n");
-        });
+    if (trackingEnabled && managedResources != null) {
+      synchronized (managedResources) {
+        managedResources.add(resource);
+      }
+    }
 
-    return sb.toString();
+    LOGGER.fine("Registered managed native resource: " + owner.getClass().getSimpleName());
+    return resource;
   }
 
   /**
-   * Gets the current arena instance.
+   * Unregisters a managed resource.
    *
-   * @return the arena instance
-   * @throws IllegalStateException if the manager is closed
+   * @param owner the resource owner to unregister
    */
-  public Arena getCurrentArena() {
-    checkNotClosed();
-    return arena;
-  }
+  public void unregisterManagedResource(final Object owner) {
+    if (owner == null) {
+      return;
+    }
 
-  /**
-   * Checks if the manager is closed.
-   *
-   * @return true if closed, false otherwise
-   */
-  public boolean isClosed() {
-    return closed;
+    if (!trackingEnabled || managedResources == null) {
+      return;
+    }
+
+    String ownerName = owner.getClass().getSimpleName();
+    synchronized (managedResources) {
+      managedResources.removeIf(
+          resource -> {
+            if (resource instanceof ManagedNativeResource managedNativeResource) {
+              return ownerName.equals(managedNativeResource.getDescription());
+            }
+            return false;
+          });
+    }
+
+    LOGGER.fine("Unregistered managed resource: " + ownerName);
   }
 
   /**
@@ -335,11 +258,22 @@ public final class ArenaResourceManager implements AutoCloseable {
     try {
       // Log resource leaks if any
       if (trackingEnabled && !resources.isEmpty()) {
-        LOGGER.warning(
-            "Closing resource manager with "
-                + resources.size()
-                + " unclosed resources:\n"
-                + getResourceTrackingInfo());
+        StringBuilder sb = new StringBuilder();
+        sb.append("Closing resource manager with ")
+            .append(resources.size())
+            .append(" unclosed resources:\n");
+        resources.forEach(
+            (id, resource) -> {
+              long ageMs = System.currentTimeMillis() - resource.getCreationTime();
+              sb.append("  - ID ")
+                  .append(id)
+                  .append(": ")
+                  .append(resource.getDescription())
+                  .append(" (age: ")
+                  .append(ageMs)
+                  .append("ms)\n");
+            });
+        LOGGER.warning(sb.toString());
       }
 
       // Close the arena only if we own it (this will free all allocated memory)
@@ -408,56 +342,8 @@ public final class ArenaResourceManager implements AutoCloseable {
      *
      * @return the memory segment
      */
-    public MemorySegment getSegment() {
-      return segment;
-    }
-
-    /**
-     * Gets the underlying memory segment (alias for getSegment).
-     *
-     * @return the memory segment
-     */
     public MemorySegment segment() {
       return segment;
-    }
-
-    /**
-     * Gets the description of this managed segment.
-     *
-     * @return the description
-     */
-    public String getDescription() {
-      return description;
-    }
-
-    /**
-     * Gets the size of the memory segment.
-     *
-     * @return size in bytes
-     */
-    public long size() {
-      return segment.byteSize();
-    }
-
-    /**
-     * Reinterprets the segment with a new size.
-     *
-     * @param newSize the new size
-     * @return reinterpreted segment
-     */
-    public MemorySegment reinterpret(final long newSize) {
-      return segment.reinterpret(newSize);
-    }
-
-    /**
-     * Creates a slice of the segment.
-     *
-     * @param offset the offset
-     * @param newSize the new size
-     * @return slice of the segment
-     */
-    public MemorySegment asSlice(final long offset, final long newSize) {
-      return segment.asSlice(offset, newSize);
     }
 
     @Override
@@ -490,21 +376,11 @@ public final class ArenaResourceManager implements AutoCloseable {
      * @return the native pointer
      * @throws IllegalStateException if the resource is closed
      */
-    public MemorySegment getNativePointer() {
+    public MemorySegment resource() {
       if (closed) {
         throw new IllegalStateException("Native resource is closed: " + description);
       }
       return nativePointer;
-    }
-
-    /**
-     * Gets the native pointer (alias for getNativePointer).
-     *
-     * @return the native pointer
-     * @throws IllegalStateException if the resource is closed
-     */
-    public MemorySegment resource() {
-      return getNativePointer();
     }
 
     /**
@@ -514,15 +390,6 @@ public final class ArenaResourceManager implements AutoCloseable {
      */
     public String getDescription() {
       return description;
-    }
-
-    /**
-     * Checks if the resource is closed.
-     *
-     * @return true if closed, false otherwise
-     */
-    public boolean isClosed() {
-      return closed;
     }
 
     /**
@@ -556,18 +423,12 @@ public final class ArenaResourceManager implements AutoCloseable {
 
   /** Internal resource tracking information. */
   private static final class ManagedResource {
-    private final long id;
     private final String description;
     private final long creationTime;
 
     ManagedResource(final long id, final String description, final long creationTime) {
-      this.id = id;
       this.description = description;
       this.creationTime = creationTime;
-    }
-
-    long getId() {
-      return id;
     }
 
     String getDescription() {
@@ -577,71 +438,6 @@ public final class ArenaResourceManager implements AutoCloseable {
     long getCreationTime() {
       return creationTime;
     }
-  }
-
-  /**
-   * Registers a managed native resource with a cleanup action.
-   *
-   * @param owner the resource owner
-   * @param nativeHandle the native handle
-   * @param cleanupAction the cleanup action to run when the resource is closed
-   * @return a managed native resource
-   */
-  public ManagedNativeResource registerManagedNativeResource(
-      final Object owner, final MemorySegment nativeHandle, final Runnable cleanupAction) {
-    checkNotClosed();
-
-    if (owner == null) {
-      throw new IllegalArgumentException("Owner cannot be null");
-    }
-    if (nativeHandle == null || nativeHandle.equals(MemorySegment.NULL)) {
-      throw new IllegalArgumentException("Native handle cannot be null");
-    }
-    if (cleanupAction == null) {
-      throw new IllegalArgumentException("Cleanup action cannot be null");
-    }
-
-    ManagedNativeResource resource =
-        new ManagedNativeResource(nativeHandle, cleanupAction, owner.getClass().getSimpleName());
-
-    // Only track if tracking is enabled
-    if (trackingEnabled && managedResources != null) {
-      synchronized (managedResources) {
-        managedResources.add(resource);
-      }
-    }
-
-    LOGGER.fine("Registered managed native resource: " + owner.getClass().getSimpleName());
-    return resource;
-  }
-
-  /**
-   * Unregisters a managed resource.
-   *
-   * @param owner the resource owner to unregister
-   */
-  public void unregisterManagedResource(final Object owner) {
-    if (owner == null) {
-      return;
-    }
-
-    // Only untrack if tracking is enabled
-    if (!trackingEnabled || managedResources == null) {
-      return;
-    }
-
-    String ownerName = owner.getClass().getSimpleName();
-    synchronized (managedResources) {
-      managedResources.removeIf(
-          resource -> {
-            if (resource instanceof ManagedNativeResource managedNativeResource) {
-              return ownerName.equals(managedNativeResource.getDescription());
-            }
-            return false;
-          });
-    }
-
-    LOGGER.fine("Unregistered managed resource: " + ownerName);
   }
 
   /** Resource statistics data. */

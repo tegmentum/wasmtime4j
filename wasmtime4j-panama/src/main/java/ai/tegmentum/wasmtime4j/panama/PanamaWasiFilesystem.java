@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiDirEntry;
 import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileHandle;
@@ -52,7 +53,7 @@ public final class PanamaWasiFilesystem implements WasiFilesystem {
   private final Map<Integer, PanamaWasiDirectoryHandleImpl> openDirectories =
       new ConcurrentHashMap<>();
   private volatile String currentWorkingDirectory;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI filesystem rooted at the specified path.
@@ -62,6 +63,30 @@ public final class PanamaWasiFilesystem implements WasiFilesystem {
   public PanamaWasiFilesystem(final Path rootPath) {
     this.rootPath = Objects.requireNonNull(rootPath, "rootPath").toAbsolutePath().normalize();
     this.currentWorkingDirectory = "/";
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiFilesystem",
+            () -> {
+              // Close all open files
+              for (final PanamaWasiFileHandleImpl handle : openFiles.values()) {
+                try {
+                  handle.close();
+                } catch (final Exception e) {
+                  LOGGER.warning("Failed to close file handle: " + e.getMessage());
+                }
+              }
+              openFiles.clear();
+
+              // Close all open directories
+              for (final PanamaWasiDirectoryHandleImpl handle : openDirectories.values()) {
+                try {
+                  handle.close();
+                } catch (final Exception e) {
+                  LOGGER.warning("Failed to close directory handle: " + e.getMessage());
+                }
+              }
+              openDirectories.clear();
+            });
   }
 
   @Override
@@ -445,30 +470,7 @@ public final class PanamaWasiFilesystem implements WasiFilesystem {
    * @throws WasmException if cleanup fails
    */
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    // Close all open files
-    for (final PanamaWasiFileHandleImpl handle : openFiles.values()) {
-      try {
-        handle.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close file handle: " + e.getMessage());
-      }
-    }
-    openFiles.clear();
-
-    // Close all open directories
-    for (final PanamaWasiDirectoryHandleImpl handle : openDirectories.values()) {
-      try {
-        handle.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close directory handle: " + e.getMessage());
-      }
-    }
-    openDirectories.clear();
+    resourceHandle.close();
   }
 
   private Path resolvePath(final String path) {
@@ -573,7 +575,9 @@ public final class PanamaWasiFilesystem implements WasiFilesystem {
   }
 
   private void ensureNotClosed() throws WasmException {
-    if (closed) {
+    try {
+      resourceHandle.ensureNotClosed();
+    } catch (final IllegalStateException e) {
       throw new WasmException("Filesystem is closed");
     }
   }

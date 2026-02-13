@@ -111,12 +111,11 @@ class PanamaInstanceTest {
     }
 
     @Test
-    @DisplayName("PanamaInstance should have closed field with volatile modifier")
-    void panamaInstanceShouldHaveClosedField() throws NoSuchFieldException {
-      final Field closedField = PanamaInstance.class.getDeclaredField("closed");
-      assertThat(Modifier.isPrivate(closedField.getModifiers())).isTrue();
-      assertThat(Modifier.isVolatile(closedField.getModifiers())).isTrue();
-      assertThat(closedField.getType()).isEqualTo(boolean.class);
+    @DisplayName("PanamaInstance should have resourceHandle field")
+    void panamaInstanceShouldHaveResourceHandleField() throws NoSuchFieldException {
+      final Field resourceHandleField = PanamaInstance.class.getDeclaredField("resourceHandle");
+      assertThat(Modifier.isPrivate(resourceHandleField.getModifiers())).isTrue();
+      assertThat(Modifier.isFinal(resourceHandleField.getModifiers())).isTrue();
     }
 
     @Test
@@ -388,12 +387,11 @@ class PanamaInstanceTest {
     }
 
     @Test
-    @DisplayName("PanamaInstanceGlobal should have closed field")
-    void panamaInstanceGlobalShouldHaveClosedField() throws NoSuchFieldException {
-      final Field field = PanamaInstanceGlobal.class.getDeclaredField("closed");
+    @DisplayName("PanamaInstanceGlobal should have resourceHandle field")
+    void panamaInstanceGlobalShouldHaveResourceHandleField() throws NoSuchFieldException {
+      final Field field = PanamaInstanceGlobal.class.getDeclaredField("resourceHandle");
       assertThat(Modifier.isPrivate(field.getModifiers())).isTrue();
-      assertThat(Modifier.isVolatile(field.getModifiers())).isTrue();
-      assertThat(field.getType()).isEqualTo(boolean.class);
+      assertThat(Modifier.isFinal(field.getModifiers())).isTrue();
     }
   }
 
@@ -507,12 +505,11 @@ class PanamaInstanceTest {
     }
 
     @Test
-    @DisplayName("PanamaInstancePre should have closed field")
-    void panamaInstancePreShouldHaveClosedField() throws NoSuchFieldException {
-      final Field field = PanamaInstancePre.class.getDeclaredField("closed");
+    @DisplayName("PanamaInstancePre should have resourceHandle field")
+    void panamaInstancePreShouldHaveResourceHandleField() throws NoSuchFieldException {
+      final Field field = PanamaInstancePre.class.getDeclaredField("resourceHandle");
       assertThat(Modifier.isPrivate(field.getModifiers())).isTrue();
       assertThat(Modifier.isFinal(field.getModifiers())).isTrue();
-      assertThat(field.getType()).isEqualTo(AtomicBoolean.class);
     }
   }
 

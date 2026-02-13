@@ -32,7 +32,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
@@ -698,11 +697,10 @@ class PanamaWasiThreadsTest {
       }
 
       @Test
-      @DisplayName("Should have closed AtomicBoolean field")
-      void shouldHaveClosedField() throws NoSuchFieldException {
-        Field field = PanamaWasiThreadsContext.class.getDeclaredField("closed");
-        assertNotNull(field, "closed field should exist");
-        assertEquals(AtomicBoolean.class, field.getType(), "Should be AtomicBoolean type");
+      @DisplayName("Should have resourceHandle field")
+      void shouldHaveResourceHandleField() throws NoSuchFieldException {
+        Field field = PanamaWasiThreadsContext.class.getDeclaredField("resourceHandle");
+        assertNotNull(field, "resourceHandle field should exist");
         assertTrue(Modifier.isPrivate(field.getModifiers()), "Should be private");
         assertTrue(Modifier.isFinal(field.getModifiers()), "Should be final");
       }

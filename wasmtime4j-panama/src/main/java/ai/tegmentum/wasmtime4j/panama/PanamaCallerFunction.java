@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaTypeConverter;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
@@ -44,7 +45,7 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
   private final String name;
   private final NativeInstanceBindings bindings;
   private volatile FunctionType cachedFunctionType;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama caller function with the given handle.
@@ -67,6 +68,29 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
     this.store = store;
     this.name = name;
     this.bindings = NativeInstanceBindings.getInstance();
+
+    // Capture handle for safety net (must not capture 'this')
+    final MemorySegment capturedHandle = funcHandle;
+    final NativeInstanceBindings capturedBindings = this.bindings;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaCallerFunction",
+            () -> {
+              try {
+                capturedBindings.funcDestroy(capturedHandle);
+                LOGGER.fine("Closed PanamaCallerFunction: " + name);
+              } catch (final Throwable t) {
+                throw new Exception("Error closing function: " + t.getMessage(), t);
+              }
+            },
+            this,
+            () -> {
+              try {
+                capturedBindings.funcDestroy(capturedHandle);
+              } catch (final Exception e) {
+                LOGGER.warning("Safety net cleanup failed for PanamaCallerFunction: " + name);
+              }
+            });
 
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine(
@@ -203,17 +227,7 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
 
   /** Closes the function and releases resources. */
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      bindings.funcDestroy(funcHandle);
-      LOGGER.fine("Closed PanamaCallerFunction: " + name);
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing function: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -222,9 +236,7 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Function has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   @Override

@@ -31,7 +31,6 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -121,13 +120,12 @@ class PanamaWasiContextTest {
     }
 
     @Test
-    @DisplayName("should have closed field")
-    void shouldHaveClosedField() throws NoSuchFieldException {
-      Field field = PanamaWasiContext.class.getDeclaredField("closed");
-      assertNotNull(field, "closed field should exist");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "closed should be final");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "closed should be private");
-      assertEquals(AtomicBoolean.class, field.getType(), "closed should be of type AtomicBoolean");
+    @DisplayName("should have resourceHandle field")
+    void shouldHaveResourceHandleField() throws NoSuchFieldException {
+      Field field = PanamaWasiContext.class.getDeclaredField("resourceHandle");
+      assertNotNull(field, "resourceHandle field should exist");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "resourceHandle should be final");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "resourceHandle should be private");
     }
   }
 
@@ -579,13 +577,12 @@ class PanamaWasiContextTest {
   class ThreadSafetyTests {
 
     @Test
-    @DisplayName("closed field should use AtomicBoolean for thread safety")
-    void closedFieldShouldUseAtomicBoolean() throws NoSuchFieldException {
-      Field field = PanamaWasiContext.class.getDeclaredField("closed");
-      assertEquals(
-          AtomicBoolean.class,
-          field.getType(),
-          "closed field should be AtomicBoolean for thread-safe close operations");
+    @DisplayName("resourceHandle field should be final for thread safety")
+    void resourceHandleFieldShouldBeFinal() throws NoSuchFieldException {
+      Field field = PanamaWasiContext.class.getDeclaredField("resourceHandle");
+      assertTrue(
+          Modifier.isFinal(field.getModifiers()),
+          "resourceHandle should be final for thread-safe close operations");
     }
 
     @Test

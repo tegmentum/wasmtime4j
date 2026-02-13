@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -93,7 +94,7 @@ public final class PanamaFunctionReference implements FunctionReference {
   private long nativeRegistryId = -1;
 
   private MemorySegment upcallStub;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new function reference from a host function.
@@ -150,6 +151,28 @@ public final class PanamaFunctionReference implements FunctionReference {
 
       // Register for automatic resource cleanup
       arenaManager.registerManagedNativeResource(this, upcallStub, this::closeNative);
+
+      // Initialize resource handle with cleanup logic
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaFunctionReference",
+              () -> {
+                // Remove from global registry
+                FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
+
+                // Unregister from arena manager - this will call closeNative()
+                if (arenaManager != null && upcallStub != null) {
+                  arenaManager.unregisterManagedResource(this);
+                }
+
+                if (LOGGER.isLoggable(Level.FINE)) {
+                  LOGGER.fine(
+                      "Closed function reference '"
+                          + functionName
+                          + "' with ID: "
+                          + functionReferenceId);
+                }
+              });
 
       if (LOGGER.isLoggable(Level.FINE)) {
         LOGGER.fine(
@@ -215,6 +238,23 @@ public final class PanamaFunctionReference implements FunctionReference {
       // WebAssembly functions don't need upcall stubs
       this.upcallStub = null;
 
+      // Initialize resource handle with cleanup logic
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaFunctionReference",
+              () -> {
+                // Remove from global registry
+                FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
+
+                if (LOGGER.isLoggable(Level.FINE)) {
+                  LOGGER.fine(
+                      "Closed function reference '"
+                          + functionName
+                          + "' with ID: "
+                          + functionReferenceId);
+                }
+              });
+
       if (LOGGER.isLoggable(Level.FINE)) {
         LOGGER.fine(
             "Created WebAssembly function reference '"
@@ -256,7 +296,7 @@ public final class PanamaFunctionReference implements FunctionReference {
 
   @Override
   public boolean isValid() {
-    return !closed && (hostFunction != null || wasmFunction != null);
+    return !resourceHandle.isClosed() && (hostFunction != null || wasmFunction != null);
   }
 
   @Override
@@ -310,35 +350,7 @@ public final class PanamaFunctionReference implements FunctionReference {
    * @throws WasmException if closing fails
    */
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-
-    synchronized (this) {
-      if (closed) {
-        return;
-      }
-
-      try {
-        // Remove from global registry
-        FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
-
-        // Unregister from arena manager - this will call closeNative()
-        if (arenaManager != null && upcallStub != null) {
-          arenaManager.unregisterManagedResource(this);
-        }
-
-        if (LOGGER.isLoggable(Level.FINE)) {
-          LOGGER.fine(
-              "Closed function reference '" + functionName + "' with ID: " + functionReferenceId);
-        }
-      } catch (Exception e) {
-        LOGGER.log(Level.WARNING, "Error closing function reference: " + functionName, e);
-        throw new WasmException("Failed to close function reference: " + functionName, e);
-      } finally {
-        closed = true;
-      }
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -568,7 +580,7 @@ public final class PanamaFunctionReference implements FunctionReference {
     }
 
     try {
-      if (funcRef.closed) {
+      if (funcRef.resourceHandle.isClosed()) {
         LOGGER.warning("Attempted to call closed function reference: " + funcRef.functionName);
         return null;
       }
@@ -862,9 +874,7 @@ public final class PanamaFunctionReference implements FunctionReference {
    * @throws WasmException if the function reference has been closed
    */
   private void ensureNotClosed() throws WasmException {
-    if (closed) {
-      throw new WasmException("Function reference '" + functionName + "' has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**
@@ -918,7 +928,7 @@ public final class PanamaFunctionReference implements FunctionReference {
       throw new WasmException("Function reference not found: " + functionReferenceId);
     }
 
-    if (funcRef.closed) {
+    if (funcRef.resourceHandle.isClosed()) {
       LOGGER.warning("Attempted to call closed function reference: " + funcRef.functionName);
       throw new WasmException("Function reference has been closed: " + funcRef.functionName);
     }
@@ -1052,7 +1062,7 @@ public final class PanamaFunctionReference implements FunctionReference {
         return -1;
       }
 
-      if (funcRef.closed) {
+      if (funcRef.resourceHandle.isClosed()) {
         LOGGER.warning("Attempted to call closed function reference: " + funcRef.functionName);
         writeErrorMessage(errorMsgPtr, errorMsgLen, "Closed function: " + funcRef.functionName);
         return -2;
@@ -1225,7 +1235,7 @@ public final class PanamaFunctionReference implements FunctionReference {
 
   @Override
   public String toString() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return "PanamaFunctionReference{name='" + functionName + "', closed=true}";
     }
 

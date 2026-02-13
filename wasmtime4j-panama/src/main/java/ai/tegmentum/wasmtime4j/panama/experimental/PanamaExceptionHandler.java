@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.experimental.DefaultExceptionHandlingConfig;
 import ai.tegmentum.wasmtime4j.experimental.DefaultExceptionTag;
 import ai.tegmentum.wasmtime4j.experimental.ExceptionHandler;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -36,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -67,7 +69,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
   private final ExceptionHandlingConfig config;
   private final String handlerName;
   private final AtomicBoolean enabled;
-  private final AtomicBoolean closed;
+  private final NativeResourceHandle resourceHandle;
 
   static {
     try {
@@ -165,7 +167,6 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
     this.tagsByHandle = new ConcurrentHashMap<>();
     this.arena = Arena.ofShared();
     this.enabled = new AtomicBoolean(true);
-    this.closed = new AtomicBoolean(false);
 
     try {
       this.nativeHandle =
@@ -180,6 +181,40 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
         throw new RuntimeException("Failed to create native exception handler");
       }
 
+      // Capture local references for safety net (must not capture 'this')
+      final MemorySegment handleForCleanup = this.nativeHandle;
+      final Arena arenaForCleanup = this.arena;
+
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaExceptionHandler",
+              () -> {
+                tagsByName.clear();
+                tagsByHandle.clear();
+
+                if (nativeHandle != null && nativeHandle.address() != 0L) {
+                  try {
+                    CLOSE_HANDLER.invoke(nativeHandle);
+                  } catch (final Throwable t) {
+                    throw new Exception("Failed to close native exception handler", t);
+                  }
+                }
+
+                arena.close();
+                LOGGER.info("Closed Panama exception handler: " + handlerName);
+              },
+              this,
+              () -> {
+                if (handleForCleanup != null && handleForCleanup.address() != 0L) {
+                  try {
+                    CLOSE_HANDLER.invoke(handleForCleanup);
+                  } catch (final Throwable t) {
+                    LOGGER.log(Level.WARNING, "Safety net cleanup failed", t);
+                  }
+                }
+                arenaForCleanup.close();
+              });
+
       LOGGER.fine("Created Panama exception handler: " + handlerName);
     } catch (final Throwable e) {
       arena.close();
@@ -189,7 +224,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
   @Override
   public HandlingResult handle(final Throwable exception) {
-    if (closed.get() || !enabled.get()) {
+    if (resourceHandle.isClosed() || !enabled.get()) {
       return HandlingResult.NOT_HANDLED;
     }
 
@@ -208,7 +243,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
   @Override
   public boolean isEnabled() {
-    return enabled.get() && !closed.get();
+    return enabled.get() && !resourceHandle.isClosed();
   }
 
   /**
@@ -336,21 +371,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      try {
-        tagsByName.clear();
-        tagsByHandle.clear();
-
-        if (nativeHandle != null && nativeHandle.address() != 0L) {
-          CLOSE_HANDLER.invoke(nativeHandle);
-        }
-
-        arena.close();
-        LOGGER.info("Closed Panama exception handler: " + handlerName);
-      } catch (final Throwable e) {
-        LOGGER.warning("Failed to close Panama exception handler: " + e.getMessage());
-      }
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -379,12 +400,10 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
    * @return true if closed
    */
   public boolean isClosed() {
-    return closed.get();
+    return resourceHandle.isClosed();
   }
 
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Exception handler is closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

@@ -18,10 +18,10 @@ package ai.tegmentum.wasmtime4j.panama.wasi.threads;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.threads.WasiThreadsContext;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -66,8 +66,8 @@ public final class PanamaWasiThreadsContext implements WasiThreadsContext {
   /** Flag indicating if WASI-Threads support is enabled. */
   private final boolean enabled;
 
-  /** Flag indicating if this context has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  /** Resource lifecycle handle. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI-Threads context.
@@ -88,6 +88,40 @@ public final class PanamaWasiThreadsContext implements WasiThreadsContext {
     this.nativeContext = nativeContext;
     this.arena = arena;
     this.enabled = enabled;
+
+    // Capture values for safety net (must not capture 'this')
+    final MemorySegment safetyNativeCtx = nativeContext;
+    final Arena safetyArena = arena;
+    final AtomicInteger safetyThreadCount = this.threadCount;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiThreadsContext",
+            () -> {
+              final int remaining = safetyThreadCount.get();
+              if (remaining > 1) {
+                LOGGER.warning(
+                    String.format(
+                        "Closing WASI-Threads context with %d threads still active",
+                        remaining - 1));
+              }
+              try {
+                NATIVE_BINDINGS.wasiThreadsContextClose(safetyNativeCtx);
+              } catch (final Throwable t) {
+                throw new Exception("Error closing WASI-Threads context", t);
+              } finally {
+                safetyArena.close();
+              }
+            },
+            this,
+            () -> {
+              try {
+                NATIVE_BINDINGS.wasiThreadsContextClose(safetyNativeCtx);
+              } catch (final Throwable t) {
+                LOGGER.warning("Safety net failed to close WASI-Threads context: " + t);
+              } finally {
+                safetyArena.close();
+              }
+            });
 
     LOGGER.info(
         String.format(
@@ -139,7 +173,7 @@ public final class PanamaWasiThreadsContext implements WasiThreadsContext {
 
   @Override
   public boolean isEnabled() {
-    return enabled && !closed.get();
+    return enabled && !resourceHandle.isClosed();
   }
 
   @Override
@@ -150,7 +184,7 @@ public final class PanamaWasiThreadsContext implements WasiThreadsContext {
 
   @Override
   public boolean isValid() {
-    return !closed.get() && enabled;
+    return !resourceHandle.isClosed() && enabled;
   }
 
   /**
@@ -179,29 +213,7 @@ public final class PanamaWasiThreadsContext implements WasiThreadsContext {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      LOGGER.fine("Closing Panama WASI-Threads context");
-
-      // Wait for all threads to complete or terminate them
-      final int remaining = threadCount.get();
-      if (remaining > 1) {
-        LOGGER.warning(
-            String.format(
-                "Closing WASI-Threads context with %d threads still active", remaining - 1));
-      }
-
-      try {
-        // Release native context
-        NATIVE_BINDINGS.wasiThreadsContextClose(nativeContext);
-
-        // Close the arena
-        arena.close();
-
-        LOGGER.info("Panama WASI-Threads context closed successfully");
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing WASI-Threads context: " + e.getMessage());
-      }
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -210,8 +222,6 @@ public final class PanamaWasiThreadsContext implements WasiThreadsContext {
    * @throws IllegalStateException if the context has been closed
    */
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("WASI-Threads context has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

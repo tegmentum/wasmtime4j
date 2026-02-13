@@ -15,6 +15,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
@@ -100,7 +101,7 @@ public final class PanamaInstance implements Instance {
   private final MemorySegment nativeInstance;
   private final long createdAtMicros;
   private final AtomicBoolean disposed = new AtomicBoolean(false);
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   // Optimization: Shared arena for function calls (lazy initialized to avoid constructor overhead)
   private volatile Arena callArena;
@@ -141,6 +142,8 @@ public final class PanamaInstance implements Instance {
       throw new WasmException("Failed to create native instance");
     }
 
+    this.resourceHandle = createResourceHandle();
+
     LOGGER.fine("Created Panama instance");
   }
 
@@ -167,6 +170,8 @@ public final class PanamaInstance implements Instance {
     this.module = module;
     this.store = store;
     this.createdAtMicros = System.currentTimeMillis() * 1000L;
+
+    this.resourceHandle = createResourceHandle();
 
     LOGGER.fine("Wrapped native instance pointer");
   }
@@ -974,7 +979,7 @@ public final class PanamaInstance implements Instance {
 
   @Override
   public InstanceState getState() {
-    if (closed || disposed.get()) {
+    if (resourceHandle.isClosed() || disposed.get()) {
       return InstanceState.DISPOSED;
     }
     return InstanceState.CREATED;
@@ -992,7 +997,7 @@ public final class PanamaInstance implements Instance {
 
   @Override
   public boolean isValid() {
-    return !closed && !disposed.get();
+    return !resourceHandle.isClosed() && !disposed.get();
   }
 
   @Override
@@ -1392,27 +1397,7 @@ public final class PanamaInstance implements Instance {
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-    disposed.set(true);
-
-    try {
-      // Clear function name cache
-      functionNameCache.clear();
-      // Close call arena (releases cached function name segments)
-      if (callArena != null && callArena.scope().isAlive()) {
-        callArena.close();
-      }
-      // Destroy native instance
-      if (nativeInstance != null && !nativeInstance.equals(MemorySegment.NULL)) {
-        NATIVE_INSTANCE_BINDINGS.instanceDestroy(nativeInstance);
-      }
-      LOGGER.fine("Closed Panama instance");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing instance: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -1570,14 +1555,39 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
+   * Creates the resource handle with the instance's cleanup logic.
+   *
+   * @return the resource handle
+   */
+  private NativeResourceHandle createResourceHandle() {
+    final MemorySegment instanceHandle = this.nativeInstance;
+    return new NativeResourceHandle(
+        "PanamaInstance",
+        () -> {
+          disposed.set(true);
+          functionNameCache.clear();
+          if (callArena != null && callArena.scope().isAlive()) {
+            callArena.close();
+          }
+          if (nativeInstance != null && !nativeInstance.equals(MemorySegment.NULL)) {
+            NATIVE_INSTANCE_BINDINGS.instanceDestroy(nativeInstance);
+          }
+        },
+        this,
+        () -> {
+          if (instanceHandle != null && !instanceHandle.equals(MemorySegment.NULL)) {
+            NATIVE_INSTANCE_BINDINGS.instanceDestroy(instanceHandle);
+          }
+        });
+  }
+
+  /**
    * Ensures the instance is not closed.
    *
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Instance has been closed");
-    }
+    resourceHandle.ensureNotClosed();
     if (disposed.get()) {
       throw new IllegalStateException("Instance has been disposed");
     }

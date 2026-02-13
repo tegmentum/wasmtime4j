@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
 import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraph;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraphExecutionContext;
@@ -30,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,7 +51,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
 
   private final MemorySegment nativeHandle;
   private final NnGraph graph;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI-NN execution context.
@@ -66,6 +66,15 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
     }
     this.nativeHandle = nativeHandle;
     this.graph = Objects.requireNonNull(graph, "graph cannot be null");
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanaNnGraphExecutionContext",
+            () -> {
+              LOGGER.log(
+                  Level.FINE, "Closing PanaNnGraphExecutionContext with handle: {0}", nativeHandle);
+              final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+              bindings.wasiNnExecClose(nativeHandle);
+            });
     LOGGER.log(Level.FINE, "Created PanaNnGraphExecutionContext with handle: {0}", nativeHandle);
   }
 
@@ -298,21 +307,15 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
 
   @Override
   public boolean isValid() {
-    return !closed.get();
+    return !resourceHandle.isClosed();
   }
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      LOGGER.log(Level.FINE, "Closing PanaNnGraphExecutionContext with handle: {0}", nativeHandle);
-      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
-      bindings.wasiNnExecClose(nativeHandle);
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("NnGraphExecutionContext has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

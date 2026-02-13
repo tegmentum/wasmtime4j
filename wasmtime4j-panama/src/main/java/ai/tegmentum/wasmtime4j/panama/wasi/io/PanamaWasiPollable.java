@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import java.lang.foreign.Arena;
@@ -41,7 +41,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaWasiPollable extends PanamaResource implements WasiPollable {
+public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWasiPollable.class.getName());
 
@@ -52,7 +52,7 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_pollable_block(context_handle, pollable_handle)
@@ -85,8 +85,9 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
     }
   }
 
-  /** The native context handle. */
+  private final MemorySegment nativeHandle;
   private final MemorySegment contextHandle;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI pollable with the given native handles.
@@ -96,9 +97,35 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
    * @throws IllegalArgumentException if either handle is null
    */
   public PanamaWasiPollable(final MemorySegment contextHandle, final MemorySegment pollableHandle) {
-    super(pollableHandle);
+    PanamaValidation.requireNonNull(pollableHandle, "pollableHandle");
     PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    this.nativeHandle = pollableHandle;
     this.contextHandle = contextHandle;
+
+    final MemorySegment ctx = this.contextHandle;
+    final MemorySegment handle = this.nativeHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiPollable",
+            () -> {
+              try {
+                final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
+                if (result != 0) {
+                  LOGGER.warning("Failed to close WASI pollable (error code: " + result + ")");
+                }
+              } catch (final Throwable e) {
+                throw new Exception("Error closing WASI pollable", e);
+              }
+            },
+            this,
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(ctx, handle);
+              } catch (final Throwable e) {
+                LOGGER.warning("Safety net: error closing WASI pollable: " + e.getMessage());
+              }
+            });
+
     LOGGER.fine("Created Panama WASI pollable with handle: " + pollableHandle);
   }
 
@@ -106,7 +133,7 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
   public void block() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
 
@@ -128,7 +155,7 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
   public boolean ready() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
 
@@ -188,7 +215,7 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
 
@@ -237,7 +264,7 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle createHandle() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
     return new PanamaWasiResourceHandle(nativeHandle.address(), getType(), getOwner());
@@ -251,7 +278,7 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
     if (!isOwned()) {
@@ -304,20 +331,31 @@ public final class PanamaWasiPollable extends PanamaResource implements WasiPoll
     }
   }
 
-  @Override
-  protected void doClose() throws Exception {
-    try {
-      final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
-      if (result != 0) {
-        LOGGER.warning("Failed to close WASI pollable (error code: " + result + ")");
-      }
-    } catch (final Throwable e) {
-      throw new Exception("Error closing WASI pollable", e);
-    }
+  /**
+   * Returns the native pollable handle.
+   *
+   * @return the native memory segment
+   */
+  public MemorySegment getNativeHandle() {
+    ensureNotClosed();
+    return nativeHandle;
+  }
+
+  /**
+   * Checks if this pollable has been closed.
+   *
+   * @return true if closed
+   */
+  public boolean isClosed() {
+    return resourceHandle.isClosed();
   }
 
   @Override
-  protected String getResourceType() {
-    return "WasiPollable";
+  public void close() {
+    resourceHandle.close();
+  }
+
+  private void ensureNotClosed() {
+    resourceHandle.ensureNotClosed();
   }
 }

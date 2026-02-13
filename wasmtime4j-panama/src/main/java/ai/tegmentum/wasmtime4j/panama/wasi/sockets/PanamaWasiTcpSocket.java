@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiInputStream;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiOutputStream;
@@ -89,7 +89,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_tcp_socket_create(context_handle, is_ipv6, out_handle)
@@ -384,8 +384,8 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
   /** The native socket handle. */
   private final long socketHandle;
 
-  /** Whether this socket has been closed. */
-  private volatile boolean closed = false;
+  /** Resource lifecycle handle. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI TCP socket with the given address family.
@@ -443,6 +443,30 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
     this.contextHandle = contextHandle;
     this.socketHandle = socketHandle;
+
+    // Capture handle values for safety net (must not capture 'this')
+    final MemorySegment safetyCtx = contextHandle;
+    final long safetySocket = socketHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiTcpSocket",
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(safetyCtx, safetySocket);
+              } catch (final Throwable t) {
+                throw new Exception("Error closing TCP socket handle: " + safetySocket, t);
+              }
+            },
+            this,
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(safetyCtx, safetySocket);
+              } catch (final Throwable t) {
+                LOGGER.warning(
+                    "Safety net failed to close TCP socket handle " + safetySocket + ": " + t);
+              }
+            });
+
     LOGGER.fine(
         "Created Panama WASI TCP socket with context handle: "
             + contextHandle
@@ -459,7 +483,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     if (localAddress == null) {
       throw new IllegalArgumentException("Local address cannot be null");
     }
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -495,7 +519,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void finishBind() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -522,7 +546,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     if (remoteAddress == null) {
       throw new IllegalArgumentException("Remote address cannot be null");
     }
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -558,7 +582,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public ConnectionStreams finishConnect() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -595,7 +619,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void startListen() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -615,7 +639,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void finishListen() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -635,7 +659,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public AcceptResult accept() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -675,7 +699,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public IpSocketAddress localAddress() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -712,7 +736,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public IpSocketAddress remoteAddress() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -749,7 +773,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public IpAddressFamily addressFamily() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -775,7 +799,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void setListenBacklogSize(final long value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -796,7 +820,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void setKeepAliveEnabled(final boolean value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -817,7 +841,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void setKeepAliveIdleTime(final long value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -838,7 +862,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void setKeepAliveInterval(final long value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -859,7 +883,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void setKeepAliveCount(final int value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -880,7 +904,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void setHopLimit(final int value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -900,7 +924,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public long receiveBufferSize() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -925,7 +949,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void setReceiveBufferSize(final long value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -946,7 +970,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public long sendBufferSize() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -970,7 +994,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void setSendBufferSize(final long value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -991,7 +1015,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public WasiPollable subscribe() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -1024,7 +1048,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     if (shutdownType == null) {
       throw new IllegalArgumentException("Shutdown type cannot be null");
     }
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -1059,18 +1083,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   @Override
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      CLOSE_HANDLE.invoke(contextHandle, socketHandle);
-      LOGGER.fine("Closed Panama WASI TCP socket with handle: " + socketHandle);
-
-    } catch (final Throwable e) {
-      throw new RuntimeException("Error closing socket: " + e.getMessage(), e);
-    }
+    resourceHandle.close();
   }
 
   // Helper class to hold address parameters for encoding

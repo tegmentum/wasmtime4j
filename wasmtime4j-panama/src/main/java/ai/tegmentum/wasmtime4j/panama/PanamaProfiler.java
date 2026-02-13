@@ -17,12 +17,12 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.profiler.Profiler;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -39,7 +39,7 @@ public final class PanamaProfiler implements Profiler {
   private final NativeExecutionBindings bindings;
   private final Arena arena;
   private final MemorySegment profilerPtr;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new PanamaProfiler.
@@ -55,6 +55,21 @@ public final class PanamaProfiler implements Profiler {
       arena.close();
       throw new WasmException("Failed to create native profiler");
     }
+
+    final MemorySegment capturedPtr = profilerPtr;
+    final Arena capturedArena = arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaProfiler",
+            () -> {
+              bindings.profilerDestroy(profilerPtr);
+              arena.close();
+            },
+            this,
+            () -> {
+              bindings.profilerDestroy(capturedPtr);
+              capturedArena.close();
+            });
 
     LOGGER.fine("Created PanamaProfiler");
   }
@@ -79,7 +94,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public boolean isProfiling() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     return bindings.profilerIsProfiling(profilerPtr);
@@ -121,7 +136,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public long getModulesCompiled() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return bindings.profilerGetModulesCompiled(profilerPtr);
@@ -129,7 +144,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public Duration getTotalCompilationTime() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return Duration.ZERO;
     }
     return Duration.ofNanos(bindings.profilerGetTotalCompilationTimeNanos(profilerPtr));
@@ -137,7 +152,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public Duration getAverageCompilationTime() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return Duration.ZERO;
     }
     return Duration.ofNanos(bindings.profilerGetAverageCompilationTimeNanos(profilerPtr));
@@ -145,7 +160,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public long getBytesCompiled() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return bindings.profilerGetBytesCompiled(profilerPtr);
@@ -153,7 +168,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public long getCacheHits() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return bindings.profilerGetCacheHits(profilerPtr);
@@ -161,7 +176,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public long getCacheMisses() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return bindings.profilerGetCacheMisses(profilerPtr);
@@ -169,7 +184,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public long getOptimizedModules() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return bindings.profilerGetOptimizedModules(profilerPtr);
@@ -177,7 +192,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public long getCurrentMemoryBytes() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return bindings.profilerGetCurrentMemoryBytes(profilerPtr);
@@ -185,7 +200,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public long getPeakMemoryBytes() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return bindings.profilerGetPeakMemoryBytes(profilerPtr);
@@ -193,7 +208,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public Duration getUptime() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return Duration.ZERO;
     }
     return Duration.ofNanos(bindings.profilerGetUptimeNanos(profilerPtr));
@@ -201,7 +216,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public double getFunctionCallsPerSecond() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0.0;
     }
     return bindings.profilerGetFunctionCallsPerSecond(profilerPtr);
@@ -209,7 +224,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public long getTotalFunctionCalls() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return bindings.profilerGetTotalFunctionCalls(profilerPtr);
@@ -217,7 +232,7 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public Duration getTotalExecutionTime() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return Duration.ZERO;
     }
     return Duration.ofNanos(bindings.profilerGetTotalExecutionTimeNanos(profilerPtr));
@@ -234,21 +249,17 @@ public final class PanamaProfiler implements Profiler {
 
   @Override
   public void close() throws WasmException {
-    if (closed.compareAndSet(false, true)) {
-      bindings.profilerDestroy(profilerPtr);
-      arena.close();
-      LOGGER.fine("Closed PanamaProfiler");
-    }
+    resourceHandle.close();
   }
 
   private void ensureOpen() throws WasmException {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Profiler has been closed");
     }
   }
 
   @Override
   public String toString() {
-    return "PanamaProfiler{closed=" + closed.get() + "}";
+    return "PanamaProfiler{closed=" + resourceHandle.isClosed() + "}";
   }
 }

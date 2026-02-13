@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.execution.FuelExhaustionAction;
 import ai.tegmentum.wasmtime4j.execution.FuelExhaustionContext;
 import ai.tegmentum.wasmtime4j.execution.FuelExhaustionResult;
 import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -43,7 +44,7 @@ public final class PanamaFuelCallbackHandler implements FuelCallbackHandler {
 
   private final long handlerId;
   private final long storeId;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   private static MethodHandle getHandle(final String name) throws WasmException {
     return NativeInstanceBindings.getInstance()
@@ -87,6 +88,38 @@ public final class PanamaFuelCallbackHandler implements FuelCallbackHandler {
   private PanamaFuelCallbackHandler(final long handlerId, final long storeId) {
     this.handlerId = handlerId;
     this.storeId = storeId;
+
+    // Capture handlerId for safety net - do NOT capture 'this'
+    final long capturedHandlerId = handlerId;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaFuelCallbackHandler",
+            () -> {
+              try {
+                final MethodHandle destroyHandle = getHandle("wasmtime4j_fuel_callback_destroy");
+                final int status = (int) destroyHandle.invoke(capturedHandlerId);
+                if (status != 0) {
+                  LOGGER.warning("Failed to destroy fuel callback handler: " + capturedHandlerId);
+                } else {
+                  LOGGER.fine("Closed fuel callback handler: " + capturedHandlerId);
+                }
+              } catch (final Throwable t) {
+                throw new Exception("Error closing fuel callback handler: " + t.getMessage(), t);
+              }
+            },
+            this,
+            () -> {
+              try {
+                final MethodHandle destroyHandle = getHandle("wasmtime4j_fuel_callback_destroy");
+                destroyHandle.invoke(capturedHandlerId);
+              } catch (final Throwable t) {
+                LOGGER.warning(
+                    "Safety net cleanup failed for fuel callback handler "
+                        + capturedHandlerId
+                        + ": "
+                        + t.getMessage());
+              }
+            });
   }
 
   @Override
@@ -102,9 +135,7 @@ public final class PanamaFuelCallbackHandler implements FuelCallbackHandler {
   @Override
   public FuelExhaustionResult handleExhaustion(final FuelExhaustionContext context)
       throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Handler has been closed");
-    }
+    resourceHandle.ensureNotClosed();
 
     final MethodHandle handleHandle = getHandle("wasmtime4j_fuel_callback_handle_exhaustion");
 
@@ -147,9 +178,7 @@ public final class PanamaFuelCallbackHandler implements FuelCallbackHandler {
 
   @Override
   public FuelCallbackStats getStats() throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Handler has been closed");
-    }
+    resourceHandle.ensureNotClosed();
 
     final MethodHandle statsHandle = getHandle("wasmtime4j_fuel_callback_get_stats");
 
@@ -189,9 +218,7 @@ public final class PanamaFuelCallbackHandler implements FuelCallbackHandler {
 
   @Override
   public void resetStats() throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Handler has been closed");
-    }
+    resourceHandle.ensureNotClosed();
 
     final MethodHandle resetHandle = getHandle("wasmtime4j_fuel_callback_reset_stats");
 
@@ -209,23 +236,7 @@ public final class PanamaFuelCallbackHandler implements FuelCallbackHandler {
   }
 
   @Override
-  public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    final MethodHandle destroyHandle = getHandle("wasmtime4j_fuel_callback_destroy");
-
-    try {
-      final int status = (int) destroyHandle.invoke(handlerId);
-      if (status != 0) {
-        LOGGER.warning("Failed to destroy fuel callback handler: " + handlerId);
-      } else {
-        LOGGER.fine("Closed fuel callback handler: " + handlerId);
-      }
-    } catch (final Throwable e) {
-      throw new WasmException("Error closing fuel callback handler: " + e.getMessage(), e);
-    }
+  public void close() {
+    resourceHandle.close();
   }
 }

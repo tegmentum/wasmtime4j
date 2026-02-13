@@ -352,16 +352,13 @@ class PanamaInstancePreTest {
     }
 
     @Test
-    @DisplayName("Should have closed field using AtomicBoolean")
-    void shouldHaveClosedField() throws NoSuchFieldException {
-      final java.lang.reflect.Field field = PanamaInstancePre.class.getDeclaredField("closed");
-      assertNotNull(field, "closed field should exist");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "closed should be final");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "closed should be private");
-      assertEquals(
-          java.util.concurrent.atomic.AtomicBoolean.class,
-          field.getType(),
-          "closed should be AtomicBoolean type");
+    @DisplayName("Should have resourceHandle field")
+    void shouldHaveResourceHandleField() throws NoSuchFieldException {
+      final java.lang.reflect.Field field =
+          PanamaInstancePre.class.getDeclaredField("resourceHandle");
+      assertNotNull(field, "resourceHandle field should exist");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "resourceHandle should be final");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "resourceHandle should be private");
     }
   }
 
@@ -394,13 +391,13 @@ class PanamaInstancePreTest {
   class ThreadSafetyTests {
 
     @Test
-    @DisplayName("closed field should use AtomicBoolean for thread safety")
-    void closedFieldShouldUseAtomicBoolean() throws NoSuchFieldException {
-      final java.lang.reflect.Field field = PanamaInstancePre.class.getDeclaredField("closed");
-      assertEquals(
-          java.util.concurrent.atomic.AtomicBoolean.class,
-          field.getType(),
-          "closed should be AtomicBoolean for thread safety");
+    @DisplayName("resourceHandle field should provide thread-safe close")
+    void resourceHandleFieldShouldProvideThreadSafeClose() throws NoSuchFieldException {
+      final java.lang.reflect.Field field =
+          PanamaInstancePre.class.getDeclaredField("resourceHandle");
+      assertTrue(
+          Modifier.isFinal(field.getModifiers()),
+          "resourceHandle should be final for thread safety");
     }
   }
 
@@ -423,19 +420,17 @@ class PanamaInstancePreTest {
   class ExceptionHandlingTests {
 
     @Test
-    @DisplayName("ensureNotClosed should throw WasmException")
-    void ensureNotClosedShouldThrowWasmException() throws NoSuchMethodException {
+    @DisplayName("ensureNotClosed should throw IllegalStateException when closed")
+    void ensureNotClosedShouldThrowIllegalStateExceptionWhenClosed() throws NoSuchMethodException {
       final Method method = PanamaInstancePre.class.getDeclaredMethod("ensureNotClosed");
-      final Class<?>[] exceptionTypes = method.getExceptionTypes();
-      assertTrue(exceptionTypes.length > 0, "ensureNotClosed should declare exceptions");
-      boolean foundWasmException = false;
-      for (final Class<?> exceptionType : exceptionTypes) {
-        if (ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(exceptionType)) {
-          foundWasmException = true;
-          break;
-        }
-      }
-      assertTrue(foundWasmException, "ensureNotClosed should throw WasmException");
+      assertTrue(
+          java.lang.reflect.Modifier.isPrivate(method.getModifiers()),
+          "ensureNotClosed should be private");
+      assertEquals(
+          0,
+          method.getExceptionTypes().length,
+          "ensureNotClosed should not declare checked exceptions (throws unchecked"
+              + " IllegalStateException)");
     }
   }
 }

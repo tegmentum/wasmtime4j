@@ -8,6 +8,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
@@ -28,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -50,7 +50,7 @@ final class PanamaComponentInstance implements ComponentInstance {
   private final long instanceId;
   private final PanamaComponentImpl component;
   private final PanamaStore store;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama component instance using enhanced component engine.
@@ -69,6 +69,14 @@ final class PanamaComponentInstance implements ComponentInstance {
     this.instanceId = instanceId;
     this.component = component;
     this.store = store;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaComponentInstance",
+            () -> {
+              // Enhanced component engine manages instance lifecycle
+              // Instances are automatically cleaned up when engine is destroyed
+              // No need to manually destroy individual instances
+            });
   }
 
   /**
@@ -90,6 +98,14 @@ final class PanamaComponentInstance implements ComponentInstance {
     this.instanceId = nativeInstancePtr.address();
     this.component = component;
     this.store = store;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaComponentInstance",
+            () -> {
+              // Enhanced component engine manages instance lifecycle
+              // Instances are automatically cleaned up when engine is destroyed
+              // No need to manually destroy individual instances
+            });
   }
 
   @Override
@@ -401,7 +417,7 @@ final class PanamaComponentInstance implements ComponentInstance {
 
   @Override
   public boolean isValid() {
-    return !closed.get()
+    return !resourceHandle.isClosed()
         && enhancedEngineHandle != null
         && !enhancedEngineHandle.equals(MemorySegment.NULL)
         && instanceId != 0;
@@ -432,11 +448,7 @@ final class PanamaComponentInstance implements ComponentInstance {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      // Enhanced component engine manages instance lifecycle
-      // Instances are automatically cleaned up when engine is destroyed
-      // No need to manually destroy individual instances
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -467,8 +479,6 @@ final class PanamaComponentInstance implements ComponentInstance {
   }
 
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Component instance is closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

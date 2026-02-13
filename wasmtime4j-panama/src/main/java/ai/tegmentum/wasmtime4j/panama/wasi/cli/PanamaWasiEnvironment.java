@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.cli;
 
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.cli.WasiEnvironment;
 import java.lang.foreign.Arena;
@@ -58,7 +58,7 @@ public final class PanamaWasiEnvironment implements WasiEnvironment {
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_environment_get_all(context, out_env_vars, out_env_vars_len)

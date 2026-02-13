@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
@@ -70,7 +71,7 @@ public final class PanamaWasiComponent implements WasiComponent {
   private final PanamaComponent.PanamaComponentEngine componentEngine;
   private final PanamaComponent.PanamaComponentHandle componentHandle;
   private final String name;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   // Cached metadata to avoid repeated native calls
   private volatile List<String> cachedExports;
@@ -98,6 +99,22 @@ public final class PanamaWasiComponent implements WasiComponent {
     this.componentHandle =
         Objects.requireNonNull(componentHandle, "Component handle cannot be null");
     this.name = name; // Can be null
+
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiComponent",
+            () -> {
+              // Clear caches
+              cachedExports = null;
+              cachedImports = null;
+              cachedStats = null;
+
+              try {
+                componentHandle.close();
+              } catch (final Throwable t) {
+                throw new Exception("Error closing PanamaWasiComponent component handle", t);
+              }
+            });
 
     LOGGER.fine("Created Panama WASI component with name: " + (name != null ? name : "unnamed"));
   }
@@ -251,27 +268,12 @@ public final class PanamaWasiComponent implements WasiComponent {
 
   @Override
   public boolean isValid() {
-    return !closed && componentEngine.isValid() && componentHandle.isValid();
+    return !resourceHandle.isClosed() && componentEngine.isValid() && componentHandle.isValid();
   }
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-
-      // Clear caches
-      cachedExports = null;
-      cachedImports = null;
-      cachedStats = null;
-
-      try {
-        componentHandle.close();
-      } catch (Exception e) {
-        LOGGER.warning("Error closing component handle: " + e.getMessage());
-      }
-
-      LOGGER.fine("Closed Panama WASI component: " + (name != null ? name : "unnamed"));
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -303,9 +305,7 @@ public final class PanamaWasiComponent implements WasiComponent {
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Component has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**

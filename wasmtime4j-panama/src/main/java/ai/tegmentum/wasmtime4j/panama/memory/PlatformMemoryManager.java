@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama.memory;
 
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.GroupLayout;
@@ -172,7 +173,7 @@ public final class PlatformMemoryManager implements AutoCloseable {
   // Native handle to the platform memory allocator
   private MemorySegment nativeHandle;
   private final Arena arena;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /** Configuration for platform-specific memory management. */
   public static final class Config {
@@ -359,6 +360,34 @@ public final class PlatformMemoryManager implements AutoCloseable {
 
       LOGGER.log(
           Level.INFO, "Platform memory manager created with handle: {0}", nativeHandle.address());
+
+      // Capture local reference for safety net (must not capture 'this')
+      final MemorySegment handleForCleanup = this.nativeHandle;
+
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PlatformMemoryManager",
+              () -> {
+                if (nativeHandle != null && nativeHandle.address() != 0) {
+                  try {
+                    DESTROY_ALLOCATOR.invoke(nativeHandle);
+                  } catch (final Throwable t) {
+                    throw new Exception("Failed to destroy platform memory allocator", t);
+                  }
+                  nativeHandle = null;
+                  LOGGER.log(Level.INFO, "Platform memory manager closed");
+                }
+              },
+              this,
+              () -> {
+                if (handleForCleanup != null && handleForCleanup.address() != 0) {
+                  try {
+                    DESTROY_ALLOCATOR.invoke(handleForCleanup);
+                  } catch (final Throwable t) {
+                    LOGGER.log(Level.WARNING, "Safety net cleanup failed", t);
+                  }
+                }
+              });
 
     } catch (Throwable t) {
       throw new RuntimeException("Failed to create platform memory manager", t);
@@ -670,31 +699,16 @@ public final class PlatformMemoryManager implements AutoCloseable {
    * @return true if closed, false otherwise
    */
   public boolean isClosed() {
-    return closed;
+    return resourceHandle.isClosed();
   }
 
   /** Closes the platform memory manager and releases native resources. */
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    if (nativeHandle != null && nativeHandle.address() != 0) {
-      try {
-        DESTROY_ALLOCATOR.invoke(nativeHandle);
-        nativeHandle = null;
-        LOGGER.log(Level.INFO, "Platform memory manager closed");
-      } catch (Throwable t) {
-        LOGGER.log(Level.WARNING, "Error during platform memory manager cleanup", t);
-      }
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Platform memory manager has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

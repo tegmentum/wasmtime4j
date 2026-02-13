@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.logging.Logger;
 
@@ -18,7 +19,7 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
   private final PanamaInstance instance;
   private final FunctionType functionType;
   private final String name;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama function that delegates to an instance.
@@ -41,6 +42,12 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
     this.instance = instance;
     this.functionType = functionType;
     this.name = name;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaFunction",
+            () -> {
+              LOGGER.fine("Closed Panama function: " + name);
+            });
 
     LOGGER.fine("Created Panama function: " + name);
   }
@@ -133,16 +140,7 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
 
   /** Closes the function and releases resources. */
   public void close() {
-    if (closed) {
-      return;
-    }
-
-    try {
-      closed = true;
-      LOGGER.fine("Closed Panama function: " + name);
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing function: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -151,8 +149,6 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Function has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiNetwork;
 import java.lang.foreign.Arena;
@@ -50,7 +50,7 @@ public final class PanamaWasiNetwork implements WasiNetwork {
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_network_create(context_handle, out_network_handle)
@@ -78,8 +78,8 @@ public final class PanamaWasiNetwork implements WasiNetwork {
   /** The native network handle. */
   private final long networkHandle;
 
-  /** Whether this network has been closed. */
-  private volatile boolean closed = false;
+  /** Resource lifecycle handle. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI network with the given native context handle.
@@ -129,6 +129,30 @@ public final class PanamaWasiNetwork implements WasiNetwork {
     }
     this.contextHandle = contextHandle;
     this.networkHandle = networkHandle;
+
+    // Capture handle values for safety net (must not capture 'this')
+    final MemorySegment safetyCtx = contextHandle;
+    final long safetyNetwork = networkHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiNetwork",
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(safetyCtx, safetyNetwork);
+              } catch (final Throwable t) {
+                throw new Exception("Error closing network handle: " + safetyNetwork, t);
+              }
+            },
+            this,
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(safetyCtx, safetyNetwork);
+              } catch (final Throwable t) {
+                LOGGER.warning(
+                    "Safety net failed to close network handle " + safetyNetwork + ": " + t);
+              }
+            });
+
     LOGGER.fine(
         "Created Panama WASI network with context handle: "
             + contextHandle
@@ -138,18 +162,7 @@ public final class PanamaWasiNetwork implements WasiNetwork {
 
   @Override
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      CLOSE_HANDLE.invoke(contextHandle, networkHandle);
-      LOGGER.fine("Closed Panama WASI network with handle: " + networkHandle);
-
-    } catch (final Throwable e) {
-      throw new RuntimeException("Error closing network: " + e.getMessage(), e);
-    }
+    resourceHandle.close();
   }
 
   /**

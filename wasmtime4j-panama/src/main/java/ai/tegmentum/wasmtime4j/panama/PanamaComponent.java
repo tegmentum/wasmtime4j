@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -95,7 +96,7 @@ public final class PanamaComponent {
     private final ArenaResourceManager resourceManager;
     private final NativeComponentBindings nativeFunctions;
     private final ArenaResourceManager.ManagedNativeResource engineResource;
-    private volatile boolean closed = false;
+    private final NativeResourceHandle resourceHandle;
 
     /**
      * Creates a new component engine wrapper with arena-based resource management.
@@ -123,6 +124,14 @@ public final class PanamaComponent {
                 enginePtr,
                 () -> destroyNativeComponentEngine(enginePtr),
                 "Wasmtime Component Engine");
+
+        this.resourceHandle =
+            new NativeResourceHandle(
+                "PanamaComponentEngine",
+                () -> {
+                  engineResource.close();
+                  LOGGER.fine("Closed Panama component engine");
+                });
 
         LOGGER.fine("Created Panama component engine instance with managed resource");
 
@@ -246,22 +255,16 @@ public final class PanamaComponent {
      * @return true if the engine is valid, false if closed
      */
     public boolean isValid() {
-      return !closed && engineResource.isValid();
+      return !resourceHandle.isClosed() && engineResource.isValid();
     }
 
     private void ensureNotClosed() {
-      if (closed) {
-        throw new IllegalStateException("Component engine has been closed");
-      }
+      resourceHandle.ensureNotClosed();
     }
 
     @Override
     public void close() {
-      if (!closed) {
-        closed = true;
-        engineResource.close();
-        LOGGER.fine("Closed Panama component engine");
-      }
+      resourceHandle.close();
     }
 
     // Native method implementations using Panama FFI
@@ -328,7 +331,7 @@ public final class PanamaComponent {
     private final ArenaResourceManager resourceManager;
     private final NativeComponentBindings nativeFunctions;
     private final ArenaResourceManager.ManagedNativeResource componentResource;
-    private volatile boolean closed = false;
+    private final NativeResourceHandle resourceHandle;
 
     /**
      * Creates a new component handle wrapper with arena-based resource management.
@@ -346,6 +349,14 @@ public final class PanamaComponent {
       this.componentResource =
           resourceManager.manageNativeResource(
               componentPtr, () -> destroyNativeComponent(componentPtr), "Wasmtime Component");
+
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaComponentHandle",
+              () -> {
+                componentResource.close();
+                LOGGER.fine("Closed Panama component handle");
+              });
 
       LOGGER.fine("Created Panama component handle with managed resource");
     }
@@ -420,22 +431,16 @@ public final class PanamaComponent {
      * @return true if the component is valid, false if closed
      */
     public boolean isValid() {
-      return !closed && componentResource.isValid();
+      return !resourceHandle.isClosed() && componentResource.isValid();
     }
 
     void ensureNotClosed() {
-      if (closed) {
-        throw new IllegalStateException("Component has been closed");
-      }
+      resourceHandle.ensureNotClosed();
     }
 
     @Override
     public void close() {
-      if (!closed) {
-        closed = true;
-        componentResource.close();
-        LOGGER.fine("Closed Panama component handle");
-      }
+      resourceHandle.close();
     }
 
     // Native method implementations using Panama FFI
@@ -487,7 +492,7 @@ public final class PanamaComponent {
     private final ArenaResourceManager resourceManager;
     private final NativeComponentBindings nativeFunctions;
     private final ArenaResourceManager.ManagedNativeResource instanceResource;
-    private volatile boolean closed = false;
+    private final NativeResourceHandle resourceHandle;
 
     /**
      * Creates a new component instance handle wrapper with arena-based resource management.
@@ -508,6 +513,14 @@ public final class PanamaComponent {
               () -> destroyNativeComponentInstance(instancePtr),
               "Wasmtime Component Instance");
 
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaComponentInstanceHandle",
+              () -> {
+                instanceResource.close();
+                LOGGER.fine("Closed Panama component instance handle");
+              });
+
       LOGGER.fine("Created Panama component instance handle with managed resource");
     }
 
@@ -527,22 +540,16 @@ public final class PanamaComponent {
      * @return true if the instance is valid, false if closed
      */
     public boolean isValid() {
-      return !closed && instanceResource.isValid();
+      return !resourceHandle.isClosed() && instanceResource.isValid();
     }
 
     private void ensureNotClosed() {
-      if (closed) {
-        throw new IllegalStateException("Component instance has been closed");
-      }
+      resourceHandle.ensureNotClosed();
     }
 
     @Override
     public void close() {
-      if (!closed) {
-        closed = true;
-        instanceResource.close();
-        LOGGER.fine("Closed Panama component instance handle");
-      }
+      resourceHandle.close();
     }
 
     // Native method implementations using Panama FFI

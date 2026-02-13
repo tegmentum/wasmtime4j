@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.WasmTypeException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -29,7 +30,7 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
   private final WasmValueType type;
   private final boolean mutable;
   private final Arena arena;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Package-private constructor for wrapping a global export from an instance.
@@ -65,6 +66,16 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
     this.type = type;
     this.mutable = mutable;
     this.arena = Arena.ofShared();
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaInstanceGlobal",
+            () -> {
+              if (arena != null && arena.scope().isAlive()) {
+                arena.close();
+              }
+
+              LOGGER.fine("Closed instance global: " + name);
+            });
 
     LOGGER.fine(
         "Created instance global '" + name + "' with type: " + type + ", mutable: " + mutable);
@@ -275,21 +286,10 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-
-    closed = true;
-    if (arena != null && arena.scope().isAlive()) {
-      arena.close();
-    }
-
-    LOGGER.fine("Closed instance global: " + name);
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Global has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

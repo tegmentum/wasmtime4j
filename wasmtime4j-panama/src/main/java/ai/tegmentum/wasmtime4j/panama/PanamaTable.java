@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.Table;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -25,7 +26,7 @@ public final class PanamaTable implements WasmTable {
   private final PanamaInstance instance;
   private final PanamaStore store; // For tables created directly by store (instance will be null)
   private final WasmValueType elementType;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Package-private constructor for wrapping an existing native table pointer.
@@ -46,6 +47,18 @@ public final class PanamaTable implements WasmTable {
     this.store = null;
     // Query element type from native table metadata
     this.elementType = queryElementTypeFromNative(nativeTable, arena);
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaTable",
+            () -> {
+              try {
+                // TODO: Destroy native table
+                arena.close();
+                LOGGER.fine("Closed Panama table");
+              } catch (final Exception e) {
+                LOGGER.warning("Error closing table: " + e.getMessage());
+              }
+            });
     LOGGER.fine("Wrapped native table pointer with element type: " + this.elementType);
   }
 
@@ -72,6 +85,18 @@ public final class PanamaTable implements WasmTable {
     this.elementType = elementType;
     this.instance = null; // Tables created by store don't have an instance
     this.store = store;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaTable",
+            () -> {
+              try {
+                // TODO: Destroy native table
+                arena.close();
+                LOGGER.fine("Closed Panama table");
+              } catch (final Exception e) {
+                LOGGER.warning("Error closing table: " + e.getMessage());
+              }
+            });
     LOGGER.fine("Created table from store with type: " + elementType);
   }
 
@@ -707,18 +732,7 @@ public final class PanamaTable implements WasmTable {
 
   /** Closes the table and releases resources. */
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      // TODO: Destroy native table
-      arena.close();
-      LOGGER.fine("Closed Panama table");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing table: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -736,9 +750,7 @@ public final class PanamaTable implements WasmTable {
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Table has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**
@@ -763,7 +775,7 @@ public final class PanamaTable implements WasmTable {
 
   @Override
   public boolean supports64BitAddressing() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     try {

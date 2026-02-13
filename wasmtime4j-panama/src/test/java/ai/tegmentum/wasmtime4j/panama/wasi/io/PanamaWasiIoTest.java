@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.panama.wasi.io;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
@@ -109,14 +108,13 @@ class PanamaWasiIoTest {
     @DisplayName("PanamaWasiInputStream should have required WASI I/O methods")
     void inputStreamShouldHaveRequiredMethods() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(INPUT_STREAM_CLASS);
-      // Note: close is inherited from PanamaResource, not declared in PanamaWasiInputStream
       final Set<String> requiredMethods = new HashSet<>();
       requiredMethods.add("read");
       requiredMethods.add("blockingRead");
       requiredMethods.add("skip");
       requiredMethods.add("blockingSkip");
       requiredMethods.add("subscribe");
-      requiredMethods.add("doClose"); // Protected method that implements actual close
+      requiredMethods.add("close");
 
       final Set<String> foundMethods = new HashSet<>();
       for (Method method : clazz.getDeclaredMethods()) {
@@ -210,7 +208,6 @@ class PanamaWasiIoTest {
     @DisplayName("PanamaWasiOutputStream should have required WASI I/O methods")
     void outputStreamShouldHaveRequiredMethods() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(OUTPUT_STREAM_CLASS);
-      // Note: close is inherited from PanamaResource, not declared in PanamaWasiOutputStream
       final Set<String> requiredMethods = new HashSet<>();
       requiredMethods.add("checkWrite");
       requiredMethods.add("write");
@@ -222,7 +219,7 @@ class PanamaWasiIoTest {
       requiredMethods.add("splice");
       requiredMethods.add("blockingSplice");
       requiredMethods.add("subscribe");
-      requiredMethods.add("doClose"); // Protected method that implements actual close
+      requiredMethods.add("close");
 
       final Set<String> foundMethods = new HashSet<>();
       for (Method method : clazz.getDeclaredMethods()) {
@@ -314,11 +311,10 @@ class PanamaWasiIoTest {
     @DisplayName("PanamaWasiPollable should have required pollable methods")
     void pollableShouldHaveRequiredMethods() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(POLLABLE_CLASS);
-      // Note: close is inherited from PanamaResource, not declared in PanamaWasiPollable
       final Set<String> requiredMethods = new HashSet<>();
       requiredMethods.add("block");
       requiredMethods.add("ready");
-      requiredMethods.add("doClose"); // Protected method that implements actual close
+      requiredMethods.add("close");
 
       final Set<String> foundMethods = new HashSet<>();
       for (Method method : clazz.getDeclaredMethods()) {
@@ -541,19 +537,16 @@ class PanamaWasiIoTest {
   class PanamaFfiPatternTests {
 
     @Test
-    @DisplayName("All I/O classes should extend PanamaResource base class")
-    void allIoClassesShouldExtendPanamaResource() throws ClassNotFoundException {
+    @DisplayName("All I/O classes should implement AutoCloseable")
+    void allIoClassesShouldImplementAutoCloseable() throws ClassNotFoundException {
       final String[] classNames = {INPUT_STREAM_CLASS, OUTPUT_STREAM_CLASS, POLLABLE_CLASS};
 
       for (String className : classNames) {
         final Class<?> clazz = loadClassWithoutInit(className);
-        final Class<?> superclass = clazz.getSuperclass();
-        assertNotNull(superclass, className + " should have a superclass");
-        assertEquals(
-            "PanamaResource",
-            superclass.getSimpleName(),
-            className + " should extend PanamaResource");
-        LOGGER.info(className + " extends: " + superclass.getName());
+        assertTrue(
+            AutoCloseable.class.isAssignableFrom(clazz),
+            className + " should implement AutoCloseable");
+        LOGGER.info(className + " implements AutoCloseable: true");
       }
     }
 
@@ -666,48 +659,43 @@ class PanamaWasiIoTest {
     }
 
     @Test
-    @DisplayName("I/O classes should have doClose protected method")
-    void ioClassesShouldHaveDoCloseMethod() throws ClassNotFoundException {
+    @DisplayName("I/O classes should have close method")
+    void ioClassesShouldHaveCloseMethod() throws ClassNotFoundException {
       final String[] classNames = {INPUT_STREAM_CLASS, OUTPUT_STREAM_CLASS, POLLABLE_CLASS};
 
       for (String className : classNames) {
         final Class<?> clazz = loadClassWithoutInit(className);
-        boolean hasDoClose = false;
+        boolean hasClose = false;
         for (Method method : clazz.getDeclaredMethods()) {
-          if (method.getName().equals("doClose")) {
-            hasDoClose = true;
+          if (method.getName().equals("close") && method.getParameterCount() == 0) {
+            hasClose = true;
             assertTrue(
-                Modifier.isProtected(method.getModifiers()),
-                "doClose in " + className + " should be protected");
-            LOGGER.info(className + " has doClose method");
+                Modifier.isPublic(method.getModifiers()),
+                "close in " + className + " should be public");
+            LOGGER.info(className + " has close method");
             break;
           }
         }
-        assertTrue(hasDoClose, className + " should have doClose method");
+        assertTrue(hasClose, className + " should have close method");
       }
     }
 
     @Test
-    @DisplayName("I/O classes should have getResourceType protected method")
-    void ioClassesShouldHaveGetResourceTypeMethod() throws ClassNotFoundException {
+    @DisplayName("I/O classes should have NativeResourceHandle field for lifecycle management")
+    void ioClassesShouldHaveResourceHandleField() throws ClassNotFoundException {
       final String[] classNames = {INPUT_STREAM_CLASS, OUTPUT_STREAM_CLASS, POLLABLE_CLASS};
 
       for (String className : classNames) {
         final Class<?> clazz = loadClassWithoutInit(className);
-        boolean hasGetResourceType = false;
-        for (Method method : clazz.getDeclaredMethods()) {
-          if (method.getName().equals("getResourceType")
-              && method.getParameterCount() == 0
-              && method.getReturnType() == String.class) {
-            hasGetResourceType = true;
-            assertTrue(
-                Modifier.isProtected(method.getModifiers()),
-                "getResourceType in " + className + " should be protected");
-            LOGGER.info(className + " has getResourceType method");
+        boolean hasResourceHandle = false;
+        for (Field field : clazz.getDeclaredFields()) {
+          if (field.getType().getSimpleName().equals("NativeResourceHandle")) {
+            hasResourceHandle = true;
+            LOGGER.info(className + " has NativeResourceHandle field: " + field.getName());
             break;
           }
         }
-        assertTrue(hasGetResourceType, className + " should have getResourceType method");
+        assertTrue(hasResourceHandle, className + " should have NativeResourceHandle field");
       }
     }
   }
@@ -767,22 +755,17 @@ class PanamaWasiIoTest {
     }
 
     @Test
-    @DisplayName("All I/O classes should have common PanamaResource ancestor")
-    void allIoClassesShouldShareCommonAncestor() throws ClassNotFoundException {
+    @DisplayName("All I/O classes should implement AutoCloseable")
+    void allIoClassesShouldImplementAutoCloseable() throws ClassNotFoundException {
       final String[] classNames = {INPUT_STREAM_CLASS, OUTPUT_STREAM_CLASS, POLLABLE_CLASS};
-      Class<?> commonAncestor = null;
 
       for (String className : classNames) {
         final Class<?> clazz = loadClassWithoutInit(className);
-        final Class<?> superclass = clazz.getSuperclass();
-        if (commonAncestor == null) {
-          commonAncestor = superclass;
-        } else {
-          assertEquals(commonAncestor, superclass, "All I/O classes should have same superclass");
-        }
+        assertTrue(
+            AutoCloseable.class.isAssignableFrom(clazz),
+            className + " should implement AutoCloseable");
+        LOGGER.info(className + " implements AutoCloseable: true");
       }
-      assertNotNull(commonAncestor, "Common ancestor should not be null");
-      LOGGER.info("All I/O classes share common ancestor: " + commonAncestor.getName());
     }
   }
 }

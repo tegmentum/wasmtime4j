@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.panama.wasi.filesystem;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.filesystem.WasiDescriptor;
@@ -101,16 +100,15 @@ class PanamaWasiFilesystemTest {
     }
 
     @Test
-    @DisplayName("PanamaWasiDescriptor should extend PanamaResource")
-    void descriptorShouldExtendPanamaResource() throws ClassNotFoundException {
+    @DisplayName("PanamaWasiDescriptor should implement AutoCloseable")
+    void descriptorShouldImplementAutoCloseable() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(DESCRIPTOR_CLASS);
-      final Class<?> superclass = clazz.getSuperclass();
-      assertNotNull(superclass, "PanamaWasiDescriptor should have a superclass");
-      assertEquals(
-          "PanamaResource",
-          superclass.getSimpleName(),
-          "PanamaWasiDescriptor should extend PanamaResource");
-      LOGGER.info("PanamaWasiDescriptor extends: " + superclass.getName());
+      assertTrue(
+          AutoCloseable.class.isAssignableFrom(clazz),
+          "PanamaWasiDescriptor should implement AutoCloseable");
+      LOGGER.info(
+          "PanamaWasiDescriptor implements AutoCloseable: "
+              + AutoCloseable.class.isAssignableFrom(clazz));
     }
 
     @Test
@@ -143,7 +141,7 @@ class PanamaWasiFilesystemTest {
       requiredMethods.add("linkAt");
       // Utility operations
       requiredMethods.add("isSameObject");
-      requiredMethods.add("doClose"); // Protected method that implements actual close
+      requiredMethods.add("close");
 
       final Set<String> foundMethods = new HashSet<>();
       for (Method method : clazz.getDeclaredMethods()) {
@@ -667,28 +665,18 @@ class PanamaWasiFilesystemTest {
     }
 
     @Test
-    @DisplayName("Descriptor should have doClose and getResourceType protected methods")
-    void descriptorShouldHaveProtectedMethods() throws ClassNotFoundException {
+    @DisplayName("Descriptor should have public close method")
+    void descriptorShouldHavePublicCloseMethod() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(DESCRIPTOR_CLASS);
-      boolean hasDoClose = false;
-      boolean hasGetResourceType = false;
+      boolean hasClose = false;
       for (Method method : clazz.getDeclaredMethods()) {
-        if (method.getName().equals("doClose")) {
-          hasDoClose = true;
-          assertTrue(Modifier.isProtected(method.getModifiers()), "doClose should be protected");
-          LOGGER.info("Found doClose method");
-        }
-        if (method.getName().equals("getResourceType")
-            && method.getParameterCount() == 0
-            && method.getReturnType() == String.class) {
-          hasGetResourceType = true;
-          assertTrue(
-              Modifier.isProtected(method.getModifiers()), "getResourceType should be protected");
-          LOGGER.info("Found getResourceType method");
+        if (method.getName().equals("close") && method.getParameterCount() == 0) {
+          hasClose = true;
+          assertTrue(Modifier.isPublic(method.getModifiers()), "close should be public");
+          LOGGER.info("Found close method");
         }
       }
-      assertTrue(hasDoClose, "PanamaWasiDescriptor should have doClose method");
-      assertTrue(hasGetResourceType, "PanamaWasiDescriptor should have getResourceType method");
+      assertTrue(hasClose, "PanamaWasiDescriptor should have close method");
     }
   }
 }

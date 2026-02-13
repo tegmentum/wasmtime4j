@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddress;
 import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address;
@@ -56,7 +56,7 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_resolve_stream_next(context_handle, stream_handle, out_result)
@@ -102,8 +102,8 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
   /** The native stream handle. */
   private final long streamHandle;
 
-  /** Whether this stream has been closed. */
-  private volatile boolean closed = false;
+  /** Resource lifecycle handle. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama resolve address stream with the given handles.
@@ -119,6 +119,30 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
     }
     this.contextHandle = contextHandle;
     this.streamHandle = streamHandle;
+
+    // Capture handle values for safety net (must not capture 'this')
+    final MemorySegment safetyCtx = contextHandle;
+    final long safetyStream = streamHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaResolveAddressStream",
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(safetyCtx, safetyStream);
+              } catch (final Throwable t) {
+                throw new Exception("Error closing resolve stream handle: " + safetyStream, t);
+              }
+            },
+            this,
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(safetyCtx, safetyStream);
+              } catch (final Throwable t) {
+                LOGGER.warning(
+                    "Safety net failed to close resolve stream handle " + safetyStream + ": " + t);
+              }
+            });
+
     LOGGER.fine(
         "Created Panama resolve address stream with context handle: "
             + contextHandle
@@ -128,7 +152,7 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
 
   @Override
   public Optional<IpAddress> resolveNextAddress() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new IllegalStateException("Stream has been closed");
     }
 
@@ -185,7 +209,7 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
 
   @Override
   public void subscribe() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new IllegalStateException("Stream has been closed");
     }
 
@@ -198,7 +222,7 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
 
   @Override
   public boolean isClosed() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return true;
     }
 
@@ -213,16 +237,6 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
 
   @Override
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      CLOSE_HANDLE.invoke(contextHandle, streamHandle);
-      LOGGER.fine("Closed Panama resolve address stream with handle: " + streamHandle);
-    } catch (final Throwable e) {
-      throw new RuntimeException("Error closing stream: " + e.getMessage(), e);
-    }
+    resourceHandle.close();
   }
 }

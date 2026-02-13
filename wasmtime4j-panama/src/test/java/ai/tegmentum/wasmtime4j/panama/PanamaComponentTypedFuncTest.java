@@ -110,13 +110,12 @@ class PanamaComponentTypedFuncTest {
     }
 
     @Test
-    @DisplayName("Should have closed field")
-    void shouldHaveClosedField() throws NoSuchFieldException {
-      Field field = PanamaComponentTypedFunc.class.getDeclaredField("closed");
-      assertNotNull(field, "closed field should exist");
-      assertEquals(boolean.class, field.getType(), "Should be boolean type");
+    @DisplayName("Should have resourceHandle field")
+    void shouldHaveResourceHandleField() throws NoSuchFieldException {
+      Field field = PanamaComponentTypedFunc.class.getDeclaredField("resourceHandle");
+      assertNotNull(field, "resourceHandle field should exist");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "Should be private");
-      assertTrue(Modifier.isVolatile(field.getModifiers()), "Should be volatile");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "Should be final");
     }
   }
 
@@ -595,14 +594,17 @@ class PanamaComponentTypedFuncTest {
       StubComponentFunc stubFunc = new StubComponentFunc();
       PanamaComponentTypedFunc typedFunc = new PanamaComponentTypedFunc(stubFunc, "s32->s32");
 
-      Field closedField = PanamaComponentTypedFunc.class.getDeclaredField("closed");
-      closedField.setAccessible(true);
+      Field resourceHandleField = PanamaComponentTypedFunc.class.getDeclaredField("resourceHandle");
+      resourceHandleField.setAccessible(true);
+      Object resourceHandle = resourceHandleField.get(typedFunc);
+      Method isClosedMethod = resourceHandle.getClass().getMethod("isClosed");
 
-      assertFalse(closedField.getBoolean(typedFunc), "Should not be closed initially");
+      assertFalse(
+          (boolean) isClosedMethod.invoke(resourceHandle), "Should not be closed initially");
 
       typedFunc.close();
 
-      assertTrue(closedField.getBoolean(typedFunc), "Should be closed after close()");
+      assertTrue((boolean) isClosedMethod.invoke(resourceHandle), "Should be closed after close()");
     }
   }
 

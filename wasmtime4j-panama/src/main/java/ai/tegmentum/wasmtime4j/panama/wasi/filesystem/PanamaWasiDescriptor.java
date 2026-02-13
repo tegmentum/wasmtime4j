@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.filesystem;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiInputStream;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiOutputStream;
@@ -54,7 +54,7 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class PanamaWasiDescriptor extends PanamaResource implements WasiDescriptor {
+public final class PanamaWasiDescriptor implements WasiDescriptor, AutoCloseable {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWasiDescriptor.class.getName());
 
@@ -91,7 +91,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // Stream operations
@@ -296,8 +296,9 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
   }
 
-  /** The native context handle. */
+  private final MemorySegment nativeHandle;
   private final MemorySegment contextHandle;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI descriptor with the given native handles.
@@ -308,9 +309,35 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
    */
   public PanamaWasiDescriptor(
       final MemorySegment contextHandle, final MemorySegment descriptorHandle) {
-    super(descriptorHandle);
+    PanamaValidation.requireNonNull(descriptorHandle, "descriptorHandle");
     PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    this.nativeHandle = descriptorHandle;
     this.contextHandle = contextHandle;
+
+    final MemorySegment ctx = this.contextHandle;
+    final MemorySegment handle = this.nativeHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiDescriptor",
+            () -> {
+              try {
+                final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
+                if (result != 0) {
+                  LOGGER.warning("Failed to close WASI descriptor (error code: " + result + ")");
+                }
+              } catch (final Throwable e) {
+                throw new Exception("Error closing WASI descriptor", e);
+              }
+            },
+            this,
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(ctx, handle);
+              } catch (final Throwable e) {
+                LOGGER.warning("Safety net: error closing WASI descriptor: " + e.getMessage());
+              }
+            });
+
     LOGGER.fine("Created Panama WASI descriptor with handle: " + descriptorHandle);
   }
 
@@ -321,7 +348,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -356,7 +383,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -389,7 +416,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
   public WasiOutputStream appendViaStream() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -421,7 +448,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
   public DescriptorType getDescriptorType() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -448,7 +475,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
   public Set<DescriptorFlags> getFlags() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -478,7 +505,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -500,7 +527,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
   public void syncData() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -522,7 +549,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
   public void sync() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -556,7 +583,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
 
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -606,7 +633,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -634,7 +661,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
   public List<String> readDirectory() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -698,7 +725,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -745,7 +772,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -776,7 +803,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -815,7 +842,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -828,7 +855,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     final MemorySegment newDescriptorHandle;
     try {
       newDescriptorHandle = ((PanamaWasiDescriptor) newDescriptor).getNativeHandle();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("New descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -871,7 +898,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -923,7 +950,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -936,7 +963,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     final MemorySegment newDescriptorHandle;
     try {
       newDescriptorHandle = ((PanamaWasiDescriptor) newDescriptor).getNativeHandle();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("New descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -979,7 +1006,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     }
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -991,7 +1018,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
     final MemorySegment otherHandle;
     try {
       otherHandle = ((PanamaWasiDescriptor) other).getNativeHandle();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Other descriptor is closed: " + e.getMessage(), e);
     }
 
@@ -1102,7 +1129,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle createHandle() throws WasmException {
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
     return new ai.tegmentum.wasmtime4j.panama.wasi.PanamaWasiResourceHandle(this);
@@ -1115,7 +1142,7 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
         targetInstance, "targetInstance");
     try {
       ensureNotClosed();
-    } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaResourceException e) {
+    } catch (final IllegalStateException e) {
       throw new WasmException("Descriptor is closed: " + e.getMessage(), e);
     }
     LOGGER.fine(
@@ -1125,21 +1152,32 @@ public final class PanamaWasiDescriptor extends PanamaResource implements WasiDe
             + targetInstance.getId());
   }
 
-  @Override
-  protected void doClose() throws Exception {
-    try {
-      final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
-      if (result != 0) {
-        LOGGER.warning("Failed to close WASI descriptor (error code: " + result + ")");
-      }
-    } catch (final Throwable e) {
-      throw new Exception("Error closing WASI descriptor", e);
-    }
+  /**
+   * Returns the native descriptor handle.
+   *
+   * @return the native memory segment
+   */
+  public MemorySegment getNativeHandle() {
+    ensureNotClosed();
+    return nativeHandle;
+  }
+
+  /**
+   * Checks if this descriptor has been closed.
+   *
+   * @return true if closed
+   */
+  public boolean isClosed() {
+    return resourceHandle.isClosed();
   }
 
   @Override
-  protected String getResourceType() {
-    return "WasiDescriptor";
+  public void close() {
+    resourceHandle.close();
+  }
+
+  private void ensureNotClosed() {
+    resourceHandle.ensureNotClosed();
   }
 
   // Helper methods for encoding/decoding flag sets

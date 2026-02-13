@@ -33,7 +33,6 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -139,11 +138,10 @@ class PanamaComponentInstanceTest {
     }
 
     @Test
-    @DisplayName("Should have closed field")
-    void shouldHaveClosedField() throws NoSuchFieldException {
-      Field field = PanamaComponentInstance.class.getDeclaredField("closed");
-      assertNotNull(field, "closed field should exist");
-      assertEquals(AtomicBoolean.class, field.getType(), "Should be AtomicBoolean type");
+    @DisplayName("Should have resourceHandle field")
+    void shouldHaveResourceHandleField() throws NoSuchFieldException {
+      Field field = PanamaComponentInstance.class.getDeclaredField("resourceHandle");
+      assertNotNull(field, "resourceHandle field should exist");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "Should be private");
       assertTrue(Modifier.isFinal(field.getModifiers()), "Should be final");
     }

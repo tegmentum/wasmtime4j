@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.lang.foreign.MemorySegment;
 import java.util.logging.Logger;
 
@@ -23,7 +24,7 @@ public final class PanamaExnRef implements ExnRef {
 
   private final MemorySegment nativeHandle;
   private final MemorySegment storeHandle;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new PanamaExnRef wrapping a native exception reference.
@@ -37,6 +38,13 @@ public final class PanamaExnRef implements ExnRef {
     }
     this.nativeHandle = nativeHandle;
     this.storeHandle = storeHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaExnRef",
+            () -> {
+              NATIVE_BINDINGS.exnRefDestroy(nativeHandle);
+              LOGGER.fine("Destroyed exception reference");
+            });
   }
 
   @Override
@@ -77,7 +85,7 @@ public final class PanamaExnRef implements ExnRef {
 
   @Override
   public boolean isValid() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     return NATIVE_BINDINGS.exnRefIsValid(nativeHandle, storeHandle) != 0;
@@ -85,16 +93,10 @@ public final class PanamaExnRef implements ExnRef {
 
   /** Closes this exception reference and releases native resources. */
   public void close() {
-    if (!closed) {
-      closed = true;
-      NATIVE_BINDINGS.exnRefDestroy(nativeHandle);
-      LOGGER.fine("Destroyed exception reference");
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("ExnRef has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

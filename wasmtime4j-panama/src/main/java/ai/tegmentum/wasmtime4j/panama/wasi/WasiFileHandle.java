@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
-import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -37,8 +37,8 @@ public final class WasiFileHandle implements AutoCloseable {
   /** The file operation type this handle supports. */
   private final WasiFileOperation operation;
 
-  /** Whether this handle has been closed. */
-  private volatile boolean closed = false;
+  /** Resource handle for lifecycle management. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new WASI file handle.
@@ -64,6 +64,38 @@ public final class WasiFileHandle implements AutoCloseable {
     this.channel = channel;
     this.fileChannel = fileChannel;
     this.operation = operation;
+
+    // Capture channel locally for safety net (must NOT capture 'this')
+    final SeekableByteChannel channelRef = this.channel;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "WasiFileHandle",
+            () -> {
+              LOGGER.fine(
+                  String.format("Closing file handle: fd=%d, path=%s", fileDescriptor, path));
+              try {
+                channelRef.close();
+                LOGGER.fine(
+                    String.format("File handle closed successfully: fd=%d", fileDescriptor));
+              } catch (final Exception e) {
+                throw new Exception(
+                    String.format(
+                        "Error closing file handle: fd=%d, error=%s",
+                        fileDescriptor, e.getMessage()),
+                    e);
+              }
+            },
+            this,
+            () -> {
+              try {
+                channelRef.close();
+              } catch (final Exception e) {
+                LOGGER.warning(
+                    String.format(
+                        "Error closing file handle in safety net: fd=%d, error=%s",
+                        fileDescriptor, e.getMessage()));
+              }
+            });
 
     LOGGER.fine(
         String.format(
@@ -126,7 +158,7 @@ public final class WasiFileHandle implements AutoCloseable {
    * @return true if closed, false otherwise
    */
   public boolean isClosed() {
-    return closed;
+    return resourceHandle.isClosed();
   }
 
   /**
@@ -136,28 +168,7 @@ public final class WasiFileHandle implements AutoCloseable {
    */
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-
-    synchronized (this) {
-      if (closed) {
-        return;
-      }
-
-      LOGGER.fine(String.format("Closing file handle: fd=%d, path=%s", fileDescriptor, path));
-
-      try {
-        channel.close();
-        LOGGER.fine(String.format("File handle closed successfully: fd=%d", fileDescriptor));
-      } catch (final IOException e) {
-        LOGGER.warning(
-            String.format(
-                "Error closing file handle: fd=%d, error=%s", fileDescriptor, e.getMessage()));
-      } finally {
-        closed = true;
-      }
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -166,10 +177,7 @@ public final class WasiFileHandle implements AutoCloseable {
    * @throws IllegalStateException if the handle is closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException(
-          String.format("File handle is closed: fd=%d, path=%s", fileDescriptor, path));
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   // Note: finalize() method removed to avoid deprecation warnings.
@@ -179,6 +187,6 @@ public final class WasiFileHandle implements AutoCloseable {
   public String toString() {
     return String.format(
         "WasiFileHandle{fd=%d, path=%s, operation=%s, closed=%s}",
-        fileDescriptor, path, operation, closed);
+        fileDescriptor, path, operation, resourceHandle.isClosed());
   }
 }

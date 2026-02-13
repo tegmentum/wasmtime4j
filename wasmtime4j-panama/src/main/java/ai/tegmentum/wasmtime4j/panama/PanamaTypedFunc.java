@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -59,8 +60,8 @@ public final class PanamaTypedFunc implements TypedFunc {
   /** Function signature string (e.g., "ii->i" for (i32, i32) -> i32). */
   private final String signature;
 
-  /** Flag to track if this resource has been closed. */
-  private volatile boolean closed = false;
+  /** Resource handle for managing lifecycle and cleanup. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a typed function wrapper from a regular function.
@@ -93,6 +94,13 @@ public final class PanamaTypedFunc implements TypedFunc {
     this.signature = signature;
 
     LOGGER.log(Level.FINE, "Created TypedFunc with signature: {0}", signature);
+
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaTypedFunc",
+            () -> {
+              LOGGER.log(Level.FINE, "Closed TypedFunc with signature: {0}", signature);
+            });
   }
 
   /**
@@ -442,16 +450,7 @@ public final class PanamaTypedFunc implements TypedFunc {
 
   /** Closes the typed function and releases resources. */
   public void close() {
-    if (closed) {
-      return;
-    }
-
-    try {
-      closed = true;
-      LOGGER.log(Level.FINE, "Closed TypedFunc with signature: {0}", signature);
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing typed function: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -460,8 +459,6 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("TypedFunc has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

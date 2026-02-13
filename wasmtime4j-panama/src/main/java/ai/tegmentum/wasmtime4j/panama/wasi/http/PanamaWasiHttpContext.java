@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeHttpBindings;
 import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
 import ai.tegmentum.wasmtime4j.panama.PanamaStore;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
@@ -29,7 +30,6 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -46,7 +46,7 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
   private final MemorySegment contextPtr;
   private final NativeHttpBindings bindings;
   private final PanamaWasiHttpStats stats;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
   private final Arena arena;
 
   /**
@@ -67,6 +67,32 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
         throw new WasmException("Failed to create native WASI HTTP context");
       }
       this.stats = new PanamaWasiHttpStats(contextPtr, bindings);
+
+      // Capture values for safety net (must not capture 'this')
+      final MemorySegment safetyCtxPtr = this.contextPtr;
+      final NativeHttpBindings safetyBindings = this.bindings;
+      final Arena safetyArena = this.arena;
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaWasiHttpContext",
+              () -> {
+                try {
+                  safetyBindings.wasiHttpContextFree(safetyCtxPtr);
+                } finally {
+                  safetyArena.close();
+                }
+              },
+              this,
+              () -> {
+                try {
+                  safetyBindings.wasiHttpContextFree(safetyCtxPtr);
+                } catch (final Throwable t) {
+                  LOGGER.warning("Safety net failed to free HTTP context: " + t);
+                } finally {
+                  safetyArena.close();
+                }
+              });
+
       LOGGER.fine("Created WASI HTTP context: " + bindings.wasiHttpContextGetId(contextPtr));
     } catch (final WasmException e) {
       arena.close();
@@ -211,7 +237,7 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("WASI HTTP context has been closed");
     }
 
@@ -252,7 +278,7 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
 
   @Override
   public boolean isValid() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     return bindings.wasiHttpContextIsValid(contextPtr) != 0;
@@ -263,7 +289,7 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
     if (host == null) {
       throw new IllegalArgumentException("host cannot be null");
     }
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
 
@@ -273,7 +299,7 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
 
   @Override
   public void resetStats() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       throw new IllegalStateException("WASI HTTP context has been closed");
     }
     bindings.wasiHttpContextResetStats(contextPtr);
@@ -281,21 +307,14 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      try {
-        bindings.wasiHttpContextFree(contextPtr);
-        LOGGER.fine("Closed WASI HTTP context");
-      } finally {
-        arena.close();
-      }
-    }
+    resourceHandle.close();
   }
 
   @Override
   public String toString() {
     return "PanamaWasiHttpContext{"
         + "id="
-        + (closed.get() ? "closed" : bindings.wasiHttpContextGetId(contextPtr))
+        + (resourceHandle.isClosed() ? "closed" : bindings.wasiHttpContextGetId(contextPtr))
         + ", valid="
         + isValid()
         + '}';

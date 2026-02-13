@@ -8,13 +8,13 @@ import ai.tegmentum.wasmtime4j.concurrent.WasmThreadLocalStorage;
 import ai.tegmentum.wasmtime4j.concurrent.WasmThreadState;
 import ai.tegmentum.wasmtime4j.concurrent.WasmThreadStatistics;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -57,8 +57,8 @@ public final class PanamaWasmThread implements WasmThread {
   /** Memory arena for resource management. */
   private final Arena arena;
 
-  /** Whether this thread has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  /** Resource lifecycle handle for thread-safe close. */
+  private final NativeResourceHandle resourceHandle;
 
   /** Current thread state. */
   private final AtomicReference<WasmThreadState> currentState =
@@ -100,9 +100,31 @@ public final class PanamaWasmThread implements WasmThread {
     this.arena = arena;
     this.threadLocalStorage = new PanamaWasmThreadLocalStorage(nativeHandle, arena);
 
-    // Register for cleanup
-    // TODO: Register resource when PanamaResourceRegistry is implemented
-    // PanamaResourceRegistry.register(this, nativeHandle.address());
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasmThread",
+            () -> {
+              // Request termination first
+              if (isAlive()) {
+                final CompletableFuture<Void> termination = terminate();
+                try {
+                  termination.get(10, TimeUnit.SECONDS);
+                } catch (final Exception e) {
+                  // Force termination if graceful termination failed
+                  try {
+                    forceTerminate();
+                  } catch (final Exception ignored) {
+                    // Ignore errors during force termination
+                  }
+                }
+              }
+
+              // Clean up thread-local storage
+              ((PanamaWasmThreadLocalStorage) threadLocalStorage).close();
+
+              // TODO: Clean up native resources when PanamaThreadingBindings is available
+              // PanamaThreadingBindings.destroyThread(nativeHandle);
+            });
   }
 
   @Override
@@ -212,7 +234,7 @@ public final class PanamaWasmThread implements WasmThread {
 
   @Override
   public CompletableFuture<Void> terminate() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return CompletableFuture.completedFuture(null);
     }
 
@@ -266,7 +288,7 @@ public final class PanamaWasmThread implements WasmThread {
 
   @Override
   public boolean isAlive() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
 
@@ -339,38 +361,7 @@ public final class PanamaWasmThread implements WasmThread {
 
   @Override
   public void close() throws WasmException {
-    if (!closed.compareAndSet(false, true)) {
-      return; // Already closed
-    }
-
-    try {
-      // Request termination first
-      if (isAlive()) {
-        final CompletableFuture<Void> termination = terminate();
-        try {
-          termination.get(10, TimeUnit.SECONDS);
-        } catch (final Exception e) {
-          // Force termination if graceful termination failed
-          try {
-            forceTerminate();
-          } catch (final Exception ignored) {
-            // Ignore errors during force termination
-          }
-        }
-      }
-
-      // Clean up thread-local storage
-      ((PanamaWasmThreadLocalStorage) threadLocalStorage).close();
-
-      // TODO: Clean up native resources when PanamaThreadingBindings is available
-      // PanamaThreadingBindings.destroyThread(nativeHandle);
-
-      // TODO: Unregister from cleanup when PanamaResourceRegistry is available
-      // PanamaResourceRegistry.unregister(nativeHandle.address());
-
-    } catch (final Exception e) {
-      throw new WasmException("Failed to close thread: " + e.getMessage(), e);
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -397,9 +388,7 @@ public final class PanamaWasmThread implements WasmThread {
    * @throws IllegalStateException if the thread has been closed
    */
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Thread has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**

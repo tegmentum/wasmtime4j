@@ -9,6 +9,7 @@ import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.ModuleImport;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
@@ -38,7 +39,7 @@ public final class PanamaModule implements Module {
   private final Arena arena;
   private final MemorySegment nativeModule;
   private final byte[] wasmBytes;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama module from compiled bytecode.
@@ -75,6 +76,25 @@ public final class PanamaModule implements Module {
       throw new WasmException("Failed to compile WASM module");
     }
 
+    final MemorySegment moduleHandle = this.nativeModule;
+    final Arena moduleArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaModule",
+            () -> {
+              if (nativeModule != null && !nativeModule.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.moduleDestroy(nativeModule);
+              }
+              arena.close();
+            },
+            this,
+            () -> {
+              if (moduleHandle != null && !moduleHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.moduleDestroy(moduleHandle);
+              }
+              moduleArena.close();
+            });
+
     LOGGER.fine("Created Panama module");
   }
 
@@ -102,6 +122,25 @@ public final class PanamaModule implements Module {
     this.wasmBytes = null; // WAT modules don't have original bytes
     this.arena = Arena.ofShared();
     this.nativeModule = nativeModulePtr;
+
+    final MemorySegment moduleHandle = this.nativeModule;
+    final Arena moduleArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaModule",
+            () -> {
+              if (nativeModule != null && !nativeModule.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.moduleDestroy(nativeModule);
+              }
+              arena.close();
+            },
+            this,
+            () -> {
+              if (moduleHandle != null && !moduleHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.moduleDestroy(moduleHandle);
+              }
+              moduleArena.close();
+            });
 
     LOGGER.fine("Created Panama module from native pointer");
   }
@@ -867,7 +906,7 @@ public final class PanamaModule implements Module {
 
   @Override
   public boolean isValid() {
-    return !closed;
+    return !resourceHandle.isClosed();
   }
 
   @Override
@@ -907,21 +946,7 @@ public final class PanamaModule implements Module {
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      // Destroy native module
-      if (nativeModule != null && !nativeModule.equals(MemorySegment.NULL)) {
-        NATIVE_BINDINGS.moduleDestroy(nativeModule);
-      }
-      arena.close();
-      LOGGER.fine("Closed Panama module");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing module: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -1145,8 +1170,6 @@ public final class PanamaModule implements Module {
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Module has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

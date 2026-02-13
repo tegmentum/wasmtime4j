@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -35,7 +36,7 @@ public final class PanamaMemory implements WasmMemory {
   private final String memoryName;
   private final PanamaInstance instance;
   private final PanamaStore store; // For memories created directly by store (instance will be null)
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   // Performance optimization: cached memory pointer to avoid repeated lookups
   private volatile MemorySegment cachedMemoryPointer;
@@ -74,6 +75,7 @@ public final class PanamaMemory implements WasmMemory {
     this.memoryName = memoryName;
     this.instance = instance;
     this.store = null; // Instance-exported memories don't have direct store reference
+    this.resourceHandle = createResourceHandle();
     LOGGER.fine("Created memory wrapper for export: " + memoryName);
   }
 
@@ -96,6 +98,7 @@ public final class PanamaMemory implements WasmMemory {
     this.memoryName = null; // Store-created memories don't have a name
     this.instance = null; // Memories created by store don't have an instance
     this.store = store;
+    this.resourceHandle = createResourceHandle();
     LOGGER.fine("Created memory from store");
   }
 
@@ -1257,29 +1260,7 @@ public final class PanamaMemory implements WasmMemory {
 
   /** Closes the memory and releases resources. */
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      // Clear cached resources
-      cachedMemoryPointer = null;
-      smallBuffer = null;
-      mediumBuffer = null;
-      cachedByteBuffer = null;
-      directMemorySegment = null;
-      directMemorySize = 0;
-      directByteBuffer = null;
-
-      // Close arenas
-      bufferArena.close();
-      arena.close();
-
-      LOGGER.fine("Closed Panama memory");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing memory: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -1349,9 +1330,28 @@ public final class PanamaMemory implements WasmMemory {
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Memory has been closed");
-    }
+    resourceHandle.ensureNotClosed();
+  }
+
+  /**
+   * Creates the resource handle with the memory's cleanup logic.
+   *
+   * @return the resource handle
+   */
+  private NativeResourceHandle createResourceHandle() {
+    return new NativeResourceHandle(
+        "PanamaMemory",
+        () -> {
+          cachedMemoryPointer = null;
+          smallBuffer = null;
+          mediumBuffer = null;
+          cachedByteBuffer = null;
+          directMemorySegment = null;
+          directMemorySize = 0;
+          directByteBuffer = null;
+          bufferArena.close();
+          arena.close();
+        });
   }
 
   /**

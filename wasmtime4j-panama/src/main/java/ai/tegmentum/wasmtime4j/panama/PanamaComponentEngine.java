@@ -13,6 +13,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
@@ -63,7 +64,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
   private final ConcurrentMap<String, PanamaComponentImpl> loadedComponents;
   private final AtomicLong componentIdCounter;
   private final WasmRuntime runtime;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
   private ComponentRegistry registry;
 
   /**
@@ -101,6 +102,40 @@ public final class PanamaComponentEngine implements ComponentEngine {
     if (enhancedEngineHandle == null || enhancedEngineHandle.equals(MemorySegment.NULL)) {
       throw new WasmException("Failed to create enhanced component engine");
     }
+
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaComponentEngine",
+            () -> {
+              // Close all loaded components
+              for (final PanamaComponentImpl component : loadedComponents.values()) {
+                try {
+                  component.close();
+                } catch (final Exception e) {
+                  // Log and continue
+                }
+              }
+              loadedComponents.clear();
+
+              // Destroy enhanced component engine
+              if (enhancedEngineHandle != null
+                  && !enhancedEngineHandle.equals(MemorySegment.NULL)) {
+                try {
+                  NATIVE_BINDINGS.enhancedComponentEngineDestroy(enhancedEngineHandle);
+                } catch (final Throwable t) {
+                  throw new Exception("Error closing PanamaComponentEngine native engine", t);
+                }
+              }
+
+              // Close arena
+              if (arena != null) {
+                try {
+                  arena.close();
+                } catch (final Throwable t) {
+                  throw new Exception("Error closing PanamaComponentEngine arena", t);
+                }
+              }
+            });
   }
 
   /**
@@ -374,38 +409,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    // Close all loaded components
-    for (final PanamaComponentImpl component : loadedComponents.values()) {
-      try {
-        component.close();
-      } catch (final Exception e) {
-        // Log and continue
-      }
-    }
-    loadedComponents.clear();
-
-    // Destroy enhanced component engine
-    if (enhancedEngineHandle != null && !enhancedEngineHandle.equals(MemorySegment.NULL)) {
-      try {
-        NATIVE_BINDINGS.enhancedComponentEngineDestroy(enhancedEngineHandle);
-      } catch (final Exception e) {
-        // Log and continue
-      }
-    }
-
-    // Close arena
-    if (arena != null) {
-      try {
-        arena.close();
-      } catch (final Exception e) {
-        // Log and continue
-      }
-    }
+    resourceHandle.close();
   }
 
   // Engine interface methods - delegate to PanamaEngine
@@ -465,7 +469,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public boolean isValid() {
-    return !closed
+    return !resourceHandle.isClosed()
         && enhancedEngineHandle != null
         && !enhancedEngineHandle.equals(MemorySegment.NULL);
   }
@@ -530,9 +534,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
   // Helper methods
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Component engine is closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   private String generateComponentId() {
@@ -547,9 +549,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
     if (bytes.length == 0) {
       return null;
     }
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
+    ensureNotClosed();
 
     try (final java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined()) {
       final java.lang.foreign.MemorySegment bytesSegment = tempArena.allocate(bytes.length);

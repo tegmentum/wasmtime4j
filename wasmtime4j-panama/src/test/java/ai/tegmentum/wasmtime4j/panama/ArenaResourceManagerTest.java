@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.foreign.Arena;
-import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -80,23 +79,6 @@ class ArenaResourceManagerTest {
   }
 
   @Nested
-  @DisplayName("Static Factory Method Tests")
-  class StaticFactoryMethodTests {
-
-    @Test
-    @DisplayName("should have createGlobal static method")
-    void shouldHaveCreateGlobalMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("createGlobal");
-      assertNotNull(method, "createGlobal method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "createGlobal should be static");
-      assertEquals(
-          ArenaResourceManager.class,
-          method.getReturnType(),
-          "createGlobal should return ArenaResourceManager");
-    }
-  }
-
-  @Nested
   @DisplayName("Arena Access Method Tests")
   class ArenaAccessMethodTests {
 
@@ -107,42 +89,11 @@ class ArenaResourceManagerTest {
       assertNotNull(method, "getArena method should exist");
       assertEquals(Arena.class, method.getReturnType(), "getArena should return Arena");
     }
-
-    @Test
-    @DisplayName("should have getCurrentArena method")
-    void shouldHaveGetCurrentArenaMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("getCurrentArena");
-      assertNotNull(method, "getCurrentArena method should exist");
-      assertEquals(Arena.class, method.getReturnType(), "getCurrentArena should return Arena");
-    }
   }
 
   @Nested
   @DisplayName("Allocation Method Tests")
   class AllocationMethodTests {
-
-    @Test
-    @DisplayName("should have allocate method with MemoryLayout")
-    void shouldHaveAllocateWithLayoutMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("allocate", MemoryLayout.class);
-      assertNotNull(method, "allocate(MemoryLayout) method should exist");
-      assertEquals(
-          ArenaResourceManager.ManagedMemorySegment.class,
-          method.getReturnType(),
-          "allocate should return ManagedMemorySegment");
-    }
-
-    @Test
-    @DisplayName("should have allocate method with size and alignment")
-    void shouldHaveAllocateWithSizeAndAlignmentMethod() throws NoSuchMethodException {
-      final Method method =
-          ArenaResourceManager.class.getMethod("allocate", long.class, long.class);
-      assertNotNull(method, "allocate(long, long) method should exist");
-      assertEquals(
-          ArenaResourceManager.ManagedMemorySegment.class,
-          method.getReturnType(),
-          "allocate should return ManagedMemorySegment");
-    }
 
     @Test
     @DisplayName("should have allocate method with size")
@@ -153,17 +104,6 @@ class ArenaResourceManagerTest {
           ArenaResourceManager.ManagedMemorySegment.class,
           method.getReturnType(),
           "allocate should return ManagedMemorySegment");
-    }
-
-    @Test
-    @DisplayName("should have allocateString method")
-    void shouldHaveAllocateStringMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("allocateString", String.class);
-      assertNotNull(method, "allocateString method should exist");
-      assertEquals(
-          ArenaResourceManager.ManagedMemorySegment.class,
-          method.getReturnType(),
-          "allocateString should return ManagedMemorySegment");
     }
   }
 
@@ -209,24 +149,15 @@ class ArenaResourceManagerTest {
   }
 
   @Nested
-  @DisplayName("Tracking Method Tests")
-  class TrackingMethodTests {
+  @DisplayName("State and Tracking Method Tests")
+  class StateAndTrackingMethodTests {
 
     @Test
-    @DisplayName("should have getResourceCount method")
-    void shouldHaveGetResourceCountMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("getResourceCount");
-      assertNotNull(method, "getResourceCount method should exist");
-      assertEquals(int.class, method.getReturnType(), "getResourceCount should return int");
-    }
-
-    @Test
-    @DisplayName("should have getResourceTrackingInfo method")
-    void shouldHaveGetResourceTrackingInfoMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("getResourceTrackingInfo");
-      assertNotNull(method, "getResourceTrackingInfo method should exist");
-      assertEquals(
-          String.class, method.getReturnType(), "getResourceTrackingInfo should return String");
+    @DisplayName("should have isValid method")
+    void shouldHaveIsValidMethod() throws NoSuchMethodException {
+      final Method method = ArenaResourceManager.class.getMethod("isValid");
+      assertNotNull(method, "isValid method should exist");
+      assertEquals(boolean.class, method.getReturnType(), "isValid should return boolean");
     }
 
     @Test
@@ -238,27 +169,6 @@ class ArenaResourceManagerTest {
           ArenaResourceManager.Statistics.class,
           method.getReturnType(),
           "getStatistics should return Statistics");
-    }
-  }
-
-  @Nested
-  @DisplayName("State Query Method Tests")
-  class StateQueryMethodTests {
-
-    @Test
-    @DisplayName("should have isClosed method")
-    void shouldHaveIsClosedMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("isClosed");
-      assertNotNull(method, "isClosed method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isClosed should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isValid method")
-    void shouldHaveIsValidMethod() throws NoSuchMethodException {
-      final Method method = ArenaResourceManager.class.getMethod("isValid");
-      assertNotNull(method, "isValid method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isValid should return boolean");
     }
   }
 

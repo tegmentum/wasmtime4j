@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
  * <p>Classes covered:
  *
  * <ul>
- *   <li>PanamaResourceTracker - Resource tracking for native handles
  *   <li>PanamaValidation - Defensive programming validation utilities
  *   <li>PanamaTypeConverter - WebAssembly type conversion
  *   <li>PanamaExceptionMapper - Exception mapping for FFI operations
@@ -66,79 +65,6 @@ class PanamaUtilPackageTest {
    */
   private Class<?> loadClassWithoutInit(final String className) throws ClassNotFoundException {
     return Class.forName(className, false, getClass().getClassLoader());
-  }
-
-  @Nested
-  @DisplayName("PanamaResourceTracker Tests")
-  class PanamaResourceTrackerTests {
-
-    private static final String CLASS_NAME = UTIL_PACKAGE + ".PanamaResourceTracker";
-
-    @Test
-    @DisplayName("Should be a final class with instance methods")
-    void shouldBeFinalClassWithInstanceMethods() throws Exception {
-      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
-      LOGGER.info("Testing PanamaResourceTracker class structure");
-
-      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
-      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
-    }
-
-    @Test
-    @DisplayName("Should have resource tracking methods")
-    void shouldHaveResourceTrackingMethods() throws Exception {
-      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
-
-      assertMethodExists(clazz, "trackResource", Object.class);
-      assertMethodExists(clazz, "untrackResource", Object.class);
-      assertMethodExists(clazz, "isTracked", Object.class);
-      assertMethodExists(clazz, "getHandle", Object.class);
-      assertMethodExists(clazz, "cleanupOrphanedResources");
-      assertMethodExists(clazz, "cleanup");
-      assertMethodExists(clazz, "getTrackedResourceCount");
-      assertMethodExists(clazz, "getTotalTracked");
-      assertMethodExists(clazz, "getTotalCleaned");
-      assertMethodExists(clazz, "getPotentialLeaks");
-      assertMethodExists(clazz, "getTrackingStats");
-      assertMethodExists(clazz, "hasPotentialLeaks");
-      assertMethodExists(clazz, "logStats");
-      assertMethodExists(clazz, "getResourceSummary");
-
-      LOGGER.info("All expected resource tracking methods exist");
-    }
-
-    @Test
-    @DisplayName("Should use ConcurrentHashMap for thread safety")
-    void shouldUseConcurrentHashMapForThreadSafety() throws Exception {
-      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
-
-      boolean hasConcurrentMap = false;
-      for (final Field field : clazz.getDeclaredFields()) {
-        if (field.getType().getName().contains("ConcurrentHashMap")
-            || field.getType().getName().contains("ConcurrentMap")) {
-          hasConcurrentMap = true;
-          break;
-        }
-      }
-
-      assertTrue(
-          hasConcurrentMap, "Should use ConcurrentHashMap or ConcurrentMap for thread safety");
-    }
-
-    @Test
-    @DisplayName("Should have atomic counters for statistics")
-    void shouldHaveAtomicCountersForStatistics() throws Exception {
-      final Class<?> clazz = loadClassWithoutInit(CLASS_NAME);
-
-      int atomicLongCount = 0;
-      for (final Field field : clazz.getDeclaredFields()) {
-        if (field.getType().getName().contains("AtomicLong")) {
-          atomicLongCount++;
-        }
-      }
-
-      assertTrue(atomicLongCount >= 2, "Should have at least 2 AtomicLong fields for statistics");
-    }
   }
 
   @Nested
@@ -377,7 +303,7 @@ class PanamaUtilPackageTest {
   class PackageCompletenessTests {
 
     private static final String[] EXPECTED_CLASSES = {
-      "PanamaResourceTracker",
+      "NativeResourceHandle",
       "PanamaValidation",
       "PanamaTypeConverter",
       "PanamaExceptionMapper",
@@ -451,7 +377,7 @@ class PanamaUtilPackageTest {
     @Test
     @DisplayName("Classes using concurrent data structures")
     void classesShouldUseConcurrentDataStructures() throws Exception {
-      final String[] classesNeedingConcurrency = {"PanamaResourceTracker"};
+      final String[] classesNeedingConcurrency = {"NativeResourceHandle"};
 
       for (final String className : classesNeedingConcurrency) {
         final Class<?> clazz = loadClassWithoutInit(UTIL_PACKAGE + "." + className);

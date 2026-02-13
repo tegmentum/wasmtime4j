@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ public final class PanamaSerializer implements Serializer {
   private final AtomicInteger cacheHits;
   private final AtomicInteger cacheMisses;
 
-  private volatile boolean closed;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new serializer with default configuration.
@@ -88,7 +89,15 @@ public final class PanamaSerializer implements Serializer {
     this.currentCacheSize = new AtomicLong(0);
     this.cacheHits = new AtomicInteger(0);
     this.cacheMisses = new AtomicInteger(0);
-    this.closed = false;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaSerializer",
+            () -> {
+              synchronized (cache) {
+                cache.clear();
+                currentCacheSize.set(0);
+              }
+            });
   }
 
   @Override
@@ -200,19 +209,11 @@ public final class PanamaSerializer implements Serializer {
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-      synchronized (cache) {
-        cache.clear();
-        currentCacheSize.set(0);
-      }
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Serializer has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /** Cache key based on engine configuration and module bytes. */

@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponentContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeInfo;
@@ -58,7 +59,7 @@ public final class PanamaWasiComponentContext implements WasiComponentContext {
   private final ArenaResourceManager resourceManager;
   private final PanamaComponent.PanamaComponentEngine componentEngine;
   private final WasiRuntimeInfo runtimeInfo;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI component context with default configuration.
@@ -77,6 +78,25 @@ public final class PanamaWasiComponentContext implements WasiComponentContext {
 
       // Create runtime information
       this.runtimeInfo = createRuntimeInfo();
+
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaWasiComponentContext",
+              () -> {
+                try {
+                  componentEngine.close();
+                } catch (Exception e) {
+                  LOGGER.warning("Error closing component engine: " + e.getMessage());
+                }
+
+                try {
+                  resourceManager.close();
+                } catch (Exception e) {
+                  LOGGER.warning("Error closing resource manager: " + e.getMessage());
+                }
+
+                LOGGER.fine("Closed Panama WASI context");
+              });
 
       LOGGER.info("Created Panama WASI context successfully");
 
@@ -199,7 +219,7 @@ public final class PanamaWasiComponentContext implements WasiComponentContext {
 
   @Override
   public boolean isValid() {
-    return !closed && resourceManager.isValid() && componentEngine.isValid();
+    return !resourceHandle.isClosed() && resourceManager.isValid() && componentEngine.isValid();
   }
 
   @Override
@@ -250,23 +270,7 @@ public final class PanamaWasiComponentContext implements WasiComponentContext {
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-
-      try {
-        componentEngine.close();
-      } catch (Exception e) {
-        LOGGER.warning("Error closing component engine: " + e.getMessage());
-      }
-
-      try {
-        resourceManager.close();
-      } catch (Exception e) {
-        LOGGER.warning("Error closing resource manager: " + e.getMessage());
-      }
-
-      LOGGER.fine("Closed Panama WASI context");
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -290,9 +294,7 @@ public final class PanamaWasiComponentContext implements WasiComponentContext {
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("WASI context has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**

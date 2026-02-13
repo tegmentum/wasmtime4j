@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
@@ -102,9 +103,10 @@ public final class PanamaWasiInstance implements WasiInstance {
   private final Map<String, Object> properties;
   private final List<WasiResource> resources;
 
+  private final NativeResourceHandle resourceHandle;
+
   private volatile WasiInstanceState state;
   private volatile Instant lastActivityAt;
-  private volatile boolean closed = false;
 
   // Cached metadata to avoid repeated native calls
   private volatile List<String> cachedExportedFunctions;
@@ -134,6 +136,39 @@ public final class PanamaWasiInstance implements WasiInstance {
     this.properties = new ConcurrentHashMap<>();
     this.resources = new ArrayList<>();
     this.state = WasiInstanceState.CREATED;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiInstance",
+            () -> {
+              setState(WasiInstanceState.TERMINATED);
+
+              // Clear caches
+              cachedExportedFunctions = null;
+              cachedExportedInterfaces = null;
+
+              // Close all resources
+              synchronized (resources) {
+                for (WasiResource resource : resources) {
+                  try {
+                    resource.close();
+                  } catch (Exception e) {
+                    LOGGER.warning(
+                        "Error closing resource " + resource.getId() + ": " + e.getMessage());
+                  }
+                }
+                resources.clear();
+              }
+
+              // Close instance handle (managed by Arena)
+              try {
+                instanceHandle.close();
+              } catch (Exception e) {
+                LOGGER.warning("Error closing instance handle: " + e.getMessage());
+              }
+
+              properties.clear();
+              LOGGER.fine("Closed Panama WASI instance: " + instanceId);
+            });
 
     LOGGER.fine("Created Panama WASI instance with ID: " + instanceId);
   }
@@ -560,7 +595,7 @@ public final class PanamaWasiInstance implements WasiInstance {
 
   @Override
   public boolean isValid() {
-    return !closed && instanceHandle.isValid() && component.isValid();
+    return !resourceHandle.isClosed() && instanceHandle.isValid() && component.isValid();
   }
 
   @Override
@@ -595,36 +630,7 @@ public final class PanamaWasiInstance implements WasiInstance {
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-      setState(WasiInstanceState.TERMINATED);
-
-      // Clear caches
-      cachedExportedFunctions = null;
-      cachedExportedInterfaces = null;
-
-      // Close all resources
-      synchronized (resources) {
-        for (WasiResource resource : resources) {
-          try {
-            resource.close();
-          } catch (Exception e) {
-            LOGGER.warning("Error closing resource " + resource.getId() + ": " + e.getMessage());
-          }
-        }
-        resources.clear();
-      }
-
-      // Close instance handle (managed by Arena)
-      try {
-        instanceHandle.close();
-      } catch (Exception e) {
-        LOGGER.warning("Error closing instance handle: " + e.getMessage());
-      }
-
-      properties.clear();
-      LOGGER.fine("Closed Panama WASI instance: " + instanceId);
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -647,9 +653,7 @@ public final class PanamaWasiInstance implements WasiInstance {
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Instance has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   private void ensureCallableState() {

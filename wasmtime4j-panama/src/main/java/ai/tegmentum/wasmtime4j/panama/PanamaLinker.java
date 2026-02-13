@@ -15,6 +15,7 @@ import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
@@ -59,7 +60,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   private final PanamaEngine engine;
   private final Arena arena;
   private final MemorySegment nativeLinker;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
   private final Set<String> imports = new HashSet<>();
   private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo>
       importRegistry = new java.util.concurrent.ConcurrentHashMap<>();
@@ -90,6 +91,33 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (this.nativeLinker == null || this.nativeLinker.equals(MemorySegment.NULL)) {
       throw new WasmException("Failed to create native linker");
     }
+
+    final MemorySegment linkerHandle = this.nativeLinker;
+    final Arena linkerArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaLinker",
+            () -> {
+              // Wait for in-flight callbacks before destroying native resources
+              waitForInFlightCallbacks();
+
+              // Destroy native linker FIRST, before cleaning up callback map
+              if (nativeLinker != null && !nativeLinker.equals(MemorySegment.NULL)) {
+                NATIVE_INSTANCE_BINDINGS.panamaLinkerDestroy(nativeLinker);
+              }
+
+              // Now safe to clean up callbacks
+              cleanupHostFunctionCallbacks();
+
+              arena.close();
+            },
+            this,
+            () -> {
+              if (linkerHandle != null && !linkerHandle.equals(MemorySegment.NULL)) {
+                NATIVE_INSTANCE_BINDINGS.panamaLinkerDestroy(linkerHandle);
+              }
+              linkerArena.close();
+            });
 
     LOGGER.fine("Created Panama linker");
   }
@@ -631,7 +659,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public boolean isValid() {
-    return !closed;
+    return !resourceHandle.isClosed();
   }
 
   @Override
@@ -1024,47 +1052,31 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public void close() {
-    if (closed) {
-      return;
+    resourceHandle.close();
+  }
+
+  /**
+   * Waits for in-flight host function callbacks to complete.
+   *
+   * <p>This prevents a race condition where callbacks lookup wrappers that have been removed during
+   * cleanup.
+   */
+  private void waitForInFlightCallbacks() {
+    final int maxWaitMs = 5000;
+    final int pollIntervalMs = 10;
+    int waited = 0;
+    while (IN_FLIGHT_CALLBACKS.get() > 0 && waited < maxWaitMs) {
+      try {
+        Thread.sleep(pollIntervalMs);
+        waited += pollIntervalMs;
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        LOGGER.warning("Interrupted while waiting for in-flight callbacks");
+        break;
+      }
     }
-
-    try {
-      // Mark as closed first to prevent new operations
-      closed = true;
-
-      // Wait for any in-flight callbacks to complete before destroying native resources.
-      // This prevents a race condition where callbacks lookup wrappers that have been removed.
-      final int maxWaitMs = 5000;
-      final int pollIntervalMs = 10;
-      int waited = 0;
-      while (IN_FLIGHT_CALLBACKS.get() > 0 && waited < maxWaitMs) {
-        try {
-          Thread.sleep(pollIntervalMs);
-          waited += pollIntervalMs;
-        } catch (final InterruptedException e) {
-          Thread.currentThread().interrupt();
-          LOGGER.warning("Interrupted while waiting for in-flight callbacks");
-          break;
-        }
-      }
-      if (waited >= maxWaitMs) {
-        LOGGER.warning("Timed out waiting for in-flight callbacks, proceeding with cleanup");
-      }
-
-      // CRITICAL: Destroy native linker FIRST, before cleaning up callback map.
-      // This ensures any pending native callbacks complete before we remove their wrappers.
-      if (nativeLinker != null && !nativeLinker.equals(MemorySegment.NULL)) {
-        NATIVE_INSTANCE_BINDINGS.panamaLinkerDestroy(nativeLinker);
-      }
-
-      // Now safe to clean up callbacks - native linker is destroyed
-      cleanupHostFunctionCallbacks();
-
-      // Finally close the arena
-      arena.close();
-      LOGGER.fine("Closed Panama linker");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing linker: " + e.getMessage());
+    if (waited >= maxWaitMs) {
+      LOGGER.warning("Timed out waiting for in-flight callbacks, proceeding with cleanup");
     }
   }
 
@@ -1177,9 +1189,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Linker has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**

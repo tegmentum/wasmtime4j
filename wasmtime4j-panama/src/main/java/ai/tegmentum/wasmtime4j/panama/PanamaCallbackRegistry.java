@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
@@ -65,7 +66,7 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
   private final AtomicLong nextCallbackId = new AtomicLong(1L);
   private volatile ScheduledExecutorService asyncExecutor; // Lazy initialized
   private final CallbackMetricsImpl metrics = new CallbackMetricsImpl();
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /** Internal callback entry for managing callback state. */
   private static class CallbackEntry {
@@ -105,6 +106,35 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
     this.errorHandler = Objects.requireNonNull(errorHandler, "Error handler cannot be null");
     // asyncExecutor is lazy initialized when first needed
+
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaCallbackRegistry",
+            () -> {
+              // Unregister all callbacks
+              for (final CallbackEntry entry : callbacks.values()) {
+                try {
+                  if (entry.functionReference instanceof PanamaFunctionReference panamaFuncRef) {
+                    panamaFuncRef.close();
+                  }
+                } catch (final Exception e) {
+                  LOGGER.log(
+                      Level.WARNING,
+                      "Error closing callback function reference: " + entry.handle.getName(),
+                      e);
+                }
+              }
+              callbacks.clear();
+
+              // Shutdown async executor only if it was created
+              if (asyncExecutor != null) {
+                asyncExecutor.shutdownNow();
+              }
+
+              if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine("Closed Panama callback registry");
+              }
+            });
 
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine("Created Panama callback registry for store");
@@ -359,46 +389,7 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
 
   @Override
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-
-    synchronized (this) {
-      if (closed) {
-        return;
-      }
-
-      try {
-        // Unregister all callbacks
-        for (final CallbackEntry entry : callbacks.values()) {
-          try {
-            if (entry.functionReference instanceof PanamaFunctionReference panamaFuncRef) {
-              panamaFuncRef.close();
-            }
-          } catch (Exception e) {
-            LOGGER.log(
-                Level.WARNING,
-                "Error closing callback function reference: " + entry.handle.getName(),
-                e);
-          }
-        }
-        callbacks.clear();
-
-        // Shutdown async executor only if it was created
-        if (asyncExecutor != null) {
-          asyncExecutor.shutdownNow();
-        }
-
-        if (LOGGER.isLoggable(Level.FINE)) {
-          LOGGER.fine("Closed Panama callback registry");
-        }
-
-      } catch (Exception e) {
-        throw new WasmException("Failed to close callback registry", e);
-      } finally {
-        closed = true;
-      }
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -421,9 +412,7 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
    * @throws IllegalStateException if the registry is closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Callback registry has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /** Implementation of CallbackHandle. */

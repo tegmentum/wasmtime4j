@@ -10,6 +10,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +33,7 @@ public final class PanamaEngine implements Engine {
   private final MemorySegment nativeEngine;
   private final EngineConfig config;
   private final WasmRuntime runtime;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama engine with default configuration.
@@ -81,6 +82,25 @@ public final class PanamaEngine implements Engine {
       arena.close();
       throw new WasmException("Failed to create native engine");
     }
+
+    final MemorySegment engineHandle = this.nativeEngine;
+    final Arena engineArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaEngine",
+            () -> {
+              if (nativeEngine != null && !nativeEngine.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.engineDestroy(nativeEngine);
+              }
+              arena.close();
+            },
+            this,
+            () -> {
+              if (engineHandle != null && !engineHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.engineDestroy(engineHandle);
+              }
+              engineArena.close();
+            });
 
     LOGGER.fine("Created Panama engine");
   }
@@ -204,7 +224,7 @@ public final class PanamaEngine implements Engine {
 
   @Override
   public boolean isValid() {
-    return !closed;
+    return !resourceHandle.isClosed();
   }
 
   @Override
@@ -270,21 +290,7 @@ public final class PanamaEngine implements Engine {
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      // Destroy native engine
-      if (nativeEngine != null && !nativeEngine.equals(MemorySegment.NULL)) {
-        NATIVE_BINDINGS.engineDestroy(nativeEngine);
-      }
-      arena.close();
-      LOGGER.fine("Closed Panama engine");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing engine: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -294,9 +300,7 @@ public final class PanamaEngine implements Engine {
    * @throws IllegalStateException if the engine has been closed
    */
   public MemorySegment getNativeEngine() {
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
+    resourceHandle.ensureNotClosed();
     return nativeEngine;
   }
 
@@ -337,9 +341,7 @@ public final class PanamaEngine implements Engine {
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**
@@ -366,7 +368,7 @@ public final class PanamaEngine implements Engine {
 
   @Override
   public boolean isPulley() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     try {
@@ -378,7 +380,7 @@ public final class PanamaEngine implements Engine {
 
   @Override
   public byte[] precompileCompatibilityHash() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return new byte[0];
     }
     try {
@@ -397,9 +399,7 @@ public final class PanamaEngine implements Engine {
     if (bytes.length == 0) {
       return null;
     }
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
+    ensureNotClosed();
 
     try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
       final java.lang.foreign.MemorySegment bytesSegment = arena.allocate(bytes.length);
@@ -419,7 +419,7 @@ public final class PanamaEngine implements Engine {
     if (other == null) {
       throw new IllegalArgumentException("other cannot be null");
     }
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     if (!(other instanceof PanamaEngine)) {

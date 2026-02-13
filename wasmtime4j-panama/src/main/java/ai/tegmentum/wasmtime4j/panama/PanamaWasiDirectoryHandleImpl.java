@@ -1,10 +1,10 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiRights;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -18,7 +18,7 @@ final class PanamaWasiDirectoryHandleImpl implements WasiDirectoryHandle {
   private final String path;
   private final Path resolvedPath;
   private final WasiRights rights;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
   private final AtomicLong position = new AtomicLong(0);
 
   PanamaWasiDirectoryHandleImpl(
@@ -30,6 +30,12 @@ final class PanamaWasiDirectoryHandleImpl implements WasiDirectoryHandle {
     this.path = path;
     this.resolvedPath = resolvedPath;
     this.rights = rights;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiDirectoryHandleImpl",
+            () -> {
+              // No native resources to clean up - just marks as closed
+            });
   }
 
   @Override
@@ -49,7 +55,7 @@ final class PanamaWasiDirectoryHandleImpl implements WasiDirectoryHandle {
 
   @Override
   public boolean isValid() {
-    return !closed.get();
+    return !resourceHandle.isClosed();
   }
 
   @Override
@@ -75,7 +81,7 @@ final class PanamaWasiDirectoryHandleImpl implements WasiDirectoryHandle {
 
   @Override
   public void close() {
-    closed.set(true);
+    resourceHandle.close();
   }
 
   Path getResolvedPath() {

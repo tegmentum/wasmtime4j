@@ -255,13 +255,12 @@ class PanamaWasiInstanceTest {
     }
 
     @Test
-    @DisplayName("Should have volatile closed field")
-    void shouldHaveClosedField() throws ClassNotFoundException, NoSuchFieldException {
+    @DisplayName("Should have resourceHandle field")
+    void shouldHaveResourceHandleField() throws ClassNotFoundException, NoSuchFieldException {
       Class<?> clazz = getTestedClass();
-      Field field = clazz.getDeclaredField("closed");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "closed should be private");
-      assertTrue(Modifier.isVolatile(field.getModifiers()), "closed should be volatile");
-      assertEquals(boolean.class, field.getType(), "closed should be of type boolean");
+      Field field = clazz.getDeclaredField("resourceHandle");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "resourceHandle should be private");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "resourceHandle should be final");
     }
 
     @Test
@@ -1125,12 +1124,13 @@ class PanamaWasiInstanceTest {
     }
 
     @Test
-    @DisplayName("Closed field should be volatile for thread safety")
-    void closedFieldShouldBeVolatile() throws ClassNotFoundException, NoSuchFieldException {
+    @DisplayName("resourceHandle field should be final for thread safety")
+    void resourceHandleFieldShouldBeFinal() throws ClassNotFoundException, NoSuchFieldException {
       Class<?> clazz = getTestedClass();
-      Field field = clazz.getDeclaredField("closed");
+      Field field = clazz.getDeclaredField("resourceHandle");
       assertTrue(
-          Modifier.isVolatile(field.getModifiers()), "closed should be volatile for thread safety");
+          Modifier.isFinal(field.getModifiers()),
+          "resourceHandle should be final for thread safety");
     }
 
     @Test

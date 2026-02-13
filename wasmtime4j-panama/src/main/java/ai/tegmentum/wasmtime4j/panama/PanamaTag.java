@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import java.lang.foreign.MemorySegment;
@@ -25,7 +26,7 @@ public final class PanamaTag implements Tag {
 
   private final MemorySegment nativeHandle;
   private final MemorySegment storeHandle;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new PanamaTag wrapping a native tag.
@@ -39,6 +40,13 @@ public final class PanamaTag implements Tag {
     }
     this.nativeHandle = nativeHandle;
     this.storeHandle = storeHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaTag",
+            () -> {
+              NATIVE_BINDINGS.tagDestroy(nativeHandle);
+              LOGGER.fine("Destroyed tag");
+            });
   }
 
   @Override
@@ -115,16 +123,10 @@ public final class PanamaTag implements Tag {
 
   /** Closes this tag and releases native resources. */
   public void close() {
-    if (!closed) {
-      closed = true;
-      NATIVE_BINDINGS.tagDestroy(nativeHandle);
-      LOGGER.fine("Destroyed tag");
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Tag has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

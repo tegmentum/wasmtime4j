@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama.experimental;
 
 import ai.tegmentum.wasmtime4j.experimental.ExperimentalFeature;
 import ai.tegmentum.wasmtime4j.experimental.ExperimentalFeatureConfig;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -152,7 +153,7 @@ public final class PanamaExperimentalFeatures implements AutoCloseable {
 
   private final MemorySegment nativeHandle;
   private final Map<ExperimentalFeature, Boolean> enabledFeatures = new ConcurrentHashMap<>();
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama experimental features instance.
@@ -172,6 +173,39 @@ public final class PanamaExperimentalFeatures implements AutoCloseable {
       if (nativeHandle == null || nativeHandle.address() == 0) {
         throw new RuntimeException("Failed to create native experimental features instance");
       }
+
+      // Capture local references for safety net (must not capture 'this')
+      final MemorySegment handleForCleanup = this.nativeHandle;
+      final Arena arenaForCleanup = this.arena;
+
+      this.resourceHandle =
+          new NativeResourceHandle(
+              "PanamaExperimentalFeatures",
+              () -> {
+                try {
+                  if (nativeHandle != null && nativeHandle.address() != 0) {
+                    DESTROY_EXPERIMENTAL_FEATURES.invoke(nativeHandle);
+                  }
+                } catch (final Throwable t) {
+                  throw new Exception("Failed to destroy experimental features", t);
+                }
+
+                arena.close();
+                enabledFeatures.clear();
+
+                LOGGER.info("Panama experimental features closed successfully");
+              },
+              this,
+              () -> {
+                if (handleForCleanup != null && handleForCleanup.address() != 0) {
+                  try {
+                    DESTROY_EXPERIMENTAL_FEATURES.invoke(handleForCleanup);
+                  } catch (final Throwable t) {
+                    LOGGER.log(Level.WARNING, "Safety net cleanup failed", t);
+                  }
+                }
+                arenaForCleanup.close();
+              });
 
       applyConfiguration(config);
 
@@ -461,7 +495,7 @@ public final class PanamaExperimentalFeatures implements AutoCloseable {
    * @return true if initialized and not closed
    */
   public boolean isInitialized() {
-    return nativeHandle != null && nativeHandle.address() != 0 && !closed;
+    return nativeHandle != null && nativeHandle.address() != 0 && !resourceHandle.isClosed();
   }
 
   /**
@@ -470,29 +504,11 @@ public final class PanamaExperimentalFeatures implements AutoCloseable {
    * @throws IllegalStateException if the instance is closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Experimental features instance has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-
-    try {
-      if (nativeHandle != null && nativeHandle.address() != 0) {
-        DESTROY_EXPERIMENTAL_FEATURES.invoke(nativeHandle);
-      }
-
-      arena.close();
-      enabledFeatures.clear();
-      closed = true;
-
-      LOGGER.info("Panama experimental features closed successfully");
-    } catch (final Throwable e) {
-      LOGGER.log(Level.WARNING, "Failed to close Panama experimental features cleanly", e);
-    }
+    resourceHandle.close();
   }
 }

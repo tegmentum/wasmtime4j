@@ -28,6 +28,7 @@ import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
 import ai.tegmentum.wasmtime4j.panama.PanamaStore;
 import ai.tegmentum.wasmtime4j.panama.PanamaWasiContext;
 import ai.tegmentum.wasmtime4j.panama.PanamaWasmRuntime;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
@@ -62,7 +63,7 @@ public final class PanamaWasiLinker implements WasiLinker {
   private final PanamaLinker<Object> linker;
   private final PanamaEngine engine;
   private final WasiConfig initialConfig;
-  private volatile boolean closed;
+  private final NativeResourceHandle resourceHandle;
 
   // Accumulated configuration
   private final Map<Path, DirectoryMapping> directoryMappings;
@@ -89,7 +90,6 @@ public final class PanamaWasiLinker implements WasiLinker {
     this.linker = linker;
     this.engine = engine;
     this.initialConfig = config;
-    this.closed = false;
 
     // Initialize configuration storage
     this.directoryMappings = new HashMap<>();
@@ -103,6 +103,12 @@ public final class PanamaWasiLinker implements WasiLinker {
     this.maxOpenFiles = null;
     this.inheritAllEnvironment = false;
     this.inheritedEnvironmentVariables = null;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiLinker",
+            () -> {
+              linker.close();
+            });
 
     LOGGER.fine("Created PanamaWasiLinker");
   }
@@ -471,22 +477,16 @@ public final class PanamaWasiLinker implements WasiLinker {
 
   @Override
   public boolean isValid() {
-    return !closed && linker.isValid();
+    return !resourceHandle.isClosed() && linker.isValid();
   }
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-      linker.close();
-      LOGGER.fine("Closed PanamaWasiLinker");
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("WASI linker has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /** Internal class to hold directory mapping configuration. */

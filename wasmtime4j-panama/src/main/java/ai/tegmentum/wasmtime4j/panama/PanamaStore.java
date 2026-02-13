@@ -6,6 +6,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -108,7 +109,7 @@ public final class PanamaStore implements Store {
   private final ArenaResourceManager resourceManager;
   private final PanamaErrorHandler errorHandler;
   private volatile PanamaCallbackRegistry callbackRegistry; // Lazy initialized
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   // Epoch callback ID for this store (0 = no callback registered)
   private volatile long epochCallbackId = 0;
@@ -143,6 +144,8 @@ public final class PanamaStore implements Store {
 
     // Use singleton error handler (callbackRegistry is lazy initialized)
     this.errorHandler = PanamaErrorHandler.getInstance();
+
+    this.resourceHandle = createResourceHandle();
 
     LOGGER.fine("Created Panama store");
   }
@@ -201,6 +204,8 @@ public final class PanamaStore implements Store {
     // Use singleton error handler (callbackRegistry is lazy initialized)
     this.errorHandler = PanamaErrorHandler.getInstance();
 
+    this.resourceHandle = createResourceHandle();
+
     LOGGER.fine("Created Panama store with limits: " + limits);
   }
 
@@ -229,6 +234,8 @@ public final class PanamaStore implements Store {
 
     // Use singleton error handler (callbackRegistry is lazy initialized)
     this.errorHandler = PanamaErrorHandler.getInstance();
+
+    this.resourceHandle = createResourceHandle();
 
     LOGGER.fine("Created Panama store from pre-created native handle");
   }
@@ -882,7 +889,7 @@ public final class PanamaStore implements Store {
 
   @Override
   public boolean isValid() {
-    return !closed;
+    return !resourceHandle.isClosed();
   }
 
   private ResourceLimiter resourceLimiter;
@@ -924,7 +931,7 @@ public final class PanamaStore implements Store {
 
   @Override
   public long getExecutionCount() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     try {
@@ -938,7 +945,7 @@ public final class PanamaStore implements Store {
 
   @Override
   public long getTotalExecutionTimeMicros() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     try {
@@ -952,42 +959,7 @@ public final class PanamaStore implements Store {
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    // Mark as closed immediately to prevent reuse during cleanup
-    closed = true;
-
-    try {
-      // Clean up epoch callback from static registry
-      if (epochCallbackId != 0) {
-        EPOCH_CALLBACKS.remove(epochCallbackId);
-        epochCallbackId = 0;
-      }
-
-      // Close callback registry first (cleans up function references)
-      if (callbackRegistry != null) {
-        try {
-          callbackRegistry.close();
-        } catch (final Exception e) {
-          LOGGER.warning("Error closing callback registry: " + e.getMessage());
-        }
-      }
-
-      // Close resource manager (cleans up host functions and managed resources)
-      if (resourceManager != null) {
-        resourceManager.close();
-      }
-
-      // Destroy native store
-      if (nativeStore != null && !nativeStore.equals(MemorySegment.NULL)) {
-        NATIVE_BINDINGS.storeDestroy(nativeStore);
-      }
-      arena.close();
-      LOGGER.fine("Closed Panama store");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing store: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -1177,7 +1149,7 @@ public final class PanamaStore implements Store {
 
   @Override
   public boolean hasPendingException() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     return NATIVE_BINDINGS.storeHasPendingException(nativeStore) != 0;
@@ -1309,14 +1281,59 @@ public final class PanamaStore implements Store {
   }
 
   /**
+   * Creates the resource handle with the store's cleanup logic.
+   *
+   * @return the resource handle
+   */
+  private NativeResourceHandle createResourceHandle() {
+    final MemorySegment storeHandle = this.nativeStore;
+    final Arena storeArena = this.arena;
+    return new NativeResourceHandle(
+        "PanamaStore",
+        () -> {
+          // Clean up epoch callback from static registry
+          if (epochCallbackId != 0) {
+            EPOCH_CALLBACKS.remove(epochCallbackId);
+            epochCallbackId = 0;
+          }
+
+          // Close callback registry first (cleans up function references)
+          if (callbackRegistry != null) {
+            try {
+              callbackRegistry.close();
+            } catch (final Exception e) {
+              LOGGER.warning("Error closing callback registry: " + e.getMessage());
+            }
+          }
+
+          // Close resource manager (cleans up host functions and managed resources)
+          if (resourceManager != null) {
+            resourceManager.close();
+          }
+
+          // Destroy native store
+          if (nativeStore != null && !nativeStore.equals(MemorySegment.NULL)) {
+            NATIVE_BINDINGS.storeDestroy(nativeStore);
+          }
+          arena.close();
+        },
+        this,
+        () -> {
+          // Safety net: only destroy native store and close arena
+          if (storeHandle != null && !storeHandle.equals(MemorySegment.NULL)) {
+            NATIVE_BINDINGS.storeDestroy(storeHandle);
+          }
+          storeArena.close();
+        });
+  }
+
+  /**
    * Ensures the store is not closed.
    *
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Store has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /** Holds execution statistics from the native store. */

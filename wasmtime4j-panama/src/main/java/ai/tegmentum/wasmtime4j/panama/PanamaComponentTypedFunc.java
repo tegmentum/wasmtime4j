@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -72,8 +73,8 @@ public final class PanamaComponentTypedFunc implements ComponentTypedFunc {
   /** Function signature string (e.g., "s32,s32->s32" for (s32, s32) -> s32). */
   private final String signature;
 
-  /** Flag to track if this resource has been closed. */
-  private volatile boolean closed = false;
+  /** Handle for managing native resource lifecycle and cleanup. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a typed component function wrapper from a regular component function.
@@ -107,6 +108,13 @@ public final class PanamaComponentTypedFunc implements ComponentTypedFunc {
     this.signature = signature;
 
     LOGGER.log(Level.FINE, "Created ComponentTypedFunc with signature: {0}", signature);
+
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaComponentTypedFunc",
+            () -> {
+              LOGGER.log(Level.FINE, "Closed ComponentTypedFunc with signature: {0}", signature);
+            });
   }
 
   // ========== Void return signatures ==========
@@ -340,16 +348,7 @@ public final class PanamaComponentTypedFunc implements ComponentTypedFunc {
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-
-    try {
-      closed = true;
-      LOGGER.log(Level.FINE, "Closed ComponentTypedFunc with signature: {0}", signature);
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing typed component function: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -371,9 +370,7 @@ public final class PanamaComponentTypedFunc implements ComponentTypedFunc {
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("ComponentTypedFunc has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   @Override
@@ -383,7 +380,7 @@ public final class PanamaComponentTypedFunc implements ComponentTypedFunc {
         + "', function="
         + function.getName()
         + ", closed="
-        + closed
+        + resourceHandle.isClosed()
         + "}";
   }
 }

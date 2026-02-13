@@ -25,6 +25,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -59,7 +60,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
   private final MemorySegment nativeLinker;
   private final Map<String, Long> hostFunctions = new ConcurrentHashMap<>();
   private final Map<String, Set<String>> definedInterfaces = new ConcurrentHashMap<>();
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama component linker.
@@ -84,6 +85,33 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (this.nativeLinker == null || this.nativeLinker.equals(MemorySegment.NULL)) {
       throw new WasmException("Failed to create native component linker");
     }
+
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaComponentLinker",
+            () -> {
+              // Clean up host function callbacks
+              for (final Long callbackId : hostFunctions.values()) {
+                HOST_CALLBACKS.remove(callbackId);
+              }
+              hostFunctions.clear();
+              definedInterfaces.clear();
+
+              // Dispose native linker resources
+              if (nativeLinker != null && !nativeLinker.equals(MemorySegment.NULL)) {
+                try {
+                  NATIVE_BINDINGS.componentLinkerDestroy(nativeLinker);
+                } catch (final Throwable t) {
+                  throw new Exception("Error closing PanamaComponentLinker native linker", t);
+                }
+              }
+
+              try {
+                arena.close();
+              } catch (final Throwable t) {
+                throw new Exception("Error closing PanamaComponentLinker arena", t);
+              }
+            });
 
     LOGGER.fine("Created Panama component linker");
   }
@@ -487,7 +515,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
 
   @Override
   public boolean isValid() {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     return NATIVE_BINDINGS.componentLinkerIsValid(nativeLinker) == 1;
@@ -624,29 +652,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      // Clean up host function callbacks
-      for (final Long callbackId : hostFunctions.values()) {
-        HOST_CALLBACKS.remove(callbackId);
-      }
-      hostFunctions.clear();
-      definedInterfaces.clear();
-
-      // Dispose native linker resources
-      if (nativeLinker != null && !nativeLinker.equals(MemorySegment.NULL)) {
-        NATIVE_BINDINGS.componentLinkerDestroy(nativeLinker);
-      }
-
-      arena.close();
-      LOGGER.fine("Closed Panama component linker");
-    } catch (final Exception e) {
-      LOGGER.warning("Error closing component linker: " + e.getMessage());
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -664,9 +670,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
    * @throws IllegalStateException if closed
    */
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("ComponentLinker has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 
   /**

@@ -1,13 +1,13 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiOpenFlags;
 import ai.tegmentum.wasmtime4j.wasi.WasiRights;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Panama implementation of WasiFileHandle.
@@ -22,7 +22,7 @@ final class PanamaWasiFileHandleImpl implements WasiFileHandle {
   private final FileChannel channel;
   private final WasiOpenFlags openFlags;
   private final WasiRights rights;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
   private volatile long position = 0;
 
   PanamaWasiFileHandleImpl(
@@ -38,6 +38,16 @@ final class PanamaWasiFileHandleImpl implements WasiFileHandle {
     this.channel = channel;
     this.openFlags = openFlags;
     this.rights = rights;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiFileHandleImpl",
+            () -> {
+              try {
+                channel.close();
+              } catch (final IOException e) {
+                // Log and continue
+              }
+            });
   }
 
   @Override
@@ -62,7 +72,7 @@ final class PanamaWasiFileHandleImpl implements WasiFileHandle {
 
   @Override
   public boolean isValid() {
-    return !closed.get() && channel.isOpen();
+    return !resourceHandle.isClosed() && channel.isOpen();
   }
 
   @Override
@@ -114,13 +124,7 @@ final class PanamaWasiFileHandleImpl implements WasiFileHandle {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      try {
-        channel.close();
-      } catch (final IOException e) {
-        // Log and continue
-      }
-    }
+    resourceHandle.close();
   }
 
   FileChannel getChannel() {

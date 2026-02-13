@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
 import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnContext;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnExecutionTarget;
@@ -33,7 +34,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,7 +52,7 @@ public final class PanaNnContext implements NnContext {
   private static final int MAX_TARGETS = 16;
 
   private final MemorySegment nativeHandle;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI-NN context with the specified native handle.
@@ -65,6 +65,14 @@ public final class PanaNnContext implements NnContext {
       throw new IllegalArgumentException("Native handle cannot be null");
     }
     this.nativeHandle = nativeHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanaNnContext",
+            () -> {
+              LOGGER.log(Level.FINE, "Closing PanaNnContext with handle: {0}", nativeHandle);
+              final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+              bindings.wasiNnContextClose(nativeHandle);
+            });
     LOGGER.log(Level.FINE, "Created PanaNnContext with handle: {0}", nativeHandle);
   }
 
@@ -245,21 +253,15 @@ public final class PanaNnContext implements NnContext {
 
   @Override
   public boolean isValid() {
-    return !closed.get();
+    return !resourceHandle.isClosed();
   }
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      LOGGER.log(Level.FINE, "Closing PanaNnContext with handle: {0}", nativeHandle);
-      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
-      bindings.wasiNnContextClose(nativeHandle);
-    }
+    resourceHandle.close();
   }
 
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("NnContext has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

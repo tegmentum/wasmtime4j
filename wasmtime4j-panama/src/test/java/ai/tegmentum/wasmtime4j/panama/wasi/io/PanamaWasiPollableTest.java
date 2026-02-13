@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata;
@@ -63,11 +62,11 @@ class PanamaWasiPollableTest {
     }
 
     @Test
-    @DisplayName("should extend PanamaResource")
-    void shouldExtendPanamaResource() {
+    @DisplayName("should implement AutoCloseable")
+    void shouldImplementAutoCloseable() {
       assertTrue(
-          PanamaResource.class.isAssignableFrom(PanamaWasiPollable.class),
-          "PanamaWasiPollable should extend PanamaResource");
+          AutoCloseable.class.isAssignableFrom(PanamaWasiPollable.class),
+          "PanamaWasiPollable should implement AutoCloseable");
     }
 
     @Test

@@ -171,13 +171,12 @@ class PanamaWasiFilesystemTest {
     }
 
     @Test
-    @DisplayName("should have closed field")
-    void shouldHaveClosedField() throws NoSuchFieldException {
-      Field field = PanamaWasiFilesystem.class.getDeclaredField("closed");
-      assertNotNull(field, "closed field should exist");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "closed should be private");
-      assertTrue(Modifier.isVolatile(field.getModifiers()), "closed should be volatile");
-      assertEquals(boolean.class, field.getType(), "closed should be of type boolean");
+    @DisplayName("should have resourceHandle field")
+    void shouldHaveResourceHandleField() throws NoSuchFieldException {
+      Field field = PanamaWasiFilesystem.class.getDeclaredField("resourceHandle");
+      assertNotNull(field, "resourceHandle field should exist");
+      assertTrue(Modifier.isPrivate(field.getModifiers()), "resourceHandle should be private");
+      assertTrue(Modifier.isFinal(field.getModifiers()), "resourceHandle should be final");
     }
   }
 
@@ -600,12 +599,12 @@ class PanamaWasiFilesystemTest {
     }
 
     @Test
-    @DisplayName("closed field should be volatile")
-    void closedFieldShouldBeVolatile() throws NoSuchFieldException {
-      Field field = PanamaWasiFilesystem.class.getDeclaredField("closed");
+    @DisplayName("resourceHandle field should be final for thread safety")
+    void resourceHandleFieldShouldBeFinal() throws NoSuchFieldException {
+      Field field = PanamaWasiFilesystem.class.getDeclaredField("resourceHandle");
       assertTrue(
-          Modifier.isVolatile(field.getModifiers()),
-          "closed should be volatile for thread visibility");
+          Modifier.isFinal(field.getModifiers()),
+          "resourceHandle should be final for thread safety");
     }
   }
 

@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
 import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnExecutionTarget;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraph;
@@ -24,7 +25,6 @@ import ai.tegmentum.wasmtime4j.wasi.nn.NnGraphEncoding;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraphExecutionContext;
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,7 +43,7 @@ public final class PanaNnGraph implements NnGraph {
   private final MemorySegment nativeHandle;
   private final NnGraphEncoding encoding;
   private final NnExecutionTarget executionTarget;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI-NN graph with the specified parameters.
@@ -64,6 +64,14 @@ public final class PanaNnGraph implements NnGraph {
     this.encoding = Objects.requireNonNull(encoding, "encoding cannot be null");
     this.executionTarget =
         Objects.requireNonNull(executionTarget, "executionTarget cannot be null");
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanaNnGraph",
+            () -> {
+              LOGGER.log(Level.FINE, "Closing PanaNnGraph with handle: {0}", nativeHandle);
+              final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+              bindings.wasiNnGraphClose(nativeHandle);
+            });
     LOGGER.log(Level.FINE, "Created PanaNnGraph with handle: {0}", nativeHandle);
   }
 
@@ -98,12 +106,12 @@ public final class PanaNnGraph implements NnGraph {
 
   @Override
   public boolean isValid() {
-    return !closed.get();
+    return !resourceHandle.isClosed();
   }
 
   @Override
   public String getModelName() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return null;
     }
     // The Panama FFI doesn't expose a model name getter, return null
@@ -112,11 +120,7 @@ public final class PanaNnGraph implements NnGraph {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      LOGGER.log(Level.FINE, "Closing PanaNnGraph with handle: {0}", nativeHandle);
-      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
-      bindings.wasiNnGraphClose(nativeHandle);
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -129,8 +133,6 @@ public final class PanaNnGraph implements NnGraph {
   }
 
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("NnGraph has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

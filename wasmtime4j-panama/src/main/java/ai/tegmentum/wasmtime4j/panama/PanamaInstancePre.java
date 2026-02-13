@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.InstancePre;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
 import java.lang.foreign.MemorySegment;
@@ -29,7 +30,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -51,7 +51,7 @@ public final class PanamaInstancePre implements InstancePre {
   private final Module module;
   private final Engine engine;
   private final Instant creationTime;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new PanamaInstancePre with the given native handle.
@@ -70,6 +70,15 @@ public final class PanamaInstancePre implements InstancePre {
     this.module = Objects.requireNonNull(module, "module cannot be null");
     this.engine = Objects.requireNonNull(engine, "engine cannot be null");
     this.creationTime = Instant.now();
+
+    final MemorySegment handle = this.nativeInstancePre;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaInstancePre",
+            () -> NATIVE_BINDINGS.instancePreDestroy(nativeInstancePre),
+            this,
+            () -> NATIVE_BINDINGS.instancePreDestroy(handle));
+
     LOGGER.fine("Created PanamaInstancePre");
   }
 
@@ -122,7 +131,7 @@ public final class PanamaInstancePre implements InstancePre {
 
   @Override
   public boolean isValid() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return false;
     }
     return NATIVE_BINDINGS.instancePreIsValid(nativeInstancePre) != 0;
@@ -130,7 +139,7 @@ public final class PanamaInstancePre implements InstancePre {
 
   @Override
   public long getInstanceCount() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return 0;
     }
     return NATIVE_BINDINGS.instancePreGetInstanceCount(nativeInstancePre);
@@ -167,7 +176,7 @@ public final class PanamaInstancePre implements InstancePre {
 
   @Override
   public PreInstantiationStatistics getStatistics() {
-    if (closed.get()) {
+    if (resourceHandle.isClosed()) {
       return PreInstantiationStatistics.builder().build();
     }
 
@@ -187,10 +196,7 @@ public final class PanamaInstancePre implements InstancePre {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      NATIVE_BINDINGS.instancePreDestroy(nativeInstancePre);
-      LOGGER.fine("Closed PanamaInstancePre");
-    }
+    resourceHandle.close();
   }
 
   /**
@@ -202,10 +208,8 @@ public final class PanamaInstancePre implements InstancePre {
     return nativeInstancePre;
   }
 
-  private void ensureNotClosed() throws WasmException {
-    if (closed.get()) {
-      throw new WasmException("InstancePre has been closed");
-    }
+  private void ensureNotClosed() {
+    resourceHandle.ensureNotClosed();
   }
 
   @Override

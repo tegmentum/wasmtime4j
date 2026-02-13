@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.panama.pool;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocator;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig;
@@ -47,7 +48,7 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
   private final Arena arena;
   private final MemorySegment nativeAllocator;
   private final Instant createdAt;
-  private volatile boolean closed = false;
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new PanamaPoolingAllocator with the specified configuration.
@@ -80,6 +81,29 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
       arena.close();
       throw new WasmException("Failed to create native pooling allocator");
     }
+
+    // Capture local references for the safety net (must not capture 'this')
+    final MemorySegment allocatorForCleanup = this.nativeAllocator;
+    final Arena arenaForCleanup = this.arena;
+
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaPoolingAllocator",
+            () -> {
+              if (allocatorForCleanup != null && !allocatorForCleanup.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.poolingAllocatorDestroy(allocatorForCleanup);
+              }
+
+              arenaForCleanup.close();
+              LOGGER.fine("Closed Panama pooling allocator");
+            },
+            this,
+            () -> {
+              if (allocatorForCleanup != null && !allocatorForCleanup.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.poolingAllocatorDestroy(allocatorForCleanup);
+              }
+              arenaForCleanup.close();
+            });
 
     LOGGER.fine("Created Panama pooling allocator with config: " + config);
   }
@@ -238,22 +262,14 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
 
   @Override
   public boolean isValid() {
-    return !closed && nativeAllocator != null && !nativeAllocator.equals(MemorySegment.NULL);
+    return !resourceHandle.isClosed()
+        && nativeAllocator != null
+        && !nativeAllocator.equals(MemorySegment.NULL);
   }
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    if (nativeAllocator != null && !nativeAllocator.equals(MemorySegment.NULL)) {
-      NATIVE_BINDINGS.poolingAllocatorDestroy(nativeAllocator);
-    }
-
-    arena.close();
-    LOGGER.fine("Closed Panama pooling allocator");
+    resourceHandle.close();
   }
 
   /**
@@ -266,8 +282,6 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
   }
 
   private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Pooling allocator has been closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }

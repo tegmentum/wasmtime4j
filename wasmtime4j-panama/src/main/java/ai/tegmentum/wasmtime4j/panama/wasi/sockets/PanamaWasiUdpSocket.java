@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaResource;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
@@ -73,7 +73,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   static {
     try {
-      final SymbolLookup nativeLib = PanamaResource.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_udp_socket_create(context_handle, is_ipv6, out_handle)
@@ -299,8 +299,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
   /** The native socket handle. */
   private final long socketHandle;
 
-  /** Whether this socket has been closed. */
-  private volatile boolean closed = false;
+  /** Resource lifecycle handle. */
+  private final NativeResourceHandle resourceHandle;
 
   /**
    * Creates a new Panama WASI UDP socket with the given address family.
@@ -358,6 +358,30 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     }
     this.contextHandle = contextHandle;
     this.socketHandle = socketHandle;
+
+    // Capture handle values for safety net (must not capture 'this')
+    final MemorySegment safetyCtx = contextHandle;
+    final long safetySocket = socketHandle;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaWasiUdpSocket",
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(safetyCtx, safetySocket);
+              } catch (final Throwable t) {
+                throw new Exception("Error closing UDP socket handle: " + safetySocket, t);
+              }
+            },
+            this,
+            () -> {
+              try {
+                CLOSE_HANDLE.invoke(safetyCtx, safetySocket);
+              } catch (final Throwable t) {
+                LOGGER.warning(
+                    "Safety net failed to close UDP socket handle " + safetySocket + ": " + t);
+              }
+            });
+
     LOGGER.fine(
         "Created Panama WASI UDP socket with context handle: "
             + contextHandle
@@ -374,7 +398,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     if (localAddress == null) {
       throw new IllegalArgumentException("Local address cannot be null");
     }
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -410,7 +434,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public void finishBind() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -437,7 +461,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     if (remoteAddress == null) {
       throw new IllegalArgumentException("Remote address cannot be null");
     }
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -473,7 +497,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public IpSocketAddress localAddress() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -510,7 +534,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public IpSocketAddress remoteAddress() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -547,7 +571,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public IpAddressFamily addressFamily() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -573,7 +597,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public void setUnicastHopLimit(final int value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -594,7 +618,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public long receiveBufferSize() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -619,7 +643,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public void setReceiveBufferSize(final long value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -640,7 +664,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public long sendBufferSize() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -664,7 +688,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public void setSendBufferSize(final long value) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -685,7 +709,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public WasiPollable subscribe() throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
 
@@ -715,7 +739,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public IncomingDatagram[] receive(final long maxResults) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
     if (maxResults <= 0) {
@@ -826,7 +850,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public long send(final OutgoingDatagram[] datagrams) throws WasmException {
-    if (closed) {
+    if (resourceHandle.isClosed()) {
       throw new WasmException("Socket is closed");
     }
     if (datagrams == null || datagrams.length == 0) {
@@ -930,18 +954,7 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
 
   @Override
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-    closed = true;
-
-    try {
-      CLOSE_HANDLE.invoke(contextHandle, socketHandle);
-      LOGGER.fine("Closed Panama WASI UDP socket with handle: " + socketHandle);
-
-    } catch (final Throwable e) {
-      throw new RuntimeException("Error closing socket: " + e.getMessage(), e);
-    }
+    resourceHandle.close();
   }
 
   // Helper class to hold address parameters for encoding

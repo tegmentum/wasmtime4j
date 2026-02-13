@@ -13,13 +13,13 @@ import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Panama implementation of Component.
@@ -34,7 +34,7 @@ final class PanamaComponentImpl implements Component {
   private final MemorySegment componentHandle;
   private final String componentId;
   private final PanamaComponentEngine engine;
-  private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final NativeResourceHandle resourceHandle;
 
   PanamaComponentImpl(
       final MemorySegment componentHandle,
@@ -43,6 +43,18 @@ final class PanamaComponentImpl implements Component {
     this.componentHandle = componentHandle;
     this.componentId = componentId;
     this.engine = engine;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaComponentImpl",
+            () -> {
+              if (componentHandle != null && !componentHandle.equals(MemorySegment.NULL)) {
+                try {
+                  NATIVE_BINDINGS.componentDestroy(componentHandle);
+                } catch (final Throwable t) {
+                  throw new Exception("Error closing PanamaComponentImpl", t);
+                }
+              }
+            });
   }
 
   @Override
@@ -262,12 +274,16 @@ final class PanamaComponentImpl implements Component {
 
   @Override
   public ComponentLifecycleState getLifecycleState() {
-    return closed.get() ? ComponentLifecycleState.ERROR : ComponentLifecycleState.READY;
+    return resourceHandle.isClosed()
+        ? ComponentLifecycleState.ERROR
+        : ComponentLifecycleState.READY;
   }
 
   @Override
   public boolean isValid() {
-    return !closed.get() && componentHandle != null && !componentHandle.equals(MemorySegment.NULL);
+    return !resourceHandle.isClosed()
+        && componentHandle != null
+        && !componentHandle.equals(MemorySegment.NULL);
   }
 
   @Override
@@ -285,15 +301,7 @@ final class PanamaComponentImpl implements Component {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      if (componentHandle != null && !componentHandle.equals(MemorySegment.NULL)) {
-        try {
-          NATIVE_BINDINGS.componentDestroy(componentHandle);
-        } catch (final Exception e) {
-          // Log and continue
-        }
-      }
-    }
+    resourceHandle.close();
   }
 
   MemorySegment getNativeHandle() {
@@ -309,8 +317,6 @@ final class PanamaComponentImpl implements Component {
   }
 
   private void ensureNotClosed() {
-    if (closed.get()) {
-      throw new IllegalStateException("Component is closed");
-    }
+    resourceHandle.ensureNotClosed();
   }
 }
