@@ -318,16 +318,18 @@ public final class AddressReuseRegressionTest {
 
     try {
       final Class<?> panamaBindingsClass =
-          Class.forName("ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings");
+          Class.forName("ai.tegmentum.wasmtime4j.panama.NativeMemoryBindings");
       final java.lang.reflect.Method getInstanceMethod =
           panamaBindingsClass.getMethod("getInstance");
       final Object instance = getInstanceMethod.invoke(null);
       final java.lang.reflect.Method clearMethod =
-          panamaBindingsClass.getMethod("clearDestroyedPointers");
-      clearMethod.invoke(instance);
-      LOGGER.info("Cleared Panama destroyed pointers");
+          panamaBindingsClass.getMethod("memoryClearHandleRegistries");
+      final int result = (int) clearMethod.invoke(instance);
+      if (result == 0) {
+        LOGGER.info("Cleared Panama handle registries");
+      }
     } catch (final Exception e) {
-      LOGGER.fine("Panama clearDestroyedPointers not available: " + e.getMessage());
+      LOGGER.fine("Panama clearHandleRegistries not available: " + e.getMessage());
     }
   }
 }

@@ -1259,15 +1259,15 @@ public final class ExceptionHierarchyTest {
   }
 
   @Nested
-  @DisplayName("WitMarshallingException Tests")
-  class WitMarshallingExceptionTests {
+  @DisplayName("WitMarshalingException Tests")
+  class WitMarshalingExceptionTests {
 
     @Test
     @DisplayName("should create exception with message")
     void shouldCreateExceptionWithMessage() {
-      final WitMarshallingException exception = new WitMarshallingException(TEST_MESSAGE);
+      final WitMarshalingException exception = new WitMarshalingException(TEST_MESSAGE);
 
-      // WitMarshallingException adds error code to message
+      // WitMarshalingException adds error code to message
       assertTrue(
           exception.getMessage().contains(TEST_MESSAGE),
           "Exception message should contain: " + TEST_MESSAGE);
@@ -1277,7 +1277,7 @@ public final class ExceptionHierarchyTest {
     @Test
     @DisplayName("should extend WitValueException")
     void shouldExtendWitValueException() {
-      final WitMarshallingException exception = new WitMarshallingException(TEST_MESSAGE);
+      final WitMarshalingException exception = new WitMarshalingException(TEST_MESSAGE);
       assertTrue(exception instanceof WitValueException);
       assertTrue(exception instanceof WasmException);
     }

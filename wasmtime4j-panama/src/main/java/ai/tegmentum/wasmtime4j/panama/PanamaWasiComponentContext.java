@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponentContext;
@@ -302,8 +303,7 @@ public final class PanamaWasiComponentContext implements WasiComponentContext {
   private WasiRuntimeInfo createRuntimeInfo() {
     return new WasiRuntimeInfo(
         WasiRuntimeType.PANAMA,
-        "1.0.0-panama",
-        "36.0.2" // TODO: Extract actual version from native layer
-        );
+        RuntimeInfo.getBindingsVersion() + "-panama",
+        RuntimeInfo.getWasmtimeLibraryVersion());
   }
 }

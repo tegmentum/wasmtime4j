@@ -230,7 +230,7 @@ public final class SharedMemoryIntegrationTest {
     // Try Panama
     try {
       final Class<?> panamaBindingsClass =
-          Class.forName("ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings");
+          Class.forName("ai.tegmentum.wasmtime4j.panama.NativeMemoryBindings");
       final java.lang.reflect.Method getInstanceMethod =
           panamaBindingsClass.getMethod("getInstance");
       final Object instance = getInstanceMethod.invoke(null);

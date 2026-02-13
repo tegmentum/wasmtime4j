@@ -81,9 +81,9 @@ class WitValueExceptionTest {
     }
 
     @Test
-    @DisplayName("Should have MARSHALLING_ERROR value")
+    @DisplayName("Should have MARSHALING_ERROR value")
     void shouldHaveMarshallingErrorValue() {
-      assertNotNull(ErrorCode.valueOf("MARSHALLING_ERROR"), "Should have MARSHALLING_ERROR value");
+      assertNotNull(ErrorCode.valueOf("MARSHALING_ERROR"), "Should have MARSHALING_ERROR value");
     }
 
     @Test
@@ -184,12 +184,12 @@ class WitValueExceptionTest {
     @DisplayName("getCode should return error code")
     void getCodeShouldReturnErrorCode() {
       final WitValueException exception =
-          new WitValueException("Error", ErrorCode.MARSHALLING_ERROR);
+          new WitValueException("Error", ErrorCode.MARSHALING_ERROR);
 
       assertEquals(
-          ErrorCode.MARSHALLING_ERROR,
+          ErrorCode.MARSHALING_ERROR,
           exception.getCode(),
-          "getCode should return MARSHALLING_ERROR");
+          "getCode should return MARSHALING_ERROR");
     }
 
     @Test

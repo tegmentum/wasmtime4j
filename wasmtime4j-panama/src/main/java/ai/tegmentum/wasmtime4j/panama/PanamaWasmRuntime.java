@@ -244,7 +244,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     }
 
     final java.lang.foreign.MemorySegment tagPtr =
-        NativeFunctionBindings.getInstance().tagCreate(storeHandle, paramTypes, returnTypes);
+        NativeInstanceBindings.getInstance().tagCreate(storeHandle, paramTypes, returnTypes);
 
     if (tagPtr == null || tagPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
       throw new WasmException("Failed to create tag");
@@ -357,8 +357,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public RuntimeInfo getRuntimeInfo() {
     return new RuntimeInfo(
         "Panama FFI Runtime",
-        "1.0.0",
-        "36.0.2",
+        RuntimeInfo.getBindingsVersion(),
+        RuntimeInfo.getWasmtimeLibraryVersion(),
         RuntimeType.PANAMA,
         System.getProperty("java.version"),
         System.getProperty("os.name") + " " + System.getProperty("os.arch"));
@@ -392,7 +392,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
       // Call native deserialize
       final int result =
-          NativeFunctionBindings.getInstance()
+          NativeEngineBindings.getInstance()
               .moduleDeserialize(
                   panamaEngine.getNativeEngine(),
                   dataSegment,
@@ -434,11 +434,6 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
     ensureNotClosed();
     return new PanamaSerializer(this, maxCacheSize, enableCompression, compressionLevel);
-  }
-
-  @Override
-  public String getDebuggingCapabilities() {
-    return "Panama debugging with basic support";
   }
 
   @Override

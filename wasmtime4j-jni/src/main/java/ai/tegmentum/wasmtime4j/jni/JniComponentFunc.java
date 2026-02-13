@@ -251,7 +251,7 @@ public final class JniComponentFunc
       }
       throw new WitValueException(
           "Failed to convert ComponentVal to WitValue: " + e.getMessage(),
-          WitValueException.ErrorCode.MARSHALLING_ERROR,
+          WitValueException.ErrorCode.MARSHALING_ERROR,
           e);
     }
   }

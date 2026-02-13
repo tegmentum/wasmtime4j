@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wit;
 
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeComponentBindings;
 import ai.tegmentum.wasmtime4j.wit.WitValue;
 import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller.MarshalledValue;
 import ai.tegmentum.wasmtime4j.wit.WitValueSerializer;
@@ -45,8 +45,8 @@ import java.lang.foreign.ValueLayout;
  */
 public final class PanamaWitValueMarshaller {
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeComponentBindings NATIVE_BINDINGS =
+      NativeComponentBindings.getInstance();
 
   /** Private constructor to prevent instantiation. */
   private PanamaWitValueMarshaller() {}
@@ -86,7 +86,7 @@ public final class PanamaWitValueMarshaller {
     if (errorCode != 0) {
       throw new WitValueException(
           "Native marshalling failed for type discriminator " + typeDiscriminator,
-          WitValueException.ErrorCode.MARSHALLING_ERROR);
+          WitValueException.ErrorCode.MARSHALING_ERROR);
     }
 
     // Read output
@@ -145,7 +145,7 @@ public final class PanamaWitValueMarshaller {
     if (errorCode != 0) {
       throw new WitValueException(
           "Native unmarshalling failed for type discriminator " + typeDiscriminator,
-          WitValueException.ErrorCode.MARSHALLING_ERROR);
+          WitValueException.ErrorCode.MARSHALING_ERROR);
     }
 
     // Read output

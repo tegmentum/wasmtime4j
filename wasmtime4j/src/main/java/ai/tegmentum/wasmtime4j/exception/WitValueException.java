@@ -51,8 +51,8 @@ public class WitValueException extends WasmException {
     /** Invalid value format or encoding. */
     INVALID_FORMAT,
 
-    /** Marshalling operation failed. */
-    MARSHALLING_ERROR,
+    /** Marshaling operation failed. */
+    MARSHALING_ERROR,
 
     /** Validation constraint violated. */
     VALIDATION_ERROR,

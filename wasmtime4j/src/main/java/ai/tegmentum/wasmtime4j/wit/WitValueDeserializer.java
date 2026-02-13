@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.exception.WitMarshallingException;
+import ai.tegmentum.wasmtime4j.exception.WitMarshalingException;
 import ai.tegmentum.wasmtime4j.exception.WitRangeException;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import java.nio.ByteBuffer;
@@ -347,9 +347,9 @@ public final class WitValueDeserializer {
     final String value = new String(utf8Bytes, StandardCharsets.UTF_8);
     try {
       return WitString.of(value);
-    } catch (final WitMarshallingException e) {
+    } catch (final WitMarshalingException e) {
       throw new WitValueException(
-          "Failed to create WitString", WitValueException.ErrorCode.MARSHALLING_ERROR, e);
+          "Failed to create WitString", WitValueException.ErrorCode.MARSHALING_ERROR, e);
     }
   }
 

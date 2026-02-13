@@ -1,5 +1,11 @@
 package ai.tegmentum.wasmtime4j;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Information about the WebAssembly runtime implementation.
  *
@@ -9,6 +15,49 @@ package ai.tegmentum.wasmtime4j;
  * @since 1.0.0
  */
 public final class RuntimeInfo {
+
+  private static final Logger LOGGER = Logger.getLogger(RuntimeInfo.class.getName());
+  private static final String VERSION_RESOURCE = "wasmtime4j-version.properties";
+  private static final String WASMTIME_VERSION;
+  private static final String WASMTIME4J_VERSION;
+
+  static {
+    String wasmtimeVer = "unknown";
+    String wasmtime4jVer = "unknown";
+    try (InputStream is =
+        RuntimeInfo.class.getClassLoader().getResourceAsStream(VERSION_RESOURCE)) {
+      if (is != null) {
+        final Properties props = new Properties();
+        props.load(is);
+        wasmtimeVer = props.getProperty("wasmtime.version", "unknown");
+        wasmtime4jVer = props.getProperty("wasmtime4j.version", "unknown");
+      } else {
+        LOGGER.warning("Could not find " + VERSION_RESOURCE + " on classpath");
+      }
+    } catch (IOException e) {
+      LOGGER.log(Level.WARNING, "Failed to load " + VERSION_RESOURCE, e);
+    }
+    WASMTIME_VERSION = wasmtimeVer;
+    WASMTIME4J_VERSION = wasmtime4jVer;
+  }
+
+  /**
+   * Gets the Wasmtime library version from build-time properties.
+   *
+   * @return the Wasmtime version string (e.g. "41.0.3"), or "unknown" if unavailable
+   */
+  public static String getWasmtimeLibraryVersion() {
+    return WASMTIME_VERSION;
+  }
+
+  /**
+   * Gets the wasmtime4j bindings version from build-time properties.
+   *
+   * @return the wasmtime4j version string (e.g. "1.0.0"), or "unknown" if unavailable
+   */
+  public static String getBindingsVersion() {
+    return WASMTIME4J_VERSION;
+  }
 
   private final String runtimeName;
   private final String runtimeVersion;

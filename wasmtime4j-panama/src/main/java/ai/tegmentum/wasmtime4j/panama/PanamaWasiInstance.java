@@ -87,8 +87,9 @@ import java.util.logging.Logger;
 public final class PanamaWasiInstance implements WasiInstance {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWasiInstance.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeWasiBindings NATIVE_BINDINGS = NativeWasiBindings.getInstance();
+  private static final NativeComponentBindings COMPONENT_BINDINGS =
+      NativeComponentBindings.getInstance();
 
   private static final AtomicLong NEXT_INSTANCE_ID = new AtomicLong(1);
 
@@ -238,7 +239,7 @@ public final class PanamaWasiInstance implements WasiInstance {
 
       // Call native component invoke
       final int errorCode =
-          NATIVE_BINDINGS.componentInvoke(
+          COMPONENT_BINDINGS.componentInvoke(
               instanceHandle.getResource(),
               funcNameSegment,
               paramsPtr,
@@ -682,7 +683,7 @@ public final class PanamaWasiInstance implements WasiInstance {
 
       // Call native function to get exported functions
       final int errorCode =
-          NATIVE_BINDINGS.componentGetExportedFunctions(
+          COMPONENT_BINDINGS.componentGetExportedFunctions(
               instanceHandle.getResource(), functionsOut, countOut);
 
       if (errorCode != 0) {
@@ -718,7 +719,7 @@ public final class PanamaWasiInstance implements WasiInstance {
       }
 
       // Free the string array
-      NATIVE_BINDINGS.componentFreeStringArray(stringsPtr, count);
+      COMPONENT_BINDINGS.componentFreeStringArray(stringsPtr, count);
 
       LOGGER.fine("Extracted " + functions.size() + " exported functions from instance");
       return functions;

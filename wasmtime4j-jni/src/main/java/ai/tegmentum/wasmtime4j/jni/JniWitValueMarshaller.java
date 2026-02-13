@@ -73,7 +73,7 @@ public final class JniWitValueMarshaller {
     if (marshalledData == null) {
       throw new WitValueException(
           "Native marshalling failed for type discriminator " + typeDiscriminator,
-          WitValueException.ErrorCode.MARSHALLING_ERROR);
+          WitValueException.ErrorCode.MARSHALING_ERROR);
     }
 
     return new MarshalledValue(typeDiscriminator, marshalledData);
@@ -107,7 +107,7 @@ public final class JniWitValueMarshaller {
     if (unmarshalledData == null) {
       throw new WitValueException(
           "Native unmarshalling failed for type discriminator " + typeDiscriminator,
-          WitValueException.ErrorCode.MARSHALLING_ERROR);
+          WitValueException.ErrorCode.MARSHALING_ERROR);
     }
 
     // Deserialize using the public API

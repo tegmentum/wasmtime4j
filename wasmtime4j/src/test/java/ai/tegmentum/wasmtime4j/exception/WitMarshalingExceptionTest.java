@@ -28,32 +28,32 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for the {@link WitMarshallingException} class.
+ * Tests for the {@link WitMarshalingException} class.
  *
- * <p>This test class verifies the construction and behavior of WIT marshalling exceptions,
- * including factory methods for common marshalling errors.
+ * <p>This test class verifies the construction and behavior of WIT marshaling exceptions, including
+ * factory methods for common marshaling errors.
  */
-@DisplayName("WitMarshallingException Tests")
-class WitMarshallingExceptionTest {
+@DisplayName("WitMarshalingException Tests")
+class WitMarshalingExceptionTest {
 
   @Nested
   @DisplayName("Class Structure Tests")
   class ClassStructureTests {
 
     @Test
-    @DisplayName("WitMarshallingException should extend WitValueException")
+    @DisplayName("WitMarshalingException should extend WitValueException")
     void shouldExtendWitValueException() {
       assertTrue(
-          WitValueException.class.isAssignableFrom(WitMarshallingException.class),
-          "WitMarshallingException should extend WitValueException");
+          WitValueException.class.isAssignableFrom(WitMarshalingException.class),
+          "WitMarshalingException should extend WitValueException");
     }
 
     @Test
-    @DisplayName("WitMarshallingException should be serializable")
+    @DisplayName("WitMarshalingException should be serializable")
     void shouldBeSerializable() {
       assertTrue(
-          java.io.Serializable.class.isAssignableFrom(WitMarshallingException.class),
-          "WitMarshallingException should be serializable");
+          java.io.Serializable.class.isAssignableFrom(WitMarshalingException.class),
+          "WitMarshalingException should be serializable");
     }
   }
 
@@ -62,45 +62,39 @@ class WitMarshallingExceptionTest {
   class ConstructorTests {
 
     @Test
-    @DisplayName("Constructor with message should set error code to MARSHALLING_ERROR")
-    void constructorWithMessageShouldSetMarshallingErrorCode() {
-      final WitMarshallingException exception = new WitMarshallingException("Marshalling failed");
+    @DisplayName("Constructor with message should set error code to MARSHALING_ERROR")
+    void constructorWithMessageShouldSetMarshalingErrorCode() {
+      final WitMarshalingException exception = new WitMarshalingException("Marshaling failed");
 
       assertTrue(
-          exception.getMessage().contains("Marshalling failed"),
+          exception.getMessage().contains("Marshaling failed"),
           "Message should contain error text");
       assertEquals(
-          ErrorCode.MARSHALLING_ERROR,
-          exception.getCode(),
-          "Error code should be MARSHALLING_ERROR");
+          ErrorCode.MARSHALING_ERROR, exception.getCode(), "Error code should be MARSHALING_ERROR");
     }
 
     @Test
     @DisplayName("Constructor with message and cause should set both")
     void constructorWithMessageAndCauseShouldSetBoth() {
       final Throwable cause = new RuntimeException("Root cause");
-      final WitMarshallingException exception = new WitMarshallingException("Error message", cause);
+      final WitMarshalingException exception = new WitMarshalingException("Error message", cause);
 
       assertTrue(
           exception.getMessage().contains("Error message"), "Message should contain error text");
       assertSame(cause, exception.getCause(), "Cause should be set");
       assertEquals(
-          ErrorCode.MARSHALLING_ERROR,
-          exception.getCode(),
-          "Error code should be MARSHALLING_ERROR");
+          ErrorCode.MARSHALING_ERROR, exception.getCode(), "Error code should be MARSHALING_ERROR");
     }
 
     @Test
     @DisplayName("Constructor with type information should set all fields")
     void constructorWithTypeInformationShouldSetAllFields() {
       final WitType type = WitType.list(WitType.createU8());
-      final WitMarshallingException exception =
-          new WitMarshallingException("Cannot marshal", type, new int[] {1, 2, 3});
+      final WitMarshalingException exception =
+          new WitMarshalingException("Cannot marshal", type, new int[] {1, 2, 3});
 
       assertEquals(
-          ErrorCode.MARSHALLING_ERROR,
-          exception.getCode(),
-          "Error code should be MARSHALLING_ERROR");
+          ErrorCode.MARSHALING_ERROR, exception.getCode(), "Error code should be MARSHALING_ERROR");
       assertTrue(exception.getExpectedType().isPresent(), "Expected type should be present");
       assertTrue(exception.getActualValue().isPresent(), "Actual value should be present");
     }
@@ -114,7 +108,7 @@ class WitMarshallingExceptionTest {
     @DisplayName("nullValue should create exception for null values")
     void nullValueShouldCreateExceptionForNullValues() {
       final WitType type = WitType.createS32();
-      final WitMarshallingException exception = WitMarshallingException.nullValue(type);
+      final WitMarshalingException exception = WitMarshalingException.nullValue(type);
 
       assertTrue(
           exception.getMessage().toLowerCase().contains("null"), "Message should mention null");
@@ -129,14 +123,14 @@ class WitMarshallingExceptionTest {
     @DisplayName("typeMismatch should create exception for type mismatches")
     void typeMismatchShouldCreateExceptionForTypeMismatches() {
       final WitType type = WitType.createFloat64();
-      final WitMarshallingException exception =
-          WitMarshallingException.typeMismatch(type, "not a number");
+      final WitMarshalingException exception =
+          WitMarshalingException.typeMismatch(type, "not a number");
 
       assertTrue(
           exception.getMessage().contains("String"), "Message should contain actual type name");
       assertTrue(
           exception.getMessage().toLowerCase().contains("marshal"),
-          "Message should mention marshalling");
+          "Message should mention marshaling");
       assertTrue(exception.getExpectedType().isPresent(), "Expected type should be present");
       assertTrue(exception.getActualValue().isPresent(), "Actual value should be present");
     }
@@ -145,7 +139,7 @@ class WitMarshallingExceptionTest {
     @DisplayName("typeMismatch should handle null actual value")
     void typeMismatchShouldHandleNullActualValue() {
       final WitType type = WitType.createBool();
-      final WitMarshallingException exception = WitMarshallingException.typeMismatch(type, null);
+      final WitMarshalingException exception = WitMarshalingException.typeMismatch(type, null);
 
       assertTrue(
           exception.getMessage().toLowerCase().contains("null"), "Message should mention null");
@@ -156,8 +150,8 @@ class WitMarshallingExceptionTest {
     void allocationFailureShouldCreateExceptionWithCause() {
       final WitType type = WitType.createString();
       final Throwable cause = new OutOfMemoryError("No memory");
-      final WitMarshallingException exception =
-          WitMarshallingException.allocationFailure(type, cause);
+      final WitMarshalingException exception =
+          WitMarshalingException.allocationFailure(type, cause);
 
       assertTrue(
           exception.getMessage().toLowerCase().contains("allocat"),
@@ -172,7 +166,7 @@ class WitMarshallingExceptionTest {
     void readFailureShouldCreateExceptionWithCause() {
       final WitType type = WitType.createU64();
       final Throwable cause = new IllegalStateException("Read error");
-      final WitMarshallingException exception = WitMarshallingException.readFailure(type, cause);
+      final WitMarshalingException exception = WitMarshalingException.readFailure(type, cause);
 
       assertTrue(
           exception.getMessage().toLowerCase().contains("read"), "Message should mention reading");
@@ -189,25 +183,25 @@ class WitMarshallingExceptionTest {
   class ErrorCodeTests {
 
     @Test
-    @DisplayName("All factory methods should produce MARSHALLING_ERROR code")
-    void allFactoryMethodsShouldProduceMarshallingErrorCode() {
+    @DisplayName("All factory methods should produce MARSHALING_ERROR code")
+    void allFactoryMethodsShouldProduceMarshalingErrorCode() {
       final WitType type = WitType.createS32();
-      final WitMarshallingException e1 = WitMarshallingException.nullValue(type);
-      final WitMarshallingException e2 = WitMarshallingException.typeMismatch(type, "str");
-      final WitMarshallingException e3 =
-          WitMarshallingException.allocationFailure(type, new Exception());
-      final WitMarshallingException e4 = WitMarshallingException.readFailure(type, new Exception());
+      final WitMarshalingException e1 = WitMarshalingException.nullValue(type);
+      final WitMarshalingException e2 = WitMarshalingException.typeMismatch(type, "str");
+      final WitMarshalingException e3 =
+          WitMarshalingException.allocationFailure(type, new Exception());
+      final WitMarshalingException e4 = WitMarshalingException.readFailure(type, new Exception());
 
       assertEquals(
-          ErrorCode.MARSHALLING_ERROR, e1.getCode(), "nullValue should use MARSHALLING_ERROR");
+          ErrorCode.MARSHALING_ERROR, e1.getCode(), "nullValue should use MARSHALING_ERROR");
       assertEquals(
-          ErrorCode.MARSHALLING_ERROR, e2.getCode(), "typeMismatch should use MARSHALLING_ERROR");
+          ErrorCode.MARSHALING_ERROR, e2.getCode(), "typeMismatch should use MARSHALING_ERROR");
       assertEquals(
-          ErrorCode.MARSHALLING_ERROR,
+          ErrorCode.MARSHALING_ERROR,
           e3.getCode(),
-          "allocationFailure should use MARSHALLING_ERROR");
+          "allocationFailure should use MARSHALING_ERROR");
       assertEquals(
-          ErrorCode.MARSHALLING_ERROR, e4.getCode(), "readFailure should use MARSHALLING_ERROR");
+          ErrorCode.MARSHALING_ERROR, e4.getCode(), "readFailure should use MARSHALING_ERROR");
     }
   }
 
@@ -218,16 +212,16 @@ class WitMarshallingExceptionTest {
     @Test
     @DisplayName("Should be throwable")
     void shouldBeThrowable() {
-      final WitMarshallingException exception = new WitMarshallingException("Test");
+      final WitMarshalingException exception = new WitMarshalingException("Test");
 
-      assertTrue(exception instanceof Throwable, "WitMarshallingException should be throwable");
+      assertTrue(exception instanceof Throwable, "WitMarshalingException should be throwable");
     }
 
     @Test
     @DisplayName("Should be catchable as WitValueException")
     void shouldBeCatchableAsWitValueException() {
       try {
-        throw new WitMarshallingException("Test error");
+        throw new WitMarshalingException("Test error");
       } catch (WitValueException e) {
         assertTrue(
             e.getMessage().contains("Test error"), "Should be catchable as WitValueException");
@@ -238,7 +232,7 @@ class WitMarshallingExceptionTest {
     @DisplayName("Should be catchable as WasmException")
     void shouldBeCatchableAsWasmException() {
       try {
-        throw new WitMarshallingException("Test error");
+        throw new WitMarshalingException("Test error");
       } catch (WasmException e) {
         assertNotNull(e, "Should be catchable as WasmException");
       }

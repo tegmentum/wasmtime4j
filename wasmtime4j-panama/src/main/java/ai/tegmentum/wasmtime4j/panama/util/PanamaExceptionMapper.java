@@ -22,7 +22,7 @@ import ai.tegmentum.wasmtime4j.exception.TrapException;
 import ai.tegmentum.wasmtime4j.exception.TrapException.TrapType;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
 import java.lang.foreign.MemorySegment;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -144,7 +144,7 @@ public final class PanamaExceptionMapper {
     }
 
     try {
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeExecutionBindings bindings = NativeExecutionBindings.getInstance();
 
       // Check if this is a trap message
       if (!bindings.trapIsTrap(message)) {
@@ -152,7 +152,7 @@ public final class PanamaExceptionMapper {
       }
 
       // Extract trap information using native introspection
-      final NativeFunctionBindings.TrapInfo trapInfo = bindings.trapExtractInfo(message);
+      final NativeExecutionBindings.TrapInfo trapInfo = bindings.trapExtractInfo(message);
       if (trapInfo == null) {
         return null;
       }
@@ -208,7 +208,7 @@ public final class PanamaExceptionMapper {
    * @return the function name if found, null otherwise
    */
   private static String extractFunctionNameFromMessage(
-      final String message, final NativeFunctionBindings bindings) {
+      final String message, final NativeExecutionBindings bindings) {
     // Look for backtrace lines containing function information
     // Format: "   0: 0x... - <module>!<function>"
     final String[] lines = message.split("\n");
