@@ -121,13 +121,6 @@ class ComponentEngineConfigTest {
     }
 
     @Test
-    @DisplayName("should have hotSwapping false by default")
-    void shouldHaveHotSwappingFalseByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertFalse(config.isHotSwapping(), "Hot swapping should be disabled by default");
-    }
-
-    @Test
     @DisplayName("should have capabilityBasedSecurity true by default")
     void shouldHaveCapabilityBasedSecurityByDefault() {
       final ComponentEngineConfig config = new ComponentEngineConfig();
@@ -214,16 +207,6 @@ class ComponentEngineConfigTest {
     }
 
     @Test
-    @DisplayName("enableHotSwapping should set and return config")
-    void enableHotSwappingShouldSetAndReturnConfig() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      final ComponentEngineConfig result = config.enableHotSwapping(true);
-
-      assertTrue(config.isHotSwapping(), "Hot swapping should be enabled");
-      assertEquals(config, result, "Should return this for method chaining");
-    }
-
-    @Test
     @DisplayName("enableCapabilityBasedSecurity should set and return config")
     void enableCapabilityBasedSecurityShouldSetAndReturnConfig() {
       final ComponentEngineConfig config = new ComponentEngineConfig();
@@ -270,7 +253,6 @@ class ComponentEngineConfigTest {
               .enableDistributedSupport(true)
               .enableEnterpriseManagement(true)
               .enableWitInterfaceEnhancement(true)
-              .enableHotSwapping(true)
               .enableCapabilityBasedSecurity(false)
               .addComponentFeature(ComponentFeature.COMPONENT_MODEL)
               .build();
@@ -279,7 +261,6 @@ class ComponentEngineConfigTest {
       assertTrue(config.isDistributedSupport(), "Distributed support should be enabled");
       assertTrue(config.isEnterpriseManagement(), "Enterprise management should be enabled");
       assertTrue(config.isWitInterfaceEnhancement(), "WIT interface enhancement should be enabled");
-      assertTrue(config.isHotSwapping(), "Hot swapping should be enabled");
       assertFalse(
           config.isCapabilityBasedSecurity(), "Capability-based security should be disabled");
       assertTrue(
@@ -375,7 +356,6 @@ class ComponentEngineConfigTest {
               .enableDistributedSupport(false)
               .enableEnterpriseManagement(false)
               .enableWitInterfaceEnhancement(false)
-              .enableHotSwapping(false)
               .enableCapabilityBasedSecurity(false);
 
       assertFalse(config.isComponentModelEnabled(), "Component model should be disabled");
@@ -384,7 +364,6 @@ class ComponentEngineConfigTest {
       assertFalse(config.isEnterpriseManagement(), "Enterprise management should be disabled");
       assertFalse(
           config.isWitInterfaceEnhancement(), "WIT interface enhancement should be disabled");
-      assertFalse(config.isHotSwapping(), "Hot swapping should be disabled");
       assertFalse(
           config.isCapabilityBasedSecurity(), "Capability-based security should be disabled");
     }
@@ -399,7 +378,6 @@ class ComponentEngineConfigTest {
               .enableDistributedSupport(true)
               .enableEnterpriseManagement(true)
               .enableWitInterfaceEnhancement(true)
-              .enableHotSwapping(true)
               .enableCapabilityBasedSecurity(true);
 
       assertTrue(config.isComponentModelEnabled(), "Component model should be enabled");
@@ -407,7 +385,6 @@ class ComponentEngineConfigTest {
       assertTrue(config.isDistributedSupport(), "Distributed support should be enabled");
       assertTrue(config.isEnterpriseManagement(), "Enterprise management should be enabled");
       assertTrue(config.isWitInterfaceEnhancement(), "WIT interface enhancement should be enabled");
-      assertTrue(config.isHotSwapping(), "Hot swapping should be enabled");
       assertTrue(config.isCapabilityBasedSecurity(), "Capability-based security should be enabled");
     }
   }

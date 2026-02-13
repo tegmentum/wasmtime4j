@@ -34,7 +34,6 @@ public final class ComponentEngineConfig {
   private boolean advancedOrchestration = false;
   private boolean dependencyResolution = true;
   private boolean circularDependencyDetection = true;
-  private boolean hotSwapping = false;
   private boolean componentVersioning = true;
 
   // Distributed Component Support
@@ -149,17 +148,6 @@ public final class ComponentEngineConfig {
   }
 
   /**
-   * Enables or disables component hot-swapping capability.
-   *
-   * @param enabled true to enable hot-swapping
-   * @return this configuration for method chaining
-   */
-  public ComponentEngineConfig enableHotSwapping(final boolean enabled) {
-    this.hotSwapping = enabled;
-    return this;
-  }
-
-  /**
    * Enables or disables capability-based security model.
    *
    * @param enabled true to enable capability-based security
@@ -207,10 +195,6 @@ public final class ComponentEngineConfig {
     return witInterfaceEnhancement;
   }
 
-  public boolean isHotSwapping() {
-    return hotSwapping;
-  }
-
   public boolean isCapabilityBasedSecurity() {
     return capabilityBasedSecurity;
   }
@@ -250,11 +234,6 @@ public final class ComponentEngineConfig {
 
     public ComponentEngineConfigBuilder enableWitInterfaceEnhancement(final boolean enabled) {
       config.enableWitInterfaceEnhancement(enabled);
-      return this;
-    }
-
-    public ComponentEngineConfigBuilder enableHotSwapping(final boolean enabled) {
-      config.enableHotSwapping(enabled);
       return this;
     }
 

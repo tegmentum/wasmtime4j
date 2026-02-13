@@ -14,7 +14,6 @@ import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.execution.HotSwapStrategy;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
@@ -218,63 +217,6 @@ public final class JniComponentImpl implements Component {
     ensureValid();
     // Return empty set for now
     return new HashSet<>();
-  }
-
-  /**
-   * Performs hot-swap of this component.
-   *
-   * @param newComponent the new component
-   * @param migrationStrategy the migration strategy
-   * @return future that completes when hot-swap is done
-   * @throws WasmException if hot-swap fails
-   */
-  public CompletableFuture<Void> hotSwap(
-      final Component newComponent, final HotSwapStrategy migrationStrategy) throws WasmException {
-    JniValidation.requireNonNull(newComponent, "newComponent");
-    JniValidation.requireNonNull(migrationStrategy, "migrationStrategy");
-    ensureValid();
-
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            // Log the hot-swap operation
-            LOGGER.info(
-                "Hot-swap initiated for component "
-                    + componentId
-                    + " using strategy "
-                    + migrationStrategy.getName());
-
-            // Validate compatibility before swap
-            final ComponentCompatibility compatibility = checkCompatibility(newComponent);
-            if (!compatibility.isCompatible()) {
-              throw new RuntimeException("Components are not compatible: " + compatibility);
-            }
-
-            // In a real implementation, this would:
-            // 1. Drain existing requests
-            // 2. Capture current state
-            // 3. Initialize new component with captured state
-            // 4. Redirect traffic to new component
-            // 5. Clean up old component
-
-            // Simulate swap delay based on strategy
-            final long delayMs =
-                migrationStrategy.getType() == HotSwapStrategy.StrategyType.INSTANT_REPLACEMENT
-                    ? 0
-                    : 100;
-            if (delayMs > 0) {
-              Thread.sleep(delayMs);
-            }
-
-            LOGGER.info("Hot-swap completed for component " + componentId);
-            return null;
-          } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Hot-swap interrupted", e);
-          } catch (final Exception e) {
-            throw new RuntimeException("Hot-swap failed", e);
-          }
-        });
   }
 
   /**
@@ -484,11 +426,6 @@ public final class JniComponentImpl implements Component {
     @Override
     public java.util.List<SourceMap> getSourceMaps() {
       return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public ai.tegmentum.wasmtime4j.component.ExecutionState getExecutionState() {
-      return null;
     }
 
     @Override
