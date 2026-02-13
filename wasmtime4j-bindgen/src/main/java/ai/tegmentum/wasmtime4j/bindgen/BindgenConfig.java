@@ -48,7 +48,6 @@ public final class BindgenConfig {
   private final List<Path> wasmSources;
   private final boolean generateJavadoc;
   private final boolean generateBuilders;
-  private final boolean generateValidation;
 
   private BindgenConfig(final Builder builder) {
     this.codeStyle = builder.codeStyle;
@@ -58,7 +57,6 @@ public final class BindgenConfig {
     this.wasmSources = Collections.unmodifiableList(new ArrayList<>(builder.wasmSources));
     this.generateJavadoc = builder.generateJavadoc;
     this.generateBuilders = builder.generateBuilders;
-    this.generateValidation = builder.generateValidation;
   }
 
   /**
@@ -134,15 +132,6 @@ public final class BindgenConfig {
   }
 
   /**
-   * Returns whether validation methods should be generated.
-   *
-   * @return true if validation should be generated
-   */
-  public boolean isGenerateValidation() {
-    return generateValidation;
-  }
-
-  /**
    * Checks if there are WIT sources configured.
    *
    * @return true if WIT sources exist
@@ -189,7 +178,6 @@ public final class BindgenConfig {
     BindgenConfig that = (BindgenConfig) obj;
     return generateJavadoc == that.generateJavadoc
         && generateBuilders == that.generateBuilders
-        && generateValidation == that.generateValidation
         && codeStyle == that.codeStyle
         && Objects.equals(packageName, that.packageName)
         && Objects.equals(outputDirectory, that.outputDirectory)
@@ -206,8 +194,7 @@ public final class BindgenConfig {
         witSources,
         wasmSources,
         generateJavadoc,
-        generateBuilders,
-        generateValidation);
+        generateBuilders);
   }
 
   @Override
@@ -243,7 +230,6 @@ public final class BindgenConfig {
     private List<Path> wasmSources = new ArrayList<>();
     private boolean generateJavadoc = true;
     private boolean generateBuilders = true;
-    private boolean generateValidation = true;
 
     private Builder() {}
 
@@ -343,17 +329,6 @@ public final class BindgenConfig {
      */
     public Builder generateBuilders(final boolean generate) {
       this.generateBuilders = generate;
-      return this;
-    }
-
-    /**
-     * Sets whether to generate validation methods.
-     *
-     * @param generate true to generate validation
-     * @return this builder
-     */
-    public Builder generateValidation(final boolean generate) {
-      this.generateValidation = generate;
       return this;
     }
 

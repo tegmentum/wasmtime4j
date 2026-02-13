@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.wit;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -45,11 +46,29 @@ public interface WitInterfaceDefinition {
   List<String> getFunctionNames();
 
   /**
+   * Gets all functions defined in this interface.
+   *
+   * @return unmodifiable map of function name to function definition
+   */
+  default Map<String, WitFunction> getFunctions() {
+    return Map.of();
+  }
+
+  /**
    * Gets all type names in this interface.
    *
    * @return list of type names
    */
   List<String> getTypeNames();
+
+  /**
+   * Gets all types defined in this interface.
+   *
+   * @return unmodifiable map of type name to type definition
+   */
+  default Map<String, WitType> getTypes() {
+    return Map.of();
+  }
 
   /**
    * Gets the interfaces that this interface depends on.

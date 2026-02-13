@@ -23,8 +23,6 @@ import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.wit.WitParameter;
 import ai.tegmentum.wasmtime4j.wit.WitPrimitiveType;
 import ai.tegmentum.wasmtime4j.wit.WitType;
-import ai.tegmentum.wasmtime4j.wit.WitTypeValidator;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,11 +42,6 @@ import java.util.regex.Pattern;
  *
  * @since 1.0.0
  */
-@SuppressFBWarnings(
-    value = {"URF_UNREAD_FIELD", "REDOS"},
-    justification =
-        "Validator field reserved for future validation; possessive quantifiers"
-            + " mitigate ReDoS but pattern flagged conservatively")
 public final class WitInterfaceParser {
 
   private static final Pattern INTERFACE_PATTERN =
@@ -76,12 +69,10 @@ public final class WitInterfaceParser {
   private static final int MAX_WIT_TEXT_LENGTH = 1024 * 1024; // 1MB limit
 
   private final Map<String, WitType> typeCache;
-  private final WitTypeValidator validator;
 
   /** Creates a new WIT interface parser. */
   public WitInterfaceParser() {
     this.typeCache = new HashMap<>();
-    this.validator = new WitTypeValidator();
     initializePrimitiveTypes();
   }
 
@@ -114,10 +105,9 @@ public final class WitInterfaceParser {
       final String interfaceName = interfaceMatcher.group(1);
       final String interfaceBody = interfaceMatcher.group(2);
 
-      // Parse types, functions, imports, and exports
+      // Parse types, functions, and exports
       final Map<String, WitType> types = parseTypes(interfaceBody);
       final Map<String, WitFunction> functions = parseFunctions(interfaceBody, types);
-      final List<String> imports = parseImports(interfaceBody);
       final List<String> exports = parseExports(interfaceBody);
 
       return new WitInterfaceDefinitionImpl(
@@ -126,7 +116,7 @@ public final class WitInterfaceParser {
           packageName,
           functions,
           types,
-          imports,
+          List.of(),
           exports,
           witText);
 
@@ -475,18 +465,6 @@ public final class WitInterfaceParser {
   }
 
   /**
-   * Parses import declarations (simplified implementation).
-   *
-   * @param interfaceBody the interface body text
-   * @return list of import names
-   */
-  private List<String> parseImports(final String interfaceBody) {
-    final List<String> imports = new ArrayList<>();
-    // Simplified - in real implementation would parse "use" statements
-    return imports;
-  }
-
-  /**
    * Parses export declarations (simplified implementation).
    *
    * @param interfaceBody the interface body text
@@ -634,8 +612,18 @@ public final class WitInterfaceParser {
     }
 
     @Override
+    public Map<String, WitFunction> getFunctions() {
+      return functions;
+    }
+
+    @Override
     public List<String> getTypeNames() {
       return new ArrayList<>(types.keySet());
+    }
+
+    @Override
+    public Map<String, WitType> getTypes() {
+      return types;
     }
 
     @Override
@@ -645,13 +633,44 @@ public final class WitInterfaceParser {
 
     @Override
     public WitCompatibilityResult isCompatibleWith(final WitInterfaceDefinition other) {
-      // Simplified compatibility check
-      final boolean compatible = name.equals(other.getName()) && version.equals(other.getVersion());
-      return new WitCompatibilityResult(
-          compatible,
-          compatible ? "Interfaces are compatible" : "Interfaces are not compatible",
-          Set.of(),
-          Set.of());
+      if (!name.equals(other.getName())) {
+        return new WitCompatibilityResult(
+            false,
+            "Interface names do not match: " + name + " vs " + other.getName(),
+            Set.of(),
+            Set.of());
+      }
+
+      final Set<String> ourFunctions = Set.copyOf(functions.keySet());
+      final Set<String> otherFunctions = Set.copyOf(other.getFunctionNames());
+      final Set<String> ourTypes = Set.copyOf(types.keySet());
+      final Set<String> otherTypes = Set.copyOf(other.getTypeNames());
+
+      final Set<String> missingFunctions = new java.util.HashSet<>(ourFunctions);
+      missingFunctions.removeAll(otherFunctions);
+      final Set<String> extraFunctions = new java.util.HashSet<>(otherFunctions);
+      extraFunctions.removeAll(ourFunctions);
+
+      final Set<String> missingTypes = new java.util.HashSet<>(ourTypes);
+      missingTypes.removeAll(otherTypes);
+      final Set<String> extraTypes = new java.util.HashSet<>(otherTypes);
+      extraTypes.removeAll(ourTypes);
+
+      final Set<String> allMissing = new java.util.HashSet<>();
+      missingFunctions.forEach(f -> allMissing.add("function:" + f));
+      missingTypes.forEach(t -> allMissing.add("type:" + t));
+
+      final Set<String> allExtra = new java.util.HashSet<>();
+      extraFunctions.forEach(f -> allExtra.add("function:" + f));
+      extraTypes.forEach(t -> allExtra.add("type:" + t));
+
+      final boolean compatible = allMissing.isEmpty() && allExtra.isEmpty();
+      final String message =
+          compatible
+              ? "Interfaces are compatible"
+              : "Interfaces differ: missing=" + allMissing + ", extra=" + allExtra;
+
+      return new WitCompatibilityResult(compatible, message, allMissing, allExtra);
     }
 
     @Override

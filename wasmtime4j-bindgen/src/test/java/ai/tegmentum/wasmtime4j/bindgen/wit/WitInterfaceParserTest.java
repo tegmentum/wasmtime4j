@@ -277,7 +277,7 @@ class WitInterfaceParserTest {
 
     final WitCompatibilityResult result = def1.isCompatibleWith(def2);
     assertFalse(result.isCompatible());
-    assertEquals("Interfaces are not compatible", result.getDetails());
+    assertTrue(result.getDetails().contains("Interface names do not match"));
   }
 
   @Test

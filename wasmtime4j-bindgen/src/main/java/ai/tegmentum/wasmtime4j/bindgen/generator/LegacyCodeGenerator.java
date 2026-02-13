@@ -82,7 +82,7 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
     // Add equals, hashCode, toString
     classBuilder.addMethod(generateEquals(type, className));
     classBuilder.addMethod(generateHashCode(type));
-    classBuilder.addMethod(generateToString(type, className));
+    classBuilder.addMethod(generateToString(type, className, "{", "}"));
 
     // Add builder if configured
     if (config.isGenerateBuilders() && !type.getFields().isEmpty()) {
@@ -204,96 +204,6 @@ public final class LegacyCodeGenerator extends JavaCodeGenerator {
     }
 
     return getterBuilder.build();
-  }
-
-  private MethodSpec generateEquals(final BindgenType type, final String className) {
-    MethodSpec.Builder equalsBuilder =
-        MethodSpec.methodBuilder("equals")
-            .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Override.class)
-            .returns(TypeName.BOOLEAN)
-            .addParameter(Object.class, "obj");
-
-    equalsBuilder.addStatement("if (this == obj) return true");
-    equalsBuilder.addStatement("if (obj == null || getClass() != obj.getClass()) return false");
-    equalsBuilder.addStatement("$L that = ($L) obj", className, className);
-
-    if (type.getFields().isEmpty()) {
-      equalsBuilder.addStatement("return true");
-    } else {
-      StringBuilder comparison = new StringBuilder();
-      for (int i = 0; i < type.getFields().size(); i++) {
-        BindgenField field = type.getFields().get(i);
-        String fieldName = JavaNaming.toFieldName(field.getName());
-        TypeName fieldType = mapType(field.getType());
-
-        if (i > 0) {
-          comparison.append(" && ");
-        }
-
-        if (fieldType.isPrimitive()) {
-          comparison.append(String.format("this.%s == that.%s", fieldName, fieldName));
-        } else {
-          comparison.append(
-              String.format("java.util.Objects.equals(this.%s, that.%s)", fieldName, fieldName));
-        }
-      }
-      equalsBuilder.addStatement("return " + comparison);
-    }
-
-    return equalsBuilder.build();
-  }
-
-  private MethodSpec generateHashCode(final BindgenType type) {
-    MethodSpec.Builder hashCodeBuilder =
-        MethodSpec.methodBuilder("hashCode")
-            .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Override.class)
-            .returns(TypeName.INT);
-
-    if (type.getFields().isEmpty()) {
-      hashCodeBuilder.addStatement("return 0");
-    } else {
-      StringBuilder args = new StringBuilder();
-      for (int i = 0; i < type.getFields().size(); i++) {
-        BindgenField field = type.getFields().get(i);
-        String fieldName = JavaNaming.toFieldName(field.getName());
-        if (i > 0) {
-          args.append(", ");
-        }
-        args.append(fieldName);
-      }
-      hashCodeBuilder.addStatement("return java.util.Objects.hash($L)", args);
-    }
-
-    return hashCodeBuilder.build();
-  }
-
-  private MethodSpec generateToString(final BindgenType type, final String className) {
-    MethodSpec.Builder toStringBuilder =
-        MethodSpec.methodBuilder("toString")
-            .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(Override.class)
-            .returns(String.class);
-
-    if (type.getFields().isEmpty()) {
-      toStringBuilder.addStatement("return \"$L{}\"", className);
-    } else {
-      StringBuilder sb = new StringBuilder();
-      sb.append(className).append("{");
-      for (int i = 0; i < type.getFields().size(); i++) {
-        BindgenField field = type.getFields().get(i);
-        String fieldName = JavaNaming.toFieldName(field.getName());
-        if (i > 0) {
-          sb.append(", ");
-        }
-        sb.append(fieldName).append("=\" + ").append(fieldName).append(" + \"");
-      }
-      sb.append("}");
-      toStringBuilder.addStatement("return \"$L\"", sb);
-    }
-
-    return toStringBuilder.build();
   }
 
   private TypeSpec generateBuilder(final BindgenType type, final String parentClassName) {

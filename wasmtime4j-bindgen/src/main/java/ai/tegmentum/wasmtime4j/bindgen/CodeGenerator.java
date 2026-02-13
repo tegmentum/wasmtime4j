@@ -19,16 +19,29 @@ package ai.tegmentum.wasmtime4j.bindgen;
 import ai.tegmentum.wasmtime4j.bindgen.generator.JavaCodeGenerator;
 import ai.tegmentum.wasmtime4j.bindgen.generator.LegacyCodeGenerator;
 import ai.tegmentum.wasmtime4j.bindgen.generator.ModernCodeGenerator;
+import ai.tegmentum.wasmtime4j.bindgen.model.BindgenField;
+import ai.tegmentum.wasmtime4j.bindgen.model.BindgenFunction;
+import ai.tegmentum.wasmtime4j.bindgen.model.BindgenInterface;
 import ai.tegmentum.wasmtime4j.bindgen.model.BindgenModel;
+import ai.tegmentum.wasmtime4j.bindgen.model.BindgenParameter;
+import ai.tegmentum.wasmtime4j.bindgen.model.BindgenType;
+import ai.tegmentum.wasmtime4j.bindgen.model.BindgenVariantCase;
 import ai.tegmentum.wasmtime4j.bindgen.wit.WitInterfaceParser;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wit.WitFunction;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.WitParameter;
+import ai.tegmentum.wasmtime4j.wit.WitType;
+import ai.tegmentum.wasmtime4j.wit.WitTypeCategory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -132,22 +145,241 @@ public final class CodeGenerator {
   private BindgenModel parseWitSource(final Path witPath) throws BindgenException {
     try {
       final String witText = Files.readString(witPath);
-      final String fileName = witPath.getFileName().toString();
       final String packageName =
           config.getPackageName() != null ? config.getPackageName() : "generated";
 
       final WitInterfaceParser parser = new WitInterfaceParser();
       final WitInterfaceDefinition definition = parser.parseInterface(witText, packageName);
 
-      return BindgenModel.builder()
-          .name(definition.getName())
-          .sourceFile(witPath.toString())
-          .build();
+      final BindgenModel.Builder modelBuilder =
+          BindgenModel.builder().name(definition.getName()).sourceFile(witPath.toString());
+
+      // Convert WIT types to bindgen types
+      final Map<String, BindgenType> convertedTypes = new HashMap<>();
+      for (Map.Entry<String, WitType> entry : definition.getTypes().entrySet()) {
+        final BindgenType bindgenType = convertWitType(entry.getKey(), entry.getValue());
+        convertedTypes.put(entry.getKey(), bindgenType);
+      }
+
+      // Convert WIT functions to bindgen functions
+      final List<BindgenFunction> convertedFunctions = new ArrayList<>();
+      for (Map.Entry<String, WitFunction> entry : definition.getFunctions().entrySet()) {
+        final BindgenFunction bindgenFunc = convertWitFunction(entry.getValue(), convertedTypes);
+        convertedFunctions.add(bindgenFunc);
+      }
+
+      // Build interface containing types and functions
+      final BindgenInterface.Builder ifaceBuilder =
+          BindgenInterface.builder().name(definition.getName()).packageName(packageName);
+
+      for (BindgenFunction func : convertedFunctions) {
+        ifaceBuilder.addFunction(func);
+      }
+      for (BindgenType type : convertedTypes.values()) {
+        ifaceBuilder.addType(type);
+      }
+
+      modelBuilder.addInterface(ifaceBuilder.build());
+
+      return modelBuilder.build();
     } catch (final IOException e) {
       throw new BindgenException("Failed to read WIT file: " + witPath, e);
     } catch (final WasmException e) {
       throw new BindgenException("Failed to parse WIT file: " + witPath, e);
     }
+  }
+
+  /**
+   * Converts a WIT type to a bindgen type.
+   *
+   * @param name the type name
+   * @param witType the WIT type
+   * @return the bindgen type
+   */
+  private BindgenType convertWitType(final String name, final WitType witType) {
+    final WitTypeCategory category = witType.getKind().getCategory();
+
+    switch (category) {
+      case PRIMITIVE:
+        return BindgenType.primitive(witType.getName());
+
+      case RECORD:
+        return convertRecordType(name, witType);
+
+      case VARIANT:
+        return convertVariantType(name, witType);
+
+      case ENUM:
+        return BindgenType.builder()
+            .name(name)
+            .kind(BindgenType.Kind.ENUM)
+            .enumValues(witType.getKind().getEnumValues())
+            .documentation(witType.getDocumentation().orElse(null))
+            .build();
+
+      case FLAGS:
+        return BindgenType.builder()
+            .name(name)
+            .kind(BindgenType.Kind.FLAGS)
+            .enumValues(witType.getKind().getFlags())
+            .documentation(witType.getDocumentation().orElse(null))
+            .build();
+
+      case LIST:
+        final Optional<WitType> listInner = witType.getKind().getInnerType();
+        final BindgenType listElement =
+            listInner.isPresent()
+                ? convertWitType(listInner.get().getName(), listInner.get())
+                : BindgenType.primitive("u8");
+        return BindgenType.list(listElement);
+
+      case OPTION:
+        final Optional<WitType> optInner = witType.getKind().getInnerType();
+        final BindgenType optElement =
+            optInner.isPresent()
+                ? convertWitType(optInner.get().getName(), optInner.get())
+                : BindgenType.primitive("u8");
+        return BindgenType.option(optElement);
+
+      case RESULT:
+        final BindgenType okType =
+            witType.getKind().getOkType().map(t -> convertWitType(t.getName(), t)).orElse(null);
+        final BindgenType errorType =
+            witType.getKind().getErrorType().map(t -> convertWitType(t.getName(), t)).orElse(null);
+        return BindgenType.result(okType, errorType);
+
+      case TUPLE:
+        final List<BindgenType> tupleElements = new ArrayList<>();
+        for (WitType element : witType.getKind().getTupleElements()) {
+          tupleElements.add(convertWitType(element.getName(), element));
+        }
+        return BindgenType.builder()
+            .name(witType.getName())
+            .kind(BindgenType.Kind.TUPLE)
+            .tupleElements(tupleElements)
+            .documentation(witType.getDocumentation().orElse(null))
+            .build();
+
+      case RESOURCE:
+        return BindgenType.builder()
+            .name(name)
+            .kind(BindgenType.Kind.RESOURCE)
+            .documentation(witType.getDocumentation().orElse(null))
+            .build();
+
+      default:
+        // Unknown category - treat as reference
+        return BindgenType.reference(name);
+    }
+  }
+
+  /**
+   * Converts a WIT record type to a bindgen record type.
+   *
+   * @param name the type name
+   * @param witType the WIT record type
+   * @return the bindgen record type
+   */
+  private BindgenType convertRecordType(final String name, final WitType witType) {
+    final BindgenType.Builder builder =
+        BindgenType.builder()
+            .name(name)
+            .kind(BindgenType.Kind.RECORD)
+            .documentation(witType.getDocumentation().orElse(null));
+
+    for (Map.Entry<String, WitType> field : witType.getKind().getRecordFields().entrySet()) {
+      final BindgenType fieldType = convertWitType(field.getKey(), field.getValue());
+      builder.addField(new BindgenField(field.getKey(), fieldType));
+    }
+
+    return builder.build();
+  }
+
+  /**
+   * Converts a WIT variant type to a bindgen variant type.
+   *
+   * @param name the type name
+   * @param witType the WIT variant type
+   * @return the bindgen variant type
+   */
+  private BindgenType convertVariantType(final String name, final WitType witType) {
+    final BindgenType.Builder builder =
+        BindgenType.builder()
+            .name(name)
+            .kind(BindgenType.Kind.VARIANT)
+            .documentation(witType.getDocumentation().orElse(null));
+
+    for (Map.Entry<String, Optional<WitType>> entry :
+        witType.getKind().getVariantCases().entrySet()) {
+      final BindgenType payload =
+          entry.getValue().map(t -> convertWitType(t.getName(), t)).orElse(null);
+      builder.addCase(new BindgenVariantCase(entry.getKey(), payload));
+    }
+
+    return builder.build();
+  }
+
+  /**
+   * Converts a WIT function to a bindgen function.
+   *
+   * @param witFunction the WIT function
+   * @param knownTypes previously converted types for resolving references
+   * @return the bindgen function
+   */
+  private BindgenFunction convertWitFunction(
+      final WitFunction witFunction, final Map<String, BindgenType> knownTypes) {
+    final BindgenFunction.Builder builder =
+        BindgenFunction.builder()
+            .name(witFunction.getName())
+            .async(witFunction.isAsync())
+            .documentation(witFunction.getDocumentation().orElse(null));
+
+    // Convert parameters
+    for (WitParameter param : witFunction.getParameters()) {
+      final BindgenType paramType =
+          resolveOrConvertType(param.getType().getName(), param.getType(), knownTypes);
+      builder.addParameter(new BindgenParameter(param.getName(), paramType));
+    }
+
+    // Convert return type (WIT supports multiple returns, BindgenFunction supports single)
+    final List<WitType> returnTypes = witFunction.getReturnTypes();
+    if (!returnTypes.isEmpty()) {
+      if (returnTypes.size() == 1) {
+        final WitType retType = returnTypes.get(0);
+        builder.returnType(resolveOrConvertType(retType.getName(), retType, knownTypes));
+      } else {
+        // Multiple returns: wrap in a tuple
+        final List<BindgenType> tupleElements = new ArrayList<>();
+        for (WitType retType : returnTypes) {
+          tupleElements.add(resolveOrConvertType(retType.getName(), retType, knownTypes));
+        }
+        builder.returnType(
+            BindgenType.builder()
+                .name("tuple")
+                .kind(BindgenType.Kind.TUPLE)
+                .tupleElements(tupleElements)
+                .build());
+      }
+    }
+
+    return builder.build();
+  }
+
+  /**
+   * Resolves a type from known types or converts it from WIT.
+   *
+   * @param name the type name
+   * @param witType the WIT type
+   * @param knownTypes previously converted types
+   * @return the bindgen type
+   */
+  private BindgenType resolveOrConvertType(
+      final String name, final WitType witType, final Map<String, BindgenType> knownTypes) {
+    final BindgenType known = knownTypes.get(name);
+    if (known != null) {
+      return BindgenType.reference(name);
+    }
+    return convertWitType(name, witType);
   }
 
   /**

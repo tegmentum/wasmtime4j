@@ -221,6 +221,51 @@ public abstract class WitTypeKind {
     return Optional.empty(); // Default implementation for non-option types
   }
 
+  /**
+   * Gets the enum values (only for enum types).
+   *
+   * @return list of enum values, or empty list for non-enum types
+   */
+  public List<String> getEnumValues() {
+    return List.of(); // Default implementation for non-enum types
+  }
+
+  /**
+   * Gets the success type (only for result types).
+   *
+   * @return the ok type, or empty for non-result types
+   */
+  public Optional<WitType> getOkType() {
+    return Optional.empty(); // Default implementation for non-result types
+  }
+
+  /**
+   * Gets the error type (only for result types).
+   *
+   * @return the error type, or empty for non-result types
+   */
+  public Optional<WitType> getErrorType() {
+    return Optional.empty(); // Default implementation for non-result types
+  }
+
+  /**
+   * Gets the tuple element types (only for tuple types).
+   *
+   * @return list of element types, or empty list for non-tuple types
+   */
+  public List<WitType> getTupleElements() {
+    return List.of(); // Default implementation for non-tuple types
+  }
+
+  /**
+   * Gets the resource identifier (only for resource types).
+   *
+   * @return the resource ID, or empty for non-resource types
+   */
+  public Optional<String> getResourceId() {
+    return Optional.empty(); // Default implementation for non-resource types
+  }
+
   /** Primitive type kind implementation. */
   private static final class PrimitiveTypeKind extends WitTypeKind {
     private final WitPrimitiveType primitive;
@@ -483,6 +528,11 @@ public abstract class WitTypeKind {
     }
 
     @Override
+    public List<String> getEnumValues() {
+      return values;
+    }
+
+    @Override
     public boolean equals(final Object obj) {
       if (this == obj) {
         return true;
@@ -630,6 +680,11 @@ public abstract class WitTypeKind {
     }
 
     @Override
+    public Optional<WitType> getInnerType() {
+      return Optional.of(elementType);
+    }
+
+    @Override
     public boolean equals(final Object obj) {
       if (this == obj) {
         return true;
@@ -765,10 +820,12 @@ public abstract class WitTypeKind {
       return WitTypeCategory.RESULT;
     }
 
+    @Override
     public Optional<WitType> getOkType() {
       return okType;
     }
 
+    @Override
     public Optional<WitType> getErrorType() {
       return errorType;
     }
@@ -851,6 +908,11 @@ public abstract class WitTypeKind {
     }
 
     @Override
+    public List<WitType> getTupleElements() {
+      return elementTypes;
+    }
+
+    @Override
     public boolean equals(final Object obj) {
       if (this == obj) {
         return true;
@@ -914,8 +976,9 @@ public abstract class WitTypeKind {
       return WitTypeCategory.RESOURCE;
     }
 
-    public String getResourceId() {
-      return resourceId;
+    @Override
+    public Optional<String> getResourceId() {
+      return Optional.of(resourceId);
     }
 
     @Override
