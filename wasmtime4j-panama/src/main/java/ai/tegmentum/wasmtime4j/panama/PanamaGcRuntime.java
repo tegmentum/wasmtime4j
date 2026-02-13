@@ -6,19 +6,12 @@ import ai.tegmentum.wasmtime4j.gc.ArrayInstance;
 import ai.tegmentum.wasmtime4j.gc.ArrayType;
 import ai.tegmentum.wasmtime4j.gc.FieldType;
 import ai.tegmentum.wasmtime4j.gc.GcException;
-import ai.tegmentum.wasmtime4j.gc.GcHeapInspection;
-import ai.tegmentum.wasmtime4j.gc.GcInvariantValidation;
 import ai.tegmentum.wasmtime4j.gc.GcObject;
-import ai.tegmentum.wasmtime4j.gc.GcProfiler;
 import ai.tegmentum.wasmtime4j.gc.GcReferenceType;
 import ai.tegmentum.wasmtime4j.gc.GcRuntime;
 import ai.tegmentum.wasmtime4j.gc.GcStats;
 import ai.tegmentum.wasmtime4j.gc.GcValue;
 import ai.tegmentum.wasmtime4j.gc.I31Instance;
-import ai.tegmentum.wasmtime4j.gc.MemoryCorruptionAnalysis;
-import ai.tegmentum.wasmtime4j.gc.MemoryLeakAnalysis;
-import ai.tegmentum.wasmtime4j.gc.ObjectLifecycleTracker;
-import ai.tegmentum.wasmtime4j.gc.ReferenceSafetyResult;
 import ai.tegmentum.wasmtime4j.gc.StructInstance;
 import ai.tegmentum.wasmtime4j.gc.StructType;
 import ai.tegmentum.wasmtime4j.gc.WeakGcReference;
@@ -1783,47 +1776,6 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public GcHeapInspection inspectHeap() {
-    validateNotDisposed();
-    return new PanamaGcHeapInspection();
-  }
-
-  @Override
-  public ObjectLifecycleTracker trackObjectLifecycles(final List<GcObject> objects) {
-    validateNotDisposed();
-    validateNotNull(objects, "objects");
-
-    final long[] objectIds = objects.stream().mapToLong(this::getObjectId).toArray();
-    return new PanamaObjectLifecycleTracker(objectIds);
-  }
-
-  @Override
-  public MemoryLeakAnalysis detectMemoryLeaks() {
-    validateNotDisposed();
-    return new PanamaMemoryLeakAnalysis();
-  }
-
-  @Override
-  public GcProfiler startProfiling() {
-    validateNotDisposed();
-    return new PanamaGcProfiler();
-  }
-
-  @Override
-  public ReferenceSafetyResult validateReferenceSafety(final List<GcObject> rootObjects) {
-    validateNotDisposed();
-    validateNotNull(rootObjects, "rootObjects");
-
-    // Basic safety validation - check all references are valid
-    for (final GcObject obj : rootObjects) {
-      if (obj == null) {
-        return new PanamaReferenceSafetyResult(false, "Null reference found in root objects");
-      }
-    }
-    return new PanamaReferenceSafetyResult(true, "All references are safe");
-  }
-
-  @Override
   public boolean enforceTypeSafety(final String operation, final List<Object> operands) {
     validateNotDisposed();
     validateNotNull(operation, "operation");
@@ -1863,18 +1815,6 @@ public final class PanamaGcRuntime implements GcRuntime {
 
     // For struct.get and other operations, return true (valid by default)
     return true;
-  }
-
-  @Override
-  public MemoryCorruptionAnalysis detectMemoryCorruption() {
-    validateNotDisposed();
-    return new PanamaMemoryCorruptionAnalysis();
-  }
-
-  @Override
-  public GcInvariantValidation validateInvariants() {
-    validateNotDisposed();
-    return new PanamaGcInvariantValidation();
   }
 
   // ========== Helper Classes ==========

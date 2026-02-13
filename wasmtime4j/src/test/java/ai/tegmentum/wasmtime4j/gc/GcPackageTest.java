@@ -1214,17 +1214,6 @@ class GcPackageTest {
   }
 
   @Nested
-  @DisplayName("GcProfiler Tests")
-  class GcProfilerTests {
-
-    @Test
-    @DisplayName("should exist as a class")
-    void shouldExistAsAClass() {
-      assertNotNull(GcProfiler.class, "GcProfiler class should exist");
-    }
-  }
-
-  @Nested
   @DisplayName("FieldDefinition Tests")
   class FieldDefinitionTests {
 

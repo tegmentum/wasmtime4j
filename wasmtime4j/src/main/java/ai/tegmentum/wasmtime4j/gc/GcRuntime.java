@@ -422,46 +422,7 @@ public interface GcRuntime {
    */
   Object createSharingBridge(List<GcObject> objects) throws GcException;
 
-  // ========== Debugging and Profiling ==========
-
-  /**
-   * Inspects the GC heap and returns analysis information.
-   *
-   * @return heap inspection results
-   */
-  GcHeapInspection inspectHeap();
-
-  /**
-   * Tracks the lifecycle of specific objects for debugging.
-   *
-   * @param objects objects to track
-   * @return lifecycle tracking handle
-   */
-  ObjectLifecycleTracker trackObjectLifecycles(List<GcObject> objects);
-
-  /**
-   * Detects potential memory leaks in the GC heap.
-   *
-   * @return leak detection results
-   */
-  MemoryLeakAnalysis detectMemoryLeaks();
-
-  /**
-   * Starts performance profiling of GC operations.
-   *
-   * @return profiling session handle
-   */
-  GcProfiler startProfiling();
-
   // ========== Safety and Validation ==========
-
-  /**
-   * Validates reference safety for complex object graphs.
-   *
-   * @param rootObjects the root objects to validate
-   * @return validation results
-   */
-  ReferenceSafetyResult validateReferenceSafety(List<GcObject> rootObjects);
 
   /**
    * Enforces type safety in complex scenarios.
@@ -471,20 +432,6 @@ public interface GcRuntime {
    * @return true if operation is type-safe
    */
   boolean enforceTypeSafety(String operation, List<Object> operands);
-
-  /**
-   * Detects potential memory corruption.
-   *
-   * @return corruption detection results
-   */
-  MemoryCorruptionAnalysis detectMemoryCorruption();
-
-  /**
-   * Validates GC invariants and consistency.
-   *
-   * @return invariant validation results
-   */
-  GcInvariantValidation validateInvariants();
 
   // ========== Advanced GC Features from Task #307 Integration ==========
 

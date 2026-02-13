@@ -353,67 +353,11 @@ JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_createSh
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
- * Method:    inspectHeapNative
- * Signature: (J)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_inspectHeapNative
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
- * Method:    trackObjectLifecyclesNative
- * Signature: (J[J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_trackObjectLifecyclesNative
-  (JNIEnv *, jclass, jlong, jlongArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
- * Method:    detectMemoryLeaksNative
- * Signature: (J)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_detectMemoryLeaksNative
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
- * Method:    startProfilingNative
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_startProfilingNative
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
- * Method:    validateReferenceSafetyNative
- * Signature: (J[J)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_validateReferenceSafetyNative
-  (JNIEnv *, jclass, jlong, jlongArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
  * Method:    enforceTypeSafetyNative
  * Signature: (JLjava/lang/String;[Ljava/lang/Object;)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_enforceTypeSafetyNative
   (JNIEnv *, jclass, jlong, jstring, jobjectArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
- * Method:    detectMemoryCorruptionNative
- * Signature: (J)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_detectMemoryCorruptionNative
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
- * Method:    validateInvariantsNative
- * Signature: (J)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_validateInvariantsNative
-  (JNIEnv *, jclass, jlong);
 
 #ifdef __cplusplus
 }
