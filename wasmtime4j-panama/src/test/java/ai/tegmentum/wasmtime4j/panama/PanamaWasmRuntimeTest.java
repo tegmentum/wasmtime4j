@@ -693,20 +693,6 @@ class PanamaWasmRuntimeTest {
   }
 
   @Nested
-  @DisplayName("Debugging Capabilities Tests")
-  class DebuggingTests {
-
-    @Test
-    @DisplayName("Should return debugging capabilities string")
-    void shouldReturnDebuggingCapabilities() {
-      final String capabilities = runtime.getDebuggingCapabilities();
-      assertNotNull(capabilities, "Debugging capabilities should not be null");
-      assertFalse(capabilities.isEmpty(), "Debugging capabilities should not be empty");
-      LOGGER.info("Debugging capabilities: " + capabilities);
-    }
-  }
-
-  @Nested
   @DisplayName("NN Context Tests")
   class NnContextTests {
 

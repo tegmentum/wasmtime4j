@@ -41,8 +41,8 @@ import java.util.logging.Logger;
 public final class PanamaAsyncRuntime implements AsyncRuntime {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaAsyncRuntime.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeExecutionBindings NATIVE_BINDINGS =
+      NativeExecutionBindings.getInstance();
 
   private final AtomicBoolean initialized = new AtomicBoolean(false);
   private final AtomicBoolean shutdown = new AtomicBoolean(false);

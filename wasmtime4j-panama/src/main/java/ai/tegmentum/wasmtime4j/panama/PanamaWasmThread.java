@@ -39,8 +39,8 @@ import java.util.function.Supplier;
  */
 public final class PanamaWasmThread implements WasmThread {
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeExecutionBindings NATIVE_BINDINGS =
+      NativeExecutionBindings.getInstance();
 
   /** Native thread handle memory segment. */
   private final MemorySegment nativeHandle;

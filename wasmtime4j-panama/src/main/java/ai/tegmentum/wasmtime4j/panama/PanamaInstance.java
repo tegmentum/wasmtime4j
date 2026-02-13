@@ -40,8 +40,12 @@ import java.util.logging.Logger;
  */
 public final class PanamaInstance implements Instance {
   private static final Logger LOGGER = Logger.getLogger(PanamaInstance.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeInstanceBindings NATIVE_INSTANCE_BINDINGS =
+      NativeInstanceBindings.getInstance();
+  private static final NativeEngineBindings NATIVE_ENGINE_BINDINGS =
+      NativeEngineBindings.getInstance();
+  private static final NativeMemoryBindings NATIVE_MEMORY_BINDINGS =
+      NativeMemoryBindings.getInstance();
 
   // Thread-local arena pool for function calls - eliminates per-call Arena allocation
   private static final ThreadLocal<CallContext> CALL_CONTEXT =
@@ -131,7 +135,7 @@ public final class PanamaInstance implements Instance {
 
     // Create native instance via Panama FFI
     this.nativeInstance =
-        NATIVE_BINDINGS.instanceCreate(store.getNativeStore(), module.getNativeModule());
+        NATIVE_INSTANCE_BINDINGS.instanceCreate(store.getNativeStore(), module.getNativeModule());
 
     if (this.nativeInstance == null || this.nativeInstance.equals(MemorySegment.NULL)) {
       throw new WasmException("Failed to create native instance");
@@ -206,7 +210,7 @@ public final class PanamaInstance implements Instance {
     final MemorySegment modulePtr = module.getNativeModule();
     final MemorySegment namePtr =
         getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-    final int exportKind = NATIVE_BINDINGS.moduleGetExportKind(modulePtr, namePtr);
+    final int exportKind = NATIVE_ENGINE_BINDINGS.moduleGetExportKind(modulePtr, namePtr);
 
     // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
     if (exportKind != 1) {
@@ -269,7 +273,7 @@ public final class PanamaInstance implements Instance {
     final MemorySegment nameSegment =
         getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
     final int result =
-        NATIVE_BINDINGS.instanceHasGlobalExport(
+        NATIVE_INSTANCE_BINDINGS.instanceHasGlobalExport(
             nativeInstance, store.getNativeStore(), nameSegment);
 
     // Result is 0 on success (global exists), non-zero on error/not found
@@ -281,7 +285,7 @@ public final class PanamaInstance implements Instance {
     final MemorySegment valueTypeOut = getArena().allocate(ValueLayout.JAVA_INT);
     final MemorySegment isMutableOut = getArena().allocate(ValueLayout.JAVA_INT);
     final int typeResult =
-        NATIVE_BINDINGS.instanceGetGlobalType(
+        NATIVE_INSTANCE_BINDINGS.instanceGetGlobalType(
             nativeInstance, store.getNativeStore(), nameSegment, valueTypeOut, isMutableOut);
 
     if (typeResult != 0) {
@@ -331,7 +335,7 @@ public final class PanamaInstance implements Instance {
     // because shared memory exports are Extern::SharedMemory, not Extern::Memory
     try (final Arena checkArena = Arena.ofConfined()) {
       final int exportKind =
-          NATIVE_BINDINGS.moduleGetExportKind(
+          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
               module.getNativeModule(),
               checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
@@ -379,7 +383,8 @@ public final class PanamaInstance implements Instance {
     final MemorySegment nameSegment =
         getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
     final MemorySegment tablePtr =
-        NATIVE_BINDINGS.instanceGetTableByName(nativeInstance, store.getNativeStore(), nameSegment);
+        NATIVE_INSTANCE_BINDINGS.instanceGetTableByName(
+            nativeInstance, store.getNativeStore(), nameSegment);
 
     if (tablePtr == null || tablePtr.equals(MemorySegment.NULL)) {
       return Optional.empty();
@@ -439,7 +444,7 @@ public final class PanamaInstance implements Instance {
     ensureNotClosed();
 
     // Get the export count
-    final long exportCount = NATIVE_BINDINGS.moduleExportCount(module.getNativeModule());
+    final long exportCount = NATIVE_ENGINE_BINDINGS.moduleExportCount(module.getNativeModule());
     if (exportCount <= 0) {
       return new String[0];
     }
@@ -450,7 +455,8 @@ public final class PanamaInstance implements Instance {
 
       // Call native function to populate the array
       final long actualCount =
-          NATIVE_BINDINGS.moduleGetExportNames(module.getNativeModule(), namesArray, exportCount);
+          NATIVE_ENGINE_BINDINGS.moduleGetExportNames(
+              module.getNativeModule(), namesArray, exportCount);
 
       if (actualCount <= 0) {
         return new String[0];
@@ -465,7 +471,7 @@ public final class PanamaInstance implements Instance {
           final MemorySegment unboundedPtr = cStringPtr.reinterpret(Long.MAX_VALUE);
           exportNames[i] = unboundedPtr.getString(0);
           // Free the C string allocated by Rust
-          NATIVE_BINDINGS.freeString(cStringPtr);
+          NATIVE_MEMORY_BINDINGS.freeString(cStringPtr);
         }
       }
 
@@ -545,7 +551,7 @@ public final class PanamaInstance implements Instance {
 
     try (final Arena checkArena = Arena.ofConfined()) {
       final int exportKind =
-          NATIVE_BINDINGS.moduleGetExportKind(
+          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
               module.getNativeModule(),
               checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
       // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
@@ -568,7 +574,7 @@ public final class PanamaInstance implements Instance {
 
     try (final Arena checkArena = Arena.ofConfined()) {
       final int exportKind =
-          NATIVE_BINDINGS.moduleGetExportKind(
+          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
               module.getNativeModule(),
               checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
       // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
@@ -591,7 +597,7 @@ public final class PanamaInstance implements Instance {
 
     try (final Arena checkArena = Arena.ofConfined()) {
       final int exportKind =
-          NATIVE_BINDINGS.moduleGetExportKind(
+          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
               module.getNativeModule(),
               checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
       // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
@@ -614,7 +620,7 @@ public final class PanamaInstance implements Instance {
 
     try (final Arena checkArena = Arena.ofConfined()) {
       final int exportKind =
-          NATIVE_BINDINGS.moduleGetExportKind(
+          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
               module.getNativeModule(),
               checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
       // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
@@ -637,7 +643,7 @@ public final class PanamaInstance implements Instance {
 
     try (final Arena checkArena = Arena.ofConfined()) {
       final int exportKind =
-          NATIVE_BINDINGS.moduleGetExportKind(
+          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
               module.getNativeModule(),
               checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
       // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
@@ -710,7 +716,7 @@ public final class PanamaInstance implements Instance {
 
     // Call native function using invokeExact fast path
     final long resultCount =
-        NATIVE_BINDINGS.instanceCallFunctionFast(
+        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
             nativeInstance,
             store.getNativeStore(),
             functionNameSegment,
@@ -1011,7 +1017,7 @@ public final class PanamaInstance implements Instance {
   @Override
   public int getMetadataExportCount() {
     ensureNotClosed();
-    final long count = NATIVE_BINDINGS.moduleExportCount(module.getNativeModule());
+    final long count = NATIVE_ENGINE_BINDINGS.moduleExportCount(module.getNativeModule());
     return (int) count;
   }
 
@@ -1116,7 +1122,7 @@ public final class PanamaInstance implements Instance {
     params.set(ValueLayout.JAVA_INT, 24, arg2); // Value 2
 
     final long resultCount =
-        NATIVE_BINDINGS.instanceCallFunctionFast(
+        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
             nativeInstance,
             store.getNativeStore(),
             functionNameSegment,
@@ -1165,7 +1171,7 @@ public final class PanamaInstance implements Instance {
     params.set(ValueLayout.JAVA_INT, 4, arg); // Value
 
     final long resultCount =
-        NATIVE_BINDINGS.instanceCallFunctionFast(
+        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
             nativeInstance,
             store.getNativeStore(),
             functionNameSegment,
@@ -1208,7 +1214,7 @@ public final class PanamaInstance implements Instance {
     final CallContext ctx = CALL_CONTEXT.get();
 
     final long resultCount =
-        NATIVE_BINDINGS.instanceCallFunctionFast(
+        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
             nativeInstance,
             store.getNativeStore(),
             functionNameSegment,
@@ -1250,7 +1256,7 @@ public final class PanamaInstance implements Instance {
     final CallContext ctx = CALL_CONTEXT.get();
 
     final long resultCount =
-        NATIVE_BINDINGS.instanceCallFunctionFast(
+        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
             nativeInstance,
             store.getNativeStore(),
             functionNameSegment,
@@ -1293,7 +1299,7 @@ public final class PanamaInstance implements Instance {
     params.set(ValueLayout.JAVA_LONG_UNALIGNED, 4, arg); // Value
 
     final long resultCount =
-        NATIVE_BINDINGS.instanceCallFunctionFast(
+        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
             nativeInstance,
             store.getNativeStore(),
             functionNameSegment,
@@ -1341,7 +1347,7 @@ public final class PanamaInstance implements Instance {
     params.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4, arg); // Value
 
     final long resultCount =
-        NATIVE_BINDINGS.instanceCallFunctionFast(
+        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
             nativeInstance,
             store.getNativeStore(),
             functionNameSegment,
@@ -1369,14 +1375,14 @@ public final class PanamaInstance implements Instance {
    */
   private static String retrieveNativeErrorMessage() {
     try {
-      final MemorySegment errorPtr = NATIVE_BINDINGS.getLastErrorMessage();
+      final MemorySegment errorPtr = NATIVE_MEMORY_BINDINGS.getLastErrorMessage();
       if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
         return null;
       }
       try {
         return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
       } finally {
-        NATIVE_BINDINGS.freeErrorMessage(errorPtr);
+        NATIVE_MEMORY_BINDINGS.freeErrorMessage(errorPtr);
       }
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
@@ -1401,7 +1407,7 @@ public final class PanamaInstance implements Instance {
       }
       // Destroy native instance
       if (nativeInstance != null && !nativeInstance.equals(MemorySegment.NULL)) {
-        NATIVE_BINDINGS.instanceDestroy(nativeInstance);
+        NATIVE_INSTANCE_BINDINGS.instanceDestroy(nativeInstance);
       }
       LOGGER.fine("Closed Panama instance");
     } catch (final Exception e) {
@@ -1621,7 +1627,7 @@ public final class PanamaInstance implements Instance {
       final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
-          NATIVE_BINDINGS.instanceGetMemorySizePages(
+          NATIVE_INSTANCE_BINDINGS.instanceGetMemorySizePages(
               nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
 
       if (result != 0) {
@@ -1646,7 +1652,7 @@ public final class PanamaInstance implements Instance {
 
       // First get the memory pointer
       final MemorySegment memoryPtr =
-          NATIVE_BINDINGS.instanceGetMemoryByName(
+          NATIVE_INSTANCE_BINDINGS.instanceGetMemoryByName(
               nativeInstance, store.getNativeStore(), nameSegment);
 
       if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
@@ -1656,7 +1662,8 @@ public final class PanamaInstance implements Instance {
       // Now get the max size
       final MemorySegment maxSizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
       final int result =
-          NATIVE_BINDINGS.panamaMemoryGetMaximum(memoryPtr, store.getNativeStore(), maxSizeOut);
+          NATIVE_MEMORY_BINDINGS.panamaMemoryGetMaximum(
+              memoryPtr, store.getNativeStore(), maxSizeOut);
 
       if (result != 0) {
         return -1; // Failed to get max size
@@ -1683,7 +1690,7 @@ public final class PanamaInstance implements Instance {
       final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
-          NATIVE_BINDINGS.instanceGrowMemory(
+          NATIVE_INSTANCE_BINDINGS.instanceGrowMemory(
               nativeInstance, store.getNativeStore(), nameSegment, pages, previousPagesOut);
 
       if (result != 0) {
@@ -1716,7 +1723,7 @@ public final class PanamaInstance implements Instance {
       final MemorySegment buffer = tempArena.allocate(length);
 
       final int result =
-          NATIVE_BINDINGS.instanceReadMemoryBytes(
+          NATIVE_INSTANCE_BINDINGS.instanceReadMemoryBytes(
               nativeInstance, store.getNativeStore(), nameSegment, offset, length, buffer);
 
       if (result != 0) {
@@ -1753,7 +1760,7 @@ public final class PanamaInstance implements Instance {
       MemorySegment.copy(src, srcOffset, buffer, ValueLayout.JAVA_BYTE, 0, length);
 
       final int result =
-          NATIVE_BINDINGS.instanceWriteMemoryBytes(
+          NATIVE_INSTANCE_BINDINGS.instanceWriteMemoryBytes(
               nativeInstance, store.getNativeStore(), nameSegment, offset, length, buffer);
 
       if (result != 0) {
@@ -1777,7 +1784,7 @@ public final class PanamaInstance implements Instance {
       final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
-          NATIVE_BINDINGS.instanceGetMemorySizeBytes(
+          NATIVE_INSTANCE_BINDINGS.instanceGetMemorySizeBytes(
               nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
 
       if (result != 0) {

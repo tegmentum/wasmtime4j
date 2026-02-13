@@ -32,8 +32,7 @@ import java.util.logging.Logger;
  */
 public final class PanamaModule implements Module {
   private static final Logger LOGGER = Logger.getLogger(PanamaModule.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeEngineBindings NATIVE_BINDINGS = NativeEngineBindings.getInstance();
 
   private final PanamaEngine engine;
   private final Arena arena;

@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.threads;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
 import ai.tegmentum.wasmtime4j.wasi.threads.WasiThreadsContext;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -45,8 +45,8 @@ public final class PanamaWasiThreadsContext implements WasiThreadsContext {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWasiThreadsContext.class.getName());
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeExecutionBindings NATIVE_BINDINGS =
+      NativeExecutionBindings.getInstance();
 
   /** Maximum valid thread ID as per WASI-Threads specification (0x1FFFFFFF). */
   private static final int MAX_THREAD_ID = 0x1FFFFFFF;

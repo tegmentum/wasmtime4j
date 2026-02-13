@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.http;
 
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeHttpBindings;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
 import java.lang.foreign.MemorySegment;
 import java.time.Duration;
@@ -31,7 +31,7 @@ import java.util.Objects;
 public final class PanamaWasiHttpStats implements WasiHttpStats {
 
   private final MemorySegment contextPtr;
-  private final NativeFunctionBindings bindings;
+  private final NativeHttpBindings bindings;
 
   /**
    * Creates a new PanamaWasiHttpStats.
@@ -40,8 +40,7 @@ public final class PanamaWasiHttpStats implements WasiHttpStats {
    * @param bindings the native function bindings
    * @throws NullPointerException if any argument is null
    */
-  public PanamaWasiHttpStats(
-      final MemorySegment contextPtr, final NativeFunctionBindings bindings) {
+  public PanamaWasiHttpStats(final MemorySegment contextPtr, final NativeHttpBindings bindings) {
     this.contextPtr = Objects.requireNonNull(contextPtr, "contextPtr cannot be null");
     this.bindings = Objects.requireNonNull(bindings, "bindings cannot be null");
   }

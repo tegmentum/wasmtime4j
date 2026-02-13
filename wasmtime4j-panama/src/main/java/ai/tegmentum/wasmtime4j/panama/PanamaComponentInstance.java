@@ -43,8 +43,8 @@ final class PanamaComponentInstance implements ComponentInstance {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaComponentInstance.class.getName());
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeComponentBindings NATIVE_BINDINGS =
+      NativeComponentBindings.getInstance();
 
   private final MemorySegment enhancedEngineHandle;
   private final long instanceId;

@@ -20,8 +20,8 @@ import java.util.logging.Logger;
 public final class PanamaTag implements Tag {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaTag.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeInstanceBindings NATIVE_BINDINGS =
+      NativeInstanceBindings.getInstance();
 
   private final MemorySegment nativeHandle;
   private final MemorySegment storeHandle;

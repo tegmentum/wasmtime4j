@@ -20,7 +20,7 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
 import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
 import ai.tegmentum.wasmtime4j.panama.PanamaModule;
 import ai.tegmentum.wasmtime4j.panama.PanamaStore;
@@ -42,8 +42,8 @@ public final class PanamaWasiThreadsContextBuilder implements WasiThreadsContext
   private static final Logger LOGGER =
       Logger.getLogger(PanamaWasiThreadsContextBuilder.class.getName());
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeExecutionBindings NATIVE_BINDINGS =
+      NativeExecutionBindings.getInstance();
 
   /** The WebAssembly module for thread spawning. */
   private Module module;

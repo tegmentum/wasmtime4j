@@ -52,8 +52,9 @@ import java.util.logging.Logger;
 public final class PanamaComponentEngine implements ComponentEngine {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaComponentEngine.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeComponentBindings NATIVE_BINDINGS =
+      NativeComponentBindings.getInstance();
+  private static final NativeEngineBindings ENGINE_BINDINGS = NativeEngineBindings.getInstance();
 
   private final String engineId;
   private final ComponentEngineConfig config;
@@ -554,7 +555,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
       final java.lang.foreign.MemorySegment bytesSegment = tempArena.allocate(bytes.length);
       bytesSegment.copyFrom(java.lang.foreign.MemorySegment.ofArray(bytes));
       final int result =
-          NATIVE_BINDINGS.engineDetectPrecompiled(enhancedEngineHandle, bytesSegment, bytes.length);
+          ENGINE_BINDINGS.engineDetectPrecompiled(enhancedEngineHandle, bytesSegment, bytes.length);
       // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
       if (result < 0) {
         return null;

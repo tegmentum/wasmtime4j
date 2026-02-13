@@ -20,7 +20,7 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
 import ai.tegmentum.wasmtime4j.panama.PanamaModule;
@@ -118,7 +118,7 @@ public final class PanamaWasiThreadsProvider implements WasiThreadsProvider {
               "Adding thread-spawn to linker: linker=%s, store=%s, module=%s",
               linkerSegment, storeSegment, moduleSegment));
 
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeExecutionBindings bindings = NativeExecutionBindings.getInstance();
       bindings.wasiThreadsAddToLinker(linkerSegment, storeSegment, moduleSegment);
 
       LOGGER.info("Successfully added thread-spawn function to linker");
@@ -141,7 +141,7 @@ public final class PanamaWasiThreadsProvider implements WasiThreadsProvider {
       }
 
       // Check native support
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeExecutionBindings bindings = NativeExecutionBindings.getInstance();
       final boolean supported = bindings.wasiThreadsIsSupported();
       LOGGER.info("WASI-Threads support check: " + supported);
       return supported;

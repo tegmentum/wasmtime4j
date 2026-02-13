@@ -104,9 +104,9 @@ class PanamaWasiContextTest {
       assertTrue(Modifier.isFinal(field.getModifiers()), "NATIVE_BINDINGS should be final");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "NATIVE_BINDINGS should be private");
       assertEquals(
-          NativeFunctionBindings.class,
+          NativeWasiBindings.class,
           field.getType(),
-          "NATIVE_BINDINGS should be of type NativeFunctionBindings");
+          "NATIVE_BINDINGS should be of type NativeWasiBindings");
     }
 
     @Test

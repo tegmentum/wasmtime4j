@@ -18,8 +18,7 @@ import java.util.logging.Logger;
  */
 public final class PanamaTable implements WasmTable {
   private static final Logger LOGGER = Logger.getLogger(PanamaTable.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeMemoryBindings NATIVE_BINDINGS = NativeMemoryBindings.getInstance();
 
   private final Arena arena;
   private final MemorySegment nativeTable;
@@ -769,8 +768,7 @@ public final class PanamaTable implements WasmTable {
     }
     try {
       final MemorySegment storePtr = getNativeStorePointer();
-      return NativeFunctionBindings.getInstance()
-          .tableSupports64BitAddressing(nativeTable, storePtr);
+      return NATIVE_BINDINGS.tableSupports64BitAddressing(nativeTable, storePtr);
     } catch (final Exception e) {
       LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
       return false;

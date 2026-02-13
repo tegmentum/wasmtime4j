@@ -36,8 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class PanamaWasiContext implements WasiContext {
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeWasiBindings NATIVE_BINDINGS = NativeWasiBindings.getInstance();
 
   private final MemorySegment contextHandle;
   private final AtomicBoolean closed = new AtomicBoolean(false);

@@ -41,8 +41,8 @@ public final class PanamaAsyncRuntimeProvider implements AsyncRuntimeFactory.Asy
   @Override
   public AsyncRuntime create() throws WasmException {
     try {
-      // Verify Panama is available by checking native bindings
-      NativeFunctionBindings.getInstance();
+      // Verify Panama native library is available
+      NativeLibraryLoader.getInstance();
       LOGGER.fine("Creating PanamaAsyncRuntime");
       return new PanamaAsyncRuntime();
     } catch (Exception e) {

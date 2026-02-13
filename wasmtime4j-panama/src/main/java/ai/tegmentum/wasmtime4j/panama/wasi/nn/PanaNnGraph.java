@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnExecutionTarget;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraph;
@@ -86,7 +86,7 @@ public final class PanaNnGraph implements NnGraph {
   public NnGraphExecutionContext createExecutionContext() throws NnException {
     ensureNotClosed();
 
-    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
     final MemorySegment execContextHandle = bindings.wasiNnGraphCreateExecContext(nativeHandle);
 
     if (execContextHandle == null || execContextHandle.equals(MemorySegment.NULL)) {
@@ -114,7 +114,7 @@ public final class PanaNnGraph implements NnGraph {
   public void close() {
     if (closed.compareAndSet(false, true)) {
       LOGGER.log(Level.FINE, "Closing PanaNnGraph with handle: {0}", nativeHandle);
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
       bindings.wasiNnGraphClose(nativeHandle);
     }
   }

@@ -48,8 +48,8 @@ import java.util.logging.Logger;
 public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaComponentLinker.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeComponentBindings NATIVE_BINDINGS =
+      NativeComponentBindings.getInstance();
   private static final ConcurrentHashMap<Long, ComponentHostFunctionWrapper> HOST_CALLBACKS =
       new ConcurrentHashMap<>();
   private static final AtomicLong NEXT_CALLBACK_ID = new AtomicLong(1);

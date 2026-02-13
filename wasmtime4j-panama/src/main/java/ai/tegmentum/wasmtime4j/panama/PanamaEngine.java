@@ -25,8 +25,8 @@ import java.util.logging.Logger;
  */
 public final class PanamaEngine implements Engine {
   private static final Logger LOGGER = Logger.getLogger(PanamaEngine.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeEngineBindings NATIVE_BINDINGS = NativeEngineBindings.getInstance();
+  private static final NativeMemoryBindings MEMORY_BINDINGS = NativeMemoryBindings.getInstance();
 
   private final Arena arena;
   private final MemorySegment nativeEngine;
@@ -349,14 +349,14 @@ public final class PanamaEngine implements Engine {
    */
   private static String retrieveNativeErrorMessage() {
     try {
-      final MemorySegment errorPtr = NATIVE_BINDINGS.getLastErrorMessage();
+      final MemorySegment errorPtr = MEMORY_BINDINGS.getLastErrorMessage();
       if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
         return null;
       }
       try {
         return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
       } finally {
-        NATIVE_BINDINGS.freeErrorMessage(errorPtr);
+        MEMORY_BINDINGS.freeErrorMessage(errorPtr);
       }
     } catch (final Exception e) {
       LOGGER.log(java.util.logging.Level.WARNING, "Failed to retrieve native error message", e);

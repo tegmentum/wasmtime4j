@@ -42,7 +42,7 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
   private final MemorySegment funcHandle;
   private final PanamaStore store;
   private final String name;
-  private final NativeFunctionBindings bindings;
+  private final NativeInstanceBindings bindings;
   private volatile FunctionType cachedFunctionType;
   private volatile boolean closed = false;
 
@@ -66,7 +66,7 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
     this.funcHandle = funcHandle;
     this.store = store;
     this.name = name;
-    this.bindings = NativeFunctionBindings.getInstance();
+    this.bindings = NativeInstanceBindings.getInstance();
 
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine(

@@ -22,7 +22,7 @@ import ai.tegmentum.wasmtime4j.execution.FuelCallbackStats;
 import ai.tegmentum.wasmtime4j.execution.FuelExhaustionAction;
 import ai.tegmentum.wasmtime4j.execution.FuelExhaustionContext;
 import ai.tegmentum.wasmtime4j.execution.FuelExhaustionResult;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -46,7 +46,7 @@ public final class PanamaFuelCallbackHandler implements FuelCallbackHandler {
   private volatile boolean closed = false;
 
   private static MethodHandle getHandle(final String name) throws WasmException {
-    return NativeFunctionBindings.getInstance()
+    return NativeInstanceBindings.getInstance()
         .getMethodHandle(name)
         .orElseThrow(() -> new WasmException("Native function not found: " + name));
   }

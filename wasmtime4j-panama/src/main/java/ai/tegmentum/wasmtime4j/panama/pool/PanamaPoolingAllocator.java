@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.pool;
 
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocator;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig;
@@ -40,8 +40,8 @@ import java.util.logging.Logger;
 public final class PanamaPoolingAllocator implements PoolingAllocator {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaPoolingAllocator.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeExecutionBindings NATIVE_BINDINGS =
+      NativeExecutionBindings.getInstance();
 
   private final PoolingAllocatorConfig config;
   private final Arena arena;

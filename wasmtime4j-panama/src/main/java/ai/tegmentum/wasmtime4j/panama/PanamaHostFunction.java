@@ -256,7 +256,7 @@ public final class PanamaHostFunction implements WasmFunction {
         if (funcRefId != 0) {
           try {
             final MethodHandle destroyHandle =
-                NativeFunctionBindings.getInstance().getPanamaDestroyHostFunction();
+                NativeInstanceBindings.getInstance().getPanamaDestroyHostFunction();
             if (destroyHandle != null) {
               destroyHandle.invoke(funcRefId);
             }
@@ -342,7 +342,7 @@ public final class PanamaHostFunction implements WasmFunction {
    * @throws WasmException if registration fails
    */
   private void registerInNativeRegistry(final PanamaStore store) throws WasmException {
-    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
     final MethodHandle createHandle = bindings.getPanamaStoreCreateHostFunction();
 
     if (createHandle == null) {

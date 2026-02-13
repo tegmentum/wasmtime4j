@@ -36,7 +36,7 @@ public final class PanamaProfiler implements Profiler {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaProfiler.class.getName());
 
-  private final NativeFunctionBindings bindings;
+  private final NativeExecutionBindings bindings;
   private final Arena arena;
   private final MemorySegment profilerPtr;
   private final AtomicBoolean closed = new AtomicBoolean(false);
@@ -47,7 +47,7 @@ public final class PanamaProfiler implements Profiler {
    * @throws WasmException if the profiler cannot be created
    */
   public PanamaProfiler() throws WasmException {
-    this.bindings = NativeFunctionBindings.getInstance();
+    this.bindings = NativeExecutionBindings.getInstance();
     this.arena = Arena.ofShared();
     this.profilerPtr = bindings.profilerCreate();
 

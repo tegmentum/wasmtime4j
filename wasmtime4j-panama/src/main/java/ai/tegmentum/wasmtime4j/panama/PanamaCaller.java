@@ -50,7 +50,7 @@ final class PanamaCaller<T> implements Caller<T> {
   private final long callerHandle;
   private final MemorySegment callerPtr;
   private final PanamaStore store;
-  private final NativeFunctionBindings bindings;
+  private final NativeInstanceBindings bindings;
 
   /**
    * Creates a Panama caller context wrapper.
@@ -69,7 +69,7 @@ final class PanamaCaller<T> implements Caller<T> {
     this.callerHandle = callerHandle;
     this.callerPtr = MemorySegment.ofAddress(callerHandle);
     this.store = store;
-    this.bindings = NativeFunctionBindings.getInstance();
+    this.bindings = NativeInstanceBindings.getInstance();
 
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine("Created PanamaCaller with handle: 0x" + Long.toHexString(callerHandle));

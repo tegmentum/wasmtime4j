@@ -46,8 +46,12 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   private static final Logger LOGGER = Logger.getLogger(PanamaLinker.class.getName());
   private static final ConcurrentHashMap<Long, HostFunctionWrapper> HOST_FUNCTION_CALLBACKS =
       new ConcurrentHashMap<>();
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeInstanceBindings NATIVE_INSTANCE_BINDINGS =
+      NativeInstanceBindings.getInstance();
+  private static final NativeEngineBindings NATIVE_ENGINE_BINDINGS =
+      NativeEngineBindings.getInstance();
+  private static final NativeMemoryBindings NATIVE_MEMORY_BINDINGS =
+      NativeMemoryBindings.getInstance();
 
   /** Counter tracking the number of in-flight host function callbacks. */
   private static final AtomicInteger IN_FLIGHT_CALLBACKS = new AtomicInteger(0);
@@ -82,7 +86,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       throw new WasmException("Engine has invalid native handle");
     }
 
-    this.nativeLinker = NATIVE_BINDINGS.panamaLinkerCreate(enginePtr);
+    this.nativeLinker = NATIVE_INSTANCE_BINDINGS.panamaLinkerCreate(enginePtr);
     if (this.nativeLinker == null || this.nativeLinker.equals(MemorySegment.NULL)) {
       throw new WasmException("Failed to create native linker");
     }
@@ -141,7 +145,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
       // Call native function to define host function
       final int result =
-          NATIVE_BINDINGS.panamaLinkerDefineHostFunction(
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineHostFunction(
               nativeLinker,
               moduleNamePtr,
               namePtr,
@@ -229,7 +233,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
       // Use the instance's store to extract the memory, not the linker's store
       result =
-          NATIVE_BINDINGS.panamaLinkerDefineMemoryFromInstance(
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineMemoryFromInstance(
               nativeLinker,
               instanceStore.getNativeStore(),
               moduleNamePtr,
@@ -240,7 +244,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       // For store-created memories, use the standard path with the memory pointer
       final MemorySegment memoryPtr = panamaMemory.getNativeMemory();
       result =
-          NATIVE_BINDINGS.panamaLinkerDefineMemory(
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineMemory(
               nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, memoryPtr);
     }
 
@@ -287,7 +291,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Call native function to define table
     final int result =
-        NATIVE_BINDINGS.panamaLinkerDefineTable(
+        NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineTable(
             nativeLinker,
             panamaStore.getNativeStore(),
             moduleNamePtr,
@@ -350,7 +354,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Call native function to define global
     final int result =
-        NATIVE_BINDINGS.panamaLinkerDefineGlobal(
+        NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineGlobal(
             nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, globalPtr);
 
     if (result != 0) {
@@ -391,7 +395,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Call native function to define instance
     final int result =
-        NATIVE_BINDINGS.panamaLinkerDefineInstance(
+        NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineInstance(
             nativeLinker,
             panamaStore.getNativeStore(),
             moduleNamePtr,
@@ -431,7 +435,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Call native function to create alias
     final int result =
-        NATIVE_BINDINGS.panamaLinkerAlias(
+        NATIVE_INSTANCE_BINDINGS.panamaLinkerAlias(
             nativeLinker, fromModulePtr, fromNamePtr, toModulePtr, toNamePtr);
 
     if (result != 0) {
@@ -476,11 +480,11 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // If we have a WASI context, attach it to the store before instantiation
     if (wasiContext != null) {
-      final int hasWasi = NATIVE_BINDINGS.storeHasWasiContext(panamaStore.getNativeStore());
+      final int hasWasi = NATIVE_ENGINE_BINDINGS.storeHasWasiContext(panamaStore.getNativeStore());
       if (hasWasi == 0) {
         // Store doesn't have WASI context yet, attach it
         final int result =
-            NATIVE_BINDINGS.storeSetWasiContext(
+            NATIVE_ENGINE_BINDINGS.storeSetWasiContext(
                 panamaStore.getNativeStore(), wasiContext.getNativeContext());
         if (result != 0) {
           throw new WasmException(
@@ -492,7 +496,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Call native function to instantiate module using linker
     final MemorySegment instancePtr =
-        NATIVE_BINDINGS.panamaLinkerInstantiate(
+        NATIVE_INSTANCE_BINDINGS.panamaLinkerInstantiate(
             nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
 
     if (instancePtr == null || instancePtr.address() == 0) {
@@ -559,7 +563,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Call native function to create InstancePre
     final MemorySegment instancePrePtr =
-        NATIVE_BINDINGS.linkerInstantiatePre(nativeLinker, panamaModule.getNativeModule());
+        NATIVE_INSTANCE_BINDINGS.linkerInstantiatePre(nativeLinker, panamaModule.getNativeModule());
 
     if (instancePrePtr == null || instancePrePtr.equals(MemorySegment.NULL)) {
       throw new WasmException("Failed to create InstancePre for module");
@@ -581,7 +585,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
 
     // Add WASI Preview 1 imports to the linker
-    final int result = NATIVE_BINDINGS.linkerAddWasi(nativeLinker);
+    final int result = NATIVE_INSTANCE_BINDINGS.linkerAddWasi(nativeLinker);
 
     if (result != 0) {
       throw new WasmException("Failed to enable WASI (error code: " + result + ")");
@@ -1050,7 +1054,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       // CRITICAL: Destroy native linker FIRST, before cleaning up callback map.
       // This ensures any pending native callbacks complete before we remove their wrappers.
       if (nativeLinker != null && !nativeLinker.equals(MemorySegment.NULL)) {
-        NATIVE_BINDINGS.panamaLinkerDestroy(nativeLinker);
+        NATIVE_INSTANCE_BINDINGS.panamaLinkerDestroy(nativeLinker);
       }
 
       // Now safe to clean up callbacks - native linker is destroyed
@@ -1185,14 +1189,14 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    */
   private static String retrieveNativeErrorMessage() {
     try {
-      final MemorySegment errorPtr = NATIVE_BINDINGS.getLastErrorMessage();
+      final MemorySegment errorPtr = NATIVE_MEMORY_BINDINGS.getLastErrorMessage();
       if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
         return null;
       }
       try {
         return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
       } finally {
-        NATIVE_BINDINGS.freeErrorMessage(errorPtr);
+        NATIVE_MEMORY_BINDINGS.freeErrorMessage(errorPtr);
       }
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
@@ -1512,7 +1516,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   @Override
   public ai.tegmentum.wasmtime4j.Linker<T> allowShadowing(final boolean allow) {
     ensureNotClosed();
-    final int result = NATIVE_BINDINGS.linkerAllowShadowing(nativeLinker, allow ? 1 : 0);
+    final int result = NATIVE_INSTANCE_BINDINGS.linkerAllowShadowing(nativeLinker, allow ? 1 : 0);
     if (result != 0) {
       LOGGER.warning("Failed to set allow shadowing: error code " + result);
     }
@@ -1522,7 +1526,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   @Override
   public ai.tegmentum.wasmtime4j.Linker<T> allowUnknownExports(final boolean allow) {
     ensureNotClosed();
-    final int result = NATIVE_BINDINGS.linkerAllowUnknownExports(nativeLinker, allow ? 1 : 0);
+    final int result =
+        NATIVE_INSTANCE_BINDINGS.linkerAllowUnknownExports(nativeLinker, allow ? 1 : 0);
     if (result != 0) {
       LOGGER.warning("Failed to set allow unknown exports: error code " + result);
     }
@@ -1551,7 +1556,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final PanamaModule panamaModule = (PanamaModule) module;
 
     final int result =
-        NATIVE_BINDINGS.linkerDefineUnknownImportsAsTraps(
+        NATIVE_INSTANCE_BINDINGS.linkerDefineUnknownImportsAsTraps(
             nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
 
     if (result != 0) {
@@ -1583,7 +1588,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final PanamaModule panamaModule = (PanamaModule) module;
 
     final int result =
-        NATIVE_BINDINGS.linkerDefineUnknownImportsAsDefaultValues(
+        NATIVE_INSTANCE_BINDINGS.linkerDefineUnknownImportsAsDefaultValues(
             nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
 
     if (result != 0) {
@@ -1686,7 +1691,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Call native function to get the extern
     final MemorySegment externPtr =
-        NATIVE_BINDINGS.linkerGetByImport(
+        NATIVE_INSTANCE_BINDINGS.linkerGetByImport(
             nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr);
 
     if (externPtr == null || externPtr.equals(MemorySegment.NULL)) {
@@ -1694,7 +1699,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
 
     // Determine extern type and wrap appropriately
-    final int externTypeCode = NATIVE_BINDINGS.externGetType(externPtr);
+    final int externTypeCode = NATIVE_INSTANCE_BINDINGS.externGetType(externPtr);
     switch (externTypeCode) {
       case 0: // FUNC
         return new PanamaExternFunc(externPtr, panamaStore);
@@ -1763,15 +1768,15 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
               + "Use defineHostFunction() to register host functions.");
     } else if (extern instanceof PanamaExternMemory) {
       final MemorySegment memPtr = ((PanamaExternMemory) extern).getNativeHandle();
-      return NATIVE_BINDINGS.panamaLinkerDefineMemory(
+      return NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineMemory(
           nativeLinker, storePtr, moduleNamePtr, namePtr, memPtr);
     } else if (extern instanceof PanamaExternTable) {
       final MemorySegment tablePtr = ((PanamaExternTable) extern).getNativeHandle();
-      return NATIVE_BINDINGS.panamaLinkerDefineTable(
+      return NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineTable(
           nativeLinker, storePtr, moduleNamePtr, namePtr, tablePtr);
     } else if (extern instanceof PanamaExternGlobal) {
       final MemorySegment globalPtr = ((PanamaExternGlobal) extern).getNativeHandle();
-      return NATIVE_BINDINGS.panamaLinkerDefineGlobal(
+      return NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineGlobal(
           nativeLinker, storePtr, moduleNamePtr, namePtr, globalPtr);
     }
     throw new IllegalArgumentException("Unknown extern type: " + extern.getClass().getName());
@@ -1813,7 +1818,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Call native function to get the default function
     final MemorySegment funcPtr =
-        NATIVE_BINDINGS.linkerGetDefault(nativeLinker, panamaStore.getNativeStore(), moduleNamePtr);
+        NATIVE_INSTANCE_BINDINGS.linkerGetDefault(
+            nativeLinker, panamaStore.getNativeStore(), moduleNamePtr);
 
     if (funcPtr == null || funcPtr.equals(MemorySegment.NULL)) {
       return null;

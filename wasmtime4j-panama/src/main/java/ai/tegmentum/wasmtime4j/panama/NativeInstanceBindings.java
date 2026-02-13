@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -1865,6 +1866,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     initializeFunctionReferenceBindings();
     initializeExternAndCallHookBindings();
     initializeWasiNnBindings();
+    initializeTagExnRefAndHostFunctionBindings();
   }
 
   private void initializeInstanceBindings() {
@@ -2475,5 +2477,278 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
 
     addFunctionBinding(
         "wasmtime4j_panama_wasi_nn_exec_close", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+  }
+
+  // ===== Tag Methods =====
+
+  /**
+   * Creates a new WebAssembly tag for exception handling.
+   *
+   * @param storePtr the store pointer
+   * @param paramTypes the parameter type codes
+   * @param returnTypes the return type codes
+   * @return the tag pointer, or NULL on error
+   */
+  public MemorySegment tagCreate(
+      final MemorySegment storePtr, final int[] paramTypes, final int[] returnTypes) {
+    validatePointer(storePtr, "storePtr");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment paramsSegment = arena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
+      for (int i = 0; i < paramTypes.length; i++) {
+        paramsSegment.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i]);
+      }
+
+      final MemorySegment returnsSegment = arena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
+      for (int i = 0; i < returnTypes.length; i++) {
+        returnsSegment.setAtIndex(ValueLayout.JAVA_INT, i, returnTypes[i]);
+      }
+
+      return callNativeFunction(
+          "wasmtime4j_panama_tag_create",
+          MemorySegment.class,
+          storePtr,
+          paramsSegment,
+          paramTypes.length,
+          returnsSegment,
+          returnTypes.length);
+    }
+  }
+
+  /**
+   * Gets the parameter types of a tag.
+   *
+   * @param tagPtr the tag pointer
+   * @param storePtr the store pointer
+   * @return the parameter type codes
+   */
+  public int[] tagGetParamTypes(final MemorySegment tagPtr, final MemorySegment storePtr) {
+    validatePointer(tagPtr, "tagPtr");
+    validatePointer(storePtr, "storePtr");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment countPtr = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment typesPtr =
+          callNativeFunction(
+              "wasmtime4j_panama_tag_get_param_types",
+              MemorySegment.class,
+              tagPtr,
+              storePtr,
+              countPtr);
+      if (typesPtr == null || typesPtr.equals(MemorySegment.NULL)) {
+        return new int[0];
+      }
+      final int count = countPtr.get(ValueLayout.JAVA_INT, 0);
+      final int[] types = new int[count];
+      for (int i = 0; i < count; i++) {
+        types[i] =
+            typesPtr
+                .reinterpret(count * ValueLayout.JAVA_INT.byteSize())
+                .getAtIndex(ValueLayout.JAVA_INT, i);
+      }
+      tagTypesArrayFree(typesPtr, count);
+      return types;
+    }
+  }
+
+  /**
+   * Gets the return types of a tag.
+   *
+   * @param tagPtr the tag pointer
+   * @param storePtr the store pointer
+   * @return the return type codes
+   */
+  public int[] tagGetReturnTypes(final MemorySegment tagPtr, final MemorySegment storePtr) {
+    validatePointer(tagPtr, "tagPtr");
+    validatePointer(storePtr, "storePtr");
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment countPtr = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment typesPtr =
+          callNativeFunction(
+              "wasmtime4j_panama_tag_get_return_types",
+              MemorySegment.class,
+              tagPtr,
+              storePtr,
+              countPtr);
+      if (typesPtr == null || typesPtr.equals(MemorySegment.NULL)) {
+        return new int[0];
+      }
+      final int count = countPtr.get(ValueLayout.JAVA_INT, 0);
+      final int[] types = new int[count];
+      for (int i = 0; i < count; i++) {
+        types[i] =
+            typesPtr
+                .reinterpret(count * ValueLayout.JAVA_INT.byteSize())
+                .getAtIndex(ValueLayout.JAVA_INT, i);
+      }
+      tagTypesArrayFree(typesPtr, count);
+      return types;
+    }
+  }
+
+  /**
+   * Frees a tag types array.
+   *
+   * @param ptr the types array pointer
+   * @param count the number of elements
+   */
+  private void tagTypesArrayFree(final MemorySegment ptr, final int count) {
+    if (ptr != null && !ptr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_tag_types_free", Void.class, ptr, count);
+    }
+  }
+
+  /**
+   * Checks if two tags are equal.
+   *
+   * @param tag1Ptr the first tag pointer
+   * @param tag2Ptr the second tag pointer
+   * @param storePtr the store pointer
+   * @return 1 if equal, 0 if not equal, -1 on error
+   */
+  public int tagEquals(
+      final MemorySegment tag1Ptr, final MemorySegment tag2Ptr, final MemorySegment storePtr) {
+    validatePointer(tag1Ptr, "tag1Ptr");
+    validatePointer(tag2Ptr, "tag2Ptr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_tag_equals", Integer.class, tag1Ptr, tag2Ptr, storePtr);
+  }
+
+  /**
+   * Destroys a tag and frees its native resources.
+   *
+   * @param tagPtr the tag pointer
+   */
+  public void tagDestroy(final MemorySegment tagPtr) {
+    if (tagPtr != null && !tagPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_tag_destroy", Void.class, tagPtr);
+    }
+  }
+
+  // ===== Exception Reference Methods =====
+
+  /**
+   * Gets the tag from an exception reference.
+   *
+   * @param exnRefPtr the exception reference pointer
+   * @param storePtr the store pointer
+   * @return the tag pointer, or NULL on error
+   */
+  public MemorySegment exnRefGetTag(final MemorySegment exnRefPtr, final MemorySegment storePtr) {
+    validatePointer(exnRefPtr, "exnRefPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_get_tag", MemorySegment.class, exnRefPtr, storePtr);
+  }
+
+  /**
+   * Checks if an exception reference is valid.
+   *
+   * @param exnRefPtr the exception reference pointer
+   * @param storePtr the store pointer
+   * @return 1 if valid, 0 if not valid, -1 on error
+   */
+  public int exnRefIsValid(final MemorySegment exnRefPtr, final MemorySegment storePtr) {
+    validatePointer(exnRefPtr, "exnRefPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_is_valid", Integer.class, exnRefPtr, storePtr);
+  }
+
+  /**
+   * Destroys an exception reference and frees its native resources.
+   *
+   * @param exnRefPtr the exception reference pointer
+   */
+  public void exnRefDestroy(final MemorySegment exnRefPtr) {
+    if (exnRefPtr != null && !exnRefPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_exnref_destroy", Void.class, exnRefPtr);
+    }
+  }
+
+  // ===== Host Function MethodHandle Getters =====
+
+  /**
+   * Gets the method handle for creating a host function in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreCreateHostFunction() {
+    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_create_host_function");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  /**
+   * Gets the method handle for destroying a host function.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaDestroyHostFunction() {
+    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_destroy_host_function");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  private void initializeTagExnRefAndHostFunctionBindings() {
+    // Tag bindings
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_create",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_get_param_types",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_get_return_types",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_types_free",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_equals",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_tag_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // ExnRef bindings
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_get_tag",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_is_valid",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    // Host function bindings
+    addFunctionBinding(
+        "wasmtime4j_panama_store_create_host_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_destroy_host_function",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG));
   }
 }

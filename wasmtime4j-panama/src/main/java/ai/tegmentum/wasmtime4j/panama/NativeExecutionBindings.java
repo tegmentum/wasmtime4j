@@ -688,6 +688,9 @@ public final class NativeExecutionBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_coredump_clear_all",
         FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns 0 on success, -1 on error
+
+    // General Memory Management
+    addFunctionBinding("wasmtime4j_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // ptr
   }
 
   // ===== Thread-Local Storage Functions =====
@@ -1986,6 +1989,19 @@ public final class NativeExecutionBindings extends NativeBindingsBase {
   public void serializerFreeBuffer(final MemorySegment buffer, final long size) {
     if (buffer != null && !buffer.equals(MemorySegment.NULL) && size > 0) {
       callNativeFunction("wasmtime4j_serializer_free_buffer", Void.class, buffer, size);
+    }
+  }
+
+  // ===== General Memory Management =====
+
+  /**
+   * Frees memory allocated by native functions.
+   *
+   * @param ptr the memory pointer to free
+   */
+  public void free(final MemorySegment ptr) {
+    if (ptr != null && !ptr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_free", Void.class, ptr);
     }
   }
 

@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnContext;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnExecutionTarget;
@@ -81,7 +81,7 @@ public final class PanaNnContext implements NnContext {
       final MemorySegment dataSegment = arena.allocate(modelData.length);
       dataSegment.copyFrom(MemorySegment.ofArray(modelData));
 
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
       final MemorySegment graphHandle =
           bindings.wasiNnLoadGraph(
               nativeHandle, dataSegment, modelData.length, encoding.ordinal(), target.ordinal());
@@ -147,7 +147,7 @@ public final class PanaNnContext implements NnContext {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment nameSegment = arena.allocateFrom(name);
 
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
       final MemorySegment graphHandle =
           bindings.wasiNnLoadGraphByName(
               nativeHandle, nameSegment, NnExecutionTarget.CPU.ordinal());
@@ -168,7 +168,7 @@ public final class PanaNnContext implements NnContext {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment outEncodings = arena.allocate(ValueLayout.JAVA_INT, MAX_ENCODINGS);
 
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
       final int count =
           bindings.wasiNnGetSupportedEncodings(nativeHandle, outEncodings, MAX_ENCODINGS);
 
@@ -192,7 +192,7 @@ public final class PanaNnContext implements NnContext {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment outTargets = arena.allocate(ValueLayout.JAVA_INT, MAX_TARGETS);
 
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
       final int count = bindings.wasiNnGetSupportedTargets(nativeHandle, outTargets, MAX_TARGETS);
 
       final Set<NnExecutionTarget> targets = EnumSet.noneOf(NnExecutionTarget.class);
@@ -213,7 +213,7 @@ public final class PanaNnContext implements NnContext {
     Objects.requireNonNull(encoding, "encoding cannot be null");
     ensureNotClosed();
 
-    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
     return bindings.wasiNnIsEncodingSupported(nativeHandle, encoding.ordinal()) != 0;
   }
 
@@ -222,13 +222,13 @@ public final class PanaNnContext implements NnContext {
     Objects.requireNonNull(target, "target cannot be null");
     ensureNotClosed();
 
-    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
     return bindings.wasiNnIsTargetSupported(nativeHandle, target.ordinal()) != 0;
   }
 
   @Override
   public boolean isAvailable() {
-    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
     return bindings.wasiNnIsAvailable() != 0;
   }
 
@@ -252,7 +252,7 @@ public final class PanaNnContext implements NnContext {
   public void close() {
     if (closed.compareAndSet(false, true)) {
       LOGGER.log(Level.FINE, "Closing PanaNnContext with handle: {0}", nativeHandle);
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
       bindings.wasiNnContextClose(nativeHandle);
     }
   }

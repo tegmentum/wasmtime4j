@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.http;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeHttpBindings;
 import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
 import ai.tegmentum.wasmtime4j.panama.PanamaStore;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
@@ -44,7 +44,7 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
 
   private final WasiHttpConfig config;
   private final MemorySegment contextPtr;
-  private final NativeFunctionBindings bindings;
+  private final NativeHttpBindings bindings;
   private final PanamaWasiHttpStats stats;
   private final AtomicBoolean closed = new AtomicBoolean(false);
   private final Arena arena;
@@ -58,7 +58,7 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
    */
   public PanamaWasiHttpContext(final WasiHttpConfig config) throws WasmException {
     this.config = Objects.requireNonNull(config, "config cannot be null");
-    this.bindings = NativeFunctionBindings.getInstance();
+    this.bindings = NativeHttpBindings.getInstance();
     this.arena = Arena.ofShared();
 
     try {

@@ -23,7 +23,7 @@ import java.lang.invoke.MethodHandle;
  * Helper class for finding native functions.
  *
  * <p>This class provides a simple static interface for looking up native function method handles,
- * delegating to the NativeFunctionBindings singleton.
+ * delegating to the NativeLibraryLoader singleton.
  */
 final class PanamaNativeLibrary {
 
@@ -40,11 +40,9 @@ final class PanamaNativeLibrary {
    * @throws RuntimeException if the function cannot be found
    */
   static MethodHandle findFunction(final String functionName, final FunctionDescriptor descriptor) {
-    NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
-    MethodHandle handle = bindings.getFunction(functionName, descriptor);
-    if (handle == null) {
-      throw new RuntimeException("Native function not found: " + functionName);
-    }
-    return handle;
+    NativeLibraryLoader loader = NativeLibraryLoader.getInstance();
+    return loader
+        .lookupFunction(functionName, descriptor)
+        .orElseThrow(() -> new RuntimeException("Native function not found: " + functionName));
   }
 }

@@ -68,8 +68,8 @@ public final class PanamaFunctionReference implements FunctionReference {
       FUNCTION_REFERENCE_REGISTRY = new ConcurrentHashMap<>();
   private static final AtomicLong NEXT_FUNCTION_REFERENCE_ID = new AtomicLong(1L);
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeInstanceBindings NATIVE_BINDINGS =
+      NativeInstanceBindings.getInstance();
 
   /** Global arena for the callback stub - lives for the entire JVM lifetime. */
   private static final Arena GLOBAL_CALLBACK_ARENA = Arena.ofAuto();

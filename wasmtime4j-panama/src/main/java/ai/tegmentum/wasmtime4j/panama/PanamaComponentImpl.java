@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 final class PanamaComponentImpl implements Component {
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeComponentBindings NATIVE_BINDINGS =
+      NativeComponentBindings.getInstance();
 
   private final MemorySegment componentHandle;
   private final String componentId;

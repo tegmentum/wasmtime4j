@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeHttpBindings;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
@@ -68,13 +68,11 @@ class PanamaWasiHttpStatsTest {
   class ConstructorTests {
 
     @Test
-    @DisplayName("should have constructor with MemorySegment and NativeFunctionBindings")
+    @DisplayName("should have constructor with MemorySegment and NativeHttpBindings")
     void shouldHaveNativeConstructor() throws NoSuchMethodException {
       final Constructor<?> constructor =
-          PanamaWasiHttpStats.class.getConstructor(
-              MemorySegment.class, NativeFunctionBindings.class);
-      assertNotNull(
-          constructor, "Constructor with MemorySegment, NativeFunctionBindings should exist");
+          PanamaWasiHttpStats.class.getConstructor(MemorySegment.class, NativeHttpBindings.class);
+      assertNotNull(constructor, "Constructor with MemorySegment, NativeHttpBindings should exist");
       assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
     }
   }

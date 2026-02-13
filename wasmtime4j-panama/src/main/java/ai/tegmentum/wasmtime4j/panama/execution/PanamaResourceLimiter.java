@@ -20,7 +20,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiterStats;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.lang.foreign.MemorySegment;
@@ -51,7 +51,7 @@ public final class PanamaResourceLimiter implements ResourceLimiter {
    * @throws WasmException if limiter creation fails
    */
   private static MethodHandle getHandle(final String name) throws WasmException {
-    return NativeFunctionBindings.getInstance()
+    return NativeInstanceBindings.getInstance()
         .getMethodHandle(name)
         .orElseThrow(() -> new WasmException("Native function not found: " + name));
   }

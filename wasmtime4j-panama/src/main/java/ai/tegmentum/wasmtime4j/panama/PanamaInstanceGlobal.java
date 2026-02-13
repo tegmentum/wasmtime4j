@@ -20,8 +20,8 @@ import java.util.logging.Logger;
 final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
   private static final Logger LOGGER = Logger.getLogger(PanamaInstanceGlobal.class.getName());
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeInstanceBindings NATIVE_BINDINGS =
+      NativeInstanceBindings.getInstance();
 
   private final PanamaInstance instance;
   private final PanamaStore store;

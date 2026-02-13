@@ -91,7 +91,7 @@ class PanamaComponentInstanceTest {
       Field field = PanamaComponentInstance.class.getDeclaredField("NATIVE_BINDINGS");
       assertNotNull(field, "NATIVE_BINDINGS field should exist");
       assertEquals(
-          NativeFunctionBindings.class, field.getType(), "Should be NativeFunctionBindings type");
+          NativeComponentBindings.class, field.getType(), "Should be NativeComponentBindings type");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "Should be private");
       assertTrue(Modifier.isStatic(field.getModifiers()), "Should be static");
       assertTrue(Modifier.isFinal(field.getModifiers()), "Should be final");

@@ -18,8 +18,8 @@ import java.util.logging.Logger;
 public final class PanamaExnRef implements ExnRef {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaExnRef.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeInstanceBindings NATIVE_BINDINGS =
+      NativeInstanceBindings.getInstance();
 
   private final MemorySegment nativeHandle;
   private final MemorySegment storeHandle;

@@ -2272,4 +2272,66 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     return callNativeFunction(
         "wasmtime4j_panama_store_clear_call_hook_async", Integer.class, storePtr);
   }
+
+  // ===== Store Fuel/Epoch MethodHandle Getters =====
+
+  /**
+   * Gets the method handle for setting fuel level in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreSetFuel() {
+    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_set_fuel");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  /**
+   * Gets the method handle for getting remaining fuel from a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreGetFuel() {
+    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_get_fuel");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  /**
+   * Gets the method handle for adding fuel to a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreAddFuel() {
+    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_add_fuel");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  /**
+   * Gets the method handle for consuming fuel from a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreConsumeFuel() {
+    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_consume_fuel");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  /**
+   * Gets the method handle for setting epoch deadline in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreSetEpochDeadline() {
+    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_set_epoch_deadline");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  /**
+   * Gets the method handle for getting execution statistics from a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreGetExecutionStats() {
+    FunctionBinding binding = getFunctionBinding("wasmtime4j_store_get_execution_stats");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
 }

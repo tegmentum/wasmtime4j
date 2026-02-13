@@ -137,16 +137,16 @@ class PanamaComponentEngineTest {
     }
 
     @Test
-    @DisplayName("should have nativeFunctionBindings field")
-    void shouldHaveNativeFunctionBindingsField() {
+    @DisplayName("should have nativeComponentBindings field")
+    void shouldHaveNativeComponentBindingsField() {
       boolean hasField =
           Arrays.stream(PanamaComponentEngine.class.getDeclaredFields())
               .anyMatch(
                   f ->
-                      f.getType().equals(NativeFunctionBindings.class)
+                      f.getType().equals(NativeComponentBindings.class)
                           || f.getName().contains("native")
                           || f.getName().contains("binding"));
-      assertTrue(hasField, "Should have NativeFunctionBindings field or similar");
+      assertTrue(hasField, "Should have NativeComponentBindings field or similar");
     }
 
     @Test
@@ -447,12 +447,13 @@ class PanamaComponentEngineTest {
   class NativeIntegrationTests {
 
     @Test
-    @DisplayName("should use NativeFunctionBindings")
-    void shouldUseNativeFunctionBindings() {
-      boolean usesNativeFunctionBindings =
+    @DisplayName("should use NativeComponentBindings")
+    void shouldUseNativeComponentBindings() {
+      boolean usesNativeComponentBindings =
           Arrays.stream(PanamaComponentEngine.class.getDeclaredFields())
-              .anyMatch(f -> f.getType().equals(NativeFunctionBindings.class));
-      assertTrue(usesNativeFunctionBindings, "Should use NativeFunctionBindings for native calls");
+              .anyMatch(f -> f.getType().equals(NativeComponentBindings.class));
+      assertTrue(
+          usesNativeComponentBindings, "Should use NativeComponentBindings for native calls");
     }
 
     @Test

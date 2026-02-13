@@ -22,7 +22,7 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeWasiBindings;
 import ai.tegmentum.wasmtime4j.panama.PanamaEngine;
 import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
 import ai.tegmentum.wasmtime4j.panama.PanamaStore;
@@ -57,8 +57,7 @@ import java.util.logging.Logger;
 public final class PanamaWasiLinker implements WasiLinker {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWasiLinker.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeWasiBindings NATIVE_BINDINGS = NativeWasiBindings.getInstance();
 
   private final PanamaLinker<Object> linker;
   private final PanamaEngine engine;

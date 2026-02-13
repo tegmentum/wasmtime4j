@@ -18,8 +18,9 @@ import java.util.logging.Logger;
 public final class PanamaMemory implements WasmMemory {
   private static final Logger LOGGER = Logger.getLogger(PanamaMemory.class.getName());
   private static final int PAGE_SIZE = 65536; // 64KB
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeMemoryBindings NATIVE_BINDINGS = NativeMemoryBindings.getInstance();
+  private static final NativeInstanceBindings INSTANCE_BINDINGS =
+      NativeInstanceBindings.getInstance();
 
   // Buffer pool constants for optimized memory operations
   private static final int SMALL_BUFFER_SIZE = 4096; // 4KB
@@ -566,7 +567,7 @@ public final class PanamaMemory implements WasmMemory {
       final MemorySegment nameSegment = arena.allocateFrom(memoryName);
       final PanamaStore actualStore = getPanamaStore();
       cachedMemoryPointer =
-          NATIVE_BINDINGS.instanceGetMemoryByName(
+          INSTANCE_BINDINGS.instanceGetMemoryByName(
               instance.getNativeInstance(), actualStore.getNativeStore(), nameSegment);
       return cachedMemoryPointer;
     } else {

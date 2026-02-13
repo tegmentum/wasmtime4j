@@ -439,8 +439,8 @@ public final class WasiContextBuilder {
 
     try {
       // Get the native function bindings
-      ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings bindings =
-          ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings.getInstance();
+      ai.tegmentum.wasmtime4j.panama.NativeWasiBindings bindings =
+          ai.tegmentum.wasmtime4j.panama.NativeWasiBindings.getInstance();
 
       if (!bindings.isInitialized()) {
         throw new RuntimeException("Native function bindings not initialized");

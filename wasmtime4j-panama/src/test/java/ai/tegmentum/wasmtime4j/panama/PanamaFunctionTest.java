@@ -53,8 +53,8 @@ class PanamaFunctionTest {
 
   @BeforeAll
   static void loadNativeLibrary() {
-    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
-    assertTrue(bindings.isInitialized(), "Native function bindings should be initialized");
+    final NativeLibraryLoader loader = NativeLibraryLoader.getInstance();
+    assertTrue(loader.isLoaded(), "Native library should be loaded");
     LOGGER.info("Native library loaded for PanamaFunctionTest");
   }
 

@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class PanamaWasmThreadLocalStorage implements WasmThreadLocalStorage {
 
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeExecutionBindings NATIVE_BINDINGS =
+      NativeExecutionBindings.getInstance();
 
   /** Native thread handle for storage operations. */
   private final MemorySegment nativeThreadHandle;

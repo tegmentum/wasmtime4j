@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
-import ai.tegmentum.wasmtime4j.panama.NativeFunctionBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraph;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraphExecutionContext;
@@ -148,7 +148,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
       final MemorySegment dataSegment = arena.allocate(data.length);
       dataSegment.copyFrom(MemorySegment.ofArray(data));
 
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
       final int result =
           bindings.wasiNnExecSetInput(
               nativeHandle,
@@ -182,7 +182,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
   public List<NnTensor> computeNoInputs() throws NnException {
     ensureNotClosed();
 
-    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
     final int result = bindings.wasiNnExecCompute(nativeHandle);
 
     if (result != 0) {
@@ -205,7 +205,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
     }
     ensureNotClosed();
 
-    final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
 
     // Get output size first
     final long outputSize = bindings.wasiNnExecGetOutputSize(nativeHandle, index);
@@ -305,7 +305,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
   public void close() {
     if (closed.compareAndSet(false, true)) {
       LOGGER.log(Level.FINE, "Closing PanaNnGraphExecutionContext with handle: {0}", nativeHandle);
-      final NativeFunctionBindings bindings = NativeFunctionBindings.getInstance();
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
       bindings.wasiNnExecClose(nativeHandle);
     }
   }

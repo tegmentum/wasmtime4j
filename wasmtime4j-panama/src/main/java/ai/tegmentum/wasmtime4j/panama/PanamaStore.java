@@ -30,8 +30,11 @@ import java.util.logging.Logger;
  */
 public final class PanamaStore implements Store {
   private static final Logger LOGGER = Logger.getLogger(PanamaStore.class.getName());
-  private static final NativeFunctionBindings NATIVE_BINDINGS =
-      NativeFunctionBindings.getInstance();
+  private static final NativeEngineBindings NATIVE_BINDINGS = NativeEngineBindings.getInstance();
+  private static final NativeInstanceBindings INSTANCE_BINDINGS =
+      NativeInstanceBindings.getInstance();
+  private static final NativeMemoryBindings MEMORY_BINDINGS = NativeMemoryBindings.getInstance();
+  private static final NativeEngineBindings ENGINE_BINDINGS = NativeEngineBindings.getInstance();
 
   // Epoch callback infrastructure
   private static final AtomicLong EPOCH_CALLBACK_ID_COUNTER = new AtomicLong(1);
@@ -309,7 +312,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle setFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetFuel();
+      final MethodHandle setFuelHandle = ENGINE_BINDINGS.getPanamaStoreSetFuel();
       if (setFuelHandle == null) {
         throw new WasmException("Panama store set fuel function not available");
       }
@@ -332,7 +335,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle getFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetFuel();
+      final MethodHandle getFuelHandle = ENGINE_BINDINGS.getPanamaStoreGetFuel();
       if (getFuelHandle == null) {
         throw new WasmException("Panama store get fuel function not available");
       }
@@ -362,7 +365,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle addFuelHandle = NATIVE_BINDINGS.getPanamaStoreAddFuel();
+      final MethodHandle addFuelHandle = ENGINE_BINDINGS.getPanamaStoreAddFuel();
       if (addFuelHandle == null) {
         throw new WasmException("Panama store add fuel function not available");
       }
@@ -385,7 +388,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle setEpochDeadlineHandle = NATIVE_BINDINGS.getPanamaStoreSetEpochDeadline();
+      final MethodHandle setEpochDeadlineHandle = ENGINE_BINDINGS.getPanamaStoreSetEpochDeadline();
       if (setEpochDeadlineHandle == null) {
         throw new WasmException("Panama store set epoch deadline function not available");
       }
@@ -411,7 +414,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle consumeFuelHandle = NATIVE_BINDINGS.getPanamaStoreConsumeFuel();
+      final MethodHandle consumeFuelHandle = ENGINE_BINDINGS.getPanamaStoreConsumeFuel();
       if (consumeFuelHandle == null) {
         throw new WasmException("Panama store consume fuel function not available");
       }
@@ -492,7 +495,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaGlobalCreate();
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaGlobalCreate();
       if (createHandle == null) {
         throw new WasmException("Panama global creation function not available");
       }
@@ -612,7 +615,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaTableCreate();
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreate();
       if (createHandle == null) {
         throw new WasmException("Panama table creation function not available");
       }
@@ -688,7 +691,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaMemoryCreateWithConfig();
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
       if (createHandle == null) {
         throw new WasmException("Panama memory creation function not available");
       }
@@ -755,7 +758,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaMemoryCreateWithConfig();
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
       if (createHandle == null) {
         throw new WasmException("Panama memory creation function not available");
       }
@@ -848,7 +851,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle createHandle = NATIVE_BINDINGS.getPanamaInstanceCreate();
+      final MethodHandle createHandle = INSTANCE_BINDINGS.getPanamaInstanceCreate();
       if (createHandle == null) {
         throw new WasmException("Panama instance creation function not available");
       }
@@ -1023,7 +1026,7 @@ public final class PanamaStore implements Store {
    */
   private ExecutionStats getExecutionStats() throws WasmException {
     try {
-      final MethodHandle getStatsHandle = NATIVE_BINDINGS.getPanamaStoreGetExecutionStats();
+      final MethodHandle getStatsHandle = ENGINE_BINDINGS.getPanamaStoreGetExecutionStats();
       if (getStatsHandle == null) {
         throw new WasmException("Panama store get execution stats function not available");
       }
@@ -1359,26 +1362,6 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException("Task cannot be null");
     }
     return new PanamaJoinHandle<>(task);
-  }
-
-  // ===== Debug Methods =====
-
-  @Override
-  public java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> debugFrames()
-      throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    // Return empty list - debug frames require native implementation
-    return java.util.Collections.emptyList();
-  }
-
-  private ai.tegmentum.wasmtime4j.debug.DebugHandler debugHandler;
-
-  @Override
-  public void setDebugHandler(final ai.tegmentum.wasmtime4j.debug.DebugHandler handler)
-      throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    this.debugHandler = handler;
-    // Native binding would be called here
   }
 
   // ===== Fuel Async Methods =====

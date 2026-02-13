@@ -93,7 +93,7 @@ public final class PanamaComponent {
   public static final class PanamaComponentEngine implements AutoCloseable {
 
     private final ArenaResourceManager resourceManager;
-    private final NativeFunctionBindings nativeFunctions;
+    private final NativeComponentBindings nativeFunctions;
     private final ArenaResourceManager.ManagedNativeResource engineResource;
     private volatile boolean closed = false;
 
@@ -106,7 +106,7 @@ public final class PanamaComponent {
     PanamaComponentEngine(final ArenaResourceManager resourceManager) throws WasmException {
       this.resourceManager =
           Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
-      this.nativeFunctions = NativeFunctionBindings.getInstance();
+      this.nativeFunctions = NativeComponentBindings.getInstance();
 
       if (!nativeFunctions.isInitialized()) {
         throw new WasmException("Native function bindings not initialized");
@@ -326,7 +326,7 @@ public final class PanamaComponent {
   public static final class PanamaComponentHandle implements AutoCloseable {
 
     private final ArenaResourceManager resourceManager;
-    private final NativeFunctionBindings nativeFunctions;
+    private final NativeComponentBindings nativeFunctions;
     private final ArenaResourceManager.ManagedNativeResource componentResource;
     private volatile boolean closed = false;
 
@@ -340,7 +340,7 @@ public final class PanamaComponent {
         final ArenaResourceManager resourceManager, final MemorySegment componentPtr) {
       this.resourceManager =
           Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
-      this.nativeFunctions = NativeFunctionBindings.getInstance();
+      this.nativeFunctions = NativeComponentBindings.getInstance();
 
       // Create managed resource with cleanup
       this.componentResource =
@@ -485,7 +485,7 @@ public final class PanamaComponent {
   public static final class PanamaComponentInstanceHandle implements AutoCloseable {
 
     private final ArenaResourceManager resourceManager;
-    private final NativeFunctionBindings nativeFunctions;
+    private final NativeComponentBindings nativeFunctions;
     private final ArenaResourceManager.ManagedNativeResource instanceResource;
     private volatile boolean closed = false;
 
@@ -499,7 +499,7 @@ public final class PanamaComponent {
         final ArenaResourceManager resourceManager, final MemorySegment instancePtr) {
       this.resourceManager =
           Objects.requireNonNull(resourceManager, "Resource manager cannot be null");
-      this.nativeFunctions = NativeFunctionBindings.getInstance();
+      this.nativeFunctions = NativeComponentBindings.getInstance();
 
       // Create managed resource with cleanup
       this.instanceResource =

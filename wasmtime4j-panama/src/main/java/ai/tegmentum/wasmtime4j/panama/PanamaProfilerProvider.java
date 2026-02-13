@@ -42,7 +42,7 @@ public final class PanamaProfilerProvider implements ProfilerFactory.ProfilerPro
   public Profiler create() throws WasmException {
     try {
       // Verify Panama native library is available
-      NativeFunctionBindings.getInstance();
+      NativeLibraryLoader.getInstance();
       LOGGER.fine("Creating PanamaProfiler");
       return new PanamaProfiler();
     } catch (Exception e) {
