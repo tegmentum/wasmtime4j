@@ -336,6 +336,7 @@ class PanamaWitInterfaceDefinitionTest {
     void shouldImplementAllWitInterfaceDefinitionMethods() {
       final Set<String> interfaceMethods =
           Arrays.stream(WitInterfaceDefinition.class.getDeclaredMethods())
+              .filter(m -> !m.isSynthetic())
               .map(Method::getName)
               .collect(Collectors.toSet());
 

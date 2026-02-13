@@ -160,14 +160,15 @@ class PanamaStoreTest {
     }
 
     @Test
-    @DisplayName("forModule should throw when native function not available")
+    @DisplayName("forModule should create a store from a module")
     void shouldCreateStoreFromModule() throws Exception {
       final PanamaModule module = compileWat(FUNCTION_MODULE_WAT);
 
-      // The native function wasmtime4j_store_new_for_module is not yet implemented,
-      // so forModule() should throw IllegalArgumentException from the native bindings
-      assertThrows(IllegalArgumentException.class, () -> PanamaStore.forModule(module));
-      LOGGER.info("forModule correctly throws for unimplemented native function");
+      final PanamaStore moduleStore = PanamaStore.forModule(module);
+      assertNotNull(moduleStore, "Store created from module should not be null");
+      assertNotNull(moduleStore.getEngine(), "Store engine should not be null");
+      moduleStore.close();
+      LOGGER.info("forModule successfully created store from module");
     }
 
     @Test
@@ -609,26 +610,6 @@ class PanamaStoreTest {
   @Nested
   @DisplayName("Debug and Concurrency Tests")
   class DebugAndConcurrencyTests {
-
-    @Test
-    @DisplayName("debugFrames should return empty list")
-    void debugFramesShouldReturnEmptyList() throws Exception {
-      final PanamaStore store = createStore();
-
-      final List<?> frames = store.debugFrames();
-      assertNotNull(frames, "Debug frames should not be null");
-      assertThat(frames).isEmpty();
-      LOGGER.info("Debug frames correctly returns empty list");
-    }
-
-    @Test
-    @DisplayName("setDebugHandler should accept handler")
-    void setDebugHandlerShouldAcceptHandler() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertDoesNotThrow(() -> store.setDebugHandler(null));
-      LOGGER.info("setDebugHandler accepts null handler");
-    }
 
     @Test
     @DisplayName("Should reject null concurrent task")

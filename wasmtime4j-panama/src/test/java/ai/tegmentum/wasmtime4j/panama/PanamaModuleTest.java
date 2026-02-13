@@ -795,14 +795,14 @@ class PanamaModuleTest {
   class CustomSectionsTests {
 
     @Test
-    @DisplayName("getCustomSections should throw when native function not available")
-    void getCustomSectionsShouldThrowWhenNativeUnavailable() throws Exception {
+    @DisplayName("getCustomSections should return empty map for module without custom sections")
+    void getCustomSectionsShouldReturnEmptyForBasicModule() throws Exception {
       final PanamaModule module = compileWat(FUNCTION_MODULE_WAT);
 
-      // The native function wasmtime4j_panama_module_get_custom_sections is not yet implemented,
-      // so calling getCustomSections() should throw IllegalArgumentException
-      assertThrows(IllegalArgumentException.class, module::getCustomSections);
-      LOGGER.info("getCustomSections correctly throws for unimplemented native function");
+      final java.util.Map<String, byte[]> sections = module.getCustomSections();
+      assertNotNull(sections, "Custom sections map should not be null");
+      assertTrue(sections.isEmpty(), "Basic WAT module should have no custom sections");
+      LOGGER.info("getCustomSections returned empty map for basic module: " + sections);
     }
 
     @Test

@@ -130,9 +130,9 @@ class PanamaWasiInstanceTest {
       assertTrue(Modifier.isStatic(field.getModifiers()), "NATIVE_BINDINGS should be static");
       assertTrue(Modifier.isFinal(field.getModifiers()), "NATIVE_BINDINGS should be final");
       assertEquals(
-          NativeFunctionBindings.class,
+          NativeWasiBindings.class,
           field.getType(),
-          "NATIVE_BINDINGS should be of type NativeFunctionBindings");
+          "NATIVE_BINDINGS should be of type NativeWasiBindings");
     }
 
     @Test
@@ -949,14 +949,14 @@ class PanamaWasiInstanceTest {
   class StaticFieldCountTests {
 
     @Test
-    @DisplayName("Should have exactly 3 static fields")
-    void shouldHaveThreeStaticFields() throws ClassNotFoundException {
+    @DisplayName("Should have exactly 4 static fields")
+    void shouldHaveFourStaticFields() throws ClassNotFoundException {
       Class<?> clazz = getTestedClass();
       long staticFieldCount =
           Arrays.stream(clazz.getDeclaredFields())
               .filter(f -> Modifier.isStatic(f.getModifiers()))
               .count();
-      assertEquals(3, staticFieldCount, "Should have exactly 3 static fields");
+      assertEquals(4, staticFieldCount, "Should have exactly 4 static fields");
     }
 
     @Test
