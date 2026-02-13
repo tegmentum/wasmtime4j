@@ -310,15 +310,6 @@ public interface WasmRuntime extends Closeable {
       final long maxCacheSize, final boolean enableCompression, final int compressionLevel)
       throws WasmException;
 
-  // ===== DEBUGGING OPERATIONS =====
-
-  /**
-   * Gets debugging capabilities of this runtime.
-   *
-   * @return debugging capabilities information
-   */
-  String getDebuggingCapabilities();
-
   /**
    * Creates a new WASI context with default settings.
    *

@@ -1608,42 +1608,6 @@ public final class JniStore extends JniResource implements Store {
     return new JniJoinHandle<>(task);
   }
 
-  // ===== Debug Methods =====
-
-  @Override
-  public java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> debugFrames()
-      throws WasmException {
-    ensureNotClosed();
-    // Return debug frames from native (empty if debugging not enabled)
-    final String framesJson = nativeGetDebugFrames(nativeHandle);
-    if (framesJson == null || framesJson.isEmpty()) {
-      return java.util.Collections.emptyList();
-    }
-    return parseDebugFrames(framesJson);
-  }
-
-  private java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> parseDebugFrames(
-      final String json) {
-    // Simple JSON parsing for debug frames
-    java.util.List<ai.tegmentum.wasmtime4j.debug.DebugFrame> frames = new java.util.ArrayList<>();
-    // For now return empty list - native implementation will provide real data
-    return frames;
-  }
-
-  private ai.tegmentum.wasmtime4j.debug.DebugHandler debugHandler;
-
-  @Override
-  public void setDebugHandler(final ai.tegmentum.wasmtime4j.debug.DebugHandler handler)
-      throws WasmException {
-    ensureNotClosed();
-    this.debugHandler = handler;
-    if (handler == null) {
-      nativeClearDebugHandler(nativeHandle);
-    } else {
-      nativeSetDebugHandler(nativeHandle);
-    }
-  }
-
   // ===== Fuel Async Methods =====
 
   private long fuelAsyncYieldInterval = 0;
@@ -1664,12 +1628,6 @@ public final class JniStore extends JniResource implements Store {
   }
 
   // Native methods for new functionality
-  private native String nativeGetDebugFrames(long storeHandle);
-
-  private native void nativeSetDebugHandler(long storeHandle);
-
-  private native void nativeClearDebugHandler(long storeHandle);
-
   private native void nativeSetFuelAsyncYieldInterval(long storeHandle, long interval);
 
   // ===== Resource Limiter Methods =====

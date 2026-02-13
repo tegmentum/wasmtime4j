@@ -335,40 +335,6 @@ class JniWasmRuntimeTest {
   }
 
   @Nested
-  @DisplayName("Debugging Methods Tests")
-  class DebuggingMethodsTests {
-
-    @Test
-    @DisplayName("should have createDebugger method")
-    void shouldHaveCreateDebuggerMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Class<?> engineClass = Class.forName("ai.tegmentum.wasmtime4j.Engine");
-      Method method = clazz.getMethod("createDebugger", engineClass);
-
-      assertThat(method.getReturnType().getName())
-          .isEqualTo("ai.tegmentum.wasmtime4j.debug.Debugger");
-    }
-
-    @Test
-    @DisplayName("should have isDebuggingSupported method")
-    void shouldHaveIsDebuggingSupportedMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getMethod("isDebuggingSupported");
-
-      assertThat(method.getReturnType()).isEqualTo(boolean.class);
-    }
-
-    @Test
-    @DisplayName("should have getDebuggingCapabilities method")
-    void shouldHaveGetDebuggingCapabilitiesMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getMethod("getDebuggingCapabilities");
-
-      assertThat(method.getReturnType()).isEqualTo(String.class);
-    }
-  }
-
-  @Nested
   @DisplayName("Serialization Methods Tests")
   class SerializationMethodsTests {
 

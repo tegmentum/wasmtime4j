@@ -353,30 +353,6 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCall
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeGetDebugFrames
- * Signature: (J)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetDebugFrames
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeSetDebugHandler
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetDebugHandler
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeClearDebugHandler
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearDebugHandler
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeSetFuelAsyncYieldInterval
  * Signature: (JJ)V
  */

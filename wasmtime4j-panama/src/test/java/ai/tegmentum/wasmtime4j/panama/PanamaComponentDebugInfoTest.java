@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ExecutionState;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -99,14 +98,6 @@ class PanamaComponentDebugInfoTest {
       final Method method = PanamaComponentDebugInfo.class.getMethod("getSourceMaps");
       assertNotNull(method, "getSourceMaps method should exist");
       assertEquals(List.class, method.getReturnType(), "Should return List");
-    }
-
-    @Test
-    @DisplayName("should have getExecutionState method")
-    void shouldHaveGetExecutionStateMethod() throws NoSuchMethodException {
-      final Method method = PanamaComponentDebugInfo.class.getMethod("getExecutionState");
-      assertNotNull(method, "getExecutionState method should exist");
-      assertEquals(ExecutionState.class, method.getReturnType(), "Should return ExecutionState");
     }
 
     @Test

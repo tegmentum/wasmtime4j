@@ -29,13 +29,6 @@ public interface StackFrame {
   SourceLocation getSourceLocation();
 
   /**
-   * Gets the local variables.
-   *
-   * @return list of variables
-   */
-  java.util.List<Variable> getVariables();
-
-  /**
    * Gets the frame depth.
    *
    * @return depth in call stack

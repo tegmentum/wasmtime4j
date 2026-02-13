@@ -4,9 +4,7 @@ import ai.tegmentum.wasmtime4j.concurrent.Accessor;
 import ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask;
 import ai.tegmentum.wasmtime4j.concurrent.JoinHandle;
 import ai.tegmentum.wasmtime4j.concurrent.SpawnableTask;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
-import ai.tegmentum.wasmtime4j.debug.DebugFrame;
 import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
@@ -705,50 +703,6 @@ public interface Store extends Closeable {
   <R> JoinHandle<R> spawn(SpawnableTask<R> task) throws WasmException;
 
   // ===== Debug Methods =====
-
-  /**
-   * Gets the debug stack frames for the current execution context.
-   *
-   * <p>This method provides access to WebAssembly execution stack frames for debugging purposes. It
-   * requires guest debugging to be enabled in the engine configuration via {@link
-   * EngineConfig#guestDebug(boolean)}.
-   *
-   * <p>The returned list contains frames from the innermost (current) to outermost (caller).
-   *
-   * <p><b>Note:</b> This method may have performance implications when called frequently.
-   *
-   * @return a list of debug frames, or empty list if debugging is not enabled
-   * @throws WasmException if retrieving frames fails
-   * @since 1.0.0
-   */
-  java.util.List<DebugFrame> debugFrames() throws WasmException;
-
-  /**
-   * Sets a debug handler for receiving debug events.
-   *
-   * <p>The debug handler is invoked when debug events occur during WebAssembly execution, such as
-   * breakpoints, single-stepping, or exceptions.
-   *
-   * <p><b>Note:</b> Debug instrumentation must be enabled via {@link
-   * EngineConfig#guestDebug(boolean)}.
-   *
-   * @param handler the debug handler, or null to clear any existing handler
-   * @throws WasmException if setting the handler fails
-   * @since 1.0.0
-   */
-  void setDebugHandler(ai.tegmentum.wasmtime4j.debug.DebugHandler handler) throws WasmException;
-
-  /**
-   * Clears any previously set debug handler.
-   *
-   * <p>This is equivalent to calling {@code setDebugHandler(null)}.
-   *
-   * @throws WasmException if clearing the handler fails
-   * @since 1.0.0
-   */
-  default void clearDebugHandler() throws WasmException {
-    setDebugHandler(null);
-  }
 
   // ===== Resource Limiter Methods =====
 

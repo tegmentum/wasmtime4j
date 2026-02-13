@@ -36,13 +36,6 @@ public interface ComponentDebugInfo {
   java.util.List<SourceMap> getSourceMaps();
 
   /**
-   * Gets current execution state.
-   *
-   * @return execution state
-   */
-  ExecutionState getExecutionState();
-
-  /**
    * Gets variable information.
    *
    * @return variable information

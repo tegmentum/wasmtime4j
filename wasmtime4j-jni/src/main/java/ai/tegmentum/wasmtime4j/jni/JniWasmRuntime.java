@@ -572,54 +572,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     return !isClosed() && nativeHandle != 0;
   }
 
-  // ===== DEBUGGING OPERATIONS =====
-
-  /**
-   * Creates a debugger for the given engine.
-   *
-   * @param engine the engine to create the debugger for
-   * @return the debugger
-   * @throws WasmException if the debugger cannot be created
-   */
-  public ai.tegmentum.wasmtime4j.debug.Debugger createDebugger(final Engine engine)
-      throws WasmException {
-    JniValidation.requireNonNull(engine, "engine");
-    validateRuntimeState();
-
-    if (!(engine instanceof JniEngine)) {
-      throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
-    }
-
-    try {
-      final JniDebugger debugger = new JniDebugger(engine);
-
-      LOGGER.fine(
-          "Created debugger for engine: 0x"
-              + Long.toHexString(((JniEngine) engine).getNativeHandle()));
-
-      return debugger;
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Unexpected error creating debugger", e);
-    }
-  }
-
-  public boolean isDebuggingSupported() {
-    return true; // JNI implementation supports debugging
-  }
-
-  @Override
-  public String getDebuggingCapabilities() {
-    try {
-      return "JNI debugging with breakpoints, step execution, variable inspection, "
-          + "memory inspection, call stack analysis, profiling integration";
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to get debugging capabilities: " + e.getMessage());
-      return "Basic debugging support";
-    }
-  }
-
   @Override
   public Module deserializeModule(final Engine engine, final byte[] serializedBytes)
       throws WasmException {

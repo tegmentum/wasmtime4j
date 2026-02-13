@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ExecutionState;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -67,11 +66,6 @@ final class PanamaComponentDebugInfo implements ComponentDebugInfo {
   @Override
   public List<SourceMap> getSourceMaps() {
     return Collections.emptyList();
-  }
-
-  @Override
-  public ExecutionState getExecutionState() {
-    return null;
   }
 
   @Override
