@@ -1,17 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
@@ -63,19 +54,9 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
-  public ComponentVersion getVersion() {
-    return new ComponentVersion(1, 0, 0);
-  }
-
-  @Override
   public long getSize() throws WasmException {
     ensureNotClosed();
     return NATIVE_BINDINGS.componentGetSize(componentHandle);
-  }
-
-  @Override
-  public ComponentMetadata getMetadata() {
-    return new ComponentMetadata(componentId, new ComponentVersion(1, 0, 0), "Component");
   }
 
   @Override
@@ -171,61 +152,6 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
-  public ComponentDependencyGraph getDependencyGraph() throws WasmException {
-    ensureNotClosed();
-
-    // Create dependency graph based on imports
-    final ComponentDependencyGraph graph = new ComponentDependencyGraph(null);
-
-    // Get imported interfaces as dependencies
-    final Set<String> imports = getImportedInterfaces();
-    // The graph tracks dependencies - in a real implementation we would
-    // resolve these imports to actual components from a registry
-
-    return graph;
-  }
-
-  @Override
-  public Set<Component> resolveDependencies(final ComponentRegistry registry) throws WasmException {
-    if (registry == null) {
-      throw new IllegalArgumentException("registry cannot be null");
-    }
-    ensureNotClosed();
-    // Return empty set - full dependency resolution requires WIT type system
-    return Set.of();
-  }
-
-  @Override
-  public ComponentCompatibility checkCompatibility(final Component other) throws WasmException {
-    if (other == null) {
-      throw new IllegalArgumentException("other cannot be null");
-    }
-    ensureNotClosed();
-
-    // Check if this component's imports can be satisfied by the other's exports
-    final Set<String> myImports = getImportedInterfaces();
-    final Set<String> otherExports = other.getExportedInterfaces();
-
-    // Check if all required imports are provided
-    for (final String requiredImport : myImports) {
-      if (!otherExports.contains(requiredImport)) {
-        return new ComponentCompatibility(false, "Missing required import: " + requiredImport);
-      }
-    }
-
-    // Check version compatibility if both components have versions
-    final ComponentVersion myVersion = getVersion();
-    final ComponentVersion otherVersion = other.getVersion();
-
-    if (myVersion.getMajor() != otherVersion.getMajor()) {
-      return new ComponentCompatibility(
-          false, "Major version mismatch: " + myVersion + " vs " + otherVersion);
-    }
-
-    return new ComponentCompatibility(true, "Components are compatible");
-  }
-
-  @Override
   public WitInterfaceDefinition getWitInterface() throws WasmException {
     ensureNotClosed();
 
@@ -247,7 +173,7 @@ final class PanamaComponentImpl implements Component {
 
     return new PanamaWitInterfaceDefinition(
         componentId,
-        getVersion().toString(),
+        "1.0.0",
         "", // Package name not available from component metadata
         witBuilder.toString());
   }
@@ -268,35 +194,10 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
-  public ComponentResourceUsage getResourceUsage() {
-    return new ComponentResourceUsage(componentId);
-  }
-
-  @Override
-  public ComponentLifecycleState getLifecycleState() {
-    return resourceHandle.isClosed()
-        ? ComponentLifecycleState.ERROR
-        : ComponentLifecycleState.READY;
-  }
-
-  @Override
   public boolean isValid() {
     return !resourceHandle.isClosed()
         && componentHandle != null
         && !componentHandle.equals(MemorySegment.NULL);
-  }
-
-  @Override
-  public ComponentValidationResult validate(final ComponentValidationConfig validationConfig)
-      throws WasmException {
-    if (validationConfig == null) {
-      throw new IllegalArgumentException("validationConfig cannot be null");
-    }
-    ensureNotClosed();
-    // Basic validation - component is valid if it's not closed and has a valid handle
-    final ComponentValidationResult.ValidationContext context =
-        new ComponentValidationResult.ValidationContext(componentId, getVersion());
-    return ComponentValidationResult.success(context);
   }
 
   @Override

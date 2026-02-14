@@ -183,60 +183,6 @@ public final class ComponentLifecycleIntegrationTest {
   }
 
   @Nested
-  @DisplayName("Component Metadata Tests")
-  class MetadataTests {
-
-    @Test
-    @DisplayName("should create component with metadata")
-    void shouldCreateComponentWithMetadata(final TestInfo testInfo) throws Exception {
-      assumeComponentAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Create a mock component handle for testing metadata
-      // Since we can't load a real component without valid WASM, we test the metadata creation
-      ComponentVersion version = new ComponentVersion(1, 2, 3);
-      ComponentMetadata metadata = new ComponentMetadata("test-component", version, "Test");
-
-      assertNotNull(metadata, "Metadata should not be null");
-      assertNotNull(metadata.getName(), "Metadata name should not be null");
-      assertNotNull(metadata.getVersion(), "Metadata version should not be null");
-      LOGGER.info(
-          "Component metadata created: " + metadata.getName() + " v" + metadata.getVersion());
-    }
-
-    @Test
-    @DisplayName("should return component version")
-    void shouldReturnComponentVersion(final TestInfo testInfo) throws Exception {
-      assumeComponentAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      ComponentVersion version = new ComponentVersion(2, 0, 1);
-      assertTrue(version.getMajor() == 2, "Major version should be 2");
-      assertTrue(version.getMinor() == 0, "Minor version should be 0");
-      assertTrue(version.getPatch() == 1, "Patch version should be 1");
-      LOGGER.info("Component version: " + version);
-    }
-
-    @Test
-    @DisplayName("should check version compatibility")
-    void shouldCheckVersionCompatibility(final TestInfo testInfo) throws Exception {
-      assumeComponentAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      ComponentVersion v1 = new ComponentVersion(1, 0, 0);
-      ComponentVersion v2 = new ComponentVersion(1, 1, 0);
-      ComponentVersion v3 = new ComponentVersion(2, 0, 0);
-
-      // isCompatibleWith returns true if major matches AND this >= other
-      assertTrue(v2.isCompatibleWith(v1), "v2 (1.1.0) should be compatible with v1 (1.0.0)");
-      assertFalse(v1.isCompatibleWith(v2), "v1 (1.0.0) should not be compatible with v2 (1.1.0)");
-      assertFalse(v1.isCompatibleWith(v3), "v1 should not be compatible with v3 (different major)");
-      assertFalse(v3.isCompatibleWith(v1), "v3 should not be compatible with v1 (different major)");
-      LOGGER.info("Version compatibility checks passed");
-    }
-  }
-
-  @Nested
   @DisplayName("Component Lifecycle Tests")
   class LifecycleTests {
 
@@ -279,27 +225,6 @@ public final class ComponentLifecycleIntegrationTest {
 
       assertTrue(componentEngine.isValid(), "Engine should be valid when open");
       LOGGER.info("Engine validity check passed");
-    }
-  }
-
-  @Nested
-  @DisplayName("Component Lifecycle State Tests")
-  class LifecycleStateTests {
-
-    @Test
-    @DisplayName("should have lifecycle states defined")
-    void shouldHaveLifecycleStatesDefined(final TestInfo testInfo) throws Exception {
-      assumeComponentAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Verify all lifecycle states are accessible
-      assertNotNull(ComponentLifecycleState.CREATING, "CREATING state should exist");
-      assertNotNull(ComponentLifecycleState.READY, "READY state should exist");
-      assertNotNull(ComponentLifecycleState.ACTIVE, "ACTIVE state should exist");
-      assertNotNull(ComponentLifecycleState.SUSPENDED, "SUSPENDED state should exist");
-      assertNotNull(ComponentLifecycleState.DESTROYED, "DESTROYED state should exist");
-
-      LOGGER.info("All lifecycle states verified");
     }
   }
 }

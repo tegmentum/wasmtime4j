@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
@@ -212,56 +210,6 @@ class ComponentEngineTest {
   }
 
   // ========================================================================
-  // Registry Method Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Registry Method Tests")
-  class RegistryMethodTests {
-
-    @Test
-    @DisplayName("should have getRegistry method")
-    void shouldHaveGetRegistryMethod() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("getRegistry");
-      assertNotNull(method, "getRegistry method should exist");
-      assertEquals(
-          ComponentRegistry.class,
-          method.getReturnType(),
-          "Return type should be ComponentRegistry");
-      assertEquals(0, method.getParameterCount(), "getRegistry should have no parameters");
-    }
-
-    @Test
-    @DisplayName("should have setRegistry method")
-    void shouldHaveSetRegistryMethod() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("setRegistry", ComponentRegistry.class);
-      assertNotNull(method, "setRegistry method should exist");
-      assertEquals(void.class, method.getReturnType(), "Return type should be void");
-      assertEquals(1, method.getParameterCount(), "setRegistry should have 1 parameter");
-      assertEquals(
-          ComponentRegistry.class,
-          method.getParameterTypes()[0],
-          "Parameter should be ComponentRegistry");
-    }
-
-    @Test
-    @DisplayName("getRegistry should not throw checked exceptions")
-    void getRegistryShouldNotThrowCheckedExceptions() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("getRegistry");
-      Class<?>[] exceptionTypes = method.getExceptionTypes();
-      assertEquals(0, exceptionTypes.length, "getRegistry should not declare checked exceptions");
-    }
-
-    @Test
-    @DisplayName("setRegistry should not throw checked exceptions")
-    void setRegistryShouldNotThrowCheckedExceptions() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("setRegistry", ComponentRegistry.class);
-      Class<?>[] exceptionTypes = method.getExceptionTypes();
-      assertEquals(0, exceptionTypes.length, "setRegistry should not declare checked exceptions");
-    }
-  }
-
-  // ========================================================================
   // Instance Creation Method Tests
   // ========================================================================
 
@@ -322,37 +270,6 @@ class ComponentEngineTest {
       Class<?>[] exceptionTypes = method.getExceptionTypes();
       assertEquals(1, exceptionTypes.length, "Should declare one exception");
       assertEquals(WasmException.class, exceptionTypes[0], "Should throw WasmException");
-    }
-  }
-
-  // ========================================================================
-  // Validation Method Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Validation Method Tests")
-  class ValidationMethodTests {
-
-    @Test
-    @DisplayName("should have validateComponent method")
-    void shouldHaveValidateComponentMethod() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("validateComponent", Component.class);
-      assertNotNull(method, "validateComponent method should exist");
-      assertEquals(
-          ComponentValidationResult.class,
-          method.getReturnType(),
-          "Return type should be ComponentValidationResult");
-      assertEquals(1, method.getParameterCount(), "validateComponent should have 1 parameter");
-      assertEquals(Component.class, method.getParameterTypes()[0], "Parameter should be Component");
-    }
-
-    @Test
-    @DisplayName("validateComponent should not throw checked exceptions")
-    void validateComponentShouldNotThrowCheckedExceptions() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("validateComponent", Component.class);
-      Class<?>[] exceptionTypes = method.getExceptionTypes();
-      assertEquals(
-          0, exceptionTypes.length, "validateComponent should not declare checked exceptions");
     }
   }
 
@@ -471,10 +388,7 @@ class ComponentEngineTest {
                   "compileComponent",
                   "linkComponents",
                   "checkCompatibility",
-                  "getRegistry",
-                  "setRegistry",
                   "createInstance",
-                  "validateComponent",
                   "getWitSupportInfo",
                   "supportsComponentModel",
                   "getMaxLinkDepth"));
@@ -588,14 +502,6 @@ class ComponentEngineTest {
           ComponentEngine.class.getMethod("createInstance", Component.class, Store.class);
       assertEquals(
           Store.class, createMethod.getParameterTypes()[1], "createInstance should accept Store");
-
-      // Verify registry-related parameters use ComponentRegistry
-      Method setRegistryMethod =
-          ComponentEngine.class.getMethod("setRegistry", ComponentRegistry.class);
-      assertEquals(
-          ComponentRegistry.class,
-          setRegistryMethod.getParameterTypes()[0],
-          "setRegistry should accept ComponentRegistry");
     }
   }
 }

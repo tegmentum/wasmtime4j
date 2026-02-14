@@ -1,18 +1,9 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
 import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
@@ -40,9 +31,7 @@ public final class JniComponentImpl implements Component {
 
   private final JniComponent.JniComponentHandle nativeComponent;
   private final JniComponentEngine engine;
-  private final ComponentMetadata metadata;
   private final String componentId;
-  private final ComponentVersion version;
 
   /**
    * Creates a new JNI component implementation.
@@ -52,37 +41,16 @@ public final class JniComponentImpl implements Component {
    */
   public JniComponentImpl(
       final JniComponent.JniComponentHandle nativeComponent, final JniComponentEngine engine) {
-    this(nativeComponent, engine, createDefaultMetadata());
-  }
-
-  /**
-   * Creates a new JNI component implementation with metadata.
-   *
-   * @param nativeComponent the native component handle
-   * @param engine the component engine that created this component
-   * @param metadata the component metadata
-   */
-  public JniComponentImpl(
-      final JniComponent.JniComponentHandle nativeComponent,
-      final JniComponentEngine engine,
-      final ComponentMetadata metadata) {
     JniValidation.requireNonNull(nativeComponent, "nativeComponent");
     JniValidation.requireNonNull(engine, "engine");
     this.nativeComponent = nativeComponent;
     this.engine = engine;
-    this.metadata = metadata != null ? metadata : createDefaultMetadata();
     this.componentId = "jni-component-" + System.nanoTime();
-    this.version = this.metadata.getVersion();
   }
 
   @Override
   public String getId() {
     return componentId;
-  }
-
-  @Override
-  public ComponentVersion getVersion() {
-    return version;
   }
 
   @Override
@@ -94,11 +62,6 @@ public final class JniComponentImpl implements Component {
     } catch (final Exception e) {
       throw new WasmException("Failed to get component size", e);
     }
-  }
-
-  @Override
-  public ComponentMetadata getMetadata() {
-    return metadata;
   }
 
   /**
@@ -195,49 +158,6 @@ public final class JniComponentImpl implements Component {
     }
   }
 
-  // Advanced Orchestration Features - Basic implementations
-
-  @Override
-  public ComponentDependencyGraph getDependencyGraph() throws WasmException {
-    ensureValid();
-    // Return empty dependency graph for now
-    return new ComponentDependencyGraph(this);
-  }
-
-  /**
-   * Resolves dependencies for this component.
-   *
-   * @param registry the component registry
-   * @return set of resolved dependencies
-   * @throws WasmException if resolution fails
-   */
-  @Override
-  public Set<Component> resolveDependencies(final ComponentRegistry registry) throws WasmException {
-    JniValidation.requireNonNull(registry, "registry");
-    ensureValid();
-    // Return empty set for now
-    return new HashSet<>();
-  }
-
-  /**
-   * Checks compatibility with another component.
-   *
-   * @param other the other component
-   * @return compatibility result
-   * @throws WasmException if check fails
-   */
-  @Override
-  public ComponentCompatibility checkCompatibility(final Component other) throws WasmException {
-    JniValidation.requireNonNull(other, "other");
-    ensureValid();
-
-    // Basic compatibility check based on version
-    final boolean compatible = this.version.isCompatibleWith(other.getVersion());
-    return new ComponentCompatibility(compatible, compatible ? "Compatible" : "Incompatible");
-  }
-
-  // WIT Interface Enhancement
-
   @Override
   public WitInterfaceDefinition getWitInterface() throws WasmException {
     ensureValid();
@@ -290,7 +210,7 @@ public final class JniComponentImpl implements Component {
                     + targetVersion);
 
             // Validate target version compatibility
-            final String currentVersion = version.toString();
+            final String currentVersion = "1.0.0";
             final String targetVersionStr = targetVersion.toString();
 
             // Execute migration plan steps
@@ -314,21 +234,7 @@ public final class JniComponentImpl implements Component {
    */
   public WitInterfaceIntrospection getWitIntrospection() throws WasmException {
     ensureValid();
-    return new JniWitInterfaceIntrospection(componentId, metadata.getName(), version.toString());
-  }
-
-  // Resource Management
-
-  @Override
-  public ComponentResourceUsage getResourceUsage() {
-    return new ComponentResourceUsage(componentId);
-  }
-
-  // Lifecycle Management
-
-  @Override
-  public ComponentLifecycleState getLifecycleState() {
-    return ComponentLifecycleState.ACTIVE;
+    return new JniWitInterfaceIntrospection(componentId, componentId, "1.0.0");
   }
 
   @Override
@@ -346,18 +252,7 @@ public final class JniComponentImpl implements Component {
   }
 
   public ComponentDebugInfo getDebugInfo() {
-    return new JniComponentDebugInfoImpl(componentId, metadata.getName());
-  }
-
-  @Override
-  public ComponentValidationResult validate(final ComponentValidationConfig validationConfig)
-      throws WasmException {
-    JniValidation.requireNonNull(validationConfig, "validationConfig");
-    ensureValid();
-
-    final ComponentValidationResult.ValidationContext context =
-        new ComponentValidationResult.ValidationContext(componentId, version);
-    return ComponentValidationResult.success(context);
+    return new JniComponentDebugInfoImpl(componentId, componentId);
   }
 
   @Override
@@ -376,11 +271,6 @@ public final class JniComponentImpl implements Component {
     if (!isValid()) {
       throw new WasmException("Component is no longer valid");
     }
-  }
-
-  private static ComponentMetadata createDefaultMetadata() {
-    final ComponentVersion version = new ComponentVersion(1, 0, 0);
-    return new ComponentMetadata("unknown", version, "JNI Component");
   }
 
   /** Stub implementation of ComponentDebugInfo. */

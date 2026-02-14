@@ -8,9 +8,6 @@ import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
@@ -65,7 +62,6 @@ public final class PanamaComponentEngine implements ComponentEngine {
   private final AtomicLong componentIdCounter;
   private final WasmRuntime runtime;
   private final NativeResourceHandle resourceHandle;
-  private ComponentRegistry registry;
 
   /**
    * Creates a new Panama component engine with the given configuration.
@@ -287,38 +283,6 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
-  public ComponentValidationResult validateComponent(final Component component) {
-    Objects.requireNonNull(component, "component cannot be null");
-    ensureNotClosed();
-
-    if (!(component instanceof PanamaComponentImpl)) {
-      throw new IllegalArgumentException("Component must be Panama implementation");
-    }
-
-    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
-    final ComponentVersion version = panamaComponent.getVersion();
-    final ComponentValidationResult.ValidationContext context =
-        new ComponentValidationResult.ValidationContext(
-            panamaComponent.getId() != null ? panamaComponent.getId() : "unknown", version);
-
-    // Use native validation
-    final int validationResult =
-        NATIVE_BINDINGS.componentValidate(panamaComponent.getNativeHandle());
-
-    if (validationResult != 0) {
-      final ComponentValidationResult.ValidationError error =
-          new ComponentValidationResult.ValidationError(
-              "VALIDATION_ERROR",
-              "Component validation failed (error code: " + validationResult + ")",
-              panamaComponent.getId(),
-              ComponentValidationResult.ErrorSeverity.HIGH);
-      return ComponentValidationResult.failure(List.of(error), context);
-    }
-
-    return ComponentValidationResult.success(context);
-  }
-
-  @Override
   public Component linkComponents(final List<Component> components) throws WasmException {
     Objects.requireNonNull(components, "components cannot be null");
     if (components.isEmpty()) {
@@ -369,21 +333,6 @@ public final class PanamaComponentEngine implements ComponentEngine {
         "Components are compatible", // details
         Set.of(), // satisfiedImports
         Set.of()); // unsatisfiedImports
-  }
-
-  @Override
-  public ComponentRegistry getRegistry() {
-    ensureNotClosed();
-    if (registry == null) {
-      throw new IllegalStateException("Registry not set");
-    }
-    return registry;
-  }
-
-  @Override
-  public void setRegistry(final ComponentRegistry registry) {
-    Objects.requireNonNull(registry, "registry cannot be null");
-    this.registry = registry;
   }
 
   @Override

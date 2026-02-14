@@ -22,21 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
 import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
@@ -414,24 +404,6 @@ class JniComponentLinkerTest {
   }
 
   @Nested
-  @DisplayName("Validate Imports Tests")
-  class ValidateImportsTests {
-
-    @Test
-    @DisplayName("Should throw on null component")
-    void testValidateImportsNullComponent() {
-      assertThrows(IllegalArgumentException.class, () -> linker.validateImports(null));
-    }
-
-    @Test
-    @DisplayName("Should return valid result for mock component")
-    void testValidateImportsMockComponent() {
-      final ComponentImportValidation result = linker.validateImports(new MockComponent());
-      assertTrue(result.isValid());
-    }
-  }
-
-  @Nested
   @DisplayName("Lifecycle Tests")
   class LifecycleTests {
 
@@ -476,18 +448,8 @@ class JniComponentLinkerTest {
     }
 
     @Override
-    public ComponentVersion getVersion() {
-      return null;
-    }
-
-    @Override
     public long getSize() {
       return 0;
-    }
-
-    @Override
-    public ComponentMetadata getMetadata() {
-      return null;
     }
 
     @Override
@@ -521,51 +483,19 @@ class JniComponentLinkerTest {
     }
 
     @Override
-    public ComponentDependencyGraph getDependencyGraph() {
+    public ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition getWitInterface() {
       return null;
     }
 
     @Override
-    public Set<ai.tegmentum.wasmtime4j.component.Component> resolveDependencies(
-        final ComponentRegistry registry) {
-      return Collections.emptySet();
-    }
-
-    @Override
-    public ComponentCompatibility checkCompatibility(
+    public ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult checkWitCompatibility(
         final ai.tegmentum.wasmtime4j.component.Component other) {
-      return null;
-    }
-
-    @Override
-    public WitInterfaceDefinition getWitInterface() {
-      return null;
-    }
-
-    @Override
-    public WitCompatibilityResult checkWitCompatibility(
-        final ai.tegmentum.wasmtime4j.component.Component other) {
-      return null;
-    }
-
-    @Override
-    public ComponentResourceUsage getResourceUsage() {
-      return null;
-    }
-
-    @Override
-    public ComponentLifecycleState getLifecycleState() {
       return null;
     }
 
     @Override
     public boolean isValid() {
       return true;
-    }
-
-    @Override
-    public ComponentValidationResult validate(final ComponentValidationConfig validationConfig) {
-      return null;
     }
 
     @Override

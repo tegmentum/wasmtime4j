@@ -22,11 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentFeature;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -143,13 +141,6 @@ class ComponentEngineConfigTest {
       assertTrue(config.isComponentCaching(), "Component caching should be enabled by default");
     }
 
-    @Test
-    @DisplayName("should have empty component features by default")
-    void shouldHaveEmptyComponentFeaturesByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertTrue(
-          config.getComponentFeatures().isEmpty(), "Component features should be empty by default");
-    }
   }
 
   @Nested
@@ -217,18 +208,6 @@ class ComponentEngineConfigTest {
       assertEquals(config, result, "Should return this for method chaining");
     }
 
-    @Test
-    @DisplayName("addComponentFeature should add feature and return config")
-    void addComponentFeatureShouldAddFeatureAndReturnConfig() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      final ComponentEngineConfig result =
-          config.addComponentFeature(ComponentFeature.COMPONENT_MODEL);
-
-      assertTrue(
-          config.getComponentFeatures().contains(ComponentFeature.COMPONENT_MODEL),
-          "Feature should be added");
-      assertEquals(config, result, "Should return this for method chaining");
-    }
   }
 
   @Nested
@@ -254,7 +233,6 @@ class ComponentEngineConfigTest {
               .enableEnterpriseManagement(true)
               .enableWitInterfaceEnhancement(true)
               .enableCapabilityBasedSecurity(false)
-              .addComponentFeature(ComponentFeature.COMPONENT_MODEL)
               .build();
 
       assertTrue(config.isAdvancedOrchestration(), "Advanced orchestration should be enabled");
@@ -263,50 +241,6 @@ class ComponentEngineConfigTest {
       assertTrue(config.isWitInterfaceEnhancement(), "WIT interface enhancement should be enabled");
       assertFalse(
           config.isCapabilityBasedSecurity(), "Capability-based security should be disabled");
-      assertTrue(
-          config.getComponentFeatures().contains(ComponentFeature.COMPONENT_MODEL),
-          "Should contain GARBAGE_COLLECTION feature");
-    }
-  }
-
-  @Nested
-  @DisplayName("ComponentFeatures Tests")
-  class ComponentFeaturesTests {
-
-    @Test
-    @DisplayName("getComponentFeatures should return defensive copy")
-    void getComponentFeaturesShouldReturnDefensiveCopy() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      config.addComponentFeature(ComponentFeature.COMPONENT_MODEL);
-
-      final Set<ComponentFeature> features = config.getComponentFeatures();
-      features.add(ComponentFeature.ORCHESTRATION);
-
-      assertFalse(
-          config.getComponentFeatures().contains(ComponentFeature.ORCHESTRATION),
-          "Modifying returned set should not affect config");
-    }
-
-    @Test
-    @DisplayName("should allow multiple features")
-    void shouldAllowMultipleFeatures() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      config.addComponentFeature(ComponentFeature.COMPONENT_MODEL);
-      config.addComponentFeature(ComponentFeature.ORCHESTRATION);
-      config.addComponentFeature(ComponentFeature.HOT_SWAPPING);
-
-      assertEquals(3, config.getComponentFeatures().size(), "Should have 3 features");
-    }
-
-    @Test
-    @DisplayName("should not allow duplicate features")
-    void shouldNotAllowDuplicateFeatures() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      config.addComponentFeature(ComponentFeature.COMPONENT_MODEL);
-      config.addComponentFeature(ComponentFeature.COMPONENT_MODEL);
-
-      assertEquals(
-          1, config.getComponentFeatures().size(), "Should have 1 feature (no duplicates)");
     }
   }
 

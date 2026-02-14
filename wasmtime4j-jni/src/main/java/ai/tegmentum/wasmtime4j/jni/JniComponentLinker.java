@@ -20,7 +20,6 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
@@ -437,15 +436,6 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     return functions != null
         ? Collections.unmodifiableSet(new HashSet<>(functions))
         : Collections.<String>emptySet();
-  }
-
-  @Override
-  public ComponentImportValidation validateImports(final Component component) {
-    if (component == null) {
-      throw new IllegalArgumentException("Component cannot be null");
-    }
-    // Validation not fully implemented - return a basic result
-    return ComponentImportValidation.success(Collections.<String>emptyList());
   }
 
   @Override

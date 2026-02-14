@@ -299,24 +299,6 @@ public final class ComponentInstanceIntegrationTest {
 
       LOGGER.info("Instance validity tracking works correctly");
     }
-
-    @Test
-    @DisplayName("should get instance state")
-    void shouldGetInstanceState(final TestInfo testInfo) throws Exception {
-      assumeComponentInstanceAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
-      resources.add(component);
-
-      final ComponentInstance instance = component.instantiate();
-      resources.add(instance);
-
-      final ai.tegmentum.wasmtime4j.component.ComponentInstanceState state = instance.getState();
-      assertNotNull(state, "Instance state should not be null");
-
-      LOGGER.info("Instance state: " + state);
-    }
   }
 
   @Nested

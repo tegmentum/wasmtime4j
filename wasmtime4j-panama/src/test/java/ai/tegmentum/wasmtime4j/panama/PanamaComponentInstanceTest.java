@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -212,18 +210,6 @@ class PanamaComponentInstanceTest {
     }
 
     @Test
-    @DisplayName("getState should exist and return ComponentInstanceState")
-    void getStateShouldExist() throws NoSuchMethodException {
-      Method method = PanamaComponentInstance.class.getMethod("getState");
-      assertNotNull(method, "getState method should exist");
-      assertEquals(
-          ComponentInstanceState.class,
-          method.getReturnType(),
-          "Should return ComponentInstanceState");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
-    }
-
-    @Test
     @DisplayName("invoke should exist with String and varargs Object")
     void invokeShouldExist() throws NoSuchMethodException {
       Method method =
@@ -288,18 +274,6 @@ class PanamaComponentInstanceTest {
           ComponentInstanceConfig.class,
           method.getReturnType(),
           "Should return ComponentInstanceConfig");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
-    }
-
-    @Test
-    @DisplayName("getResourceUsage should exist and return ComponentResourceUsage")
-    void getResourceUsageShouldExist() throws NoSuchMethodException {
-      Method method = PanamaComponentInstance.class.getMethod("getResourceUsage");
-      assertNotNull(method, "getResourceUsage method should exist");
-      assertEquals(
-          ComponentResourceUsage.class,
-          method.getReturnType(),
-          "Should return ComponentResourceUsage");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
 

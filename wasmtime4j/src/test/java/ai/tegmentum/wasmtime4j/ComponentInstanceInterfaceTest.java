@@ -24,8 +24,6 @@ import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -107,17 +105,6 @@ class ComponentInstanceInterfaceTest {
       assertEquals(0, method.getParameterCount(), "getComponent should have no parameters");
     }
 
-    @Test
-    @DisplayName("should have getState method")
-    void shouldHaveGetStateMethod() throws NoSuchMethodException {
-      Method method = ComponentInstance.class.getMethod("getState");
-      assertNotNull(method, "getState method should exist");
-      assertEquals(
-          ComponentInstanceState.class,
-          method.getReturnType(),
-          "Return type should be ComponentInstanceState");
-      assertEquals(0, method.getParameterCount(), "getState should have no parameters");
-    }
   }
 
   // ========================================================================
@@ -300,17 +287,6 @@ class ComponentInstanceInterfaceTest {
       assertEquals(0, method.getParameterCount(), "getConfig should have no parameters");
     }
 
-    @Test
-    @DisplayName("should have getResourceUsage method")
-    void shouldHaveGetResourceUsageMethod() throws NoSuchMethodException {
-      Method method = ComponentInstance.class.getMethod("getResourceUsage");
-      assertNotNull(method, "getResourceUsage method should exist");
-      assertEquals(
-          ComponentResourceUsage.class,
-          method.getReturnType(),
-          "Return type should be ComponentResourceUsage");
-      assertEquals(0, method.getParameterCount(), "getResourceUsage should have no parameters");
-    }
   }
 
   // ========================================================================
@@ -418,7 +394,6 @@ class ComponentInstanceInterfaceTest {
               Arrays.asList(
                   "getId",
                   "getComponent",
-                  "getState",
                   "invoke",
                   "hasFunction",
                   "getFunc",
@@ -426,7 +401,6 @@ class ComponentInstanceInterfaceTest {
                   "getExportedInterfaces",
                   "bindInterface",
                   "getConfig",
-                  "getResourceUsage",
                   "isValid",
                   "pause",
                   "resume",
@@ -493,14 +467,5 @@ class ComponentInstanceInterfaceTest {
       assertEquals(Component.class, method.getReturnType(), "getComponent should return Component");
     }
 
-    @Test
-    @DisplayName("getState should return ComponentInstanceState type")
-    void getStateShouldReturnComponentInstanceState() throws NoSuchMethodException {
-      Method method = ComponentInstance.class.getMethod("getState");
-      assertEquals(
-          ComponentInstanceState.class,
-          method.getReturnType(),
-          "getState should return ComponentInstanceState");
-    }
   }
 }

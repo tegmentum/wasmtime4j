@@ -73,15 +73,6 @@ public interface ComponentEngine extends Engine {
   WitCompatibilityResult checkCompatibility(Component source, Component target);
 
   /**
-   * Gets the component registry associated with this engine.
-   *
-   * <p>The registry provides component discovery, registration, and management capabilities.
-   *
-   * @return the component registry
-   */
-  ComponentRegistry getRegistry();
-
-  /**
    * Creates a component instance from a compiled component.
    *
    * <p>This method creates an executable instance of a component that can be used to invoke
@@ -109,18 +100,6 @@ public interface ComponentEngine extends Engine {
       throws WasmException;
 
   /**
-   * Validates a component without creating an instance.
-   *
-   * <p>This method performs comprehensive validation of a component including interface
-   * compatibility, resource requirements, and security constraints.
-   *
-   * @param component the component to validate
-   * @return validation result with any issues found
-   * @throws IllegalArgumentException if component is null
-   */
-  ComponentValidationResult validateComponent(Component component);
-
-  /**
    * Gets information about WIT (WebAssembly Interface Types) support.
    *
    * @return WIT support information
@@ -141,11 +120,4 @@ public interface ComponentEngine extends Engine {
    */
   Optional<Integer> getMaxLinkDepth();
 
-  /**
-   * Sets the component registry for this engine.
-   *
-   * @param registry the component registry to use
-   * @throws IllegalArgumentException if registry is null
-   */
-  void setRegistry(ComponentRegistry registry);
 }

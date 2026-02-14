@@ -24,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -194,30 +192,6 @@ class JniComponentInstanceImplTest {
       Method method = JniComponentInstanceImpl.class.getMethod("getComponent");
       assertNotNull(method, "getComponent method should exist");
       assertEquals(Component.class, method.getReturnType(), "Should return Component");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
-    }
-
-    @Test
-    @DisplayName("getState method should exist and return ComponentInstanceState")
-    void getStateMethodShouldExist() throws NoSuchMethodException {
-      Method method = JniComponentInstanceImpl.class.getMethod("getState");
-      assertNotNull(method, "getState method should exist");
-      assertEquals(
-          ComponentInstanceState.class,
-          method.getReturnType(),
-          "Should return ComponentInstanceState");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
-    }
-
-    @Test
-    @DisplayName("getResourceUsage method should exist and return ComponentResourceUsage")
-    void getResourceUsageMethodShouldExist() throws NoSuchMethodException {
-      Method method = JniComponentInstanceImpl.class.getMethod("getResourceUsage");
-      assertNotNull(method, "getResourceUsage method should exist");
-      assertEquals(
-          ComponentResourceUsage.class,
-          method.getReturnType(),
-          "Should return ComponentResourceUsage");
       assertTrue(Modifier.isPublic(method.getModifiers()), "Should be public");
     }
 

@@ -550,30 +550,6 @@ class JniWasiContextIntegrationTest {
   }
 
   @Nested
-  @DisplayName("Permission Manager Tests")
-  class PermissionManagerTests {
-
-    @Test
-    @DisplayName("should return permission manager")
-    void shouldReturnPermissionManager() throws Exception {
-      LOGGER.info("Testing permission manager retrieval");
-
-      final Path existingDir = tempDir.resolve("perm-test");
-      Files.createDirectories(existingDir);
-
-      final WasiContext context =
-          WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
-              .build();
-      resources.add(context);
-
-      assertNotNull(context.getPermissionManager(), "Permission manager should not be null");
-      LOGGER.info("Permission manager retrieved successfully");
-    }
-  }
-
-  @Nested
   @DisplayName("Security Validator Tests")
   class SecurityValidatorTests {
 

@@ -2,8 +2,6 @@ package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Configuration options for WebAssembly Component Model engine creation.
@@ -74,9 +72,6 @@ public final class ComponentEngineConfig {
   private boolean performanceOptimization = false;
   private boolean loadBalancing = false;
   private boolean autoScaling = false;
-
-  // Component Features Set
-  private Set<ComponentFeature> componentFeatures = new HashSet<>();
 
   /** Creates a new component engine configuration with default settings. */
   public ComponentEngineConfig() {
@@ -158,17 +153,6 @@ public final class ComponentEngineConfig {
     return this;
   }
 
-  /**
-   * Adds a component feature to the configuration.
-   *
-   * @param feature the component feature to add
-   * @return this configuration for method chaining
-   */
-  public ComponentEngineConfig addComponentFeature(final ComponentFeature feature) {
-    this.componentFeatures.add(feature);
-    return this;
-  }
-
   // Getters for all configuration options
 
   public boolean isComponentModelEnabled() {
@@ -207,10 +191,6 @@ public final class ComponentEngineConfig {
     return componentCaching;
   }
 
-  public Set<ComponentFeature> getComponentFeatures() {
-    return new HashSet<>(componentFeatures);
-  }
-
   /** Builder for ComponentEngineConfig with fluent API. */
   public static final class ComponentEngineConfigBuilder {
     private final ComponentEngineConfig config = new ComponentEngineConfig();
@@ -239,11 +219,6 @@ public final class ComponentEngineConfig {
 
     public ComponentEngineConfigBuilder enableCapabilityBasedSecurity(final boolean enabled) {
       config.enableCapabilityBasedSecurity(enabled);
-      return this;
-    }
-
-    public ComponentEngineConfigBuilder addComponentFeature(final ComponentFeature feature) {
-      config.addComponentFeature(feature);
       return this;
     }
 

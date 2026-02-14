@@ -317,17 +317,6 @@ class PanamaComponentLinkerTest {
   }
 
   @Nested
-  @DisplayName("Validate Imports Tests")
-  class ValidateImportsTests {
-
-    @Test
-    @DisplayName("Should throw on null component")
-    void testValidateImportsNullComponent() {
-      assertThrows(IllegalArgumentException.class, () -> linker.validateImports(null));
-    }
-  }
-
-  @Nested
   @DisplayName("Lifecycle Tests")
   class LifecycleTests {
 

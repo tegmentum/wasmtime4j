@@ -4,8 +4,6 @@ import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
@@ -58,19 +56,6 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   @Override
   public Component getComponent() {
     return component;
-  }
-
-  @Override
-  public ComponentInstanceState getState() {
-    if (!isValid()) {
-      return ComponentInstanceState.TERMINATED;
-    }
-    return ComponentInstanceState.ACTIVE;
-  }
-
-  @Override
-  public ComponentResourceUsage getResourceUsage() {
-    return new ComponentResourceUsage(instanceId);
   }
 
   @Override

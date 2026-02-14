@@ -642,22 +642,6 @@ class PanamaEngineTest {
     }
   }
 
-  // ==================== Validate Component Tests ====================
-
-  @Nested
-  @DisplayName("Component Validation Tests")
-  class ComponentValidationTests {
-
-    @Test
-    @DisplayName("validateComponent should return success for any input")
-    void shouldReturnSuccessForValidation() throws Exception {
-      final PanamaEngine engine = createEngine();
-      final var result = engine.validateComponent(null);
-      assertNotNull(result, "Validation result should not be null");
-      LOGGER.info("Validation result: " + result);
-    }
-  }
-
   // ==================== Closed Engine Detection Tests ====================
 
   @Nested

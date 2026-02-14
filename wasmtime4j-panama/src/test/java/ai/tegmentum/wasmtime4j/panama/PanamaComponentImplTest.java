@@ -21,17 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentCompatibility;
-import ai.tegmentum.wasmtime4j.component.ComponentDependencyGraph;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentLifecycleState;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.lang.foreign.MemorySegment;
@@ -87,29 +78,11 @@ class PanamaComponentImplTest {
     }
 
     @Test
-    @DisplayName("should have getVersion method")
-    void shouldHaveGetVersionMethod() throws NoSuchMethodException {
-      final Method method = PanamaComponentImpl.class.getMethod("getVersion");
-      assertNotNull(method, "getVersion method should exist");
-      assertEquals(
-          ComponentVersion.class, method.getReturnType(), "Should return ComponentVersion");
-    }
-
-    @Test
     @DisplayName("should have getSize method")
     void shouldHaveGetSizeMethod() throws NoSuchMethodException {
       final Method method = PanamaComponentImpl.class.getMethod("getSize");
       assertNotNull(method, "getSize method should exist");
       assertEquals(long.class, method.getReturnType(), "Should return long");
-    }
-
-    @Test
-    @DisplayName("should have getMetadata method")
-    void shouldHaveGetMetadataMethod() throws NoSuchMethodException {
-      final Method method = PanamaComponentImpl.class.getMethod("getMetadata");
-      assertNotNull(method, "getMetadata method should exist");
-      assertEquals(
-          ComponentMetadata.class, method.getReturnType(), "Should return ComponentMetadata");
     }
 
     @Test
@@ -164,38 +137,6 @@ class PanamaComponentImplTest {
     }
 
     @Test
-    @DisplayName("should have getDependencyGraph method")
-    void shouldHaveGetDependencyGraphMethod() throws NoSuchMethodException {
-      final Method method = PanamaComponentImpl.class.getMethod("getDependencyGraph");
-      assertNotNull(method, "getDependencyGraph method should exist");
-      assertEquals(
-          ComponentDependencyGraph.class,
-          method.getReturnType(),
-          "Should return ComponentDependencyGraph");
-    }
-
-    @Test
-    @DisplayName("should have resolveDependencies method")
-    void shouldHaveResolveDependenciesMethod() throws NoSuchMethodException {
-      final Method method =
-          PanamaComponentImpl.class.getMethod("resolveDependencies", ComponentRegistry.class);
-      assertNotNull(method, "resolveDependencies method should exist");
-      assertEquals(Set.class, method.getReturnType(), "Should return Set");
-    }
-
-    @Test
-    @DisplayName("should have checkCompatibility method")
-    void shouldHaveCheckCompatibilityMethod() throws NoSuchMethodException {
-      final Method method =
-          PanamaComponentImpl.class.getMethod("checkCompatibility", Component.class);
-      assertNotNull(method, "checkCompatibility method should exist");
-      assertEquals(
-          ComponentCompatibility.class,
-          method.getReturnType(),
-          "Should return ComponentCompatibility");
-    }
-
-    @Test
     @DisplayName("should have getWitInterface method")
     void shouldHaveGetWitInterfaceMethod() throws NoSuchMethodException {
       final Method method = PanamaComponentImpl.class.getMethod("getWitInterface");
@@ -219,45 +160,11 @@ class PanamaComponentImplTest {
     }
 
     @Test
-    @DisplayName("should have getResourceUsage method")
-    void shouldHaveGetResourceUsageMethod() throws NoSuchMethodException {
-      final Method method = PanamaComponentImpl.class.getMethod("getResourceUsage");
-      assertNotNull(method, "getResourceUsage method should exist");
-      assertEquals(
-          ComponentResourceUsage.class,
-          method.getReturnType(),
-          "Should return ComponentResourceUsage");
-    }
-
-    @Test
-    @DisplayName("should have getLifecycleState method")
-    void shouldHaveGetLifecycleStateMethod() throws NoSuchMethodException {
-      final Method method = PanamaComponentImpl.class.getMethod("getLifecycleState");
-      assertNotNull(method, "getLifecycleState method should exist");
-      assertEquals(
-          ComponentLifecycleState.class,
-          method.getReturnType(),
-          "Should return ComponentLifecycleState");
-    }
-
-    @Test
     @DisplayName("should have isValid method")
     void shouldHaveIsValidMethod() throws NoSuchMethodException {
       final Method method = PanamaComponentImpl.class.getMethod("isValid");
       assertNotNull(method, "isValid method should exist");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have validate method")
-    void shouldHaveValidateMethod() throws NoSuchMethodException {
-      final Method method =
-          PanamaComponentImpl.class.getMethod("validate", ComponentValidationConfig.class);
-      assertNotNull(method, "validate method should exist");
-      assertEquals(
-          ComponentValidationResult.class,
-          method.getReturnType(),
-          "Should return ComponentValidationResult");
     }
 
     @Test

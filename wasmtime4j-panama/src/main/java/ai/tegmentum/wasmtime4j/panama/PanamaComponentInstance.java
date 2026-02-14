@@ -4,8 +4,6 @@ import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentInstanceState;
-import ai.tegmentum.wasmtime4j.component.ComponentResourceUsage;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
@@ -116,12 +114,6 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public Component getComponent() {
     return component;
-  }
-
-  @Override
-  public ComponentInstanceState getState() {
-    ensureNotClosed();
-    return ComponentInstanceState.ACTIVE;
   }
 
   @Override
@@ -408,11 +400,6 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public ComponentInstanceConfig getConfig() {
     return new ComponentInstanceConfig();
-  }
-
-  @Override
-  public ComponentResourceUsage getResourceUsage() {
-    return new ComponentResourceUsage(component.getComponentId());
   }
 
   @Override

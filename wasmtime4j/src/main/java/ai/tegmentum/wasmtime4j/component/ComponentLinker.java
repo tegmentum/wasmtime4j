@@ -256,15 +256,6 @@ public interface ComponentLinker<T> extends Closeable {
   Set<String> getDefinedFunctions(String interfaceNamespace, String interfaceName);
 
   /**
-   * Validates that all imports for a component can be satisfied by this linker.
-   *
-   * @param component the component to validate
-   * @return validation result with detailed information about any missing imports
-   * @throws IllegalArgumentException if component is null
-   */
-  ComponentImportValidation validateImports(Component component);
-
-  /**
    * Creates an alias from one interface to another.
    *
    * <p>This allows an interface defined under one name to also satisfy imports under another name.

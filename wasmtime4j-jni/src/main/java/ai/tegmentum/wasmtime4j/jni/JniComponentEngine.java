@@ -7,13 +7,8 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentEngineDebugInfo;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
-import ai.tegmentum.wasmtime4j.component.ComponentMetadata;
-import ai.tegmentum.wasmtime4j.component.ComponentRegistry;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
@@ -62,7 +57,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   private final ConcurrentMap<String, Component> loadedComponents;
   private final AtomicLong componentIdCounter;
   private final WasmRuntime runtime;
-  private ComponentRegistry registry;
 
   // Load native library when this class is first loaded
   static {
@@ -107,9 +101,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     try {
       // Get the native engine wrapper using the handle we just passed to super
       this.nativeEngine = new JniComponent.JniComponentEngine(getNativeHandle());
-
-      // TODO: Initialize component registry when JniComponentRegistry is implemented
-      this.registry = null;
 
       LOGGER.fine("Created JNI component engine: " + engineId);
     } catch (final Exception e) {
@@ -336,29 +327,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   /**
-   * Loads a component from raw WebAssembly component bytes with metadata.
-   *
-   * @param wasmBytes the WebAssembly component bytes
-   * @param metadata the component metadata
-   * @return the compiled Component
-   * @throws WasmException if loading fails
-   */
-  public Component loadComponentFromBytes(final byte[] wasmBytes, final ComponentMetadata metadata)
-      throws WasmException {
-    JniValidation.requireNonEmpty(wasmBytes, "wasmBytes");
-    JniValidation.requireNonNull(metadata, "metadata");
-    ensureNotClosed();
-
-    try {
-      final JniComponent.JniComponentHandle componentHandle =
-          nativeEngine.loadComponentFromBytes(wasmBytes);
-      return new JniComponentImpl(componentHandle, this, metadata);
-    } catch (final Exception e) {
-      throw new WasmException("Failed to load component from bytes with metadata", e);
-    }
-  }
-
-  /**
    * Loads a component from a file.
    *
    * @param filePath the path to the WebAssembly component file
@@ -483,18 +451,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public ComponentRegistry getRegistry() {
-    return registry;
-  }
-
-  @Override
-  public void setRegistry(final ComponentRegistry registry) {
-    JniValidation.requireNonNull(registry, "registry");
-    this.registry = registry;
-    LOGGER.fine("Component registry updated for engine: " + engineId);
-  }
-
-  @Override
   public ComponentInstance createInstance(final Component component, final Store store)
       throws WasmException {
     JniValidation.requireNonNull(component, "component");
@@ -543,76 +499,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
     } catch (final Exception e) {
       throw new WasmException("Failed to create component instance with imports", e);
-    }
-  }
-
-  @Override
-  public ComponentValidationResult validateComponent(final Component component) {
-    JniValidation.requireNonNull(component, "component");
-
-    try {
-      ensureNotClosed();
-
-      final List<String> issues = new ArrayList<>();
-      final List<String> warnings = new ArrayList<>();
-
-      // Check component validity
-      if (!component.isValid()) {
-        issues.add("Component is not in a valid state");
-      }
-
-      // Check component size
-      final long size = component.getSize();
-      if (size <= 0) {
-        issues.add("Component has invalid size: " + size);
-      }
-
-      // Check interfaces
-      final Set<String> exports = component.getExportedInterfaces();
-      final Set<String> imports = component.getImportedInterfaces();
-
-      if (exports.isEmpty() && imports.isEmpty()) {
-        warnings.add("Component has no imports or exports defined");
-      }
-
-      // Check metadata
-      final ComponentMetadata metadata = component.getMetadata();
-      if (metadata == null) {
-        warnings.add("Component metadata is not available");
-      }
-
-      final boolean valid = issues.isEmpty();
-      final List<ComponentValidationResult.ValidationError> errors = new ArrayList<>();
-      final List<ComponentValidationResult.ValidationWarning> validationWarnings =
-          new ArrayList<>();
-
-      // Convert warnings to ValidationWarning objects
-      for (final String warning : warnings) {
-        validationWarnings.add(
-            new ComponentValidationResult.ValidationWarning(
-                "COMPONENT_WARNING", warning, "component"));
-      }
-
-      final ComponentValidationResult.ValidationContext context =
-          new ComponentValidationResult.ValidationContext(
-              component.getMetadata() != null ? component.getMetadata().getName() : "unknown",
-              new ComponentVersion(1, 0, 0));
-      return new ComponentValidationResult(
-          valid, errors, validationWarnings, Collections.emptyList(), context);
-
-    } catch (final Exception e) {
-      LOGGER.warning("Component validation failed: " + e.getMessage());
-      final List<ComponentValidationResult.ValidationError> errors = new ArrayList<>();
-      errors.add(
-          new ComponentValidationResult.ValidationError(
-              "VALIDATION_ERROR",
-              e.getMessage(),
-              "component",
-              ComponentValidationResult.ErrorSeverity.HIGH));
-      final ComponentValidationResult.ValidationContext context =
-          new ComponentValidationResult.ValidationContext("unknown", new ComponentVersion(1, 0, 0));
-      return new ComponentValidationResult(
-          false, errors, Collections.emptyList(), Collections.emptyList(), context);
     }
   }
 
@@ -683,10 +569,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     return !isClosed() && nativeEngine.isValid();
   }
 
-  public ComponentEngineDebugInfo getDebugInfo() {
-    return new JniComponentEngineDebugInfo(engineId, config);
-  }
-
   @Override
   protected void doClose() throws Exception {
     if (nativeEngine != null && nativeEngine.isValid()) {
@@ -730,29 +612,4 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   private native int nativeDetectPrecompiled(long engineHandle, byte[] bytes);
-
-  private static final class JniComponentEngineDebugInfo implements ComponentEngineDebugInfo {
-    private final String debugLevel;
-    private final boolean debugEnabled;
-
-    JniComponentEngineDebugInfo(final String engineId, final ComponentEngineConfig config) {
-      this.debugLevel = "INFO";
-      this.debugEnabled = false;
-    }
-
-    @Override
-    public String getDebugLevel() {
-      return debugLevel;
-    }
-
-    @Override
-    public boolean isDebugEnabled() {
-      return debugEnabled;
-    }
-
-    @Override
-    public String getDebugStatistics() {
-      return "";
-    }
-  }
 }

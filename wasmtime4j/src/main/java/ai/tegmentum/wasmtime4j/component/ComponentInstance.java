@@ -56,13 +56,6 @@ public interface ComponentInstance extends AutoCloseable {
   Component getComponent();
 
   /**
-   * Gets the current state of this component instance.
-   *
-   * @return the instance state
-   */
-  ComponentInstanceState getState();
-
-  /**
    * Invokes a function exported by this component.
    *
    * @param functionName the name of the function to invoke
@@ -132,13 +125,6 @@ public interface ComponentInstance extends AutoCloseable {
    * @return the instance configuration
    */
   ComponentInstanceConfig getConfig();
-
-  /**
-   * Gets resource usage information for this component instance.
-   *
-   * @return the resource usage information
-   */
-  ComponentResourceUsage getResourceUsage();
 
   /**
    * Checks if this component instance is still valid and usable.

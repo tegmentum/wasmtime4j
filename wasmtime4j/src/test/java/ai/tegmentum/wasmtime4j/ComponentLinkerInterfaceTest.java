@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
@@ -467,28 +466,6 @@ class ComponentLinkerInterfaceTest {
   class ValidationAliasTests {
 
     @Test
-    @DisplayName("should have validateImports method")
-    void shouldHaveValidateImportsMethod() throws NoSuchMethodException {
-      Method method = ComponentLinker.class.getMethod("validateImports", Component.class);
-      assertNotNull(method, "validateImports method should exist");
-      assertEquals(
-          ComponentImportValidation.class,
-          method.getReturnType(),
-          "Return type should be ComponentImportValidation");
-      assertEquals(1, method.getParameterCount(), "validateImports should have 1 parameter");
-      assertEquals(Component.class, method.getParameterTypes()[0], "Parameter should be Component");
-    }
-
-    @Test
-    @DisplayName("validateImports should not throw checked exceptions")
-    void validateImportsShouldNotThrowCheckedExceptions() throws NoSuchMethodException {
-      Method method = ComponentLinker.class.getMethod("validateImports", Component.class);
-      Class<?>[] exceptionTypes = method.getExceptionTypes();
-      assertEquals(
-          0, exceptionTypes.length, "validateImports should not declare checked exceptions");
-    }
-
-    @Test
     @DisplayName("should have aliasInterface method")
     void shouldHaveAliasInterfaceMethod() throws NoSuchMethodException {
       Method method =
@@ -586,7 +563,6 @@ class ComponentLinkerInterfaceTest {
                   "hasFunction",
                   "getDefinedInterfaces",
                   "getDefinedFunctions",
-                  "validateImports",
                   "aliasInterface",
                   "close",
                   "create"));

@@ -61,14 +61,6 @@ class WasiContextTest {
   class ApiMethodTests {
 
     @Test
-    @DisplayName("should have getPermissionManager method")
-    void shouldHaveGetPermissionManagerMethod() throws NoSuchMethodException {
-      assertNotNull(
-          WasiContext.class.getMethod("getPermissionManager"),
-          "Should have getPermissionManager method");
-    }
-
-    @Test
     @DisplayName("should have getSecurityValidator method")
     void shouldHaveGetSecurityValidatorMethod() throws NoSuchMethodException {
       assertNotNull(

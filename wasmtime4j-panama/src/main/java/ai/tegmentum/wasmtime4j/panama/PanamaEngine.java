@@ -5,9 +5,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentValidationResult;
-import ai.tegmentum.wasmtime4j.component.ComponentVersion;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
@@ -311,19 +308,6 @@ public final class PanamaEngine implements Engine {
    */
   public long getId() {
     return System.identityHashCode(this);
-  }
-
-  /**
-   * Validates a component.
-   *
-   * @param component the component to validate
-   * @return the validation result
-   */
-  public ComponentValidationResult validateComponent(final Component component) {
-    // TODO: Implement actual component validation
-    final ComponentValidationResult.ValidationContext context =
-        new ComponentValidationResult.ValidationContext("unknown", new ComponentVersion(1, 0, 0));
-    return ComponentValidationResult.success(context);
   }
 
   /**

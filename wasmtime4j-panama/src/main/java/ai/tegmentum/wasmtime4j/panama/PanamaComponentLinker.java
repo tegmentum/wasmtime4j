@@ -20,7 +20,6 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
-import ai.tegmentum.wasmtime4j.component.ComponentImportValidation;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
@@ -587,24 +586,6 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     final String key = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
     final Set<String> functions = definedInterfaces.get(key);
     return functions != null ? new HashSet<>(functions) : Set.of();
-  }
-
-  @Override
-  public ComponentImportValidation validateImports(final Component component) {
-    if (component == null) {
-      throw new IllegalArgumentException("Component cannot be null");
-    }
-    ensureNotClosed();
-
-    // Build validation result based on what's defined
-    final ComponentImportValidation.Builder builder = ComponentImportValidation.builder();
-
-    // For now, mark all host functions as satisfied
-    for (final String witPath : hostFunctions.keySet()) {
-      builder.addSatisfied(witPath);
-    }
-
-    return builder.build();
   }
 
   @Override

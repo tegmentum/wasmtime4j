@@ -189,15 +189,6 @@ class PanamaComponentEngineTest {
     }
 
     @Test
-    @DisplayName("should have validateComponent method")
-    void shouldHaveValidateComponentMethod() {
-      boolean hasMethod =
-          Arrays.stream(PanamaComponentEngine.class.getDeclaredMethods())
-              .anyMatch(m -> m.getName().equals("validateComponent"));
-      assertTrue(hasMethod, "Should have validateComponent method");
-    }
-
-    @Test
     @DisplayName("should have linkComponents method")
     void shouldHaveLinkComponentsMethod() {
       boolean hasMethod =
@@ -291,25 +282,6 @@ class PanamaComponentEngineTest {
       }
     }
 
-    @Test
-    @DisplayName("validateComponent should return validation result")
-    void validateComponentShouldReturnValidationResult() {
-      // Note: Implementation returns ComponentValidationResult for detailed validation info
-      List<Method> validateMethods =
-          Arrays.stream(PanamaComponentEngine.class.getDeclaredMethods())
-              .filter(m -> m.getName().equals("validateComponent"))
-              .collect(Collectors.toList());
-
-      if (!validateMethods.isEmpty()) {
-        for (Method method : validateMethods) {
-          // Accept either boolean or ComponentValidationResult
-          assertTrue(
-              method.getReturnType() == boolean.class
-                  || method.getReturnType().getSimpleName().contains("ValidationResult"),
-              "validateComponent should return boolean or validation result");
-        }
-      }
-    }
   }
 
   // ========================================================================
@@ -523,9 +495,9 @@ class PanamaComponentEngineTest {
     @DisplayName("should have at least 5 declared methods")
     void shouldHaveAtLeastFiveDeclaredMethods() {
       Method[] methods = PanamaComponentEngine.class.getDeclaredMethods();
-      // At minimum: compileComponent, createInstance, validateComponent, linkComponents, close
+      // At minimum: compileComponent, createInstance, linkComponents, close
       assertTrue(
-          methods.length >= 5, "Should have at least 5 declared methods, found: " + methods.length);
+          methods.length >= 4, "Should have at least 4 declared methods, found: " + methods.length);
     }
 
     @Test
@@ -538,8 +510,7 @@ class PanamaComponentEngineTest {
 
       // Check for expected methods from ComponentEngine interface
       Set<String> expectedMethods =
-          Set.of(
-              "compileComponent", "createInstance", "validateComponent", "linkComponents", "close");
+          Set.of("compileComponent", "createInstance", "linkComponents", "close");
 
       for (String expected : expectedMethods) {
         assertTrue(
