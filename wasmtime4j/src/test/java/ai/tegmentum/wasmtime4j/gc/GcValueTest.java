@@ -51,14 +51,12 @@ class GcValueTest {
     @DisplayName("Type enum should have all expected values")
     void typeEnumShouldHaveAllExpectedValues() {
       final GcValue.Type[] values = GcValue.Type.values();
-      assertEquals(9, values.length, "Type enum should have 9 values");
+      assertEquals(7, values.length, "Type enum should have 7 values");
       assertNotNull(GcValue.Type.I32, "Should have I32");
       assertNotNull(GcValue.Type.I64, "Should have I64");
       assertNotNull(GcValue.Type.F32, "Should have F32");
       assertNotNull(GcValue.Type.F64, "Should have F64");
       assertNotNull(GcValue.Type.V128, "Should have V128");
-      assertNotNull(GcValue.Type.V256, "Should have V256");
-      assertNotNull(GcValue.Type.V512, "Should have V512");
       assertNotNull(GcValue.Type.REFERENCE, "Should have REFERENCE");
       assertNotNull(GcValue.Type.NULL, "Should have NULL");
     }
@@ -220,52 +218,6 @@ class GcValueTest {
   }
 
   @Nested
-  @DisplayName("V256 Value Tests")
-  class V256ValueTests {
-
-    @Test
-    @DisplayName("v256 should create V256 value")
-    void v256ShouldCreateV256Value() {
-      final byte[] bytes = new byte[32];
-      final GcValue val = GcValue.v256(bytes);
-      assertEquals(GcValue.Type.V256, val.getType(), "Type should be V256");
-    }
-
-    @Test
-    @DisplayName("v256 with wrong length should throw")
-    void v256WithWrongLengthShouldThrow() {
-      final byte[] wrongBytes = new byte[16];
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> GcValue.v256(wrongBytes),
-          "v256 with non-32-byte array should throw IllegalArgumentException");
-    }
-  }
-
-  @Nested
-  @DisplayName("V512 Value Tests")
-  class V512ValueTests {
-
-    @Test
-    @DisplayName("v512 should create V512 value")
-    void v512ShouldCreateV512Value() {
-      final byte[] bytes = new byte[64];
-      final GcValue val = GcValue.v512(bytes);
-      assertEquals(GcValue.Type.V512, val.getType(), "Type should be V512");
-    }
-
-    @Test
-    @DisplayName("v512 with wrong length should throw")
-    void v512WithWrongLengthShouldThrow() {
-      final byte[] wrongBytes = new byte[32];
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> GcValue.v512(wrongBytes),
-          "v512 with non-64-byte array should throw IllegalArgumentException");
-    }
-  }
-
-  @Nested
   @DisplayName("Null Value Tests")
   class NullValueTests {
 
@@ -339,20 +291,6 @@ class GcValueTest {
     void fromObject16ByteArrayShouldReturnV128() {
       final GcValue val = GcValue.fromObject(new byte[16]);
       assertEquals(GcValue.Type.V128, val.getType(), "16-byte array should map to V128");
-    }
-
-    @Test
-    @DisplayName("fromObject 32-byte array should return V256")
-    void fromObject32ByteArrayShouldReturnV256() {
-      final GcValue val = GcValue.fromObject(new byte[32]);
-      assertEquals(GcValue.Type.V256, val.getType(), "32-byte array should map to V256");
-    }
-
-    @Test
-    @DisplayName("fromObject 64-byte array should return V512")
-    void fromObject64ByteArrayShouldReturnV512() {
-      final GcValue val = GcValue.fromObject(new byte[64]);
-      assertEquals(GcValue.Type.V512, val.getType(), "64-byte array should map to V512");
     }
 
     @Test

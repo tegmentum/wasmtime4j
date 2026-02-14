@@ -14,7 +14,6 @@ import ai.tegmentum.wasmtime4j.gc.GcValue;
 import ai.tegmentum.wasmtime4j.gc.I31Instance;
 import ai.tegmentum.wasmtime4j.gc.StructInstance;
 import ai.tegmentum.wasmtime4j.gc.StructType;
-import ai.tegmentum.wasmtime4j.gc.WeakGcReference;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -26,7 +25,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.VarHandle;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
@@ -55,14 +53,6 @@ public final class PanamaGcRuntime implements GcRuntime {
   private final Arena arena;
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private volatile boolean disposed = false;
-
-  // Host object integration fields
-  private final java.util.concurrent.ConcurrentHashMap<Long, Runnable> finalizationCallbacks =
-      new java.util.concurrent.ConcurrentHashMap<>();
-  private final java.util.concurrent.ConcurrentHashMap<Long, Object> hostObjects =
-      new java.util.concurrent.ConcurrentHashMap<>();
-  private final java.util.concurrent.atomic.AtomicLong nextHostObjectId =
-      new java.util.concurrent.atomic.AtomicLong(1);
 
   // Registry to track GC objects by their native object ID
   private final java.util.concurrent.ConcurrentHashMap<Long, PanamaGcObject> objectRegistry =
@@ -715,14 +705,6 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public GcObject refCastOptimized(
-      final GcObject object, final GcReferenceType targetType, final boolean enableCaching) {
-    // For now, delegate to non-optimized version
-    // TODO: Implement caching when enableCaching is true
-    return refCast(object, targetType);
-  }
-
-  @Override
   public boolean refTest(final GcObject object, final GcReferenceType targetType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -838,41 +820,6 @@ public final class PanamaGcRuntime implements GcRuntime {
     } finally {
       lock.writeLock().unlock();
     }
-  }
-
-  @Override
-  public void pinObject(final GcObject object) {
-    validateNotDisposed();
-    validateNotNull(object, "object");
-    // TODO: Implement object pinning in native code
-    LOGGER.fine("Pinning object (not yet implemented): " + getObjectId(object));
-  }
-
-  @Override
-  public void unpinObject(final GcObject object) {
-    validateNotDisposed();
-    validateNotNull(object, "object");
-    // TODO: Implement object unpinning in native code
-    LOGGER.fine("Unpinning object (not yet implemented): " + getObjectId(object));
-  }
-
-  @Override
-  public GcStats collectGarbageAdvanced(final Long maxPauseMillis, final boolean concurrent) {
-    validateNotDisposed();
-    // TODO: Implement advanced GC with pause time and concurrency controls
-    LOGGER.fine(
-        "Advanced GC requested (maxPause=" + maxPauseMillis + "ms, concurrent=" + concurrent + ")");
-    return collectGarbage();
-  }
-
-  @Override
-  public WeakGcReference createWeakReferenceAdvanced(
-      final GcObject object, final Runnable finalizationCallback) {
-    validateNotDisposed();
-    validateNotNull(object, "object");
-    // TODO: Implement weak reference creation with finalization callback
-    LOGGER.fine("Creating weak reference with finalization callback: " + getObjectId(object));
-    return createWeakReference(object, finalizationCallback);
   }
 
   @Override
@@ -1248,10 +1195,6 @@ public final class PanamaGcRuntime implements GcRuntime {
         .build();
   }
 
-  // ========== Advanced GC Method Stubs ==========
-  // These methods provide stub implementations for all the advanced GC features
-  // In a complete implementation, these would have Panama FFI bindings to native code
-
   @Override
   public StructInstance refCastStruct(final GcObject object, final StructType targetStructType) {
     validateNotDisposed();
@@ -1407,102 +1350,6 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
-  public StructInstance createPackedStruct(
-      final StructType structType,
-      final List<GcValue> fieldValues,
-      final Map<Integer, Integer> customAlignment)
-      throws GcException {
-    // Packed structs use the same creation path - alignment is handled at type level
-    // Custom alignment is advisory and may not be honored by the native runtime
-    return createStruct(structType, fieldValues);
-  }
-
-  @Override
-  public ArrayInstance createVariableLengthArray(
-      final ArrayType arrayType, final int baseLength, final List<GcValue> flexibleElements)
-      throws GcException {
-    validateNotDisposed();
-    validateNotNull(arrayType, "arrayType");
-    validateNotNull(flexibleElements, "flexibleElements");
-
-    // Create array with combined length of base + flexible elements
-    final int totalLength = baseLength + flexibleElements.size();
-
-    lock.writeLock().lock();
-    try {
-      if (disposed) {
-        throw new GcException("GC runtime has been disposed");
-      }
-
-      final int typeId = registerArrayTypeInternal(arrayType);
-
-      // Create array with default values first
-      final long objectId = (long) arrayNewDefault.invokeExact(nativeHandle, typeId, totalLength);
-      if (objectId == 0) {
-        throw new GcException("Failed to create variable-length array instance");
-      }
-
-      // Set flexible elements starting at baseLength
-      for (int i = 0; i < flexibleElements.size(); i++) {
-        final GcValue value = flexibleElements.get(i);
-        final NativeValue nativeValue = convertGcValueToNative(value);
-        arraySet.invokeExact(
-            nativeHandle, objectId, baseLength + i, nativeValue.value, nativeValue.type);
-      }
-
-      return new PanamaArrayInstance(this, objectId, arrayType, typeId, totalLength);
-    } catch (final Throwable e) {
-      if (e instanceof GcException) {
-        throw (GcException) e;
-      }
-      throw new GcException("Failed to create variable-length array", e);
-    } finally {
-      lock.writeLock().unlock();
-    }
-  }
-
-  @Override
-  public ArrayInstance createNestedArray(
-      final ArrayType arrayType, final List<GcObject> nestedElements) throws GcException {
-    validateNotDisposed();
-    validateNotNull(arrayType, "arrayType");
-    validateNotNull(nestedElements, "nestedElements");
-
-    lock.writeLock().lock();
-    try {
-      if (disposed) {
-        throw new GcException("GC runtime has been disposed");
-      }
-
-      final int typeId = registerArrayTypeInternal(arrayType);
-      final int length = nestedElements.size();
-
-      // Create array with default values
-      final long objectId = (long) arrayNewDefault.invokeExact(nativeHandle, typeId, length);
-      if (objectId == 0) {
-        throw new GcException("Failed to create nested array instance");
-      }
-
-      // Set nested elements (references to other GC objects)
-      for (int i = 0; i < nestedElements.size(); i++) {
-        final GcObject nested = nestedElements.get(i);
-        final long nestedId = getObjectId(nested);
-        // Reference type = 7
-        arraySet.invokeExact(nativeHandle, objectId, i, nestedId, 7);
-      }
-
-      return new PanamaArrayInstance(this, objectId, arrayType, typeId, length);
-    } catch (final Throwable e) {
-      if (e instanceof GcException) {
-        throw (GcException) e;
-      }
-      throw new GcException("Failed to create nested array", e);
-    } finally {
-      lock.writeLock().unlock();
-    }
-  }
-
-  @Override
   public void copyArrayElements(
       final ArrayInstance sourceArray,
       final int sourceIndex,
@@ -1596,239 +1443,4 @@ public final class PanamaGcRuntime implements GcRuntime {
     }
   }
 
-  @Override
-  public int registerRecursiveType(final String typeName, final Object typeDefinition)
-      throws GcException {
-    validateNotDisposed();
-    validateNotNull(typeName, "typeName");
-    validateNotNull(typeDefinition, "typeDefinition");
-
-    // For recursive types, we generate a unique type ID and store the definition
-    // Wasmtime handles recursive type resolution at module compilation time
-    lock.writeLock().lock();
-    try {
-      if (disposed) {
-        throw new GcException("GC runtime has been disposed");
-      }
-
-      // Generate a simple hash-based type ID for tracking
-      final int typeId = typeName.hashCode() & 0x7FFFFFFF;
-      return typeId;
-    } finally {
-      lock.writeLock().unlock();
-    }
-  }
-
-  @Override
-  public Map<String, Integer> createTypeHierarchy(
-      final Object baseType, final List<Object> derivedTypes) throws GcException {
-    validateNotDisposed();
-    validateNotNull(baseType, "baseType");
-    validateNotNull(derivedTypes, "derivedTypes");
-
-    lock.writeLock().lock();
-    try {
-      if (disposed) {
-        throw new GcException("GC runtime has been disposed");
-      }
-
-      // Create a type hierarchy map with generated IDs
-      final Map<String, Integer> hierarchy = new java.util.HashMap<>();
-      hierarchy.put("base", baseType.hashCode() & 0x7FFFFFFF);
-      for (int i = 0; i < derivedTypes.size(); i++) {
-        hierarchy.put("derived_" + i, derivedTypes.get(i).hashCode() & 0x7FFFFFFF);
-      }
-      return hierarchy;
-    } finally {
-      lock.writeLock().unlock();
-    }
-  }
-
-  @Override
-  public GcStats collectGarbageIncremental(final long maxPauseMillis) {
-    validateNotDisposed();
-
-    // Delegate to standard GC collection - incremental behavior is advisory
-    // The runtime may not support true incremental collection
-    return collectGarbage();
-  }
-
-  @Override
-  public GcStats collectGarbageConcurrent() {
-    validateNotDisposed();
-
-    // Delegate to standard GC collection - concurrent behavior is advisory
-    // The runtime may not support true concurrent collection
-    return collectGarbage();
-  }
-
-  @Override
-  public void configureGcStrategy(final String strategy, final Map<String, Object> parameters)
-      throws GcException {
-    validateNotDisposed();
-    validateNotNull(strategy, "strategy");
-
-    // GC strategy configuration is advisory - Wasmtime uses its own internal GC
-    // Log the configuration attempt but don't fail
-    java.util.logging.Logger.getLogger(getClass().getName())
-        .fine("GC strategy configuration requested: " + strategy + " (advisory only)");
-  }
-
-  @Override
-  public boolean monitorGcPressure(final double pressureThreshold) {
-    validateNotDisposed();
-
-    // GC pressure monitoring requires runtime metrics
-    // Return false (no pressure) as we cannot accurately measure native GC pressure
-    return false;
-  }
-
-  @Override
-  public WeakGcReference createWeakReference(
-      final GcObject object, final Runnable finalizationCallback) {
-    validateNotDisposed();
-    validateNotNull(object, "object");
-
-    // Create a weak reference wrapper using Java's WeakReference
-    final long objectId = getObjectId(object);
-    return new PanamaWeakGcReference(this, objectId, finalizationCallback);
-  }
-
-  @Override
-  public void registerFinalizationCallback(final GcObject object, final Runnable callback) {
-    validateNotDisposed();
-    validateNotNull(object, "object");
-    validateNotNull(callback, "callback");
-
-    // Store finalization callback - will be invoked when object is collected
-    final long objectId = getObjectId(object);
-    finalizationCallbacks.put(objectId, callback);
-  }
-
-  @Override
-  public int runFinalization() {
-    validateNotDisposed();
-
-    // Run all pending finalization callbacks
-    int finalized = 0;
-    for (final Runnable callback : finalizationCallbacks.values()) {
-      try {
-        callback.run();
-        finalized++;
-      } catch (final Exception e) {
-        // Log but don't fail on individual callback errors
-        java.util.logging.Logger.getLogger(getClass().getName())
-            .warning("Finalization callback failed: " + e.getMessage());
-      }
-    }
-    finalizationCallbacks.clear();
-    return finalized;
-  }
-
-  @Override
-  public GcObject integrateHostObject(final Object hostObject, final GcReferenceType gcType)
-      throws GcException {
-    validateNotDisposed();
-    validateNotNull(hostObject, "hostObject");
-    validateNotNull(gcType, "gcType");
-
-    lock.writeLock().lock();
-    try {
-      if (disposed) {
-        throw new GcException("GC runtime has been disposed");
-      }
-
-      // Create a host object wrapper with a unique ID
-      final long objectId = nextHostObjectId.getAndIncrement();
-      hostObjects.put(objectId, hostObject);
-
-      return new PanamaHostObjectWrapper(this, objectId, gcType);
-    } finally {
-      lock.writeLock().unlock();
-    }
-  }
-
-  @Override
-  public Object extractHostObject(final GcObject gcObject) throws GcException {
-    validateNotDisposed();
-    validateNotNull(gcObject, "gcObject");
-
-    if (gcObject instanceof PanamaHostObjectWrapper) {
-      final long objectId = ((PanamaHostObjectWrapper) gcObject).getObjectId();
-      final Object hostObject = hostObjects.get(objectId);
-      if (hostObject == null) {
-        throw new GcException("Host object not found or has been collected");
-      }
-      return hostObject;
-    }
-
-    throw new GcException("Object is not a host-integrated object");
-  }
-
-  @Override
-  public Object createSharingBridge(final List<GcObject> objects) throws GcException {
-    validateNotDisposed();
-    validateNotNull(objects, "objects");
-
-    // Create a sharing bridge that holds references to all objects
-    final long[] objectIds = objects.stream().mapToLong(this::getObjectId).toArray();
-    return new SharingBridge(objectIds);
-  }
-
-  @Override
-  public boolean enforceTypeSafety(final String operation, final List<Object> operands) {
-    validateNotDisposed();
-    validateNotNull(operation, "operation");
-
-    // Type safety enforcement - validate operand types match expected patterns
-    if ("ref.cast".equals(operation) && operands.size() >= 2) {
-      final Object source = operands.get(0);
-      final Object targetType = operands.get(1);
-
-      // Validate that the source object can be cast to the target type
-      if (source instanceof GcObject && targetType instanceof GcReferenceType) {
-        final GcObject gcObject = (GcObject) source;
-        final GcReferenceType target = (GcReferenceType) targetType;
-
-        // I31 can only be cast to I31_REF, EQ_REF, or ANY_REF - not to STRUCT_REF or ARRAY_REF
-        if (gcObject instanceof I31Instance) {
-          return target == GcReferenceType.I31_REF
-              || target == GcReferenceType.EQ_REF
-              || target == GcReferenceType.ANY_REF;
-        }
-
-        // StructInstance can be cast to STRUCT_REF, EQ_REF, or ANY_REF
-        if (gcObject instanceof StructInstance) {
-          return target == GcReferenceType.STRUCT_REF
-              || target == GcReferenceType.EQ_REF
-              || target == GcReferenceType.ANY_REF;
-        }
-
-        // ArrayInstance can be cast to ARRAY_REF, EQ_REF, or ANY_REF
-        if (gcObject instanceof ArrayInstance) {
-          return target == GcReferenceType.ARRAY_REF
-              || target == GcReferenceType.EQ_REF
-              || target == GcReferenceType.ANY_REF;
-        }
-      }
-    }
-
-    // For struct.get and other operations, return true (valid by default)
-    return true;
-  }
-
-  // ========== Helper Classes ==========
-
-  /** Sharing bridge for cross-module object sharing. */
-  private static final class SharingBridge {
-    private final long[] objectIds;
-
-    SharingBridge(final long[] objectIds) {
-      this.objectIds = objectIds.clone();
-    }
-
-    public long[] getObjectIds() {
-      return objectIds.clone();
-    }
-  }
 }

@@ -1132,41 +1132,6 @@ class GcPackageTest {
   }
 
   @Nested
-  @DisplayName("WeakGcReference Interface Tests")
-  class WeakGcReferenceTests {
-
-    @Test
-    @DisplayName("should exist as an interface")
-    void shouldExistAsAnInterface() {
-      assertNotNull(WeakGcReference.class, "WeakGcReference class should exist");
-      assertTrue(WeakGcReference.class.isInterface(), "WeakGcReference should be an interface");
-    }
-
-    @Test
-    @DisplayName("should have get method returning Optional")
-    void shouldHaveGetMethod() throws Exception {
-      final Method method = WeakGcReference.class.getMethod("get");
-      assertNotNull(method, "Should have get method");
-      assertEquals(java.util.Optional.class, method.getReturnType(), "Should return Optional");
-    }
-
-    @Test
-    @DisplayName("should have isCleared method")
-    void shouldHaveIsClearedMethod() throws Exception {
-      final Method method = WeakGcReference.class.getMethod("isCleared");
-      assertNotNull(method, "Should have isCleared method");
-      assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have clear method")
-    void shouldHaveClearMethod() throws Exception {
-      final Method method = WeakGcReference.class.getMethod("clear");
-      assertNotNull(method, "Should have clear method");
-    }
-  }
-
-  @Nested
   @DisplayName("OwnedRooted Tests")
   class OwnedRootedTests {
 

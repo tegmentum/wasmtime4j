@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.gc;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -209,44 +208,6 @@ public interface GcRuntime {
    */
   Optional<GcObject> refCastNullable(GcObject object, GcReferenceType targetType);
 
-  // ========== Complex Type Operations ==========
-
-  /**
-   * Creates a struct instance with packed fields and custom alignment.
-   *
-   * @param structType the struct type with packed field definitions
-   * @param fieldValues the initial field values
-   * @param customAlignment custom field alignment requirements
-   * @return the new struct instance
-   * @throws GcException if creation fails
-   */
-  StructInstance createPackedStruct(
-      StructType structType, List<GcValue> fieldValues, Map<Integer, Integer> customAlignment)
-      throws GcException;
-
-  /**
-   * Creates a variable-length array with flexible members.
-   *
-   * @param arrayType the base array type
-   * @param baseLength the fixed portion length
-   * @param flexibleElements the flexible portion elements
-   * @return the new variable-length array instance
-   * @throws GcException if creation fails
-   */
-  ArrayInstance createVariableLengthArray(
-      ArrayType arrayType, int baseLength, List<GcValue> flexibleElements) throws GcException;
-
-  /**
-   * Creates an array with nested struct or array elements.
-   *
-   * @param arrayType the array type
-   * @param nestedElements the nested elements (structs or arrays)
-   * @return the new nested array instance
-   * @throws GcException if creation fails
-   */
-  ArrayInstance createNestedArray(ArrayType arrayType, List<GcObject> nestedElements)
-      throws GcException;
-
   /**
    * Copies array elements between arrays with type compatibility checking.
    *
@@ -297,27 +258,6 @@ public interface GcRuntime {
    */
   int registerArrayType(ArrayType arrayType) throws GcException;
 
-  /**
-   * Registers a recursive type definition.
-   *
-   * @param typeName the type name
-   * @param typeDefinition the recursive type definition
-   * @return the assigned type ID
-   * @throws GcException if registration fails
-   */
-  int registerRecursiveType(String typeName, Object typeDefinition) throws GcException;
-
-  /**
-   * Creates a type hierarchy with inheritance relationships.
-   *
-   * @param baseType the base type
-   * @param derivedTypes the derived types
-   * @return the type hierarchy mapping
-   * @throws GcException if hierarchy creation fails
-   */
-  Map<String, Integer> createTypeHierarchy(Object baseType, List<Object> derivedTypes)
-      throws GcException;
-
   // ========== Garbage Collection Control ==========
 
   /**
@@ -328,173 +268,9 @@ public interface GcRuntime {
   GcStats collectGarbage();
 
   /**
-   * Triggers incremental garbage collection.
-   *
-   * @param maxPauseMillis maximum pause time in milliseconds
-   * @return collection statistics
-   */
-  GcStats collectGarbageIncremental(long maxPauseMillis);
-
-  /**
-   * Triggers concurrent garbage collection.
-   *
-   * @return collection statistics
-   */
-  GcStats collectGarbageConcurrent();
-
-  /**
    * Gets current garbage collection statistics.
    *
    * @return GC statistics
    */
   GcStats getGcStats();
-
-  /**
-   * Configures garbage collection strategy.
-   *
-   * @param strategy the GC strategy to use
-   * @param parameters strategy-specific parameters
-   * @throws GcException if configuration fails
-   */
-  void configureGcStrategy(String strategy, Map<String, Object> parameters) throws GcException;
-
-  /**
-   * Monitors GC pressure and triggers collection when necessary.
-   *
-   * @param pressureThreshold the pressure threshold (0.0 to 1.0)
-   * @return true if collection was triggered
-   */
-  boolean monitorGcPressure(double pressureThreshold);
-
-  // ========== Advanced Memory Management ==========
-
-  /**
-   * Creates a weak reference to an object.
-   *
-   * @param object the object to reference weakly
-   * @param finalizationCallback callback to invoke when object is finalized
-   * @return the weak reference
-   */
-  WeakGcReference createWeakReference(GcObject object, Runnable finalizationCallback);
-
-  /**
-   * Registers a finalization callback for an object.
-   *
-   * @param object the object
-   * @param callback the finalization callback
-   */
-  void registerFinalizationCallback(GcObject object, Runnable callback);
-
-  /**
-   * Forces finalization of all pending objects.
-   *
-   * @return the number of objects finalized
-   */
-  int runFinalization();
-
-  // ========== Host Integration ==========
-
-  /**
-   * Integrates a host-managed object with the GC heap.
-   *
-   * @param hostObject the host object
-   * @param gcType the corresponding GC type
-   * @return the GC wrapper object
-   * @throws GcException if integration fails
-   */
-  GcObject integrateHostObject(Object hostObject, GcReferenceType gcType) throws GcException;
-
-  /**
-   * Extracts the host object from a GC-managed wrapper.
-   *
-   * @param gcObject the GC wrapper object
-   * @return the host object
-   * @throws GcException if extraction fails
-   */
-  Object extractHostObject(GcObject gcObject) throws GcException;
-
-  /**
-   * Creates a cross-language object sharing bridge.
-   *
-   * @param objects objects to share across languages
-   * @return the sharing bridge
-   * @throws GcException if bridge creation fails
-   */
-  Object createSharingBridge(List<GcObject> objects) throws GcException;
-
-  // ========== Safety and Validation ==========
-
-  /**
-   * Enforces type safety in complex scenarios.
-   *
-   * @param operation the operation to check
-   * @param operands the operation operands
-   * @return true if operation is type-safe
-   */
-  boolean enforceTypeSafety(String operation, List<Object> operands);
-
-  // ========== Advanced GC Features from Task #307 Integration ==========
-
-  /**
-   * Creates a weak reference with finalization callback support.
-   *
-   * @param object the object to reference weakly
-   * @param finalizationCallback optional callback to invoke when object is finalized
-   * @return the weak reference
-   */
-  WeakGcReference createWeakReferenceAdvanced(GcObject object, Runnable finalizationCallback);
-
-  /**
-   * Performs advanced garbage collection with incremental and concurrent support.
-   *
-   * @param maxPauseMillis maximum pause time in milliseconds (null for no limit)
-   * @param concurrent whether to perform concurrent collection
-   * @return collection statistics
-   */
-  GcStats collectGarbageAdvanced(Long maxPauseMillis, boolean concurrent);
-
-  /**
-   * Pins an object to prevent it from being moved during GC (future GC proposal support).
-   *
-   * @param object the object to pin
-   */
-  void pinObject(GcObject object);
-
-  /**
-   * Unpins an object to allow it to be moved during GC (future GC proposal support).
-   *
-   * @param object the object to unpin
-   */
-  void unpinObject(GcObject object);
-
-  /**
-   * Performs optimized reference type casting with caching support.
-   *
-   * @param object the object to cast
-   * @param targetType the target reference type
-   * @param enableCaching whether to enable cast result caching
-   * @return the cast object
-   * @throws ClassCastException if the cast is invalid
-   */
-  GcObject refCastOptimized(GcObject object, GcReferenceType targetType, boolean enableCaching);
-
-  /**
-   * Creates SIMD values with advanced vector types from Task #307.
-   *
-   * @param v256Data the 256-bit vector data (32 bytes)
-   * @return the V256 GC value
-   */
-  default GcValue createV256(byte[] v256Data) {
-    return GcValue.v256(v256Data);
-  }
-
-  /**
-   * Creates SIMD values with AVX-512 support from Task #307.
-   *
-   * @param v512Data the 512-bit vector data (64 bytes)
-   * @return the V512 GC value
-   */
-  default GcValue createV512(byte[] v512Data) {
-    return GcValue.v512(v512Data);
-  }
 }
