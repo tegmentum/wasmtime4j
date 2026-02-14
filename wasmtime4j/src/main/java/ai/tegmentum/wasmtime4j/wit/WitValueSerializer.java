@@ -631,11 +631,11 @@ public final class WitValueSerializer {
    *   <li>14 = option
    *   <li>15 = result
    *   <li>16 = flags
-   *   <li>17 = s8 (reserved for deserializer)
-   *   <li>18 = s16 (reserved for deserializer)
-   *   <li>19 = u8 (reserved for deserializer)
-   *   <li>20 = u16 (reserved for deserializer)
-   *   <li>21 = float32 (reserved for deserializer)
+   *   <li>17 = s8
+   *   <li>18 = s16
+   *   <li>19 = u8
+   *   <li>20 = u16
+   *   <li>21 = float32
    *   <li>22 = own (owned resource handle)
    *   <li>23 = borrow (borrowed resource handle)
    * </ul>
@@ -679,13 +679,22 @@ public final class WitValueSerializer {
       return 15;
     } else if (value instanceof WitFlags) {
       return 16;
+    } else if (value instanceof WitS8) {
+      return 17;
+    } else if (value instanceof WitS16) {
+      return 18;
+    } else if (value instanceof WitU8) {
+      return 19;
+    } else if (value instanceof WitU16) {
+      return 20;
+    } else if (value instanceof WitFloat32) {
+      return 21;
     } else if (value instanceof WitOwn) {
       return 22;
     } else if (value instanceof WitBorrow) {
       return 23;
     } else {
-      throw new ValidationException(
-          "Unsupported value type: " + value.getClass().getName());
+      throw new ValidationException("Unsupported value type: " + value.getClass().getName());
     }
   }
 }

@@ -383,6 +383,87 @@ final class WitValueMarshallerTest {
   }
 
   @Test
+  @DisplayName("From Java s8 value")
+  void testFromJavaS8() throws ValidationException {
+    final WitValue result = WitValueMarshaller.fromJava(Byte.valueOf((byte) -42), "s8");
+
+    assertInstanceOf(WitS8.class, result, "Result should be WitS8");
+    assertEquals((byte) -42, ((WitS8) result).getValue(), "Value should be -42");
+  }
+
+  @Test
+  @DisplayName("From Java s16 value")
+  void testFromJavaS16() throws ValidationException {
+    final WitValue result = WitValueMarshaller.fromJava(Short.valueOf((short) -1000), "s16");
+
+    assertInstanceOf(WitS16.class, result, "Result should be WitS16");
+    assertEquals((short) -1000, ((WitS16) result).getValue(), "Value should be -1000");
+  }
+
+  @Test
+  @DisplayName("From Java u8 value")
+  void testFromJavaU8() throws ValidationException {
+    final WitValue result = WitValueMarshaller.fromJava(Integer.valueOf(200), "u8");
+
+    assertInstanceOf(WitU8.class, result, "Result should be WitU8");
+    assertEquals(200, ((WitU8) result).toUnsignedInt(), "Unsigned value should be 200");
+  }
+
+  @Test
+  @DisplayName("From Java u16 value")
+  void testFromJavaU16() throws ValidationException {
+    final WitValue result = WitValueMarshaller.fromJava(Integer.valueOf(50000), "u16");
+
+    assertInstanceOf(WitU16.class, result, "Result should be WitU16");
+    assertEquals(50000, ((WitU16) result).toUnsignedInt(), "Unsigned value should be 50000");
+  }
+
+  @Test
+  @DisplayName("From Java u32 value")
+  void testFromJavaU32() throws ValidationException {
+    final WitValue result = WitValueMarshaller.fromJava(Long.valueOf(3000000000L), "u32");
+
+    assertInstanceOf(WitU32.class, result, "Result should be WitU32");
+    assertEquals(
+        3000000000L, ((WitU32) result).toUnsignedLong(), "Unsigned value should be 3000000000");
+  }
+
+  @Test
+  @DisplayName("From Java u64 value")
+  void testFromJavaU64() throws ValidationException {
+    final WitValue result = WitValueMarshaller.fromJava(Long.valueOf(Long.MAX_VALUE), "u64");
+
+    assertInstanceOf(WitU64.class, result, "Result should be WitU64");
+    assertEquals(Long.MAX_VALUE, ((WitU64) result).getValue(), "Value should be Long.MAX_VALUE");
+  }
+
+  @Test
+  @DisplayName("From Java float32 value")
+  void testFromJavaFloat32() throws ValidationException {
+    final WitValue result = WitValueMarshaller.fromJava(Float.valueOf(3.14f), "float32");
+
+    assertInstanceOf(WitFloat32.class, result, "Result should be WitFloat32");
+    assertEquals(3.14f, ((WitFloat32) result).getValue(), 0.001f, "Value should be 3.14");
+  }
+
+  @Test
+  @DisplayName("From Java with type mismatch for new numeric types")
+  void testFromJavaNewTypesMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a number", "s8"),
+        "Should throw for non-Number s8");
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a number", "u16"),
+        "Should throw for non-Number u16");
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a number", "float32"),
+        "Should throw for non-Number float32");
+  }
+
+  @Test
   @DisplayName("From Java with case-insensitive type name")
   void testFromJavaCaseInsensitive() throws ValidationException {
     final WitValue result1 = WitValueMarshaller.fromJava(Boolean.TRUE, "BOOL");

@@ -184,8 +184,7 @@ public final class WitValueMarshaller {
 
       case "s64":
         if (!(javaValue instanceof Long)) {
-          throw new ValidationException(
-              "Expected Long for s64 type, got " + javaValue.getClass());
+          throw new ValidationException("Expected Long for s64 type, got " + javaValue.getClass());
         }
         return WitS64.of((Long) javaValue);
 
@@ -212,6 +211,53 @@ public final class WitValueMarshaller {
               "Expected String for string type, got " + javaValue.getClass());
         }
         return WitString.of((String) javaValue);
+
+      case "s8":
+        if (!(javaValue instanceof Number)) {
+          throw new ValidationException("Expected Number for s8 type, got " + javaValue.getClass());
+        }
+        return WitS8.of(((Number) javaValue).byteValue());
+
+      case "s16":
+        if (!(javaValue instanceof Number)) {
+          throw new ValidationException(
+              "Expected Number for s16 type, got " + javaValue.getClass());
+        }
+        return WitS16.of(((Number) javaValue).shortValue());
+
+      case "u8":
+        if (!(javaValue instanceof Number)) {
+          throw new ValidationException("Expected Number for u8 type, got " + javaValue.getClass());
+        }
+        return WitU8.ofUnsigned(((Number) javaValue).intValue());
+
+      case "u16":
+        if (!(javaValue instanceof Number)) {
+          throw new ValidationException(
+              "Expected Number for u16 type, got " + javaValue.getClass());
+        }
+        return WitU16.ofUnsigned(((Number) javaValue).intValue());
+
+      case "u32":
+        if (!(javaValue instanceof Number)) {
+          throw new ValidationException(
+              "Expected Number for u32 type, got " + javaValue.getClass());
+        }
+        return WitU32.ofUnsigned(((Number) javaValue).longValue());
+
+      case "u64":
+        if (!(javaValue instanceof Number)) {
+          throw new ValidationException(
+              "Expected Number for u64 type, got " + javaValue.getClass());
+        }
+        return WitU64.of(((Number) javaValue).longValue());
+
+      case "float32":
+        if (!(javaValue instanceof Number)) {
+          throw new ValidationException(
+              "Expected Number for float32 type, got " + javaValue.getClass());
+        }
+        return WitFloat32.of(((Number) javaValue).floatValue());
 
       default:
         throw new ValidationException("Unsupported WIT type: " + witType);

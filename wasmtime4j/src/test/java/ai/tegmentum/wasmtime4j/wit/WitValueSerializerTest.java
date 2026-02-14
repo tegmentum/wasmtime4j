@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.wit;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -546,6 +547,114 @@ final class WitValueSerializerTest {
     final WitBorrow value = WitBorrow.of("TestResource", 1);
     assertEquals(
         23, WitValueSerializer.getTypeDiscriminator(value), "Borrow discriminator should be 23");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for s8")
+  void testGetTypeDiscriminatorS8() throws ValidationException {
+    final WitS8 value = WitS8.of((byte) 1);
+    assertEquals(
+        17, WitValueSerializer.getTypeDiscriminator(value), "S8 discriminator should be 17");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for s16")
+  void testGetTypeDiscriminatorS16() throws ValidationException {
+    final WitS16 value = WitS16.of((short) 1);
+    assertEquals(
+        18, WitValueSerializer.getTypeDiscriminator(value), "S16 discriminator should be 18");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for u8")
+  void testGetTypeDiscriminatorU8() throws ValidationException {
+    final WitU8 value = WitU8.of((byte) 1);
+    assertEquals(
+        19, WitValueSerializer.getTypeDiscriminator(value), "U8 discriminator should be 19");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for u16")
+  void testGetTypeDiscriminatorU16() throws ValidationException {
+    final WitU16 value = WitU16.of((short) 1);
+    assertEquals(
+        20, WitValueSerializer.getTypeDiscriminator(value), "U16 discriminator should be 20");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for float32")
+  void testGetTypeDiscriminatorFloat32() throws ValidationException {
+    final WitFloat32 value = WitFloat32.of(1.0f);
+    assertEquals(
+        21, WitValueSerializer.getTypeDiscriminator(value), "Float32 discriminator should be 21");
+  }
+
+  @Test
+  @DisplayName("Round-trip serialize/deserialize s8 via marshaller")
+  void testRoundTripS8() throws ValidationException {
+    final WitS8 original = WitS8.of((byte) -42);
+    final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
+    final byte[] data = WitValueSerializer.serialize(original);
+    final WitValue restored = WitValueDeserializer.deserialize(discriminator, data);
+
+    assertInstanceOf(WitS8.class, restored, "Should deserialize back to WitS8");
+    assertEquals(
+        original.getValue(), ((WitS8) restored).getValue(), "Value should survive round-trip");
+  }
+
+  @Test
+  @DisplayName("Round-trip serialize/deserialize s16 via marshaller")
+  void testRoundTripS16() throws ValidationException {
+    final WitS16 original = WitS16.of((short) -1000);
+    final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
+    final byte[] data = WitValueSerializer.serialize(original);
+    final WitValue restored = WitValueDeserializer.deserialize(discriminator, data);
+
+    assertInstanceOf(WitS16.class, restored, "Should deserialize back to WitS16");
+    assertEquals(
+        original.getValue(), ((WitS16) restored).getValue(), "Value should survive round-trip");
+  }
+
+  @Test
+  @DisplayName("Round-trip serialize/deserialize u8 via marshaller")
+  void testRoundTripU8() throws ValidationException {
+    final WitU8 original = WitU8.of((byte) 0xFF);
+    final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
+    final byte[] data = WitValueSerializer.serialize(original);
+    final WitValue restored = WitValueDeserializer.deserialize(discriminator, data);
+
+    assertInstanceOf(WitU8.class, restored, "Should deserialize back to WitU8");
+    assertEquals(
+        original.getValue(), ((WitU8) restored).getValue(), "Value should survive round-trip");
+  }
+
+  @Test
+  @DisplayName("Round-trip serialize/deserialize u16 via marshaller")
+  void testRoundTripU16() throws ValidationException {
+    final WitU16 original = WitU16.of((short) 0xFFFF);
+    final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
+    final byte[] data = WitValueSerializer.serialize(original);
+    final WitValue restored = WitValueDeserializer.deserialize(discriminator, data);
+
+    assertInstanceOf(WitU16.class, restored, "Should deserialize back to WitU16");
+    assertEquals(
+        original.getValue(), ((WitU16) restored).getValue(), "Value should survive round-trip");
+  }
+
+  @Test
+  @DisplayName("Round-trip serialize/deserialize float32 via marshaller")
+  void testRoundTripFloat32() throws ValidationException {
+    final WitFloat32 original = WitFloat32.of(3.14f);
+    final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
+    final byte[] data = WitValueSerializer.serialize(original);
+    final WitValue restored = WitValueDeserializer.deserialize(discriminator, data);
+
+    assertInstanceOf(WitFloat32.class, restored, "Should deserialize back to WitFloat32");
+    assertEquals(
+        original.getValue(),
+        ((WitFloat32) restored).getValue(),
+        0.001f,
+        "Value should survive round-trip");
   }
 
   @Test
