@@ -56,14 +56,13 @@ class PanamaGcObject implements GcObject {
 
   @Override
   public GcObject castTo(final GcReferenceType type) {
-    // TODO: Implement proper type casting with validation
-    return this;
+    throw new UnsupportedOperationException(
+        "not yet implemented: GC object type casting with validation");
   }
 
   @Override
   public boolean isOfType(final GcReferenceType type) {
-    // TODO: Implement proper type checking
-    return type == GcReferenceType.ANY_REF;
+    throw new UnsupportedOperationException("not yet implemented: GC object type checking");
   }
 
   @Override

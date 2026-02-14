@@ -82,14 +82,13 @@ class PanamaArrayInstance extends PanamaGcObject implements ArrayInstance {
 
   @Override
   public GcObject castTo(final GcReferenceType type) {
-    // TODO: Implement proper type casting with validation
-    return this;
+    throw new UnsupportedOperationException(
+        "not yet implemented: GC array type casting with validation");
   }
 
   @Override
   public boolean isOfType(final GcReferenceType type) {
-    // TODO: Implement proper type checking
-    return type == GcReferenceType.ARRAY_REF;
+    throw new UnsupportedOperationException("not yet implemented: GC array type checking");
   }
 
   @Override

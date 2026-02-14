@@ -124,7 +124,6 @@ class JniWasiMiscClassesTest {
         assertEquals(boolean.class, field.getType(), "closed should be boolean type");
         assertTrue(Modifier.isVolatile(field.getModifiers()), "closed should be volatile");
       }
-
     }
 
     @Nested

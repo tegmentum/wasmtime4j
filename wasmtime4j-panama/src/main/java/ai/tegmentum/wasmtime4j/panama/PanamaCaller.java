@@ -88,8 +88,8 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Export name cannot be null");
     }
 
-    // TODO: Implement export retrieval
-    return Optional.empty();
+    throw new UnsupportedOperationException(
+        "not yet implemented: export retrieval from caller context");
   }
 
   @Override

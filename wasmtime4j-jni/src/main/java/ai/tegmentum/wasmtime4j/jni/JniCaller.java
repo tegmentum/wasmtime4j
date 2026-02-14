@@ -97,10 +97,8 @@ final class JniCaller<T> implements Caller<T> {
         return Optional.empty();
       }
 
-      // Unmarshal export from native data
-      // TODO: Implement export unmarshalling
-      // For now, return empty until export types are fully implemented
-      return Optional.empty();
+      throw new UnsupportedOperationException(
+          "not yet implemented: export unmarshalling from native data");
 
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get export: " + name, e);

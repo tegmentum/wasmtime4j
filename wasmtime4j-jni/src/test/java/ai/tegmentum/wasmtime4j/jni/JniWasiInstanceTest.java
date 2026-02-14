@@ -132,18 +132,6 @@ class JniWasiInstanceTest {
     }
 
     @Test
-    @DisplayName("Should have NEXT_RESOURCE_ID field")
-    void shouldHaveNextResourceIdField() throws ClassNotFoundException, NoSuchFieldException {
-      Class<?> clazz = getTestedClass();
-      Field field = clazz.getDeclaredField("NEXT_RESOURCE_ID");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "NEXT_RESOURCE_ID should be private");
-      assertTrue(Modifier.isStatic(field.getModifiers()), "NEXT_RESOURCE_ID should be static");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "NEXT_RESOURCE_ID should be final");
-      assertEquals(
-          AtomicLong.class, field.getType(), "NEXT_RESOURCE_ID should be of type AtomicLong");
-    }
-
-    @Test
     @DisplayName("Should have instanceId field")
     void shouldHaveInstanceIdField() throws ClassNotFoundException, NoSuchFieldException {
       Class<?> clazz = getTestedClass();
@@ -754,91 +742,6 @@ class JniWasiInstanceTest {
       assertEquals(
           List.class, method.getReturnType(), "extractExportedInterfaces should return List");
     }
-
-    @Test
-    @DisplayName("Should have createBasicFunctionMetadata method")
-    void shouldHaveCreateBasicFunctionMetadataMethod() throws ClassNotFoundException {
-      Class<?> clazz = getTestedClass();
-      boolean found = false;
-      for (Method method : clazz.getDeclaredMethods()) {
-        if (method.getName().equals("createBasicFunctionMetadata")) {
-          assertTrue(
-              Modifier.isPrivate(method.getModifiers()),
-              "createBasicFunctionMetadata should be private");
-          found = true;
-          break;
-        }
-      }
-      assertTrue(found, "createBasicFunctionMetadata method should exist");
-    }
-
-    @Test
-    @DisplayName("Should have createPlaceholderResource method")
-    void shouldHaveCreatePlaceholderResourceMethod() throws ClassNotFoundException {
-      Class<?> clazz = getTestedClass();
-      boolean found = false;
-      for (Method method : clazz.getDeclaredMethods()) {
-        if (method.getName().equals("createPlaceholderResource")) {
-          assertTrue(
-              Modifier.isPrivate(method.getModifiers()),
-              "createPlaceholderResource should be private");
-          found = true;
-          break;
-        }
-      }
-      assertTrue(found, "createPlaceholderResource method should exist");
-    }
-
-    @Test
-    @DisplayName("Should have createInstanceStats method")
-    void shouldHaveCreateInstanceStatsMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createInstanceStats");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "createInstanceStats should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createMemoryInfo method")
-    void shouldHaveCreateMemoryInfoMethod() throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createMemoryInfo");
-      assertTrue(Modifier.isPrivate(method.getModifiers()), "createMemoryInfo should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createPlaceholderResourceMetadata method")
-    void shouldHaveCreatePlaceholderResourceMetadataMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createPlaceholderResourceMetadata");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createPlaceholderResourceMetadata should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createPlaceholderResourceStats method")
-    void shouldHaveCreatePlaceholderResourceStatsMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createPlaceholderResourceStats");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createPlaceholderResourceStats should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createPlaceholderNetworkStats method")
-    void shouldHaveCreatePlaceholderNetworkStatsMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createPlaceholderNetworkStats");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createPlaceholderNetworkStats should be private");
-    }
   }
 
   @Nested
@@ -892,7 +795,7 @@ class JniWasiInstanceTest {
               .filter(f -> Modifier.isStatic(f.getModifiers()))
               .filter(f -> !f.isSynthetic() && !f.getName().startsWith("$"))
               .count();
-      assertEquals(3, staticFieldCount, "Should have exactly 3 static fields");
+      assertEquals(2, staticFieldCount, "Should have exactly 2 static fields");
     }
 
     @Test

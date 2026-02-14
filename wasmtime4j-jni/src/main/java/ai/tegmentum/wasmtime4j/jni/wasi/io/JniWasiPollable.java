@@ -89,7 +89,7 @@ public final class JniWasiPollable extends JniResource implements WasiPollable {
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiInstance getOwner() {
-    return null; // Instance ownership tracking not yet implemented for WASI pollables
+    throw new UnsupportedOperationException("not yet implemented: WASI pollable owner tracking");
   }
 
   @Override
@@ -129,7 +129,7 @@ public final class JniWasiPollable extends JniResource implements WasiPollable {
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceStats getStats() {
-    return null; // Stats not yet implemented for WASI pollables
+    throw new UnsupportedOperationException("not yet implemented: WASI pollable statistics");
   }
 
   @Override
@@ -141,7 +141,7 @@ public final class JniWasiPollable extends JniResource implements WasiPollable {
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata getMetadata() throws WasmException {
-    return null; // Metadata not yet implemented for WASI pollables
+    throw new UnsupportedOperationException("not yet implemented: WASI pollable metadata");
   }
 
   @Override

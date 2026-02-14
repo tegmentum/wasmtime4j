@@ -267,20 +267,19 @@ public class JniEngine implements Engine {
 
   @Override
   public EngineConfig getConfig() {
-    // TODO: Implement config retrieval
-    return null;
+    throw new UnsupportedOperationException("not yet implemented: native engine config retrieval");
   }
 
   @Override
   public long getReferenceCount() {
-    // TODO: Implement reference counting
-    return 1;
+    throw new UnsupportedOperationException(
+        "not yet implemented: native engine reference counting");
   }
 
   @Override
   public int getMaxInstances() {
-    // TODO: Implement max instances tracking
-    return Integer.MAX_VALUE;
+    throw new UnsupportedOperationException(
+        "not yet implemented: native engine max instances tracking");
   }
 
   @Override

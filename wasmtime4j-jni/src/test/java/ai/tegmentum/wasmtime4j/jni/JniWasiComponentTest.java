@@ -392,22 +392,6 @@ class JniWasiComponentTest {
     }
 
     @Test
-    @DisplayName("should have createBasicInterfaceMetadata private method")
-    void shouldHaveCreateBasicInterfaceMetadataMethod() throws Exception {
-      Method method =
-          JniWasiComponent.class.getDeclaredMethod(
-              "createBasicInterfaceMetadata", String.class, boolean.class);
-      assertNotNull(method, "createBasicInterfaceMetadata method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createBasicInterfaceMetadata should be private");
-      assertEquals(
-          WasiInterfaceMetadata.class,
-          method.getReturnType(),
-          "Return type should be WasiInterfaceMetadata");
-    }
-
-    @Test
     @DisplayName("should have extractStats private method")
     void shouldHaveExtractStatsMethod() throws Exception {
       Method method = JniWasiComponent.class.getDeclaredMethod("extractStats");
@@ -417,35 +401,6 @@ class JniWasiComponentTest {
           WasiComponentStats.class,
           method.getReturnType(),
           "Return type should be WasiComponentStats");
-    }
-
-    @Test
-    @DisplayName("should have createBasicErrorStats private method")
-    void shouldHaveCreateBasicErrorStatsMethod() throws Exception {
-      Method method = JniWasiComponent.class.getDeclaredMethod("createBasicErrorStats");
-      assertNotNull(method, "createBasicErrorStats method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "createBasicErrorStats should be private");
-    }
-
-    @Test
-    @DisplayName("should have createBasicResourceUsageStats private method")
-    void shouldHaveCreateBasicResourceUsageStatsMethod() throws Exception {
-      Method method = JniWasiComponent.class.getDeclaredMethod("createBasicResourceUsageStats");
-      assertNotNull(method, "createBasicResourceUsageStats method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createBasicResourceUsageStats should be private");
-    }
-
-    @Test
-    @DisplayName("should have createBasicPerformanceMetrics private method")
-    void shouldHaveCreateBasicPerformanceMetricsMethod() throws Exception {
-      Method method = JniWasiComponent.class.getDeclaredMethod("createBasicPerformanceMetrics");
-      assertNotNull(method, "createBasicPerformanceMetrics method should exist");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createBasicPerformanceMetrics should be private");
     }
   }
 
@@ -587,8 +542,9 @@ class JniWasiComponentTest {
         }
       }
 
-      // Expected: ~7 private helper methods
-      assertTrue(privateCount >= 5, "Should have at least 5 private helper methods");
+      // Expected: ~4 private helper methods (ensureNotClosed, extractExports, extractImports,
+      // extractStats)
+      assertTrue(privateCount >= 3, "Should have at least 3 private helper methods");
     }
   }
 }

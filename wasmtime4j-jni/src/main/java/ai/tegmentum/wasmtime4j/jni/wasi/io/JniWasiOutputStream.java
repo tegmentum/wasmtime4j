@@ -176,7 +176,8 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiInstance getOwner() {
-    return null; // Instance ownership tracking not yet implemented for WASI I/O streams
+    throw new UnsupportedOperationException(
+        "not yet implemented: WASI output stream owner tracking");
   }
 
   @Override
@@ -282,7 +283,7 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceStats getStats() {
-    return null; // Stats not yet implemented for WASI I/O streams
+    throw new UnsupportedOperationException("not yet implemented: WASI output stream statistics");
   }
 
   @Override
@@ -294,7 +295,7 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata getMetadata() throws WasmException {
-    return null; // Metadata not yet implemented for WASI I/O streams
+    throw new UnsupportedOperationException("not yet implemented: WASI output stream metadata");
   }
 
   @Override

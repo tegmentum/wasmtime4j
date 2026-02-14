@@ -1326,14 +1326,13 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      // TODO: Implement proper type casting with validation
-      return this;
+      throw new UnsupportedOperationException(
+          "not yet implemented: GC struct type casting with validation");
     }
 
     @Override
     public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      // TODO: Implement proper type checking
-      return false;
+      throw new UnsupportedOperationException("not yet implemented: GC struct type checking");
     }
 
     @Override
@@ -1414,14 +1413,13 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      // TODO: Implement proper type casting with validation
-      return this;
+      throw new UnsupportedOperationException(
+          "not yet implemented: GC array type casting with validation");
     }
 
     @Override
     public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      // TODO: Implement proper type checking
-      return false;
+      throw new UnsupportedOperationException("not yet implemented: GC array type checking");
     }
 
     @Override
@@ -1455,8 +1453,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public I31Type getType() {
-      // TODO: I31Type is a utility class, not an instance type - API design issue
-      return null;
+      throw new UnsupportedOperationException("not yet implemented: I31Type instance creation");
     }
 
     @Override

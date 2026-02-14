@@ -40,8 +40,7 @@ class PanamaI31Instance extends PanamaGcObject implements I31Instance {
 
   @Override
   public I31Type getType() {
-    // TODO: I31Type is a utility class, not an instance type - API design issue
-    return null;
+    throw new UnsupportedOperationException("not yet implemented: I31Type instance creation");
   }
 
   @Override
@@ -72,14 +71,13 @@ class PanamaI31Instance extends PanamaGcObject implements I31Instance {
 
   @Override
   public GcObject castTo(final GcReferenceType type) {
-    // TODO: Implement proper type casting with validation
-    return this;
+    throw new UnsupportedOperationException(
+        "not yet implemented: GC I31 type casting with validation");
   }
 
   @Override
   public boolean isOfType(final GcReferenceType type) {
-    // TODO: Implement proper type checking
-    return type == GcReferenceType.I31_REF;
+    throw new UnsupportedOperationException("not yet implemented: GC I31 type checking");
   }
 
   @Override

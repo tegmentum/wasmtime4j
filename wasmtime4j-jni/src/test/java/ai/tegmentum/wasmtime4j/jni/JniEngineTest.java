@@ -409,37 +409,36 @@ class JniEngineTest {
   class ConfigAndStatsTests {
 
     @Test
-    @DisplayName("should return null for getConfig - placeholder until native implementation")
-    void shouldReturnNullForGetConfig() {
+    @DisplayName("should throw UnsupportedOperationException for getConfig")
+    void shouldThrowForGetConfig() {
       final JniEngine engine = new JniEngine(VALID_HANDLE);
 
-      // getConfig returns null as a placeholder until native implementation is complete.
-      // This is the documented behavior for the current version.
-      assertNull(engine.getConfig(), "getConfig should return null (placeholder behavior)");
+      assertThrows(
+          UnsupportedOperationException.class,
+          engine::getConfig,
+          "getConfig should throw UnsupportedOperationException");
     }
 
     @Test
-    @DisplayName("should return 1 for getReferenceCount - placeholder until native implementation")
-    void shouldReturnOneForGetReferenceCount() {
+    @DisplayName("should throw UnsupportedOperationException for getReferenceCount")
+    void shouldThrowForGetReferenceCount() {
       final JniEngine engine = new JniEngine(VALID_HANDLE);
 
-      // getReferenceCount returns 1 as a placeholder until native implementation is complete.
-      // This is the documented behavior for the current version.
-      assertEquals(
-          1, engine.getReferenceCount(), "getReferenceCount should return 1 (placeholder)");
+      assertThrows(
+          UnsupportedOperationException.class,
+          engine::getReferenceCount,
+          "getReferenceCount should throw UnsupportedOperationException");
     }
 
     @Test
-    @DisplayName("should return MAX_VALUE for getMaxInstances - placeholder until native impl")
-    void shouldReturnMaxValueForGetMaxInstances() {
+    @DisplayName("should throw UnsupportedOperationException for getMaxInstances")
+    void shouldThrowForGetMaxInstances() {
       final JniEngine engine = new JniEngine(VALID_HANDLE);
 
-      // getMaxInstances returns MAX_VALUE as a placeholder until native implementation is complete.
-      // This is the documented behavior for the current version (no instance limits).
-      assertEquals(
-          Integer.MAX_VALUE,
-          engine.getMaxInstances(),
-          "getMaxInstances should return MAX_VALUE (placeholder)");
+      assertThrows(
+          UnsupportedOperationException.class,
+          engine::getMaxInstances,
+          "getMaxInstances should throw UnsupportedOperationException");
     }
   }
 
