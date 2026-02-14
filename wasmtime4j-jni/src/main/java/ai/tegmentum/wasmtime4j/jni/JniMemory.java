@@ -4,8 +4,6 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import ai.tegmentum.wasmtime4j.memory.Memory64Instruction;
-import ai.tegmentum.wasmtime4j.memory.Memory64InstructionHandler;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -30,9 +28,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
   private volatile long lastBufferCheck = 0;
   private static final long BUFFER_CACHE_VALIDITY_MS = 100; // Cache buffer for 100ms
   private static final int BULK_OPERATION_THRESHOLD = 1024; // Use bulk operations for >= 1KB
-
-  // Memory64 instruction support
-  private final Memory64InstructionHandler instructionHandler = new Memory64InstructionHandler();
 
   // Store reference for atomic operations
   private final JniStore store;
@@ -1643,81 +1638,4 @@ public final class JniMemory extends JniResource implements WasmMemory {
   private static native void nativeMemoryInit64(
       long memoryHandle, long destOffset, int dataSegmentIndex, long srcOffset, long length);
 
-  // Memory64 Instruction Support
-
-  /**
-   * Executes a Memory64 instruction by opcode.
-   *
-   * @param opcode the instruction opcode
-   * @param offset the memory offset (64-bit)
-   * @param value the value for store operations (ignored for loads)
-   * @return the result value for load operations, or 0 for store/control operations
-   * @throws UnsupportedOperationException if the instruction or memory doesn't support 64-bit
-   * @throws IndexOutOfBoundsException if the operation is out of bounds
-   * @throws IllegalArgumentException if parameters are invalid
-   */
-  public long executeMemory64Instruction(final int opcode, final long offset, final long value) {
-    return instructionHandler.executeByOpcode(opcode, this, offset, value);
-  }
-
-  /**
-   * Executes a Memory64 instruction by mnemonic.
-   *
-   * @param mnemonic the instruction mnemonic
-   * @param offset the memory offset (64-bit)
-   * @param value the value for store operations (ignored for loads)
-   * @return the result value for load operations, or 0 for store/control operations
-   * @throws UnsupportedOperationException if the instruction or memory doesn't support 64-bit
-   * @throws IndexOutOfBoundsException if the operation is out of bounds
-   * @throws IllegalArgumentException if parameters are invalid
-   */
-  public long executeMemory64Instruction(
-      final String mnemonic, final long offset, final long value) {
-    return instructionHandler.executeByMnemonic(mnemonic, this, offset, value);
-  }
-
-  /**
-   * Executes a Memory64 instruction directly.
-   *
-   * @param instruction the instruction to execute
-   * @param offset the memory offset (64-bit)
-   * @param value the value for store operations (ignored for loads)
-   * @return the result value for load operations, or 0 for store/control operations
-   * @throws UnsupportedOperationException if the instruction or memory doesn't support 64-bit
-   * @throws IndexOutOfBoundsException if the operation is out of bounds
-   * @throws IllegalArgumentException if parameters are invalid
-   */
-  public long executeMemory64Instruction(
-      final Memory64Instruction instruction, final long offset, final long value) {
-    return instructionHandler.executeInstruction(instruction, this, offset, value);
-  }
-
-  /**
-   * Checks if a Memory64 instruction is supported by this memory implementation.
-   *
-   * @param opcode the instruction opcode
-   * @return true if the instruction is supported
-   */
-  public boolean isMemory64InstructionSupported(final int opcode) {
-    return supports64BitAddressing() && instructionHandler.isInstructionSupported(opcode);
-  }
-
-  /**
-   * Checks if a Memory64 instruction is supported by this memory implementation.
-   *
-   * @param mnemonic the instruction mnemonic
-   * @return true if the instruction is supported
-   */
-  public boolean isMemory64InstructionSupported(final String mnemonic) {
-    return supports64BitAddressing() && instructionHandler.isInstructionSupported(mnemonic);
-  }
-
-  /**
-   * Gets execution statistics for Memory64 instructions.
-   *
-   * @return the execution statistics
-   */
-  public Memory64InstructionHandler.ExecutionStatistics getMemory64InstructionStatistics() {
-    return instructionHandler.getStatistics();
-  }
 }
