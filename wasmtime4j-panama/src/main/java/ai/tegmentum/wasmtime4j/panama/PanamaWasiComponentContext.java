@@ -223,16 +223,6 @@ public final class PanamaWasiComponentContext implements WasiComponentContext {
     return !resourceHandle.isClosed() && resourceManager.isValid() && componentEngine.isValid();
   }
 
-  @Override
-  public ai.tegmentum.wasmtime4j.wasi.WasiFilesystem getFilesystem() throws WasmException {
-    ensureNotClosed();
-
-    // Create a filesystem rooted at the current working directory
-    // In a real deployment, this would be configured with proper sandbox paths
-    final java.nio.file.Path rootPath = java.nio.file.Paths.get(System.getProperty("user.dir"));
-    return new PanamaWasiFilesystem(rootPath);
-  }
-
   /**
    * Gets the number of active component instances managed by this context.
    *

@@ -47,17 +47,6 @@ public interface WasiComponentContext extends Closeable {
   WasiRuntimeInfo getRuntimeInfo();
 
   /**
-   * Gets the filesystem interface for this WASI context.
-   *
-   * <p>The filesystem interface provides access to all file and directory operations within the
-   * capability-based security model of this WASI context.
-   *
-   * @return the filesystem interface
-   * @throws WasmException if the filesystem interface cannot be accessed
-   */
-  WasiFilesystem getFilesystem() throws WasmException;
-
-  /**
    * Checks if the WASI context is still valid and usable.
    *
    * @return true if the context is valid, false otherwise

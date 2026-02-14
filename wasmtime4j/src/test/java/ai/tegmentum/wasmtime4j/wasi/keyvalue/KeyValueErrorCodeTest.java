@@ -148,8 +148,16 @@ class KeyValueErrorCodeTest {
       }
       assertTrue(
           Arrays.asList(
-                  "unknown", "key_not_found", "key_exists", "invalid_key", "invalid_value",
-                  "capacity_exceeded", "not_permitted", "connection_failed", "read_only", "timeout",
+                  "unknown",
+                  "key_not_found",
+                  "key_exists",
+                  "invalid_key",
+                  "invalid_value",
+                  "capacity_exceeded",
+                  "not_permitted",
+                  "connection_failed",
+                  "read_only",
+                  "timeout",
                   "internal_error")
               .contains(result),
           "Switch should handle " + code + " but got: " + result);

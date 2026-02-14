@@ -191,15 +191,6 @@ public interface WasiInstanceStats {
   int getPendingAsyncOperationCount();
 
   /**
-   * Gets file system operation statistics.
-   *
-   * <p>Includes read/write counts, bytes transferred, and operation times.
-   *
-   * @return file system statistics
-   */
-  WasiFileSystemStats getFileSystemStats();
-
-  /**
    * Gets network operation statistics.
    *
    * <p>Includes connection counts, bytes sent/received, and operation times.

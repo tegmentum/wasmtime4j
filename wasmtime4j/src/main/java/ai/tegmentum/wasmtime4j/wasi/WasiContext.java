@@ -260,23 +260,6 @@ public interface WasiContext {
   WasiContext setFilesystemWorkingDir(Path workingDir);
 
   /**
-   * Grants the WASI module access to a directory with specific permissions.
-   *
-   * <p>This is an enhanced version of preopenedDir that allows fine-grained permission control for
-   * WASI Preview 2.
-   *
-   * @param hostPath the path on the host file system to grant access to
-   * @param guestPath the path that the WebAssembly module will use to access the directory
-   * @param permissions the permissions to grant (read, write, create, etc.)
-   * @return this WasiContext for method chaining
-   * @throws WasmException if the directory cannot be accessed or mapped
-   * @throws IllegalArgumentException if any parameter is null
-   * @since 1.0.0
-   */
-  WasiContext preopenedDirWithPermissions(
-      Path hostPath, String guestPath, WasiDirectoryPermissions permissions) throws WasmException;
-
-  /**
    * Enables output capture for stdout and stderr.
    *
    * <p>When output capture is enabled, stdout and stderr output from the WebAssembly module is

@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -444,45 +443,6 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     }
   }
 
-  @Override
-  public WasiContext preopenedDirWithPermissions(
-      Path hostPath, String guestPath, WasiDirectoryPermissions permissions) throws WasmException {
-    if (hostPath == null) {
-      throw new IllegalArgumentException("Host path cannot be null");
-    }
-    if (guestPath == null) {
-      throw new IllegalArgumentException("Guest path cannot be null");
-    }
-    if (permissions == null) {
-      throw new IllegalArgumentException("Permissions cannot be null");
-    }
-    ensureNotClosed();
-
-    try {
-      final int result =
-          nativePreopenedDirWithPermissions(
-              nativeHandle,
-              hostPath.toString(),
-              guestPath,
-              permissions.canRead(),
-              permissions.canWrite(),
-              permissions.canCreate(),
-              permissions.canDelete(),
-              permissions.canList(),
-              permissions.canTraverse(),
-              permissions.canAccessMetadata());
-      if (result != 0) {
-        throw new WasmException("Failed to add preopened directory with permissions");
-      }
-      return this;
-    } catch (Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
-      }
-      throw new WasmException("Failed to add preopened directory with permissions", e);
-    }
-  }
-
   // ===== Output Capture methods =====
 
   @Override
@@ -579,18 +539,6 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   private static native int nativeSetProcessEnabled(long contextHandle, boolean enabled);
 
   private static native int nativeSetFilesystemWorkingDir(long contextHandle, String workingDir);
-
-  private static native int nativePreopenedDirWithPermissions(
-      long contextHandle,
-      String hostPath,
-      String guestPath,
-      boolean canRead,
-      boolean canWrite,
-      boolean canCreate,
-      boolean canDelete,
-      boolean canList,
-      boolean canTraverse,
-      boolean canAccessMetadata);
 
   private static native void nativeCleanup(long contextHandle);
 

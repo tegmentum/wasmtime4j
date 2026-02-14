@@ -22,8 +22,8 @@ import java.util.Set;
 /**
  * WASI-keyvalue interface providing key-value store operations.
  *
- * <p>This interface maps to the WASI Key-Value proposal ({@code wasi:keyvalue/store}) providing core
- * CRUD operations for key-value storage.
+ * <p>This interface maps to the WASI Key-Value proposal ({@code wasi:keyvalue/store}) providing
+ * core CRUD operations for key-value storage.
  *
  * @since 1.0.0
  */

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponentContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiFilesystem;
 import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeInfo;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -90,14 +89,6 @@ class PanamaWasiComponentContextTest {
       final Method method = PanamaWasiComponentContext.class.getMethod("isValid");
       assertNotNull(method, "isValid method should exist");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have getFilesystem method")
-    void shouldHaveGetFilesystemMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiComponentContext.class.getMethod("getFilesystem");
-      assertNotNull(method, "getFilesystem method should exist");
-      assertEquals(WasiFilesystem.class, method.getReturnType(), "Should return WasiFilesystem");
     }
 
     @Test

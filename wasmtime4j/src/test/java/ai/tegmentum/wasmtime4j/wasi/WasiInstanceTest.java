@@ -472,11 +472,6 @@ class WasiInstanceTest {
           }
 
           @Override
-          public WasiFileSystemStats getFileSystemStats() {
-            throw new UnsupportedOperationException("Not implemented for test");
-          }
-
-          @Override
           public WasiNetworkStats getNetworkStats() {
             throw new UnsupportedOperationException("Not implemented for test");
           }

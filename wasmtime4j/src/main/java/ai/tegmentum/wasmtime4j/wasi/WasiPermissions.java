@@ -7,8 +7,7 @@ package ai.tegmentum.wasmtime4j.wasi;
  * within the WASI sandbox. These permissions control read, write, and execute access for the owner,
  * group, and other users.
  *
- * <p>Permissions are used when creating files and directories, and can be modified using {@link
- * WasiFilesystem#setFilePermissions} operations where the WASI context allows.
+ * <p>Permissions are used when creating files and directories within the WASI sandbox.
  *
  * <p>Example usage:
  *

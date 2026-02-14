@@ -22,7 +22,6 @@ import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
-import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceState;
@@ -1015,11 +1014,6 @@ public final class PanamaWasiInstance implements WasiInstance {
       }
 
       @Override
-      public WasiFileSystemStats getFileSystemStats() {
-        return createEmptyFileSystemStats();
-      }
-
-      @Override
       public WasiNetworkStats getNetworkStats() {
         return createEmptyNetworkStats();
       }
@@ -1164,40 +1158,6 @@ public final class PanamaWasiInstance implements WasiInstance {
 
       @Override
       public long getErrorCount() {
-        return 0;
-      }
-    };
-  }
-
-  private WasiFileSystemStats createEmptyFileSystemStats() {
-    return new WasiFileSystemStats() {
-      @Override
-      public long getReadOperations() {
-        return 0;
-      }
-
-      @Override
-      public long getWriteOperations() {
-        return 0;
-      }
-
-      @Override
-      public long getBytesRead() {
-        return 0;
-      }
-
-      @Override
-      public long getBytesWritten() {
-        return 0;
-      }
-
-      @Override
-      public long getFileOpenCount() {
-        return 0;
-      }
-
-      @Override
-      public int getCurrentOpenFiles() {
         return 0;
       }
     };

@@ -4,7 +4,6 @@ import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
-import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceState;
@@ -1015,11 +1014,6 @@ public final class JniWasiInstance implements WasiInstance {
       }
 
       @Override
-      public WasiFileSystemStats getFileSystemStats() {
-        return createPlaceholderFileSystemStats();
-      }
-
-      @Override
       public WasiNetworkStats getNetworkStats() {
         return createPlaceholderNetworkStats();
       }
@@ -1076,45 +1070,6 @@ public final class JniWasiInstance implements WasiInstance {
       public void reset() {
         // For now, no-op since we're not tracking detailed statistics
         // TODO: Implement actual statistics reset when tracking is added
-      }
-    };
-  }
-
-  /**
-   * Creates placeholder file system statistics.
-   *
-   * @return placeholder file system statistics
-   */
-  private WasiFileSystemStats createPlaceholderFileSystemStats() {
-    return new WasiFileSystemStats() {
-      @Override
-      public long getReadOperations() {
-        return 0;
-      }
-
-      @Override
-      public long getWriteOperations() {
-        return 0;
-      }
-
-      @Override
-      public long getBytesRead() {
-        return 0;
-      }
-
-      @Override
-      public long getBytesWritten() {
-        return 0;
-      }
-
-      @Override
-      public long getFileOpenCount() {
-        return 0;
-      }
-
-      @Override
-      public int getCurrentOpenFiles() {
-        return 0;
       }
     };
   }

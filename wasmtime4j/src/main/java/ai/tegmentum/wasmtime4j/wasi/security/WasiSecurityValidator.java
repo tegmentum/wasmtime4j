@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.wasi.security;
 
 import ai.tegmentum.wasmtime4j.util.Validation;
-import ai.tegmentum.wasmtime4j.wasi.exception.WasiPermissionException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
@@ -108,7 +107,7 @@ public final class WasiSecurityValidator {
    * security vulnerabilities.
    *
    * @param path the path to validate
-   * @throws WasiPermissionException if the path is not safe
+   * @throws IllegalArgumentException if the path is not safe
    * @throws IllegalArgumentException if path is null
    */
   public void validatePath(final Path path) {
@@ -121,26 +120,26 @@ public final class WasiSecurityValidator {
     // Check path length
     if (pathString.length() > maxPathLength) {
       LOGGER.warning(String.format("Path too long: %d > %d", pathString.length(), maxPathLength));
-      throw new WasiPermissionException(
+      throw new IllegalArgumentException(
           String.format("Path exceeds maximum length: %d", maxPathLength));
     }
 
     // Check for path traversal patterns
     if (PATH_TRAVERSAL_PATTERN.matcher(pathString).find()) {
       LOGGER.warning(String.format("Path traversal attempt detected: %s", pathString));
-      throw new WasiPermissionException("Path traversal attempt detected");
+      throw new IllegalArgumentException("Path traversal attempt detected");
     }
 
     // Check for dangerous path patterns
     if (DANGEROUS_PATH_PATTERN.matcher(pathString).find()) {
       LOGGER.warning(String.format("Dangerous path pattern detected: %s", pathString));
-      throw new WasiPermissionException("Dangerous path pattern detected");
+      throw new IllegalArgumentException("Dangerous path pattern detected");
     }
 
     // Check absolute path policy
     if (path.isAbsolute() && !allowAbsolutePaths) {
       LOGGER.warning(String.format("Absolute path not allowed: %s", pathString));
-      throw new WasiPermissionException("Absolute paths are not allowed");
+      throw new IllegalArgumentException("Absolute paths are not allowed");
     }
 
     // Check individual path components
@@ -148,7 +147,7 @@ public final class WasiSecurityValidator {
       final String componentString = component.toString();
       if (forbiddenPathComponents.contains(componentString)) {
         LOGGER.warning(String.format("Forbidden path component detected: %s", componentString));
-        throw new WasiPermissionException(
+        throw new IllegalArgumentException(
             String.format("Forbidden path component: %s", componentString));
       }
     }
@@ -160,7 +159,7 @@ public final class WasiSecurityValidator {
    * Validates that an environment variable name is safe for access.
    *
    * @param name the environment variable name to validate
-   * @throws WasiPermissionException if the environment variable is not accessible
+   * @throws IllegalArgumentException if the environment variable is not accessible
    * @throws IllegalArgumentException if name is null or empty
    */
   public void validateEnvironmentAccess(final String name) {
@@ -171,7 +170,7 @@ public final class WasiSecurityValidator {
     // Check forbidden names
     if (forbiddenEnvironmentNames.contains(name)) {
       LOGGER.warning(String.format("Access to forbidden environment variable: %s", name));
-      throw new WasiPermissionException(
+      throw new IllegalArgumentException(
           String.format("Access to environment variable '%s' is forbidden", name));
     }
 
@@ -188,7 +187,7 @@ public final class WasiSecurityValidator {
       if (!allowed) {
         LOGGER.warning(
             String.format("Environment variable does not match allowed patterns: %s", name));
-        throw new WasiPermissionException(
+        throw new IllegalArgumentException(
             String.format("Environment variable '%s' does not match allowed patterns", name));
       }
     }
@@ -200,7 +199,7 @@ public final class WasiSecurityValidator {
    * Validates that a resource identifier is safe for use.
    *
    * @param resourceId the resource identifier to validate
-   * @throws WasiPermissionException if the resource identifier is not safe
+   * @throws IllegalArgumentException if the resource identifier is not safe
    */
   public void validateResourceAccess(final String resourceId) {
     Validation.requireNonEmpty(resourceId, "resourceId");
@@ -210,13 +209,13 @@ public final class WasiSecurityValidator {
     // Check for null bytes and control characters
     if (resourceId.contains("\0") || resourceId.chars().anyMatch(Character::isISOControl)) {
       LOGGER.warning(String.format("Invalid characters in resource identifier: %s", resourceId));
-      throw new WasiPermissionException("Resource identifier contains invalid characters");
+      throw new IllegalArgumentException("Resource identifier contains invalid characters");
     }
 
     // Check length
     if (resourceId.length() > 255) {
       LOGGER.warning(String.format("Resource identifier too long: %d", resourceId.length()));
-      throw new WasiPermissionException("Resource identifier exceeds maximum length");
+      throw new IllegalArgumentException("Resource identifier exceeds maximum length");
     }
 
     LOGGER.fine(String.format("Resource access validated: %s", resourceId));

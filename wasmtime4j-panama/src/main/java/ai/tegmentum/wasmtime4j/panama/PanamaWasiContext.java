@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -362,39 +361,6 @@ public final class PanamaWasiContext implements WasiContext {
     // Filesystem working directory requires additional native binding
     // For now, this is a no-op that doesn't fail
     ensureNotClosed();
-    return this;
-  }
-
-  @Override
-  public WasiContext preopenedDirWithPermissions(
-      final Path hostPath, final String guestPath, final WasiDirectoryPermissions permissions)
-      throws WasmException {
-    if (hostPath == null) {
-      throw new IllegalArgumentException("Host path cannot be null");
-    }
-    if (guestPath == null) {
-      throw new IllegalArgumentException("Guest path cannot be null");
-    }
-    if (permissions == null) {
-      throw new IllegalArgumentException("Permissions cannot be null");
-    }
-    ensureNotClosed();
-
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment hostPathStr = arena.allocateFrom(hostPath.toString());
-      final MemorySegment guestPathStr = arena.allocateFrom(guestPath);
-
-      final int canRead = permissions.canRead() ? 1 : 0;
-      final int canWrite = permissions.canWrite() ? 1 : 0;
-      final int canCreate = permissions.canCreate() ? 1 : 0;
-
-      final int result =
-          NATIVE_BINDINGS.wasiContextPreopenDirWithPerms(
-              contextHandle, hostPathStr, guestPathStr, canRead, canWrite, canCreate);
-      if (result != 0) {
-        throw new WasmException("Failed to add pre-opened directory with custom permissions");
-      }
-    }
     return this;
   }
 

@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -278,24 +277,6 @@ class PanamaWasiContextTest {
       assertTrue(
           Arrays.asList(method.getExceptionTypes()).contains(WasmException.class),
           "preopenedDirReadOnly should throw WasmException");
-    }
-
-    @Test
-    @DisplayName("should have preopenedDirWithPermissions method")
-    void shouldHavePreopenedDirWithPermissionsMethod() throws NoSuchMethodException {
-      Method method =
-          PanamaWasiContext.class.getMethod(
-              "preopenedDirWithPermissions",
-              Path.class,
-              String.class,
-              WasiDirectoryPermissions.class);
-      assertNotNull(method, "preopenedDirWithPermissions method should exist");
-      assertEquals(
-          WasiContext.class,
-          method.getReturnType(),
-          "preopenedDirWithPermissions should return WasiContext");
-      assertEquals(
-          3, method.getParameterCount(), "preopenedDirWithPermissions should have 3 parameters");
     }
   }
 

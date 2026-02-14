@@ -8,18 +8,13 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
-import ai.tegmentum.wasmtime4j.wasi.WasiDirectoryPermissions;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.EnabledIf;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration tests for WASI Preview 2 functionality.
@@ -29,7 +24,6 @@ import org.junit.jupiter.api.io.TempDir;
  * <ul>
  *   <li>Component model integration
  *   <li>Async I/O operations
- *   <li>Enhanced filesystem permissions
  *   <li>Network operations (where supported)
  *   <li>Process management
  *   <li>Resource management and cleanup
@@ -42,8 +36,6 @@ public class WasiPreview2IntegrationTest {
 
   private WasmRuntime runtime;
   private Engine engine;
-
-  @TempDir Path tempDir;
 
   @BeforeEach
   void setUp(TestInfo testInfo) {
@@ -126,42 +118,6 @@ public class WasiPreview2IntegrationTest {
         "Linker should have component model imports");
 
     LOGGER.info("Successfully validated component model support");
-  }
-
-  @Test
-  void testEnhancedFilesystemPermissions() throws WasmException, IOException {
-    // Create test directories
-    Path readOnlyDir = tempDir.resolve("readonly");
-    Path readWriteDir = tempDir.resolve("readwrite");
-    Files.createDirectories(readOnlyDir);
-    Files.createDirectories(readWriteDir);
-
-    // Create test files
-    Path readOnlyFile = readOnlyDir.resolve("readonly.txt");
-    Path readWriteFile = readWriteDir.resolve("readwrite.txt");
-    Files.writeString(readOnlyFile, "Read-only content");
-    Files.writeString(readWriteFile, "Read-write content");
-
-    WasiContext context = runtime.createWasiContext().setAsyncIoEnabled(true);
-
-    // Add directories with specific permissions
-    WasiDirectoryPermissions readOnlyPerms = WasiDirectoryPermissions.readOnly();
-    WasiDirectoryPermissions readWritePerms = WasiDirectoryPermissions.readWrite();
-
-    assertDoesNotThrow(
-        () -> {
-          context.preopenedDirWithPermissions(readOnlyDir, "/readonly", readOnlyPerms);
-          context.preopenedDirWithPermissions(readWriteDir, "/readwrite", readWritePerms);
-        },
-        "Setting directory permissions should not throw");
-
-    // Validate permission configurations
-    assertTrue(readOnlyPerms.canRead(), "Read-only permissions should allow reading");
-    assertFalse(readOnlyPerms.canWrite(), "Read-only permissions should not allow writing");
-    assertTrue(readWritePerms.canRead(), "Read-write permissions should allow reading");
-    assertTrue(readWritePerms.canWrite(), "Read-write permissions should allow writing");
-
-    LOGGER.info("Successfully configured enhanced filesystem permissions");
   }
 
   @Test
@@ -269,37 +225,6 @@ public class WasiPreview2IntegrationTest {
   }
 
   @Test
-  void testDirectoryPermissionsBuilder() {
-    // Test permission builder patterns
-    WasiDirectoryPermissions customPerms =
-        WasiDirectoryPermissions.builder()
-            .allowRead()
-            .allowList()
-            .allowTraverse()
-            .allowMetadata()
-            .build();
-
-    assertTrue(customPerms.canRead(), "Custom permissions should allow reading");
-    assertTrue(customPerms.canList(), "Custom permissions should allow listing");
-    assertTrue(customPerms.canTraverse(), "Custom permissions should allow traversal");
-    assertTrue(customPerms.canAccessMetadata(), "Custom permissions should allow metadata access");
-    assertFalse(customPerms.canWrite(), "Custom permissions should not allow writing");
-    assertFalse(customPerms.canCreate(), "Custom permissions should not allow creation");
-    assertFalse(customPerms.canDelete(), "Custom permissions should not allow deletion");
-
-    // Test pre-built permission sets
-    WasiDirectoryPermissions readOnly = WasiDirectoryPermissions.readOnly();
-    WasiDirectoryPermissions readWrite = WasiDirectoryPermissions.readWrite();
-    WasiDirectoryPermissions none = WasiDirectoryPermissions.none();
-    WasiDirectoryPermissions full = WasiDirectoryPermissions.full();
-
-    assertNotEquals(readOnly, readWrite, "Read-only and read-write permissions should differ");
-    assertNotEquals(none, full, "No permissions and full permissions should differ");
-
-    LOGGER.info("Successfully validated directory permissions builder");
-  }
-
-  @Test
   void testErrorHandlingInPreview2() throws WasmException {
     WasiContext context = runtime.createWasiContext();
 
@@ -317,28 +242,6 @@ public class WasiPreview2IntegrationTest {
           context.setAsyncTimeout(-2);
         },
         "Invalid async timeout should throw");
-
-    // Test null parameters
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          context.preopenedDirWithPermissions(null, "/test", WasiDirectoryPermissions.readOnly());
-        },
-        "Null host path should throw");
-
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          context.preopenedDirWithPermissions(tempDir, null, WasiDirectoryPermissions.readOnly());
-        },
-        "Null guest path should throw");
-
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          context.preopenedDirWithPermissions(tempDir, "/test", null);
-        },
-        "Null permissions should throw");
 
     LOGGER.info("Successfully validated error handling in WASI Preview 2");
   }
