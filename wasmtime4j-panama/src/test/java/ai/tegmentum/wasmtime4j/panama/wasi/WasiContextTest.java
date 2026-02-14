@@ -20,8 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
-import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Method;
@@ -91,19 +89,8 @@ class WasiContextTest {
   }
 
   @Nested
-  @DisplayName("Permission Method Tests")
-  class PermissionMethodTests {
-
-    @Test
-    @DisplayName("should have getPermissionManager method")
-    void shouldHaveGetPermissionManagerMethod() throws NoSuchMethodException {
-      final Method method = WasiContext.class.getMethod("getPermissionManager");
-      assertNotNull(method, "getPermissionManager method should exist");
-      assertEquals(
-          WasiPermissionManager.class,
-          method.getReturnType(),
-          "Should return WasiPermissionManager");
-    }
+  @DisplayName("Security Method Tests")
+  class SecurityMethodTests {
 
     @Test
     @DisplayName("should have getSecurityValidator method")
@@ -181,15 +168,6 @@ class WasiContextTest {
     void shouldHaveValidatePathMethod() throws NoSuchMethodException {
       final Method method = WasiContext.class.getMethod("validatePath", String.class);
       assertNotNull(method, "validatePath(String) method should exist");
-      assertEquals(Path.class, method.getReturnType(), "Should return Path");
-    }
-
-    @Test
-    @DisplayName("should have validatePath method with operation")
-    void shouldHaveValidatePathWithOperationMethod() throws NoSuchMethodException {
-      final Method method =
-          WasiContext.class.getMethod("validatePath", String.class, WasiFileOperation.class);
-      assertNotNull(method, "validatePath(String, WasiFileOperation) method should exist");
       assertEquals(Path.class, method.getReturnType(), "Should return Path");
     }
   }

@@ -3,8 +3,6 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiPermissionManager;
-import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,9 +33,6 @@ public final class WasiContext extends JniResource {
 
   private static final Logger LOGGER = Logger.getLogger(WasiContext.class.getName());
 
-  /** Permission manager for controlling WASI capabilities. */
-  private final WasiPermissionManager permissionManager;
-
   /** Security validator for preventing unauthorized access. */
   private final WasiSecurityValidator securityValidator;
 
@@ -65,7 +60,6 @@ public final class WasiContext extends JniResource {
 
     JniValidation.requireNonNull(builder, "builder");
 
-    this.permissionManager = builder.getPermissionManager();
     this.securityValidator = builder.getSecurityValidator();
     this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
     this.arguments = builder.getArguments().toArray(new String[0]);
@@ -77,16 +71,6 @@ public final class WasiContext extends JniResource {
             "Created WASI context with %d preopen directories, %d environment variables, %d"
                 + " arguments",
             preopenedDirectories.size(), environment.size(), arguments.length));
-  }
-
-  /**
-   * Gets the permission manager for this WASI context.
-   *
-   * @return the permission manager
-   */
-  public WasiPermissionManager getPermissionManager() {
-    ensureNotClosed();
-    return permissionManager;
   }
 
   /**
@@ -169,6 +153,9 @@ public final class WasiContext extends JniResource {
   /**
    * Validates that a file path is accessible within the sandbox.
    *
+   * <p>Security validation checks for path traversal attacks. Filesystem sandboxing is enforced by
+   * the Wasmtime native runtime through pre-opened directory configuration.
+   *
    * @param path the file path to validate
    * @return the resolved and validated path
    * @throws JniException if the path is not accessible or validation fails
@@ -184,31 +171,7 @@ public final class WasiContext extends JniResource {
     // Security validation - check for path traversal attacks
     securityValidator.validatePath(resolvedPath);
 
-    // Permission validation - check sandbox access
-    permissionManager.validateFileSystemAccess(resolvedPath);
-
     return resolvedPath.normalize().toAbsolutePath();
-  }
-
-  /**
-   * Validates that a file path is accessible for the specified operation.
-   *
-   * @param path the file path to validate
-   * @param operation the file operation type
-   * @return the resolved and validated path
-   * @throws JniException if the path is not accessible or validation fails
-   */
-  public Path validatePath(final String path, final WasiFileOperation operation) {
-    ensureNotClosed();
-    JniValidation.requireNonEmpty(path, "path");
-    JniValidation.requireNonNull(operation, "operation");
-
-    final Path resolvedPath = validatePath(path);
-
-    // Additional permission validation for specific operation
-    permissionManager.validateFileSystemAccess(resolvedPath, operation);
-
-    return resolvedPath;
   }
 
   /**

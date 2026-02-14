@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import ai.tegmentum.wasmtime4j.jni.wasi.permission.WasiPermissionManager;
 import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,7 +34,6 @@ import java.util.logging.Logger;
  *     .withArgument("--verbose")
  *     .withPreopenDirectory("/tmp", "/host/tmp")
  *     .withWorkingDirectory("/app")
- *     .withPermissionManager(permissionManager)
  *     .build();
  * }</pre>
  *
@@ -59,9 +57,6 @@ public final class WasiContextBuilder {
 
   /** Working directory for the WASI context. */
   private Path workingDirectory = Paths.get(DEFAULT_WORKING_DIR);
-
-  /** Permission manager for controlling WASI capabilities. */
-  private WasiPermissionManager permissionManager = WasiPermissionManager.defaultManager();
 
   /** Security validator for preventing unauthorized access. */
   private WasiSecurityValidator securityValidator = WasiSecurityValidator.defaultValidator();
@@ -213,22 +208,6 @@ public final class WasiContextBuilder {
   }
 
   /**
-   * Sets the permission manager for controlling WASI capabilities.
-   *
-   * @param manager the permission manager to use
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if manager is null
-   */
-  public WasiContextBuilder withPermissionManager(final WasiPermissionManager manager) {
-    JniValidation.requireNonNull(manager, "manager");
-
-    this.permissionManager = manager;
-    LOGGER.fine("Set custom permission manager");
-
-    return this;
-  }
-
-  /**
    * Sets the security validator for preventing unauthorized access.
    *
    * @param validator the security validator to use
@@ -280,15 +259,6 @@ public final class WasiContextBuilder {
   }
 
   /**
-   * Gets the permission manager.
-   *
-   * @return the permission manager
-   */
-  WasiPermissionManager getPermissionManager() {
-    return permissionManager;
-  }
-
-  /**
    * Gets the security validator.
    *
    * @return the security validator
@@ -333,18 +303,19 @@ public final class WasiContextBuilder {
     return workingDirectory;
   }
 
-  /** Validates the configuration before creating the WASI context. */
+  /**
+   * Validates the configuration before creating the WASI context.
+   *
+   * <p>Filesystem sandboxing is enforced by the Wasmtime native runtime through pre-opened
+   * directory configuration.
+   */
   private void validateConfiguration() {
-    // Validate pre-opened directories
+    // Validate pre-opened directories for path traversal attacks
     for (final Map.Entry<String, Path> entry : preopenedDirectories.entrySet()) {
       final String guestDir = entry.getKey();
-      final Path hostPath = entry.getValue();
 
       // Validate guest directory path
       securityValidator.validatePath(Paths.get(guestDir));
-
-      // Validate host directory accessibility
-      permissionManager.validateFileSystemAccess(hostPath);
     }
 
     // Validate working directory

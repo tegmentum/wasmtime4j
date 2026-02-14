@@ -2,9 +2,6 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiPermissionException;
-import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
-import ai.tegmentum.wasmtime4j.wasi.WasiFileOperation;
 import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
@@ -44,9 +41,6 @@ public final class WasiContext implements AutoCloseable {
 
   /** Resource manager for native memory management. */
   private final ArenaResourceManager resourceManager;
-
-  /** Permission manager for controlling WASI capabilities. */
-  private final WasiPermissionManager permissionManager;
 
   /** Security validator for preventing unauthorized access. */
   private final WasiSecurityValidator securityValidator;
@@ -90,7 +84,6 @@ public final class WasiContext implements AutoCloseable {
 
     this.nativeHandle = nativeHandle;
     this.resourceManager = resourceManager;
-    this.permissionManager = builder.getPermissionManager();
     this.securityValidator = builder.getSecurityValidator();
     this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
     this.arguments = builder.getArguments().toArray(new String[0]);
@@ -139,17 +132,6 @@ public final class WasiContext implements AutoCloseable {
   }
 
   /**
-   * Gets the permission manager for this WASI context.
-   *
-   * @return the permission manager
-   * @throws IllegalStateException if the context is closed
-   */
-  public WasiPermissionManager getPermissionManager() {
-    ensureNotClosed();
-    return permissionManager;
-  }
-
-  /**
    * Gets the security validator for this WASI context.
    *
    * @return the security validator
@@ -167,9 +149,8 @@ public final class WasiContext implements AutoCloseable {
    * @return the environment variable value, or null if not set
    * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if the context is closed
-   * @throws WasiPermissionException if access is denied
    */
-  public String getEnvironmentVariable(final String name) throws WasiPermissionException {
+  public String getEnvironmentVariable(final String name) {
     ensureNotClosed();
 
     if (name == null || name.isEmpty()) {
@@ -235,14 +216,16 @@ public final class WasiContext implements AutoCloseable {
   /**
    * Validates that a file path is accessible within the sandbox.
    *
+   * <p>Security validation checks for path traversal attacks. Filesystem sandboxing is enforced by
+   * the Wasmtime native runtime through pre-opened directory configuration.
+   *
    * @param path the file path to validate
    * @return the resolved and validated path
    * @throws IllegalArgumentException if path is null or empty
    * @throws IllegalStateException if the context is closed
    * @throws RuntimeException if the path is not accessible or validation fails
-   * @throws WasiPermissionException if access is denied
    */
-  public Path validatePath(final String path) throws WasiPermissionException {
+  public Path validatePath(final String path) {
     ensureNotClosed();
 
     if (path == null || path.isEmpty()) {
@@ -254,39 +237,7 @@ public final class WasiContext implements AutoCloseable {
     // Security validation - check for path traversal attacks
     securityValidator.validatePath(resolvedPath);
 
-    // Permission validation - check sandbox access
-    permissionManager.validateFileSystemAccess(resolvedPath);
-
     return resolvedPath.normalize().toAbsolutePath();
-  }
-
-  /**
-   * Validates that a file path is accessible for the specified operation.
-   *
-   * @param path the file path to validate
-   * @param operation the file operation type
-   * @return the resolved and validated path
-   * @throws IllegalArgumentException if path or operation is null/empty
-   * @throws IllegalStateException if the context is closed
-   * @throws RuntimeException if the path is not accessible or validation fails
-   */
-  public Path validatePath(final String path, final WasiFileOperation operation)
-      throws WasiPermissionException {
-    ensureNotClosed();
-
-    if (path == null || path.isEmpty()) {
-      throw new IllegalArgumentException("Path cannot be null or empty");
-    }
-    if (operation == null) {
-      throw new IllegalArgumentException("Operation cannot be null");
-    }
-
-    final Path resolvedPath = validatePath(path);
-
-    // Additional permission validation for specific operation
-    permissionManager.validateFileSystemAccess(resolvedPath, operation);
-
-    return resolvedPath;
   }
 
   /**

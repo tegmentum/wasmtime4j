@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
-import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiPermissionException;
-import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
 import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -39,7 +37,6 @@ import java.util.logging.Logger;
  *     .withArgument("--verbose")
  *     .withPreopenDirectory("/tmp", "/host/tmp")
  *     .withWorkingDirectory("/app")
- *     .withPermissionManager(permissionManager)
  *     .build();
  * }</pre>
  *
@@ -63,9 +60,6 @@ public final class WasiContextBuilder {
 
   /** Working directory for the WASI context. */
   private Path workingDirectory = Paths.get(DEFAULT_WORKING_DIR);
-
-  /** Permission manager for controlling WASI capabilities. */
-  private WasiPermissionManager permissionManager = WasiPermissionManager.defaultManager();
 
   /** Security validator for preventing unauthorized access. */
   private WasiSecurityValidator securityValidator = WasiSecurityValidator.defaultValidator();
@@ -233,24 +227,6 @@ public final class WasiContextBuilder {
   }
 
   /**
-   * Sets the permission manager for controlling WASI capabilities.
-   *
-   * @param manager the permission manager to use
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if manager is null
-   */
-  public WasiContextBuilder withPermissionManager(final WasiPermissionManager manager) {
-    if (manager == null) {
-      throw new IllegalArgumentException("Permission manager cannot be null");
-    }
-
-    this.permissionManager = manager;
-    LOGGER.fine("Set custom permission manager");
-
-    return this;
-  }
-
-  /**
    * Sets the security validator for preventing unauthorized access.
    *
    * @param validator the security validator to use
@@ -273,9 +249,8 @@ public final class WasiContextBuilder {
    *
    * @return the configured WASI context
    * @throws RuntimeException if the WASI context cannot be created
-   * @throws WasiPermissionException if configuration validation fails
    */
-  public WasiContext build() throws WasiPermissionException {
+  public WasiContext build() {
     LOGGER.info(
         String.format(
             "Building Panama WASI context with %d environment variables, %d arguments, %d preopen"
@@ -315,15 +290,6 @@ public final class WasiContextBuilder {
 
       throw new RuntimeException("Failed to create Panama WASI context: " + e.getMessage(), e);
     }
-  }
-
-  /**
-   * Gets the permission manager.
-   *
-   * @return the permission manager
-   */
-  WasiPermissionManager getPermissionManager() {
-    return permissionManager;
   }
 
   /**
@@ -371,18 +337,19 @@ public final class WasiContextBuilder {
     return workingDirectory;
   }
 
-  /** Validates the configuration before creating the WASI context. */
-  private void validateConfiguration() throws WasiPermissionException {
-    // Validate pre-opened directories
+  /**
+   * Validates the configuration before creating the WASI context.
+   *
+   * <p>Filesystem sandboxing is enforced by the Wasmtime native runtime through pre-opened
+   * directory configuration.
+   */
+  private void validateConfiguration() {
+    // Validate pre-opened directories for path traversal attacks
     for (final Map.Entry<String, Path> entry : preopenedDirectories.entrySet()) {
       final String guestDir = entry.getKey();
-      final Path hostPath = entry.getValue();
 
       // Validate guest directory path
       securityValidator.validatePath(Paths.get(guestDir));
-
-      // Validate host directory accessibility
-      permissionManager.validateFileSystemAccess(hostPath);
     }
 
     // Validate working directory

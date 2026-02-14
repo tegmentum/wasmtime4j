@@ -109,7 +109,7 @@ public final class WasiFileSystem {
 
     try {
       // Validate path access through WASI context
-      final Path validatedPath = wasiContext.validatePath(path, operation);
+      final Path validatedPath = wasiContext.validatePath(path);
 
       // Check file handle limits
       fileHandleLock.writeLock().lock();
@@ -504,7 +504,7 @@ public final class WasiFileSystem {
 
     try {
       // Validate path access
-      final Path validatedPath = wasiContext.validatePath(path, WasiFileOperation.METADATA);
+      final Path validatedPath = wasiContext.validatePath(path);
 
       // Read basic file attributes
       final BasicFileAttributes attributes =
@@ -551,7 +551,7 @@ public final class WasiFileSystem {
 
     try {
       // Validate path access
-      final Path validatedPath = wasiContext.validatePath(path, WasiFileOperation.LIST_DIRECTORY);
+      final Path validatedPath = wasiContext.validatePath(path);
 
       if (!Files.isDirectory(validatedPath)) {
         throw new WasiFileSystemException("Path is not a directory", "ENOTDIR");
@@ -606,7 +606,7 @@ public final class WasiFileSystem {
 
     try {
       // Validate path access
-      final Path validatedPath = wasiContext.validatePath(path, WasiFileOperation.CREATE_DIRECTORY);
+      final Path validatedPath = wasiContext.validatePath(path);
 
       Files.createDirectory(validatedPath);
 
@@ -638,7 +638,7 @@ public final class WasiFileSystem {
 
     try {
       // Validate path access
-      final Path validatedPath = wasiContext.validatePath(path, WasiFileOperation.DELETE);
+      final Path validatedPath = wasiContext.validatePath(path);
 
       Files.delete(validatedPath);
 
@@ -673,8 +673,8 @@ public final class WasiFileSystem {
 
     try {
       // Validate both paths
-      final Path validatedOldPath = wasiContext.validatePath(oldPath, WasiFileOperation.RENAME);
-      final Path validatedNewPath = wasiContext.validatePath(newPath, WasiFileOperation.RENAME);
+      final Path validatedOldPath = wasiContext.validatePath(oldPath);
+      final Path validatedNewPath = wasiContext.validatePath(newPath);
 
       Files.move(validatedOldPath, validatedNewPath);
 
@@ -709,7 +709,7 @@ public final class WasiFileSystem {
 
     try {
       // Validate path access
-      final Path validatedPath = wasiContext.validatePath(path, WasiFileOperation.SET_TIMES);
+      final Path validatedPath = wasiContext.validatePath(path);
 
       if (lastAccessTime != null) {
         Files.setAttribute(validatedPath, "basic:lastAccessTime", lastAccessTime);

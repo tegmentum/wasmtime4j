@@ -10,17 +10,6 @@
     </Or>
   </Match>
 
-  <!-- Suppress command injection in WasiProcessOperations.spawnProcess() -->
-  <!-- ProcessBuilder with List<String> is safe - does not invoke shell, arguments passed separately to OS -->
-  <Match>
-    <Bug pattern="COMMAND_INJECTION"/>
-    <Class name="ai.tegmentum.wasmtime4j.jni.wasi.WasiProcessOperations"/>
-    <Or>
-      <Method name="spawnProcess"/>
-      <Method name="~lambda\$spawnProcess.*"/>
-    </Or>
-  </Match>
-
   <!-- Suppress test-specific warnings globally in test classes -->
   <!-- Tests intentionally use patterns that trigger warnings for validation purposes -->
 

@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.panama.wasi.permission.WasiPermissionManager;
 import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -148,16 +147,6 @@ class WasiContextBuilderTest {
   @Nested
   @DisplayName("Security Method Tests")
   class SecurityMethodTests {
-
-    @Test
-    @DisplayName("should have withPermissionManager method")
-    void shouldHaveWithPermissionManagerMethod() throws NoSuchMethodException {
-      final Method method =
-          WasiContextBuilder.class.getMethod("withPermissionManager", WasiPermissionManager.class);
-      assertNotNull(method, "withPermissionManager method should exist");
-      assertEquals(
-          WasiContextBuilder.class, method.getReturnType(), "Should return WasiContextBuilder");
-    }
 
     @Test
     @DisplayName("should have withSecurityValidator method")

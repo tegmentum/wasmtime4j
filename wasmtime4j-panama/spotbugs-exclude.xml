@@ -10,29 +10,11 @@
     </Or>
   </Match>
 
-  <!-- Suppress command injection in WasiProcessOperations.spawnProcess() -->
-  <!-- ProcessBuilder with List<String> is safe - does not invoke shell, arguments passed separately to OS -->
-  <Match>
-    <Bug pattern="COMMAND_INJECTION"/>
-    <Class name="ai.tegmentum.wasmtime4j.panama.wasi.WasiProcessOperations"/>
-    <Or>
-      <Method name="spawnProcess"/>
-      <Method name="~lambda\$spawnProcess.*"/>
-    </Or>
-  </Match>
-
   <!-- Suppress overridable method call in PanamaResource constructor -->
   <!-- getClass() is final and cannot be overridden, this is a false positive -->
   <Match>
     <Bug pattern="MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR"/>
     <Class name="ai.tegmentum.wasmtime4j.panama.PanamaResource"/>
-  </Match>
-
-  <!-- Suppress System.exit() warning in WasiProcessOperations.raiseSignal -->
-  <!-- This method explicitly simulates signal handling which may require process termination -->
-  <Match>
-    <Bug pattern="DM_EXIT"/>
-    <Class name="ai.tegmentum.wasmtime4j.panama.wasi.WasiProcessOperations"/>
   </Match>
 
   <!-- Suppress test-specific warnings in test classes -->
