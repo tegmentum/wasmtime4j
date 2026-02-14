@@ -17,12 +17,8 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.keyvalue;
 
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.ConsistencyModel;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.EvictionPolicy;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.IsolationLevel;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueEntry;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueException;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueTransaction;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.WasiKeyValue;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -32,11 +28,7 @@ import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -60,9 +52,6 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
   /** Arena for memory management. */
   private final Arena arena;
 
-  /** Current consistency model. */
-  private ConsistencyModel consistencyModel = ConsistencyModel.EVENTUAL;
-
   /** Resource lifecycle handle. */
   private final NativeResourceHandle resourceHandle;
 
@@ -73,9 +62,6 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
   private static final MethodHandle SET;
   private static final MethodHandle DELETE;
   private static final MethodHandle EXISTS;
-  private static final MethodHandle INCREMENT;
-  private static final MethodHandle SIZE;
-  private static final MethodHandle CLEAR;
   private static final MethodHandle KEYS;
   private static final MethodHandle FREE_BYTES;
   private static final MethodHandle FREE_STRING;
@@ -134,31 +120,6 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
                   ValueLayout.JAVA_INT,
                   ValueLayout.ADDRESS, // context
                   ValueLayout.ADDRESS // key
-                  ));
-
-      INCREMENT =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_panama_wasi_keyvalue_increment").orElseThrow(),
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_INT,
-                  ValueLayout.ADDRESS, // context
-                  ValueLayout.ADDRESS, // key
-                  ValueLayout.JAVA_LONG, // delta
-                  ValueLayout.ADDRESS // out_value
-                  ));
-
-      SIZE =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_panama_wasi_keyvalue_size").orElseThrow(),
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_LONG, ValueLayout.ADDRESS // context
-                  ));
-
-      CLEAR =
-          linker.downcallHandle(
-              lookup.find("wasmtime4j_panama_wasi_keyvalue_clear").orElseThrow(),
-              FunctionDescriptor.of(
-                  ValueLayout.JAVA_INT, ValueLayout.ADDRESS // context
                   ));
 
       KEYS =
@@ -353,13 +314,6 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
   }
 
   @Override
-  public void set(final String key, final byte[] value, final Duration ttl)
-      throws KeyValueException {
-    // TTL not supported in basic implementation, just set the value
-    set(key, value);
-  }
-
-  @Override
   public boolean delete(final String key) throws KeyValueException {
     ensureOpen();
     try {
@@ -385,12 +339,6 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
     } catch (Throwable t) {
       throw new KeyValueException("Failed to check key existence: " + key, t);
     }
-  }
-
-  @Override
-  public Set<String> keys(final String pattern) throws KeyValueException {
-    // Pattern matching not supported, return all keys
-    return keys();
   }
 
   @Override
@@ -436,280 +384,6 @@ public final class PanamaWasiKeyValue implements WasiKeyValue {
       throw e;
     } catch (Throwable t) {
       throw new KeyValueException("Failed to get keys", t);
-    }
-  }
-
-  @Override
-  public boolean setIfAbsent(final String key, final byte[] value) throws KeyValueException {
-    if (!exists(key)) {
-      set(key, value);
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public boolean setIfPresent(final String key, final byte[] value) throws KeyValueException {
-    if (exists(key)) {
-      set(key, value);
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public boolean compareAndSwap(final String key, final byte[] expectedValue, final byte[] newValue)
-      throws KeyValueException {
-    Optional<byte[]> current = get(key);
-    if (current.isPresent() && java.util.Arrays.equals(current.get(), expectedValue)) {
-      set(key, newValue);
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public boolean compareVersionAndSwap(
-      final String key, final long expectedVersion, final byte[] newValue)
-      throws KeyValueException {
-    // Version support not implemented
-    throw new KeyValueException("Version-based CAS not supported");
-  }
-
-  @Override
-  public long increment(final String key, final long delta) throws KeyValueException {
-    ensureOpen();
-    try {
-      MemorySegment keySegment = toNativeString(key);
-      MemorySegment outValue = arena.allocate(ValueLayout.JAVA_LONG);
-
-      int result =
-          (int)
-              INCREMENT.invokeExact(
-                  MemorySegment.ofAddress(contextHandle), keySegment, delta, outValue);
-
-      if (result != 0) {
-        throw new KeyValueException("Failed to increment key: " + key);
-      }
-
-      return outValue.get(ValueLayout.JAVA_LONG, 0);
-    } catch (KeyValueException e) {
-      throw e;
-    } catch (Throwable t) {
-      throw new KeyValueException("Failed to increment key: " + key, t);
-    }
-  }
-
-  @Override
-  public Optional<byte[]> getAndDelete(final String key) throws KeyValueException {
-    Optional<byte[]> value = get(key);
-    if (value.isPresent()) {
-      delete(key);
-    }
-    return value;
-  }
-
-  @Override
-  public Optional<byte[]> getAndSet(final String key, final byte[] newValue)
-      throws KeyValueException {
-    Optional<byte[]> oldValue = get(key);
-    set(key, newValue);
-    return oldValue;
-  }
-
-  @Override
-  public Map<String, byte[]> getMultiple(final Set<String> keySet) throws KeyValueException {
-    Map<String, byte[]> result = new HashMap<>();
-    for (String key : keySet) {
-      get(key).ifPresent(value -> result.put(key, value));
-    }
-    return result;
-  }
-
-  @Override
-  public void setMultiple(final Map<String, byte[]> entries) throws KeyValueException {
-    for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
-      set(entry.getKey(), entry.getValue());
-    }
-  }
-
-  @Override
-  public Set<String> deleteMultiple(final Set<String> keySet) throws KeyValueException {
-    Set<String> deleted = new HashSet<>();
-    for (String key : keySet) {
-      if (delete(key)) {
-        deleted.add(key);
-      }
-    }
-    return deleted;
-  }
-
-  // List operations - not supported in basic implementation
-  @Override
-  public long listAppend(final String key, final List<byte[]> values) throws KeyValueException {
-    throw new KeyValueException("List operations not supported");
-  }
-
-  @Override
-  public long listPrepend(final String key, final List<byte[]> values) throws KeyValueException {
-    throw new KeyValueException("List operations not supported");
-  }
-
-  @Override
-  public List<byte[]> listRange(final String key, final long start, final long end)
-      throws KeyValueException {
-    throw new KeyValueException("List operations not supported");
-  }
-
-  @Override
-  public long listLength(final String key) throws KeyValueException {
-    throw new KeyValueException("List operations not supported");
-  }
-
-  @Override
-  public Optional<byte[]> listPop(final String key) throws KeyValueException {
-    throw new KeyValueException("List operations not supported");
-  }
-
-  @Override
-  public Optional<byte[]> listShift(final String key) throws KeyValueException {
-    throw new KeyValueException("List operations not supported");
-  }
-
-  // Set operations - not supported in basic implementation
-  @Override
-  public long setAdd(final String key, final Set<byte[]> members) throws KeyValueException {
-    throw new KeyValueException("Set operations not supported");
-  }
-
-  @Override
-  public long setRemove(final String key, final Set<byte[]> members) throws KeyValueException {
-    throw new KeyValueException("Set operations not supported");
-  }
-
-  @Override
-  public Set<byte[]> setMembers(final String key) throws KeyValueException {
-    throw new KeyValueException("Set operations not supported");
-  }
-
-  @Override
-  public boolean setIsMember(final String key, final byte[] member) throws KeyValueException {
-    throw new KeyValueException("Set operations not supported");
-  }
-
-  @Override
-  public long setSize(final String key) throws KeyValueException {
-    throw new KeyValueException("Set operations not supported");
-  }
-
-  // Hash operations - not supported in basic implementation
-  @Override
-  public void hashSet(final String key, final String field, final byte[] value)
-      throws KeyValueException {
-    throw new KeyValueException("Hash operations not supported");
-  }
-
-  @Override
-  public Optional<byte[]> hashGet(final String key, final String field) throws KeyValueException {
-    throw new KeyValueException("Hash operations not supported");
-  }
-
-  @Override
-  public boolean hashDelete(final String key, final String field) throws KeyValueException {
-    throw new KeyValueException("Hash operations not supported");
-  }
-
-  @Override
-  public Map<String, byte[]> hashGetAll(final String key) throws KeyValueException {
-    throw new KeyValueException("Hash operations not supported");
-  }
-
-  @Override
-  public Set<String> hashKeys(final String key) throws KeyValueException {
-    throw new KeyValueException("Hash operations not supported");
-  }
-
-  @Override
-  public boolean hashExists(final String key, final String field) throws KeyValueException {
-    throw new KeyValueException("Hash operations not supported");
-  }
-
-  // Transaction support - not supported in basic implementation
-  @Override
-  public KeyValueTransaction beginTransaction() throws KeyValueException {
-    throw new KeyValueException("Transactions not supported");
-  }
-
-  @Override
-  public KeyValueTransaction beginTransaction(final IsolationLevel isolationLevel)
-      throws KeyValueException {
-    throw new KeyValueException("Transactions not supported");
-  }
-
-  @Override
-  public ConsistencyModel getConsistencyModel() {
-    return consistencyModel;
-  }
-
-  @Override
-  public void setConsistencyModel(final ConsistencyModel model) throws KeyValueException {
-    this.consistencyModel = model;
-  }
-
-  @Override
-  public EvictionPolicy getEvictionPolicy() {
-    return EvictionPolicy.LRU;
-  }
-
-  // TTL operations - not supported in basic implementation
-  @Override
-  public Optional<Duration> getTtl(final String key) throws KeyValueException {
-    return Optional.empty();
-  }
-
-  @Override
-  public boolean setTtl(final String key, final Duration ttl) throws KeyValueException {
-    return false;
-  }
-
-  @Override
-  public boolean persist(final String key) throws KeyValueException {
-    return exists(key);
-  }
-
-  @Override
-  public long size() throws KeyValueException {
-    ensureOpen();
-    try {
-      long result = (long) SIZE.invokeExact(MemorySegment.ofAddress(contextHandle));
-      if (result < 0) {
-        throw new KeyValueException("Failed to get size");
-      }
-      return result;
-    } catch (KeyValueException e) {
-      throw e;
-    } catch (Throwable t) {
-      throw new KeyValueException("Failed to get size", t);
-    }
-  }
-
-  @Override
-  public boolean isEmpty() throws KeyValueException {
-    return size() == 0;
-  }
-
-  @Override
-  public void clear() throws KeyValueException {
-    ensureOpen();
-    try {
-      int result = (int) CLEAR.invokeExact(MemorySegment.ofAddress(contextHandle));
-      if (result != 0) {
-        throw new KeyValueException("Failed to clear store");
-      }
-    } catch (KeyValueException e) {
-      throw e;
-    } catch (Throwable t) {
-      throw new KeyValueException("Failed to clear store", t);
     }
   }
 

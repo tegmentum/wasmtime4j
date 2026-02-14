@@ -116,8 +116,8 @@ class KeyValueExceptionTest {
     @Test
     @DisplayName("should create exception with message, error code, and cause")
     void shouldCreateExceptionWithMessageErrorCodeAndCause() {
-      final String message = "Transaction conflict detected";
-      final KeyValueErrorCode errorCode = KeyValueErrorCode.TRANSACTION_CONFLICT;
+      final String message = "Connection failed";
+      final KeyValueErrorCode errorCode = KeyValueErrorCode.CONNECTION_FAILED;
       final RuntimeException cause = new RuntimeException("Concurrent modification");
       final KeyValueException exception = new KeyValueException(message, errorCode, cause);
 

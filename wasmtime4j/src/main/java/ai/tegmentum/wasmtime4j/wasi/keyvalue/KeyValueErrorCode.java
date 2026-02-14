@@ -41,15 +41,6 @@ public enum KeyValueErrorCode {
   /** Storage capacity exceeded. */
   CAPACITY_EXCEEDED,
 
-  /** Transaction conflict. */
-  TRANSACTION_CONFLICT,
-
-  /** Transaction timeout. */
-  TRANSACTION_TIMEOUT,
-
-  /** Compare-and-swap failed. */
-  CAS_FAILED,
-
   /** Operation not permitted. */
   NOT_PERMITTED,
 
@@ -61,12 +52,6 @@ public enum KeyValueErrorCode {
 
   /** Operation timed out. */
   TIMEOUT,
-
-  /** Consistency requirements not met. */
-  CONSISTENCY_VIOLATION,
-
-  /** Replication failed. */
-  REPLICATION_FAILED,
 
   /** Internal error. */
   INTERNAL_ERROR

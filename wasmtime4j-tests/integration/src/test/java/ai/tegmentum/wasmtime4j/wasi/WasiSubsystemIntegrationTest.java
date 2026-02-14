@@ -25,9 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
 import ai.tegmentum.wasmtime4j.wasi.clocks.TimezoneDisplay;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.ConsistencyModel;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.EvictionPolicy;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.IsolationLevel;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueErrorCode;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnErrorCode;
@@ -337,71 +334,12 @@ public final class WasiSubsystemIntegrationTest {
   class WasiKeyValueEnumsFunctionalTests {
 
     @Test
-    @DisplayName("ConsistencyModel should have all expected models")
-    void consistencyModelShouldHaveAllExpectedModels(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final Set<String> expected = Set.of("STRONG", "EVENTUAL", "CAUSAL", "LINEARIZABLE");
-
-      final Set<String> actual = new HashSet<>();
-      for (final ConsistencyModel model : ConsistencyModel.values()) {
-        actual.add(model.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain consistency model: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " consistency models: " + actual);
-    }
-
-    @Test
-    @DisplayName("IsolationLevel should have all expected levels")
-    void isolationLevelShouldHaveAllExpectedLevels(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final Set<String> expected =
-          Set.of("READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE");
-
-      final Set<String> actual = new HashSet<>();
-      for (final IsolationLevel level : IsolationLevel.values()) {
-        actual.add(level.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain isolation level: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " isolation levels: " + actual);
-    }
-
-    @Test
-    @DisplayName("EvictionPolicy should have all expected policies")
-    void evictionPolicyShouldHaveAllExpectedPolicies(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final Set<String> expected = Set.of("LRU", "LFU", "FIFO", "RANDOM", "TTL");
-
-      final Set<String> actual = new HashSet<>();
-      for (final EvictionPolicy policy : EvictionPolicy.values()) {
-        actual.add(policy.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain eviction policy: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " eviction policies: " + actual);
-    }
-
-    @Test
     @DisplayName("KeyValueErrorCode should have all expected codes")
     void keyValueErrorCodeShouldHaveAllExpectedCodes(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      // Actual values: KEY_NOT_FOUND, CAPACITY_EXCEEDED, TRANSACTION_CONFLICT, CAS_FAILED, etc.
       final Set<String> expected =
-          Set.of("KEY_NOT_FOUND", "CAPACITY_EXCEEDED", "TRANSACTION_CONFLICT", "CAS_FAILED");
+          Set.of("KEY_NOT_FOUND", "CAPACITY_EXCEEDED", "INTERNAL_ERROR", "TIMEOUT");
 
       final Set<String> actual = new HashSet<>();
       for (final KeyValueErrorCode code : KeyValueErrorCode.values()) {

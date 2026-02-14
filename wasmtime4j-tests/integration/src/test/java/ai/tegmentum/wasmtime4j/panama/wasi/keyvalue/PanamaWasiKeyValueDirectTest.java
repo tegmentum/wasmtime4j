@@ -69,18 +69,19 @@ public class PanamaWasiKeyValueDirectTest {
 
       assertTrue(
           java.lang.reflect.Modifier.isPublic(clazz.getModifiers()), "Class should be public");
-      assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "Class should be final");
+      assertTrue(
+          java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "Class should be final");
 
       LOGGER.info("Class structure verified");
     }
 
     @Test
-    @DisplayName("Should have CRUD methods")
-    void shouldHaveCrudMethods() {
-      LOGGER.info("Testing CRUD methods");
+    @DisplayName("Should have core CRUD methods")
+    void shouldHaveCoreCrudMethods() {
+      LOGGER.info("Testing core CRUD methods");
 
       final Class<?> clazz = PanamaWasiKeyValue.class;
-      final String[] expectedMethods = {"get", "set", "delete", "exists"};
+      final String[] expectedMethods = {"get", "set", "delete", "exists", "keys", "close"};
 
       for (final String methodName : expectedMethods) {
         boolean found = false;
@@ -88,71 +89,6 @@ public class PanamaWasiKeyValueDirectTest {
           if (method.getName().equals(methodName)) {
             found = true;
             LOGGER.info("Found CRUD method: " + methodName);
-            break;
-          }
-        }
-        assertTrue(found, "Should have method: " + methodName);
-      }
-    }
-
-    @Test
-    @DisplayName("Should have atomic operation methods")
-    void shouldHaveAtomicOperationMethods() {
-      LOGGER.info("Testing atomic operation methods");
-
-      final Class<?> clazz = PanamaWasiKeyValue.class;
-      final String[] expectedMethods = {
-        "increment", "setIfAbsent", "setIfPresent", "compareAndSwap", "getAndDelete", "getAndSet"
-      };
-
-      for (final String methodName : expectedMethods) {
-        boolean found = false;
-        for (final Method method : clazz.getMethods()) {
-          if (method.getName().equals(methodName)) {
-            found = true;
-            LOGGER.info("Found atomic method: " + methodName);
-            break;
-          }
-        }
-        assertTrue(found, "Should have method: " + methodName);
-      }
-    }
-
-    @Test
-    @DisplayName("Should have batch operation methods")
-    void shouldHaveBatchOperationMethods() {
-      LOGGER.info("Testing batch operation methods");
-
-      final Class<?> clazz = PanamaWasiKeyValue.class;
-      final String[] expectedMethods = {"getMultiple", "setMultiple", "deleteMultiple"};
-
-      for (final String methodName : expectedMethods) {
-        boolean found = false;
-        for (final Method method : clazz.getMethods()) {
-          if (method.getName().equals(methodName)) {
-            found = true;
-            LOGGER.info("Found batch method: " + methodName);
-            break;
-          }
-        }
-        assertTrue(found, "Should have method: " + methodName);
-      }
-    }
-
-    @Test
-    @DisplayName("Should have store management methods")
-    void shouldHaveStoreManagementMethods() {
-      LOGGER.info("Testing store management methods");
-
-      final Class<?> clazz = PanamaWasiKeyValue.class;
-      final String[] expectedMethods = {"size", "clear", "keys", "close"};
-
-      for (final String methodName : expectedMethods) {
-        boolean found = false;
-        for (final Method method : clazz.getMethods()) {
-          if (method.getName().equals(methodName)) {
-            found = true;
-            LOGGER.info("Found store management method: " + methodName);
             break;
           }
         }
