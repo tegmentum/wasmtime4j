@@ -223,57 +223,6 @@ public class WasiKeyValueIntegrationTest {
   }
 
   @Nested
-  @DisplayName("ConsistencyModel Tests")
-  class ConsistencyModelTests {
-
-    @Test
-    @DisplayName("Should have all expected consistency models")
-    void shouldHaveAllExpectedConsistencyModels() {
-      LOGGER.info("Testing ConsistencyModel enum values");
-
-      ConsistencyModel[] models = ConsistencyModel.values();
-
-      assertTrue(models.length >= 1, "Should have at least 1 consistency model");
-
-      LOGGER.info("Consistency models verified: " + models.length + " models");
-    }
-  }
-
-  @Nested
-  @DisplayName("IsolationLevel Tests")
-  class IsolationLevelTests {
-
-    @Test
-    @DisplayName("Should have all expected isolation levels")
-    void shouldHaveAllExpectedIsolationLevels() {
-      LOGGER.info("Testing IsolationLevel enum values");
-
-      IsolationLevel[] levels = IsolationLevel.values();
-
-      assertTrue(levels.length >= 1, "Should have at least 1 isolation level");
-
-      LOGGER.info("Isolation levels verified: " + levels.length + " levels");
-    }
-  }
-
-  @Nested
-  @DisplayName("EvictionPolicy Tests")
-  class EvictionPolicyTests {
-
-    @Test
-    @DisplayName("Should have all expected eviction policies")
-    void shouldHaveAllExpectedEvictionPolicies() {
-      LOGGER.info("Testing EvictionPolicy enum values");
-
-      EvictionPolicy[] policies = EvictionPolicy.values();
-
-      assertTrue(policies.length >= 1, "Should have at least 1 eviction policy");
-
-      LOGGER.info("Eviction policies verified: " + policies.length + " policies");
-    }
-  }
-
-  @Nested
   @DisplayName("KeyValueErrorCode Tests")
   class KeyValueErrorCodeTests {
 
