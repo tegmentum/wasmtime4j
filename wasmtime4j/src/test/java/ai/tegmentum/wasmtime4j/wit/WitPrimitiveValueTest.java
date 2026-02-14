@@ -431,9 +431,13 @@ class WitPrimitiveValueTest {
     @DisplayName("WitChar should reject surrogate codepoints")
     void witCharShouldRejectSurrogates() {
       assertThrows(
-          ValidationException.class, () -> WitChar.of(0xD800), "Should reject low surrogate 0xD800");
+          ValidationException.class,
+          () -> WitChar.of(0xD800),
+          "Should reject low surrogate 0xD800");
       assertThrows(
-          ValidationException.class, () -> WitChar.of(0xDFFF), "Should reject high surrogate 0xDFFF");
+          ValidationException.class,
+          () -> WitChar.of(0xDFFF),
+          "Should reject high surrogate 0xDFFF");
     }
 
     @Test
