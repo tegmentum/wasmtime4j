@@ -1637,5 +1637,4 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   private static native void nativeMemoryInit64(
       long memoryHandle, long destOffset, int dataSegmentIndex, long srcOffset, long length);
-
 }

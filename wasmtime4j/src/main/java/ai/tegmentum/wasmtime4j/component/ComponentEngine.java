@@ -119,5 +119,4 @@ public interface ComponentEngine extends Engine {
    * @return the maximum link depth, or empty if unlimited
    */
   Optional<Integer> getMaxLinkDepth();
-
 }

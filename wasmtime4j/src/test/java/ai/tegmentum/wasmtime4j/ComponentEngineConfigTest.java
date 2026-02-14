@@ -140,7 +140,6 @@ class ComponentEngineConfigTest {
       final ComponentEngineConfig config = new ComponentEngineConfig();
       assertTrue(config.isComponentCaching(), "Component caching should be enabled by default");
     }
-
   }
 
   @Nested
@@ -207,7 +206,6 @@ class ComponentEngineConfigTest {
           config.isCapabilityBasedSecurity(), "Capability-based security should be disabled");
       assertEquals(config, result, "Should return this for method chaining");
     }
-
   }
 
   @Nested

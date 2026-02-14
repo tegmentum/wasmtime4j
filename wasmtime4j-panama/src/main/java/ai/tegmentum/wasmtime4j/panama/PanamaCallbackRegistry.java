@@ -96,9 +96,7 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
    * @param store the store this registry belongs to
    * @param arenaManager the arena resource manager
    */
-  PanamaCallbackRegistry(
-      final PanamaStore store,
-      final ArenaResourceManager arenaManager) {
+  PanamaCallbackRegistry(final PanamaStore store, final ArenaResourceManager arenaManager) {
     this.storeRef = new WeakReference<>(Objects.requireNonNull(store, "Store cannot be null"));
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
     // asyncExecutor is lazy initialized when first needed

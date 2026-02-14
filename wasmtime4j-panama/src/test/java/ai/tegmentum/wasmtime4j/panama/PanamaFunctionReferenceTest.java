@@ -196,7 +196,6 @@ class PanamaFunctionReferenceTest {
           ex.getMessage().contains("null"),
           "Error message should mention null: " + ex.getMessage());
     }
-
   }
 
   @Nested
@@ -252,7 +251,6 @@ class PanamaFunctionReferenceTest {
               "Should throw WasmException for null arena manager");
       LOGGER.info("Null arena manager error: " + ex.getMessage());
     }
-
   }
 
   @Nested
@@ -478,8 +476,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       assertNotNull(ref, "Wasm function reference should not be null");
@@ -495,8 +492,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       final String name = ref.getName();
@@ -514,8 +510,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       assertTrue(ref.isWasmFunction(), "Should be a wasm function");
@@ -533,8 +528,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       assertNull(ref.getUpcallStub(), "Wasm function reference should have null upcall stub");
@@ -550,8 +544,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       final WasmValue[] results = ref.call(WasmValue.i32(7), WasmValue.i32(8));
@@ -570,8 +563,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       final FunctionType ft = ref.getFunctionType();
@@ -597,8 +589,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       assertTrue(ref.isValid(), "Wasm function reference should be valid");
@@ -853,8 +844,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       assertTrue(ref.isValid(), "Should be valid before close");
 
       assertDoesNotThrow(() -> ref.close(), "Closing wasm function ref should not throw");
@@ -895,8 +885,7 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm);
+      final PanamaFunctionReference ref = new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       final String str = ref.toString();

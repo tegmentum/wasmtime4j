@@ -104,7 +104,6 @@ class ComponentInstanceInterfaceTest {
       assertEquals(Component.class, method.getReturnType(), "Return type should be Component");
       assertEquals(0, method.getParameterCount(), "getComponent should have no parameters");
     }
-
   }
 
   // ========================================================================
@@ -286,7 +285,6 @@ class ComponentInstanceInterfaceTest {
           "Return type should be ComponentInstanceConfig");
       assertEquals(0, method.getParameterCount(), "getConfig should have no parameters");
     }
-
   }
 
   // ========================================================================
@@ -466,6 +464,5 @@ class ComponentInstanceInterfaceTest {
       Method method = ComponentInstance.class.getMethod("getComponent");
       assertEquals(Component.class, method.getReturnType(), "getComponent should return Component");
     }
-
   }
 }

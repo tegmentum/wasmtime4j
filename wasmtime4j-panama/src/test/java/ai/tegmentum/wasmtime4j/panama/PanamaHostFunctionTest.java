@@ -139,12 +139,7 @@ class PanamaHostFunctionTest {
           NullPointerException.class,
           () ->
               new PanamaHostFunction(
-                  null,
-                  createI32ToI32Type(),
-                  createDoubleCallback(),
-                  null,
-                  store,
-                  arenaManager),
+                  null, createI32ToI32Type(), createDoubleCallback(), null, store, arenaManager),
           "Should throw NullPointerException for null functionName");
       LOGGER.info("Correctly threw for null function name");
     }
@@ -167,8 +162,7 @@ class PanamaHostFunctionTest {
       assertThrows(
           NullPointerException.class,
           () ->
-              new PanamaHostFunction(
-                  "test", createI32ToI32Type(), null, null, store, arenaManager),
+              new PanamaHostFunction("test", createI32ToI32Type(), null, null, store, arenaManager),
           "Should throw NullPointerException for null callback");
       LOGGER.info("Correctly threw for null callback");
     }
@@ -180,16 +174,10 @@ class PanamaHostFunctionTest {
           NullPointerException.class,
           () ->
               new PanamaHostFunction(
-                  "test",
-                  createI32ToI32Type(),
-                  createDoubleCallback(),
-                  null,
-                  store,
-                  null),
+                  "test", createI32ToI32Type(), createDoubleCallback(), null, store, null),
           "Should throw NullPointerException for null arenaManager");
       LOGGER.info("Correctly threw for null arena manager");
     }
-
   }
 
   @Nested
@@ -211,12 +199,7 @@ class PanamaHostFunctionTest {
     void shouldCreateHostFunctionWithoutStore() throws Exception {
       final PanamaHostFunction func =
           new PanamaHostFunction(
-              "noStore",
-              createI32ToI32Type(),
-              createDoubleCallback(),
-              null,
-              null,
-              arenaManager);
+              "noStore", createI32ToI32Type(), createDoubleCallback(), null, null, arenaManager);
       hostFunctions.add(func);
       assertNotNull(func, "Host function should not be null");
       LOGGER.info("Created host function without store: " + func.getName());
@@ -469,12 +452,7 @@ class PanamaHostFunctionTest {
     void shouldCloseWithoutError() throws Exception {
       final PanamaHostFunction func =
           new PanamaHostFunction(
-              "closeable",
-              createI32ToI32Type(),
-              createDoubleCallback(),
-              null,
-              store,
-              arenaManager);
+              "closeable", createI32ToI32Type(), createDoubleCallback(), null, store, arenaManager);
 
       assertDoesNotThrow(func::close, "Close should not throw");
       assertTrue(func.isClosed(), "Should be closed after close()");
@@ -538,12 +516,7 @@ class PanamaHostFunctionTest {
     void shouldIndicateClosedInToString() throws Exception {
       final PanamaHostFunction func =
           new PanamaHostFunction(
-              "closedStr",
-              createI32ToI32Type(),
-              createDoubleCallback(),
-              null,
-              store,
-              arenaManager);
+              "closedStr", createI32ToI32Type(), createDoubleCallback(), null, store, arenaManager);
       func.close();
       final String str = func.toString();
       assertTrue(
@@ -593,12 +566,7 @@ class PanamaHostFunctionTest {
           createTrackedHostFunction("keepOpen", createI32ToI32Type(), createDoubleCallback());
       final PanamaHostFunction func2 =
           new PanamaHostFunction(
-              "toClose",
-              createVoidType(),
-              createVoidCallback(),
-              null,
-              store,
-              arenaManager);
+              "toClose", createVoidType(), createVoidCallback(), null, store, arenaManager);
 
       func2.close();
       assertTrue(func2.isClosed(), "func2 should be closed");

@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.gc;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Constructor;
@@ -51,8 +50,7 @@ class GcExceptionTest {
     @DisplayName("should extend WasmException")
     void shouldExtendWasmException() {
       assertTrue(
-          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(
-              GcException.class),
+          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(GcException.class),
           "GcException should extend WasmException");
     }
 
@@ -119,8 +117,7 @@ class GcExceptionTest {
     @DisplayName("should be a WasmException subclass")
     void shouldBeWasmExceptionSubclass() {
       assertTrue(
-          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(
-              GcException.class),
+          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(GcException.class),
           "GcException should be a WasmException subclass");
     }
 

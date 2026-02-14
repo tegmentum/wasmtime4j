@@ -161,14 +161,6 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
- * Method:    nativePreopenedDirWithPermissions
- * Signature: (JLjava/lang/String;Ljava/lang/String;ZZZZZZZ)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativePreopenedDirWithPermissions
-  (JNIEnv *, jclass, jlong, jstring, jstring, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
  * Method:    nativeCleanup
  * Signature: (J)V
  */

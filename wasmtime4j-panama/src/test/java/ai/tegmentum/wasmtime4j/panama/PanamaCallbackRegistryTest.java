@@ -68,8 +68,7 @@ class PanamaCallbackRegistryTest {
     resources.add(store);
     LOGGER.info("Created PanamaStore");
 
-    registry =
-        new PanamaCallbackRegistry(store, store.getResourceManager());
+    registry = new PanamaCallbackRegistry(store, store.getResourceManager());
     LOGGER.info("Created PanamaCallbackRegistry");
   }
 

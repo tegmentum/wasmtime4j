@@ -199,8 +199,7 @@ class WitResourceManagerTest {
     @Test
     @DisplayName("createResource should throw for unknown type")
     void createResourceShouldThrowForUnknownType() {
-      assertThrows(
-          WasmException.class, () -> manager.createResource("unknown-type", "resource"));
+      assertThrows(WasmException.class, () -> manager.createResource("unknown-type", "resource"));
     }
 
     @Test
@@ -287,8 +286,7 @@ class WitResourceManagerTest {
     @Test
     @DisplayName("getResourceValue should throw for wrong type")
     void getResourceValueShouldThrowForWrongType() {
-      assertThrows(
-          WasmException.class, () -> manager.getResourceValue(resourceId, Integer.class));
+      assertThrows(WasmException.class, () -> manager.getResourceValue(resourceId, Integer.class));
     }
   }
 

@@ -473,5 +473,4 @@ class MultiValueFunctionTest {
           });
     }
   }
-
 }

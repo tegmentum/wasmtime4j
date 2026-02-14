@@ -491,8 +491,7 @@ class GcPackageTest {
     @DisplayName("should be a subclass of WasmException")
     void shouldBeSubclassOfWasmException() {
       assertTrue(
-          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(
-              GcException.class),
+          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(GcException.class),
           "GcException should extend WasmException");
     }
 

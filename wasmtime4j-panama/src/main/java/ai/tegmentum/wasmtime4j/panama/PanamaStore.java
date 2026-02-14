@@ -460,8 +460,7 @@ public final class PanamaStore implements Store {
 
     // Create the Panama host function with implementation and store reference for caller context
     final PanamaHostFunction hostFunction =
-        new PanamaHostFunction(
-            name, functionType, callback, implementation, this, resourceManager);
+        new PanamaHostFunction(name, functionType, callback, implementation, this, resourceManager);
 
     LOGGER.fine("Created host function '" + name + "' in store");
     return hostFunction;
@@ -814,8 +813,7 @@ public final class PanamaStore implements Store {
     // Create a host function wrapper that delegates to the wasm function
     final ai.tegmentum.wasmtime4j.func.HostFunction wrapper = function::call;
 
-    return new PanamaFunctionReference(
-        wrapper, function.getFunctionType(), this, resourceManager);
+    return new PanamaFunctionReference(wrapper, function.getFunctionType(), this, resourceManager);
   }
 
   @Override

@@ -25,22 +25,6 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKey
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue
- * Method:    nativeGetContextId
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeGetContextId
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue
- * Method:    nativeIsContextValid
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeIsContextValid
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue
  * Method:    nativeGet
  * Signature: (JLjava/lang/String;)[B
  */
@@ -70,30 +54,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWas
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeExists
   (JNIEnv *, jclass, jlong, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue
- * Method:    nativeIncrement
- * Signature: (JLjava/lang/String;J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeIncrement
-  (JNIEnv *, jclass, jlong, jstring, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue
- * Method:    nativeSize
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeSize
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue
- * Method:    nativeClear
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue_nativeClear
-  (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_keyvalue_JniWasiKeyValue

@@ -727,7 +727,8 @@ public final class WasmValue {
       throws ai.tegmentum.wasmtime4j.exception.ValidationException {
     if (values == null) {
       throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
-          String.format("Value array cannot be null for operation: %s",
+          String.format(
+              "Value array cannot be null for operation: %s",
               operation != null ? operation : "validation"));
     }
     if (expectedTypes == null) {
@@ -735,7 +736,8 @@ public final class WasmValue {
     }
     if (values.length != expectedTypes.length) {
       throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
-          String.format("Value count mismatch: expected %d but got %d for operation: %s",
+          String.format(
+              "Value count mismatch: expected %d but got %d for operation: %s",
               expectedTypes.length, values.length, operation));
     }
 
@@ -747,7 +749,8 @@ public final class WasmValue {
         values[i].validateType(expectedTypes[i]);
       } catch (IllegalArgumentException e) {
         throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
-            String.format("Type mismatch at index %d: expected %s but got %s",
+            String.format(
+                "Type mismatch at index %d: expected %s but got %s",
                 i, expectedTypes[i].toString(), values[i].getType().toString()));
       }
     }
