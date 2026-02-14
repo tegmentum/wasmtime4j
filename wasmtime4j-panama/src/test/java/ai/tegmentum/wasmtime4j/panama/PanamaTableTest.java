@@ -15,8 +15,6 @@ import java.lang.foreign.MemorySegment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -927,27 +925,6 @@ class PanamaTableTest {
       final PanamaTable table = (PanamaTable) getTable(instance);
       table.close();
       assertThat(table.supports64BitAddressing()).isFalse();
-    }
-  }
-
-  // ==================== Async Grow Tests ====================
-
-  @Nested
-  @DisplayName("Async Grow Tests")
-  class AsyncGrowTests {
-
-    @Test
-    @DisplayName("growAsync should complete successfully")
-    void shouldCompleteSuccessfully() throws Exception {
-      final String wat = "(module\n" + "  (table (export \"table\") 3 10 funcref)\n" + ")";
-      final PanamaInstance instance = createInstanceFromWat(wat);
-      final PanamaTable table = (PanamaTable) getTable(instance);
-      final CompletableFuture<Long> future = table.growAsync(2L, null);
-      final Long oldSize = future.get(5, TimeUnit.SECONDS);
-      assertNotNull(oldSize, "growAsync should return non-null result");
-      assertEquals(3L, oldSize.longValue(), "growAsync should return previous size");
-      assertEquals(5, table.getSize(), "Size after growAsync should be 5");
-      LOGGER.info("growAsync returned old size: " + oldSize);
     }
   }
 

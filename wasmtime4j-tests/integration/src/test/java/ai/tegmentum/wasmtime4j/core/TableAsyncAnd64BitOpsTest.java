@@ -28,8 +28,6 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link WasmTable#growAsync(int, Object)} and 64-bit table operations ({@link
+ * Tests for 64-bit table operations ({@link
  * WasmTable#getSize64()}, {@link WasmTable#get64(long)}, {@link WasmTable#set64(long, WasmValue)},
  * {@link WasmTable#grow64(long, WasmValue)}).
  *
@@ -91,41 +89,6 @@ public class TableAsyncAnd64BitOpsTest extends DualRuntimeTest {
               + opName
               + " threw UnsatisfiedLinkError (missing native binding): "
               + e.getMessage());
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("growAsync returns future with previous size")
-  void growAsyncReturnsFutureWithPreviousSize(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing growAsync returns previous size");
-
-    try (Engine engine = Engine.create();
-        Module module = engine.compileWat(TABLE_WAT);
-        Store store = engine.createStore();
-        Instance instance = module.instantiate(store)) {
-
-      final WasmTable table =
-          instance
-              .getTable("tab")
-              .orElseThrow(() -> new AssertionError("tab table should be present"));
-
-      final int initialSize = table.getSize();
-      LOGGER.info("[" + runtime + "] Initial table size: " + initialSize);
-      assertEquals(5, initialSize, "Initial table size should be 5");
-
-      final CompletableFuture<Integer> future = table.growAsync(3, null);
-      assertNotNull(future, "CompletableFuture should not be null");
-
-      final Integer previousSize = future.get(10, TimeUnit.SECONDS);
-
-      LOGGER.info("[" + runtime + "] growAsync returned previous size: " + previousSize);
-      assertEquals(5, previousSize, "growAsync should return previous size of 5");
-
-      final int newSize = table.getSize();
-      LOGGER.info("[" + runtime + "] New table size: " + newSize);
-      assertEquals(8, newSize, "Table size after grow should be 8");
     }
   }
 

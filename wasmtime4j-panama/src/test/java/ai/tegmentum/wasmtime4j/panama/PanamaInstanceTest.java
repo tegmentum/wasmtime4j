@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
@@ -534,27 +533,6 @@ class PanamaInstanceTest {
               ai.tegmentum.wasmtime4j.Store.class,
               ai.tegmentum.wasmtime4j.validation.ImportMap.class);
       assertThat(method.getReturnType()).isEqualTo(Instance.class);
-    }
-
-    @Test
-    @DisplayName("PanamaInstancePre should have instantiateAsync method")
-    void panamaInstancePreShouldHaveInstantiateAsyncMethod() throws NoSuchMethodException {
-      final Method method =
-          PanamaInstancePre.class.getMethod(
-              "instantiateAsync", ai.tegmentum.wasmtime4j.Store.class);
-      assertThat(method.getReturnType()).isEqualTo(CompletableFuture.class);
-    }
-
-    @Test
-    @DisplayName("PanamaInstancePre should have instantiateAsync method with imports")
-    void panamaInstancePreShouldHaveInstantiateAsyncWithImportsMethod()
-        throws NoSuchMethodException {
-      final Method method =
-          PanamaInstancePre.class.getMethod(
-              "instantiateAsync",
-              ai.tegmentum.wasmtime4j.Store.class,
-              ai.tegmentum.wasmtime4j.validation.ImportMap.class);
-      assertThat(method.getReturnType()).isEqualTo(CompletableFuture.class);
     }
 
     @Test

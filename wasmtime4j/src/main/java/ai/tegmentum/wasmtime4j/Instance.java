@@ -9,7 +9,6 @@ import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.TableType;
 import java.io.Closeable;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Represents an instantiated WebAssembly module.
@@ -408,47 +407,6 @@ public interface Instance extends Closeable {
    */
   @Override
   void close();
-
-  // ===== Async Instance Creation Methods =====
-
-  /**
-   * Creates an instance of a WebAssembly module asynchronously.
-   *
-   * <p>This method performs module instantiation in an async context, allowing the operation to
-   * yield during start function execution if the module uses async features.
-   *
-   * <p>This is useful when:
-   *
-   * <ul>
-   *   <li>The module's start function may perform async operations
-   *   <li>Resource limiting with async callbacks is enabled
-   *   <li>The instantiation may take significant time
-   * </ul>
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param store the store to create the instance in
-   * @param module the compiled module to instantiate
-   * @return a future that completes with the new Instance
-   * @throws IllegalArgumentException if store or module is null
-   * @since 1.1.0
-   */
-  static CompletableFuture<Instance> createAsync(final Store store, final Module module) {
-    if (store == null) {
-      throw new IllegalArgumentException("Store cannot be null");
-    }
-    if (module == null) {
-      throw new IllegalArgumentException("Module cannot be null");
-    }
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return store.createInstance(module);
-          } catch (WasmException e) {
-            throw new RuntimeException(e);
-          }
-        });
-  }
 
   /**
    * Creates an instance of a WebAssembly module in the given store.

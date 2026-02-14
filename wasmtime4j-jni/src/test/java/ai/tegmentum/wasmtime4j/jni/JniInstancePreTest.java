@@ -30,7 +30,6 @@ import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -95,29 +94,6 @@ class JniInstancePreTest {
           JniInstancePre.class.getMethod("instantiate", Store.class, ImportMap.class);
       assertNotNull(method, "instantiate method with imports should exist");
       assertEquals(Instance.class, method.getReturnType(), "instantiate should return Instance");
-    }
-
-    @Test
-    @DisplayName("should have instantiateAsync method with store")
-    void shouldHaveInstantiateAsyncMethodWithStore() throws NoSuchMethodException {
-      final Method method = JniInstancePre.class.getMethod("instantiateAsync", Store.class);
-      assertNotNull(method, "instantiateAsync method should exist");
-      assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "instantiateAsync should return CompletableFuture");
-    }
-
-    @Test
-    @DisplayName("should have instantiateAsync method with store and imports")
-    void shouldHaveInstantiateAsyncMethodWithStoreAndImports() throws NoSuchMethodException {
-      final Method method =
-          JniInstancePre.class.getMethod("instantiateAsync", Store.class, ImportMap.class);
-      assertNotNull(method, "instantiateAsync method with imports should exist");
-      assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "instantiateAsync should return CompletableFuture");
     }
   }
 

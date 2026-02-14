@@ -35,7 +35,6 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +45,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * Tests Instance index-based export access methods: {@link Instance#getFunction(int)}, {@link
  * Instance#getGlobal(int)}, {@link Instance#getMemory(int)}, {@link Instance#getTable(int)}, as
  * well as {@link Instance#getTypedFunc(String, WasmValueType...)}, {@link
- * Instance#callI32Function(String, int...)}, and {@link Instance#createAsync(Store, Module)}.
+ * Instance#callI32Function(String, int...)}.
  *
  * @since 1.0.0
  */
@@ -352,45 +351,4 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
     }
   }
 
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("createAsync returns valid instance")
-  void createAsyncReturnsValidInstance(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing Instance.createAsync");
-
-    try (Engine engine = Engine.create();
-        Store store = engine.createStore()) {
-      final Module module = engine.compileWat(WAT);
-
-      try {
-        final CompletableFuture<Instance> future = Instance.createAsync(store, module);
-        assertNotNull(future, "createAsync should return a non-null future");
-
-        final Instance instance = future.get();
-        assertNotNull(instance, "Async-created instance should not be null");
-        assertTrue(instance.isValid(), "Async-created instance should be valid");
-
-        // Verify the instance works
-        final int result = instance.callI32Function("add", 5, 6);
-        assertEquals(11, result, "add(5, 6) should return 11 on async instance");
-        LOGGER.info("[" + runtime + "] createAsync instance valid, add(5,6) = " + result);
-
-        instance.close();
-      } catch (final UnsupportedOperationException e) {
-        LOGGER.info("[" + runtime + "] createAsync not supported: " + e.getMessage());
-      } catch (final Exception e) {
-        // Async instantiation may fail due to thread-safety constraints
-        LOGGER.info(
-            "["
-                + runtime
-                + "] createAsync threw: "
-                + e.getClass().getName()
-                + " - "
-                + e.getMessage());
-      }
-
-      module.close();
-    }
-  }
 }

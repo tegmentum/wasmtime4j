@@ -9,7 +9,6 @@ import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import java.io.Closeable;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * WebAssembly linker interface for defining host functions and resolving imports.
@@ -476,88 +475,6 @@ public interface Linker<T> extends Closeable {
       final String name, final FunctionType functionType, final HostFunction implementation)
       throws WasmException {
     defineHostFunction("", name, functionType, implementation);
-  }
-
-  // ===== Async Module and Instantiation Methods =====
-
-  /**
-   * Defines a module in the linker namespace asynchronously.
-   *
-   * <p>This method performs module definition in an async context, allowing the operation to yield
-   * if needed. The module's exports will be available under the specified name for linking with
-   * other modules.
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param store the store context
-   * @param moduleName the name to assign to this module in the linker
-   * @param module the compiled module to define
-   * @return a future that completes when the module is defined
-   * @throws IllegalArgumentException if any parameter is null
-   * @since 1.1.0
-   */
-  default CompletableFuture<Void> moduleAsync(
-      final Store store, final String moduleName, final Module module) {
-    return CompletableFuture.runAsync(
-        () -> {
-          try {
-            instantiate(store, moduleName, module);
-          } catch (WasmException e) {
-            throw new RuntimeException(e);
-          }
-        });
-  }
-
-  /**
-   * Instantiates a WebAssembly module asynchronously using this linker.
-   *
-   * <p>This method performs module instantiation in an async context, allowing the operation to
-   * yield during start function execution if the module uses async features.
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param store the store to instantiate the module in
-   * @param module the compiled module to instantiate
-   * @return a future that completes with the new Instance
-   * @throws IllegalArgumentException if store or module is null
-   * @since 1.1.0
-   */
-  default CompletableFuture<Instance> instantiateAsync(final Store store, final Module module) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return instantiate(store, module);
-          } catch (WasmException e) {
-            throw new RuntimeException(e);
-          }
-        });
-  }
-
-  /**
-   * Instantiates a WebAssembly module with a name asynchronously using this linker.
-   *
-   * <p>This method performs module instantiation in an async context. The module's exports will be
-   * available under the specified name for subsequent linking operations.
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param store the store to instantiate the module in
-   * @param moduleName the name to assign to this module in the linker
-   * @param module the compiled module to instantiate
-   * @return a future that completes with the new Instance
-   * @throws IllegalArgumentException if any parameter is null
-   * @since 1.1.0
-   */
-  default CompletableFuture<Instance> instantiateAsync(
-      final Store store, final String moduleName, final Module module) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return instantiate(store, moduleName, module);
-          } catch (WasmException e) {
-            throw new RuntimeException(e);
-          }
-        });
   }
 
   /**

@@ -37,8 +37,6 @@ import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,10 +44,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link InstancePre#instantiateAsync(Store)}, {@link InstancePre#instantiateAsync(Store,
- * ImportMap)}, and {@link InstancePre#instantiate(Store, ImportMap)}.
+ * Tests for {@link InstancePre#instantiate(Store, ImportMap)}.
  *
- * <p>Verifies async and import-map-based instantiation from pre-instantiated modules. The JNI
+ * <p>Verifies import-map-based instantiation from pre-instantiated modules. The JNI
  * implementation may throw {@link UnsatisfiedLinkError} if nativeInstantiatePre is not yet bound.
  *
  * @since 1.0.0
@@ -114,79 +111,6 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("instantiateAsync returns valid instance with working export")
-  void instantiateAsyncReturnsValidInstance(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing instantiateAsync(Store)");
-
-    try (Engine engine = Engine.create();
-        Module module = engine.compileWat(ANSWER_WAT);
-        Linker<Void> linker = Linker.create(engine)) {
-
-      final InstancePre pre = tryCreateInstancePre(linker, module, runtime);
-      if (pre == null) {
-        LOGGER.info("[" + runtime + "] Skipping: instantiatePre not available");
-        return;
-      }
-
-      try (pre;
-          Store store = engine.createStore()) {
-        final CompletableFuture<Instance> future = pre.instantiateAsync(store);
-        assertNotNull(future, "CompletableFuture should not be null");
-
-        final Instance instance = future.get(10, TimeUnit.SECONDS);
-        assertNotNull(instance, "Instance should not be null");
-
-        final WasmFunction answerFunc =
-            instance
-                .getFunction("answer")
-                .orElseThrow(() -> new AssertionError("answer function should be present"));
-
-        final WasmValue[] result = answerFunc.call();
-        assertEquals(42, result[0].asInt(), "answer() should return 42");
-
-        LOGGER.info("[" + runtime + "] instantiateAsync returned valid instance, answer()=42");
-        instance.close();
-      }
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("instantiateAsync with ImportMap returns valid instance")
-  void instantiateAsyncWithImportMapReturnsInstance(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing instantiateAsync(Store, ImportMap)");
-
-    try (Engine engine = Engine.create();
-        Module module = engine.compileWat(ANSWER_WAT);
-        Linker<Void> linker = Linker.create(engine)) {
-
-      final InstancePre pre = tryCreateInstancePre(linker, module, runtime);
-      if (pre == null) {
-        LOGGER.info("[" + runtime + "] Skipping: instantiatePre not available");
-        return;
-      }
-
-      try (pre;
-          Store store = engine.createStore()) {
-        final ImportMap emptyMap = createImportMap();
-        final CompletableFuture<Instance> future = pre.instantiateAsync(store, emptyMap);
-        assertNotNull(future, "CompletableFuture should not be null");
-
-        final Instance instance = future.get(10, TimeUnit.SECONDS);
-        assertNotNull(instance, "Instance should not be null");
-
-        LOGGER.info("[" + runtime + "] instantiateAsync(store, importMap) returned valid instance");
-        LOGGER.info(
-            "[" + runtime + "] exports: " + java.util.Arrays.toString(instance.getExportNames()));
-        instance.close();
-      }
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("instantiate with ImportMap returns valid instance with working export")
   void instantiateWithImportMapReturnsInstance(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
@@ -219,42 +143,6 @@ public class InstancePreAsyncAndImportTest extends DualRuntimeTest {
         LOGGER.info("[" + runtime + "] instantiate(store, importMap) returned valid instance");
         LOGGER.info("[" + runtime + "] answer()=" + result[0].asInt());
         instance.close();
-      }
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("instantiateAsync with null store throws exception")
-  void instantiateAsyncNullStoreThrows(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing instantiateAsync(null)");
-
-    try (Engine engine = Engine.create();
-        Module module = engine.compileWat(ANSWER_WAT);
-        Linker<Void> linker = Linker.create(engine)) {
-
-      final InstancePre pre = tryCreateInstancePre(linker, module, runtime);
-      if (pre == null) {
-        LOGGER.info("[" + runtime + "] Skipping: instantiatePre not available");
-        return;
-      }
-
-      try (pre) {
-        final Exception thrown =
-            assertThrows(
-                Exception.class,
-                () -> pre.instantiateAsync(null),
-                "instantiateAsync(null) should throw an exception");
-
-        assertNotNull(thrown, "Exception should not be null");
-        LOGGER.info(
-            "["
-                + runtime
-                + "] Threw "
-                + thrown.getClass().getSimpleName()
-                + ": "
-                + thrown.getMessage());
       }
     }
   }

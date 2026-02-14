@@ -907,20 +907,6 @@ public interface WasmMemory {
   }
 
   /**
-   * Grows the memory asynchronously by the specified number of pages.
-   *
-   * <p>This method allows memory growth operations to be performed without blocking the calling
-   * thread, which is useful for async-enabled stores.
-   *
-   * @param pages the number of pages to grow by
-   * @return a CompletableFuture that completes with the previous size in pages, or -1 if failed
-   * @since 1.1.0
-   */
-  default java.util.concurrent.CompletableFuture<Integer> growAsync(final int pages) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> grow(pages));
-  }
-
-  /**
    * Gets the minimum number of pages for this memory.
    *
    * <p>This is the minimum size that the memory was created with and cannot shrink below.

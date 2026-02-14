@@ -8,7 +8,6 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 /**
@@ -658,26 +657,6 @@ public final class PanamaTable implements WasmTable {
             + elementSegmentIndex
             + " at offset "
             + srcIndex);
-  }
-
-  /**
-   * Grows this table asynchronously.
-   *
-   * @param deltaElements the number of elements to grow by
-   * @param initValue the initial value for new elements
-   * @return a future that completes with the previous size, or -1 if growth failed
-   */
-  public CompletableFuture<Long> growAsync(final long deltaElements, final Object initValue) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            ensureNotClosed();
-            final int result = grow((int) deltaElements, initValue);
-            return (long) result;
-          } catch (final Exception e) {
-            throw new RuntimeException("Failed to grow table asynchronously", e);
-          }
-        });
   }
 
   @Override

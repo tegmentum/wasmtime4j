@@ -33,7 +33,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -155,34 +154,6 @@ class PanamaInstancePreTest {
       final Method method = PanamaInstancePre.class.getMethod("close");
       assertNotNull(method, "close method should exist");
       assertEquals(void.class, method.getReturnType(), "close should return void");
-    }
-  }
-
-  @Nested
-  @DisplayName("Async Method Tests")
-  class AsyncMethodTests {
-
-    @Test
-    @DisplayName("Should implement instantiateAsync with Store method")
-    void shouldImplementInstantiateAsyncMethod() throws NoSuchMethodException {
-      final Method method = PanamaInstancePre.class.getMethod("instantiateAsync", Store.class);
-      assertNotNull(method, "instantiateAsync(Store) method should exist");
-      assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "instantiateAsync should return CompletableFuture");
-    }
-
-    @Test
-    @DisplayName("Should implement instantiateAsync with Store and ImportMap method")
-    void shouldImplementInstantiateAsyncWithImportsMethod() throws NoSuchMethodException {
-      final Method method =
-          PanamaInstancePre.class.getMethod("instantiateAsync", Store.class, ImportMap.class);
-      assertNotNull(method, "instantiateAsync(Store, ImportMap) method should exist");
-      assertEquals(
-          CompletableFuture.class,
-          method.getReturnType(),
-          "instantiateAsync should return CompletableFuture");
     }
   }
 
