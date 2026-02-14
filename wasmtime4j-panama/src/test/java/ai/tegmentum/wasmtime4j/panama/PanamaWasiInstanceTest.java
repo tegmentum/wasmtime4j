@@ -799,110 +799,6 @@ class PanamaWasiInstanceTest {
       assertEquals(
           List.class, method.getReturnType(), "extractExportedInterfaces should return List");
     }
-
-    @Test
-    @DisplayName("Should have createBasicFunctionMetadata method")
-    void shouldHaveCreateBasicFunctionMetadataMethod() throws ClassNotFoundException {
-      Class<?> clazz = getTestedClass();
-      boolean found = false;
-      for (Method method : clazz.getDeclaredMethods()) {
-        if (method.getName().equals("createBasicFunctionMetadata")) {
-          assertTrue(
-              Modifier.isPrivate(method.getModifiers()),
-              "createBasicFunctionMetadata should be private");
-          found = true;
-          break;
-        }
-      }
-      assertTrue(found, "createBasicFunctionMetadata method should exist");
-    }
-
-    @Test
-    @DisplayName("Should have createPlaceholderResource method")
-    void shouldHaveCreatePlaceholderResourceMethod() throws ClassNotFoundException {
-      Class<?> clazz = getTestedClass();
-      boolean found = false;
-      for (Method method : clazz.getDeclaredMethods()) {
-        if (method.getName().equals("createPlaceholderResource")) {
-          assertTrue(
-              Modifier.isPrivate(method.getModifiers()),
-              "createPlaceholderResource should be private");
-          found = true;
-          break;
-        }
-      }
-      assertTrue(found, "createPlaceholderResource method should exist");
-    }
-
-    @Test
-    @DisplayName("Should have createInstanceStats method")
-    void shouldHaveCreateInstanceStatsMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createInstanceStats");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "createInstanceStats should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createMemoryInfo method")
-    void shouldHaveCreateMemoryInfoMethod() throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createMemoryInfo");
-      assertTrue(Modifier.isPrivate(method.getModifiers()), "createMemoryInfo should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createEmptyResourceMetadata method")
-    void shouldHaveCreateEmptyResourceMetadataMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createEmptyResourceMetadata");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createEmptyResourceMetadata should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createEmptyResourceState method")
-    void shouldHaveCreateEmptyResourceStateMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createEmptyResourceState");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "createEmptyResourceState should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createEmptyResourceStats method")
-    void shouldHaveCreateEmptyResourceStatsMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createEmptyResourceStats");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "createEmptyResourceStats should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createEmptyFileSystemStats method")
-    void shouldHaveCreateEmptyFileSystemStatsMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createEmptyFileSystemStats");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createEmptyFileSystemStats should be private");
-    }
-
-    @Test
-    @DisplayName("Should have createEmptyNetworkStats method")
-    void shouldHaveCreateEmptyNetworkStatsMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createEmptyNetworkStats");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()), "createEmptyNetworkStats should be private");
-    }
   }
 
   @Nested
@@ -998,7 +894,7 @@ class PanamaWasiInstanceTest {
 
     @Test
     @DisplayName("Should have 5 volatile instance fields")
-    void shouldHaveFiveVolatileFields() throws ClassNotFoundException {
+    void shouldHaveFourVolatileFields() throws ClassNotFoundException {
       Class<?> clazz = getTestedClass();
       List<String> volatileFields =
           Arrays.stream(clazz.getDeclaredFields())
@@ -1007,14 +903,14 @@ class PanamaWasiInstanceTest {
               .map(Field::getName)
               .collect(Collectors.toList());
       assertEquals(
-          5,
+          4,
           volatileFields.size(),
-          "Should have exactly 5 volatile fields, found: " + volatileFields);
+          "Should have exactly 4 volatile fields, found: " + volatileFields);
     }
 
     @Test
-    @DisplayName("Should have 8 final instance fields")
-    void shouldHaveEightFinalFields() throws ClassNotFoundException {
+    @DisplayName("Should have 9 final instance fields")
+    void shouldHaveNineFinalFields() throws ClassNotFoundException {
       Class<?> clazz = getTestedClass();
       List<String> finalFields =
           Arrays.stream(clazz.getDeclaredFields())
@@ -1023,9 +919,9 @@ class PanamaWasiInstanceTest {
               .map(Field::getName)
               .collect(Collectors.toList());
       assertEquals(
-          8,
+          9,
           finalFields.size(),
-          "Should have exactly 8 final instance fields, found: " + finalFields);
+          "Should have exactly 9 final instance fields, found: " + finalFields);
     }
   }
 
