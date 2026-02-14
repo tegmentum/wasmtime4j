@@ -17,16 +17,14 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Export;
+import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.ModuleExport;
-import ai.tegmentum.wasmtime4j.adapter.WasmGlobalToGlobalAdapter;
-import ai.tegmentum.wasmtime4j.adapter.WasmMemoryToMemoryAdapter;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.Caller;
-import ai.tegmentum.wasmtime4j.func.Function;
-import ai.tegmentum.wasmtime4j.memory.Global;
-import ai.tegmentum.wasmtime4j.memory.Memory;
-import ai.tegmentum.wasmtime4j.memory.Table;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -85,7 +83,7 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Export> getExport(final String name) {
+  public Optional<Extern> getExport(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Export name cannot be null");
     }
@@ -95,7 +93,7 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Function<T>> getFunction(final String name) {
+  public Optional<WasmFunction> getFunction(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
@@ -111,9 +109,7 @@ final class PanamaCaller<T> implements Caller<T> {
       if (funcHandle.equals(MemorySegment.NULL) || funcHandle.address() == 0) {
         return Optional.empty();
       }
-      final PanamaCallerFunction panamaFunc = new PanamaCallerFunction(funcHandle, store, name);
-      return Optional.of(
-          new ai.tegmentum.wasmtime4j.panama.adapter.WasmFunctionToFunctionAdapter<>(panamaFunc));
+      return Optional.of(new PanamaCallerFunction(funcHandle, store, name));
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get function: " + name, e);
       return Optional.empty();
@@ -121,7 +117,7 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Memory> getMemory(final String name) {
+  public Optional<WasmMemory> getMemory(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Memory name cannot be null");
     }
@@ -137,8 +133,7 @@ final class PanamaCaller<T> implements Caller<T> {
       if (memoryHandle.equals(MemorySegment.NULL) || memoryHandle.address() == 0) {
         return Optional.empty();
       }
-      final PanamaMemory panamaMemory = new PanamaMemory(memoryHandle, store);
-      return Optional.of(new WasmMemoryToMemoryAdapter(panamaMemory));
+      return Optional.of(new PanamaMemory(memoryHandle, store));
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get memory: " + name, e);
       return Optional.empty();
@@ -146,7 +141,7 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Table> getTable(final String name) {
+  public Optional<WasmTable> getTable(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Table name cannot be null");
     }
@@ -172,7 +167,7 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Global> getGlobal(final String name) {
+  public Optional<WasmGlobal> getGlobal(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Global name cannot be null");
     }
@@ -188,8 +183,7 @@ final class PanamaCaller<T> implements Caller<T> {
       if (globalHandle.equals(MemorySegment.NULL) || globalHandle.address() == 0) {
         return Optional.empty();
       }
-      final PanamaGlobal panamaGlobal = new PanamaGlobal(globalHandle, store);
-      return Optional.of(new WasmGlobalToGlobalAdapter(panamaGlobal));
+      return Optional.of(new PanamaGlobal(globalHandle, store));
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get global: " + name, e);
       return Optional.empty();
@@ -296,7 +290,7 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Export> getExportByModuleExport(final ModuleExport moduleExport) {
+  public Optional<Extern> getExportByModuleExport(final ModuleExport moduleExport) {
     if (moduleExport == null) {
       throw new IllegalArgumentException("moduleExport cannot be null");
     }

@@ -1,12 +1,13 @@
 package ai.tegmentum.wasmtime4j.func;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Export;
+import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.ModuleExport;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.memory.Global;
-import ai.tegmentum.wasmtime4j.memory.Memory;
-import ai.tegmentum.wasmtime4j.memory.Table;
 import java.util.Optional;
 
 /**
@@ -46,7 +47,7 @@ public interface Caller<T> {
    * @throws IllegalArgumentException if name is null
    * @since 1.0.0
    */
-  Optional<Export> getExport(String name);
+  Optional<Extern> getExport(String name);
 
   /**
    * Gets an exported function by name from the calling instance.
@@ -56,7 +57,7 @@ public interface Caller<T> {
    * @throws IllegalArgumentException if name is null
    * @since 1.0.0
    */
-  Optional<Function<T>> getFunction(String name);
+  Optional<WasmFunction> getFunction(String name);
 
   /**
    * Gets an exported memory by name from the calling instance.
@@ -66,7 +67,7 @@ public interface Caller<T> {
    * @throws IllegalArgumentException if name is null
    * @since 1.0.0
    */
-  Optional<Memory> getMemory(String name);
+  Optional<WasmMemory> getMemory(String name);
 
   /**
    * Gets the default memory export from the calling instance.
@@ -77,7 +78,7 @@ public interface Caller<T> {
    * @return the default memory if it exists, empty otherwise
    * @since 1.0.0
    */
-  default Optional<Memory> getMemory() {
+  default Optional<WasmMemory> getMemory() {
     return getMemory("memory");
   }
 
@@ -89,7 +90,7 @@ public interface Caller<T> {
    * @throws IllegalArgumentException if name is null
    * @since 1.0.0
    */
-  Optional<Table> getTable(String name);
+  Optional<WasmTable> getTable(String name);
 
   /**
    * Gets an exported global by name from the calling instance.
@@ -99,7 +100,7 @@ public interface Caller<T> {
    * @throws IllegalArgumentException if name is null
    * @since 1.0.0
    */
-  Optional<Global> getGlobal(String name);
+  Optional<WasmGlobal> getGlobal(String name);
 
   /**
    * Checks if the calling instance has an export with the given name.
@@ -203,7 +204,7 @@ public interface Caller<T> {
    * @throws IllegalArgumentException if moduleExport is null
    * @since 1.0.0
    */
-  Optional<Export> getExportByModuleExport(ModuleExport moduleExport);
+  Optional<Extern> getExportByModuleExport(ModuleExport moduleExport);
 
   /**
    * Gets the engine associated with the caller's store.

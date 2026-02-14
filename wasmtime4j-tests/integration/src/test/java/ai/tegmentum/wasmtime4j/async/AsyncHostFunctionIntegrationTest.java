@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -445,7 +446,7 @@ public final class AsyncHostFunctionIntegrationTest {
           new AsyncHostFunction() {
             @Override
             public CompletableFuture<WasmValue[]> call(
-                final ai.tegmentum.wasmtime4j.func.Function<?> caller, final WasmValue[] args) {
+                final WasmFunction caller, final WasmValue[] args) {
               return CompletableFuture.completedFuture(new WasmValue[] {WasmValue.i32(1)});
             }
 

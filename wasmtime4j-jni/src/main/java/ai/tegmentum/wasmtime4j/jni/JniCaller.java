@@ -17,18 +17,14 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Export;
+import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.ModuleExport;
-import ai.tegmentum.wasmtime4j.adapter.WasmGlobalToGlobalAdapter;
-import ai.tegmentum.wasmtime4j.adapter.WasmMemoryToMemoryAdapter;
-import ai.tegmentum.wasmtime4j.adapter.WasmTableToTableAdapter;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.Caller;
-import ai.tegmentum.wasmtime4j.func.Function;
-import ai.tegmentum.wasmtime4j.jni.adapter.WasmFunctionToFunctionAdapter;
-import ai.tegmentum.wasmtime4j.memory.Global;
-import ai.tegmentum.wasmtime4j.memory.Memory;
-import ai.tegmentum.wasmtime4j.memory.Table;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,7 +85,7 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Export> getExport(final String name) {
+  public Optional<Extern> getExport(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Export name cannot be null");
     }
@@ -113,7 +109,7 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Function<T>> getFunction(final String name) {
+  public Optional<WasmFunction> getFunction(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
@@ -124,8 +120,7 @@ final class JniCaller<T> implements Caller<T> {
         return Optional.empty();
       }
       // Module handle is 0 since we're getting the function from a caller context
-      final JniFunction jniFunc = new JniFunction(funcHandle, name, 0L, store);
-      return Optional.of(new WasmFunctionToFunctionAdapter<>(jniFunc));
+      return Optional.of(new JniFunction(funcHandle, name, 0L, store));
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get function: " + name, e);
       return Optional.empty();
@@ -133,7 +128,7 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Memory> getMemory(final String name) {
+  public Optional<WasmMemory> getMemory(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Memory name cannot be null");
     }
@@ -143,8 +138,7 @@ final class JniCaller<T> implements Caller<T> {
       if (memHandle == 0) {
         return Optional.empty();
       }
-      final JniMemory jniMemory = new JniMemory(memHandle, store);
-      return Optional.of(new WasmMemoryToMemoryAdapter(jniMemory));
+      return Optional.of(new JniMemory(memHandle, store));
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get memory: " + name, e);
       return Optional.empty();
@@ -152,7 +146,7 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Table> getTable(final String name) {
+  public Optional<WasmTable> getTable(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Table name cannot be null");
     }
@@ -162,8 +156,7 @@ final class JniCaller<T> implements Caller<T> {
       if (tableHandle == 0) {
         return Optional.empty();
       }
-      final JniTable jniTable = new JniTable(tableHandle, store);
-      return Optional.of(new WasmTableToTableAdapter(jniTable));
+      return Optional.of(new JniTable(tableHandle, store));
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get table: " + name, e);
       return Optional.empty();
@@ -171,7 +164,7 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Global> getGlobal(final String name) {
+  public Optional<WasmGlobal> getGlobal(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Global name cannot be null");
     }
@@ -181,8 +174,7 @@ final class JniCaller<T> implements Caller<T> {
       if (globalHandle == 0) {
         return Optional.empty();
       }
-      final JniGlobal jniGlobal = new JniGlobal(globalHandle, store);
-      return Optional.of(new WasmGlobalToGlobalAdapter(jniGlobal));
+      return Optional.of(new JniGlobal(globalHandle, store));
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get global: " + name, e);
       return Optional.empty();
@@ -269,7 +261,7 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Export> getExportByModuleExport(final ModuleExport moduleExport) {
+  public Optional<Extern> getExportByModuleExport(final ModuleExport moduleExport) {
     if (moduleExport == null) {
       throw new IllegalArgumentException("moduleExport cannot be null");
     }

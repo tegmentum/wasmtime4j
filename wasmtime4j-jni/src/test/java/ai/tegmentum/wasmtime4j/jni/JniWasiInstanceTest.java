@@ -830,17 +830,6 @@ class JniWasiInstanceTest {
     }
 
     @Test
-    @DisplayName("Should have createPlaceholderFileSystemStats method")
-    void shouldHaveCreatePlaceholderFileSystemStatsMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getDeclaredMethod("createPlaceholderFileSystemStats");
-      assertTrue(
-          Modifier.isPrivate(method.getModifiers()),
-          "createPlaceholderFileSystemStats should be private");
-    }
-
-    @Test
     @DisplayName("Should have createPlaceholderNetworkStats method")
     void shouldHaveCreatePlaceholderNetworkStatsMethod()
         throws ClassNotFoundException, NoSuchMethodException {

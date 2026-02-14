@@ -27,11 +27,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.func.Caller;
-import ai.tegmentum.wasmtime4j.func.Function;
-import ai.tegmentum.wasmtime4j.memory.Global;
-import ai.tegmentum.wasmtime4j.memory.Memory;
-import ai.tegmentum.wasmtime4j.memory.Table;
 import ai.tegmentum.wasmtime4j.validation.CallerContextValidator.ValidationConfig;
 import ai.tegmentum.wasmtime4j.validation.CallerContextValidator.ValidationResult;
 import java.util.Optional;
@@ -384,10 +384,10 @@ class CallerContextValidatorTest {
       when(mockCaller.data()).thenReturn("test data");
       when(mockCaller.hasExport(anyString())).thenReturn(true);
       when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
-      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(Memory.class)));
-      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(Function.class)));
-      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(Global.class)));
-      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(Table.class)));
+      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(WasmMemory.class)));
+      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(WasmFunction.class)));
+      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(WasmGlobal.class)));
+      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(WasmTable.class)));
       when(mockCaller.fuelConsumed()).thenReturn(Optional.of(100L));
       when(mockCaller.fuelRemaining()).thenReturn(Optional.of(1000L));
       when(mockCaller.hasEpochDeadline()).thenReturn(true);
@@ -466,10 +466,10 @@ class CallerContextValidatorTest {
       when(mockCaller.data()).thenReturn("test");
       when(mockCaller.hasExport(anyString())).thenReturn(true);
       when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
-      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(Memory.class)));
-      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(Function.class)));
-      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(Global.class)));
-      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(Table.class)));
+      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(WasmMemory.class)));
+      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(WasmFunction.class)));
+      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(WasmGlobal.class)));
+      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(WasmTable.class)));
 
       final ValidationConfig config = new ValidationConfig(true, true, false, false, false);
       final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
@@ -832,10 +832,10 @@ class CallerContextValidatorTest {
       when(mockCaller.data()).thenReturn("test");
       when(mockCaller.hasExport(anyString())).thenReturn(true);
       when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
-      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(Memory.class)));
-      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(Function.class)));
-      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(Global.class)));
-      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(Table.class)));
+      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(WasmMemory.class)));
+      when(mockCaller.getFunction(anyString())).thenReturn(Optional.of(mock(WasmFunction.class)));
+      when(mockCaller.getGlobal(anyString())).thenReturn(Optional.of(mock(WasmGlobal.class)));
+      when(mockCaller.getTable(anyString())).thenReturn(Optional.of(mock(WasmTable.class)));
 
       final ValidationConfig config = new ValidationConfig(true, true, false, false, false);
       final ValidationResult result = CallerContextValidator.validate(mockCaller, config);
@@ -1012,7 +1012,7 @@ class CallerContextValidatorTest {
       when(mockCaller.data()).thenReturn("test");
       when(mockCaller.hasExport(anyString())).thenReturn(false);
       when(mockCaller.getExport(anyString())).thenReturn(Optional.empty());
-      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(Memory.class)));
+      when(mockCaller.getMemory(anyString())).thenReturn(Optional.of(mock(WasmMemory.class)));
       when(mockCaller.getFunction(anyString())).thenReturn(Optional.empty());
       when(mockCaller.getGlobal(anyString())).thenReturn(Optional.empty());
       when(mockCaller.getTable(anyString())).thenReturn(Optional.empty());

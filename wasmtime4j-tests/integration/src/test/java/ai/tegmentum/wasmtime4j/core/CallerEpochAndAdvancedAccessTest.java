@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Export;
+import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -233,7 +233,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing Caller.getExportByModuleExport() for memory export");
 
-    final AtomicReference<Optional<Export>> exportResult = new AtomicReference<>();
+    final AtomicReference<Optional<Extern>> exportResult = new AtomicReference<>();
     final AtomicReference<ModuleExport> usedModuleExport = new AtomicReference<>();
 
     final HostFunction hostFn =

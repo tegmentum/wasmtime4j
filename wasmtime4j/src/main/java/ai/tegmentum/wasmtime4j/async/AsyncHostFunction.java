@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.async;
 
+import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.func.Function;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -24,7 +24,7 @@ public interface AsyncHostFunction {
    * @param args the arguments passed to the host function
    * @return CompletableFuture containing the function result
    */
-  CompletableFuture<WasmValue[]> call(Function<?> caller, WasmValue[] args);
+  CompletableFuture<WasmValue[]> call(WasmFunction caller, WasmValue[] args);
 
   /**
    * Gets the name of this host function. Default implementation returns the class simple name.
@@ -171,13 +171,13 @@ public interface AsyncHostFunction {
   /** Interface for blocking operations that should be executed asynchronously. */
   @FunctionalInterface
   interface BlockingOperation {
-    WasmValue[] execute(Function<?> caller, WasmValue[] args) throws Exception;
+    WasmValue[] execute(WasmFunction caller, WasmValue[] args) throws Exception;
   }
 
   /** Interface for async operations. */
   @FunctionalInterface
   interface AsyncOperation {
-    CompletableFuture<WasmValue[]> execute(Function<?> caller, WasmValue[] args);
+    CompletableFuture<WasmValue[]> execute(WasmFunction caller, WasmValue[] args);
   }
 
   /** Simple implementation that returns a fixed result. */
@@ -191,7 +191,7 @@ public interface AsyncHostFunction {
     }
 
     @Override
-    public CompletableFuture<WasmValue[]> call(final Function<?> caller, final WasmValue[] args) {
+    public CompletableFuture<WasmValue[]> call(final WasmFunction caller, final WasmValue[] args) {
       return CompletableFuture.completedFuture(result.clone());
     }
 
@@ -212,7 +212,7 @@ public interface AsyncHostFunction {
     }
 
     @Override
-    public CompletableFuture<WasmValue[]> call(final Function<?> caller, final WasmValue[] args) {
+    public CompletableFuture<WasmValue[]> call(final WasmFunction caller, final WasmValue[] args) {
       return CompletableFuture.supplyAsync(
           () -> {
             try {
@@ -250,7 +250,7 @@ public interface AsyncHostFunction {
     }
 
     @Override
-    public CompletableFuture<WasmValue[]> call(final Function<?> caller, final WasmValue[] args) {
+    public CompletableFuture<WasmValue[]> call(final WasmFunction caller, final WasmValue[] args) {
       final CompletableFuture<WasmValue[]> future = new CompletableFuture<>();
       executor.execute(
           () -> {

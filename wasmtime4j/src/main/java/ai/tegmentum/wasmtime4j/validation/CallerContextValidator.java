@@ -16,11 +16,11 @@
 
 package ai.tegmentum.wasmtime4j.validation;
 
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmGlobal;
+import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.func.Caller;
-import ai.tegmentum.wasmtime4j.func.Function;
-import ai.tegmentum.wasmtime4j.memory.Global;
-import ai.tegmentum.wasmtime4j.memory.Memory;
-import ai.tegmentum.wasmtime4j.memory.Table;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -138,7 +138,7 @@ public final class CallerContextValidator {
   private static <T> void validateSpecificExportTypes(Caller<T> caller, ValidationResult result) {
     // Test memory access
     try {
-      Optional<Memory> memory = caller.getMemory("memory");
+      Optional<WasmMemory> memory = caller.getMemory("memory");
       result.addSuccess("Memory export access works");
     } catch (Exception e) {
       result.addWarning("Memory export access failed: " + e.getMessage());
@@ -146,7 +146,7 @@ public final class CallerContextValidator {
 
     // Test function access
     try {
-      Optional<Function<T>> function = caller.getFunction("some_function");
+      Optional<WasmFunction> function = caller.getFunction("some_function");
       result.addSuccess("Function export access works");
     } catch (Exception e) {
       result.addWarning("Function export access failed: " + e.getMessage());
@@ -154,7 +154,7 @@ public final class CallerContextValidator {
 
     // Test global access
     try {
-      Optional<Global> global = caller.getGlobal("some_global");
+      Optional<WasmGlobal> global = caller.getGlobal("some_global");
       result.addSuccess("Global export access works");
     } catch (Exception e) {
       result.addWarning("Global export access failed: " + e.getMessage());
@@ -162,7 +162,7 @@ public final class CallerContextValidator {
 
     // Test table access
     try {
-      Optional<Table> table = caller.getTable("some_table");
+      Optional<WasmTable> table = caller.getTable("some_table");
       result.addSuccess("Table export access works");
     } catch (Exception e) {
       result.addWarning("Table export access failed: " + e.getMessage());
