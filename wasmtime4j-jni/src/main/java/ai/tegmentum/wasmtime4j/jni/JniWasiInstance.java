@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiFileSystemStats;
@@ -211,7 +211,7 @@ public final class JniWasiInstance implements WasiInstance {
       setState(WasiInstanceState.CREATED); // Return to ready state
       return result;
 
-    } catch (final WitValueException e) {
+    } catch (final ValidationException e) {
       setState(WasiInstanceState.ERROR);
       throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     } catch (final Exception e) {
@@ -228,12 +228,11 @@ public final class JniWasiInstance implements WasiInstance {
    *
    * @param obj the Java object to convert
    * @return the WIT value
-   * @throws WitValueException if conversion fails
+   * @throws ValidationException if conversion fails
    */
-  private WitValue convertToWitValue(final Object obj) throws WitValueException {
+  private WitValue convertToWitValue(final Object obj) throws ValidationException {
     if (obj == null) {
-      throw new WitValueException(
-          "Cannot convert null to WIT value", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot convert null to WIT value");
     }
 
     if (obj instanceof WitValue) {
@@ -275,9 +274,8 @@ public final class JniWasiInstance implements WasiInstance {
       return builder.build();
     }
 
-    throw new WitValueException(
-        "Unsupported Java type for WIT conversion: " + obj.getClass().getName(),
-        WitValueException.ErrorCode.TYPE_MISMATCH);
+    throw new ValidationException(
+        "Unsupported Java type for WIT conversion: " + obj.getClass().getName());
   }
 
   @Override

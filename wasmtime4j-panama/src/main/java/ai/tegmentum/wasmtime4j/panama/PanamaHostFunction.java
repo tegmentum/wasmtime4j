@@ -70,8 +70,6 @@ public final class PanamaHostFunction implements WasmFunction {
   private final ai.tegmentum.wasmtime4j.func.HostFunction implementation;
   private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
-  private final PanamaErrorHandler errorHandler;
-
   private MemorySegment functionHandle;
   private MemorySegment upcallStub;
   private MemorySegment ffiUpcallStub; // FFI-compatible upcall stub for native registry
@@ -106,7 +104,6 @@ public final class PanamaHostFunction implements WasmFunction {
    *     callbacks)
    * @param store the store this host function belongs to (may be null for direct callbacks)
    * @param arenaManager the arena resource manager for memory lifecycle
-   * @param errorHandler the error handler for exception mapping
    * @throws WasmException if host function creation fails
    * @throws IllegalArgumentException if any parameter is null
    */
@@ -116,8 +113,7 @@ public final class PanamaHostFunction implements WasmFunction {
       final HostFunctionCallback callback,
       final ai.tegmentum.wasmtime4j.func.HostFunction implementation,
       final PanamaStore store,
-      final ArenaResourceManager arenaManager,
-      final PanamaErrorHandler errorHandler)
+      final ArenaResourceManager arenaManager)
       throws WasmException {
     this.hostFunctionId = nextHostFunctionId.getAndIncrement();
     this.functionName = Objects.requireNonNull(functionName, "Function name cannot be null");
@@ -126,7 +122,6 @@ public final class PanamaHostFunction implements WasmFunction {
     this.implementation = implementation; // May be null
     this.storeRef = store != null ? new WeakReference<>(store) : null;
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
-    this.errorHandler = Objects.requireNonNull(errorHandler, "Error handler cannot be null");
 
     try {
       // Register this host function to prevent GC

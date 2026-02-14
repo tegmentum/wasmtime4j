@@ -88,7 +88,6 @@ public final class PanamaFunctionReference implements FunctionReference {
   private final WasmFunction wasmFunction; // Null for host functions
   private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
-  private final PanamaErrorHandler errorHandler;
 
   /** The native registry ID for this function reference, used when setting funcref globals. */
   private long nativeRegistryId = -1;
@@ -103,7 +102,6 @@ public final class PanamaFunctionReference implements FunctionReference {
    * @param functionType the WebAssembly function type signature
    * @param store the store this function reference belongs to
    * @param arenaManager the arena resource manager for memory lifecycle
-   * @param errorHandler the error handler for exception mapping
    * @throws WasmException if function reference creation fails
    * @throws IllegalArgumentException if any required parameter is null
    */
@@ -111,8 +109,7 @@ public final class PanamaFunctionReference implements FunctionReference {
       final HostFunction hostFunction,
       final FunctionType functionType,
       final PanamaStore store,
-      final ArenaResourceManager arenaManager,
-      final PanamaErrorHandler errorHandler)
+      final ArenaResourceManager arenaManager)
       throws WasmException {
     if (hostFunction == null) {
       throw new WasmException("Failed to create function reference: Host function cannot be null");
@@ -126,9 +123,6 @@ public final class PanamaFunctionReference implements FunctionReference {
     if (arenaManager == null) {
       throw new WasmException("Failed to create function reference: Arena manager cannot be null");
     }
-    if (errorHandler == null) {
-      throw new WasmException("Failed to create function reference: Error handler cannot be null");
-    }
 
     this.functionReferenceId = NEXT_FUNCTION_REFERENCE_ID.getAndIncrement();
     this.functionName = "host_function_" + functionReferenceId;
@@ -137,7 +131,6 @@ public final class PanamaFunctionReference implements FunctionReference {
     this.wasmFunction = null;
     this.storeRef = new WeakReference<>(store);
     this.arenaManager = arenaManager;
-    this.errorHandler = errorHandler;
 
     try {
       // Register this function reference to prevent GC
@@ -195,15 +188,13 @@ public final class PanamaFunctionReference implements FunctionReference {
    * @param wasmFunction the WebAssembly function
    * @param store the store this function reference belongs to
    * @param arenaManager the arena resource manager for memory lifecycle
-   * @param errorHandler the error handler for exception mapping
    * @throws WasmException if function reference creation fails
    * @throws IllegalArgumentException if any required parameter is null
    */
   public PanamaFunctionReference(
       final WasmFunction wasmFunction,
       final PanamaStore store,
-      final ArenaResourceManager arenaManager,
-      final PanamaErrorHandler errorHandler)
+      final ArenaResourceManager arenaManager)
       throws WasmException {
     if (wasmFunction == null) {
       throw new WasmException(
@@ -214,9 +205,6 @@ public final class PanamaFunctionReference implements FunctionReference {
     }
     if (arenaManager == null) {
       throw new WasmException("Failed to create function reference: Arena manager cannot be null");
-    }
-    if (errorHandler == null) {
-      throw new WasmException("Failed to create function reference: Error handler cannot be null");
     }
 
     this.functionReferenceId = NEXT_FUNCTION_REFERENCE_ID.getAndIncrement();
@@ -229,7 +217,6 @@ public final class PanamaFunctionReference implements FunctionReference {
     this.wasmFunction = wasmFunction;
     this.storeRef = new WeakReference<>(store);
     this.arenaManager = arenaManager;
-    this.errorHandler = errorHandler;
 
     try {
       // Register this function reference to prevent GC

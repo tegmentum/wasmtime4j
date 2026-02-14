@@ -253,14 +253,6 @@ class WasmExceptionTest {
     }
 
     @Test
-    @DisplayName("InstantiationException should extend WasmException")
-    void instantiationExceptionShouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(InstantiationException.class),
-          "InstantiationException should extend WasmException");
-    }
-
-    @Test
     @DisplayName("WasiException should extend WasmException")
     void wasiExceptionShouldExtendWasmException() {
       assertTrue(

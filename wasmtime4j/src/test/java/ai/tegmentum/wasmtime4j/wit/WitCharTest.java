@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WitRangeException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -62,7 +62,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("should create WitChar from valid ASCII codepoint")
-    void shouldCreateFromValidAsciiCodepoint() throws WitRangeException {
+    void shouldCreateFromValidAsciiCodepoint() throws ValidationException {
       final WitChar witChar = WitChar.of(65); // 'A'
       assertNotNull(witChar, "Should create WitChar from ASCII codepoint");
       assertEquals(65, witChar.getCodepoint(), "Codepoint should be 65");
@@ -70,7 +70,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("should create WitChar from valid BMP codepoint")
-    void shouldCreateFromValidBmpCodepoint() throws WitRangeException {
+    void shouldCreateFromValidBmpCodepoint() throws ValidationException {
       final WitChar witChar = WitChar.of(0x4E2D); // Chinese character
       assertNotNull(witChar, "Should create WitChar from BMP codepoint");
       assertEquals(0x4E2D, witChar.getCodepoint(), "Codepoint should match");
@@ -78,7 +78,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("should create WitChar from valid supplementary codepoint")
-    void shouldCreateFromValidSupplementaryCodepoint() throws WitRangeException {
+    void shouldCreateFromValidSupplementaryCodepoint() throws ValidationException {
       final WitChar witChar = WitChar.of(0x1F600); // Emoji
       assertNotNull(witChar, "Should create WitChar from supplementary codepoint");
       assertEquals(0x1F600, witChar.getCodepoint(), "Codepoint should match");
@@ -86,7 +86,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("should create WitChar from minimum codepoint")
-    void shouldCreateFromMinimumCodepoint() throws WitRangeException {
+    void shouldCreateFromMinimumCodepoint() throws ValidationException {
       final WitChar witChar = WitChar.of(0x0000);
       assertNotNull(witChar, "Should create from minimum codepoint");
       assertEquals(0, witChar.getCodepoint(), "Codepoint should be 0");
@@ -94,7 +94,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("should create WitChar from maximum codepoint")
-    void shouldCreateFromMaximumCodepoint() throws WitRangeException {
+    void shouldCreateFromMaximumCodepoint() throws ValidationException {
       final WitChar witChar = WitChar.of(0x10FFFF);
       assertNotNull(witChar, "Should create from maximum codepoint");
       assertEquals(0x10FFFF, witChar.getCodepoint(), "Codepoint should be max");
@@ -109,14 +109,14 @@ class WitCharTest {
     @DisplayName("should reject negative codepoint")
     void shouldRejectNegativeCodepoint() {
       assertThrows(
-          WitRangeException.class, () -> WitChar.of(-1), "Should reject negative codepoint");
+          ValidationException.class, () -> WitChar.of(-1), "Should reject negative codepoint");
     }
 
     @Test
     @DisplayName("should reject codepoint above maximum")
     void shouldRejectCodepointAboveMaximum() {
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(0x110000),
           "Should reject codepoint above 0x10FFFF");
     }
@@ -125,7 +125,7 @@ class WitCharTest {
     @DisplayName("should reject low surrogate codepoint")
     void shouldRejectLowSurrogateCodepoint() {
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(0xD800),
           "Should reject low surrogate codepoint");
     }
@@ -134,7 +134,7 @@ class WitCharTest {
     @DisplayName("should reject high surrogate codepoint")
     void shouldRejectHighSurrogateCodepoint() {
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(0xDFFF),
           "Should reject high surrogate codepoint");
     }
@@ -143,7 +143,7 @@ class WitCharTest {
     @DisplayName("should reject middle surrogate codepoint")
     void shouldRejectMiddleSurrogateCodepoint() {
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(0xDC00),
           "Should reject middle surrogate codepoint");
     }
@@ -155,14 +155,14 @@ class WitCharTest {
 
     @Test
     @DisplayName("getCodepoint should return correct value")
-    void getCodepointShouldReturnCorrectValue() throws WitRangeException {
+    void getCodepointShouldReturnCorrectValue() throws ValidationException {
       final WitChar witChar = WitChar.of(97);
       assertEquals(97, witChar.getCodepoint(), "Should return correct codepoint");
     }
 
     @Test
     @DisplayName("toJava should return Character")
-    void toJavaShouldReturnCharacter() throws WitRangeException {
+    void toJavaShouldReturnCharacter() throws ValidationException {
       final WitChar witChar = WitChar.of(65);
       assertEquals(Character.valueOf('A'), witChar.toJava(), "toJava should return Character 'A'");
     }
@@ -174,7 +174,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("should accept codepoint just before surrogate range")
-    void shouldAcceptCodepointBeforeSurrogateRange() throws WitRangeException {
+    void shouldAcceptCodepointBeforeSurrogateRange() throws ValidationException {
       final WitChar witChar = WitChar.of(0xD7FF);
       assertEquals(
           0xD7FF, witChar.getCodepoint(), "Should accept codepoint just before surrogate range");
@@ -182,7 +182,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("should accept codepoint just after surrogate range")
-    void shouldAcceptCodepointAfterSurrogateRange() throws WitRangeException {
+    void shouldAcceptCodepointAfterSurrogateRange() throws ValidationException {
       final WitChar witChar = WitChar.of(0xE000);
       assertEquals(
           0xE000, witChar.getCodepoint(), "Should accept codepoint just after surrogate range");
@@ -195,7 +195,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("same codepoint should be equal")
-    void sameCodepointShouldBeEqual() throws WitRangeException {
+    void sameCodepointShouldBeEqual() throws ValidationException {
       final WitChar char1 = WitChar.of(65);
       final WitChar char2 = WitChar.of(65);
       assertEquals(char1, char2, "Same codepoints should be equal");
@@ -203,7 +203,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("different codepoints should not be equal")
-    void differentCodepointsShouldNotBeEqual() throws WitRangeException {
+    void differentCodepointsShouldNotBeEqual() throws ValidationException {
       final WitChar char1 = WitChar.of(65);
       final WitChar char2 = WitChar.of(66);
       assertNotEquals(char1, char2, "Different codepoints should not be equal");
@@ -216,7 +216,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("same codepoint should have same hash code")
-    void sameCodepointShouldHaveSameHashCode() throws WitRangeException {
+    void sameCodepointShouldHaveSameHashCode() throws ValidationException {
       final WitChar char1 = WitChar.of(65);
       final WitChar char2 = WitChar.of(65);
       assertEquals(
@@ -230,7 +230,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("toString should contain codepoint")
-    void toStringShouldContainCodepoint() throws WitRangeException {
+    void toStringShouldContainCodepoint() throws ValidationException {
       final WitChar witChar = WitChar.of(65);
       final String str = witChar.toString();
       assertNotNull(str, "toString should not return null");
@@ -251,7 +251,7 @@ class WitCharTest {
 
     @Test
     @DisplayName("MIN_CODEPOINT boundary - exactly MIN must be accepted, MIN-1 must be rejected")
-    void minCodepointBoundaryMutationTest() throws WitRangeException {
+    void minCodepointBoundaryMutationTest() throws ValidationException {
       // If mutation changes < to <=, MIN_CODEPOINT would be rejected when it should be accepted
       final WitChar atMin = WitChar.of(MIN_CODEPOINT);
       assertEquals(
@@ -261,14 +261,14 @@ class WitCharTest {
 
       // Verify MIN-1 is rejected (tests the < condition)
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(MIN_CODEPOINT - 1),
           "Codepoint at MIN_CODEPOINT-1 (-1) must be rejected");
     }
 
     @Test
     @DisplayName("MAX_CODEPOINT boundary - exactly MAX must be accepted, MAX+1 must be rejected")
-    void maxCodepointBoundaryMutationTest() throws WitRangeException {
+    void maxCodepointBoundaryMutationTest() throws ValidationException {
       // If mutation changes > to >=, MAX_CODEPOINT would be rejected when it should be accepted
       final WitChar atMax = WitChar.of(MAX_CODEPOINT);
       assertEquals(
@@ -278,17 +278,17 @@ class WitCharTest {
 
       // Verify MAX+1 is rejected (tests the > condition)
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(MAX_CODEPOINT + 1),
           "Codepoint at MAX_CODEPOINT+1 (0x110000) must be rejected");
     }
 
     @Test
     @DisplayName("SURROGATE_MIN boundary - exactly MIN must be rejected, MIN-1 must be accepted")
-    void surrogateMinBoundaryMutationTest() throws WitRangeException {
+    void surrogateMinBoundaryMutationTest() throws ValidationException {
       // If mutation changes >= to >, SURROGATE_MIN would be accepted when it should be rejected
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(SURROGATE_MIN),
           "Codepoint exactly at SURROGATE_MIN (0xD800) must be rejected");
 
@@ -302,10 +302,10 @@ class WitCharTest {
 
     @Test
     @DisplayName("SURROGATE_MAX boundary - exactly MAX must be rejected, MAX+1 must be accepted")
-    void surrogateMaxBoundaryMutationTest() throws WitRangeException {
+    void surrogateMaxBoundaryMutationTest() throws ValidationException {
       // If mutation changes <= to <, SURROGATE_MAX would be accepted when it should be rejected
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(SURROGATE_MAX),
           "Codepoint exactly at SURROGATE_MAX (0xDFFF) must be rejected");
 
@@ -319,23 +319,23 @@ class WitCharTest {
 
     @Test
     @DisplayName("Combined boundary test - all four boundary conditions in single test")
-    void allBoundaryConditionsCombinedTest() throws WitRangeException {
+    void allBoundaryConditionsCombinedTest() throws ValidationException {
       // This test explicitly verifies both sides of each boundary for mutation killing
       // MIN boundary: 0 accepted, -1 rejected
       assertEquals(0, WitChar.of(0).getCodepoint(), "0 must be accepted");
-      assertThrows(WitRangeException.class, () -> WitChar.of(-1), "-1 must be rejected");
+      assertThrows(ValidationException.class, () -> WitChar.of(-1), "-1 must be rejected");
 
       // MAX boundary: 0x10FFFF accepted, 0x110000 rejected
       assertEquals(0x10FFFF, WitChar.of(0x10FFFF).getCodepoint(), "0x10FFFF must be accepted");
       assertThrows(
-          WitRangeException.class, () -> WitChar.of(0x110000), "0x110000 must be rejected");
+          ValidationException.class, () -> WitChar.of(0x110000), "0x110000 must be rejected");
 
       // SURROGATE_MIN boundary: 0xD800 rejected, 0xD7FF accepted
-      assertThrows(WitRangeException.class, () -> WitChar.of(0xD800), "0xD800 must be rejected");
+      assertThrows(ValidationException.class, () -> WitChar.of(0xD800), "0xD800 must be rejected");
       assertEquals(0xD7FF, WitChar.of(0xD7FF).getCodepoint(), "0xD7FF must be accepted");
 
       // SURROGATE_MAX boundary: 0xDFFF rejected, 0xE000 accepted
-      assertThrows(WitRangeException.class, () -> WitChar.of(0xDFFF), "0xDFFF must be rejected");
+      assertThrows(ValidationException.class, () -> WitChar.of(0xDFFF), "0xDFFF must be rejected");
       assertEquals(0xE000, WitChar.of(0xE000).getCodepoint(), "0xE000 must be accepted");
     }
   }

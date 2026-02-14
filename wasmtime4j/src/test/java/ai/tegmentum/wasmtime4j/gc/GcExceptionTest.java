@@ -48,12 +48,12 @@ class GcExceptionTest {
     }
 
     @Test
-    @DisplayName("should extend RuntimeException")
-    void shouldExtendRuntimeException() {
+    @DisplayName("should extend WasmException")
+    void shouldExtendWasmException() {
       assertTrue(
-          ai.tegmentum.wasmtime4j.exception.RuntimeException.class.isAssignableFrom(
+          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(
               GcException.class),
-          "GcException should extend RuntimeException");
+          "GcException should extend WasmException");
     }
 
     @Test
@@ -116,25 +116,25 @@ class GcExceptionTest {
   class ExceptionBehaviorTests {
 
     @Test
-    @DisplayName("should be unchecked exception")
-    void shouldBeUncheckedException() {
+    @DisplayName("should be a WasmException subclass")
+    void shouldBeWasmExceptionSubclass() {
       assertTrue(
-          ai.tegmentum.wasmtime4j.exception.RuntimeException.class.isAssignableFrom(
+          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(
               GcException.class),
-          "GcException should be an unchecked exception");
+          "GcException should be a WasmException subclass");
     }
 
     @Test
-    @DisplayName("should be catchable as RuntimeException")
-    void shouldBeCatchableAsRuntimeException() {
+    @DisplayName("should be catchable as WasmException")
+    void shouldBeCatchableAsWasmException() {
       boolean caught = false;
       try {
         throw new GcException("GC error");
-      } catch (final ai.tegmentum.wasmtime4j.exception.RuntimeException e) {
+      } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
         caught = true;
         assertTrue(e instanceof GcException, "Should be instance of GcException");
       }
-      assertTrue(caught, "Exception should be caught as RuntimeException");
+      assertTrue(caught, "Exception should be caught as WasmException");
     }
 
     @Test
@@ -201,24 +201,6 @@ class GcExceptionTest {
   @Nested
   @DisplayName("Edge Case Tests")
   class EdgeCaseTests {
-
-    @Test
-    @DisplayName("should reject null message")
-    void shouldRejectNullMessage() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> new GcException((String) null),
-          "Null message should be rejected");
-    }
-
-    @Test
-    @DisplayName("should reject empty message")
-    void shouldRejectEmptyMessage() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> new GcException(""),
-          "Empty message should be rejected");
-    }
 
     @Test
     @DisplayName("should chain causes correctly")

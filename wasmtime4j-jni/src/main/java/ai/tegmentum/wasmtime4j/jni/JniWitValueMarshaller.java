@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.wit.WitValue;
 import ai.tegmentum.wasmtime4j.wit.WitValueDeserializer;
@@ -55,12 +55,11 @@ public final class JniWitValueMarshaller {
    *
    * @param value the WIT value to marshal
    * @return marshalled value ready for native calls
-   * @throws WitValueException if marshalling fails
+   * @throws ValidationException if marshalling fails
    */
-  public static MarshalledValue marshal(final WitValue value) throws WitValueException {
+  public static MarshalledValue marshal(final WitValue value) throws ValidationException {
     if (value == null) {
-      throw new WitValueException(
-          "Cannot marshal null value", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot marshal null value");
     }
 
     // Get type discriminator and serialize value
@@ -71,9 +70,8 @@ public final class JniWitValueMarshaller {
     final byte[] marshalledData = witValueSerializeNative(typeDiscriminator, data);
 
     if (marshalledData == null) {
-      throw new WitValueException(
-          "Native marshalling failed for type discriminator " + typeDiscriminator,
-          WitValueException.ErrorCode.MARSHALING_ERROR);
+      throw new ValidationException(
+          "Native marshalling failed for type discriminator " + typeDiscriminator);
     }
 
     return new MarshalledValue(typeDiscriminator, marshalledData);
@@ -85,29 +83,25 @@ public final class JniWitValueMarshaller {
    * @param typeDiscriminator the type discriminator (1-6)
    * @param data the serialized byte array
    * @return the unmarshalled WIT value
-   * @throws WitValueException if unmarshalling fails
+   * @throws ValidationException if unmarshalling fails
    */
   public static WitValue unmarshal(final int typeDiscriminator, final byte[] data)
-      throws WitValueException {
+      throws ValidationException {
     if (data == null) {
-      throw new WitValueException(
-          "Cannot unmarshal null data", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot unmarshal null data");
     }
 
     // Validate discriminator
     if (!validateDiscriminator(typeDiscriminator)) {
-      throw new WitValueException(
-          "Invalid type discriminator: " + typeDiscriminator,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid type discriminator: " + typeDiscriminator);
     }
 
     // Call native unmarshalling function
     final byte[] unmarshalledData = witValueDeserializeNative(typeDiscriminator, data);
 
     if (unmarshalledData == null) {
-      throw new WitValueException(
-          "Native unmarshalling failed for type discriminator " + typeDiscriminator,
-          WitValueException.ErrorCode.MARSHALING_ERROR);
+      throw new ValidationException(
+          "Native unmarshalling failed for type discriminator " + typeDiscriminator);
     }
 
     // Deserialize using the public API

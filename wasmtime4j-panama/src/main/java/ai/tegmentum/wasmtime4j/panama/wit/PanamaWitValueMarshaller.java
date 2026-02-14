@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wit;
 
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.panama.NativeComponentBindings;
 import ai.tegmentum.wasmtime4j.wit.WitValue;
 import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller.MarshalledValue;
@@ -57,13 +57,12 @@ public final class PanamaWitValueMarshaller {
    * @param value the WIT value to marshal
    * @param arena the memory arena for allocation
    * @return marshalled value ready for native calls
-   * @throws WitValueException if marshalling fails
+   * @throws ValidationException if marshalling fails
    */
   public static MarshalledValue marshal(final WitValue value, final Arena arena)
-      throws WitValueException {
+      throws ValidationException {
     if (value == null) {
-      throw new WitValueException(
-          "Cannot marshal null value", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot marshal null value");
     }
     if (arena == null) {
       throw new IllegalArgumentException("Arena cannot be null");
@@ -84,9 +83,8 @@ public final class PanamaWitValueMarshaller {
             typeDiscriminator, valueSegment, data.length, outDataPtr, outLenPtr);
 
     if (errorCode != 0) {
-      throw new WitValueException(
-          "Native marshalling failed for type discriminator " + typeDiscriminator,
-          WitValueException.ErrorCode.MARSHALING_ERROR);
+      throw new ValidationException(
+          "Native marshalling failed for type discriminator " + typeDiscriminator);
     }
 
     // Read output
@@ -113,13 +111,13 @@ public final class PanamaWitValueMarshaller {
    * @param data the serialized byte array
    * @param arena the memory arena for allocation
    * @return the unmarshalled WIT value
-   * @throws WitValueException if unmarshalling fails
+   * @throws ValidationException if unmarshalling fails
    */
   public static WitValue unmarshal(
-      final int typeDiscriminator, final byte[] data, final Arena arena) throws WitValueException {
+      final int typeDiscriminator, final byte[] data, final Arena arena)
+      throws ValidationException {
     if (data == null) {
-      throw new WitValueException(
-          "Cannot unmarshal null data", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot unmarshal null data");
     }
     if (arena == null) {
       throw new IllegalArgumentException("Arena cannot be null");
@@ -127,9 +125,7 @@ public final class PanamaWitValueMarshaller {
 
     // Validate discriminator
     if (!NATIVE_BINDINGS.witValueValidateDiscriminator(typeDiscriminator)) {
-      throw new WitValueException(
-          "Invalid type discriminator: " + typeDiscriminator,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid type discriminator: " + typeDiscriminator);
     }
 
     // Allocate native memory
@@ -143,9 +139,8 @@ public final class PanamaWitValueMarshaller {
             typeDiscriminator, dataSegment, data.length, outValuePtr, outLenPtr);
 
     if (errorCode != 0) {
-      throw new WitValueException(
-          "Native unmarshalling failed for type discriminator " + typeDiscriminator,
-          WitValueException.ErrorCode.MARSHALING_ERROR);
+      throw new ValidationException(
+          "Native unmarshalling failed for type discriminator " + typeDiscriminator);
     }
 
     // Read output

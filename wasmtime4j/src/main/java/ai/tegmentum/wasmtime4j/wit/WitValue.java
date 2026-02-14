@@ -130,9 +130,9 @@ public abstract class WitValue {
    * <p>Implementations should call this method during construction to ensure values are always
    * valid.
    *
-   * @throws ai.tegmentum.wasmtime4j.exception.WitValueException if validation fails
+   * @throws ai.tegmentum.wasmtime4j.exception.ValidationException if validation fails
    */
-  protected abstract void validate() throws ai.tegmentum.wasmtime4j.exception.WitValueException;
+  protected abstract void validate() throws ai.tegmentum.wasmtime4j.exception.ValidationException;
 
   /**
    * Checks if this value is compatible with the specified WIT type.

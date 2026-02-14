@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -286,7 +286,7 @@ final class WitResourceHandleTest {
 
     @Test
     @DisplayName("Serialize WitOwn to binary format")
-    void testSerializeOwn() throws WitValueException {
+    void testSerializeOwn() throws ValidationException {
       final WitOwn own = WitOwn.of("file-handle", 42);
       final byte[] result = WitValueSerializer.serialize(own);
 
@@ -306,7 +306,7 @@ final class WitResourceHandleTest {
 
     @Test
     @DisplayName("Serialize WitBorrow to binary format")
-    void testSerializeBorrow() throws WitValueException {
+    void testSerializeBorrow() throws ValidationException {
       final WitBorrow borrow = WitBorrow.of("socket", 100);
       final byte[] result = WitValueSerializer.serialize(borrow);
 
@@ -325,14 +325,14 @@ final class WitResourceHandleTest {
 
     @Test
     @DisplayName("Get type discriminator for WitOwn")
-    void testOwnTypeDiscriminator() throws WitValueException {
+    void testOwnTypeDiscriminator() throws ValidationException {
       final WitOwn own = WitOwn.of("resource", 1);
       assertEquals(22, WitValueSerializer.getTypeDiscriminator(own));
     }
 
     @Test
     @DisplayName("Get type discriminator for WitBorrow")
-    void testBorrowTypeDiscriminator() throws WitValueException {
+    void testBorrowTypeDiscriminator() throws ValidationException {
       final WitBorrow borrow = WitBorrow.of("resource", 1);
       assertEquals(23, WitValueSerializer.getTypeDiscriminator(borrow));
     }
@@ -344,7 +344,7 @@ final class WitResourceHandleTest {
 
     @Test
     @DisplayName("Deserialize WitOwn from binary format")
-    void testDeserializeOwn() throws WitValueException {
+    void testDeserializeOwn() throws ValidationException {
       // Create serialized data: [type_name_length: u32][type_name: UTF-8][index: i32]
       final String resourceType = "file-handle";
       final byte[] typeBytes = resourceType.getBytes(StandardCharsets.UTF_8);
@@ -364,7 +364,7 @@ final class WitResourceHandleTest {
 
     @Test
     @DisplayName("Deserialize WitBorrow from binary format")
-    void testDeserializeBorrow() throws WitValueException {
+    void testDeserializeBorrow() throws ValidationException {
       final String resourceType = "socket";
       final byte[] typeBytes = resourceType.getBytes(StandardCharsets.UTF_8);
       final ByteBuffer buffer =
@@ -386,7 +386,7 @@ final class WitResourceHandleTest {
     void testRejectTruncatedOwnData() {
       final byte[] truncatedData = new byte[] {0, 0, 0, 5};
       assertThrows(
-          WitValueException.class,
+          ValidationException.class,
           () -> WitValueDeserializer.deserialize(22, truncatedData),
           "Should reject truncated data");
     }
@@ -396,7 +396,7 @@ final class WitResourceHandleTest {
     void testRejectTruncatedBorrowData() {
       final byte[] truncatedData = new byte[] {0, 0, 0, 5};
       assertThrows(
-          WitValueException.class,
+          ValidationException.class,
           () -> WitValueDeserializer.deserialize(23, truncatedData),
           "Should reject truncated data");
     }
@@ -408,7 +408,7 @@ final class WitResourceHandleTest {
 
     @Test
     @DisplayName("Round-trip WitOwn through serialization")
-    void testOwnRoundTrip() throws WitValueException {
+    void testOwnRoundTrip() throws ValidationException {
       final WitOwn original = WitOwn.of("database-connection", 999);
 
       final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
@@ -423,7 +423,7 @@ final class WitResourceHandleTest {
 
     @Test
     @DisplayName("Round-trip WitBorrow through serialization")
-    void testBorrowRoundTrip() throws WitValueException {
+    void testBorrowRoundTrip() throws ValidationException {
       final WitBorrow original = WitBorrow.of("network-stream", 12345);
 
       final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
@@ -438,7 +438,7 @@ final class WitResourceHandleTest {
 
     @Test
     @DisplayName("Round-trip with Unicode resource type name")
-    void testUnicodeResourceTypeRoundTrip() throws WitValueException {
+    void testUnicodeResourceTypeRoundTrip() throws ValidationException {
       final WitOwn original = WitOwn.of("文件句柄", 42);
 
       final int discriminator = WitValueSerializer.getTypeDiscriminator(original);

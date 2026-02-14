@@ -28,8 +28,6 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

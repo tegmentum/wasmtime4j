@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WitMarshalingException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -62,7 +62,7 @@ class WitStringTest {
 
     @Test
     @DisplayName("should create WitString from valid string")
-    void shouldCreateFromValidString() throws WitMarshalingException {
+    void shouldCreateFromValidString() throws ValidationException {
       final WitString witString = WitString.of("hello");
       assertNotNull(witString, "Should create WitString from valid string");
       assertEquals("hello", witString.getValue(), "Value should be 'hello'");
@@ -70,7 +70,7 @@ class WitStringTest {
 
     @Test
     @DisplayName("should create WitString from empty string")
-    void shouldCreateFromEmptyString() throws WitMarshalingException {
+    void shouldCreateFromEmptyString() throws ValidationException {
       final WitString witString = WitString.of("");
       assertNotNull(witString, "Should create WitString from empty string");
       assertEquals("", witString.getValue(), "Value should be empty");
@@ -78,7 +78,7 @@ class WitStringTest {
 
     @Test
     @DisplayName("should create WitString from unicode string")
-    void shouldCreateFromUnicodeString() throws WitMarshalingException {
+    void shouldCreateFromUnicodeString() throws ValidationException {
       final String unicode = "Hello 世界 🌍";
       final WitString witString = WitString.of(unicode);
       assertEquals(unicode, witString.getValue(), "Should preserve unicode content");
@@ -88,9 +88,9 @@ class WitStringTest {
     @DisplayName("should throw on null value")
     void shouldThrowOnNullValue() {
       assertThrows(
-          WitMarshalingException.class,
+          ValidationException.class,
           () -> WitString.of(null),
-          "Should throw WitMarshalingException for null");
+          "Should throw ValidationException for null");
     }
   }
 
@@ -100,14 +100,14 @@ class WitStringTest {
 
     @Test
     @DisplayName("getValue should return correct value")
-    void getValueShouldReturnCorrectValue() throws WitMarshalingException {
+    void getValueShouldReturnCorrectValue() throws ValidationException {
       final WitString witString = WitString.of("test");
       assertEquals("test", witString.getValue(), "Should return correct value");
     }
 
     @Test
     @DisplayName("toJava should return same string")
-    void toJavaShouldReturnSameString() throws WitMarshalingException {
+    void toJavaShouldReturnSameString() throws ValidationException {
       final WitString witString = WitString.of("test");
       assertEquals("test", witString.toJava(), "toJava should return same string");
     }
@@ -119,7 +119,7 @@ class WitStringTest {
 
     @Test
     @DisplayName("same string value should be equal")
-    void sameStringValueShouldBeEqual() throws WitMarshalingException {
+    void sameStringValueShouldBeEqual() throws ValidationException {
       final WitString str1 = WitString.of("hello");
       final WitString str2 = WitString.of("hello");
       assertEquals(str1, str2, "Same string values should be equal");
@@ -127,7 +127,7 @@ class WitStringTest {
 
     @Test
     @DisplayName("different string values should not be equal")
-    void differentStringValuesShouldNotBeEqual() throws WitMarshalingException {
+    void differentStringValuesShouldNotBeEqual() throws ValidationException {
       final WitString str1 = WitString.of("hello");
       final WitString str2 = WitString.of("world");
       assertNotEquals(str1, str2, "Different string values should not be equal");
@@ -135,14 +135,14 @@ class WitStringTest {
 
     @Test
     @DisplayName("should not equal null")
-    void shouldNotEqualNull() throws WitMarshalingException {
+    void shouldNotEqualNull() throws ValidationException {
       final WitString witString = WitString.of("test");
       assertNotEquals(null, witString, "Should not equal null");
     }
 
     @Test
     @DisplayName("should not equal object of different type")
-    void shouldNotEqualDifferentType() throws WitMarshalingException {
+    void shouldNotEqualDifferentType() throws ValidationException {
       final WitString witString = WitString.of("test");
       assertNotEquals("test", witString, "Should not equal plain String");
     }
@@ -154,7 +154,7 @@ class WitStringTest {
 
     @Test
     @DisplayName("same string value should have same hash code")
-    void sameStringValueShouldHaveSameHashCode() throws WitMarshalingException {
+    void sameStringValueShouldHaveSameHashCode() throws ValidationException {
       final WitString str1 = WitString.of("hello");
       final WitString str2 = WitString.of("hello");
       assertEquals(str1.hashCode(), str2.hashCode(), "Same values should have same hash code");
@@ -167,7 +167,7 @@ class WitStringTest {
 
     @Test
     @DisplayName("toString should contain the string value")
-    void toStringShouldContainValue() throws WitMarshalingException {
+    void toStringShouldContainValue() throws ValidationException {
       final WitString witString = WitString.of("hello");
       final String str = witString.toString();
       assertNotNull(str, "toString should not return null");
@@ -181,7 +181,7 @@ class WitStringTest {
 
     @Test
     @DisplayName("should have WitType")
-    void shouldHaveWitType() throws WitMarshalingException {
+    void shouldHaveWitType() throws ValidationException {
       final WitString witString = WitString.of("test");
       assertNotNull(witString.getType(), "Should have WitType");
     }

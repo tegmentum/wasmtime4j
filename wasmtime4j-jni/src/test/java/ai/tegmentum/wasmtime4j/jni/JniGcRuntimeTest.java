@@ -310,7 +310,6 @@ class JniGcRuntimeTest {
       final Method method = JniGcRuntime.class.getMethod("getGcStats");
       assertThat(method.getReturnType()).isEqualTo(GcStats.class);
     }
-
   }
 
   @Nested

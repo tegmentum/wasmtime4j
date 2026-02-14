@@ -16,9 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.exception.WitMarshalingException;
-import ai.tegmentum.wasmtime4j.exception.WitRangeException;
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -56,13 +54,12 @@ public final class WitValueDeserializer {
    * @param typeDiscriminator the type discriminator (1-16)
    * @param data the serialized byte array
    * @return the deserialized WIT value
-   * @throws WitValueException if deserialization fails
+   * @throws ValidationException if deserialization fails
    */
   public static WitValue deserialize(final int typeDiscriminator, final byte[] data)
-      throws WitValueException {
+      throws ValidationException {
     if (data == null) {
-      throw new WitValueException(
-          "Cannot deserialize null data", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot deserialize null data");
     }
 
     switch (typeDiscriminator) {
@@ -111,9 +108,7 @@ public final class WitValueDeserializer {
       case 23:
         return deserializeBorrow(data);
       default:
-        throw new WitValueException(
-            "Invalid type discriminator: " + typeDiscriminator,
-            WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Invalid type discriminator: " + typeDiscriminator);
     }
   }
 
@@ -122,12 +117,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the boolean value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitBool deserializeBool(final byte[] data) throws WitValueException {
+  private static WitBool deserializeBool(final byte[] data) throws ValidationException {
     if (data.length != BOOL_SIZE) {
-      throw new WitValueException(
-          "Invalid bool data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid bool data size: " + data.length);
     }
     return WitBool.of(data[0] != 0);
   }
@@ -137,12 +131,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the byte value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitS8 deserializeS8(final byte[] data) throws WitValueException {
+  private static WitS8 deserializeS8(final byte[] data) throws ValidationException {
     if (data.length != S8_SIZE) {
-      throw new WitValueException(
-          "Invalid s8 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid s8 data size: " + data.length);
     }
     return WitS8.of(data[0]);
   }
@@ -152,12 +145,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the short value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitS16 deserializeS16(final byte[] data) throws WitValueException {
+  private static WitS16 deserializeS16(final byte[] data) throws ValidationException {
     if (data.length != S16_SIZE) {
-      throw new WitValueException(
-          "Invalid s16 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid s16 data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitS16.of(buffer.getShort());
@@ -168,12 +160,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the integer value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitS32 deserializeS32(final byte[] data) throws WitValueException {
+  private static WitS32 deserializeS32(final byte[] data) throws ValidationException {
     if (data.length != S32_SIZE) {
-      throw new WitValueException(
-          "Invalid s32 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid s32 data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitS32.of(buffer.getInt());
@@ -184,12 +175,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the long value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitS64 deserializeS64(final byte[] data) throws WitValueException {
+  private static WitS64 deserializeS64(final byte[] data) throws ValidationException {
     if (data.length != S64_SIZE) {
-      throw new WitValueException(
-          "Invalid s64 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid s64 data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitS64.of(buffer.getLong());
@@ -200,12 +190,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the unsigned byte value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitU8 deserializeU8(final byte[] data) throws WitValueException {
+  private static WitU8 deserializeU8(final byte[] data) throws ValidationException {
     if (data.length != U8_SIZE) {
-      throw new WitValueException(
-          "Invalid u8 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid u8 data size: " + data.length);
     }
     return WitU8.of(data[0]);
   }
@@ -215,12 +204,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the unsigned short value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitU16 deserializeU16(final byte[] data) throws WitValueException {
+  private static WitU16 deserializeU16(final byte[] data) throws ValidationException {
     if (data.length != U16_SIZE) {
-      throw new WitValueException(
-          "Invalid u16 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid u16 data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitU16.of(buffer.getShort());
@@ -231,12 +219,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the unsigned integer value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitU32 deserializeU32(final byte[] data) throws WitValueException {
+  private static WitU32 deserializeU32(final byte[] data) throws ValidationException {
     if (data.length != U32_SIZE) {
-      throw new WitValueException(
-          "Invalid u32 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid u32 data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitU32.of(buffer.getInt());
@@ -247,12 +234,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the unsigned long value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitU64 deserializeU64(final byte[] data) throws WitValueException {
+  private static WitU64 deserializeU64(final byte[] data) throws ValidationException {
     if (data.length != U64_SIZE) {
-      throw new WitValueException(
-          "Invalid u64 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid u64 data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitU64.of(buffer.getLong());
@@ -263,12 +249,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the float value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitFloat32 deserializeFloat32(final byte[] data) throws WitValueException {
+  private static WitFloat32 deserializeFloat32(final byte[] data) throws ValidationException {
     if (data.length != FLOAT32_SIZE) {
-      throw new WitValueException(
-          "Invalid float32 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid float32 data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitFloat32.of(buffer.getFloat());
@@ -279,12 +264,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the double value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitFloat64 deserializeFloat64(final byte[] data) throws WitValueException {
+  private static WitFloat64 deserializeFloat64(final byte[] data) throws ValidationException {
     if (data.length != FLOAT64_SIZE) {
-      throw new WitValueException(
-          "Invalid float64 data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid float64 data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     return WitFloat64.of(buffer.getDouble());
@@ -295,20 +279,18 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the character value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitChar deserializeChar(final byte[] data) throws WitValueException {
+  private static WitChar deserializeChar(final byte[] data) throws ValidationException {
     if (data.length != CHAR_SIZE) {
-      throw new WitValueException(
-          "Invalid char data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid char data size: " + data.length);
     }
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     final int codepoint = buffer.getInt();
     try {
       return WitChar.of(codepoint);
-    } catch (final WitRangeException e) {
-      throw new WitValueException(
-          "Invalid codepoint: " + codepoint, WitValueException.ErrorCode.RANGE_ERROR, e);
+    } catch (final ValidationException e) {
+      throw new ValidationException("Invalid codepoint: " + codepoint, e);
     }
   }
 
@@ -317,28 +299,25 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the string value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitString deserializeString(final byte[] data) throws WitValueException {
+  private static WitString deserializeString(final byte[] data) throws ValidationException {
     if (data.length < STRING_LENGTH_SIZE) {
-      throw new WitValueException(
-          "Invalid string data size: " + data.length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid string data size: " + data.length);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     final int length = buffer.getInt();
 
     if (length < 0) {
-      throw new WitValueException(
-          "Invalid string length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid string length: " + length);
     }
 
     if (data.length != STRING_LENGTH_SIZE + length) {
-      throw new WitValueException(
+      throw new ValidationException(
           String.format(
               "String data size mismatch: expected %d, got %d",
-              STRING_LENGTH_SIZE + length, data.length),
-          WitValueException.ErrorCode.INVALID_FORMAT);
+              STRING_LENGTH_SIZE + length, data.length));
     }
 
     final byte[] utf8Bytes = new byte[length];
@@ -347,9 +326,8 @@ public final class WitValueDeserializer {
     final String value = new String(utf8Bytes, StandardCharsets.UTF_8);
     try {
       return WitString.of(value);
-    } catch (final WitMarshalingException e) {
-      throw new WitValueException(
-          "Failed to create WitString", WitValueException.ErrorCode.MARSHALING_ERROR, e);
+    } catch (final ValidationException e) {
+      throw new ValidationException("Failed to create WitString", e);
     }
   }
 
@@ -358,40 +336,35 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the record value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitRecord deserializeRecord(final byte[] data) throws WitValueException {
+  private static WitRecord deserializeRecord(final byte[] data) throws ValidationException {
     if (data.length < 4) {
-      throw new WitValueException(
-          "Record data too short for field count", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Record data too short for field count");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     final int fieldCount = buffer.getInt();
 
     if (fieldCount < 0) {
-      throw new WitValueException(
-          "Invalid field count: " + fieldCount, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid field count: " + fieldCount);
     }
 
     final java.util.Map<String, WitValue> fields = new java.util.LinkedHashMap<>(fieldCount);
 
     for (int i = 0; i < fieldCount; i++) {
       if (buffer.remaining() < 4) { // Need at least field name length
-        throw new WitValueException(
-            "Record data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Record data truncated at field " + i);
       }
 
       // Read field name
       final int nameLength = buffer.getInt();
       if (nameLength < 0) {
-        throw new WitValueException(
-            "Invalid field name length: " + nameLength, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Invalid field name length: " + nameLength);
       }
 
       if (buffer.remaining() < nameLength) {
-        throw new WitValueException(
-            "Field name data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Field name data truncated at field " + i);
       }
 
       final byte[] nameBytes = new byte[nameLength];
@@ -400,21 +373,18 @@ public final class WitValueDeserializer {
 
       // Read field value
       if (buffer.remaining() < 8) { // Need discriminator + length
-        throw new WitValueException(
-            "Record data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Record data truncated at field " + i);
       }
 
       final int discriminator = buffer.getInt();
       final int length = buffer.getInt();
 
       if (length < 0) {
-        throw new WitValueException(
-            "Invalid field data length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Invalid field data length: " + length);
       }
 
       if (buffer.remaining() < length) {
-        throw new WitValueException(
-            "Field data truncated at field " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Field data truncated at field " + i);
       }
 
       final byte[] fieldData = new byte[length];
@@ -434,47 +404,40 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the list value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitList deserializeList(final byte[] data) throws WitValueException {
+  private static WitList deserializeList(final byte[] data) throws ValidationException {
     if (data.length < 4) {
-      throw new WitValueException(
-          "List data too short for element count", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("List data too short for element count");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     final int elementCount = buffer.getInt();
 
     if (elementCount < 0) {
-      throw new WitValueException(
-          "Invalid element count: " + elementCount, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid element count: " + elementCount);
     }
 
     if (elementCount == 0) {
-      throw new WitValueException(
-          "Cannot infer list element type from empty list",
-          WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Cannot infer list element type from empty list");
     }
 
     final java.util.List<WitValue> elements = new java.util.ArrayList<>(elementCount);
 
     for (int i = 0; i < elementCount; i++) {
       if (buffer.remaining() < 8) { // Need discriminator + length
-        throw new WitValueException(
-            "List data truncated at element " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("List data truncated at element " + i);
       }
 
       final int discriminator = buffer.getInt();
       final int length = buffer.getInt();
 
       if (length < 0) {
-        throw new WitValueException(
-            "Invalid element data length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Invalid element data length: " + length);
       }
 
       if (buffer.remaining() < length) {
-        throw new WitValueException(
-            "Element data truncated at element " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Element data truncated at element " + i);
       }
 
       final byte[] elementData = new byte[length];
@@ -498,12 +461,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the variant value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitVariant deserializeVariant(final byte[] data) throws WitValueException {
+  private static WitVariant deserializeVariant(final byte[] data) throws ValidationException {
     if (data.length < 5) { // name_length + has_payload
-      throw new WitValueException(
-          "Variant data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Variant data too short");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -511,13 +473,11 @@ public final class WitValueDeserializer {
     // Read case name
     final int nameLength = buffer.getInt();
     if (nameLength < 0) {
-      throw new WitValueException(
-          "Invalid case name length: " + nameLength, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid case name length: " + nameLength);
     }
 
     if (buffer.remaining() < nameLength + 1) {
-      throw new WitValueException(
-          "Variant case name truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Variant case name truncated");
     }
 
     final byte[] nameBytes = new byte[nameLength];
@@ -533,21 +493,18 @@ public final class WitValueDeserializer {
     } else {
       // Read payload
       if (buffer.remaining() < 8) {
-        throw new WitValueException(
-            "Variant payload truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Variant payload truncated");
       }
 
       final int discriminator = buffer.getInt();
       final int length = buffer.getInt();
 
       if (length < 0) {
-        throw new WitValueException(
-            "Invalid payload length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Invalid payload length: " + length);
       }
 
       if (buffer.remaining() < length) {
-        throw new WitValueException(
-            "Variant payload data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Variant payload data truncated");
       }
 
       final byte[] payloadData = new byte[length];
@@ -570,26 +527,22 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the enum value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitEnum deserializeEnum(final byte[] data) throws WitValueException {
+  private static WitEnum deserializeEnum(final byte[] data) throws ValidationException {
     if (data.length < 4) {
-      throw new WitValueException(
-          "Enum data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Enum data too short");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
 
     final int nameLength = buffer.getInt();
     if (nameLength < 0) {
-      throw new WitValueException(
-          "Invalid discriminant name length: " + nameLength,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid discriminant name length: " + nameLength);
     }
 
     if (buffer.remaining() < nameLength) {
-      throw new WitValueException(
-          "Enum discriminant name truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Enum discriminant name truncated");
     }
 
     final byte[] nameBytes = new byte[nameLength];
@@ -610,12 +563,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the option value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitOption deserializeOption(final byte[] data) throws WitValueException {
+  private static WitOption deserializeOption(final byte[] data) throws ValidationException {
     if (data.length < 1) {
-      throw new WitValueException(
-          "Option data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Option data too short");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -627,21 +579,18 @@ public final class WitValueDeserializer {
       return WitOption.none(WitType.option(WitType.createBool()));
     } else {
       if (buffer.remaining() < 8) {
-        throw new WitValueException(
-            "Option value truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Option value truncated");
       }
 
       final int discriminator = buffer.getInt();
       final int length = buffer.getInt();
 
       if (length < 0) {
-        throw new WitValueException(
-            "Invalid value length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Invalid value length: " + length);
       }
 
       if (buffer.remaining() < length) {
-        throw new WitValueException(
-            "Option value data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Option value data truncated");
       }
 
       final byte[] valueData = new byte[length];
@@ -664,12 +613,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the result value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitResult deserializeResult(final byte[] data) throws WitValueException {
+  private static WitResult deserializeResult(final byte[] data) throws ValidationException {
     if (data.length < 2) {
-      throw new WitValueException(
-          "Result data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Result data too short");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -685,21 +633,18 @@ public final class WitValueDeserializer {
       return isOk != 0 ? WitResult.ok(resultType) : WitResult.err(resultType);
     } else {
       if (buffer.remaining() < 8) {
-        throw new WitValueException(
-            "Result value truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Result value truncated");
       }
 
       final int discriminator = buffer.getInt();
       final int length = buffer.getInt();
 
       if (length < 0) {
-        throw new WitValueException(
-            "Invalid value length: " + length, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Invalid value length: " + length);
       }
 
       if (buffer.remaining() < length) {
-        throw new WitValueException(
-            "Result value data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Result value data truncated");
       }
 
       final byte[] valueData = new byte[length];
@@ -721,39 +666,34 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the flags value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitFlags deserializeFlags(final byte[] data) throws WitValueException {
+  private static WitFlags deserializeFlags(final byte[] data) throws ValidationException {
     if (data.length < 4) {
-      throw new WitValueException(
-          "Flags data too short for flag count", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Flags data too short for flag count");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
     final int flagCount = buffer.getInt();
 
     if (flagCount < 0) {
-      throw new WitValueException(
-          "Invalid flag count: " + flagCount, WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid flag count: " + flagCount);
     }
 
     final java.util.Set<String> flagNames = new java.util.HashSet<>(flagCount);
 
     for (int i = 0; i < flagCount; i++) {
       if (buffer.remaining() < 4) {
-        throw new WitValueException(
-            "Flags data truncated at flag " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Flags data truncated at flag " + i);
       }
 
       final int nameLength = buffer.getInt();
       if (nameLength < 0) {
-        throw new WitValueException(
-            "Invalid flag name length: " + nameLength, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Invalid flag name length: " + nameLength);
       }
 
       if (buffer.remaining() < nameLength) {
-        throw new WitValueException(
-            "Flag name data truncated at flag " + i, WitValueException.ErrorCode.INVALID_FORMAT);
+        throw new ValidationException("Flag name data truncated at flag " + i);
       }
 
       final byte[] nameBytes = new byte[nameLength];
@@ -774,11 +714,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the owned resource handle value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitOwn deserializeOwn(final byte[] data) throws WitValueException {
+  private static WitOwn deserializeOwn(final byte[] data) throws ValidationException {
     if (data.length < 8) { // At least type name length + index
-      throw new WitValueException("Own data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Own data too short");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -786,13 +726,11 @@ public final class WitValueDeserializer {
     // Read resource type name
     final int typeNameLength = buffer.getInt();
     if (typeNameLength < 0) {
-      throw new WitValueException(
-          "Invalid resource type name length: " + typeNameLength,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid resource type name length: " + typeNameLength);
     }
 
     if (buffer.remaining() < typeNameLength + 4) { // type name + index
-      throw new WitValueException("Own data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Own data truncated");
     }
 
     final byte[] typeNameBytes = new byte[typeNameLength];
@@ -812,12 +750,11 @@ public final class WitValueDeserializer {
    *
    * @param data the serialized bytes
    * @return the borrowed resource handle value
-   * @throws WitValueException if data is invalid
+   * @throws ValidationException if data is invalid
    */
-  private static WitBorrow deserializeBorrow(final byte[] data) throws WitValueException {
+  private static WitBorrow deserializeBorrow(final byte[] data) throws ValidationException {
     if (data.length < 8) { // At least type name length + index
-      throw new WitValueException(
-          "Borrow data too short", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Borrow data too short");
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -825,14 +762,11 @@ public final class WitValueDeserializer {
     // Read resource type name
     final int typeNameLength = buffer.getInt();
     if (typeNameLength < 0) {
-      throw new WitValueException(
-          "Invalid resource type name length: " + typeNameLength,
-          WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Invalid resource type name length: " + typeNameLength);
     }
 
     if (buffer.remaining() < typeNameLength + 4) { // type name + index
-      throw new WitValueException(
-          "Borrow data truncated", WitValueException.ErrorCode.INVALID_FORMAT);
+      throw new ValidationException("Borrow data truncated");
     }
 
     final byte[] typeNameBytes = new byte[typeNameLength];

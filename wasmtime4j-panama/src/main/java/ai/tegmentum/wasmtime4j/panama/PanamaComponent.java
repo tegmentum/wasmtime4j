@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -116,7 +117,7 @@ public final class PanamaComponent {
       try {
         // Create the native component engine through FFI
         MemorySegment enginePtr = createNativeComponentEngine();
-        PanamaErrorHandler.requireValidPointer(enginePtr, "enginePtr");
+        PanamaValidation.requireValidHandle(enginePtr, "enginePtr");
 
         // Create managed resource with cleanup
         this.engineResource =
@@ -156,7 +157,7 @@ public final class PanamaComponent {
 
       // Parameter validation with defensive programming
       Objects.requireNonNull(wasmBytes, "WebAssembly bytes cannot be null");
-      PanamaErrorHandler.requirePositive(wasmBytes.length, "wasmBytes.length");
+      PanamaValidation.requirePositive(wasmBytes.length, "wasmBytes.length");
 
       try {
         // Allocate memory segment for WASM bytes with zero-copy approach
@@ -170,7 +171,7 @@ public final class PanamaComponent {
         // Load component through FFI
         MemorySegment componentPtr =
             loadNativeComponentFromBytes(engineResource.resource(), wasmMemory.segment());
-        PanamaErrorHandler.requireValidPointer(componentPtr, "componentPtr");
+        PanamaValidation.requireValidHandle(componentPtr, "componentPtr");
 
         return new PanamaComponentHandle(resourceManager, componentPtr);
 
@@ -202,7 +203,7 @@ public final class PanamaComponent {
         // Instantiate component through FFI
         MemorySegment instancePtr =
             instantiateNativeComponent(engineResource.resource(), component.getResource());
-        PanamaErrorHandler.requireValidPointer(instancePtr, "instancePtr");
+        PanamaValidation.requireValidHandle(instancePtr, "instancePtr");
 
         return new PanamaComponentInstanceHandle(resourceManager, instancePtr);
 
@@ -386,7 +387,7 @@ public final class PanamaComponent {
      */
     public boolean exportsInterface(final String interfaceName) throws WasmException {
       Objects.requireNonNull(interfaceName, "Interface name cannot be null");
-      PanamaErrorHandler.requireNonEmpty(interfaceName, "interfaceName");
+      PanamaValidation.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
 
       try {
@@ -405,7 +406,7 @@ public final class PanamaComponent {
      */
     public boolean importsInterface(final String interfaceName) throws WasmException {
       Objects.requireNonNull(interfaceName, "Interface name cannot be null");
-      PanamaErrorHandler.requireNonEmpty(interfaceName, "interfaceName");
+      PanamaValidation.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
 
       try {

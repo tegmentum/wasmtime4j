@@ -22,8 +22,8 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
 import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
@@ -157,7 +157,7 @@ public final class JniComponentFunc
       // Convert back to ComponentVal
       return Collections.singletonList(witValueToComponentVal(resultWitValue));
 
-    } catch (final WitValueException e) {
+    } catch (final ValidationException e) {
       throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     } catch (final Exception e) {
       throw new WasmException("Function invocation failed: " + e.getMessage(), e);
@@ -208,9 +208,9 @@ public final class JniComponentFunc
    *
    * @param val the ComponentVal to convert
    * @return the corresponding WitValue
-   * @throws WitValueException if conversion fails
+   * @throws ValidationException if conversion fails
    */
-  private WitValue componentValToWitValue(final ComponentVal val) throws WitValueException {
+  private WitValue componentValToWitValue(final ComponentVal val) throws ValidationException {
     try {
       switch (val.getType()) {
         case BOOL:
@@ -246,13 +246,11 @@ public final class JniComponentFunc
           throw new IllegalArgumentException("Unsupported ComponentVal type: " + val.getType());
       }
     } catch (final Exception e) {
-      if (e instanceof WitValueException) {
-        throw (WitValueException) e;
+      if (e instanceof ValidationException) {
+        throw (ValidationException) e;
       }
-      throw new WitValueException(
-          "Failed to convert ComponentVal to WitValue: " + e.getMessage(),
-          WitValueException.ErrorCode.MARSHALING_ERROR,
-          e);
+      throw new ValidationException(
+          "Failed to convert ComponentVal to WitValue: " + e.getMessage(), e);
     }
   }
 

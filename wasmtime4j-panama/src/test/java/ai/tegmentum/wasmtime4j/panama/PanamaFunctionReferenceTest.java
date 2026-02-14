@@ -130,12 +130,11 @@ class PanamaFunctionReferenceTest {
           FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
 
       final WasmException ex =
           assertThrows(
               WasmException.class,
-              () -> new PanamaFunctionReference(null, ft, store, arm, eh),
+              () -> new PanamaFunctionReference(null, ft, store, arm),
               "Should throw WasmException for null host function");
       LOGGER.info("Null host function error: " + ex.getMessage());
       assertTrue(
@@ -149,12 +148,11 @@ class PanamaFunctionReferenceTest {
       final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(1)};
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
 
       final WasmException ex =
           assertThrows(
               WasmException.class,
-              () -> new PanamaFunctionReference(hf, null, store, arm, eh),
+              () -> new PanamaFunctionReference(hf, null, store, arm),
               "Should throw WasmException for null function type");
       LOGGER.info("Null function type error: " + ex.getMessage());
       assertTrue(
@@ -170,12 +168,11 @@ class PanamaFunctionReferenceTest {
           FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
 
       final WasmException ex =
           assertThrows(
               WasmException.class,
-              () -> new PanamaFunctionReference(hf, ft, null, arm, eh),
+              () -> new PanamaFunctionReference(hf, ft, null, arm),
               "Should throw WasmException for null store");
       LOGGER.info("Null store error: " + ex.getMessage());
       assertTrue(
@@ -189,12 +186,10 @@ class PanamaFunctionReferenceTest {
       final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(1)};
       final FunctionType ft =
           FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final WasmException ex =
           assertThrows(
               WasmException.class,
-              () -> new PanamaFunctionReference(hf, ft, store, null, eh),
+              () -> new PanamaFunctionReference(hf, ft, store, null),
               "Should throw WasmException for null arena manager");
       LOGGER.info("Null arena manager error: " + ex.getMessage());
       assertTrue(
@@ -202,25 +197,6 @@ class PanamaFunctionReferenceTest {
           "Error message should mention null: " + ex.getMessage());
     }
 
-    @Test
-    @DisplayName("Should throw WasmException for null error handler")
-    void shouldThrowForNullErrorHandler() {
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(1)};
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final ArenaResourceManager arm = new ArenaResourceManager();
-      resources.add(arm);
-
-      final WasmException ex =
-          assertThrows(
-              WasmException.class,
-              () -> new PanamaFunctionReference(hf, ft, store, arm, null),
-              "Should throw WasmException for null error handler");
-      LOGGER.info("Null error handler error: " + ex.getMessage());
-      assertTrue(
-          ex.getMessage().contains("null"),
-          "Error message should mention null: " + ex.getMessage());
-    }
   }
 
   @Nested
@@ -232,12 +208,11 @@ class PanamaFunctionReferenceTest {
     void shouldThrowForNullWasmFunction() {
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
 
       final WasmException ex =
           assertThrows(
               WasmException.class,
-              () -> new PanamaFunctionReference((WasmFunction) null, store, arm, eh),
+              () -> new PanamaFunctionReference((WasmFunction) null, store, arm),
               "Should throw WasmException for null wasm function");
       LOGGER.info("Null wasm function error: " + ex.getMessage());
       assertTrue(
@@ -254,12 +229,11 @@ class PanamaFunctionReferenceTest {
       final WasmFunction wasmFunc = funcOpt.get();
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
 
       final WasmException ex =
           assertThrows(
               WasmException.class,
-              () -> new PanamaFunctionReference(wasmFunc, null, arm, eh),
+              () -> new PanamaFunctionReference(wasmFunc, null, arm),
               "Should throw WasmException for null store");
       LOGGER.info("Null store error: " + ex.getMessage());
     }
@@ -271,33 +245,14 @@ class PanamaFunctionReferenceTest {
       final Optional<WasmFunction> funcOpt = instance.getFunction("return_i32");
       assertTrue(funcOpt.isPresent(), "return_i32 function should exist");
       final WasmFunction wasmFunc = funcOpt.get();
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final WasmException ex =
           assertThrows(
               WasmException.class,
-              () -> new PanamaFunctionReference(wasmFunc, store, null, eh),
+              () -> new PanamaFunctionReference(wasmFunc, store, null),
               "Should throw WasmException for null arena manager");
       LOGGER.info("Null arena manager error: " + ex.getMessage());
     }
 
-    @Test
-    @DisplayName("Should throw WasmException for null error handler in wasm constructor")
-    void shouldThrowForNullErrorHandlerInWasmConstructor() throws WasmException {
-      final PanamaInstance instance = createInstanceFromWat(FUNCTIONS_WAT);
-      final Optional<WasmFunction> funcOpt = instance.getFunction("return_i32");
-      assertTrue(funcOpt.isPresent(), "return_i32 function should exist");
-      final WasmFunction wasmFunc = funcOpt.get();
-      final ArenaResourceManager arm = new ArenaResourceManager();
-      resources.add(arm);
-
-      final WasmException ex =
-          assertThrows(
-              WasmException.class,
-              () -> new PanamaFunctionReference(wasmFunc, store, arm, null),
-              "Should throw WasmException for null error handler");
-      LOGGER.info("Null error handler error: " + ex.getMessage());
-    }
   }
 
   @Nested
@@ -523,10 +478,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       assertNotNull(ref, "Wasm function reference should not be null");
@@ -542,10 +495,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       final String name = ref.getName();
@@ -563,10 +514,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       assertTrue(ref.isWasmFunction(), "Should be a wasm function");
@@ -584,10 +533,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       assertNull(ref.getUpcallStub(), "Wasm function reference should have null upcall stub");
@@ -603,10 +550,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       final WasmValue[] results = ref.call(WasmValue.i32(7), WasmValue.i32(8));
@@ -625,10 +570,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       final FunctionType ft = ref.getFunctionType();
@@ -654,10 +597,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       assertTrue(ref.isValid(), "Wasm function reference should be valid");
@@ -912,10 +853,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       assertTrue(ref.isValid(), "Should be valid before close");
 
       assertDoesNotThrow(() -> ref.close(), "Closing wasm function ref should not throw");
@@ -956,10 +895,8 @@ class PanamaFunctionReferenceTest {
 
       final ArenaResourceManager arm = new ArenaResourceManager();
       resources.add(arm);
-      final PanamaErrorHandler eh = PanamaErrorHandler.getInstance();
-
       final PanamaFunctionReference ref =
-          new PanamaFunctionReference(funcOpt.get(), store, arm, eh);
+          new PanamaFunctionReference(funcOpt.get(), store, arm);
       trackRef(ref);
 
       final String str = ref.toString();

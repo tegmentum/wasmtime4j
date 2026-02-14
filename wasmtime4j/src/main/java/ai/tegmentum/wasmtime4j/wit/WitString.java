@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.exception.WitMarshalingException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.util.Objects;
 
 /**
@@ -37,12 +37,12 @@ public final class WitString extends WitPrimitiveValue {
    * Creates a new WIT string value.
    *
    * @param value the string value (must not be null)
-   * @throws WitMarshalingException if value is null
+   * @throws ValidationException if value is null
    */
-  private WitString(final String value) throws WitMarshalingException {
+  private WitString(final String value) throws ValidationException {
     super(STRING_TYPE);
     if (value == null) {
-      throw WitMarshalingException.nullValue(STRING_TYPE);
+      throw new ValidationException("WIT string value cannot be null");
     }
     this.value = value;
     validate();
@@ -53,9 +53,9 @@ public final class WitString extends WitPrimitiveValue {
    *
    * @param value the string value (must not be null)
    * @return a WIT string value
-   * @throws WitMarshalingException if value is null
+   * @throws ValidationException if value is null
    */
-  public static WitString of(final String value) throws WitMarshalingException {
+  public static WitString of(final String value) throws ValidationException {
     return new WitString(value);
   }
 

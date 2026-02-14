@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.exception.WitRangeException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.util.Objects;
 
 /**
@@ -42,9 +42,9 @@ public final class WitChar extends WitPrimitiveValue {
    * Creates a new WIT char value.
    *
    * @param codepoint the Unicode codepoint
-   * @throws WitRangeException if codepoint is not a valid Unicode scalar value
+   * @throws ValidationException if codepoint is not a valid Unicode scalar value
    */
-  private WitChar(final int codepoint) throws WitRangeException {
+  private WitChar(final int codepoint) throws ValidationException {
     super(CHAR_TYPE);
     this.codepoint = codepoint;
     validate();
@@ -55,9 +55,9 @@ public final class WitChar extends WitPrimitiveValue {
    *
    * @param codepoint the Unicode codepoint
    * @return a WIT char value
-   * @throws WitRangeException if codepoint is not a valid Unicode scalar value
+   * @throws ValidationException if codepoint is not a valid Unicode scalar value
    */
-  public static WitChar of(final int codepoint) throws WitRangeException {
+  public static WitChar of(final int codepoint) throws ValidationException {
     return new WitChar(codepoint);
   }
 
@@ -76,12 +76,14 @@ public final class WitChar extends WitPrimitiveValue {
   }
 
   @Override
-  protected void validate() throws WitRangeException {
+  protected void validate() throws ValidationException {
     if (codepoint < MIN_CODEPOINT || codepoint > MAX_CODEPOINT) {
-      throw WitRangeException.invalidCodepoint(codepoint);
+      throw new ValidationException(
+          String.format("Invalid codepoint 0x%X: not a valid Unicode scalar value", codepoint));
     }
     if (codepoint >= SURROGATE_MIN && codepoint <= SURROGATE_MAX) {
-      throw WitRangeException.invalidCodepoint(codepoint);
+      throw new ValidationException(
+          String.format("Invalid codepoint 0x%X: not a valid Unicode scalar value", codepoint));
     }
   }
 

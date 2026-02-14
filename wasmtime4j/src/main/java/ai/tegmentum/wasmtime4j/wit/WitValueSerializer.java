@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -67,12 +67,11 @@ public final class WitValueSerializer {
    *
    * @param value the WIT value to serialize
    * @return byte array containing serialized value
-   * @throws WitValueException if value cannot be serialized
+   * @throws ValidationException if value cannot be serialized
    */
-  public static byte[] serialize(final WitValue value) throws WitValueException {
+  public static byte[] serialize(final WitValue value) throws ValidationException {
     if (value == null) {
-      throw new WitValueException(
-          "Cannot serialize null value", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot serialize null value");
     }
 
     // Handle composite types first
@@ -98,9 +97,8 @@ public final class WitValueSerializer {
 
     // Handle primitive types
     if (!(value instanceof WitPrimitiveValue)) {
-      throw new WitValueException(
-          "Unsupported value type for serialization: " + value.getClass().getName(),
-          WitValueException.ErrorCode.UNSUPPORTED_OPERATION);
+      throw new ValidationException(
+          "Unsupported value type for serialization: " + value.getClass().getName());
     }
 
     final WitPrimitiveValue primitive = (WitPrimitiveValue) value;
@@ -132,9 +130,8 @@ public final class WitValueSerializer {
     } else if (primitive instanceof WitString) {
       return serializeString((WitString) primitive);
     } else {
-      throw new WitValueException(
-          "Unsupported primitive type: " + primitive.getClass().getName(),
-          WitValueException.ErrorCode.UNSUPPORTED_OPERATION);
+      throw new ValidationException(
+          "Unsupported primitive type: " + primitive.getClass().getName());
     }
   }
 
@@ -302,9 +299,9 @@ public final class WitValueSerializer {
    *
    * @param record the record value
    * @return serialized bytes
-   * @throws WitValueException if serialization fails
+   * @throws ValidationException if serialization fails
    */
-  private static byte[] serializeRecord(final WitRecord record) throws WitValueException {
+  private static byte[] serializeRecord(final WitRecord record) throws ValidationException {
     final var fields = record.getFields();
 
     // Calculate total size: 4 bytes for count + all field data
@@ -358,9 +355,9 @@ public final class WitValueSerializer {
    *
    * @param list the list value
    * @return serialized bytes
-   * @throws WitValueException if serialization fails
+   * @throws ValidationException if serialization fails
    */
-  private static byte[] serializeList(final WitList list) throws WitValueException {
+  private static byte[] serializeList(final WitList list) throws ValidationException {
     final java.util.List<WitValue> elements = list.getElements();
 
     // Calculate total size
@@ -401,9 +398,9 @@ public final class WitValueSerializer {
    *
    * @param variant the variant value
    * @return serialized bytes
-   * @throws WitValueException if serialization fails
+   * @throws ValidationException if serialization fails
    */
-  private static byte[] serializeVariant(final WitVariant variant) throws WitValueException {
+  private static byte[] serializeVariant(final WitVariant variant) throws ValidationException {
     final byte[] nameBytes = variant.getCaseName().getBytes(StandardCharsets.UTF_8);
     final java.util.Optional<WitValue> payload = variant.getPayload();
 
@@ -464,9 +461,9 @@ public final class WitValueSerializer {
    *
    * @param option the option value
    * @return serialized bytes
-   * @throws WitValueException if serialization fails
+   * @throws ValidationException if serialization fails
    */
-  private static byte[] serializeOption(final WitOption option) throws WitValueException {
+  private static byte[] serializeOption(final WitOption option) throws ValidationException {
     final java.util.Optional<WitValue> value = option.getValue();
 
     int totalSize = 1; // is_some flag
@@ -502,9 +499,9 @@ public final class WitValueSerializer {
    *
    * @param result the result value
    * @return serialized bytes
-   * @throws WitValueException if serialization fails
+   * @throws ValidationException if serialization fails
    */
-  private static byte[] serializeResult(final WitResult result) throws WitValueException {
+  private static byte[] serializeResult(final WitResult result) throws ValidationException {
     final boolean isOk = result.isOk();
     final java.util.Optional<WitValue> value = result.getValue();
 
@@ -645,12 +642,11 @@ public final class WitValueSerializer {
    *
    * @param value the WIT value
    * @return type discriminator
-   * @throws WitValueException if value type is not supported
+   * @throws ValidationException if value type is not supported
    */
-  public static int getTypeDiscriminator(final WitValue value) throws WitValueException {
+  public static int getTypeDiscriminator(final WitValue value) throws ValidationException {
     if (value == null) {
-      throw new WitValueException(
-          "Cannot get type discriminator for null value", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot get type discriminator for null value");
     }
 
     if (value instanceof WitBool) {
@@ -688,9 +684,8 @@ public final class WitValueSerializer {
     } else if (value instanceof WitBorrow) {
       return 23;
     } else {
-      throw new WitValueException(
-          "Unsupported value type: " + value.getClass().getName(),
-          WitValueException.ErrorCode.UNSUPPORTED_OPERATION);
+      throw new ValidationException(
+          "Unsupported value type: " + value.getClass().getName());
     }
   }
 }

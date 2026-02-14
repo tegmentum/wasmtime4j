@@ -61,7 +61,6 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
 
   private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
-  private final PanamaErrorHandler errorHandler;
   private final ConcurrentHashMap<Long, CallbackEntry> callbacks = new ConcurrentHashMap<>();
   private final AtomicLong nextCallbackId = new AtomicLong(1L);
   private volatile ScheduledExecutorService asyncExecutor; // Lazy initialized
@@ -96,15 +95,12 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
    *
    * @param store the store this registry belongs to
    * @param arenaManager the arena resource manager
-   * @param errorHandler the error handler
    */
   PanamaCallbackRegistry(
       final PanamaStore store,
-      final ArenaResourceManager arenaManager,
-      final PanamaErrorHandler errorHandler) {
+      final ArenaResourceManager arenaManager) {
     this.storeRef = new WeakReference<>(Objects.requireNonNull(store, "Store cannot be null"));
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
-    this.errorHandler = Objects.requireNonNull(errorHandler, "Error handler cannot be null");
     // asyncExecutor is lazy initialized when first needed
 
     this.resourceHandle =
@@ -180,7 +176,7 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
       // Create function reference for the callback
       final PanamaStore store = getStore();
       final FunctionReference functionReference =
-          new PanamaFunctionReference(callback, functionType, store, arenaManager, errorHandler);
+          new PanamaFunctionReference(callback, functionType, store, arenaManager);
 
       // Register the callback
       final CallbackEntry entry = new CallbackEntry(handle, callback, null, functionReference);
@@ -230,7 +226,7 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
       // Create function reference for the wrapper
       final PanamaStore store = getStore();
       final FunctionReference functionReference =
-          new PanamaFunctionReference(syncWrapper, functionType, store, arenaManager, errorHandler);
+          new PanamaFunctionReference(syncWrapper, functionType, store, arenaManager);
 
       // Register the callback
       final CallbackEntry entry =

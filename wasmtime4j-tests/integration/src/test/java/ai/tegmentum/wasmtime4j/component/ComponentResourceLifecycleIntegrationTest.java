@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.ResourceException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitResourceManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -306,7 +306,7 @@ public final class ComponentResourceLifecycleIntegrationTest {
 
       try (WitResourceManager manager = new WitResourceManager()) {
         assertThrows(
-            ResourceException.class,
+            WasmException.class,
             () -> manager.createResource("unknown-type", "value"),
             "Should throw on unknown resource type");
       }
@@ -327,13 +327,13 @@ public final class ComponentResourceLifecycleIntegrationTest {
 
         // Should throw for deleted handle
         assertThrows(
-            ResourceException.class,
+            WasmException.class,
             () -> manager.getResource(handle),
             "Should throw for deleted handle");
 
         // Should throw for invalid handle
         assertThrows(
-            ResourceException.class, () -> manager.getResource(999), "Should throw for invalid id");
+            WasmException.class, () -> manager.getResource(999), "Should throw for invalid id");
 
         LOGGER.info("Invalid handle access properly rejected");
       }

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.ResourceException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitResourceManager;
 import java.util.Map;
@@ -201,7 +200,7 @@ class WitResourceManagerTest {
     @DisplayName("createResource should throw for unknown type")
     void createResourceShouldThrowForUnknownType() {
       assertThrows(
-          ResourceException.class, () -> manager.createResource("unknown-type", "resource"));
+          WasmException.class, () -> manager.createResource("unknown-type", "resource"));
     }
 
     @Test
@@ -241,7 +240,7 @@ class WitResourceManagerTest {
         limitedManager.createResource("test-type", "resource2");
 
         assertThrows(
-            ResourceException.class, () -> limitedManager.createResource("test-type", "resource3"));
+            WasmException.class, () -> limitedManager.createResource("test-type", "resource3"));
       }
     }
   }
@@ -262,7 +261,7 @@ class WitResourceManagerTest {
 
     @Test
     @DisplayName("getResource should return managed resource")
-    void getResourceShouldReturnManagedResource() throws ResourceException {
+    void getResourceShouldReturnManagedResource() throws WasmException {
       final WitResourceManager.ManagedResource resource = manager.getResource(resourceId);
 
       assertNotNull(resource);
@@ -274,12 +273,12 @@ class WitResourceManagerTest {
     @Test
     @DisplayName("getResource should throw for unknown resource")
     void getResourceShouldThrowForUnknownResource() {
-      assertThrows(ResourceException.class, () -> manager.getResource(99999));
+      assertThrows(WasmException.class, () -> manager.getResource(99999));
     }
 
     @Test
     @DisplayName("getResourceValue should return typed resource")
-    void getResourceValueShouldReturnTypedResource() throws ResourceException {
+    void getResourceValueShouldReturnTypedResource() throws WasmException {
       final String value = manager.getResourceValue(resourceId, String.class);
 
       assertEquals("test-value", value);
@@ -289,7 +288,7 @@ class WitResourceManagerTest {
     @DisplayName("getResourceValue should throw for wrong type")
     void getResourceValueShouldThrowForWrongType() {
       assertThrows(
-          ResourceException.class, () -> manager.getResourceValue(resourceId, Integer.class));
+          WasmException.class, () -> manager.getResourceValue(resourceId, Integer.class));
     }
   }
 
@@ -309,7 +308,7 @@ class WitResourceManagerTest {
 
     @Test
     @DisplayName("incrementRefCount should increase count")
-    void incrementRefCountShouldIncreaseCount() throws ResourceException {
+    void incrementRefCountShouldIncreaseCount() throws WasmException {
       manager.incrementRefCount(resourceId);
 
       final WitResourceManager.ManagedResource resource = manager.getResource(resourceId);
@@ -339,13 +338,13 @@ class WitResourceManagerTest {
     @Test
     @DisplayName("incrementRefCount should throw for unknown resource")
     void incrementRefCountShouldThrowForUnknownResource() {
-      assertThrows(ResourceException.class, () -> manager.incrementRefCount(99999));
+      assertThrows(WasmException.class, () -> manager.incrementRefCount(99999));
     }
 
     @Test
     @DisplayName("decrementRefCount should throw for unknown resource")
     void decrementRefCountShouldThrowForUnknownResource() {
-      assertThrows(ResourceException.class, () -> manager.decrementRefCount(99999));
+      assertThrows(WasmException.class, () -> manager.decrementRefCount(99999));
     }
   }
 

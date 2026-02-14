@@ -386,18 +386,6 @@ public class ExceptionIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should verify InstantiationException extends WasmException")
-    void shouldVerifyInstantiationExceptionExtendsWasmException() {
-      LOGGER.info("Testing InstantiationException hierarchy");
-
-      assertTrue(
-          WasmException.class.isAssignableFrom(InstantiationException.class),
-          "InstantiationException should extend WasmException");
-
-      LOGGER.info("InstantiationException hierarchy verified");
-    }
-
-    @Test
     @DisplayName("Should verify LinkingException extends WasmException")
     void shouldVerifyLinkingExceptionExtendsWasmException() {
       LOGGER.info("Testing LinkingException hierarchy");
@@ -421,29 +409,6 @@ public class ExceptionIntegrationTest {
       LOGGER.info("WasiException hierarchy verified");
     }
 
-    @Test
-    @DisplayName("Should verify MarshalingException extends WasmException")
-    void shouldVerifyMarshalingExceptionExtendsWasmException() {
-      LOGGER.info("Testing MarshalingException hierarchy");
-
-      assertTrue(
-          WasmException.class.isAssignableFrom(MarshalingException.class),
-          "MarshalingException should extend WasmException");
-
-      LOGGER.info("MarshalingException hierarchy verified");
-    }
-
-    @Test
-    @DisplayName("Should verify WitValueException extends WasmException")
-    void shouldVerifyWitValueExceptionExtendsWasmException() {
-      LOGGER.info("Testing WitValueException hierarchy");
-
-      assertTrue(
-          WasmException.class.isAssignableFrom(WitValueException.class),
-          "WitValueException should extend WasmException");
-
-      LOGGER.info("WitValueException hierarchy verified");
-    }
   }
 
   @Nested
@@ -474,19 +439,6 @@ public class ExceptionIntegrationTest {
       assertEquals("Validation failed", exception.getMessage(), "Message should match");
 
       LOGGER.info("ValidationException creation verified");
-    }
-
-    @Test
-    @DisplayName("Should create InstantiationException")
-    void shouldCreateInstantiationException() {
-      LOGGER.info("Testing InstantiationException creation");
-
-      InstantiationException exception = new InstantiationException("Instantiation failed");
-
-      assertNotNull(exception, "Exception should not be null");
-      assertEquals("Instantiation failed", exception.getMessage(), "Message should match");
-
-      LOGGER.info("InstantiationException creation verified");
     }
 
     @Test

@@ -1,6 +1,6 @@
 package ai.tegmentum.wasmtime4j.gc;
 
-import ai.tegmentum.wasmtime4j.exception.RuntimeException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 
 /**
  * Exception thrown by WebAssembly GC operations.
@@ -11,7 +11,7 @@ import ai.tegmentum.wasmtime4j.exception.RuntimeException;
  *
  * @since 1.0.0
  */
-public class GcException extends RuntimeException {
+public class GcException extends WasmException {
 
   private static final long serialVersionUID = 1L;
 

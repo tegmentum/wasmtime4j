@@ -25,8 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import ai.tegmentum.wasmtime4j.exception.WitMarshalingException;
-import ai.tegmentum.wasmtime4j.exception.WitRangeException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -260,7 +259,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitString.of should create valid string values")
-    void witStringOfShouldCreateValidValues() throws WitMarshalingException {
+    void witStringOfShouldCreateValidValues() throws ValidationException {
       WitString empty = WitString.of("");
       assertEquals("", empty.getValue(), "Empty string should match");
 
@@ -273,17 +272,17 @@ class WitPackageTest {
     }
 
     @Test
-    @DisplayName("WitString.of(null) should throw WitMarshalingException")
+    @DisplayName("WitString.of(null) should throw ValidationException")
     void witStringOfNullShouldThrow() {
       assertThrows(
-          WitMarshalingException.class,
+          ValidationException.class,
           () -> WitString.of(null),
-          "of(null) should throw WitMarshalingException");
+          "of(null) should throw ValidationException");
     }
 
     @Test
     @DisplayName("WitString.toJava should return String")
-    void witStringToJavaShouldReturnString() throws WitMarshalingException {
+    void witStringToJavaShouldReturnString() throws ValidationException {
       WitString witString = WitString.of("test");
       Object javaValue = witString.toJava();
       assertTrue(javaValue instanceof String, "toJava should return String");
@@ -292,7 +291,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitString equals and hashCode should work correctly")
-    void witStringEqualsShouldWorkCorrectly() throws WitMarshalingException {
+    void witStringEqualsShouldWorkCorrectly() throws ValidationException {
       WitString str1 = WitString.of("hello");
       WitString str2 = WitString.of("hello");
       WitString str3 = WitString.of("world");
@@ -317,7 +316,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitChar.of should create valid Unicode codepoints")
-    void witCharOfShouldCreateValidCodepoints() throws WitRangeException {
+    void witCharOfShouldCreateValidCodepoints() throws ValidationException {
       WitChar letterA = WitChar.of(0x0041);
       WitChar euro = WitChar.of(0x20AC);
       WitChar emoji = WitChar.of(0x1F600);
@@ -331,31 +330,31 @@ class WitPackageTest {
     @DisplayName("WitChar.of should reject surrogate codepoints")
     void witCharOfShouldRejectSurrogates() {
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(0xD800),
-          "Surrogate start should throw WitRangeException");
+          "Surrogate start should throw ValidationException");
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(0xDFFF),
-          "Surrogate end should throw WitRangeException");
+          "Surrogate end should throw ValidationException");
     }
 
     @Test
     @DisplayName("WitChar.of should reject out of range codepoints")
     void witCharOfShouldRejectOutOfRange() {
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(-1),
-          "Negative codepoint should throw WitRangeException");
+          "Negative codepoint should throw ValidationException");
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(0x110000),
-          "Codepoint > 0x10FFFF should throw WitRangeException");
+          "Codepoint > 0x10FFFF should throw ValidationException");
     }
 
     @Test
     @DisplayName("WitChar.toJava should return Character")
-    void witCharToJavaShouldReturnCharacter() throws WitRangeException {
+    void witCharToJavaShouldReturnCharacter() throws ValidationException {
       WitChar witChar = WitChar.of(0x0041);
       Object javaValue = witChar.toJava();
       assertTrue(javaValue instanceof Character, "toJava should return Character");
@@ -513,7 +512,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitList.of(List) should create list from Java List")
-    void witListOfJavaListShouldCreateList() throws WitMarshalingException {
+    void witListOfJavaListShouldCreateList() throws ValidationException {
       List<WitValue> elements = new ArrayList<>();
       elements.add(WitString.of("a"));
       elements.add(WitString.of("b"));
@@ -597,7 +596,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple.of(varargs) should create tuple from elements")
-    void witTupleOfVarargsShouldCreateTuple() throws WitMarshalingException {
+    void witTupleOfVarargsShouldCreateTuple() throws ValidationException {
       WitTuple tuple = WitTuple.of(WitString.of("hello"), WitS32.of(42));
 
       assertEquals(2, tuple.size(), "Tuple should have 2 elements");
@@ -617,7 +616,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple.getElementTypes should return types for each position")
-    void witTupleGetElementTypesShouldReturnTypes() throws WitMarshalingException {
+    void witTupleGetElementTypesShouldReturnTypes() throws ValidationException {
       WitTuple tuple = WitTuple.of(WitString.of("hello"), WitS32.of(42));
       List<WitType> types = tuple.getElementTypes();
 
@@ -628,7 +627,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple.builder should create tuple with fluent API")
-    void witTupleBuilderShouldCreateTuple() throws WitMarshalingException {
+    void witTupleBuilderShouldCreateTuple() throws ValidationException {
       WitTuple tuple = WitTuple.builder().add(WitBool.of(true)).add(WitString.of("test")).build();
 
       assertEquals(2, tuple.size(), "Tuple should have 2 elements");
@@ -637,7 +636,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple.getTypeAt should return type at index")
-    void witTupleGetTypeAtShouldReturnType() throws WitMarshalingException {
+    void witTupleGetTypeAtShouldReturnType() throws ValidationException {
       WitTuple tuple = WitTuple.of(WitString.of("hello"), WitS32.of(42));
 
       assertEquals(WitType.createString(), tuple.getTypeAt(0), "Type at 0 should be string");
@@ -646,7 +645,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple.toJava should return Java List")
-    void witTupleToJavaShouldReturnJavaList() throws WitMarshalingException {
+    void witTupleToJavaShouldReturnJavaList() throws ValidationException {
       WitTuple tuple = WitTuple.of(WitString.of("hello"), WitS32.of(42));
       Object javaValue = tuple.toJava();
 
@@ -673,7 +672,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitRecord.of should create record from map")
-    void witRecordOfShouldCreateFromMap() throws WitMarshalingException {
+    void witRecordOfShouldCreateFromMap() throws ValidationException {
       Map<String, WitValue> fields = new LinkedHashMap<>();
       fields.put("name", WitString.of("Alice"));
       fields.put("age", WitS32.of(30));
@@ -724,7 +723,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitRecord.toJava should return Java Map")
-    void witRecordToJavaShouldReturnJavaMap() throws WitMarshalingException {
+    void witRecordToJavaShouldReturnJavaMap() throws ValidationException {
       Map<String, WitValue> fields = new LinkedHashMap<>();
       fields.put("name", WitString.of("Bob"));
       WitRecord record = WitRecord.of(fields);
@@ -969,7 +968,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("Builder.add(element) should infer type")
-    void builderAddElementShouldInferType() throws WitMarshalingException {
+    void builderAddElementShouldInferType() throws ValidationException {
       WitTuple tuple = WitTuple.builder().add(WitS32.of(42)).add(WitString.of("hello")).build();
 
       assertEquals(2, tuple.size(), "Tuple should have 2 elements");
@@ -1137,7 +1136,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple equals should compare elements")
-    void witTupleEqualsShouldCompareElements() throws WitMarshalingException {
+    void witTupleEqualsShouldCompareElements() throws ValidationException {
       WitTuple tuple1 = WitTuple.of(WitString.of("a"), WitS32.of(1));
       WitTuple tuple2 = WitTuple.of(WitString.of("a"), WitS32.of(1));
       WitTuple tuple3 = WitTuple.of(WitString.of("b"), WitS32.of(1));
@@ -1221,7 +1220,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple.toString should be descriptive")
-    void witTupleToStringShouldBeDescriptive() throws WitMarshalingException {
+    void witTupleToStringShouldBeDescriptive() throws ValidationException {
       WitTuple tuple = WitTuple.of(WitString.of("a"), WitS32.of(1));
       String str = tuple.toString();
 
@@ -1267,7 +1266,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitChar.toString should show codepoint")
-    void witCharToStringShouldShowCodepoint() throws WitRangeException {
+    void witCharToStringShouldShowCodepoint() throws ValidationException {
       WitChar witChar = WitChar.of(0x0041);
       String str = witChar.toString();
 
@@ -1295,7 +1294,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple.get should throw on invalid index")
-    void witTupleGetShouldThrowOnInvalidIndex() throws WitMarshalingException {
+    void witTupleGetShouldThrowOnInvalidIndex() throws ValidationException {
       WitTuple tuple = WitTuple.of(WitString.of("a"), WitS32.of(1));
 
       assertThrows(
@@ -1306,7 +1305,7 @@ class WitPackageTest {
 
     @Test
     @DisplayName("WitTuple.getTypeAt should throw on invalid index")
-    void witTupleGetTypeAtShouldThrowOnInvalidIndex() throws WitMarshalingException {
+    void witTupleGetTypeAtShouldThrowOnInvalidIndex() throws ValidationException {
       WitTuple tuple = WitTuple.of(WitString.of("a"), WitS32.of(1));
 
       assertThrows(

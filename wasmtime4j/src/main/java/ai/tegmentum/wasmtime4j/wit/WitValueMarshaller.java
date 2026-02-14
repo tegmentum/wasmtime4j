@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,12 +63,11 @@ public final class WitValueMarshaller {
    *
    * @param value the WIT value to marshal
    * @return marshalled value containing type discriminator and binary data
-   * @throws WitValueException if marshalling fails
+   * @throws ValidationException if marshalling fails
    */
-  public static MarshalledValue marshal(final WitValue value) throws WitValueException {
+  public static MarshalledValue marshal(final WitValue value) throws ValidationException {
     if (value == null) {
-      throw new WitValueException(
-          "Cannot marshal null value", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot marshal null value");
     }
 
     final int typeDiscriminator = WitValueSerializer.getTypeDiscriminator(value);
@@ -83,13 +82,12 @@ public final class WitValueMarshaller {
    * @param typeDiscriminator the type discriminator (1-6)
    * @param data the serialized byte array
    * @return the unmarshalled WIT value
-   * @throws WitValueException if unmarshalling fails
+   * @throws ValidationException if unmarshalling fails
    */
   public static WitValue unmarshal(final int typeDiscriminator, final byte[] data)
-      throws WitValueException {
+      throws ValidationException {
     if (data == null) {
-      throw new WitValueException(
-          "Cannot unmarshal null data", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot unmarshal null data");
     }
 
     return WitValueDeserializer.deserialize(typeDiscriminator, data);
@@ -100,13 +98,12 @@ public final class WitValueMarshaller {
    *
    * @param values the list of WIT values to marshal
    * @return list of marshalled values
-   * @throws WitValueException if marshalling any value fails
+   * @throws ValidationException if marshalling any value fails
    */
   public static List<MarshalledValue> marshalAll(final List<WitValue> values)
-      throws WitValueException {
+      throws ValidationException {
     if (values == null) {
-      throw new WitValueException(
-          "Cannot marshal null value list", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot marshal null value list");
     }
 
     final List<MarshalledValue> result = new ArrayList<>(values.size());
@@ -121,13 +118,12 @@ public final class WitValueMarshaller {
    *
    * @param marshalledValues the list of marshalled values
    * @return list of unmarshalled WIT values
-   * @throws WitValueException if unmarshalling any value fails
+   * @throws ValidationException if unmarshalling any value fails
    */
   public static List<WitValue> unmarshalAll(final List<MarshalledValue> marshalledValues)
-      throws WitValueException {
+      throws ValidationException {
     if (marshalledValues == null) {
-      throw new WitValueException(
-          "Cannot unmarshal null marshalled value list", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot unmarshal null marshalled value list");
     }
 
     final List<WitValue> result = new ArrayList<>(marshalledValues.size());
@@ -160,48 +156,43 @@ public final class WitValueMarshaller {
    * @param javaValue the Java value
    * @param witType the target WIT type
    * @return the created WIT value
-   * @throws WitValueException if the conversion fails
+   * @throws ValidationException if the conversion fails
    */
   @SuppressFBWarnings(
       value = "IMPROPER_UNICODE",
       justification = "WIT types are ASCII-only specification identifiers")
   public static WitValue fromJava(final Object javaValue, final String witType)
-      throws WitValueException {
+      throws ValidationException {
     if (javaValue == null) {
-      throw new WitValueException(
-          "Cannot create WIT value from null", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot create WIT value from null");
     }
 
     switch (witType.toLowerCase(Locale.ROOT)) {
       case "bool":
         if (!(javaValue instanceof Boolean)) {
-          throw new WitValueException(
-              "Expected Boolean for bool type, got " + javaValue.getClass(),
-              WitValueException.ErrorCode.TYPE_MISMATCH);
+          throw new ValidationException(
+              "Expected Boolean for bool type, got " + javaValue.getClass());
         }
         return WitBool.of((Boolean) javaValue);
 
       case "s32":
         if (!(javaValue instanceof Integer)) {
-          throw new WitValueException(
-              "Expected Integer for s32 type, got " + javaValue.getClass(),
-              WitValueException.ErrorCode.TYPE_MISMATCH);
+          throw new ValidationException(
+              "Expected Integer for s32 type, got " + javaValue.getClass());
         }
         return WitS32.of((Integer) javaValue);
 
       case "s64":
         if (!(javaValue instanceof Long)) {
-          throw new WitValueException(
-              "Expected Long for s64 type, got " + javaValue.getClass(),
-              WitValueException.ErrorCode.TYPE_MISMATCH);
+          throw new ValidationException(
+              "Expected Long for s64 type, got " + javaValue.getClass());
         }
         return WitS64.of((Long) javaValue);
 
       case "float64":
         if (!(javaValue instanceof Double)) {
-          throw new WitValueException(
-              "Expected Double for float64 type, got " + javaValue.getClass(),
-              WitValueException.ErrorCode.TYPE_MISMATCH);
+          throw new ValidationException(
+              "Expected Double for float64 type, got " + javaValue.getClass());
         }
         return WitFloat64.of((Double) javaValue);
 
@@ -211,22 +202,19 @@ public final class WitValueMarshaller {
         } else if (javaValue instanceof Character) {
           return WitChar.of((int) (Character) javaValue);
         } else {
-          throw new WitValueException(
-              "Expected Integer or Character for char type, got " + javaValue.getClass(),
-              WitValueException.ErrorCode.TYPE_MISMATCH);
+          throw new ValidationException(
+              "Expected Integer or Character for char type, got " + javaValue.getClass());
         }
 
       case "string":
         if (!(javaValue instanceof String)) {
-          throw new WitValueException(
-              "Expected String for string type, got " + javaValue.getClass(),
-              WitValueException.ErrorCode.TYPE_MISMATCH);
+          throw new ValidationException(
+              "Expected String for string type, got " + javaValue.getClass());
         }
         return WitString.of((String) javaValue);
 
       default:
-        throw new WitValueException(
-            "Unsupported WIT type: " + witType, WitValueException.ErrorCode.UNSUPPORTED_OPERATION);
+        throw new ValidationException("Unsupported WIT type: " + witType);
     }
   }
 

@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller.MarshalledValue;
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +38,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Marshal bool value")
-  void testMarshalBool() throws WitValueException {
+  void testMarshalBool() throws ValidationException {
     final WitBool value = WitBool.of(true);
     final MarshalledValue result = WitValueMarshaller.marshal(value);
 
@@ -49,7 +49,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Marshal s32 value")
-  void testMarshalS32() throws WitValueException {
+  void testMarshalS32() throws ValidationException {
     final WitS32 value = WitS32.of(42);
     final MarshalledValue result = WitValueMarshaller.marshal(value);
 
@@ -60,7 +60,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Marshal s64 value")
-  void testMarshalS64() throws WitValueException {
+  void testMarshalS64() throws ValidationException {
     final WitS64 value = WitS64.of(1_000_000L);
     final MarshalledValue result = WitValueMarshaller.marshal(value);
 
@@ -71,7 +71,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Marshal float64 value")
-  void testMarshalFloat64() throws WitValueException {
+  void testMarshalFloat64() throws ValidationException {
     final WitFloat64 value = WitFloat64.of(3.14159);
     final MarshalledValue result = WitValueMarshaller.marshal(value);
 
@@ -82,7 +82,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Marshal char value")
-  void testMarshalChar() throws WitValueException {
+  void testMarshalChar() throws ValidationException {
     final WitChar value = WitChar.of('A');
     final MarshalledValue result = WitValueMarshaller.marshal(value);
 
@@ -93,7 +93,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Marshal string value")
-  void testMarshalString() throws WitValueException {
+  void testMarshalString() throws ValidationException {
     final WitString value = WitString.of("hello");
     final MarshalledValue result = WitValueMarshaller.marshal(value);
 
@@ -105,9 +105,9 @@ final class WitValueMarshallerTest {
   @Test
   @DisplayName("Marshal null value throws exception")
   void testMarshalNull() {
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueMarshaller.marshal(null),
             "Should throw exception for null value");
 
@@ -118,7 +118,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Unmarshal bool value")
-  void testUnmarshalBool() throws WitValueException {
+  void testUnmarshalBool() throws ValidationException {
     final byte[] data = {(byte) 1};
     final WitValue result = WitValueMarshaller.unmarshal(1, data);
 
@@ -129,7 +129,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Unmarshal s32 value")
-  void testUnmarshalS32() throws WitValueException {
+  void testUnmarshalS32() throws ValidationException {
     final WitS32 value = WitS32.of(-123);
     final byte[] data = WitValueSerializer.serialize(value);
     final WitValue result = WitValueMarshaller.unmarshal(2, data);
@@ -141,7 +141,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Unmarshal s64 value")
-  void testUnmarshalS64() throws WitValueException {
+  void testUnmarshalS64() throws ValidationException {
     final WitS64 value = WitS64.of(9_876_543_210L);
     final byte[] data = WitValueSerializer.serialize(value);
     final WitValue result = WitValueMarshaller.unmarshal(3, data);
@@ -153,7 +153,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Unmarshal float64 value")
-  void testUnmarshalFloat64() throws WitValueException {
+  void testUnmarshalFloat64() throws ValidationException {
     final WitFloat64 value = WitFloat64.of(2.71828);
     final byte[] data = WitValueSerializer.serialize(value);
     final WitValue result = WitValueMarshaller.unmarshal(4, data);
@@ -165,7 +165,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Unmarshal char value")
-  void testUnmarshalChar() throws WitValueException {
+  void testUnmarshalChar() throws ValidationException {
     final WitChar value = WitChar.of(0x1F980); // 🦀
     final byte[] data = WitValueSerializer.serialize(value);
     final WitValue result = WitValueMarshaller.unmarshal(5, data);
@@ -177,7 +177,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Unmarshal string value")
-  void testUnmarshalString() throws WitValueException {
+  void testUnmarshalString() throws ValidationException {
     final WitString value = WitString.of("Hello 🦀 World");
     final byte[] data = WitValueSerializer.serialize(value);
     final WitValue result = WitValueMarshaller.unmarshal(6, data);
@@ -190,9 +190,9 @@ final class WitValueMarshallerTest {
   @Test
   @DisplayName("Unmarshal null data throws exception")
   void testUnmarshalNullData() {
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueMarshaller.unmarshal(1, null),
             "Should throw exception for null data");
 
@@ -203,7 +203,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Round-trip marshal and unmarshal preserves value")
-  void testRoundTrip() throws WitValueException {
+  void testRoundTrip() throws ValidationException {
     final WitValue original = WitS32.of(42);
     final MarshalledValue marshalled = WitValueMarshaller.marshal(original);
     final WitValue unmarshalled =
@@ -215,7 +215,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Marshal all with multiple values")
-  void testMarshalAll() throws WitValueException {
+  void testMarshalAll() throws ValidationException {
     final List<WitValue> values =
         Arrays.asList(WitBool.of(true), WitS32.of(100), WitString.of("test"));
 
@@ -231,7 +231,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Marshal all with empty list")
-  void testMarshalAllEmpty() throws WitValueException {
+  void testMarshalAllEmpty() throws ValidationException {
     final List<WitValue> values = Arrays.asList();
     final List<MarshalledValue> results = WitValueMarshaller.marshalAll(values);
 
@@ -242,9 +242,9 @@ final class WitValueMarshallerTest {
   @Test
   @DisplayName("Marshal all with null list throws exception")
   void testMarshalAllNull() {
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueMarshaller.marshalAll(null),
             "Should throw exception for null list");
 
@@ -255,7 +255,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Unmarshal all with multiple values")
-  void testUnmarshalAll() throws WitValueException {
+  void testUnmarshalAll() throws ValidationException {
     final List<WitValue> original =
         Arrays.asList(WitBool.of(false), WitS64.of(-500L), WitFloat64.of(1.5));
 
@@ -278,7 +278,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Unmarshal all with empty list")
-  void testUnmarshalAllEmpty() throws WitValueException {
+  void testUnmarshalAllEmpty() throws ValidationException {
     final List<MarshalledValue> marshalled = Arrays.asList();
     final List<WitValue> unmarshalled = WitValueMarshaller.unmarshalAll(marshalled);
 
@@ -289,9 +289,9 @@ final class WitValueMarshallerTest {
   @Test
   @DisplayName("Unmarshal all with null list throws exception")
   void testUnmarshalAllNull() {
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueMarshaller.unmarshalAll(null),
             "Should throw exception for null list");
 
@@ -302,7 +302,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("To Java conversion for primitive values")
-  void testToJava() throws WitValueException {
+  void testToJava() throws ValidationException {
     assertEquals(Boolean.TRUE, WitValueMarshaller.toJava(WitBool.of(true)), "Bool to Boolean");
     assertEquals(Integer.valueOf(42), WitValueMarshaller.toJava(WitS32.of(42)), "S32 to Integer");
     assertEquals(Long.valueOf(100L), WitValueMarshaller.toJava(WitS64.of(100L)), "S64 to Long");
@@ -321,7 +321,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("From Java creates bool value")
-  void testFromJavaBool() throws WitValueException {
+  void testFromJavaBool() throws ValidationException {
     final WitValue result = WitValueMarshaller.fromJava(Boolean.TRUE, "bool");
 
     assertInstanceOf(WitBool.class, result, "Result should be WitBool");
@@ -330,7 +330,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("From Java creates s32 value")
-  void testFromJavaS32() throws WitValueException {
+  void testFromJavaS32() throws ValidationException {
     final WitValue result = WitValueMarshaller.fromJava(Integer.valueOf(42), "s32");
 
     assertInstanceOf(WitS32.class, result, "Result should be WitS32");
@@ -339,7 +339,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("From Java creates s64 value")
-  void testFromJavaS64() throws WitValueException {
+  void testFromJavaS64() throws ValidationException {
     final WitValue result = WitValueMarshaller.fromJava(Long.valueOf(100L), "s64");
 
     assertInstanceOf(WitS64.class, result, "Result should be WitS64");
@@ -348,7 +348,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("From Java creates float64 value")
-  void testFromJavaFloat64() throws WitValueException {
+  void testFromJavaFloat64() throws ValidationException {
     final WitValue result = WitValueMarshaller.fromJava(Double.valueOf(2.5), "float64");
 
     assertInstanceOf(WitFloat64.class, result, "Result should be WitFloat64");
@@ -357,7 +357,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("From Java creates char value from Integer")
-  void testFromJavaCharFromInteger() throws WitValueException {
+  void testFromJavaCharFromInteger() throws ValidationException {
     final WitValue result = WitValueMarshaller.fromJava(Integer.valueOf((int) 'Z'), "char");
 
     assertInstanceOf(WitChar.class, result, "Result should be WitChar");
@@ -366,7 +366,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("From Java creates char value from Character")
-  void testFromJavaCharFromCharacter() throws WitValueException {
+  void testFromJavaCharFromCharacter() throws ValidationException {
     final WitValue result = WitValueMarshaller.fromJava(Character.valueOf('X'), "char");
 
     assertInstanceOf(WitChar.class, result, "Result should be WitChar");
@@ -375,7 +375,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("From Java creates string value")
-  void testFromJavaString() throws WitValueException {
+  void testFromJavaString() throws ValidationException {
     final WitValue result = WitValueMarshaller.fromJava("test", "string");
 
     assertInstanceOf(WitString.class, result, "Result should be WitString");
@@ -384,7 +384,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("From Java with case-insensitive type name")
-  void testFromJavaCaseInsensitive() throws WitValueException {
+  void testFromJavaCaseInsensitive() throws ValidationException {
     final WitValue result1 = WitValueMarshaller.fromJava(Boolean.TRUE, "BOOL");
     final WitValue result2 = WitValueMarshaller.fromJava(Integer.valueOf(1), "S32");
     final WitValue result3 = WitValueMarshaller.fromJava("hi", "STRING");
@@ -397,9 +397,9 @@ final class WitValueMarshallerTest {
   @Test
   @DisplayName("From Java with null value throws exception")
   void testFromJavaNull() {
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueMarshaller.fromJava(null, "bool"),
             "Should throw exception for null value");
 
@@ -411,9 +411,9 @@ final class WitValueMarshallerTest {
   @Test
   @DisplayName("From Java with type mismatch throws exception")
   void testFromJavaTypeMismatch() {
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueMarshaller.fromJava("not a boolean", "bool"),
             "Should throw exception for type mismatch");
 
@@ -425,9 +425,9 @@ final class WitValueMarshallerTest {
   @Test
   @DisplayName("From Java with unsupported type throws exception")
   void testFromJavaUnsupportedType() {
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueMarshaller.fromJava(Integer.valueOf(1), "unsupported"),
             "Should throw exception for unsupported type");
 
@@ -452,7 +452,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("MarshalledValue getData returns defensive copy")
-  void testMarshalledValueDefensiveCopy() throws WitValueException {
+  void testMarshalledValueDefensiveCopy() throws ValidationException {
     final WitBool value = WitBool.of(true);
     final MarshalledValue marshalled = WitValueMarshaller.marshal(value);
 
@@ -472,7 +472,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("MarshalledValue toString contains discriminator and size")
-  void testMarshalledValueToString() throws WitValueException {
+  void testMarshalledValueToString() throws ValidationException {
     final WitS32 value = WitS32.of(42);
     final MarshalledValue marshalled = WitValueMarshaller.marshal(value);
 
@@ -484,7 +484,7 @@ final class WitValueMarshallerTest {
 
   @Test
   @DisplayName("Complex round-trip with all primitive types")
-  void testComplexRoundTrip() throws WitValueException {
+  void testComplexRoundTrip() throws ValidationException {
     final List<WitValue> original =
         Arrays.asList(
             WitBool.of(true),

@@ -107,7 +107,6 @@ public final class PanamaStore implements Store {
   private final MemorySegment nativeStore;
   private final AtomicReference<Object> userData = new AtomicReference<>();
   private final ArenaResourceManager resourceManager;
-  private final PanamaErrorHandler errorHandler;
   private volatile PanamaCallbackRegistry callbackRegistry; // Lazy initialized
   private final NativeResourceHandle resourceHandle;
 
@@ -141,9 +140,6 @@ public final class PanamaStore implements Store {
 
     // Create resource manager for host functions and other managed resources
     this.resourceManager = new ArenaResourceManager(arena, false);
-
-    // Use singleton error handler (callbackRegistry is lazy initialized)
-    this.errorHandler = PanamaErrorHandler.getInstance();
 
     this.resourceHandle = createResourceHandle();
 
@@ -201,9 +197,6 @@ public final class PanamaStore implements Store {
     // Create resource manager for host functions and other managed resources
     this.resourceManager = new ArenaResourceManager(arena, false);
 
-    // Use singleton error handler (callbackRegistry is lazy initialized)
-    this.errorHandler = PanamaErrorHandler.getInstance();
-
     this.resourceHandle = createResourceHandle();
 
     LOGGER.fine("Created Panama store with limits: " + limits);
@@ -231,9 +224,6 @@ public final class PanamaStore implements Store {
 
     // Create resource manager for host functions and other managed resources
     this.resourceManager = new ArenaResourceManager(arena, false);
-
-    // Use singleton error handler (callbackRegistry is lazy initialized)
-    this.errorHandler = PanamaErrorHandler.getInstance();
 
     this.resourceHandle = createResourceHandle();
 
@@ -468,13 +458,10 @@ public final class PanamaStore implements Store {
     // Adapt the HostFunction interface to PanamaHostFunction.HostFunctionCallback
     final PanamaHostFunction.HostFunctionCallback callback = implementation::execute;
 
-    // Use singleton error handler for this host function
-    final PanamaErrorHandler errorHandler = PanamaErrorHandler.getInstance();
-
     // Create the Panama host function with implementation and store reference for caller context
     final PanamaHostFunction hostFunction =
         new PanamaHostFunction(
-            name, functionType, callback, implementation, this, resourceManager, errorHandler);
+            name, functionType, callback, implementation, this, resourceManager);
 
     LOGGER.fine("Created host function '" + name + "' in store");
     return hostFunction;
@@ -815,8 +802,7 @@ public final class PanamaStore implements Store {
     PanamaValidation.requireNonNull(implementation, "implementation");
     PanamaValidation.requireNonNull(functionType, "functionType");
 
-    return new PanamaFunctionReference(
-        implementation, functionType, this, resourceManager, errorHandler);
+    return new PanamaFunctionReference(implementation, functionType, this, resourceManager);
   }
 
   @Override
@@ -829,7 +815,7 @@ public final class PanamaStore implements Store {
     final ai.tegmentum.wasmtime4j.func.HostFunction wrapper = function::call;
 
     return new PanamaFunctionReference(
-        wrapper, function.getFunctionType(), this, resourceManager, errorHandler);
+        wrapper, function.getFunctionType(), this, resourceManager);
   }
 
   @Override
@@ -839,7 +825,7 @@ public final class PanamaStore implements Store {
     if (callbackRegistry == null) {
       synchronized (this) {
         if (callbackRegistry == null) {
-          callbackRegistry = new PanamaCallbackRegistry(this, resourceManager, errorHandler);
+          callbackRegistry = new PanamaCallbackRegistry(this, resourceManager);
         }
       }
     }

@@ -719,7 +719,7 @@ public final class EpochInterruptionIntegrationTest {
         } catch (final UnsatisfiedLinkError e) {
           LOGGER.warning("Native method not implemented: " + e.getMessage());
           assumeTrue(false, "Native method not implemented: " + e.getMessage());
-        } catch (final ai.tegmentum.wasmtime4j.exception.WasmRuntimeException e) {
+        } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
           // Async support not fully implemented in native bindings yet
           if (e.getMessage() != null && e.getMessage().contains("async support")) {
             LOGGER.warning("Async support not implemented: " + e.getMessage());

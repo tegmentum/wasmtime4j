@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +36,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize bool true from binary format")
-  void testDeserializeBoolTrue() throws WitValueException {
+  void testDeserializeBoolTrue() throws ValidationException {
     final byte[] data = {(byte) 1};
     final WitValue result = WitValueDeserializer.deserialize(1, data);
 
@@ -47,7 +47,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize bool false from binary format")
-  void testDeserializeBoolFalse() throws WitValueException {
+  void testDeserializeBoolFalse() throws ValidationException {
     final byte[] data = {(byte) 0};
     final WitValue result = WitValueDeserializer.deserialize(1, data);
 
@@ -58,7 +58,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize bool with non-zero byte as true")
-  void testDeserializeBoolNonZero() throws WitValueException {
+  void testDeserializeBoolNonZero() throws ValidationException {
     final byte[] data = {(byte) 255};
     final WitValue result = WitValueDeserializer.deserialize(1, data);
 
@@ -72,9 +72,9 @@ final class WitValueDeserializerTest {
   void testDeserializeBoolInvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 1
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(1, data),
             "Should throw exception for invalid size");
 
@@ -85,7 +85,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s32 positive value from little-endian")
-  void testDeserializeS32Positive() throws WitValueException {
+  void testDeserializeS32Positive() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(42);
     final byte[] data = buffer.array();
@@ -99,7 +99,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s32 negative value from little-endian")
-  void testDeserializeS32Negative() throws WitValueException {
+  void testDeserializeS32Negative() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(-999);
     final byte[] data = buffer.array();
@@ -113,7 +113,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s32 max value")
-  void testDeserializeS32Max() throws WitValueException {
+  void testDeserializeS32Max() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(Integer.MAX_VALUE);
     final byte[] data = buffer.array();
@@ -128,7 +128,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s32 min value")
-  void testDeserializeS32Min() throws WitValueException {
+  void testDeserializeS32Min() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(Integer.MIN_VALUE);
     final byte[] data = buffer.array();
@@ -146,9 +146,9 @@ final class WitValueDeserializerTest {
   void testDeserializeS32InvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 4
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(2, data),
             "Should throw exception for invalid size");
 
@@ -159,7 +159,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s64 positive value from little-endian")
-  void testDeserializeS64Positive() throws WitValueException {
+  void testDeserializeS64Positive() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putLong(1_000_000_000_000L);
     final byte[] data = buffer.array();
@@ -173,7 +173,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s64 negative value from little-endian")
-  void testDeserializeS64Negative() throws WitValueException {
+  void testDeserializeS64Negative() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putLong(-9_999_999_999L);
     final byte[] data = buffer.array();
@@ -187,7 +187,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s64 max value")
-  void testDeserializeS64Max() throws WitValueException {
+  void testDeserializeS64Max() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putLong(Long.MAX_VALUE);
     final byte[] data = buffer.array();
@@ -201,7 +201,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s64 min value")
-  void testDeserializeS64Min() throws WitValueException {
+  void testDeserializeS64Min() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putLong(Long.MIN_VALUE);
     final byte[] data = buffer.array();
@@ -218,9 +218,9 @@ final class WitValueDeserializerTest {
   void testDeserializeS64InvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1, (byte) 2, (byte) 3}; // 4 bytes instead of 8
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(3, data),
             "Should throw exception for invalid size");
 
@@ -231,7 +231,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float64 positive value from little-endian IEEE 754")
-  void testDeserializeFloat64Positive() throws WitValueException {
+  void testDeserializeFloat64Positive() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putDouble(3.14159);
     final byte[] data = buffer.array();
@@ -245,7 +245,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float64 negative value from little-endian IEEE 754")
-  void testDeserializeFloat64Negative() throws WitValueException {
+  void testDeserializeFloat64Negative() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putDouble(-999.99);
     final byte[] data = buffer.array();
@@ -259,7 +259,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float64 zero")
-  void testDeserializeFloat64Zero() throws WitValueException {
+  void testDeserializeFloat64Zero() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putDouble(0.0);
     final byte[] data = buffer.array();
@@ -273,7 +273,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float64 max value")
-  void testDeserializeFloat64Max() throws WitValueException {
+  void testDeserializeFloat64Max() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putDouble(Double.MAX_VALUE);
     final byte[] data = buffer.array();
@@ -288,7 +288,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float64 min positive value")
-  void testDeserializeFloat64MinPositive() throws WitValueException {
+  void testDeserializeFloat64MinPositive() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putDouble(Double.MIN_VALUE);
     final byte[] data = buffer.array();
@@ -306,9 +306,9 @@ final class WitValueDeserializerTest {
   void testDeserializeFloat64InvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1, (byte) 2, (byte) 3}; // 4 bytes instead of 8
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(4, data),
             "Should throw exception for invalid size");
 
@@ -319,7 +319,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize char ASCII value from little-endian codepoint")
-  void testDeserializeCharAscii() throws WitValueException {
+  void testDeserializeCharAscii() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt((int) 'A');
     final byte[] data = buffer.array();
@@ -333,7 +333,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize char Unicode emoji from little-endian codepoint")
-  void testDeserializeCharEmoji() throws WitValueException {
+  void testDeserializeCharEmoji() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0x1F980); // 🦀 crab emoji
     final byte[] data = buffer.array();
@@ -347,7 +347,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize char Chinese character from little-endian codepoint")
-  void testDeserializeCharChinese() throws WitValueException {
+  void testDeserializeCharChinese() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt((int) '中');
     final byte[] data = buffer.array();
@@ -361,7 +361,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize char null character")
-  void testDeserializeCharNull() throws WitValueException {
+  void testDeserializeCharNull() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0x0000);
     final byte[] data = buffer.array();
@@ -375,7 +375,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize char max Unicode value")
-  void testDeserializeCharMaxUnicode() throws WitValueException {
+  void testDeserializeCharMaxUnicode() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0x10FFFF);
     final byte[] data = buffer.array();
@@ -392,9 +392,9 @@ final class WitValueDeserializerTest {
   void testDeserializeCharInvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 4
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(5, data),
             "Should throw exception for invalid size");
 
@@ -410,9 +410,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(0xD800); // Surrogate codepoint (invalid)
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(5, data),
             "Should throw exception for invalid codepoint");
 
@@ -423,7 +423,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize string empty")
-  void testDeserializeStringEmpty() throws WitValueException {
+  void testDeserializeStringEmpty() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0); // Length 0
     final byte[] data = buffer.array();
@@ -437,7 +437,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize string ASCII")
-  void testDeserializeStringAscii() throws WitValueException {
+  void testDeserializeStringAscii() throws ValidationException {
     final byte[] utf8Bytes = "hello".getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
         ByteBuffer.allocate(4 + utf8Bytes.length).order(ByteOrder.LITTLE_ENDIAN);
@@ -454,7 +454,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize string with Unicode characters")
-  void testDeserializeStringUnicode() throws WitValueException {
+  void testDeserializeStringUnicode() throws ValidationException {
     final byte[] utf8Bytes = "Hello 🦀 中文".getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
         ByteBuffer.allocate(4 + utf8Bytes.length).order(ByteOrder.LITTLE_ENDIAN);
@@ -471,7 +471,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize string with special characters")
-  void testDeserializeStringSpecialChars() throws WitValueException {
+  void testDeserializeStringSpecialChars() throws ValidationException {
     final byte[] utf8Bytes = "Line1\nLine2\tTab\r\nCRLF".getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
         ByteBuffer.allocate(4 + utf8Bytes.length).order(ByteOrder.LITTLE_ENDIAN);
@@ -494,9 +494,9 @@ final class WitValueDeserializerTest {
   void testDeserializeStringInvalidSizeNoLength() {
     final byte[] data = {(byte) 0, (byte) 1}; // Only 2 bytes, need at least 4 for length
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(6, data),
             "Should throw exception for data too small");
 
@@ -512,9 +512,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(-1);
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(6, data),
             "Should throw exception for negative length");
 
@@ -531,9 +531,9 @@ final class WitValueDeserializerTest {
     buffer.put("hi".getBytes(StandardCharsets.UTF_8)); // But only provides 2
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(6, data),
             "Should throw exception for length mismatch");
 
@@ -545,19 +545,15 @@ final class WitValueDeserializerTest {
   @Test
   @DisplayName("Deserialize with null data throws exception")
   void testDeserializeNullData() {
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(1, null),
             "Should throw exception for null data");
 
     assertTrue(
         exception.getMessage().contains("null"),
         "Exception message should mention null: " + exception.getMessage());
-    assertEquals(
-        WitValueException.ErrorCode.NULL_VALUE,
-        exception.getCode(),
-        "Error code should be NULL_VALUE");
   }
 
   @Test
@@ -565,24 +561,20 @@ final class WitValueDeserializerTest {
   void testDeserializeInvalidDiscriminator() {
     final byte[] data = {(byte) 0};
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(99, data),
             "Should throw exception for invalid discriminator");
 
     assertTrue(
         exception.getMessage().contains("Invalid type discriminator"),
         "Exception message should mention invalid discriminator: " + exception.getMessage());
-    assertEquals(
-        WitValueException.ErrorCode.INVALID_FORMAT,
-        exception.getCode(),
-        "Error code should be INVALID_FORMAT");
   }
 
   @Test
   @DisplayName("Round-trip bool preserves value")
-  void testRoundTripBool() throws WitValueException {
+  void testRoundTripBool() throws ValidationException {
     final WitBool original = WitBool.of(true);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(1, serialized);
@@ -596,7 +588,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip s32 preserves value")
-  void testRoundTripS32() throws WitValueException {
+  void testRoundTripS32() throws ValidationException {
     final WitS32 original = WitS32.of(-12345);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(2, serialized);
@@ -610,7 +602,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip s64 preserves value")
-  void testRoundTripS64() throws WitValueException {
+  void testRoundTripS64() throws ValidationException {
     final WitS64 original = WitS64.of(9_876_543_210L);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(3, serialized);
@@ -624,7 +616,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip float64 preserves value")
-  void testRoundTripFloat64() throws WitValueException {
+  void testRoundTripFloat64() throws ValidationException {
     final WitFloat64 original = WitFloat64.of(123.456789);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(4, serialized);
@@ -639,7 +631,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip char preserves value")
-  void testRoundTripChar() throws WitValueException {
+  void testRoundTripChar() throws ValidationException {
     final WitChar original = WitChar.of(0x1F980); // 🦀
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(5, serialized);
@@ -653,7 +645,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip string preserves value")
-  void testRoundTripString() throws WitValueException {
+  void testRoundTripString() throws ValidationException {
     final WitString original = WitString.of("Hello 🦀 World 中文");
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(6, serialized);
@@ -667,7 +659,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s8 from binary format (discriminator 17)")
-  void testDeserializeS8() throws WitValueException {
+  void testDeserializeS8() throws ValidationException {
     final byte[] data = {(byte) -42};
     final WitValue result = WitValueDeserializer.deserialize(17, data);
 
@@ -678,7 +670,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s8 max value")
-  void testDeserializeS8Max() throws WitValueException {
+  void testDeserializeS8Max() throws ValidationException {
     final byte[] data = {Byte.MAX_VALUE};
     final WitValue result = WitValueDeserializer.deserialize(17, data);
 
@@ -688,7 +680,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s8 min value")
-  void testDeserializeS8Min() throws WitValueException {
+  void testDeserializeS8Min() throws ValidationException {
     final byte[] data = {Byte.MIN_VALUE};
     final WitValue result = WitValueDeserializer.deserialize(17, data);
 
@@ -701,9 +693,9 @@ final class WitValueDeserializerTest {
   void testDeserializeS8InvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 1
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(17, data),
             "Should throw exception for invalid size");
 
@@ -714,7 +706,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s16 from binary format (discriminator 18)")
-  void testDeserializeS16() throws WitValueException {
+  void testDeserializeS16() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putShort((short) -1000);
     final byte[] data = buffer.array();
@@ -728,7 +720,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s16 max value")
-  void testDeserializeS16Max() throws WitValueException {
+  void testDeserializeS16Max() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putShort(Short.MAX_VALUE);
     final byte[] data = buffer.array();
@@ -741,7 +733,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize s16 min value")
-  void testDeserializeS16Min() throws WitValueException {
+  void testDeserializeS16Min() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putShort(Short.MIN_VALUE);
     final byte[] data = buffer.array();
@@ -757,9 +749,9 @@ final class WitValueDeserializerTest {
   void testDeserializeS16InvalidSize() {
     final byte[] data = {(byte) 0}; // 1 byte instead of 2
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(18, data),
             "Should throw exception for invalid size");
 
@@ -770,7 +762,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize u8 from binary format (discriminator 19)")
-  void testDeserializeU8() throws WitValueException {
+  void testDeserializeU8() throws ValidationException {
     final byte[] data = {(byte) 0xFF};
     final WitValue result = WitValueDeserializer.deserialize(19, data);
 
@@ -781,7 +773,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize u8 zero")
-  void testDeserializeU8Zero() throws WitValueException {
+  void testDeserializeU8Zero() throws ValidationException {
     final byte[] data = {(byte) 0};
     final WitValue result = WitValueDeserializer.deserialize(19, data);
 
@@ -794,9 +786,9 @@ final class WitValueDeserializerTest {
   void testDeserializeU8InvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 1
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(19, data),
             "Should throw exception for invalid size");
 
@@ -807,7 +799,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize u16 from binary format (discriminator 20)")
-  void testDeserializeU16() throws WitValueException {
+  void testDeserializeU16() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putShort((short) 0xFFFF);
     final byte[] data = buffer.array();
@@ -821,7 +813,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize u16 zero")
-  void testDeserializeU16Zero() throws WitValueException {
+  void testDeserializeU16Zero() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putShort((short) 0);
     final byte[] data = buffer.array();
@@ -837,9 +829,9 @@ final class WitValueDeserializerTest {
   void testDeserializeU16InvalidSize() {
     final byte[] data = {(byte) 0}; // 1 byte instead of 2
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(20, data),
             "Should throw exception for invalid size");
 
@@ -850,7 +842,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float32 from binary format (discriminator 21)")
-  void testDeserializeFloat32() throws WitValueException {
+  void testDeserializeFloat32() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putFloat(3.14f);
     final byte[] data = buffer.array();
@@ -864,7 +856,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float32 max value")
-  void testDeserializeFloat32Max() throws WitValueException {
+  void testDeserializeFloat32Max() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putFloat(Float.MAX_VALUE);
     final byte[] data = buffer.array();
@@ -877,7 +869,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float32 min positive value")
-  void testDeserializeFloat32MinPositive() throws WitValueException {
+  void testDeserializeFloat32MinPositive() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putFloat(Float.MIN_VALUE);
     final byte[] data = buffer.array();
@@ -890,7 +882,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize float32 NaN")
-  void testDeserializeFloat32Nan() throws WitValueException {
+  void testDeserializeFloat32Nan() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putFloat(Float.NaN);
     final byte[] data = buffer.array();
@@ -906,9 +898,9 @@ final class WitValueDeserializerTest {
   void testDeserializeFloat32InvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 4
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(21, data),
             "Should throw exception for invalid size");
 
@@ -919,7 +911,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize u32 from binary format (discriminator 9)")
-  void testDeserializeU32() throws WitValueException {
+  void testDeserializeU32() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0xFFFFFFFF);
     final byte[] data = buffer.array();
@@ -933,7 +925,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize u32 zero")
-  void testDeserializeU32Zero() throws WitValueException {
+  void testDeserializeU32Zero() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0);
     final byte[] data = buffer.array();
@@ -949,9 +941,9 @@ final class WitValueDeserializerTest {
   void testDeserializeU32InvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1}; // 2 bytes instead of 4
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(9, data),
             "Should throw exception for invalid size");
 
@@ -962,7 +954,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize u64 from binary format (discriminator 10)")
-  void testDeserializeU64() throws WitValueException {
+  void testDeserializeU64() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putLong(-1L); // Max unsigned
     final byte[] data = buffer.array();
@@ -976,7 +968,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize u64 zero")
-  void testDeserializeU64Zero() throws WitValueException {
+  void testDeserializeU64Zero() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putLong(0L);
     final byte[] data = buffer.array();
@@ -992,9 +984,9 @@ final class WitValueDeserializerTest {
   void testDeserializeU64InvalidSize() {
     final byte[] data = {(byte) 0, (byte) 1, (byte) 2, (byte) 3}; // 4 bytes instead of 8
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(10, data),
             "Should throw exception for invalid size");
 
@@ -1005,7 +997,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip s8 preserves value")
-  void testRoundTripS8() throws WitValueException {
+  void testRoundTripS8() throws ValidationException {
     final WitS8 original = WitS8.of((byte) -42);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(17, serialized);
@@ -1017,7 +1009,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip s16 preserves value")
-  void testRoundTripS16() throws WitValueException {
+  void testRoundTripS16() throws ValidationException {
     final WitS16 original = WitS16.of((short) -1000);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(18, serialized);
@@ -1031,7 +1023,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip u8 preserves value")
-  void testRoundTripU8() throws WitValueException {
+  void testRoundTripU8() throws ValidationException {
     final WitU8 original = WitU8.of((byte) 0xFF);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(19, serialized);
@@ -1043,7 +1035,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip u16 preserves value")
-  void testRoundTripU16() throws WitValueException {
+  void testRoundTripU16() throws ValidationException {
     final WitU16 original = WitU16.of((short) 0xFFFF);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(20, serialized);
@@ -1057,7 +1049,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip u32 preserves value")
-  void testRoundTripU32() throws WitValueException {
+  void testRoundTripU32() throws ValidationException {
     final WitU32 original = WitU32.of(0xFFFFFFFF);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(9, serialized);
@@ -1071,7 +1063,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip u64 preserves value")
-  void testRoundTripU64() throws WitValueException {
+  void testRoundTripU64() throws ValidationException {
     final WitU64 original = WitU64.of(-1L);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(10, serialized);
@@ -1085,7 +1077,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Round-trip float32 preserves value")
-  void testRoundTripFloat32() throws WitValueException {
+  void testRoundTripFloat32() throws ValidationException {
     final WitFloat32 original = WitFloat32.of(3.14f);
     final byte[] serialized = WitValueSerializer.serialize(original);
     final WitValue deserialized = WitValueDeserializer.deserialize(21, serialized);
@@ -1109,9 +1101,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(0); // count = 0
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(11, data),
             "Empty list should throw exception");
 
@@ -1125,9 +1117,9 @@ final class WitValueDeserializerTest {
   void testDeserializeListLessThanMinimumBytes() {
     final byte[] data = new byte[3]; // Less than 4 bytes needed for count
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(11, data),
             "Should throw for insufficient bytes");
 
@@ -1143,9 +1135,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(-1); // negative count
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(11, data),
             "Negative count should throw exception");
 
@@ -1167,9 +1159,9 @@ final class WitValueDeserializerTest {
     // Missing last byte of the element header
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(11, data),
             "Should throw for truncated element header");
 
@@ -1180,7 +1172,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize list with exactly 8 bytes remaining for element header should work")
-  void testDeserializeListExactlyEnoughForElementHeader() throws WitValueException {
+  void testDeserializeListExactlyEnoughForElementHeader() throws ValidationException {
     // count=1, discriminator=1 (bool), length=1, data=1 (true)
     final ByteBuffer buffer = ByteBuffer.allocate(13).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(1); // count = 1
@@ -1204,9 +1196,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(-1); // negative length
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(11, data),
             "Negative length should throw exception");
 
@@ -1224,9 +1216,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(5); // length = 5 (but no data follows)
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(11, data),
             "Truncated element data should throw exception");
 
@@ -1239,7 +1231,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize own with exactly 8 bytes (minimum) should work with empty type name")
-  void testDeserializeOwnExactlyMinimumBytes() throws WitValueException {
+  void testDeserializeOwnExactlyMinimumBytes() throws ValidationException {
     // type_length=0, index=42
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0); // type name length = 0
@@ -1258,9 +1250,9 @@ final class WitValueDeserializerTest {
   void testDeserializeOwnLessThanMinimumBytes() {
     final byte[] data = new byte[7]; // Less than 8 bytes needed
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(22, data),
             "Should throw for insufficient bytes");
 
@@ -1277,9 +1269,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(42); // index
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(22, data),
             "Negative type name length should throw exception");
 
@@ -1298,9 +1290,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(42); // index (would overwrite if we had enough space)
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(22, data),
             "Truncated type name should throw exception");
 
@@ -1311,7 +1303,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize own with valid type name and index")
-  void testDeserializeOwnWithTypeName() throws WitValueException {
+  void testDeserializeOwnWithTypeName() throws ValidationException {
     final String typeName = "myresource";
     final byte[] typeNameBytes = typeName.getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
@@ -1333,7 +1325,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize borrow with exactly 8 bytes (minimum) should work with empty type name")
-  void testDeserializeBorrowExactlyMinimumBytes() throws WitValueException {
+  void testDeserializeBorrowExactlyMinimumBytes() throws ValidationException {
     // type_length=0, index=99
     final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0); // type name length = 0
@@ -1352,9 +1344,9 @@ final class WitValueDeserializerTest {
   void testDeserializeBorrowLessThanMinimumBytes() {
     final byte[] data = new byte[7]; // Less than 8 bytes needed
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(23, data),
             "Should throw for insufficient bytes");
 
@@ -1371,9 +1363,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(42); // index
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(23, data),
             "Negative type name length should throw exception");
 
@@ -1392,9 +1384,9 @@ final class WitValueDeserializerTest {
     buffer.putInt(42); // index
     final byte[] data = buffer.array();
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(23, data),
             "Truncated type name should throw exception");
 
@@ -1405,7 +1397,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize borrow with valid type name and index")
-  void testDeserializeBorrowWithTypeName() throws WitValueException {
+  void testDeserializeBorrowWithTypeName() throws ValidationException {
     final String typeName = "borrowed_res";
     final byte[] typeNameBytes = typeName.getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
@@ -1427,7 +1419,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize string with exactly 4 bytes (minimum for length) with zero length")
-  void testDeserializeStringExactlyMinimumBytes() throws WitValueException {
+  void testDeserializeStringExactlyMinimumBytes() throws ValidationException {
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0); // length = 0 (empty string)
     final byte[] data = buffer.array();
@@ -1444,9 +1436,9 @@ final class WitValueDeserializerTest {
   void testDeserializeStringLessThanMinimumBytes() {
     final byte[] data = new byte[3]; // Less than 4 bytes needed for length
 
-    final WitValueException exception =
+    final ValidationException exception =
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> WitValueDeserializer.deserialize(6, data),
             "Should throw for insufficient bytes");
 
@@ -1457,7 +1449,7 @@ final class WitValueDeserializerTest {
 
   @Test
   @DisplayName("Deserialize string with valid content")
-  void testDeserializeStringValidContent() throws WitValueException {
+  void testDeserializeStringValidContent() throws ValidationException {
     final String text = "Hello, WIT!";
     final byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =

@@ -16,8 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
@@ -338,7 +338,7 @@ public final class PanamaWasiInstance implements WasiInstance {
         return results;
       }
 
-    } catch (final WitValueException e) {
+    } catch (final ValidationException e) {
       setState(WasiInstanceState.ERROR);
       throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     } catch (final Exception e) {
@@ -355,12 +355,11 @@ public final class PanamaWasiInstance implements WasiInstance {
    *
    * @param obj the Java object to convert
    * @return the WIT value
-   * @throws WitValueException if conversion fails
+   * @throws ValidationException if conversion fails
    */
-  private static WitValue convertToWitValue(final Object obj) throws WitValueException {
+  private static WitValue convertToWitValue(final Object obj) throws ValidationException {
     if (obj == null) {
-      throw new WitValueException(
-          "Cannot convert null to WIT value", WitValueException.ErrorCode.NULL_VALUE);
+      throw new ValidationException("Cannot convert null to WIT value");
     }
 
     if (obj instanceof WitValue) {
@@ -402,9 +401,8 @@ public final class PanamaWasiInstance implements WasiInstance {
       return builder.build();
     }
 
-    throw new WitValueException(
-        "Unsupported Java type for WIT conversion: " + obj.getClass().getName(),
-        WitValueException.ErrorCode.TYPE_MISMATCH);
+    throw new ValidationException(
+        "Unsupported Java type for WIT conversion: " + obj.getClass().getName());
   }
 
   @Override

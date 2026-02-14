@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import ai.tegmentum.wasmtime4j.exception.ResourceException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.PhantomReference;
@@ -140,12 +139,12 @@ public final class WitResourceManager implements AutoCloseable {
 
     // Check resource limit
     if (activeResources.size() >= config.getMaxResources()) {
-      throw new ResourceException("Maximum resource limit reached: " + config.getMaxResources());
+      throw new WasmException("Maximum resource limit reached: " + config.getMaxResources());
     }
 
     final ResourceTypeInfo typeInfo = resourceTypes.get(typeName);
     if (typeInfo == null) {
-      throw new ResourceException("Unknown resource type: " + typeName);
+      throw new WasmException("Unknown resource type: " + typeName);
     }
 
     final int resourceId = nextResourceId.getAndIncrement();
@@ -172,14 +171,14 @@ public final class WitResourceManager implements AutoCloseable {
    *
    * @param resourceId the resource handle
    * @return the managed resource
-   * @throws ResourceException if resource not found
+   * @throws WasmException if resource not found
    */
-  public ManagedResource getResource(final int resourceId) throws ResourceException {
+  public ManagedResource getResource(final int resourceId) throws WasmException {
     ensureNotClosed();
 
     final ManagedResource resource = activeResources.get(resourceId);
     if (resource == null) {
-      throw new ResourceException("Resource not found: " + resourceId);
+      throw new WasmException("Resource not found: " + resourceId);
     }
 
     // Update last accessed time
@@ -194,16 +193,16 @@ public final class WitResourceManager implements AutoCloseable {
    * @param expectedType the expected resource type
    * @param <T> the resource type
    * @return the resource object
-   * @throws ResourceException if resource not found or wrong type
+   * @throws WasmException if resource not found or wrong type
    */
   @SuppressWarnings("unchecked")
   public <T> T getResourceValue(final int resourceId, final Class<T> expectedType)
-      throws ResourceException {
+      throws WasmException {
     final ManagedResource managedResource = getResource(resourceId);
     final Object resource = managedResource.getResource();
 
     if (!expectedType.isInstance(resource)) {
-      throw new ResourceException(
+      throw new WasmException(
           "Resource " + resourceId + " is not of expected type: " + expectedType.getName());
     }
 
@@ -214,9 +213,9 @@ public final class WitResourceManager implements AutoCloseable {
    * Increments the reference count for a resource.
    *
    * @param resourceId the resource handle
-   * @throws ResourceException if resource not found
+   * @throws WasmException if resource not found
    */
-  public void incrementRefCount(final int resourceId) throws ResourceException {
+  public void incrementRefCount(final int resourceId) throws WasmException {
     final ManagedResource resource = getResource(resourceId);
     resource.incrementRefCount();
     LOGGER.fine(
@@ -228,9 +227,9 @@ public final class WitResourceManager implements AutoCloseable {
    *
    * @param resourceId the resource handle
    * @return true if resource was destroyed, false otherwise
-   * @throws ResourceException if resource not found
+   * @throws WasmException if resource not found
    */
-  public boolean decrementRefCount(final int resourceId) throws ResourceException, WasmException {
+  public boolean decrementRefCount(final int resourceId) throws WasmException {
     final ManagedResource resource = getResource(resourceId);
     final int newRefCount = resource.decrementRefCount();
 

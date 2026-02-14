@@ -24,8 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WitMarshalingException;
-import ai.tegmentum.wasmtime4j.exception.WitRangeException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
@@ -414,7 +413,7 @@ class WitPrimitiveValueTest {
 
     @Test
     @DisplayName("WitChar should not be numeric")
-    void witCharShouldNotBeNumeric() throws WitRangeException {
+    void witCharShouldNotBeNumeric() throws ValidationException {
       final WitChar value = WitChar.of('A');
       assertFalse(value.isNumeric(), "WitChar should not be numeric");
       assertFalse(value.isInteger(), "WitChar should not be integer");
@@ -423,7 +422,7 @@ class WitPrimitiveValueTest {
 
     @Test
     @DisplayName("WitChar should preserve codepoint")
-    void witCharShouldPreserveCodepoint() throws WitRangeException {
+    void witCharShouldPreserveCodepoint() throws ValidationException {
       final WitChar value = WitChar.of(0x1F600);
       assertEquals(0x1F600, value.getCodepoint(), "getCodepoint() should return original value");
     }
@@ -432,25 +431,25 @@ class WitPrimitiveValueTest {
     @DisplayName("WitChar should reject surrogate codepoints")
     void witCharShouldRejectSurrogates() {
       assertThrows(
-          WitRangeException.class, () -> WitChar.of(0xD800), "Should reject low surrogate 0xD800");
+          ValidationException.class, () -> WitChar.of(0xD800), "Should reject low surrogate 0xD800");
       assertThrows(
-          WitRangeException.class, () -> WitChar.of(0xDFFF), "Should reject high surrogate 0xDFFF");
+          ValidationException.class, () -> WitChar.of(0xDFFF), "Should reject high surrogate 0xDFFF");
     }
 
     @Test
     @DisplayName("WitChar should reject out-of-range codepoints")
     void witCharShouldRejectOutOfRange() {
       assertThrows(
-          WitRangeException.class,
+          ValidationException.class,
           () -> WitChar.of(0x110000),
           "Should reject codepoint above U+10FFFF");
       assertThrows(
-          WitRangeException.class, () -> WitChar.of(-1), "Should reject negative codepoint");
+          ValidationException.class, () -> WitChar.of(-1), "Should reject negative codepoint");
     }
 
     @Test
     @DisplayName("WitChar toString should show unicode codepoint")
-    void witCharToStringShouldShowUnicode() throws WitRangeException {
+    void witCharToStringShouldShowUnicode() throws ValidationException {
       final String str = WitChar.of('A').toString();
       assertTrue(
           str.contains("0041") || str.contains("41"),
@@ -464,7 +463,7 @@ class WitPrimitiveValueTest {
 
     @Test
     @DisplayName("WitString should not be numeric")
-    void witStringShouldNotBeNumeric() throws WitMarshalingException {
+    void witStringShouldNotBeNumeric() throws ValidationException {
       final WitString value = WitString.of("hello");
       assertFalse(value.isNumeric(), "WitString should not be numeric");
       assertFalse(value.isInteger(), "WitString should not be integer");
@@ -473,7 +472,7 @@ class WitPrimitiveValueTest {
 
     @Test
     @DisplayName("WitString should preserve string value")
-    void witStringShouldPreserveValue() throws WitMarshalingException {
+    void witStringShouldPreserveValue() throws ValidationException {
       final WitString value = WitString.of("hello world");
       assertEquals("hello world", value.getValue(), "getValue() should return original string");
       assertEquals("hello world", value.toJava(), "toJava() should return String");
@@ -483,12 +482,12 @@ class WitPrimitiveValueTest {
     @DisplayName("WitString should reject null")
     void witStringShouldRejectNull() {
       assertThrows(
-          WitMarshalingException.class, () -> WitString.of(null), "Should reject null string");
+          ValidationException.class, () -> WitString.of(null), "Should reject null string");
     }
 
     @Test
     @DisplayName("WitString equals should be value-based")
-    void witStringEqualsShouldBeValueBased() throws WitMarshalingException {
+    void witStringEqualsShouldBeValueBased() throws ValidationException {
       final WitString a = WitString.of("test");
       final WitString b = WitString.of("test");
       final WitString c = WitString.of("other");
@@ -499,7 +498,7 @@ class WitPrimitiveValueTest {
 
     @Test
     @DisplayName("WitString should handle empty string")
-    void witStringShouldHandleEmptyString() throws WitMarshalingException {
+    void witStringShouldHandleEmptyString() throws ValidationException {
       final WitString value = WitString.of("");
       assertEquals("", value.getValue(), "Empty string should be preserved");
     }
@@ -626,28 +625,28 @@ class WitPrimitiveValueTest {
 
     @Test
     @DisplayName("WitString equals should return true for same reference")
-    void witStringEqualsShouldReturnTrueForSameReference() throws WitMarshalingException {
+    void witStringEqualsShouldReturnTrueForSameReference() throws ValidationException {
       final WitString value = WitString.of("test");
       assertEquals(value, value, "Same reference should be equal to itself");
     }
 
     @Test
     @DisplayName("WitString equals should return false for null")
-    void witStringEqualsShouldReturnFalseForNull() throws WitMarshalingException {
+    void witStringEqualsShouldReturnFalseForNull() throws ValidationException {
       final WitString value = WitString.of("test");
       assertFalse(value.equals(null), "equals(null) should return false");
     }
 
     @Test
     @DisplayName("WitChar equals should return true for same reference")
-    void witCharEqualsShouldReturnTrueForSameReference() throws WitRangeException {
+    void witCharEqualsShouldReturnTrueForSameReference() throws ValidationException {
       final WitChar value = WitChar.of('A');
       assertEquals(value, value, "Same reference should be equal to itself");
     }
 
     @Test
     @DisplayName("WitChar equals should return false for null")
-    void witCharEqualsShouldReturnFalseForNull() throws WitRangeException {
+    void witCharEqualsShouldReturnFalseForNull() throws ValidationException {
       final WitChar value = WitChar.of('A');
       assertFalse(value.equals(null), "equals(null) should return false");
     }
@@ -794,7 +793,7 @@ class WitPrimitiveValueTest {
 
     @Test
     @DisplayName("WitChar and WitString are not numeric")
-    void charAndStringShouldNotBeNumeric() throws WitRangeException, WitMarshalingException {
+    void charAndStringShouldNotBeNumeric() throws ValidationException, ValidationException {
       final WitChar c = WitChar.of('A');
       final WitString s = WitString.of("test");
 

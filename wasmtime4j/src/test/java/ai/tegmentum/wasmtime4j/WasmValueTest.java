@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.exception.MultiValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -552,7 +552,7 @@ class WasmValueTest {
 
     @Test
     @DisplayName("validateMultiValueLimits should enforce limits")
-    void validateMultiValueLimitsShouldEnforceLimits() throws MultiValueException {
+    void validateMultiValueLimitsShouldEnforceLimits() throws ValidationException {
       final WasmValue[] validValues = new WasmValue[16];
       for (int i = 0; i < 16; i++) {
         validValues[i] = WasmValue.i32(i);
@@ -565,7 +565,7 @@ class WasmValueTest {
         invalidValues[i] = WasmValue.i32(i);
       }
       assertThrows(
-          MultiValueException.class,
+          ValidationException.class,
           () -> WasmValue.validateMultiValueLimits(invalidValues),
           "17 values should exceed limit");
     }

@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponentContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiRuntimeInfo;
@@ -116,7 +117,7 @@ public final class PanamaWasiComponentContext implements WasiComponentContext {
   @Override
   public WasiComponent createComponent(final byte[] wasmBytes) throws WasmException {
     Objects.requireNonNull(wasmBytes, "WebAssembly bytes cannot be null");
-    PanamaErrorHandler.requirePositive(wasmBytes.length, "wasmBytes.length");
+    PanamaValidation.requirePositive(wasmBytes.length, "wasmBytes.length");
     ensureNotClosed();
 
     try {

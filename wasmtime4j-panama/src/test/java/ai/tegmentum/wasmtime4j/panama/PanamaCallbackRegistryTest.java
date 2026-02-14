@@ -69,8 +69,7 @@ class PanamaCallbackRegistryTest {
     LOGGER.info("Created PanamaStore");
 
     registry =
-        new PanamaCallbackRegistry(
-            store, store.getResourceManager(), PanamaErrorHandler.getInstance());
+        new PanamaCallbackRegistry(store, store.getResourceManager());
     LOGGER.info("Created PanamaCallbackRegistry");
   }
 
@@ -127,9 +126,7 @@ class PanamaCallbackRegistryTest {
     void shouldThrowForNullStore() throws Exception {
       assertThrows(
           NullPointerException.class,
-          () ->
-              new PanamaCallbackRegistry(
-                  null, store.getResourceManager(), PanamaErrorHandler.getInstance()),
+          () -> new PanamaCallbackRegistry(null, store.getResourceManager()),
           "Should throw NullPointerException for null store");
       LOGGER.info("Correctly threw NullPointerException for null store");
     }
@@ -139,19 +136,9 @@ class PanamaCallbackRegistryTest {
     void shouldThrowForNullArenaManager() throws Exception {
       assertThrows(
           NullPointerException.class,
-          () -> new PanamaCallbackRegistry(store, null, PanamaErrorHandler.getInstance()),
+          () -> new PanamaCallbackRegistry(store, null),
           "Should throw NullPointerException for null arenaManager");
       LOGGER.info("Correctly threw NullPointerException for null arenaManager");
-    }
-
-    @Test
-    @DisplayName("Should throw for null PanamaErrorHandler")
-    void shouldThrowForNullErrorHandler() throws Exception {
-      assertThrows(
-          NullPointerException.class,
-          () -> new PanamaCallbackRegistry(store, store.getResourceManager(), null),
-          "Should throw NullPointerException for null errorHandler");
-      LOGGER.info("Correctly threw NullPointerException for null errorHandler");
     }
   }
 
@@ -530,8 +517,7 @@ class PanamaCallbackRegistryTest {
     void shouldCloseRegistryAndRejectNewOperations() throws Exception {
       // Create a separate registry for this test to avoid interfering with tearDown
       final PanamaCallbackRegistry separateRegistry =
-          new PanamaCallbackRegistry(
-              store, store.getResourceManager(), PanamaErrorHandler.getInstance());
+          new PanamaCallbackRegistry(store, store.getResourceManager());
 
       // Register a callback before closing
       separateRegistry.registerCallback(
@@ -556,8 +542,7 @@ class PanamaCallbackRegistryTest {
     @DisplayName("Should return zero count after close clears callbacks")
     void shouldReturnZeroCountAfterClose() throws Exception {
       final PanamaCallbackRegistry separateRegistry =
-          new PanamaCallbackRegistry(
-              store, store.getResourceManager(), PanamaErrorHandler.getInstance());
+          new PanamaCallbackRegistry(store, store.getResourceManager());
       separateRegistry.registerCallback("temp", createDoubleFunction(), createI32ToI32Type());
       assertEquals(1, separateRegistry.getCallbackCount(), "Should have 1 callback before close");
 
@@ -571,8 +556,7 @@ class PanamaCallbackRegistryTest {
     @DisplayName("Should not find callback after close clears all")
     void shouldNotFindCallbackAfterClose() throws Exception {
       final PanamaCallbackRegistry separateRegistry =
-          new PanamaCallbackRegistry(
-              store, store.getResourceManager(), PanamaErrorHandler.getInstance());
+          new PanamaCallbackRegistry(store, store.getResourceManager());
       separateRegistry.registerCallback("findMe", createDoubleFunction(), createI32ToI32Type());
       assertTrue(separateRegistry.hasCallback("findMe"), "Should find before close");
 
@@ -585,8 +569,7 @@ class PanamaCallbackRegistryTest {
     @DisplayName("Should still return metrics after close")
     void shouldReturnMetricsAfterClose() throws Exception {
       final PanamaCallbackRegistry separateRegistry =
-          new PanamaCallbackRegistry(
-              store, store.getResourceManager(), PanamaErrorHandler.getInstance());
+          new PanamaCallbackRegistry(store, store.getResourceManager());
       separateRegistry.close();
 
       final CallbackMetrics postCloseMetrics = separateRegistry.getMetrics();
@@ -598,8 +581,7 @@ class PanamaCallbackRegistryTest {
     @DisplayName("Should handle double close gracefully")
     void shouldHandleDoubleCloseGracefully() throws Exception {
       final PanamaCallbackRegistry separateRegistry =
-          new PanamaCallbackRegistry(
-              store, store.getResourceManager(), PanamaErrorHandler.getInstance());
+          new PanamaCallbackRegistry(store, store.getResourceManager());
 
       assertDoesNotThrow(separateRegistry::close, "First close should not throw");
       assertDoesNotThrow(separateRegistry::close, "Second close should not throw");

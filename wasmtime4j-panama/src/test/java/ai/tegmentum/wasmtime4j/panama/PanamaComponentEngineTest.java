@@ -281,7 +281,6 @@ class PanamaComponentEngineTest {
             method.getReturnType().equals(void.class), "compileComponent should not return void");
       }
     }
-
   }
 
   // ========================================================================

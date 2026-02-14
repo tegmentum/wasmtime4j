@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.MultiValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
@@ -154,7 +154,7 @@ class MultiValueFunctionTest {
 
     @Test
     @DisplayName("Should validate multi-value limits")
-    void testMultiValueLimits() throws ai.tegmentum.wasmtime4j.exception.MultiValueException {
+    void testMultiValueLimits() throws ValidationException {
       // Valid case - within limits
       WasmValue[] validArray = new WasmValue[10];
       for (int i = 0; i < 10; i++) {
@@ -174,13 +174,12 @@ class MultiValueFunctionTest {
       for (int i = 0; i < 17; i++) {
         exceedsLimit[i] = WasmValue.i32(i);
       }
-      MultiValueException exception =
+      ValidationException exception =
           assertThrows(
-              MultiValueException.class, () -> WasmValue.validateMultiValueLimits(exceedsLimit));
+              ValidationException.class, () -> WasmValue.validateMultiValueLimits(exceedsLimit));
 
-      assertEquals(17, exception.getActualCount());
-      assertEquals(16, exception.getExpectedCount());
-      assertTrue(exception.hasCountInfo());
+      assertTrue(exception.getMessage().contains("17"), "Should mention actual count");
+      assertTrue(exception.getMessage().contains("16"), "Should mention limit");
     }
 
     @Test
@@ -475,96 +474,4 @@ class MultiValueFunctionTest {
     }
   }
 
-  @Nested
-  @DisplayName("MultiValueException Tests")
-  class MultiValueExceptionTest {
-
-    @Test
-    @DisplayName("Should create count mismatch exceptions")
-    void testCountMismatchExceptions() {
-      MultiValueException exception = MultiValueException.countMismatch(3, 2);
-
-      assertNotNull(exception);
-      assertEquals(3, exception.getExpectedCount());
-      assertEquals(2, exception.getActualCount());
-      assertTrue(exception.hasCountInfo());
-      assertFalse(exception.hasOperationInfo());
-      assertTrue(exception.getMessage().contains("expected 3"));
-      assertTrue(exception.getMessage().contains("got 2"));
-
-      // With operation
-      MultiValueException withOp = MultiValueException.countMismatch(3, 2, "function_call");
-      assertEquals("function_call", withOp.getOperation());
-      assertTrue(withOp.hasOperationInfo());
-      assertTrue(withOp.getMessage().contains("function_call"));
-    }
-
-    @Test
-    @DisplayName("Should create type validation exceptions")
-    void testTypeValidationExceptions() {
-      MultiValueException exception = MultiValueException.typeValidationError(1, "I32", "F64");
-
-      assertNotNull(exception);
-      assertTrue(exception.getMessage().contains("index 1"));
-      assertTrue(exception.getMessage().contains("I32"));
-      assertTrue(exception.getMessage().contains("F64"));
-    }
-
-    @Test
-    @DisplayName("Should create marshaling exceptions")
-    void testMarshalingExceptions() {
-      RuntimeException cause = new RuntimeException("Native marshaling failed");
-      MultiValueException exception =
-          MultiValueException.marshalingError("parameter_marshaling", 5, cause);
-
-      assertNotNull(exception);
-      assertEquals("parameter_marshaling", exception.getOperation());
-      assertEquals(5, exception.getActualCount());
-      assertEquals(-1, exception.getExpectedCount());
-      assertEquals(cause, exception.getCause());
-      assertTrue(exception.getMessage().contains("parameter_marshaling"));
-      assertTrue(exception.getMessage().contains("5 values"));
-    }
-
-    @Test
-    @DisplayName("Should create limit exceeded exceptions")
-    void testLimitExceededException() {
-      MultiValueException exception = MultiValueException.limitExceeded(20, 16);
-
-      assertNotNull(exception);
-      assertEquals(16, exception.getExpectedCount());
-      assertEquals(20, exception.getActualCount());
-      assertTrue(exception.hasCountInfo());
-      assertTrue(exception.getMessage().contains("20 values"));
-      assertTrue(exception.getMessage().contains("max allowed: 16"));
-    }
-
-    @Test
-    @DisplayName("Should create invalid value array exceptions")
-    void testInvalidValueArrayException() {
-      MultiValueException exception = MultiValueException.invalidValueArray("validation");
-
-      assertNotNull(exception);
-      assertEquals("validation", exception.getOperation());
-      assertTrue(exception.hasOperationInfo());
-      assertFalse(exception.hasCountInfo());
-      assertTrue(exception.getMessage().contains("validation"));
-    }
-
-    @Test
-    @DisplayName("Should format toString correctly")
-    void testToStringFormatting() {
-      MultiValueException simpleException = new MultiValueException("Simple error");
-      assertTrue(simpleException.toString().contains("Simple error"));
-      assertTrue(simpleException.toString().startsWith("MultiValueException"));
-
-      MultiValueException fullException =
-          new MultiValueException("Full error", 3, 2, "test_operation");
-      String fullStr = fullException.toString();
-      assertTrue(fullStr.contains("Full error"));
-      assertTrue(fullStr.contains("expected: 3"));
-      assertTrue(fullStr.contains("actual: 2"));
-      assertTrue(fullStr.contains("operation: test_operation"));
-    }
-  }
 }

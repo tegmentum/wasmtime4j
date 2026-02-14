@@ -1442,5 +1442,4 @@ public final class PanamaGcRuntime implements GcRuntime {
       lock.writeLock().unlock();
     }
   }
-
 }

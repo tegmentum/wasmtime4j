@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.MultiValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
@@ -244,7 +244,7 @@ public class MultiValuePerformanceBenchmark {
   }
 
   @Benchmark
-  public void validateMultiValueLimits(Blackhole bh) throws MultiValueException {
+  public void validateMultiValueLimits(Blackhole bh) throws ValidationException {
     WasmValue.validateMultiValueLimits(eightResults);
   }
 

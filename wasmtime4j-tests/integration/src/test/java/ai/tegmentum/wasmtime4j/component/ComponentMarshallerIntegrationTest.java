@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wit.WitType;
@@ -73,7 +73,7 @@ class ComponentMarshallerIntegrationTest {
 
       try (Arena arena = Arena.ofConfined()) {
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> PanamaWitValueMarshaller.marshal(null, arena),
             "Should reject null value");
       }
@@ -88,7 +88,7 @@ class ComponentMarshallerIntegrationTest {
 
       try (Arena arena = Arena.ofConfined()) {
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> PanamaWitValueMarshaller.unmarshal(1, null, arena),
             "Should reject null data");
       }
@@ -153,7 +153,7 @@ class ComponentMarshallerIntegrationTest {
 
       try (Arena arena = Arena.ofConfined()) {
         assertThrows(
-            WitValueException.class,
+            ValidationException.class,
             () -> PanamaWitValueMarshaller.unmarshal(999, new byte[] {0}, arena),
             "Should throw for invalid discriminator");
       }

@@ -488,12 +488,12 @@ class GcPackageTest {
   class GcExceptionTests {
 
     @Test
-    @DisplayName("should be a subclass of RuntimeException")
-    void shouldBeSubclassOfRuntimeException() {
+    @DisplayName("should be a subclass of WasmException")
+    void shouldBeSubclassOfWasmException() {
       assertTrue(
-          ai.tegmentum.wasmtime4j.exception.RuntimeException.class.isAssignableFrom(
+          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(
               GcException.class),
-          "GcException should extend RuntimeException");
+          "GcException should extend WasmException");
     }
 
     @Test
@@ -520,7 +520,7 @@ class GcPackageTest {
     @DisplayName("should create with message")
     void shouldCreateWithMessage() {
       final GcException ex = new GcException("test message");
-      // Message includes error type prefix from parent RuntimeException
+      // Message is passed through directly to parent WasmException
       assertTrue(ex.getMessage().contains("test message"), "Message should contain original text");
       assertEquals(GcException.ErrorCode.INTERNAL_ERROR, ex.getErrorCode(), "Default error code");
     }
@@ -530,7 +530,7 @@ class GcPackageTest {
     void shouldCreateWithMessageAndCause() {
       final Exception cause = new Exception("cause");
       final GcException ex = new GcException("test message", cause);
-      // Message includes error type prefix from parent RuntimeException
+      // Message is passed through directly to parent WasmException
       assertTrue(ex.getMessage().contains("test message"), "Message should contain original text");
       assertEquals(cause, ex.getCause(), "Cause should match");
     }
@@ -550,7 +550,7 @@ class GcPackageTest {
           new GcException(
               "type error", GcException.ErrorCode.TYPE_VALIDATION_ERROR, "castTo", "context info");
 
-      // Message includes error type prefix from parent RuntimeException
+      // Message is passed through directly to parent WasmException
       assertTrue(ex.getMessage().contains("type error"), "Message should contain original text");
       assertEquals(
           GcException.ErrorCode.TYPE_VALIDATION_ERROR,

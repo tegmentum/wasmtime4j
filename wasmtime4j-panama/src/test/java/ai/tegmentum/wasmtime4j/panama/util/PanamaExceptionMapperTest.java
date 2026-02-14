@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
-import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.lang.foreign.MemorySegment;
@@ -98,9 +97,9 @@ class PanamaExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("mapException should return same RuntimeException")
-    void mapExceptionShouldReturnSameRuntimeException() {
-      final RuntimeException original = new RuntimeException("Runtime error");
+    @DisplayName("mapException should return same WasmException for runtime error")
+    void mapExceptionShouldReturnSameWasmExceptionForRuntimeError() {
+      final WasmException original = new WasmException("Runtime error");
 
       final WasmException result = PanamaExceptionMapper.mapException(original);
 
@@ -155,13 +154,13 @@ class PanamaExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("mapException should map IllegalStateException to RuntimeException")
-    void mapExceptionShouldMapIllegalStateExceptionToRuntimeException() {
+    @DisplayName("mapException should map IllegalStateException to WasmException")
+    void mapExceptionShouldMapIllegalStateExceptionToWasmException() {
       final IllegalStateException ise = new IllegalStateException("Bad state");
 
       final WasmException result = PanamaExceptionMapper.mapException(ise);
 
-      assertTrue(result instanceof RuntimeException, "Should be RuntimeException");
+      assertTrue(result instanceof WasmException, "Should be WasmException");
       assertEquals(ise, result.getCause(), "Should preserve cause");
     }
 
@@ -222,7 +221,7 @@ class PanamaExceptionMapperTest {
 
       final WasmException result = PanamaExceptionMapper.mapException(e);
 
-      assertTrue(result instanceof RuntimeException, "Should be RuntimeException");
+      assertTrue(result instanceof WasmException, "Should be WasmException");
     }
 
     @Test
@@ -243,7 +242,7 @@ class PanamaExceptionMapperTest {
 
       final WasmException result = PanamaExceptionMapper.mapException(e);
 
-      assertTrue(result instanceof RuntimeException, "Should be RuntimeException");
+      assertTrue(result instanceof WasmException, "Should be WasmException");
     }
 
     @Test
@@ -289,11 +288,11 @@ class PanamaExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("mapNativeError should map code 3 to RuntimeException")
-    void mapNativeErrorShouldMapCode3ToRuntimeException() {
+    @DisplayName("mapNativeError should map code 3 to WasmException")
+    void mapNativeErrorShouldMapCode3ToWasmException() {
       final WasmException result = mapper.mapNativeError(3, "Runtime failed");
 
-      assertTrue(result instanceof RuntimeException, "Should be RuntimeException");
+      assertTrue(result instanceof WasmException, "Should be WasmException");
     }
 
     @Test
@@ -310,7 +309,7 @@ class PanamaExceptionMapperTest {
     void mapNativeErrorShouldMapCode5ToFunctionCallError() {
       final WasmException result = mapper.mapNativeError(5, "Call failed");
 
-      assertTrue(result instanceof RuntimeException, "Should be RuntimeException");
+      assertTrue(result instanceof WasmException, "Should be WasmException");
     }
 
     @Test
@@ -406,9 +405,9 @@ class PanamaExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("createRuntimeException should create with prefix")
-    void createRuntimeExceptionShouldCreateWithPrefix() {
-      final RuntimeException result = mapper.createRuntimeException("Runtime error", null);
+    @DisplayName("createRuntimeException should create WasmException with prefix")
+    void createRuntimeExceptionShouldCreateWasmExceptionWithPrefix() {
+      final WasmException result = mapper.createRuntimeException("Runtime error", null);
 
       assertNotNull(result, "Result should not be null");
       assertTrue(result.getMessage().contains("Panama FFI"), "Should contain prefix");
@@ -508,11 +507,11 @@ class PanamaExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("isRecoverableError should return true for RuntimeException")
-    void isRecoverableErrorShouldReturnTrueForRuntimeException() {
-      final RuntimeException re = new RuntimeException("Generic runtime error");
+    @DisplayName("isRecoverableError should return false for generic WasmException")
+    void isRecoverableErrorShouldReturnFalseForGenericWasmException() {
+      final WasmException we = new WasmException("Generic runtime error");
 
-      assertTrue(mapper.isRecoverableError(re), "RuntimeException might be recoverable");
+      assertFalse(mapper.isRecoverableError(we), "Generic WasmException should not be recoverable");
     }
   }
 }

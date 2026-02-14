@@ -4,8 +4,8 @@ import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.exception.WitValueException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wit.WitValue;
 import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller;
@@ -210,7 +210,7 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
       // Convert back to Java type
       return resultValue.toJava();
 
-    } catch (final WitValueException e) {
+    } catch (final ValidationException e) {
       throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     } catch (final Exception e) {
       throw new WasmException("Function invocation failed: " + e.getMessage(), e);

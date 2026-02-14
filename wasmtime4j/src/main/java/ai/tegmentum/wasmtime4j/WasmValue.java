@@ -720,21 +720,23 @@ public final class WasmValue {
    * @param values the values to validate
    * @param expectedTypes the expected types
    * @param operation the operation being performed (for error context)
-   * @throws ai.tegmentum.wasmtime4j.exception.MultiValueException if validation fails
+   * @throws ai.tegmentum.wasmtime4j.exception.ValidationException if validation fails
    */
   public static void validateMultiValueWithContext(
       final WasmValue[] values, final WasmValueType[] expectedTypes, final String operation)
-      throws ai.tegmentum.wasmtime4j.exception.MultiValueException {
+      throws ai.tegmentum.wasmtime4j.exception.ValidationException {
     if (values == null) {
-      throw ai.tegmentum.wasmtime4j.exception.MultiValueException.invalidValueArray(
-          operation != null ? operation : "validation");
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
+          String.format("Value array cannot be null for operation: %s",
+              operation != null ? operation : "validation"));
     }
     if (expectedTypes == null) {
       throw new IllegalArgumentException("Expected types array cannot be null");
     }
     if (values.length != expectedTypes.length) {
-      throw ai.tegmentum.wasmtime4j.exception.MultiValueException.countMismatch(
-          expectedTypes.length, values.length, operation);
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
+          String.format("Value count mismatch: expected %d but got %d for operation: %s",
+              expectedTypes.length, values.length, operation));
     }
 
     for (int i = 0; i < values.length; i++) {
@@ -744,8 +746,9 @@ public final class WasmValue {
       try {
         values[i].validateType(expectedTypes[i]);
       } catch (IllegalArgumentException e) {
-        throw ai.tegmentum.wasmtime4j.exception.MultiValueException.typeValidationError(
-            i, expectedTypes[i].toString(), values[i].getType().toString());
+        throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
+            String.format("Type mismatch at index %d: expected %s but got %s",
+                i, expectedTypes[i].toString(), values[i].getType().toString()));
       }
     }
   }
@@ -754,12 +757,13 @@ public final class WasmValue {
    * Validates that a multi-value array doesn't exceed WebAssembly limits.
    *
    * @param values the values to check
-   * @throws ai.tegmentum.wasmtime4j.exception.MultiValueException if limits are exceeded
+   * @throws ai.tegmentum.wasmtime4j.exception.ValidationException if limits are exceeded
    */
   public static void validateMultiValueLimits(final WasmValue[] values)
-      throws ai.tegmentum.wasmtime4j.exception.MultiValueException {
+      throws ai.tegmentum.wasmtime4j.exception.ValidationException {
     if (values != null && values.length > 16) {
-      throw ai.tegmentum.wasmtime4j.exception.MultiValueException.limitExceeded(values.length, 16);
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
+          String.format("Multi-value count %d exceeds maximum of %d", values.length, 16));
     }
   }
 

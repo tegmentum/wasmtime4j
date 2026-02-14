@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
-import ai.tegmentum.wasmtime4j.exception.RuntimeException;
 import ai.tegmentum.wasmtime4j.exception.TrapException;
 import ai.tegmentum.wasmtime4j.exception.TrapException.TrapType;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
@@ -81,7 +80,7 @@ public final class PanamaExceptionMapper {
     }
 
     if (exception instanceof IllegalStateException) {
-      return new RuntimeException("Invalid state: " + message, exception);
+      return new WasmException("Invalid state: " + message, exception);
     }
 
     if (exception instanceof SecurityException) {
@@ -111,7 +110,7 @@ public final class PanamaExceptionMapper {
       }
 
       if (lowerMessage.contains("runtime") || lowerMessage.contains("execution")) {
-        return new RuntimeException("Runtime error: " + message, exception);
+        return new WasmException("Runtime error: " + message, exception);
       }
 
       if (lowerMessage.contains("memory") || lowerMessage.contains("allocation")) {
@@ -119,7 +118,7 @@ public final class PanamaExceptionMapper {
       }
 
       if (lowerMessage.contains("function") || lowerMessage.contains("call")) {
-        return new RuntimeException("Function call error: " + message, exception);
+        return new WasmException("Function call error: " + message, exception);
       }
     }
 
@@ -255,13 +254,13 @@ public final class PanamaExceptionMapper {
         return new ValidationException("Module validation failed: " + message);
 
       case 3:
-        return new RuntimeException("Runtime execution failed: " + message);
+        return new WasmException("Runtime execution failed: " + message);
 
       case 4:
         return new WasmException("Memory allocation failed: " + message);
 
       case 5:
-        return new RuntimeException("Function call failed: " + message);
+        return new WasmException("Function call failed: " + message);
 
       case 6:
         return new WasmException("Resource limit exceeded: " + message);
@@ -323,8 +322,8 @@ public final class PanamaExceptionMapper {
    * @param cause the underlying cause, if any
    * @return a new runtime exception
    */
-  public RuntimeException createRuntimeException(final String message, final Throwable cause) {
-    return new RuntimeException("Panama FFI: " + message, cause);
+  public WasmException createRuntimeException(final String message, final Throwable cause) {
+    return new WasmException("Panama FFI: " + message, cause);
   }
 
   /**
@@ -394,6 +393,6 @@ public final class PanamaExceptionMapper {
     }
 
     // Runtime exceptions might be recoverable depending on context
-    return exception instanceof RuntimeException;
+    return exception instanceof WasmException;
   }
 }
