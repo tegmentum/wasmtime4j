@@ -383,15 +383,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.simd.SimdOperations getSimdOperations() throws WasmException {
-    if (!isValid()) {
-      throw new IllegalStateException("JNI runtime is not valid or has been closed");
-    }
-
-    return new JniSimdOperations(this.nativeHandle);
-  }
-
-  @Override
   public Module compileModuleWat(final Engine engine, final String watText) throws WasmException {
     JniValidation.requireNonNull(engine, "engine");
     JniValidation.requireNonNull(watText, "watText");
@@ -681,30 +672,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     return "WasmRuntime";
   }
 
-  // ===== SIMD OPERATIONS =====
-
-  /**
-   * Checks if SIMD operations are supported.
-   *
-   * @return true if SIMD is supported
-   * @throws WasmException if the operation fails
-   */
-  public boolean isSimdSupported() throws WasmException {
-    validateRuntimeState();
-    return nativeIsSimdSupported(nativeHandle);
-  }
-
-  /**
-   * Gets SIMD capabilities information.
-   *
-   * @return SIMD capabilities as a string
-   * @throws WasmException if the operation fails
-   */
-  public String getSimdCapabilities() throws WasmException {
-    validateRuntimeState();
-    return nativeGetSimdCapabilities(nativeHandle);
-  }
-
   // ===== WASI OPERATIONS =====
 
   @Override
@@ -968,93 +935,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @param runtimeHandle the native runtime handle
    */
   private static native void nativeDestroyRuntime(long runtimeHandle);
-
-  // ===== SIMD NATIVE METHOD DECLARATIONS =====
-  // Package-private to allow access from JniSimdOperations
-
-  static native boolean nativeIsSimdSupported(long runtimeHandle);
-
-  static native String nativeGetSimdCapabilities(long runtimeHandle);
-
-  static native byte[] nativeSimdAdd(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdSubtract(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdMultiply(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdDivide(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdAddSaturated(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdAnd(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdOr(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdXor(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdNot(long runtimeHandle, byte[] a);
-
-  static native byte[] nativeSimdEquals(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdLessThan(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdGreaterThan(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdLoad(long runtimeHandle, long memoryHandle, int offset);
-
-  static native byte[] nativeSimdLoadAligned(
-      long runtimeHandle, long memoryHandle, int offset, int alignment);
-
-  static native boolean nativeSimdStore(
-      long runtimeHandle, long memoryHandle, int offset, byte[] vector);
-
-  static native boolean nativeSimdStoreAligned(
-      long runtimeHandle, long memoryHandle, int offset, byte[] vector, int alignment);
-
-  static native byte[] nativeSimdConvertI32ToF32(long runtimeHandle, byte[] vector);
-
-  static native byte[] nativeSimdConvertF32ToI32(long runtimeHandle, byte[] vector);
-
-  static native int nativeSimdExtractLaneI32(long runtimeHandle, byte[] vector, int lane);
-
-  static native byte[] nativeSimdReplaceLaneI32(
-      long runtimeHandle, byte[] vector, int lane, int value);
-
-  static native byte[] nativeSimdSplatI32(long runtimeHandle, int value);
-
-  static native byte[] nativeSimdSplatF32(long runtimeHandle, float value);
-
-  static native byte[] nativeSimdShuffle(long runtimeHandle, byte[] a, byte[] b, byte[] indices);
-
-  // ===== ADVANCED SIMD NATIVE METHOD DECLARATIONS =====
-
-  static native byte[] nativeSimdFma(long runtimeHandle, byte[] a, byte[] b, byte[] c);
-
-  static native byte[] nativeSimdFms(long runtimeHandle, byte[] a, byte[] b, byte[] c);
-
-  static native byte[] nativeSimdReciprocal(long runtimeHandle, byte[] a);
-
-  static native byte[] nativeSimdSqrt(long runtimeHandle, byte[] a);
-
-  static native byte[] nativeSimdRsqrt(long runtimeHandle, byte[] a);
-
-  static native byte[] nativeSimdPopcount(long runtimeHandle, byte[] a);
-
-  static native byte[] nativeSimdShlVariable(long runtimeHandle, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdShrVariable(long runtimeHandle, byte[] a, byte[] b);
-
-  static native float nativeSimdHorizontalSum(long runtimeHandle, byte[] a);
-
-  static native float nativeSimdHorizontalMin(long runtimeHandle, byte[] a);
-
-  static native float nativeSimdHorizontalMax(long runtimeHandle, byte[] a);
-
-  static native byte[] nativeSimdSelect(long runtimeHandle, byte[] mask, byte[] a, byte[] b);
-
-  static native byte[] nativeSimdBlend(long runtimeHandle, byte[] a, byte[] b, int mask);
-
-  static native byte[] nativeSimdRelaxedAdd(long runtimeHandle, byte[] a, byte[] b);
 
   // ===== WASI NATIVE METHOD DECLARATIONS =====
 

@@ -46,8 +46,6 @@ pub mod resource_limiter;
 #[cfg(feature = "jni-bindings")]
 pub mod runtime;
 #[cfg(feature = "jni-bindings")]
-pub mod simd;
-#[cfg(feature = "jni-bindings")]
 pub mod store;
 #[cfg(feature = "jni-bindings")]
 pub mod table;

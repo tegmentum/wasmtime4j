@@ -436,38 +436,6 @@ class V128Test {
   }
 
   @Nested
-  @DisplayName("SimdVector Conversion Tests")
-  class SimdVectorConversionTests {
-
-    @Test
-    @DisplayName("toSimdVector should preserve data")
-    void toSimdVectorShouldPreserveData() {
-      final V128 v = V128.fromInts(1, 2, 3, 4);
-      final SimdVector sv = v.toSimdVector(SimdLane.I32X4);
-      assertNotNull(sv, "toSimdVector should return non-null SimdVector");
-    }
-
-    @Test
-    @DisplayName("fromSimdVector should create equivalent V128")
-    void fromSimdVectorShouldCreateEquivalentV128() {
-      final V128 original = V128.fromInts(10, 20, 30, 40);
-      final SimdVector sv = original.toSimdVector(SimdLane.I32X4);
-      final V128 roundTripped = V128.fromSimdVector(sv);
-      assertEquals(
-          original, roundTripped, "Round-tripping through SimdVector should preserve data");
-    }
-
-    @Test
-    @DisplayName("fromSimdVector should reject null")
-    void fromSimdVectorShouldRejectNull() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> V128.fromSimdVector(null),
-          "fromSimdVector should reject null");
-    }
-  }
-
-  @Nested
   @DisplayName("Equals and HashCode Tests")
   class EqualsAndHashCodeTests {
 

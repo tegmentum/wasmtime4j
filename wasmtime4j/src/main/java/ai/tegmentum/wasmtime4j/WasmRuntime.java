@@ -422,16 +422,6 @@ public interface WasmRuntime extends Closeable {
    * <p>The SIMD operations provide access to WebAssembly's SIMD features including 128-bit vector
    * operations, lane manipulation, and memory load/store operations.
    *
-   * <p>This method uses lazy initialization - the SIMD operations are created on first access and
-   * cached for subsequent calls.
-   *
-   * @return the SIMD operations instance
-   * @throws WasmException if the SIMD operations cannot be created
-   * @throws UnsupportedOperationException if SIMD features are not supported by this runtime
-   * @since 1.0.0
-   */
-  ai.tegmentum.wasmtime4j.simd.SimdOperations getSimdOperations() throws WasmException;
-
   /**
    * Creates a new WASI-NN context for neural network inference operations.
    *

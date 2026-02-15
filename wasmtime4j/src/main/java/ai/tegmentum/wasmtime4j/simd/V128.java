@@ -329,30 +329,6 @@ public final class V128 {
     return new V128(newData, true);
   }
 
-  /**
-   * Converts this V128 to a SimdVector with the specified lane type.
-   *
-   * @param lane the lane type for the SimdVector
-   * @return a new SimdVector with the same data
-   */
-  public SimdVector toSimdVector(final SimdLane lane) {
-    return new SimdVector(lane, data);
-  }
-
-  /**
-   * Creates a V128 from a SimdVector.
-   *
-   * @param vector the source SimdVector
-   * @return a new V128 with the same data
-   * @throws IllegalArgumentException if vector is null
-   */
-  public static V128 fromSimdVector(final SimdVector vector) {
-    if (vector == null) {
-      throw new IllegalArgumentException("Vector cannot be null");
-    }
-    return new V128(vector.getData());
-  }
-
   @Override
   public boolean equals(final Object obj) {
     if (this == obj) {

@@ -243,39 +243,6 @@ class JniWasmRuntimeTest {
   }
 
   @Nested
-  @DisplayName("SIMD Operations Methods Tests")
-  class SimdOperationsMethodsTests {
-
-    @Test
-    @DisplayName("should have getSimdOperations method")
-    void shouldHaveGetSimdOperationsMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getMethod("getSimdOperations");
-
-      assertThat(method.getReturnType().getName())
-          .isEqualTo("ai.tegmentum.wasmtime4j.simd.SimdOperations");
-    }
-
-    @Test
-    @DisplayName("should have isSimdSupported method")
-    void shouldHaveIsSimdSupportedMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getMethod("isSimdSupported");
-
-      assertThat(method.getReturnType()).isEqualTo(boolean.class);
-    }
-
-    @Test
-    @DisplayName("should have getSimdCapabilities method")
-    void shouldHaveGetSimdCapabilitiesMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getMethod("getSimdCapabilities");
-
-      assertThat(method.getReturnType()).isEqualTo(String.class);
-    }
-  }
-
-  @Nested
   @DisplayName("Tag Methods Tests")
   class TagMethodsTests {
 

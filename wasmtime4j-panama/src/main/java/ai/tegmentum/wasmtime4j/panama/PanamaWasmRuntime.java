@@ -581,14 +581,6 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.simd.SimdOperations getSimdOperations() throws WasmException {
-    ensureNotClosed();
-
-    throw new UnsupportedOperationException(
-        "SIMD operations are not yet implemented for the Panama runtime");
-  }
-
-  @Override
   public Module deserializeModuleFile(final Engine engine, final Path path) throws WasmException {
     PanamaValidation.requireNonNull(engine, "engine");
     PanamaValidation.requireNonNull(path, "path");

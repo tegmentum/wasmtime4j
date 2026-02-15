@@ -118,8 +118,6 @@ pub mod panama_exception_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_gc_ffi;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_simd_ffi;
-#[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_cli_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_io_ffi;
@@ -171,8 +169,7 @@ pub mod resource_dynamic;
 #[cfg(feature = "component-model")]
 pub mod version_types;
 
-// SIMD support
-pub mod simd;
+// simd module removed (Phase 25: host-side ops duplicate Wasmtime JIT)
 
 // Store resource limiter APIs
 pub mod store_limiter;
