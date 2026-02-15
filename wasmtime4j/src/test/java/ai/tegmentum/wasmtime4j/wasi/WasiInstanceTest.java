@@ -125,18 +125,12 @@ class WasiInstanceTest {
     // Test configuration building
     WasiConfig testConfig =
         WasiConfig.builder()
-            .withMemoryLimit(1024 * 1024) // 1MB limit
             .withExecutionTimeout(Duration.ofSeconds(30))
             .withValidation(true)
             .withStrictMode(false)
             .build();
 
     assertNotNull(testConfig, "Built configuration should not be null");
-    assertTrue(testConfig.getMemoryLimit().isPresent(), "Memory limit should be set");
-    assertEquals(
-        1024 * 1024,
-        testConfig.getMemoryLimit().get().longValue(),
-        "Memory limit should match configured value");
     assertTrue(testConfig.getExecutionTimeout().isPresent(), "Execution timeout should be set");
     assertEquals(
         Duration.ofSeconds(30),
@@ -148,7 +142,6 @@ class WasiInstanceTest {
     // Test configuration validation
     assertDoesNotThrow(() -> testConfig.validate(), "Valid configuration should pass validation");
 
-    System.out.println("Configuration: Memory limit = " + testConfig.getMemoryLimit().orElse(0L));
     System.out.println(
         "Configuration: Timeout = " + testConfig.getExecutionTimeout().orElse(Duration.ZERO));
     System.out.println("Configuration: Validation = " + testConfig.isValidationEnabled());

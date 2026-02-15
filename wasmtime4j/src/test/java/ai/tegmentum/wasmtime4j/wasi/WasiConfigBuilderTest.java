@@ -247,25 +247,6 @@ class WasiConfigBuilderTest {
   @DisplayName("Resource Limit Builder Method Tests")
   class ResourceLimitBuilderMethodTests {
 
-    @Test
-    @DisplayName("should have withMemoryLimit method")
-    void shouldHaveWithMemoryLimitMethod() throws NoSuchMethodException {
-      Method method = WasiConfigBuilder.class.getMethod("withMemoryLimit", long.class);
-      assertNotNull(method, "withMemoryLimit method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
-
-    @Test
-    @DisplayName("should have withoutMemoryLimit method")
-    void shouldHaveWithoutMemoryLimitMethod() throws NoSuchMethodException {
-      Method method = WasiConfigBuilder.class.getMethod("withoutMemoryLimit");
-      assertNotNull(method, "withoutMemoryLimit method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
 
     @Test
     @DisplayName("should have withExecutionTimeout method")
@@ -287,26 +268,6 @@ class WasiConfigBuilderTest {
           WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
     }
 
-    @Test
-    @DisplayName("should have withResourceLimits method")
-    void shouldHaveWithResourceLimitsMethod() throws NoSuchMethodException {
-      Method method =
-          WasiConfigBuilder.class.getMethod("withResourceLimits", WasiResourceLimits.class);
-      assertNotNull(method, "withResourceLimits method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
-
-    @Test
-    @DisplayName("should have withoutResourceLimits method")
-    void shouldHaveWithoutResourceLimitsMethod() throws NoSuchMethodException {
-      Method method = WasiConfigBuilder.class.getMethod("withoutResourceLimits");
-      assertNotNull(method, "withoutResourceLimits method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
   }
 
 
@@ -514,12 +475,8 @@ class WasiConfigBuilderTest {
               "clearPreopenDirectories",
               "withWorkingDirectory",
               "withoutWorkingDirectory",
-              "withMemoryLimit",
-              "withoutMemoryLimit",
               "withExecutionTimeout",
               "withoutExecutionTimeout",
-              "withResourceLimits",
-              "withoutResourceLimits",
 
               "withImportResolver",
               "withImportResolvers",
@@ -548,14 +505,14 @@ class WasiConfigBuilderTest {
     }
 
     @Test
-    @DisplayName("should have at least 32 abstract methods")
-    void shouldHaveAtLeast32AbstractMethods() {
+    @DisplayName("should have at least 28 abstract methods")
+    void shouldHaveAtLeast28AbstractMethods() {
       long abstractCount =
           Arrays.stream(WasiConfigBuilder.class.getDeclaredMethods())
               .filter(m -> !m.isSynthetic())
               .filter(m -> Modifier.isAbstract(m.getModifiers()))
               .count();
-      assertTrue(abstractCount >= 32, "Should have at least 32 abstract methods");
+      assertTrue(abstractCount >= 28, "Should have at least 28 abstract methods");
     }
 
     @Test

@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits;
+
 
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
@@ -122,20 +122,12 @@ public final class JniWasiConfig implements WasiConfig {
     return Optional.ofNullable(workingDirectory);
   }
 
-  @Override
-  public Optional<Long> getMemoryLimit() {
-    return Optional.empty();
-  }
 
   @Override
   public Optional<Duration> getExecutionTimeout() {
     return Optional.ofNullable(executionTimeout);
   }
 
-  @Override
-  public Optional<WasiResourceLimits> getResourceLimits() {
-    return Optional.empty();
-  }
 
 
   @Override

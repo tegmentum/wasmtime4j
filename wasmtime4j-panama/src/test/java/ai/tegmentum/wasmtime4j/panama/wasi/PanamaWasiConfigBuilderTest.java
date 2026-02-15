@@ -26,8 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimitsBuilder;
+
 
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
@@ -586,60 +585,6 @@ class PanamaWasiConfigBuilderTest {
     }
   }
 
-  @Nested
-  @DisplayName("Memory Limit Method Tests")
-  class MemoryLimitMethodTests {
-
-    @Test
-    @DisplayName("Should throw UnsupportedOperationException for withMemoryLimit")
-    void shouldThrowUnsupportedForWithMemoryLimit() {
-      LOGGER.info("Testing withMemoryLimit");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          UnsupportedOperationException.class,
-          () -> builder.withMemoryLimit(1024L),
-          "Should throw UnsupportedOperationException");
-
-      LOGGER.info("withMemoryLimit throws UnsupportedOperationException");
-    }
-
-    @Test
-    @DisplayName("Should throw IllegalArgumentException for non-positive memory limit")
-    void shouldThrowIllegalArgumentForNonPositiveMemoryLimit() {
-      LOGGER.info("Testing withMemoryLimit with non-positive value");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withMemoryLimit(0),
-          "Should throw IllegalArgumentException for zero");
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withMemoryLimit(-1),
-          "Should throw IllegalArgumentException for negative");
-
-      LOGGER.info("Non-positive memory limit throws IllegalArgumentException");
-    }
-
-    @Test
-    @DisplayName("Should throw UnsupportedOperationException for withoutMemoryLimit")
-    void shouldThrowUnsupportedForWithoutMemoryLimit() {
-      LOGGER.info("Testing withoutMemoryLimit");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          UnsupportedOperationException.class,
-          () -> builder.withoutMemoryLimit(),
-          "Should throw UnsupportedOperationException");
-
-      LOGGER.info("withoutMemoryLimit throws UnsupportedOperationException");
-    }
-  }
 
   @Nested
   @DisplayName("Execution Timeout Method Tests")
@@ -706,55 +651,6 @@ class PanamaWasiConfigBuilderTest {
     }
   }
 
-  @Nested
-  @DisplayName("Resource Limits Method Tests")
-  class ResourceLimitsMethodTests {
-
-    @Test
-    @DisplayName("Should throw UnsupportedOperationException for withResourceLimits")
-    void shouldThrowUnsupportedForWithResourceLimits() {
-      LOGGER.info("Testing withResourceLimits");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          UnsupportedOperationException.class,
-          () -> builder.withResourceLimits(new TestWasiResourceLimits()),
-          "Should throw UnsupportedOperationException");
-
-      LOGGER.info("withResourceLimits throws UnsupportedOperationException");
-    }
-
-    @Test
-    @DisplayName("Should throw IllegalArgumentException for null resource limits")
-    void shouldThrowIllegalArgumentForNullResourceLimits() {
-      LOGGER.info("Testing withResourceLimits with null");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withResourceLimits(null),
-          "Should throw IllegalArgumentException for null");
-
-      LOGGER.info("Null resource limits throws IllegalArgumentException");
-    }
-
-    @Test
-    @DisplayName("Should throw UnsupportedOperationException for withoutResourceLimits")
-    void shouldThrowUnsupportedForWithoutResourceLimits() {
-      LOGGER.info("Testing withoutResourceLimits");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          UnsupportedOperationException.class,
-          () -> builder.withoutResourceLimits(),
-          "Should throw UnsupportedOperationException");
-
-      LOGGER.info("withoutResourceLimits throws UnsupportedOperationException");
-    }
-  }
 
 
   @Nested
@@ -1309,99 +1205,6 @@ class PanamaWasiConfigBuilderTest {
 
   // Test helper classes
 
-  /** Test implementation of WasiResourceLimits. */
-  private static final class TestWasiResourceLimits implements WasiResourceLimits {
-
-    @Override
-    public java.util.Optional<Long> getMemoryLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Duration> getExecutionTimeout() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Duration> getTotalExecutionTimeout() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Integer> getFileHandleLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Integer> getNetworkConnectionLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Integer> getThreadLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Integer> getStackDepthLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Integer> getResourceCountLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Long> getFileWriteLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Long> getFileReadLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Long> getNetworkSendLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Long> getNetworkReceiveLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public java.util.Optional<Duration> getCpuTimeLimit() {
-      return java.util.Optional.empty();
-    }
-
-    @Override
-    public boolean isUnlimited() {
-      return true;
-    }
-
-    @Override
-    public boolean hasLimits() {
-      return false;
-    }
-
-    @Override
-    public WasiResourceLimitsBuilder toBuilder() {
-      throw new UnsupportedOperationException("Test implementation");
-    }
-
-    @Override
-    public void validate() {
-      // No-op for testing
-    }
-
-    @Override
-    public String getSummary() {
-      return "TestWasiResourceLimits";
-    }
-  }
 
 
   /** Test implementation of WasiImportResolver. */

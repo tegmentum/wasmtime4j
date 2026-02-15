@@ -162,24 +162,6 @@ public interface WasiConfigBuilder {
    */
   WasiConfigBuilder withoutWorkingDirectory();
 
-  /**
-   * Sets the maximum memory limit for the component.
-   *
-   * <p>This limits the total memory that can be allocated by the component. If not specified, the
-   * component can use available system memory subject to other constraints.
-   *
-   * @param bytes maximum memory in bytes
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if bytes is negative or zero
-   */
-  WasiConfigBuilder withMemoryLimit(final long bytes);
-
-  /**
-   * Removes the memory limit, allowing unlimited memory usage.
-   *
-   * @return this builder for method chaining
-   */
-  WasiConfigBuilder withoutMemoryLimit();
 
   /**
    * Sets the execution timeout for component operations.
@@ -200,24 +182,6 @@ public interface WasiConfigBuilder {
    */
   WasiConfigBuilder withoutExecutionTimeout();
 
-  /**
-   * Sets comprehensive resource limits for the component.
-   *
-   * <p>Resource limits include memory, CPU time, file handles, and other system resources. This
-   * provides fine-grained control over component resource usage.
-   *
-   * @param limits resource limits to apply
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if limits is null
-   */
-  WasiConfigBuilder withResourceLimits(final WasiResourceLimits limits);
-
-  /**
-   * Removes resource limits, using default system limits.
-   *
-   * @return this builder for method chaining
-   */
-  WasiConfigBuilder withoutResourceLimits();
 
 
   /**

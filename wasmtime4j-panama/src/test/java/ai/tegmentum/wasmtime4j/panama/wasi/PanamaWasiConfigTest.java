@@ -102,11 +102,8 @@ class PanamaWasiConfigTest {
 
       assertFalse(
           config.getWorkingDirectory().isPresent(), "Working directory should be empty by default");
-      assertFalse(config.getMemoryLimit().isPresent(), "Memory limit should be empty by default");
       assertFalse(
           config.getExecutionTimeout().isPresent(), "Execution timeout should be empty by default");
-      assertFalse(
-          config.getResourceLimits().isPresent(), "Resource limits should be empty by default");
 
       LOGGER.info("Default optional values are empty as expected");
     }
@@ -345,35 +342,6 @@ class PanamaWasiConfigTest {
     }
   }
 
-  @Nested
-  @DisplayName("Resource Limits Tests")
-  class ResourceLimitsTests {
-
-    @Test
-    @DisplayName("Should return memory limit")
-    void shouldReturnMemoryLimit() {
-      LOGGER.info("Testing getMemoryLimit");
-
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
-
-      final Optional<Long> memoryLimit = config.getMemoryLimit();
-      assertFalse(memoryLimit.isPresent(), "Memory limit should be empty by default");
-
-      LOGGER.info("Memory limit: " + memoryLimit);
-    }
-
-    @Test
-    @DisplayName("Should return resource limits")
-    void shouldReturnResourceLimits() {
-      LOGGER.info("Testing getResourceLimits");
-
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
-
-      assertFalse(config.getResourceLimits().isPresent(), "Resource limits should be empty");
-
-      LOGGER.info("Resource limits tested");
-    }
-  }
 
 
   @Nested

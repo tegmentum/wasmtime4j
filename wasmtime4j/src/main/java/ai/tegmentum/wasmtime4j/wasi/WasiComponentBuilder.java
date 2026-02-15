@@ -25,9 +25,7 @@ import java.util.Map;
  *     .withName("my-component")
  *     .withEnvironment("HOME", "/app")
  *     .withPreopenDirectory("/tmp", "/host/tmp")
- *     .withMemoryLimit(100 * 1024 * 1024) // 100MB
  *     .withExecutionTimeout(Duration.ofSeconds(30))
- *     .withSecurityPolicy(policy)
  *     .build();
  * }</pre>
  *
@@ -152,14 +150,6 @@ public interface WasiComponentBuilder {
    */
   WasiComponentBuilder withWorkingDirectory(final String workingDirectory);
 
-  /**
-   * Sets the maximum memory limit for the component.
-   *
-   * @param bytes maximum memory in bytes
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if bytes is negative
-   */
-  WasiComponentBuilder withMemoryLimit(final long bytes);
 
   /**
    * Sets the execution timeout for component operations.
@@ -170,14 +160,6 @@ public interface WasiComponentBuilder {
    */
   WasiComponentBuilder withExecutionTimeout(final Duration timeout);
 
-  /**
-   * Sets resource limits for the component.
-   *
-   * @param limits resource limits to apply
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if limits is null
-   */
-  WasiComponentBuilder withResourceLimits(final WasiResourceLimits limits);
 
 
   /**

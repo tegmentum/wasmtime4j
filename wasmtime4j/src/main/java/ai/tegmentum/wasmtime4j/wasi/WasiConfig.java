@@ -21,7 +21,6 @@ import java.util.Optional;
  * WasiConfig config = WasiConfig.builder()
  *     .withEnvironment("HOME", "/app")
  *     .withArgument("--verbose")
- *     .withMemoryLimit(50 * 1024 * 1024)
  *     .build();
  *
  * WasiInstance instance = component.instantiate(config);
@@ -98,12 +97,6 @@ public interface WasiConfig {
    */
   Optional<String> getWorkingDirectory();
 
-  /**
-   * Gets the memory limit for the component.
-   *
-   * @return the memory limit in bytes, or empty if not specified
-   */
-  Optional<Long> getMemoryLimit();
 
   /**
    * Gets the execution timeout for component operations.
@@ -112,12 +105,6 @@ public interface WasiConfig {
    */
   Optional<Duration> getExecutionTimeout();
 
-  /**
-   * Gets the resource limits for the component.
-   *
-   * @return the resource limits, or empty if not specified
-   */
-  Optional<WasiResourceLimits> getResourceLimits();
 
 
   /**

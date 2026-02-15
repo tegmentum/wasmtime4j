@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits;
+
 
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
@@ -173,20 +173,6 @@ public final class JniWasiConfigBuilder implements WasiConfigBuilder {
     return this;
   }
 
-  @Override
-  public WasiConfigBuilder withMemoryLimit(final long bytes) {
-    if (bytes <= 0) {
-      throw new IllegalArgumentException("Memory limit must be positive");
-    }
-    throw new UnsupportedOperationException(
-        "Memory limits must be configured through Store resource limits");
-  }
-
-  @Override
-  public WasiConfigBuilder withoutMemoryLimit() {
-    throw new UnsupportedOperationException(
-        "Memory limits must be configured through Store resource limits");
-  }
 
   @Override
   public WasiConfigBuilder withExecutionTimeout(final Duration timeout) {
@@ -203,20 +189,6 @@ public final class JniWasiConfigBuilder implements WasiConfigBuilder {
     return this;
   }
 
-  @Override
-  public WasiConfigBuilder withResourceLimits(final WasiResourceLimits limits) {
-    if (limits == null) {
-      throw new IllegalArgumentException("Resource limits cannot be null");
-    }
-    throw new UnsupportedOperationException(
-        "Resource limits must be configured through Store resource limits");
-  }
-
-  @Override
-  public WasiConfigBuilder withoutResourceLimits() {
-    throw new UnsupportedOperationException(
-        "Resource limits must be configured through Store resource limits");
-  }
 
 
   @Override
