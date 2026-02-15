@@ -7,15 +7,11 @@
 //! - Configuration structs
 //! - Error types
 
-use std::collections::HashMap;
-use std::collections::VecDeque;
-use std::ffi::c_void;
-use std::sync::{Arc, Mutex, RwLock};
-use std::time::{Duration, Instant, SystemTime};
+use std::sync::RwLock;
+use std::time::Instant;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::store::Store;
-use wasmtime::{Memory as WasmtimeMemory, MemoryType, SharedMemory as WasmtimeSharedMemory};
+use wasmtime::{Memory as WasmtimeMemory, SharedMemory as WasmtimeSharedMemory};
 
 /// Memory variant that can hold either a regular memory or a shared memory
 ///
@@ -79,19 +75,6 @@ impl MemoryVariant {
     }
 }
 
-/// Page size options for memory allocation
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum PageSize {
-    /// Default page size
-    Default,
-    /// Small page size (4KB)
-    Small,
-    /// Large page size (2MB)
-    Large,
-    /// Huge page size (1GB)
-    Huge,
-}
-
 /// Memory data types for type-safe read/write operations
 #[derive(Debug, Clone, Copy)]
 pub enum MemoryDataType {
@@ -115,148 +98,6 @@ pub enum MemoryDataType {
     F32Le,
     /// 64-bit IEEE 754 float (little endian)
     F64Le,
-}
-
-/// Memory allocation strategy configuration
-#[derive(Debug, Clone)]
-pub struct PlatformMemoryConfig {
-    /// Enable huge pages allocation
-    pub enable_huge_pages: bool,
-    /// NUMA node preference (-1 for automatic)
-    pub numa_node: i32,
-    /// Memory pool initial size in bytes
-    pub initial_pool_size: usize,
-    /// Maximum pool size in bytes
-    pub max_pool_size: usize,
-    /// Enable memory compression
-    pub enable_compression: bool,
-    /// Enable memory deduplication
-    pub enable_deduplication: bool,
-    /// Prefetch buffer size in bytes
-    pub prefetch_buffer_size: usize,
-    /// Enable memory leak detection
-    pub enable_leak_detection: bool,
-    /// Memory alignment requirement
-    pub alignment: usize,
-    /// Page size preference
-    pub page_size: PageSize,
-}
-
-impl Default for PlatformMemoryConfig {
-    fn default() -> Self {
-        Self {
-            enable_huge_pages: true,
-            numa_node: -1,
-            initial_pool_size: 64 * 1024 * 1024,   // 64MB
-            max_pool_size: 2 * 1024 * 1024 * 1024, // 2GB
-            enable_compression: true,
-            enable_deduplication: true,
-            prefetch_buffer_size: 4 * 1024 * 1024, // 4MB
-            enable_leak_detection: true,
-            alignment: 64, // Cache line alignment
-            page_size: PageSize::Default,
-        }
-    }
-}
-
-/// Platform-specific memory information
-#[derive(Debug, Clone)]
-pub struct PlatformMemoryInfo {
-    /// Total physical memory in bytes
-    pub total_physical_memory: u64,
-    /// Available memory in bytes
-    pub available_memory: u64,
-    /// System page size in bytes
-    pub page_size: u64,
-    /// Huge page size in bytes
-    pub huge_page_size: u64,
-    /// Number of NUMA nodes
-    pub numa_nodes: u32,
-    /// Number of CPU cores
-    pub cpu_cores: u32,
-    /// Cache line size in bytes
-    pub cache_line_size: u32,
-    /// Whether huge pages are supported
-    pub supports_huge_pages: bool,
-    /// Whether NUMA is supported
-    pub supports_numa: bool,
-}
-
-/// Memory allocation tracking information
-#[derive(Debug, Clone)]
-pub struct AllocationInfo {
-    /// Pointer to the allocated memory
-    pub ptr: *mut c_void,
-    /// Size of the allocation in bytes
-    pub size: usize,
-    /// Alignment of the allocation
-    pub alignment: usize,
-    /// Page type used for the allocation
-    pub page_type: PageSize,
-    /// NUMA node where memory was allocated
-    pub numa_node: i32,
-    /// Timestamp when allocation was made
-    pub timestamp: SystemTime,
-    /// Stack trace at allocation time (if enabled)
-    pub stack_trace: Option<String>,
-}
-
-/// Memory pool statistics
-#[derive(Debug, Clone)]
-pub struct PlatformMemoryPoolStats {
-    /// Total bytes allocated
-    pub total_allocated: u64,
-    /// Total bytes freed
-    pub total_freed: u64,
-    /// Current memory usage in bytes
-    pub current_usage: u64,
-    /// Peak memory usage in bytes
-    pub peak_usage: u64,
-    /// Number of allocations made
-    pub allocation_count: u64,
-    /// Number of deallocations made
-    pub deallocation_count: u64,
-    /// Fragmentation ratio (0.0-1.0)
-    pub fragmentation_ratio: f64,
-    /// Compression ratio achieved
-    pub compression_ratio: f64,
-    /// Bytes saved through deduplication
-    pub deduplication_savings: u64,
-    /// Number of huge pages used
-    pub huge_pages_used: u64,
-    /// NUMA hit rate (0.0-1.0)
-    pub numa_hit_rate: f64,
-}
-
-impl Default for PlatformMemoryPoolStats {
-    fn default() -> Self {
-        Self {
-            total_allocated: 0,
-            total_freed: 0,
-            current_usage: 0,
-            peak_usage: 0,
-            allocation_count: 0,
-            deallocation_count: 0,
-            fragmentation_ratio: 0.0,
-            compression_ratio: 1.0,
-            deduplication_savings: 0,
-            huge_pages_used: 0,
-            numa_hit_rate: 1.0,
-        }
-    }
-}
-
-/// Memory leak detection information
-#[derive(Debug, Clone)]
-pub struct PlatformMemoryLeak {
-    /// Information about the leaked allocation
-    pub allocation_info: AllocationInfo,
-    /// How long the allocation has been alive
-    pub age: Duration,
-    /// Whether this is a suspected leak
-    pub is_suspected_leak: bool,
-    /// Confidence score for leak detection (0.0-1.0)
-    pub confidence_score: f64,
 }
 
 /// Memory metadata and usage statistics
@@ -377,7 +218,6 @@ pub struct MemoryBuilder {
     pub(crate) is_64: bool,
     pub(crate) memory_index: u32,
     pub(crate) name: Option<String>,
-    pub(crate) platform_config: Option<PlatformMemoryConfig>,
 }
 
 impl MemoryBuilder {
@@ -390,7 +230,6 @@ impl MemoryBuilder {
             is_64: false,
             memory_index: 0,
             name: None,
-            platform_config: None,
         }
     }
 
@@ -424,14 +263,8 @@ impl MemoryBuilder {
         self
     }
 
-    /// Set platform-specific memory configuration
-    pub fn platform_config(mut self, config: PlatformMemoryConfig) -> Self {
-        self.platform_config = Some(config);
-        self
-    }
-
     /// Build the memory instance
-    pub fn build(self, store: &mut Store) -> WasmtimeResult<super::Memory> {
+    pub fn build(self, store: &mut crate::store::Store) -> WasmtimeResult<super::Memory> {
         super::Memory::new_with_config(store, self.into())
     }
 }
@@ -449,53 +282,3 @@ impl From<MemoryBuilder> for MemoryConfig {
     }
 }
 
-// Internal structs for platform allocator
-
-/// Memory pool for efficient allocation/deallocation
-#[derive(Debug)]
-pub(crate) struct PlatformMemoryPool {
-    pub(crate) pool_size: usize,
-    pub(crate) free_blocks: VecDeque<(*mut c_void, usize)>,
-    pub(crate) allocated_blocks: HashMap<*mut c_void, usize>,
-    pub(crate) total_size: usize,
-    pub(crate) used_size: usize,
-}
-
-impl PlatformMemoryPool {
-    pub(crate) fn new(pool_size: usize) -> Self {
-        Self {
-            pool_size,
-            free_blocks: VecDeque::new(),
-            allocated_blocks: HashMap::new(),
-            total_size: 0,
-            used_size: 0,
-        }
-    }
-}
-
-/// NUMA topology detection and management
-#[derive(Debug)]
-pub(crate) struct PlatformNumaTopology {
-    pub(crate) node_count: u32,
-    pub(crate) core_count: u32,
-    pub(crate) nodes: HashMap<u32, PlatformNumaNode>,
-    pub(crate) current_node: Arc<Mutex<u32>>,
-}
-
-/// NUMA node information
-#[derive(Debug)]
-pub(crate) struct PlatformNumaNode {
-    pub(crate) id: u32,
-    pub(crate) memory_total: u64,
-    pub(crate) memory_free: u64,
-    pub(crate) cpu_cores: Vec<u32>,
-}
-
-/// Memory leak detector
-#[derive(Debug)]
-pub(crate) struct PlatformMemoryLeakDetector {
-    pub(crate) allocations: Arc<Mutex<HashMap<*mut c_void, (usize, SystemTime)>>>,
-    pub(crate) suspected_leaks: Arc<Mutex<Vec<PlatformMemoryLeak>>>,
-    pub(crate) check_interval: Duration,
-    pub(crate) leak_threshold: Duration,
-}

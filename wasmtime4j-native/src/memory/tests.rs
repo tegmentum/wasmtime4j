@@ -671,42 +671,7 @@ fn test_memory_limits() {
     );
 }
 
-// === PlatformMemoryConfig builder tests ===
-
-#[test]
-fn test_config_builder_defaults() {
-    let config = PlatformMemoryConfig::default();
-
-    assert!(
-        config.enable_huge_pages,
-        "Huge pages should be enabled by default"
-    );
-    assert_eq!(
-        config.numa_node, -1,
-        "NUMA node should default to -1 (automatic)"
-    );
-    assert!(
-        config.enable_compression,
-        "Compression should be enabled by default"
-    );
-    assert!(
-        config.enable_deduplication,
-        "Deduplication should be enabled by default"
-    );
-    assert!(
-        config.enable_leak_detection,
-        "Leak detection should be enabled by default"
-    );
-    assert_eq!(
-        config.alignment, 64,
-        "Default alignment should be 64 (cache line)"
-    );
-    assert_eq!(
-        config.page_size,
-        PageSize::Default,
-        "Page size should default to Default"
-    );
-}
+// PlatformMemoryConfig builder tests removed (Phase 12: dead PlatformMemory infrastructure)
 
 #[test]
 fn test_memory_builder_chain() {

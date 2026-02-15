@@ -12,17 +12,14 @@
 //! - Platform-specific virtual memory management and protection
 
 mod ffi;
-mod platform;
+// platform module removed (Phase 12: dead PlatformMemory infrastructure)
 mod types;
 
 // Re-export all public types for backward compatibility
 pub use types::{
-    AllocationInfo, MemoryBuilder, MemoryConfig, MemoryDataType, MemoryError, MemoryMetadata,
-    MemoryResult, MemoryUsage, MemoryVariant, PageSize, PlatformMemoryConfig, PlatformMemoryInfo,
-    PlatformMemoryLeak, PlatformMemoryPoolStats,
+    MemoryBuilder, MemoryConfig, MemoryDataType, MemoryError, MemoryMetadata,
+    MemoryResult, MemoryUsage, MemoryVariant,
 };
-
-pub use platform::PlatformMemoryAllocator;
 
 // Re-export FFI functions
 pub use ffi::*;
@@ -30,6 +27,7 @@ pub use ffi::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
+
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::store::Store;
@@ -50,8 +48,6 @@ pub struct Memory {
     config: MemoryConfig,
     /// Cached memory type (stored on creation to avoid needing Store for type queries)
     pub memory_type: MemoryType,
-    /// Platform-specific memory allocator (optional)
-    pub(crate) platform_allocator: Option<Arc<PlatformMemoryAllocator>>,
 }
 
 impl Memory {
@@ -66,26 +62,6 @@ impl Memory {
             name: None,
         };
         Self::new_with_config(store, config)
-    }
-
-    /// Create a new memory with platform-specific configuration
-    pub fn new_with_platform_config(
-        store: &mut Store,
-        config: MemoryConfig,
-        platform_config: PlatformMemoryConfig,
-    ) -> WasmtimeResult<Self> {
-        // Create platform allocator
-        let platform_allocator =
-            Arc::new(PlatformMemoryAllocator::new(platform_config).map_err(|e| {
-                WasmtimeError::Memory {
-                    message: format!("Failed to create platform allocator: {}", e),
-                }
-            })?);
-
-        // Create memory with standard configuration
-        let mut memory = Self::new_with_config(store, config)?;
-        memory.platform_allocator = Some(platform_allocator);
-        Ok(memory)
     }
 
     /// Create a new memory with specific configuration
@@ -171,7 +147,6 @@ impl Memory {
             metadata: Arc::new(RwLock::new(metadata)),
             config,
             memory_type,
-            platform_allocator: None,
         })
     }
 
@@ -564,7 +539,6 @@ impl Memory {
             metadata: Arc::new(RwLock::new(metadata)),
             config,
             memory_type,
-            platform_allocator: None,
         }
     }
 
@@ -602,7 +576,6 @@ impl Memory {
             metadata: Arc::new(RwLock::new(metadata)),
             config,
             memory_type,
-            platform_allocator: None,
         }
     }
 
