@@ -272,57 +272,6 @@ class WasiConfigBuilderTest {
 
 
   // ========================================================================
-  // Import Resolver Builder Method Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Import Resolver Builder Method Tests")
-  class ImportResolverBuilderMethodTests {
-
-    @Test
-    @DisplayName("should have withImportResolver method")
-    void shouldHaveWithImportResolverMethod() throws NoSuchMethodException {
-      Method method =
-          WasiConfigBuilder.class.getMethod(
-              "withImportResolver", String.class, WasiImportResolver.class);
-      assertNotNull(method, "withImportResolver method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
-
-    @Test
-    @DisplayName("should have withImportResolvers method")
-    void shouldHaveWithImportResolversMethod() throws NoSuchMethodException {
-      Method method = WasiConfigBuilder.class.getMethod("withImportResolvers", Map.class);
-      assertNotNull(method, "withImportResolvers method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
-
-    @Test
-    @DisplayName("should have withoutImportResolver method")
-    void shouldHaveWithoutImportResolverMethod() throws NoSuchMethodException {
-      Method method = WasiConfigBuilder.class.getMethod("withoutImportResolver", String.class);
-      assertNotNull(method, "withoutImportResolver method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
-
-    @Test
-    @DisplayName("should have clearImportResolvers method")
-    void shouldHaveClearImportResolversMethod() throws NoSuchMethodException {
-      Method method = WasiConfigBuilder.class.getMethod("clearImportResolvers");
-      assertNotNull(method, "clearImportResolvers method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
-  }
-
-  // ========================================================================
   // Validation and Mode Builder Method Tests
   // ========================================================================
 
@@ -477,11 +426,6 @@ class WasiConfigBuilderTest {
               "withoutWorkingDirectory",
               "withExecutionTimeout",
               "withoutExecutionTimeout",
-
-              "withImportResolver",
-              "withImportResolvers",
-              "withoutImportResolver",
-              "clearImportResolvers",
               "withValidation",
               "withStrictMode",
               "withWasiVersion",
@@ -505,14 +449,14 @@ class WasiConfigBuilderTest {
     }
 
     @Test
-    @DisplayName("should have at least 28 abstract methods")
-    void shouldHaveAtLeast28AbstractMethods() {
+    @DisplayName("should have at least 24 abstract methods")
+    void shouldHaveAtLeast24AbstractMethods() {
       long abstractCount =
           Arrays.stream(WasiConfigBuilder.class.getDeclaredMethods())
               .filter(m -> !m.isSynthetic())
               .filter(m -> Modifier.isAbstract(m.getModifiers()))
               .count();
-      assertTrue(abstractCount >= 28, "Should have at least 28 abstract methods");
+      assertTrue(abstractCount >= 24, "Should have at least 24 abstract methods");
     }
 
     @Test

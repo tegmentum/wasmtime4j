@@ -77,47 +77,34 @@ public final class JniWasiPollable extends JniResource implements WasiPollable {
     return nativeReady(contextHandle, nativeHandle);
   }
 
-  @Override
   public long getId() {
     return nativeHandle;
   }
 
-  @Override
   public String getType() {
     return "wasi:io/pollable";
   }
 
-  @Override
-  public ai.tegmentum.wasmtime4j.wasi.WasiInstance getOwner() {
-    throw new UnsupportedOperationException("not yet implemented: WASI pollable owner tracking");
-  }
-
-  @Override
   public boolean isOwned() {
     return true; // WASI pollables are owned by default
   }
 
-  @Override
   public boolean isValid() {
     return !isClosed();
   }
 
-  @Override
   public java.time.Instant getCreatedAt() {
     return java.time.Instant.now();
   }
 
-  @Override
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
     return java.util.Optional.empty();
   }
 
-  @Override
   public java.util.List<String> getAvailableOperations() {
     return java.util.Arrays.asList("block", "ready");
   }
 
-  @Override
   public Object invoke(final String operation, final Object... parameters) throws WasmException {
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");

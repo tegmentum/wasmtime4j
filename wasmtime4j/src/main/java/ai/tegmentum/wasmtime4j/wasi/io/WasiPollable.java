@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 
 /**
  * WASI Preview 2 pollable resource interface.
@@ -53,7 +52,7 @@ import ai.tegmentum.wasmtime4j.wasi.WasiResource;
  *
  * @since 1.0.0
  */
-public interface WasiPollable extends WasiResource {
+public interface WasiPollable extends AutoCloseable {
 
   /**
    * Blocks until this pollable is ready.

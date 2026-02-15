@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiContextBuilder;
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,13 +63,6 @@ class JniWasiContextIntegrationTest {
 
   private static final Logger LOGGER =
       Logger.getLogger(JniWasiContextIntegrationTest.class.getName());
-
-  /**
-   * Permissive security validator that allows absolute paths for testing. This is required because
-   * the default validator rejects absolute paths.
-   */
-  private static final WasiSecurityValidator TEST_SECURITY_VALIDATOR =
-      WasiSecurityValidator.builder().withAllowAbsolutePaths(true).build();
 
   /** Tracks resources for cleanup. */
   private final List<AutoCloseable> resources = new ArrayList<>();
@@ -117,7 +109,7 @@ class JniWasiContextIntegrationTest {
       LOGGER.info("Testing builder creation from static method");
 
       final WasiContextBuilder builder =
-          WasiContext.builder().withSecurityValidator(TEST_SECURITY_VALIDATOR);
+          WasiContext.builder();
 
       assertNotNull(builder, "Builder should not be null");
       LOGGER.info("Builder created successfully");
@@ -151,8 +143,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
 
@@ -171,8 +162,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withEnvironment("TEST_VAR", "test_value")
+.withEnvironment("TEST_VAR", "test_value")
               .withEnvironment("HOME", "/home/test")
               .withEnvironment("PATH", "/usr/bin:/bin")
               .withPreopenDirectory("/", existingDir.toString())
@@ -202,8 +192,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withArgument("program")
+.withArgument("program")
               .withArgument("--verbose")
               .withArgument("-o")
               .withArgument("output.txt")
@@ -239,8 +228,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/guest/tmp", dir1.toString())
+.withPreopenDirectory("/guest/tmp", dir1.toString())
               .withPreopenDirectory("/guest/data", dir2.toString())
               .build();
       resources.add(context);
@@ -266,8 +254,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withWorkingDirectory("/app")
+.withWorkingDirectory("/app")
               .withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
@@ -295,8 +282,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withEnvironment("APP_ENV", "production")
+.withEnvironment("APP_ENV", "production")
               .withEnvironment("LOG_LEVEL", "debug")
               .withArgument("myapp")
               .withArgument("--config=/etc/app.conf")
@@ -336,8 +322,7 @@ class JniWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withEnvironment(null, "value"),
+        .withEnvironment(null, "value"),
           "Should throw on null environment variable name");
 
       LOGGER.info("Validation correctly rejected null environment variable name");
@@ -352,8 +337,7 @@ class JniWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withEnvironment("", "value"),
+        .withEnvironment("", "value"),
           "Should throw on empty environment variable name");
 
       LOGGER.info("Validation correctly rejected empty environment variable name");
@@ -368,8 +352,7 @@ class JniWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withArgument(null),
+        .withArgument(null),
           "Should throw on null argument");
 
       LOGGER.info("Validation correctly rejected null argument");
@@ -384,8 +367,7 @@ class JniWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withPreopenDirectory("/guest", "/non/existent/path"),
+        .withPreopenDirectory("/guest", "/non/existent/path"),
           "Should throw on non-existent host directory");
 
       LOGGER.info("Validation correctly rejected non-existent host directory");
@@ -403,8 +385,7 @@ class JniWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withPreopenDirectory("/guest", file.toString()),
+        .withPreopenDirectory("/guest", file.toString()),
           "Should throw on file path instead of directory");
 
       LOGGER.info("Validation correctly rejected file path");
@@ -422,8 +403,7 @@ class JniWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withPreopenDirectory(null, hostDir.toString()),
+        .withPreopenDirectory(null, hostDir.toString()),
           "Should throw on null guest directory path");
 
       LOGGER.info("Validation correctly rejected null guest path");
@@ -441,8 +421,7 @@ class JniWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withPreopenDirectory("", hostDir.toString()),
+        .withPreopenDirectory("", hostDir.toString()),
           "Should throw on empty guest directory path");
 
       LOGGER.info("Validation correctly rejected empty guest path");
@@ -463,8 +442,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
 
       assertTrue(context.isValid(), "Context should be valid before close");
@@ -485,8 +463,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
 
       assertDoesNotThrow(
@@ -511,8 +488,7 @@ class JniWasiContextIntegrationTest {
 
       try (final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build()) {
         assertTrue(context.isValid(), "Context should be valid inside try block");
         handleHolder[0] = context.getNativeHandle();
@@ -537,8 +513,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
 
@@ -546,30 +521,6 @@ class JniWasiContextIntegrationTest {
       assertTrue(handle != 0, "Native handle should not be zero");
 
       LOGGER.info("Native handle retrieved: " + handle);
-    }
-  }
-
-  @Nested
-  @DisplayName("Security Validator Tests")
-  class SecurityValidatorTests {
-
-    @Test
-    @DisplayName("should return security validator")
-    void shouldReturnSecurityValidator() throws Exception {
-      LOGGER.info("Testing security validator retrieval");
-
-      final Path existingDir = tempDir.resolve("security-test");
-      Files.createDirectories(existingDir);
-
-      final WasiContext context =
-          WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
-              .build();
-      resources.add(context);
-
-      assertNotNull(context.getSecurityValidator(), "Security validator should not be null");
-      LOGGER.info("Security validator retrieved successfully");
     }
   }
 
@@ -587,8 +538,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/guest", existingDir.toString())
+.withPreopenDirectory("/guest", existingDir.toString())
               .build();
       resources.add(context);
 
@@ -614,8 +564,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withEnvironment("MY_VAR", "my_value")
+.withEnvironment("MY_VAR", "my_value")
               .withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
@@ -636,8 +585,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
 

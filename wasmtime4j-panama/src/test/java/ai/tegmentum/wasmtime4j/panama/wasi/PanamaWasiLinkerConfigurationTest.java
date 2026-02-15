@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.PanamaEngine;
 import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
-import ai.tegmentum.wasmtime4j.wasi.WasiPermissions;
 import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -75,16 +74,6 @@ class PanamaWasiLinkerConfigurationTest {
   class DirectoryAccessTests {
 
     @Test
-    @DisplayName("Should allow directory access with full permissions")
-    void testAllowDirectoryAccessWithPermissions() {
-      final Path hostPath = Paths.get("/tmp");
-      final String guestPath = "/guest/tmp";
-      final WasiPermissions permissions = WasiPermissions.of(0755);
-
-      assertDoesNotThrow(() -> wasiLinker.allowDirectoryAccess(hostPath, guestPath, permissions));
-    }
-
-    @Test
     @DisplayName("Should allow directory access with default permissions")
     void testAllowDirectoryAccessWithDefaultPermissions() {
       final Path hostPath = Paths.get("/tmp");
@@ -94,23 +83,11 @@ class PanamaWasiLinkerConfigurationTest {
     }
 
     @Test
-    @DisplayName("Should allow read-only directory access")
-    void testAllowReadOnlyDirectoryAccess() {
-      final Path hostPath = Paths.get("/tmp");
-      final String guestPath = "/guest/tmp";
-      // 0444 = r--r--r-- (read-only)
-      final WasiPermissions readOnlyPerms = WasiPermissions.of(0444);
-
-      assertDoesNotThrow(() -> wasiLinker.allowDirectoryAccess(hostPath, guestPath, readOnlyPerms));
-    }
-
-    @Test
     @DisplayName("Should throw on null host path")
     void testAllowDirectoryAccessNullHostPath() {
       final String guestPath = "/guest/tmp";
-      final WasiPermissions permissions = WasiPermissions.of(0755);
 
-      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(null, guestPath, permissions))
+      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(null, guestPath))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("Host path cannot be null");
     }
@@ -119,22 +96,10 @@ class PanamaWasiLinkerConfigurationTest {
     @DisplayName("Should throw on null guest path")
     void testAllowDirectoryAccessNullGuestPath() {
       final Path hostPath = Paths.get("/tmp");
-      final WasiPermissions permissions = WasiPermissions.of(0755);
 
-      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(hostPath, null, permissions))
+      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(hostPath, null))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("Guest path cannot be null");
-    }
-
-    @Test
-    @DisplayName("Should throw on null permissions")
-    void testAllowDirectoryAccessNullPermissions() {
-      final Path hostPath = Paths.get("/tmp");
-      final String guestPath = "/guest/tmp";
-
-      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(hostPath, guestPath, null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Permissions cannot be null");
     }
 
     @Test
@@ -512,8 +477,7 @@ class PanamaWasiLinkerConfigurationTest {
           () -> {
             // Directory access
             wasiLinker.allowDirectoryAccess(Paths.get("/tmp"), "/tmp");
-            wasiLinker.allowDirectoryAccess(
-                Paths.get("/var/log"), "/logs", WasiPermissions.of(0444));
+            wasiLinker.allowDirectoryAccess(Paths.get("/var/log"), "/logs");
 
             // Environment variables
             wasiLinker.setEnvironmentVariable("APP_ENV", "production");

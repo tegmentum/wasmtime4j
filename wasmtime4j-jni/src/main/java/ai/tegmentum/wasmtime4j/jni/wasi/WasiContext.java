@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -33,9 +32,6 @@ public final class WasiContext extends JniResource {
 
   private static final Logger LOGGER = Logger.getLogger(WasiContext.class.getName());
 
-  /** Security validator for preventing unauthorized access. */
-  private final WasiSecurityValidator securityValidator;
-
   /** Environment variables for the WASI context. */
   private final Map<String, String> environment;
 
@@ -60,7 +56,6 @@ public final class WasiContext extends JniResource {
 
     JniValidation.requireNonNull(builder, "builder");
 
-    this.securityValidator = builder.getSecurityValidator();
     this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
     this.arguments = builder.getArguments().toArray(new String[0]);
     this.preopenedDirectories = new ConcurrentHashMap<>(builder.getPreopenedDirectories());
@@ -74,16 +69,6 @@ public final class WasiContext extends JniResource {
   }
 
   /**
-   * Gets the security validator for this WASI context.
-   *
-   * @return the security validator
-   */
-  public WasiSecurityValidator getSecurityValidator() {
-    ensureNotClosed();
-    return securityValidator;
-  }
-
-  /**
    * Gets an environment variable value.
    *
    * @param name the environment variable name
@@ -93,9 +78,6 @@ public final class WasiContext extends JniResource {
   public String getEnvironmentVariable(final String name) {
     ensureNotClosed();
     JniValidation.requireNonEmpty(name, "name");
-
-    // Validate access to environment variable
-    securityValidator.validateEnvironmentAccess(name);
 
     return environment.get(name);
   }
@@ -167,9 +149,6 @@ public final class WasiContext extends JniResource {
     // Resolve relative paths against the working directory
     final Path pathObj = Paths.get(path);
     final Path resolvedPath = pathObj.isAbsolute() ? pathObj : workingDirectory.resolve(path);
-
-    // Security validation - check for path traversal attacks
-    securityValidator.validatePath(resolvedPath);
 
     return resolvedPath.normalize().toAbsolutePath();
   }

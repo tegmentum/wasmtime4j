@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,9 +40,6 @@ public final class WasiContext implements AutoCloseable {
 
   /** Resource manager for native memory management. */
   private final ArenaResourceManager resourceManager;
-
-  /** Security validator for preventing unauthorized access. */
-  private final WasiSecurityValidator securityValidator;
 
   /** Environment variables for the WASI context. */
   private final Map<String, String> environment;
@@ -84,7 +80,6 @@ public final class WasiContext implements AutoCloseable {
 
     this.nativeHandle = nativeHandle;
     this.resourceManager = resourceManager;
-    this.securityValidator = builder.getSecurityValidator();
     this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
     this.arguments = builder.getArguments().toArray(new String[0]);
     this.preopenedDirectories = new ConcurrentHashMap<>(builder.getPreopenedDirectories());
@@ -132,17 +127,6 @@ public final class WasiContext implements AutoCloseable {
   }
 
   /**
-   * Gets the security validator for this WASI context.
-   *
-   * @return the security validator
-   * @throws IllegalStateException if the context is closed
-   */
-  public WasiSecurityValidator getSecurityValidator() {
-    ensureNotClosed();
-    return securityValidator;
-  }
-
-  /**
    * Gets an environment variable value.
    *
    * @param name the environment variable name
@@ -156,9 +140,6 @@ public final class WasiContext implements AutoCloseable {
     if (name == null || name.isEmpty()) {
       throw new IllegalArgumentException("Environment variable name cannot be null or empty");
     }
-
-    // Validate access to environment variable
-    securityValidator.validateEnvironmentAccess(name);
 
     return environment.get(name);
   }
@@ -233,9 +214,6 @@ public final class WasiContext implements AutoCloseable {
     }
 
     final Path resolvedPath = Paths.get(path);
-
-    // Security validation - check for path traversal attacks
-    securityValidator.validatePath(resolvedPath);
 
     return resolvedPath.normalize().toAbsolutePath();
   }

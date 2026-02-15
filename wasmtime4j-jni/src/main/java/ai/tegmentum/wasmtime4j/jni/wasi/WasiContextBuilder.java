@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,9 +56,6 @@ public final class WasiContextBuilder {
 
   /** Working directory for the WASI context. */
   private Path workingDirectory = Paths.get(DEFAULT_WORKING_DIR);
-
-  /** Security validator for preventing unauthorized access. */
-  private WasiSecurityValidator securityValidator = WasiSecurityValidator.defaultValidator();
 
   /** Package-private constructor - use WasiContext.builder() to create. */
   WasiContextBuilder() {
@@ -208,22 +204,6 @@ public final class WasiContextBuilder {
   }
 
   /**
-   * Sets the security validator for preventing unauthorized access.
-   *
-   * @param validator the security validator to use
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if validator is null
-   */
-  public WasiContextBuilder withSecurityValidator(final WasiSecurityValidator validator) {
-    JniValidation.requireNonNull(validator, "validator");
-
-    this.securityValidator = validator;
-    LOGGER.fine("Set custom security validator");
-
-    return this;
-  }
-
-  /**
    * Creates a WASI context with the configured settings.
    *
    * @return the configured WASI context
@@ -256,15 +236,6 @@ public final class WasiContextBuilder {
     } catch (final Exception e) {
       throw new JniException("Failed to create WASI context: " + e.getMessage(), e);
     }
-  }
-
-  /**
-   * Gets the security validator.
-   *
-   * @return the security validator
-   */
-  WasiSecurityValidator getSecurityValidator() {
-    return securityValidator;
   }
 
   /**
@@ -310,17 +281,6 @@ public final class WasiContextBuilder {
    * directory configuration.
    */
   private void validateConfiguration() {
-    // Validate pre-opened directories for path traversal attacks
-    for (final Map.Entry<String, Path> entry : preopenedDirectories.entrySet()) {
-      final String guestDir = entry.getKey();
-
-      // Validate guest directory path
-      securityValidator.validatePath(Paths.get(guestDir));
-    }
-
-    // Validate working directory
-    securityValidator.validatePath(workingDirectory);
-
     LOGGER.fine("WASI context configuration validation completed");
   }
 

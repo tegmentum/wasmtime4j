@@ -1,10 +1,9 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.logging.Logger;
 
 /**
- * Factory for creating WASI (WebAssembly System Interface) context instances.
+ * Factory for WASI (WebAssembly System Interface) runtime selection.
  *
  * <p>This factory automatically selects the appropriate WASI runtime implementation based on the
  * Java version and available native bindings. It can also be configured to use a specific runtime
@@ -52,50 +51,9 @@ public final class WasiFactory {
   }
 
   /**
-   * Creates a new WASI context with automatic implementation selection.
-   *
-   * <p>This method automatically selects the best available WASI runtime implementation based on
-   * the Java version and system configuration. It prefers Panama FFI on Java 23+ but falls back to
-   * JNI if Panama is not available.
-   *
-   * @return a new WasiComponentContext instance
-   * @throws WasmException if no suitable WASI runtime implementation is available
-   */
-  public static WasiComponentContext createContext() throws WasmException {
-    final WasiRuntimeType runtimeType = selectRuntimeType();
-    return createContext(runtimeType);
-  }
-
-  /**
-   * Creates a new WASI context with the specified implementation type.
-   *
-   * @param runtimeType the type of WASI runtime implementation to create
-   * @return a new WasiComponentContext instance of the specified type
-   * @throws WasmException if the specified runtime type is not available
-   * @throws IllegalArgumentException if runtimeType is null
-   */
-  public static WasiComponentContext createContext(final WasiRuntimeType runtimeType)
-      throws WasmException {
-    if (runtimeType == null) {
-      throw new IllegalArgumentException("WASI runtime type cannot be null");
-    }
-
-    logger.info("Creating WASI context with type: " + sanitizeForLog(runtimeType.toString()));
-
-    switch (runtimeType) {
-      case JNI:
-        return createJniContext();
-      case PANAMA:
-        return createPanamaContext();
-      default:
-        throw new WasmException("Unknown WASI runtime type: " + runtimeType);
-    }
-  }
-
-  /**
    * Gets the WASI runtime type that would be automatically selected.
    *
-   * @return the runtime type that would be selected by {@link #createContext()}
+   * @return the runtime type that would be automatically selected
    */
   public static WasiRuntimeType getSelectedRuntimeType() {
     return selectRuntimeType();
@@ -183,33 +141,9 @@ public final class WasiFactory {
     }
   }
 
-  private static WasiComponentContext createJniContext() throws WasmException {
-    try {
-      // This will be implemented by loading the JNI WASI implementation class
-      final Class<?> jniWasiComponentContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasiComponentContext");
-      return (WasiComponentContext)
-          jniWasiComponentContextClass.getDeclaredConstructor().newInstance();
-    } catch (final Exception e) {
-      throw new WasmException("Failed to create JNI WASI context: " + e.getMessage(), e);
-    }
-  }
-
-  private static WasiComponentContext createPanamaContext() throws WasmException {
-    try {
-      // This will be implemented by loading the Panama WASI implementation class
-      final Class<?> panamaWasiComponentContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaWasiComponentContext");
-      return (WasiComponentContext)
-          panamaWasiComponentContextClass.getDeclaredConstructor().newInstance();
-    } catch (final Exception e) {
-      throw new WasmException("Failed to create Panama WASI context: " + e.getMessage(), e);
-    }
-  }
-
   private static boolean isJniRuntimeAvailable() {
     try {
-      Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasiComponentContext");
+      Class.forName("ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl");
       return true;
     } catch (final ClassNotFoundException e) {
       return false;
@@ -218,7 +152,7 @@ public final class WasiFactory {
 
   private static boolean isPanamaRuntimeAvailable() {
     try {
-      Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaWasiComponentContext");
+      Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaWasiContext");
       return true;
     } catch (final ClassNotFoundException e) {
       return false;

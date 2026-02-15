@@ -305,38 +305,26 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
     }
   }
 
-  @Override
   public long getId() {
     return nativeHandle.address();
   }
 
-  @Override
   public String getType() {
     return "wasi:io/input-stream";
   }
 
-  @Override
-  public ai.tegmentum.wasmtime4j.wasi.WasiInstance getOwner() {
-    throw new UnsupportedOperationException(
-        "not yet implemented: WASI input stream owner tracking");
-  }
-
-  @Override
   public boolean isOwned() {
     return true; // WASI streams are owned by default
   }
 
-  @Override
   public boolean isValid() {
     return !isClosed();
   }
 
-  @Override
   public java.util.List<String> getAvailableOperations() {
     return java.util.Arrays.asList("read", "blocking-read", "skip", "blocking-skip", "subscribe");
   }
 
-  @Override
   public Object invoke(final String operation, final Object... parameters) throws WasmException {
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");
@@ -380,12 +368,10 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
     }
   }
 
-  @Override
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
     return java.util.Optional.empty(); // Access tracking not yet implemented for WASI I/O streams
   }
 
-  @Override
   public java.time.Instant getCreatedAt() {
     return java.time.Instant
         .now(); // Creation time tracking not yet implemented for WASI I/O streams

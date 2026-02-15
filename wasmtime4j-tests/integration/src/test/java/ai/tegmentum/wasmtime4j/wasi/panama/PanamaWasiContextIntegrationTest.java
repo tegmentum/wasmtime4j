@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.panama.wasi.WasiContextBuilder;
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.io.IOException;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Files;
@@ -66,13 +65,6 @@ class PanamaWasiContextIntegrationTest {
 
   private static final Logger LOGGER =
       Logger.getLogger(PanamaWasiContextIntegrationTest.class.getName());
-
-  /**
-   * Permissive security validator that allows absolute paths for testing. This is required because
-   * the default validator rejects absolute paths.
-   */
-  private static final WasiSecurityValidator TEST_SECURITY_VALIDATOR =
-      WasiSecurityValidator.builder().withAllowAbsolutePaths(true).build();
 
   /** Tracks resources for cleanup. */
   private final List<AutoCloseable> resources = new ArrayList<>();
@@ -146,8 +138,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
 
@@ -171,8 +162,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withEnvironment("TEST_VAR", "test_value")
+.withEnvironment("TEST_VAR", "test_value")
               .withEnvironment("HOME", "/home/test")
               .withEnvironment("PATH", "/usr/bin:/bin")
               .withPreopenDirectory("/", existingDir.toString())
@@ -202,8 +192,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withArgument("program")
+.withArgument("program")
               .withArgument("--verbose")
               .withArgument("-o")
               .withArgument("output.txt")
@@ -239,8 +228,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/guest/tmp", dir1.toString())
+.withPreopenDirectory("/guest/tmp", dir1.toString())
               .withPreopenDirectory("/guest/data", dir2.toString())
               .build();
       resources.add(context);
@@ -266,8 +254,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withWorkingDirectory("/app")
+.withWorkingDirectory("/app")
               .withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
@@ -295,8 +282,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withEnvironment("APP_ENV", "production")
+.withEnvironment("APP_ENV", "production")
               .withEnvironment("LOG_LEVEL", "debug")
               .withArgument("myapp")
               .withArgument("--config=/etc/app.conf")
@@ -336,8 +322,7 @@ class PanamaWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withEnvironment(null, "value"),
+        .withEnvironment(null, "value"),
           "Should throw on null environment variable name");
 
       LOGGER.info("Validation correctly rejected null environment variable name");
@@ -352,8 +337,7 @@ class PanamaWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withEnvironment("", "value"),
+        .withEnvironment("", "value"),
           "Should throw on empty environment variable name");
 
       LOGGER.info("Validation correctly rejected empty environment variable name");
@@ -368,8 +352,7 @@ class PanamaWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withArgument(null),
+        .withArgument(null),
           "Should throw on null argument");
 
       LOGGER.info("Validation correctly rejected null argument");
@@ -384,8 +367,7 @@ class PanamaWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withPreopenDirectory("/guest", "/non/existent/path"),
+        .withPreopenDirectory("/guest", "/non/existent/path"),
           "Should throw on non-existent host directory");
 
       LOGGER.info("Validation correctly rejected non-existent host directory");
@@ -403,8 +385,7 @@ class PanamaWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withPreopenDirectory("/guest", file.toString()),
+        .withPreopenDirectory("/guest", file.toString()),
           "Should throw on file path instead of directory");
 
       LOGGER.info("Validation correctly rejected file path");
@@ -422,8 +403,7 @@ class PanamaWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withPreopenDirectory(null, hostDir.toString()),
+        .withPreopenDirectory(null, hostDir.toString()),
           "Should throw on null guest directory path");
 
       LOGGER.info("Validation correctly rejected null guest path");
@@ -441,8 +421,7 @@ class PanamaWasiContextIntegrationTest {
           RuntimeException.class,
           () ->
               WasiContext.builder()
-                  .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-                  .withPreopenDirectory("", hostDir.toString()),
+        .withPreopenDirectory("", hostDir.toString()),
           "Should throw on empty guest directory path");
 
       LOGGER.info("Validation correctly rejected empty guest path");
@@ -463,8 +442,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
 
       assertTrue(!context.isClosed(), "Context should be valid before close");
@@ -485,8 +463,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
 
       assertDoesNotThrow(
@@ -509,8 +486,7 @@ class PanamaWasiContextIntegrationTest {
 
       try (final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build()) {
         assertTrue(!context.isClosed(), "Context should be valid inside try block");
         assertNotNull(context.getNativeHandle(), "Native handle should not be null inside try");
@@ -535,8 +511,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
 
@@ -545,30 +520,6 @@ class PanamaWasiContextIntegrationTest {
       assertFalse(handle.equals(MemorySegment.NULL), "Handle should not be NULL segment");
 
       LOGGER.info("Native handle retrieved successfully");
-    }
-  }
-
-  @Nested
-  @DisplayName("Security Validator Tests")
-  class SecurityValidatorTests {
-
-    @Test
-    @DisplayName("should return security validator")
-    void shouldReturnSecurityValidator() throws Exception {
-      LOGGER.info("Testing security validator retrieval");
-
-      final Path existingDir = tempDir.resolve("security-test");
-      Files.createDirectories(existingDir);
-
-      final WasiContext context =
-          WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
-              .build();
-      resources.add(context);
-
-      assertNotNull(context.getSecurityValidator(), "Security validator should not be null");
-      LOGGER.info("Security validator retrieved successfully");
     }
   }
 
@@ -586,8 +537,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withEnvironment("MY_VAR", "my_value")
+.withEnvironment("MY_VAR", "my_value")
               .withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
@@ -608,8 +558,7 @@ class PanamaWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-              .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-              .withPreopenDirectory("/", existingDir.toString())
+.withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
 

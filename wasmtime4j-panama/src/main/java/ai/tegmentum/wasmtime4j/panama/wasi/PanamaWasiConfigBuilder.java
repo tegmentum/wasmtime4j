@@ -18,9 +18,6 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
-import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
-
-
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -39,7 +36,6 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
   private final Map<String, String> environment = new HashMap<>();
   private final List<String> arguments = new ArrayList<>();
   private final Map<String, Path> preopenDirectories = new HashMap<>();
-  private final Map<String, WasiImportResolver> importResolvers = new HashMap<>();
   private String workingDirectory;
   private boolean inheritEnvironment;
   private Duration executionTimeout;
@@ -192,43 +188,6 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
 
 
   @Override
-  public WasiConfigBuilder withImportResolver(
-      final String interfaceName, final WasiImportResolver resolver) {
-    if (interfaceName == null || interfaceName.isEmpty()) {
-      throw new IllegalArgumentException("Interface name cannot be null or empty");
-    }
-    if (resolver == null) {
-      throw new IllegalArgumentException("Resolver cannot be null");
-    }
-    this.importResolvers.put(interfaceName, resolver);
-    return this;
-  }
-
-  @Override
-  public WasiConfigBuilder withImportResolvers(final Map<String, WasiImportResolver> resolvers) {
-    if (resolvers == null) {
-      throw new IllegalArgumentException("Resolvers map cannot be null");
-    }
-    this.importResolvers.putAll(resolvers);
-    return this;
-  }
-
-  @Override
-  public WasiConfigBuilder withoutImportResolver(final String interfaceName) {
-    if (interfaceName == null || interfaceName.isEmpty()) {
-      throw new IllegalArgumentException("Interface name cannot be null or empty");
-    }
-    this.importResolvers.remove(interfaceName);
-    return this;
-  }
-
-  @Override
-  public WasiConfigBuilder clearImportResolvers() {
-    this.importResolvers.clear();
-    return this;
-  }
-
-  @Override
   public WasiConfigBuilder withValidation(final boolean validate) {
     this.validationEnabled = validate;
     return this;
@@ -298,7 +257,6 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
         environment,
         arguments,
         preopenDirectories,
-        importResolvers,
         workingDirectory,
         inheritEnvironment,
         executionTimeout,

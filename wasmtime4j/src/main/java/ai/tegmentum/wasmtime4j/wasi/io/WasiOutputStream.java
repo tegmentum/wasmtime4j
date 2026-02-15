@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 
 /**
  * WASI Preview 2 output stream interface.
@@ -52,7 +51,7 @@ import ai.tegmentum.wasmtime4j.wasi.WasiResource;
  *
  * @since 1.0.0
  */
-public interface WasiOutputStream extends WasiResource {
+public interface WasiOutputStream extends AutoCloseable {
 
   /**
    * Checks the number of bytes that can be written without blocking.

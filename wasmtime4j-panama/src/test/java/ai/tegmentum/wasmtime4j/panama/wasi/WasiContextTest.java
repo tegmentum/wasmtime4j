@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -85,22 +84,6 @@ class WasiContextTest {
       final Method method = WasiContext.class.getMethod("getNativeHandle");
       assertNotNull(method, "getNativeHandle method should exist");
       assertEquals(MemorySegment.class, method.getReturnType(), "Should return MemorySegment");
-    }
-  }
-
-  @Nested
-  @DisplayName("Security Method Tests")
-  class SecurityMethodTests {
-
-    @Test
-    @DisplayName("should have getSecurityValidator method")
-    void shouldHaveGetSecurityValidatorMethod() throws NoSuchMethodException {
-      final Method method = WasiContext.class.getMethod("getSecurityValidator");
-      assertNotNull(method, "getSecurityValidator method should exist");
-      assertEquals(
-          WasiSecurityValidator.class,
-          method.getReturnType(),
-          "Should return WasiSecurityValidator");
     }
   }
 

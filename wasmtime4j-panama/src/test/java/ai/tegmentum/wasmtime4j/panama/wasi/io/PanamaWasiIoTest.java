@@ -632,33 +632,6 @@ class PanamaWasiIoTest {
     }
 
     @Test
-    @DisplayName("I/O classes should have WasiResource methods")
-    void ioClassesShouldHaveWasiResourceMethods() throws ClassNotFoundException {
-      final String[] classNames = {INPUT_STREAM_CLASS, OUTPUT_STREAM_CLASS, POLLABLE_CLASS};
-      final Set<String> wasiResourceMethods = new HashSet<>();
-      wasiResourceMethods.add("getId");
-      wasiResourceMethods.add("getType");
-      wasiResourceMethods.add("isValid");
-      wasiResourceMethods.add("getAvailableOperations");
-      wasiResourceMethods.add("invoke");
-
-      for (String className : classNames) {
-        final Class<?> clazz = loadClassWithoutInit(className);
-        final Set<String> foundMethods = new HashSet<>();
-        for (Method method : clazz.getMethods()) {
-          foundMethods.add(method.getName());
-        }
-
-        for (String methodName : wasiResourceMethods) {
-          assertTrue(
-              foundMethods.contains(methodName),
-              className + " should have WasiResource method: " + methodName);
-        }
-        LOGGER.info(className + " has all WasiResource methods");
-      }
-    }
-
-    @Test
     @DisplayName("I/O classes should have close method")
     void ioClassesShouldHaveCloseMethod() throws ClassNotFoundException {
       final String[] classNames = {INPUT_STREAM_CLASS, OUTPUT_STREAM_CLASS, POLLABLE_CLASS};

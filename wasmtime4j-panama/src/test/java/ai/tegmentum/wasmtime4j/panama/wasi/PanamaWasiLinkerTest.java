@@ -27,7 +27,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
-import ai.tegmentum.wasmtime4j.wasi.WasiPermissions;
 import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -94,17 +93,7 @@ class PanamaWasiLinkerTest {
   class DirectoryAccessMethodTests {
 
     @Test
-    @DisplayName("should have allowDirectoryAccess method with permissions")
-    void shouldHaveAllowDirectoryAccessWithPermissions() throws NoSuchMethodException {
-      final Method method =
-          PanamaWasiLinker.class.getMethod(
-              "allowDirectoryAccess", Path.class, String.class, WasiPermissions.class);
-      assertNotNull(method, "allowDirectoryAccess method should exist");
-      assertEquals(void.class, method.getReturnType(), "Should return void");
-    }
-
-    @Test
-    @DisplayName("should have allowDirectoryAccess method without permissions")
+    @DisplayName("should have allowDirectoryAccess method")
     void shouldHaveAllowDirectoryAccessWithoutPermissions() throws NoSuchMethodException {
       final Method method =
           PanamaWasiLinker.class.getMethod("allowDirectoryAccess", Path.class, String.class);

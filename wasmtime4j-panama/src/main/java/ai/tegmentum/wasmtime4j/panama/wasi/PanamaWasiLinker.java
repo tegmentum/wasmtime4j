@@ -32,7 +32,6 @@ import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
-import ai.tegmentum.wasmtime4j.wasi.WasiPermissions;
 import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
 import java.io.IOException;
 import java.io.InputStream;
@@ -114,8 +113,7 @@ public final class PanamaWasiLinker implements WasiLinker {
   }
 
   @Override
-  public void allowDirectoryAccess(
-      final Path hostPath, final String guestPath, final WasiPermissions permissions)
+  public void allowDirectoryAccess(final Path hostPath, final String guestPath)
       throws WasmException {
     ensureNotClosed();
     if (hostPath == null) {
@@ -124,19 +122,9 @@ public final class PanamaWasiLinker implements WasiLinker {
     if (guestPath == null) {
       throw new IllegalArgumentException("Guest path cannot be null");
     }
-    if (permissions == null) {
-      throw new IllegalArgumentException("Permissions cannot be null");
-    }
 
-    directoryMappings.put(hostPath, new DirectoryMapping(guestPath, permissions));
+    directoryMappings.put(hostPath, new DirectoryMapping(guestPath));
     LOGGER.fine("Added directory mapping: " + hostPath + " -> " + guestPath);
-  }
-
-  @Override
-  public void allowDirectoryAccess(final Path hostPath, final String guestPath)
-      throws WasmException {
-    // Default permissions: 0755 (rwxr-xr-x)
-    allowDirectoryAccess(hostPath, guestPath, WasiPermissions.of(0755));
   }
 
   @Override
@@ -328,13 +316,7 @@ public final class PanamaWasiLinker implements WasiLinker {
       final Path hostPath = entry.getKey();
       final DirectoryMapping mapping = entry.getValue();
 
-      // Check if read-only based on permissions
-      final boolean readOnly = !mapping.permissions.isOwnerWrite();
-      if (readOnly) {
-        context.preopenedDirReadOnly(hostPath, mapping.guestPath);
-      } else {
-        context.preopenedDir(hostPath, mapping.guestPath);
-      }
+      context.preopenedDir(hostPath, mapping.guestPath);
     }
 
     // Apply stdio configuration
@@ -492,11 +474,9 @@ public final class PanamaWasiLinker implements WasiLinker {
   /** Internal class to hold directory mapping configuration. */
   private static final class DirectoryMapping {
     final String guestPath;
-    final WasiPermissions permissions;
 
-    DirectoryMapping(final String guestPath, final WasiPermissions permissions) {
+    DirectoryMapping(final String guestPath) {
       this.guestPath = guestPath;
-      this.permissions = permissions;
     }
   }
 }

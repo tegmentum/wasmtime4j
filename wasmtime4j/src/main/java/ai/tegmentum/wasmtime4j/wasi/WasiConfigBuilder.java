@@ -185,45 +185,6 @@ public interface WasiConfigBuilder {
 
 
   /**
-   * Adds an import resolver for component dependencies.
-   *
-   * <p>Import resolvers provide implementations for component imports. Each interface can have at
-   * most one resolver.
-   *
-   * @param interfaceName the interface name to resolve
-   * @param resolver the resolver for this interface
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if interfaceName is null or empty, or resolver is null
-   */
-  WasiConfigBuilder withImportResolver(
-      final String interfaceName, final WasiImportResolver resolver);
-
-  /**
-   * Adds multiple import resolvers for component dependencies.
-   *
-   * @param resolvers map of interface names to their resolvers
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if resolvers is null or contains null keys/values
-   */
-  WasiConfigBuilder withImportResolvers(final Map<String, WasiImportResolver> resolvers);
-
-  /**
-   * Removes an import resolver from the configuration.
-   *
-   * @param interfaceName the interface name to remove resolver for
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if interfaceName is null or empty
-   */
-  WasiConfigBuilder withoutImportResolver(final String interfaceName);
-
-  /**
-   * Clears all import resolvers from the configuration.
-   *
-   * @return this builder for method chaining
-   */
-  WasiConfigBuilder clearImportResolvers();
-
-  /**
    * Enables or disables component validation during instantiation.
    *
    * <p>When enabled, the component and configuration are validated for security, compatibility, and

@@ -23,7 +23,7 @@ import java.util.Optional;
  *     .withArgument("--verbose")
  *     .build();
  *
- * WasiInstance instance = component.instantiate(config);
+ * // Use config with WasiContext to configure WASI
  * }</pre>
  *
  * @since 1.0.0
@@ -106,13 +106,6 @@ public interface WasiConfig {
   Optional<Duration> getExecutionTimeout();
 
 
-
-  /**
-   * Gets the import resolvers for component dependencies.
-   *
-   * @return immutable map of interface names to their resolvers
-   */
-  Map<String, WasiImportResolver> getImportResolvers();
 
   /**
    * Gets whether validation is enabled.

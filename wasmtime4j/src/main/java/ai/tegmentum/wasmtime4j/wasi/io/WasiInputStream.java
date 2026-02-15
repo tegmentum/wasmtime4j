@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.wasi.WasiResource;
 
 /**
  * WASI Preview 2 input stream interface.
@@ -50,7 +49,7 @@ import ai.tegmentum.wasmtime4j.wasi.WasiResource;
  *
  * @since 1.0.0
  */
-public interface WasiInputStream extends WasiResource {
+public interface WasiInputStream extends AutoCloseable {
 
   /**
    * Reads up to the specified number of bytes from the stream.

@@ -35,8 +35,7 @@ import java.util.Map;
  * <pre>{@code
  * try (WasiLinker linker = WasiLinker.create(engine)) {
  *     // Configure filesystem access
- *     linker.allowDirectoryAccess("/tmp", "/sandbox",
- *         WasiPermissions.READ_WRITE);
+ *     linker.allowDirectoryAccess(Path.of("/tmp"), "/sandbox");
  *
  *     // Set environment variables
  *     linker.setEnvironmentVariable("USER", "wasm-user");
@@ -57,29 +56,13 @@ public interface WasiLinker extends Closeable {
    * Allows access to a host directory from the WebAssembly module.
    *
    * <p>This method maps a host filesystem directory to a path visible within the WebAssembly
-   * module's WASI filesystem namespace. Permissions control what operations the module can perform
-   * on files within this directory.
+   * module's WASI filesystem namespace with read-write permissions.
    *
    * @param hostPath the path on the host filesystem to expose
    * @param guestPath the path where it should appear in the WASI filesystem
-   * @param permissions the permissions to grant for this directory
    * @throws WasmException if directory mapping fails
    * @throws IllegalArgumentException if any parameter is null
    * @since 1.0.0
-   */
-  void allowDirectoryAccess(
-      final Path hostPath, final String guestPath, final WasiPermissions permissions)
-      throws WasmException;
-
-  /**
-   * Allows access to a host directory with default permissions.
-   *
-   * <p>Convenience method that maps a directory with read-write permissions.
-   *
-   * @param hostPath the path on the host filesystem to expose
-   * @param guestPath the path where it should appear in the WASI filesystem
-   * @throws WasmException if directory mapping fails
-   * @throws IllegalArgumentException if any parameter is null
    */
   void allowDirectoryAccess(final Path hostPath, final String guestPath) throws WasmException;
 

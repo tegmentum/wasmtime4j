@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Map;
@@ -139,21 +138,6 @@ class WasiContextBuilderTest {
       final Method method =
           WasiContextBuilder.class.getMethod("withWorkingDirectory", String.class);
       assertNotNull(method, "withWorkingDirectory method should exist");
-      assertEquals(
-          WasiContextBuilder.class, method.getReturnType(), "Should return WasiContextBuilder");
-    }
-  }
-
-  @Nested
-  @DisplayName("Security Method Tests")
-  class SecurityMethodTests {
-
-    @Test
-    @DisplayName("should have withSecurityValidator method")
-    void shouldHaveWithSecurityValidatorMethod() throws NoSuchMethodException {
-      final Method method =
-          WasiContextBuilder.class.getMethod("withSecurityValidator", WasiSecurityValidator.class);
-      assertNotNull(method, "withSecurityValidator method should exist");
       assertEquals(
           WasiContextBuilder.class, method.getReturnType(), "Should return WasiContextBuilder");
     }

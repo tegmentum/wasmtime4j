@@ -25,9 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
-import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
-
-
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -654,169 +651,6 @@ class PanamaWasiConfigBuilderTest {
 
 
   @Nested
-  @DisplayName("Import Resolver Method Tests")
-  class ImportResolverMethodTests {
-
-    @Test
-    @DisplayName("Should add import resolver")
-    void shouldAddImportResolver() {
-      LOGGER.info("Testing withImportResolver");
-
-      final WasiImportResolver resolver = new TestWasiImportResolver();
-      final WasiConfig config =
-          new PanamaWasiConfigBuilder().withImportResolver("test-interface", resolver).build();
-
-      assertEquals(1, config.getImportResolvers().size());
-      assertEquals(resolver, config.getImportResolvers().get("test-interface"));
-
-      LOGGER.info("Import resolver added");
-    }
-
-    @Test
-    @DisplayName("Should throw on null interface name")
-    void shouldThrowOnNullInterfaceName() {
-      LOGGER.info("Testing withImportResolver with null name");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withImportResolver(null, new TestWasiImportResolver()),
-          "Should throw on null name");
-
-      LOGGER.info("Null interface name throws exception");
-    }
-
-    @Test
-    @DisplayName("Should throw on empty interface name")
-    void shouldThrowOnEmptyInterfaceName() {
-      LOGGER.info("Testing withImportResolver with empty name");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withImportResolver("", new TestWasiImportResolver()),
-          "Should throw on empty name");
-
-      LOGGER.info("Empty interface name throws exception");
-    }
-
-    @Test
-    @DisplayName("Should throw on null resolver")
-    void shouldThrowOnNullResolver() {
-      LOGGER.info("Testing withImportResolver with null resolver");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withImportResolver("test", null),
-          "Should throw on null resolver");
-
-      LOGGER.info("Null resolver throws exception");
-    }
-
-    @Test
-    @DisplayName("Should add import resolvers from map")
-    void shouldAddImportResolversFromMap() {
-      LOGGER.info("Testing withImportResolvers(map)");
-
-      final Map<String, WasiImportResolver> resolvers = new HashMap<>();
-      resolvers.put("interface1", new TestWasiImportResolver());
-      resolvers.put("interface2", new TestWasiImportResolver());
-
-      final WasiConfig config =
-          new PanamaWasiConfigBuilder().withImportResolvers(resolvers).build();
-
-      assertEquals(2, config.getImportResolvers().size());
-
-      LOGGER.info("Import resolvers map added");
-    }
-
-    @Test
-    @DisplayName("Should throw on null resolvers map")
-    void shouldThrowOnNullResolversMap() {
-      LOGGER.info("Testing withImportResolvers with null map");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withImportResolvers(null),
-          "Should throw on null map");
-
-      LOGGER.info("Null resolvers map throws exception");
-    }
-
-    @Test
-    @DisplayName("Should remove import resolver")
-    void shouldRemoveImportResolver() {
-      LOGGER.info("Testing withoutImportResolver");
-
-      final WasiConfig config =
-          new PanamaWasiConfigBuilder()
-              .withImportResolver("interface1", new TestWasiImportResolver())
-              .withImportResolver("interface2", new TestWasiImportResolver())
-              .withoutImportResolver("interface1")
-              .build();
-
-      assertEquals(1, config.getImportResolvers().size());
-      assertFalse(config.getImportResolvers().containsKey("interface1"));
-      assertTrue(config.getImportResolvers().containsKey("interface2"));
-
-      LOGGER.info("Import resolver removed");
-    }
-
-    @Test
-    @DisplayName("Should throw on null interface name for removal")
-    void shouldThrowOnNullInterfaceNameForRemoval() {
-      LOGGER.info("Testing withoutImportResolver with null name");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withoutImportResolver(null),
-          "Should throw on null name");
-
-      LOGGER.info("Null interface name for removal throws exception");
-    }
-
-    @Test
-    @DisplayName("Should throw on empty interface name for removal")
-    void shouldThrowOnEmptyInterfaceNameForRemoval() {
-      LOGGER.info("Testing withoutImportResolver with empty name");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withoutImportResolver(""),
-          "Should throw on empty name");
-
-      LOGGER.info("Empty interface name for removal throws exception");
-    }
-
-    @Test
-    @DisplayName("Should clear all import resolvers")
-    void shouldClearAllImportResolvers() {
-      LOGGER.info("Testing clearImportResolvers");
-
-      final WasiConfig config =
-          new PanamaWasiConfigBuilder()
-              .withImportResolver("interface1", new TestWasiImportResolver())
-              .withImportResolver("interface2", new TestWasiImportResolver())
-              .clearImportResolvers()
-              .build();
-
-      assertTrue(config.getImportResolvers().isEmpty(), "Import resolvers should be empty");
-
-      LOGGER.info("Import resolvers cleared");
-    }
-  }
-
-  @Nested
   @DisplayName("Validation Mode Method Tests")
   class ValidationModeMethodTests {
 
@@ -1114,7 +948,6 @@ class PanamaWasiConfigBuilderTest {
       panamaBuilder.inheritEnvironment();
       panamaBuilder
           .withExecutionTimeout(Duration.ofMinutes(5))
-          .withImportResolver("test", new TestWasiImportResolver())
           .withValidation(true)
           .withStrictMode(true)
           .withWasiVersion(WasiVersion.PREVIEW_2)
@@ -1129,7 +962,6 @@ class PanamaWasiConfigBuilderTest {
       assertEquals(1, config.getPreopenDirectories().size());
       assertTrue(config.getWorkingDirectory().isPresent());
       assertTrue(config.getExecutionTimeout().isPresent());
-      assertEquals(1, config.getImportResolvers().size());
       assertTrue(config.isValidationEnabled());
       assertTrue(config.isStrictModeEnabled());
       assertEquals(WasiVersion.PREVIEW_2, config.getWasiVersion());
@@ -1180,8 +1012,6 @@ class PanamaWasiConfigBuilderTest {
               .withExecutionTimeout(Duration.ofSeconds(30))
               .withoutExecutionTimeout()
               .withExecutionTimeout(Duration.ofMinutes(1))
-              .withImportResolver("test", new TestWasiImportResolver())
-              .clearImportResolvers()
               .withValidation(true)
               .withStrictMode(true)
               .withWasiVersion(WasiVersion.PREVIEW_1)
@@ -1203,78 +1033,4 @@ class PanamaWasiConfigBuilderTest {
     }
   }
 
-  // Test helper classes
-
-
-
-  /** Test implementation of WasiImportResolver. */
-  private static final class TestWasiImportResolver implements WasiImportResolver {
-
-    @Override
-    public String getInterfaceName() {
-      return "test-interface";
-    }
-
-    @Override
-    public String getInterfaceVersion() {
-      return "1.0.0";
-    }
-
-    @Override
-    public java.util.List<String> getProvidedFunctions() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<String> getProvidedResourceTypes() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public Object resolveFunction(
-        final String functionName, final java.util.List<Object> parameters) {
-      throw new UnsupportedOperationException("Test implementation");
-    }
-
-    @Override
-    public ai.tegmentum.wasmtime4j.wasi.WasiResource createResource(
-        final String resourceType, final Object... parameters) {
-      throw new UnsupportedOperationException("Test implementation");
-    }
-
-    @Override
-    public boolean canResolveFunction(final String functionName) {
-      return false;
-    }
-
-    @Override
-    public boolean canCreateResourceType(final String resourceType) {
-      return false;
-    }
-
-    @Override
-    public java.util.Map<String, Object> getProperties() {
-      return java.util.Collections.emptyMap();
-    }
-
-    @Override
-    public void setProperty(final String key, final Object value) {
-      // No-op for testing
-    }
-
-    @Override
-    public void validate() {
-      // No-op for testing
-    }
-
-    @Override
-    public void initialize(final ai.tegmentum.wasmtime4j.wasi.WasiComponent component) {
-      // No-op for testing
-    }
-
-    @Override
-    public void cleanup() {
-      // No-op for testing
-    }
-  }
 }

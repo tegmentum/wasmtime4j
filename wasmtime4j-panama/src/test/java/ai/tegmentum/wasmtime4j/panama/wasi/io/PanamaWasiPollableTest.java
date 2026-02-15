@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
@@ -133,14 +132,6 @@ class PanamaWasiPollableTest {
   @Nested
   @DisplayName("Ownership Method Tests")
   class OwnershipMethodTests {
-
-    @Test
-    @DisplayName("should have getOwner method")
-    void shouldHaveGetOwnerMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiPollable.class.getMethod("getOwner");
-      assertNotNull(method, "getOwner method should exist");
-      assertEquals(WasiInstance.class, method.getReturnType(), "Should return WasiInstance");
-    }
 
     @Test
     @DisplayName("should have isOwned method")

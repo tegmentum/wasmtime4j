@@ -27,7 +27,6 @@ import ai.tegmentum.wasmtime4j.panama.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.panama.wasi.cli.PanamaWasiStdio;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiOutputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream;
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,13 +62,6 @@ class WasiOutputStreamIntegrationTest {
   private static final Logger LOGGER =
       Logger.getLogger(WasiOutputStreamIntegrationTest.class.getName());
 
-  /**
-   * Permissive security validator that allows absolute paths for testing. This is required because
-   * the default validator rejects absolute paths.
-   */
-  private static final WasiSecurityValidator TEST_SECURITY_VALIDATOR =
-      WasiSecurityValidator.builder().withAllowAbsolutePaths(true).build();
-
   /** Tracks resources for cleanup. */
   private final List<AutoCloseable> resources = new ArrayList<>();
 
@@ -101,8 +93,7 @@ class WasiOutputStreamIntegrationTest {
     // Create WASI context with test configuration
     wasiContext =
         WasiContext.builder()
-            .withSecurityValidator(TEST_SECURITY_VALIDATOR)
-            .withPreopenDirectory("/", preopenDir.toString())
+.withPreopenDirectory("/", preopenDir.toString())
             .withWorkingDirectory("/")
             .build();
     resources.add(wasiContext);

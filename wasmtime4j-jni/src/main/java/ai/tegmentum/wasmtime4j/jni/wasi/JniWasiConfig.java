@@ -18,9 +18,6 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
-import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
-
-
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -44,7 +41,6 @@ public final class JniWasiConfig implements WasiConfig {
   private final Map<String, String> environment;
   private final List<String> arguments;
   private final Map<String, Path> preopenDirectories;
-  private final Map<String, WasiImportResolver> importResolvers;
   private final String workingDirectory;
   private final boolean inheritEnvironment;
   private final Duration executionTimeout;
@@ -62,7 +58,6 @@ public final class JniWasiConfig implements WasiConfig {
    * @param environment environment variables
    * @param arguments command line arguments
    * @param preopenDirectories pre-opened directories
-   * @param importResolvers import resolvers for component dependencies
    * @param workingDirectory working directory
    * @param inheritEnvironment whether to inherit host environment
    * @param executionTimeout execution timeout
@@ -77,7 +72,6 @@ public final class JniWasiConfig implements WasiConfig {
       final Map<String, String> environment,
       final List<String> arguments,
       final Map<String, Path> preopenDirectories,
-      final Map<String, WasiImportResolver> importResolvers,
       final String workingDirectory,
       final boolean inheritEnvironment,
       final Duration executionTimeout,
@@ -90,7 +84,6 @@ public final class JniWasiConfig implements WasiConfig {
     this.environment = Collections.unmodifiableMap(new HashMap<>(environment));
     this.arguments = Collections.unmodifiableList(new ArrayList<>(arguments));
     this.preopenDirectories = Collections.unmodifiableMap(new HashMap<>(preopenDirectories));
-    this.importResolvers = Collections.unmodifiableMap(new HashMap<>(importResolvers));
     this.workingDirectory = workingDirectory;
     this.inheritEnvironment = inheritEnvironment;
     this.executionTimeout = executionTimeout;
@@ -131,11 +124,6 @@ public final class JniWasiConfig implements WasiConfig {
 
 
   @Override
-  public Map<String, WasiImportResolver> getImportResolvers() {
-    return importResolvers;
-  }
-
-  @Override
   public boolean isValidationEnabled() {
     return validationEnabled;
   }
@@ -151,7 +139,6 @@ public final class JniWasiConfig implements WasiConfig {
     builder.withEnvironment(environment);
     builder.withArguments(arguments);
     builder.withPreopenDirectories(preopenDirectories);
-    builder.withImportResolvers(importResolvers);
     if (workingDirectory != null) {
       builder.withWorkingDirectory(workingDirectory);
     }

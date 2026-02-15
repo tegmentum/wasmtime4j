@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
-import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -60,9 +59,6 @@ public final class WasiContextBuilder {
 
   /** Working directory for the WASI context. */
   private Path workingDirectory = Paths.get(DEFAULT_WORKING_DIR);
-
-  /** Security validator for preventing unauthorized access. */
-  private WasiSecurityValidator securityValidator = WasiSecurityValidator.defaultValidator();
 
   /** Package-private constructor - use WasiContext.builder() to create. */
   WasiContextBuilder() {
@@ -227,24 +223,6 @@ public final class WasiContextBuilder {
   }
 
   /**
-   * Sets the security validator for preventing unauthorized access.
-   *
-   * @param validator the security validator to use
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if validator is null
-   */
-  public WasiContextBuilder withSecurityValidator(final WasiSecurityValidator validator) {
-    if (validator == null) {
-      throw new IllegalArgumentException("Security validator cannot be null");
-    }
-
-    this.securityValidator = validator;
-    LOGGER.fine("Set custom security validator");
-
-    return this;
-  }
-
-  /**
    * Creates a WASI context with the configured settings.
    *
    * @return the configured WASI context
@@ -293,15 +271,6 @@ public final class WasiContextBuilder {
   }
 
   /**
-   * Gets the security validator.
-   *
-   * @return the security validator
-   */
-  WasiSecurityValidator getSecurityValidator() {
-    return securityValidator;
-  }
-
-  /**
    * Gets the environment variables.
    *
    * @return the environment variables
@@ -344,17 +313,6 @@ public final class WasiContextBuilder {
    * directory configuration.
    */
   private void validateConfiguration() {
-    // Validate pre-opened directories for path traversal attacks
-    for (final Map.Entry<String, Path> entry : preopenedDirectories.entrySet()) {
-      final String guestDir = entry.getKey();
-
-      // Validate guest directory path
-      securityValidator.validatePath(Paths.get(guestDir));
-    }
-
-    // Validate working directory
-    securityValidator.validatePath(workingDirectory);
-
     LOGGER.fine("Panama WASI context configuration validation completed");
   }
 

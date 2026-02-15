@@ -20,12 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.jni.JniWasiComponent;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.wasi.clocks.JniWasiTimezone;
 import ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiPollable;
 import ai.tegmentum.wasmtime4j.jni.wasi.keyvalue.JniWasiKeyValue;
-import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiTimezone;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.keyvalue.WasiKeyValue;
@@ -53,7 +51,6 @@ import org.junit.jupiter.api.Test;
  *   <li>{@link JniWasiKeyValue}
  *   <li>{@link JniWasiPollable}
  *   <li>{@link JniWasiTimezone}
- *   <li>{@link JniWasiComponent}
  * </ul>
  */
 @DisplayName("JNI WASI Miscellaneous Classes Tests")
@@ -528,176 +525,6 @@ class JniWasiMiscClassesTest {
   }
 
   // ===================================================================================
-  // JniWasiComponent Tests
-  // ===================================================================================
-
-  @Nested
-  @DisplayName("JniWasiComponent Tests")
-  class JniWasiComponentTests {
-
-    @Nested
-    @DisplayName("Class Structure Tests")
-    class ClassStructureTests {
-
-      @Test
-      @DisplayName("JniWasiComponent should be final class")
-      void shouldBeFinalClass() {
-        assertTrue(
-            Modifier.isFinal(JniWasiComponent.class.getModifiers()),
-            "JniWasiComponent should be final");
-      }
-
-      @Test
-      @DisplayName("JniWasiComponent should be public")
-      void shouldBePublic() {
-        assertTrue(
-            Modifier.isPublic(JniWasiComponent.class.getModifiers()),
-            "JniWasiComponent should be public");
-      }
-
-      @Test
-      @DisplayName("JniWasiComponent should implement WasiComponent")
-      void shouldImplementWasiComponent() {
-        assertTrue(
-            WasiComponent.class.isAssignableFrom(JniWasiComponent.class),
-            "JniWasiComponent should implement WasiComponent");
-      }
-    }
-
-    @Nested
-    @DisplayName("Field Tests")
-    class FieldTests {
-
-      @Test
-      @DisplayName("Should have LOGGER field")
-      void shouldHaveLoggerField() throws NoSuchFieldException {
-        Field field = JniWasiComponent.class.getDeclaredField("LOGGER");
-        assertNotNull(field, "LOGGER field should exist");
-        assertEquals(Logger.class, field.getType(), "LOGGER should be Logger type");
-      }
-
-      @Test
-      @DisplayName("Should have closed field")
-      void shouldHaveClosedField() throws NoSuchFieldException {
-        Field field = JniWasiComponent.class.getDeclaredField("closed");
-        assertNotNull(field, "closed field should exist");
-        assertEquals(boolean.class, field.getType(), "closed should be boolean type");
-        assertTrue(Modifier.isVolatile(field.getModifiers()), "closed should be volatile");
-      }
-
-      @Test
-      @DisplayName("Should have name field")
-      void shouldHaveNameField() throws NoSuchFieldException {
-        Field field = JniWasiComponent.class.getDeclaredField("name");
-        assertNotNull(field, "name field should exist");
-        assertEquals(String.class, field.getType(), "name should be String type");
-      }
-
-      @Test
-      @DisplayName("Should have cachedExports field")
-      void shouldHaveCachedExportsField() throws NoSuchFieldException {
-        Field field = JniWasiComponent.class.getDeclaredField("cachedExports");
-        assertNotNull(field, "cachedExports field should exist");
-        assertTrue(Modifier.isVolatile(field.getModifiers()), "cachedExports should be volatile");
-      }
-
-      @Test
-      @DisplayName("Should have cachedImports field")
-      void shouldHaveCachedImportsField() throws NoSuchFieldException {
-        Field field = JniWasiComponent.class.getDeclaredField("cachedImports");
-        assertNotNull(field, "cachedImports field should exist");
-        assertTrue(Modifier.isVolatile(field.getModifiers()), "cachedImports should be volatile");
-      }
-    }
-
-    @Nested
-    @DisplayName("Method Tests")
-    class MethodTests {
-
-      @Test
-      @DisplayName("Should have getName method")
-      void shouldHaveGetNameMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("getName");
-        assertNotNull(method, "getName method should exist");
-        assertEquals(String.class, method.getReturnType(), "getName should return String");
-      }
-
-      @Test
-      @DisplayName("Should have getExports method")
-      void shouldHaveGetExportsMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("getExports");
-        assertNotNull(method, "getExports method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "getExports should be public");
-      }
-
-      @Test
-      @DisplayName("Should have getImports method")
-      void shouldHaveGetImportsMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("getImports");
-        assertNotNull(method, "getImports method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "getImports should be public");
-      }
-
-      @Test
-      @DisplayName("Should have instantiate method")
-      void shouldHaveInstantiateMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("instantiate");
-        assertNotNull(method, "instantiate method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "instantiate should be public");
-      }
-
-      @Test
-      @DisplayName("Should have instantiate method with config")
-      void shouldHaveInstantiateWithConfigMethod() throws NoSuchMethodException {
-        Method method =
-            JniWasiComponent.class.getMethod(
-                "instantiate", ai.tegmentum.wasmtime4j.wasi.WasiConfig.class);
-        assertNotNull(method, "instantiate with config method should exist");
-        assertTrue(
-            Modifier.isPublic(method.getModifiers()), "instantiate with config should be public");
-      }
-
-      @Test
-      @DisplayName("Should have validate method")
-      void shouldHaveValidateMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("validate");
-        assertNotNull(method, "validate method should exist");
-        assertEquals(void.class, method.getReturnType(), "validate should return void");
-      }
-
-      @Test
-      @DisplayName("Should have isValid method")
-      void shouldHaveIsValidMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("isValid");
-        assertNotNull(method, "isValid method should exist");
-        assertEquals(boolean.class, method.getReturnType(), "isValid should return boolean");
-      }
-
-      @Test
-      @DisplayName("Should have close method")
-      void shouldHaveCloseMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("close");
-        assertNotNull(method, "close method should exist");
-        assertEquals(void.class, method.getReturnType(), "close should return void");
-      }
-    }
-
-    @Nested
-    @DisplayName("Package Location Tests")
-    class PackageLocationTests {
-
-      @Test
-      @DisplayName("Class should be in correct package")
-      void shouldBeInCorrectPackage() {
-        assertEquals(
-            "ai.tegmentum.wasmtime4j.jni",
-            JniWasiComponent.class.getPackage().getName(),
-            "Should be in ai.tegmentum.wasmtime4j.jni package");
-      }
-    }
-  }
-
-  // ===================================================================================
   // Cross-Class Consistency Tests
   // ===================================================================================
 
@@ -717,9 +544,6 @@ class JniWasiMiscClassesTest {
       assertTrue(
           Modifier.isFinal(JniWasiTimezone.class.getModifiers()),
           "JniWasiTimezone should be final");
-      assertTrue(
-          Modifier.isFinal(JniWasiComponent.class.getModifiers()),
-          "JniWasiComponent should be final");
     }
 
     @Test
@@ -734,9 +558,6 @@ class JniWasiMiscClassesTest {
       assertTrue(
           Modifier.isPublic(JniWasiTimezone.class.getModifiers()),
           "JniWasiTimezone should be public");
-      assertTrue(
-          Modifier.isPublic(JniWasiComponent.class.getModifiers()),
-          "JniWasiComponent should be public");
     }
 
     @Test
@@ -753,8 +574,7 @@ class JniWasiMiscClassesTest {
       Field[] loggerFields = {
         JniWasiKeyValue.class.getDeclaredField("LOGGER"),
         JniWasiPollable.class.getDeclaredField("LOGGER"),
-        JniWasiTimezone.class.getDeclaredField("LOGGER"),
-        JniWasiComponent.class.getDeclaredField("LOGGER")
+        JniWasiTimezone.class.getDeclaredField("LOGGER")
       };
 
       for (Field field : loggerFields) {
@@ -790,12 +610,6 @@ class JniWasiMiscClassesTest {
     @DisplayName("JniWasiTimezone should implement all WasiTimezone methods")
     void jniWasiTimezoneShouldImplementAllMethods() {
       verifyInterfaceImplementation(JniWasiTimezone.class, WasiTimezone.class);
-    }
-
-    @Test
-    @DisplayName("JniWasiComponent should implement all WasiComponent methods")
-    void jniWasiComponentShouldImplementAllMethods() {
-      verifyInterfaceImplementation(JniWasiComponent.class, WasiComponent.class);
     }
 
     private void verifyInterfaceImplementation(
