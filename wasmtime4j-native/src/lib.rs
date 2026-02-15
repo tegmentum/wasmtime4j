@@ -94,8 +94,7 @@ pub mod jni_gc_bindings;
 pub mod jni_module_cache_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_pooling_allocator_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_profiler_bindings;
+// jni_profiler_bindings module removed (Phase 11: no Java callers)
 // jni_thread_bindings module removed (Phase 8: invented abstraction)
 #[cfg(feature = "jni-bindings")]
 pub mod jni_typed_func_bindings;
@@ -207,14 +206,12 @@ pub mod store_limiter;
 // Store call hooks for execution monitoring
 pub mod call_hooks;
 
-// Fuel exhaustion callback handling
-pub mod fuel_callback;
+// fuel_callback module removed (Phase 11: no Java callers)
 
 // Epoch deadline callback handling
 pub mod epoch_callback;
 
-// Guest profiler integration
-pub mod guest_profiler;
+// guest_profiler module removed (Phase 11: no Java callers)
 
 // WebAssembly GC implementation
 pub mod gc;
