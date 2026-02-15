@@ -20,8 +20,6 @@ pub mod component;
 #[cfg(feature = "jni-bindings")]
 pub mod component_linker;
 #[cfg(feature = "jni-bindings")]
-pub mod debugger;
-#[cfg(feature = "jni-bindings")]
 pub mod engine;
 #[cfg(feature = "jni-bindings")]
 pub mod function;
