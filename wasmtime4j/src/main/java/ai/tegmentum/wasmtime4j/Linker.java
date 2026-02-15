@@ -1,7 +1,5 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.async.AsyncHostFunction;
-import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.ExternType;
@@ -223,21 +221,6 @@ public interface Linker<T> extends Closeable {
   boolean hasImport(String moduleName, String name);
 
   /**
-   * Resolves and validates dependencies for a set of modules.
-   *
-   * <p>This method analyzes the import/export relationships between modules and determines the
-   * optimal instantiation order. It also validates that all dependencies can be satisfied and
-   * detects circular dependencies.
-   *
-   * @param modules the modules to analyze for dependencies
-   * @return a dependency resolution result with instantiation order and validation details
-   * @throws WasmException if dependency resolution fails or circular dependencies are detected
-   * @throws IllegalArgumentException if modules is null or empty
-   * @since 1.0.0
-   */
-  DependencyResolution resolveDependencies(Module... modules) throws WasmException;
-
-  /**
    * Validates that all imports for the given modules can be satisfied by this linker.
    *
    * <p>This method performs comprehensive validation including:
@@ -380,64 +363,6 @@ public interface Linker<T> extends Closeable {
    * @since 1.0.0
    */
   WasmFunction getDefault(Store store, String moduleName);
-
-  /**
-   * Defines an async host function that can be imported by WebAssembly modules.
-   *
-   * <p>Async functions allow for non-blocking operations during WebAssembly execution. When the
-   * function yields, the WebAssembly execution is paused until the async operation completes.
-   *
-   * @param moduleName the module name for the import
-   * @param name the function name for the import
-   * @param functionType the WebAssembly function type signature
-   * @param implementation the async Java implementation
-   * @throws WasmException if the function cannot be defined
-   * @throws IllegalArgumentException if any parameter is null
-   * @since 1.1.0
-   */
-  default void funcNewAsync(
-      final String moduleName,
-      final String name,
-      final FunctionType functionType,
-      final AsyncHostFunction implementation)
-      throws WasmException {
-    throw new UnsupportedOperationException("Async functions not supported in this implementation");
-  }
-
-  /**
-   * Wraps an async function with the given implementation.
-   *
-   * <p>This is a convenience method for defining async host functions with automatic type inference
-   * from the implementation.
-   *
-   * @param moduleName the module name for the import
-   * @param name the function name for the import
-   * @param implementation the async Java implementation
-   * @throws WasmException if the function cannot be defined
-   * @throws IllegalArgumentException if any parameter is null
-   * @since 1.1.0
-   */
-  default void funcWrapAsync(
-      final String moduleName, final String name, final AsyncHostFunction implementation)
-      throws WasmException {
-    throw new UnsupportedOperationException("Async functions not supported in this implementation");
-  }
-
-  /**
-   * Creates an alias for an entire module's exports.
-   *
-   * <p>This makes all exports from the source module available under the destination module name,
-   * allowing for namespace renaming.
-   *
-   * @param fromModule the source module name
-   * @param toModule the destination module name
-   * @throws WasmException if the alias cannot be created
-   * @throws IllegalArgumentException if any parameter is null
-   * @since 1.1.0
-   */
-  default void aliasModule(final String fromModule, final String toModule) throws WasmException {
-    throw new UnsupportedOperationException("Module aliasing not supported in this implementation");
-  }
 
   // ===== Top-Level Name Definition =====
 

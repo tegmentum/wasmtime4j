@@ -103,13 +103,6 @@ class JniWasiConfigTest {
     }
 
     @Test
-    @DisplayName("should have getMemoryLimit method")
-    void shouldHaveGetMemoryLimitMethod() throws NoSuchMethodException {
-      assertNotNull(
-          JniWasiConfig.class.getMethod("getMemoryLimit"), "Should have getMemoryLimit method");
-    }
-
-    @Test
     @DisplayName("should have getWasiVersion method")
     void shouldHaveGetWasiVersionMethod() throws NoSuchMethodException {
       assertNotNull(

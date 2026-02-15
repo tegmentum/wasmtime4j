@@ -11,7 +11,6 @@ import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.config.DependencyResolution;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
@@ -617,42 +616,11 @@ class PanamaLinkerTest {
     }
   }
 
-  // ===== Dependency Resolution Tests =====
+  // ===== Import Validation Tests =====
 
   @Nested
-  @DisplayName("Dependency Resolution Tests")
-  class DependencyResolutionTests {
-
-    @Test
-    @DisplayName("Should reject null modules for resolveDependencies")
-    void shouldRejectNullModules() throws Exception {
-      final PanamaLinker<?> linker = createLinker();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> linker.resolveDependencies((ai.tegmentum.wasmtime4j.Module[]) null));
-      LOGGER.info("Correctly rejected null modules for dependency resolution");
-    }
-
-    @Test
-    @DisplayName("Should reject empty modules for resolveDependencies")
-    void shouldRejectEmptyModules() throws Exception {
-      final PanamaLinker<?> linker = createLinker();
-
-      assertThrows(IllegalArgumentException.class, () -> linker.resolveDependencies());
-      LOGGER.info("Correctly rejected empty modules for dependency resolution");
-    }
-
-    @Test
-    @DisplayName("Should resolve dependencies for simple module")
-    void shouldResolveDependenciesForSimpleModule() throws Exception {
-      final PanamaLinker<?> linker = createLinker();
-      final PanamaModule module = compileWat(SIMPLE_MODULE_WAT);
-
-      final DependencyResolution result = linker.resolveDependencies(module);
-      assertNotNull(result, "DependencyResolution should not be null");
-      LOGGER.info("Successfully resolved dependencies");
-    }
+  @DisplayName("Import Validation Tests")
+  class ImportValidationTests {
 
     @Test
     @DisplayName("Should validate imports for simple module")

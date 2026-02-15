@@ -328,16 +328,6 @@ class JniLinkerTest {
     assertThat(result).isNotNull();
   }
 
-  @Test
-  void testResolveDependenciesAcceptsValidModule() throws WasmException {
-    final JniModule module = new JniModule(VALID_HANDLE, testEngine);
-
-    // resolveDependencies is now implemented and should not throw for valid module
-    final ai.tegmentum.wasmtime4j.config.DependencyResolution result =
-        linker.resolveDependencies(module);
-    assertThat(result).isNotNull();
-  }
-
   // State validation tests
 
   @Test
