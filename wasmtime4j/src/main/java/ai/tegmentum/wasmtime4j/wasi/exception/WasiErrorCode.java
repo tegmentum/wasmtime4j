@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.jni.wasi.exception;
+package ai.tegmentum.wasmtime4j.wasi.exception;
 
 /**
  * WASI error codes corresponding to standard errno values.

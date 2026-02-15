@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.tegmentum.wasmtime4j.panama.wasi.exception;
+package ai.tegmentum.wasmtime4j.wasi.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,20 +23,43 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for WasiErrorCode enum.
+ * Tests for the {@link WasiErrorCode} enum.
  *
- * <p>These tests exercise actual code execution to improve JaCoCo coverage.
+ * <p>This test class verifies WasiErrorCode enum values, categorization, lookup methods, and
+ * coverage of all error codes.
  */
-@DisplayName("WASI Error Code Integration Tests")
-public class WasiErrorCodeTest {
+@DisplayName("WasiErrorCode Tests")
+class WasiErrorCodeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiErrorCodeTest.class.getName());
+
+  @Nested
+  @DisplayName("Enum Structure Tests")
+  class EnumStructureTests {
+
+    @Test
+    @DisplayName("WasiErrorCode should be an enum")
+    void shouldBeAnEnum() {
+      assertTrue(WasiErrorCode.class.isEnum(), "WasiErrorCode should be an enum");
+    }
+
+    @Test
+    @DisplayName("All enum values should have unique names")
+    void allEnumValuesShouldHaveUniqueNames() {
+      final Set<String> names = new HashSet<>();
+      for (WasiErrorCode code : WasiErrorCode.values()) {
+        assertTrue(names.add(code.name()), "Name should be unique: " + code.name());
+      }
+    }
+  }
 
   @Nested
   @DisplayName("Enum Value Tests")
@@ -216,128 +239,183 @@ public class WasiErrorCodeTest {
   }
 
   @Nested
-  @DisplayName("FromErrno Tests")
+  @DisplayName("Retryable Tests")
+  class RetryableTests {
+
+    @Test
+    @DisplayName("Retryable errors should be marked correctly")
+    void retryableErrorsShouldBeMarkedCorrectly() {
+      LOGGER.info("Testing retryable error identification");
+
+      assertTrue(WasiErrorCode.EAGAIN.isRetryable(), "EAGAIN should be retryable");
+      assertTrue(WasiErrorCode.EINTR.isRetryable(), "EINTR should be retryable");
+      assertTrue(WasiErrorCode.ECONNREFUSED.isRetryable(), "ECONNREFUSED should be retryable");
+      assertTrue(WasiErrorCode.ETIMEDOUT.isRetryable(), "ETIMEDOUT should be retryable");
+      assertTrue(WasiErrorCode.ENOENT.isRetryable(), "ENOENT should be retryable");
+      assertTrue(WasiErrorCode.EMFILE.isRetryable(), "EMFILE should be retryable");
+      assertTrue(WasiErrorCode.ENOSPC.isRetryable(), "ENOSPC should be retryable");
+      assertTrue(WasiErrorCode.ELOOP.isRetryable(), "ELOOP should be retryable");
+      assertTrue(WasiErrorCode.ENOMEM.isRetryable(), "ENOMEM should be retryable");
+    }
+
+    @Test
+    @DisplayName("Non-retryable errors should be marked correctly")
+    void nonRetryableErrorsShouldBeMarkedCorrectly() {
+      assertFalse(WasiErrorCode.EINVAL.isRetryable(), "EINVAL should not be retryable");
+      assertFalse(WasiErrorCode.EPERM.isRetryable(), "EPERM should not be retryable");
+      assertFalse(WasiErrorCode.SUCCESS.isRetryable(), "SUCCESS should not be retryable");
+      assertFalse(WasiErrorCode.EBADF.isRetryable(), "EBADF should not be retryable");
+    }
+  }
+
+  @Nested
+  @DisplayName("fromErrno Tests")
   class FromErrnoTests {
 
     @Test
-    @DisplayName("Should find error code by errno value")
-    void shouldFindErrorCodeByErrnoValue() {
+    @DisplayName("fromErrno should return correct error code")
+    void fromErrnoShouldReturnCorrectErrorCode() {
       LOGGER.info("Testing fromErrno with valid values");
 
-      assertEquals(
-          WasiErrorCode.SUCCESS, WasiErrorCode.fromErrno(0), "errno 0 should return SUCCESS");
-      assertEquals(WasiErrorCode.EPERM, WasiErrorCode.fromErrno(1), "errno 1 should return EPERM");
-      assertEquals(
-          WasiErrorCode.ENOENT, WasiErrorCode.fromErrno(2), "errno 2 should return ENOENT");
-      assertEquals(WasiErrorCode.EINTR, WasiErrorCode.fromErrno(4), "errno 4 should return EINTR");
-      assertEquals(WasiErrorCode.EIO, WasiErrorCode.fromErrno(5), "errno 5 should return EIO");
-      assertEquals(
-          WasiErrorCode.ENOMEM, WasiErrorCode.fromErrno(12), "errno 12 should return ENOMEM");
-      assertEquals(
-          WasiErrorCode.EINVAL, WasiErrorCode.fromErrno(22), "errno 22 should return EINVAL");
+      assertEquals(WasiErrorCode.SUCCESS, WasiErrorCode.fromErrno(0), "Should return SUCCESS");
+      assertEquals(WasiErrorCode.EPERM, WasiErrorCode.fromErrno(1), "Should return EPERM");
+      assertEquals(WasiErrorCode.ENOENT, WasiErrorCode.fromErrno(2), "Should return ENOENT");
+      assertEquals(WasiErrorCode.EINTR, WasiErrorCode.fromErrno(4), "Should return EINTR");
+      assertEquals(WasiErrorCode.EIO, WasiErrorCode.fromErrno(5), "Should return EIO");
+      assertEquals(WasiErrorCode.ENOMEM, WasiErrorCode.fromErrno(12), "Should return ENOMEM");
+      assertEquals(WasiErrorCode.EINVAL, WasiErrorCode.fromErrno(22), "Should return EINVAL");
 
       LOGGER.info("fromErrno with valid values verified");
     }
 
     @Test
-    @DisplayName("Should throw exception for unknown errno")
-    void shouldThrowExceptionForUnknownErrno() {
-      LOGGER.info("Testing fromErrno with unknown errno");
-
+    @DisplayName("fromErrno should throw for unknown errno")
+    void fromErrnoShouldThrowForUnknownErrno() {
       final IllegalArgumentException ex =
-          assertThrows(IllegalArgumentException.class, () -> WasiErrorCode.fromErrno(9999));
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WasiErrorCode.fromErrno(999),
+              "Should throw for unknown errno");
 
       assertTrue(
           ex.getMessage().contains("Unknown errno"),
           "Error message should mention 'Unknown errno': " + ex.getMessage());
+    }
 
-      LOGGER.info("Correctly threw exception for unknown errno: " + ex.getMessage());
+    @Test
+    @DisplayName("fromErrno should throw for negative errno")
+    void fromErrnoShouldThrowForNegativeErrno() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasiErrorCode.fromErrno(-999),
+          "Should throw for very negative errno");
     }
   }
 
   @Nested
-  @DisplayName("FromErrnoOrNull Tests")
+  @DisplayName("fromErrnoOrNull Tests")
   class FromErrnoOrNullTests {
 
     @Test
-    @DisplayName("Should return error code for valid errno")
-    void shouldReturnErrorCodeForValidErrno() {
-      LOGGER.info("Testing fromErrnoOrNull with valid errno");
-
+    @DisplayName("fromErrnoOrNull should return correct error code")
+    void fromErrnoOrNullShouldReturnCorrectErrorCode() {
       assertEquals(
-          WasiErrorCode.SUCCESS, WasiErrorCode.fromErrnoOrNull(0), "errno 0 should return SUCCESS");
+          WasiErrorCode.SUCCESS, WasiErrorCode.fromErrnoOrNull(0), "Should return SUCCESS");
+      assertEquals(WasiErrorCode.EPERM, WasiErrorCode.fromErrnoOrNull(1), "Should return EPERM");
       assertEquals(
-          WasiErrorCode.ENOENT, WasiErrorCode.fromErrnoOrNull(2), "errno 2 should return ENOENT");
+          WasiErrorCode.ENOENT, WasiErrorCode.fromErrnoOrNull(2), "Should return ENOENT");
       assertEquals(
-          WasiErrorCode.EINVAL, WasiErrorCode.fromErrnoOrNull(22), "errno 22 should return EINVAL");
-
-      LOGGER.info("fromErrnoOrNull with valid errno verified");
+          WasiErrorCode.EINVAL, WasiErrorCode.fromErrnoOrNull(22), "Should return EINVAL");
     }
 
     @Test
-    @DisplayName("Should return null for unknown errno")
-    void shouldReturnNullForUnknownErrno() {
-      LOGGER.info("Testing fromErrnoOrNull with unknown errno");
-
-      assertNull(WasiErrorCode.fromErrnoOrNull(9999), "Unknown errno should return null");
-      assertNull(WasiErrorCode.fromErrnoOrNull(-999), "Negative errno should return null");
-
-      LOGGER.info("fromErrnoOrNull correctly returned null for unknown errno");
+    @DisplayName("fromErrnoOrNull should return null for unknown errno")
+    void fromErrnoOrNullShouldReturnNullForUnknownErrno() {
+      assertNull(WasiErrorCode.fromErrnoOrNull(999), "Should return null for unknown errno");
+      assertNull(WasiErrorCode.fromErrnoOrNull(-999), "Should return null for negative errno");
     }
   }
 
   @Nested
-  @DisplayName("CreateGeneric Tests")
+  @DisplayName("createGeneric Tests")
   class CreateGenericTests {
 
     @Test
-    @DisplayName("Should return UNKNOWN for any value")
-    void shouldReturnUnknownForAnyValue() {
-      LOGGER.info("Testing createGeneric");
-
+    @DisplayName("createGeneric should return UNKNOWN")
+    void createGenericShouldReturnUnknown() {
       assertEquals(
-          WasiErrorCode.UNKNOWN,
-          WasiErrorCode.createGeneric(9999),
-          "createGeneric should return UNKNOWN");
-      assertEquals(
-          WasiErrorCode.UNKNOWN,
-          WasiErrorCode.createGeneric(0),
-          "createGeneric should return UNKNOWN even for 0");
-      assertEquals(
-          WasiErrorCode.UNKNOWN,
-          WasiErrorCode.createGeneric(-1),
-          "createGeneric should return UNKNOWN for -1");
-
-      LOGGER.info("createGeneric verified");
+          WasiErrorCode.UNKNOWN, WasiErrorCode.createGeneric(999), "Should return UNKNOWN");
+      assertEquals(WasiErrorCode.UNKNOWN, WasiErrorCode.createGeneric(-1), "Should return UNKNOWN");
+      assertEquals(WasiErrorCode.UNKNOWN, WasiErrorCode.createGeneric(0), "Should return UNKNOWN");
     }
   }
 
   @Nested
-  @DisplayName("ToString Tests")
+  @DisplayName("toString Tests")
   class ToStringTests {
 
     @Test
-    @DisplayName("Should produce formatted toString")
-    void shouldProduceFormattedToString() {
-      LOGGER.info("Testing toString output");
+    @DisplayName("toString should include name, errno, and description")
+    void toStringShouldIncludeNameErrnoAndDescription() {
+      final String str = WasiErrorCode.ENOENT.toString();
 
-      final String successStr = WasiErrorCode.SUCCESS.toString();
-      assertTrue(successStr.contains("SUCCESS"), "toString should contain name: " + successStr);
-      assertTrue(successStr.contains("0"), "toString should contain errno: " + successStr);
-      assertTrue(
-          successStr.contains("No error"), "toString should contain description: " + successStr);
+      assertTrue(str.contains("ENOENT"), "Should contain name");
+      assertTrue(str.contains("2"), "Should contain errno");
+      assertTrue(str.contains("No such file"), "Should contain description");
+    }
 
-      final String enoentStr = WasiErrorCode.ENOENT.toString();
-      assertTrue(enoentStr.contains("ENOENT"), "toString should contain name: " + enoentStr);
-      assertTrue(enoentStr.contains("2"), "toString should contain errno: " + enoentStr);
-
-      LOGGER.info("toString outputs: SUCCESS=" + successStr + ", ENOENT=" + enoentStr);
+    @Test
+    @DisplayName("toString should format correctly for all values")
+    void toStringShouldFormatCorrectlyForAllValues() {
+      for (WasiErrorCode code : WasiErrorCode.values()) {
+        final String str = code.toString();
+        assertNotNull(str, "toString should not be null: " + code.name());
+        assertTrue(str.contains(code.name()), "Should contain name: " + code.name());
+      }
     }
   }
 
   @Nested
-  @DisplayName("All Error Codes Coverage Tests")
-  class AllErrorCodesCoverageTests {
+  @DisplayName("Integration Tests")
+  class IntegrationTests {
+
+    @Test
+    @DisplayName("Error codes should be usable in switch statement")
+    void errorCodesShouldBeUsableInSwitchStatement() {
+      final WasiErrorCode code = WasiErrorCode.ENOENT;
+
+      final String result;
+      switch (code) {
+        case ENOENT:
+          result = "file not found";
+          break;
+        case EACCES:
+          result = "access denied";
+          break;
+        default:
+          result = "other error";
+          break;
+      }
+
+      assertEquals("file not found", result, "Switch should work correctly");
+    }
+
+    @Test
+    @DisplayName("Multiple error type flags can be true")
+    void multipleErrorTypeFlagsCanBeTrue() {
+      // EACCES is both file system and permission error
+      assertTrue(WasiErrorCode.EACCES.isFileSystemError(), "Should be file system error");
+      assertTrue(WasiErrorCode.EACCES.isPermissionError(), "Should also be permission error");
+    }
+
+    @Test
+    @DisplayName("EWOULDBLOCK and EAGAIN should have same errno")
+    void ewouldblockAndEagainShouldHaveSameErrno() {
+      assertEquals(
+          WasiErrorCode.EAGAIN.getErrno(),
+          WasiErrorCode.EWOULDBLOCK.getErrno(),
+          "EAGAIN and EWOULDBLOCK should have same errno (POSIX standard)");
+    }
 
     @Test
     @DisplayName("Should cover all error codes")
@@ -381,11 +459,8 @@ public class WasiErrorCodeTest {
     @Test
     @DisplayName("Should have distinct errno values for most codes")
     void shouldHaveDistinctErrnoValuesForMostCodes() {
-      LOGGER.info("Testing errno value uniqueness");
-
       // Note: EAGAIN and EWOULDBLOCK share the same errno (11)
       // This is intentional as they're the same error on most systems
-
       final WasiErrorCode eagain = WasiErrorCode.EAGAIN;
       final WasiErrorCode ewouldblock = WasiErrorCode.EWOULDBLOCK;
 
@@ -394,38 +469,6 @@ public class WasiErrorCodeTest {
           ewouldblock.getErrno(),
           "EAGAIN and EWOULDBLOCK should have same errno");
       assertEquals(11, eagain.getErrno(), "EAGAIN should be errno 11");
-
-      LOGGER.info("EAGAIN and EWOULDBLOCK both have errno " + eagain.getErrno());
-    }
-  }
-
-  @Nested
-  @DisplayName("Retryable Error Tests")
-  class RetryableErrorTests {
-
-    @Test
-    @DisplayName("Should identify retryable errors correctly")
-    void shouldIdentifyRetryableErrorsCorrectly() {
-      LOGGER.info("Testing retryable error identification");
-
-      // These should be retryable
-      assertTrue(WasiErrorCode.ENOENT.isRetryable(), "ENOENT should be retryable");
-      assertTrue(WasiErrorCode.EMFILE.isRetryable(), "EMFILE should be retryable");
-      assertTrue(WasiErrorCode.ENOSPC.isRetryable(), "ENOSPC should be retryable");
-      assertTrue(WasiErrorCode.ELOOP.isRetryable(), "ELOOP should be retryable");
-      assertTrue(WasiErrorCode.ECONNREFUSED.isRetryable(), "ECONNREFUSED should be retryable");
-      assertTrue(WasiErrorCode.ETIMEDOUT.isRetryable(), "ETIMEDOUT should be retryable");
-      assertTrue(WasiErrorCode.ENOMEM.isRetryable(), "ENOMEM should be retryable");
-      assertTrue(WasiErrorCode.EAGAIN.isRetryable(), "EAGAIN should be retryable");
-      assertTrue(WasiErrorCode.EINTR.isRetryable(), "EINTR should be retryable");
-
-      // These should not be retryable
-      assertFalse(WasiErrorCode.SUCCESS.isRetryable(), "SUCCESS should not be retryable");
-      assertFalse(WasiErrorCode.EBADF.isRetryable(), "EBADF should not be retryable");
-      assertFalse(WasiErrorCode.EINVAL.isRetryable(), "EINVAL should not be retryable");
-      assertFalse(WasiErrorCode.EPERM.isRetryable(), "EPERM should not be retryable");
-
-      LOGGER.info("Retryable error identification verified");
     }
   }
 }

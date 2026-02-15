@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
-import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiErrorCode;
+import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
 import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;

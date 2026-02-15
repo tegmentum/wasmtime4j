@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.wasi.exception;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
+import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
 
 /**
  * Base exception for WASI system operation failures.
