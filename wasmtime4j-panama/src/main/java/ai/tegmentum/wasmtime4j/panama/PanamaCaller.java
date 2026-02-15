@@ -88,8 +88,50 @@ final class PanamaCaller<T> implements Caller<T> {
       throw new IllegalArgumentException("Export name cannot be null");
     }
 
-    throw new UnsupportedOperationException(
-        "not yet implemented: export retrieval from caller context");
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(name);
+
+      // Try function
+      final MemorySegment funcOut = arena.allocate(ValueLayout.ADDRESS);
+      if (bindings.callerGetFunction(callerPtr, nameSegment, funcOut) == 0) {
+        final MemorySegment handle = funcOut.get(ValueLayout.ADDRESS, 0);
+        if (!handle.equals(MemorySegment.NULL) && handle.address() != 0) {
+          return Optional.of(new PanamaExternFunc(handle, store));
+        }
+      }
+
+      // Try memory
+      final MemorySegment memOut = arena.allocate(ValueLayout.ADDRESS);
+      if (bindings.callerGetMemory(callerPtr, nameSegment, memOut) == 0) {
+        final MemorySegment handle = memOut.get(ValueLayout.ADDRESS, 0);
+        if (!handle.equals(MemorySegment.NULL) && handle.address() != 0) {
+          return Optional.of(new PanamaExternMemory(handle, store));
+        }
+      }
+
+      // Try table
+      final MemorySegment tableOut = arena.allocate(ValueLayout.ADDRESS);
+      if (bindings.callerGetTable(callerPtr, nameSegment, tableOut) == 0) {
+        final MemorySegment handle = tableOut.get(ValueLayout.ADDRESS, 0);
+        if (!handle.equals(MemorySegment.NULL) && handle.address() != 0) {
+          return Optional.of(new PanamaExternTable(handle, store));
+        }
+      }
+
+      // Try global
+      final MemorySegment globalOut = arena.allocate(ValueLayout.ADDRESS);
+      if (bindings.callerGetGlobal(callerPtr, nameSegment, globalOut) == 0) {
+        final MemorySegment handle = globalOut.get(ValueLayout.ADDRESS, 0);
+        if (!handle.equals(MemorySegment.NULL) && handle.address() != 0) {
+          return Optional.of(new PanamaExternGlobal(handle, store));
+        }
+      }
+
+      return Optional.empty();
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get export: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override

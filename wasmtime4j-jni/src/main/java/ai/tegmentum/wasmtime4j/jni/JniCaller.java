@@ -91,15 +91,31 @@ final class JniCaller<T> implements Caller<T> {
     }
 
     try {
-      // Query native layer for export
-      final byte[] exportData = nativeGetExport(callerHandle, name);
-      if (exportData == null || exportData.length == 0) {
-        return Optional.empty();
+      // Try function
+      final long funcHandle = nativeGetFunction(callerHandle, name);
+      if (funcHandle != 0) {
+        return Optional.of(new JniExternFunc(funcHandle, store));
       }
 
-      throw new UnsupportedOperationException(
-          "not yet implemented: export unmarshalling from native data");
+      // Try memory
+      final long memHandle = nativeGetMemory(callerHandle, name);
+      if (memHandle != 0) {
+        return Optional.of(new JniExternMemory(memHandle, store));
+      }
 
+      // Try table
+      final long tableHandle = nativeGetTable(callerHandle, name);
+      if (tableHandle != 0) {
+        return Optional.of(new JniExternTable(tableHandle, store));
+      }
+
+      // Try global
+      final long globalHandle = nativeGetGlobal(callerHandle, name);
+      if (globalHandle != 0) {
+        return Optional.of(new JniExternGlobal(globalHandle, store));
+      }
+
+      return Optional.empty();
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Failed to get export: " + name, e);
       return Optional.empty();
