@@ -18,6 +18,7 @@ import java.io.InputStream;
 public class JniEngine implements Engine {
   private final long nativeHandle;
   private final WasmRuntime runtime;
+  private final EngineConfig config;
   private volatile boolean closed = false;
 
   // Load native library when this class is first loaded
@@ -36,8 +37,7 @@ public class JniEngine implements Engine {
    * @param runtime the runtime that created this engine
    */
   public JniEngine(final long nativeHandle, final WasmRuntime runtime) {
-    this.nativeHandle = nativeHandle;
-    this.runtime = runtime;
+    this(nativeHandle, runtime, null);
   }
 
   /**
@@ -49,7 +49,20 @@ public class JniEngine implements Engine {
    * @param nativeHandle the native handle
    */
   public JniEngine(final long nativeHandle) {
-    this(nativeHandle, null);
+    this(nativeHandle, null, null);
+  }
+
+  /**
+   * Creates a new JNI engine with the given native handle, runtime, and configuration.
+   *
+   * @param nativeHandle the native handle
+   * @param runtime the runtime that created this engine
+   * @param config the engine configuration used to create this engine, or null for default
+   */
+  JniEngine(final long nativeHandle, final WasmRuntime runtime, final EngineConfig config) {
+    this.nativeHandle = nativeHandle;
+    this.runtime = runtime;
+    this.config = config;
   }
 
   /**
@@ -267,7 +280,7 @@ public class JniEngine implements Engine {
 
   @Override
   public EngineConfig getConfig() {
-    throw new UnsupportedOperationException("not yet implemented: native engine config retrieval");
+    return config != null ? config : new EngineConfig();
   }
 
   @Override
@@ -453,7 +466,7 @@ public class JniEngine implements Engine {
       throw new WasmException("Failed to create engine with configuration");
     }
 
-    return new JniEngine(handle, runtime);
+    return new JniEngine(handle, runtime, config);
   }
 
   private static native long nativeCreateEngineWithConfig(

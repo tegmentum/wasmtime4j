@@ -203,6 +203,72 @@ public final class PanamaStore implements Store {
   }
 
   /**
+   * Creates a new Panama store with explicit resource limits.
+   *
+   * @param engine the engine that owns this store
+   * @param fuelLimit the initial fuel limit (0 means no limit)
+   * @param memoryLimitBytes the maximum memory in bytes (0 means no limit)
+   * @param executionTimeoutSeconds the execution timeout in seconds (0 means no timeout)
+   * @throws WasmException if store creation fails
+   */
+  PanamaStore(
+      final PanamaEngine engine,
+      final long fuelLimit,
+      final long memoryLimitBytes,
+      final long executionTimeoutSeconds)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (!engine.isValid()) {
+      throw new IllegalStateException("Engine is not valid");
+    }
+
+    this.engine = engine;
+    this.arena = Arena.ofConfined();
+
+    // Create native store via Panama FFI with resource limits
+    final MemorySegment storePtr = arena.allocate(ValueLayout.ADDRESS);
+    final int result =
+        NATIVE_BINDINGS.storeCreateWithConfig(
+            engine.getNativeEngine(),
+            fuelLimit,
+            memoryLimitBytes,
+            executionTimeoutSeconds,
+            0, // instances - 0 means no limit
+            0, // table elements - 0 means no limit
+            0, // max functions - 0 means no limit
+            storePtr);
+
+    if (result != 0) {
+      arena.close();
+      throw new WasmException(
+          "Failed to create native store with resource limits: error code " + result);
+    }
+
+    this.nativeStore = storePtr.get(ValueLayout.ADDRESS, 0);
+
+    if (this.nativeStore == null || this.nativeStore.equals(MemorySegment.NULL)) {
+      arena.close();
+      throw new WasmException("Failed to create native store with resource limits");
+    }
+
+    // Create resource manager for host functions and other managed resources
+    this.resourceManager = new ArenaResourceManager(arena, false);
+
+    this.resourceHandle = createResourceHandle();
+
+    LOGGER.fine(
+        "Created Panama store with resource limits - fuel: "
+            + fuelLimit
+            + ", memory: "
+            + memoryLimitBytes
+            + " bytes, timeout: "
+            + executionTimeoutSeconds
+            + "s");
+  }
+
+  /**
    * Private constructor for creating a store with a pre-created native store handle.
    *
    * @param engine the engine that owns this store

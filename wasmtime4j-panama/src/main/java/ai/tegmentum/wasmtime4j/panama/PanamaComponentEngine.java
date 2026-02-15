@@ -412,8 +412,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public EngineConfig getConfig() {
-    // ComponentEngineConfig doesn't extend EngineConfig, so return a basic EngineConfig
-    return new EngineConfig();
+    return config.toEngineConfig();
   }
 
   @Override

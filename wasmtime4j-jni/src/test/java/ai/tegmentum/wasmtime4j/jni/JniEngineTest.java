@@ -409,14 +409,12 @@ class JniEngineTest {
   class ConfigAndStatsTests {
 
     @Test
-    @DisplayName("should throw UnsupportedOperationException for getConfig")
-    void shouldThrowForGetConfig() {
+    @DisplayName("should return default EngineConfig when created without config")
+    void shouldReturnDefaultConfigWhenCreatedWithoutConfig() {
       final JniEngine engine = new JniEngine(VALID_HANDLE);
 
-      assertThrows(
-          UnsupportedOperationException.class,
-          engine::getConfig,
-          "getConfig should throw UnsupportedOperationException");
+      final ai.tegmentum.wasmtime4j.config.EngineConfig config = engine.getConfig();
+      assertNotNull(config, "getConfig should return a non-null EngineConfig");
     }
 
   }

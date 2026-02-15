@@ -133,9 +133,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   public EngineConfig getConfig() {
-    // ComponentEngine doesn't map directly to EngineConfig
-    // Return a basic EngineConfig instance
-    return new EngineConfig();
+    return config.toEngineConfig();
   }
 
   @Override

@@ -204,8 +204,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
           "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
-    throw new UnsupportedOperationException(
-        "not yet implemented: store creation with resource limits for Panama");
+    final PanamaEngine panamaEngine = (PanamaEngine) engine;
+    return new PanamaStore(panamaEngine, fuelLimit, memoryLimitBytes, executionTimeoutSeconds);
   }
 
   @Override
@@ -285,8 +285,10 @@ public final class PanamaWasmRuntime implements WasmRuntime {
           "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
-    throw new UnsupportedOperationException(
-        "not yet implemented: linker creation with configuration for Panama");
+    final PanamaLinker<T> linker = new PanamaLinker<>((PanamaEngine) engine);
+    linker.allowUnknownExports(allowUnknownExports);
+    linker.allowShadowing(allowShadowing);
+    return linker;
   }
 
   @Override
