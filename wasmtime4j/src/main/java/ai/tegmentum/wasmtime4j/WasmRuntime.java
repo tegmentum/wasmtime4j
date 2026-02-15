@@ -4,7 +4,6 @@ import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.Tag;
@@ -279,36 +278,6 @@ public interface WasmRuntime extends Closeable {
    * @since 1.0.0
    */
   Module deserializeModule(final Engine engine, final byte[] serializedBytes) throws WasmException;
-
-  /**
-   * Creates a new Serializer with default configuration.
-   *
-   * <p>The default configuration provides reasonable caching and compression settings for most use
-   * cases.
-   *
-   * @return a new Serializer instance
-   * @throws WasmException if the serializer cannot be created
-   * @since 1.0.0
-   */
-  Serializer createSerializer() throws WasmException;
-
-  /**
-   * Creates a new Serializer with custom configuration.
-   *
-   * <p>This method allows customizing cache size, compression settings, and other serialization
-   * parameters for optimal performance.
-   *
-   * @param maxCacheSize the maximum cache size in bytes (0 for unlimited)
-   * @param enableCompression whether to enable compression of serialized data
-   * @param compressionLevel the compression level (0-9, higher is better compression)
-   * @return a new Serializer instance with the specified configuration
-   * @throws WasmException if the serializer cannot be created
-   * @throws IllegalArgumentException if parameters are invalid
-   * @since 1.0.0
-   */
-  Serializer createSerializer(
-      final long maxCacheSize, final boolean enableCompression, final int compressionLevel)
-      throws WasmException;
 
   /**
    * Creates a new WASI context with default settings.

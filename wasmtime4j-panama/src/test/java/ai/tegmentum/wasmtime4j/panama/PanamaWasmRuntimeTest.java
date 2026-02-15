@@ -34,7 +34,6 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
@@ -466,37 +465,6 @@ class PanamaWasmRuntimeTest {
   }
 
   @Nested
-  @DisplayName("Serializer Tests")
-  class SerializerTests {
-
-    @Test
-    @DisplayName("Should create default serializer")
-    void shouldCreateDefaultSerializer() throws WasmException {
-      final Serializer serializer = runtime.createSerializer();
-      assertNotNull(serializer, "Serializer should not be null");
-      LOGGER.info("Created default serializer: " + serializer);
-    }
-
-    @Test
-    @DisplayName("Should create serializer with options")
-    void shouldCreateSerializerWithOptions() throws WasmException {
-      final Serializer serializer = runtime.createSerializer(1024L, true, 6);
-      assertNotNull(serializer, "Serializer with options should not be null");
-      LOGGER.info("Created serializer with options");
-    }
-
-    @Test
-    @DisplayName("Should throw for invalid compression level")
-    void shouldThrowForInvalidCompressionLevel() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> runtime.createSerializer(1024L, true, 10),
-          "Should throw for compression level > 9");
-      LOGGER.info("Correctly threw for invalid compression level");
-    }
-  }
-
-  @Nested
   @DisplayName("Lifecycle Tests")
   class LifecycleTests {
 
@@ -590,18 +558,6 @@ class PanamaWasmRuntimeTest {
       LOGGER.info("Double close handled gracefully");
     }
 
-    @Test
-    @DisplayName("Should throw on getRuntimeInfo-related operations after close")
-    void shouldThrowOnSerializerAfterClose() throws WasmException {
-      final PanamaWasmRuntime rt = new PanamaWasmRuntime();
-      rt.close();
-
-      assertThrows(
-          IllegalStateException.class,
-          () -> rt.createSerializer(),
-          "Should throw on createSerializer after close");
-      LOGGER.info("Correctly threw on createSerializer after close");
-    }
   }
 
   @Nested

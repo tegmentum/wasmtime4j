@@ -28,7 +28,6 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.config.Serializer;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.Tag;
@@ -419,24 +418,6 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     } catch (final Exception e) {
       throw new WasmException("Error deserializing module: " + e.getMessage(), e);
     }
-  }
-
-  @Override
-  public Serializer createSerializer() throws WasmException {
-    ensureNotClosed();
-    return new PanamaSerializer(this);
-  }
-
-  @Override
-  public Serializer createSerializer(
-      final long maxCacheSize, final boolean enableCompression, final int compressionLevel)
-      throws WasmException {
-    if (compressionLevel < 0 || compressionLevel > 9) {
-      throw new IllegalArgumentException("Compression level must be between 0 and 9");
-    }
-
-    ensureNotClosed();
-    return new PanamaSerializer(this, maxCacheSize, enableCompression, compressionLevel);
   }
 
   @Override

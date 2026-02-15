@@ -359,25 +359,6 @@ class JniWasmRuntimeTest {
       assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Module");
     }
 
-    @Test
-    @DisplayName("should have createSerializer method")
-    void shouldHaveCreateSerializerMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getMethod("createSerializer");
-
-      assertThat(method.getReturnType().getName())
-          .isEqualTo("ai.tegmentum.wasmtime4j.config.Serializer");
-    }
-
-    @Test
-    @DisplayName("should have createSerializer method with config")
-    void shouldHaveCreateSerializerWithConfigMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getMethod("createSerializer", long.class, boolean.class, int.class);
-
-      assertThat(method.getReturnType().getName())
-          .isEqualTo("ai.tegmentum.wasmtime4j.config.Serializer");
-    }
   }
 
   @Nested
@@ -797,29 +778,6 @@ class JniWasmRuntimeTest {
       assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
     }
 
-    @Test
-    @DisplayName("should have nativeCreateSerializer method")
-    void shouldHaveNativeCreateSerializerMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getDeclaredMethod("nativeCreateSerializer");
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-      assertThat(Modifier.isPrivate(method.getModifiers())).isTrue();
-      assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have nativeCreateSerializerWithConfig method")
-    void shouldHaveNativeCreateSerializerWithConfigMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method =
-          clazz.getDeclaredMethod(
-              "nativeCreateSerializerWithConfig", long.class, boolean.class, int.class);
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-      assertThat(Modifier.isPrivate(method.getModifiers())).isTrue();
-      assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
-    }
   }
 
   @Nested

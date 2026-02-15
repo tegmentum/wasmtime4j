@@ -679,32 +679,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.config.Serializer createSerializer() throws WasmException {
-    validateRuntimeState();
-    final long serializerHandle = nativeCreateSerializer();
-    if (serializerHandle == 0) {
-      throw new WasmException("Failed to create serializer");
-    }
-    return new JniSerializer(serializerHandle);
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.config.Serializer createSerializer(
-      final long maxCacheSize, final boolean enableCompression, final int compressionLevel)
-      throws WasmException {
-    if (compressionLevel < 0 || compressionLevel > 9) {
-      throw new IllegalArgumentException("Compression level must be between 0 and 9");
-    }
-    validateRuntimeState();
-    final long serializerHandle =
-        nativeCreateSerializerWithConfig(maxCacheSize, enableCompression, compressionLevel);
-    if (serializerHandle == 0) {
-      throw new WasmException("Failed to create serializer with configuration");
-    }
-    return new JniSerializer(serializerHandle);
-  }
-
-  @Override
   protected void doClose() throws Exception {
     // Close resource cache first
     if (resourceCache != null && !resourceCache.isClosed()) {
@@ -1161,24 +1135,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    */
   private static native long nativeCreateStoreWithResourceLimits(
       long engineHandle, long fuelLimit, long memoryLimitBytes, long executionTimeoutSeconds);
-
-  /**
-   * Create a new module serializer with default configuration.
-   *
-   * @return the native serializer handle, or 0 on failure
-   */
-  private static native long nativeCreateSerializer();
-
-  /**
-   * Create a new module serializer with custom configuration.
-   *
-   * @param maxCacheSize the maximum cache size in bytes (0 = unlimited)
-   * @param enableCompression whether to enable compression
-   * @param compressionLevel the compression level (0-9)
-   * @return the native serializer handle, or 0 on failure
-   */
-  private static native long nativeCreateSerializerWithConfig(
-      long maxCacheSize, boolean enableCompression, int compressionLevel);
 
   // ===== WASI-NN NATIVE METHOD DECLARATIONS =====
 
