@@ -143,11 +143,6 @@ pub enum AsyncOperationStatus {
 struct SendableUserData(usize);
 
 impl SendableUserData {
-    /// Creates a new SendableUserData from a raw pointer
-    fn new(ptr: *mut c_void) -> Self {
-        Self(ptr as usize)
-    }
-
     /// Converts back to a raw pointer for callback invocation
     ///
     /// # Safety
@@ -836,46 +831,8 @@ pub fn wait_for_operation(
 // C API Functions for JNI and Panama FFI Integration
 // ================================================================================================
 
-/// Initialize the async runtime (C API)
-///
-/// # Safety
-///
-/// This function is safe to call multiple times and performs proper initialization
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_async_runtime_init() -> c_int {
-    // Force initialization of the global runtime
-    let _runtime = get_async_runtime();
-    info!("Async runtime initialized via C API");
-    0 // Success
-}
-
-/// Get async runtime information (C API)
-///
-/// # Safety
-///
-/// Returns information about the current async runtime state
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_async_runtime_info() -> *const c_char {
-    let info = format!(
-        "Tokio runtime with {} workers",
-        get_runtime_handle().metrics().num_workers()
-    );
-    let info_cstring = CString::new(info).unwrap_or_default();
-    info_cstring.into_raw()
-}
-
-/// Shutdown the async runtime (C API)
-///
-/// # Safety
-///
-/// This function performs graceful shutdown of async operations
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_async_runtime_shutdown() -> c_int {
-    info!("Async runtime shutdown requested via C API");
-    // Note: We don't actually shut down the global runtime as it may be needed
-    // by other operations. The runtime will be cleaned up when the process exits.
-    0 // Success
-}
+// wasmtime4j_async_runtime_init, wasmtime4j_async_runtime_info,
+// wasmtime4j_async_runtime_shutdown removed (Phase 13: 0 Java callers)
 
 /// Execute async function call (C API)
 ///
