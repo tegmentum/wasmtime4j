@@ -20,13 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.async.AsyncRuntimeFactory;
 import ai.tegmentum.wasmtime4j.spi.CallerContextProvider;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,120 +37,11 @@ import org.junit.jupiter.api.Test;
  * <p>Classes tested:
  *
  * <ul>
- *   <li>{@link JniAsyncRuntimeProvider}
  *   <li>{@link JniCallerContextProvider}
  * </ul>
  */
 @DisplayName("JNI Provider Classes Tests")
 class JniProviderClassesTest {
-
-  // ===================================================================================
-  // JniAsyncRuntimeProvider Tests
-  // ===================================================================================
-
-  @Nested
-  @DisplayName("JniAsyncRuntimeProvider Tests")
-  class JniAsyncRuntimeProviderTests {
-
-    @Nested
-    @DisplayName("Class Structure Tests")
-    class ClassStructureTests {
-
-      @Test
-      @DisplayName("JniAsyncRuntimeProvider should be final class")
-      void shouldBeFinalClass() {
-        assertTrue(
-            Modifier.isFinal(JniAsyncRuntimeProvider.class.getModifiers()),
-            "JniAsyncRuntimeProvider should be final");
-      }
-
-      @Test
-      @DisplayName("JniAsyncRuntimeProvider should be public")
-      void shouldBePublic() {
-        assertTrue(
-            Modifier.isPublic(JniAsyncRuntimeProvider.class.getModifiers()),
-            "JniAsyncRuntimeProvider should be public");
-      }
-
-      @Test
-      @DisplayName("JniAsyncRuntimeProvider should implement AsyncRuntimeProvider")
-      void shouldImplementAsyncRuntimeProvider() {
-        assertTrue(
-            AsyncRuntimeFactory.AsyncRuntimeProvider.class.isAssignableFrom(
-                JniAsyncRuntimeProvider.class),
-            "JniAsyncRuntimeProvider should implement AsyncRuntimeFactory.AsyncRuntimeProvider");
-      }
-    }
-
-    @Nested
-    @DisplayName("Field Tests")
-    class FieldTests {
-
-      @Test
-      @DisplayName("Should have LOGGER field")
-      void shouldHaveLoggerField() throws NoSuchFieldException {
-        Field field = JniAsyncRuntimeProvider.class.getDeclaredField("LOGGER");
-        assertNotNull(field, "LOGGER field should exist");
-        assertEquals(Logger.class, field.getType(), "LOGGER should be Logger type");
-        assertTrue(Modifier.isPrivate(field.getModifiers()), "LOGGER should be private");
-        assertTrue(Modifier.isStatic(field.getModifiers()), "LOGGER should be static");
-        assertTrue(Modifier.isFinal(field.getModifiers()), "LOGGER should be final");
-      }
-    }
-
-    @Nested
-    @DisplayName("Constructor Tests")
-    class ConstructorTests {
-
-      @Test
-      @DisplayName("Should have public no-arg constructor for ServiceLoader")
-      void shouldHavePublicNoArgConstructor() throws NoSuchMethodException {
-        Constructor<?> constructor = JniAsyncRuntimeProvider.class.getDeclaredConstructor();
-        assertNotNull(constructor, "No-arg constructor should exist");
-        assertTrue(
-            Modifier.isPublic(constructor.getModifiers()),
-            "Constructor should be public for ServiceLoader");
-      }
-
-      @Test
-      @DisplayName("No-arg constructor should be instantiable")
-      void noArgConstructorShouldBeInstantiable() throws Exception {
-        JniAsyncRuntimeProvider provider = new JniAsyncRuntimeProvider();
-        assertNotNull(provider, "Provider should be instantiable");
-      }
-    }
-
-    @Nested
-    @DisplayName("Method Tests")
-    class MethodTests {
-
-      @Test
-      @DisplayName("Should have create method returning AsyncRuntime")
-      void shouldHaveCreateMethod() throws NoSuchMethodException {
-        Method method = JniAsyncRuntimeProvider.class.getMethod("create");
-        assertNotNull(method, "create method should exist");
-        assertEquals(
-            ai.tegmentum.wasmtime4j.async.AsyncRuntime.class,
-            method.getReturnType(),
-            "create should return AsyncRuntime");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "create should be public");
-      }
-    }
-
-    @Nested
-    @DisplayName("Package Location Tests")
-    class PackageLocationTests {
-
-      @Test
-      @DisplayName("Class should be in correct package")
-      void shouldBeInCorrectPackage() {
-        assertEquals(
-            "ai.tegmentum.wasmtime4j.jni",
-            JniAsyncRuntimeProvider.class.getPackage().getName(),
-            "Should be in ai.tegmentum.wasmtime4j.jni package");
-      }
-    }
-  }
 
   // ===================================================================================
   // JniCallerContextProvider Tests
@@ -277,88 +165,12 @@ class JniProviderClassesTest {
   }
 
   // ===================================================================================
-  // Cross-Provider Consistency Tests
-  // ===================================================================================
-
-  @Nested
-  @DisplayName("Cross-Provider Consistency Tests")
-  class CrossProviderConsistencyTests {
-
-    @Test
-    @DisplayName("All providers should be final classes")
-    void allProvidersShouldBeFinal() {
-      assertTrue(
-          Modifier.isFinal(JniAsyncRuntimeProvider.class.getModifiers()),
-          "JniAsyncRuntimeProvider should be final");
-      assertTrue(
-          Modifier.isFinal(JniCallerContextProvider.class.getModifiers()),
-          "JniCallerContextProvider should be final");
-    }
-
-    @Test
-    @DisplayName("All providers should be public")
-    void allProvidersShouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(JniAsyncRuntimeProvider.class.getModifiers()),
-          "JniAsyncRuntimeProvider should be public");
-      assertTrue(
-          Modifier.isPublic(JniCallerContextProvider.class.getModifiers()),
-          "JniCallerContextProvider should be public");
-    }
-
-    @Test
-    @DisplayName("All providers should have public no-arg constructors")
-    void allProvidersShouldHaveNoArgConstructors() throws NoSuchMethodException {
-      final Constructor<?> c1 = JniAsyncRuntimeProvider.class.getDeclaredConstructor();
-      final Constructor<?> c2 = JniCallerContextProvider.class.getDeclaredConstructor();
-
-      assertTrue(Modifier.isPublic(c1.getModifiers()), "JniAsyncRuntimeProvider constructor");
-      assertTrue(Modifier.isPublic(c2.getModifiers()), "JniCallerContextProvider constructor");
-    }
-
-    @Test
-    @DisplayName("All providers should be in same package")
-    void allProvidersShouldBeInSamePackage() {
-      String expectedPackage = "ai.tegmentum.wasmtime4j.jni";
-      assertEquals(expectedPackage, JniAsyncRuntimeProvider.class.getPackage().getName());
-      assertEquals(expectedPackage, JniCallerContextProvider.class.getPackage().getName());
-    }
-
-    @Test
-    @DisplayName("All providers should be instantiable")
-    void allProvidersShouldBeInstantiable() throws Exception {
-      assertNotNull(
-          new JniAsyncRuntimeProvider(), "JniAsyncRuntimeProvider should be instantiable");
-      assertNotNull(
-          new JniCallerContextProvider(), "JniCallerContextProvider should be instantiable");
-    }
-  }
-
-  // ===================================================================================
   // Interface Compliance Tests
   // ===================================================================================
 
   @Nested
   @DisplayName("Interface Compliance Tests")
   class InterfaceComplianceTests {
-
-    @Test
-    @DisplayName("JniAsyncRuntimeProvider should implement all interface methods")
-    void asyncRuntimeProviderShouldImplementAllMethods() {
-      Class<?> providerInterface = AsyncRuntimeFactory.AsyncRuntimeProvider.class;
-      for (Method interfaceMethod : providerInterface.getMethods()) {
-        if (!interfaceMethod.isDefault() && !Modifier.isStatic(interfaceMethod.getModifiers())) {
-          boolean found = false;
-          for (Method implMethod : JniAsyncRuntimeProvider.class.getMethods()) {
-            if (methodsMatch(interfaceMethod, implMethod)) {
-              found = true;
-              break;
-            }
-          }
-          assertTrue(found, "Should implement: " + interfaceMethod.getName());
-        }
-      }
-    }
 
     @Test
     @DisplayName("JniCallerContextProvider should implement all interface methods")
@@ -411,10 +223,6 @@ class JniProviderClassesTest {
       // 1. Public no-arg constructor
       // 2. Class implements the service interface
       // 3. Class is concrete (not abstract)
-
-      // JniAsyncRuntimeProvider
-      assertProviderFollowsServiceLoaderPattern(
-          JniAsyncRuntimeProvider.class, AsyncRuntimeFactory.AsyncRuntimeProvider.class);
 
       // JniCallerContextProvider
       assertProviderFollowsServiceLoaderPattern(
