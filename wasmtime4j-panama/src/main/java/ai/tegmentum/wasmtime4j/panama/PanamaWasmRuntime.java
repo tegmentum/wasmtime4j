@@ -80,11 +80,6 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   /** Lock object for GC runtime lazy initialization. */
   private final Object gcRuntimeLock = new Object();
 
-  /** Cached default SIMD operations for lazy initialization. */
-  private volatile ai.tegmentum.wasmtime4j.simd.SimdOperations defaultSimdOperations;
-
-  /** Lock object for SIMD operations lazy initialization. */
-  private final Object simdOperationsLock = new Object();
 
   /**
    * Creates a new Panama WebAssembly runtime.
@@ -589,20 +584,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public ai.tegmentum.wasmtime4j.simd.SimdOperations getSimdOperations() throws WasmException {
     ensureNotClosed();
 
-    if (defaultSimdOperations != null) {
-      return defaultSimdOperations;
-    }
-
-    synchronized (simdOperationsLock) {
-      if (defaultSimdOperations != null) {
-        return defaultSimdOperations;
-      }
-
-      defaultSimdOperations = new ai.tegmentum.wasmtime4j.simd.DefaultSimdOperations();
-
-      LOGGER.fine("Initialized default SIMD operations for Panama");
-      return defaultSimdOperations;
-    }
+    throw new UnsupportedOperationException(
+        "SIMD operations are not yet implemented for the Panama runtime");
   }
 
   @Override

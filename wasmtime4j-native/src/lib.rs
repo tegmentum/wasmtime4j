@@ -61,7 +61,7 @@ pub mod module;
 pub mod serialization;
 pub mod store;
 pub mod table;
-pub mod threading;
+// threading module removed (Phase 8: invented abstraction)
 pub mod typed_func; // Typed function wrapper for zero-cost calls
 pub mod value_serialization; // WASM value serialization for thread execution
 pub mod wast_runner; // WAST test execution
@@ -96,8 +96,7 @@ pub mod jni_module_cache_bindings;
 pub mod jni_pooling_allocator_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_profiler_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_thread_bindings;
+// jni_thread_bindings module removed (Phase 8: invented abstraction)
 #[cfg(feature = "jni-bindings")]
 pub mod jni_typed_func_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -142,8 +141,7 @@ pub mod panama_wasi_keyvalue_ffi;
 pub mod panama_wasi_random_ffi;
 #[cfg(all(feature = "panama-ffi", feature = "wasi-threads"))]
 pub mod panama_wasi_threads_ffi;
-#[cfg(feature = "jni-bindings")]
-pub mod platform_memory_jni;
+// platform_memory_jni module removed (Phase 8: invented abstraction)
 
 // Advanced modules - will be implemented in later tasks
 #[cfg(feature = "wasi")]

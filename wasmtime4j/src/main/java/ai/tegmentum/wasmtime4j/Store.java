@@ -1,9 +1,5 @@
 package ai.tegmentum.wasmtime4j;
 
-import ai.tegmentum.wasmtime4j.concurrent.Accessor;
-import ai.tegmentum.wasmtime4j.concurrent.ConcurrentTask;
-import ai.tegmentum.wasmtime4j.concurrent.JoinHandle;
-import ai.tegmentum.wasmtime4j.concurrent.SpawnableTask;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -632,75 +628,6 @@ public interface Store extends Closeable {
      */
     java.util.concurrent.CompletableFuture<Void> onCallHook(CallHook hook);
   }
-
-  // ===== Concurrency Methods =====
-
-  /**
-   * Runs a concurrent task with access to the store's data.
-   *
-   * <p>This method allows running a task that can access the store's user data from multiple
-   * threads concurrently. The task receives an {@link Accessor} that provides thread-safe read
-   * access to the store's data.
-   *
-   * <p>This corresponds to wasmtime's {@code Store::run_concurrent} method which enables concurrent
-   * access patterns for multi-threaded WebAssembly execution.
-   *
-   * <p>Example usage:
-   *
-   * <pre>{@code
-   * Integer result = store.runConcurrent(accessor -> {
-   *     MyData data = accessor.getData(MyData.class);
-   *     return data.computeValue();
-   * });
-   * }</pre>
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param <T> the type of user data stored in this store
-   * @param <R> the type of the task result
-   * @param task the concurrent task to execute
-   * @return the task result
-   * @throws WasmException if concurrent execution fails
-   * @throws IllegalArgumentException if task is null
-   * @since 1.0.0
-   */
-  <T, R> R runConcurrent(ConcurrentTask<T, R> task) throws WasmException;
-
-  /**
-   * Spawns a concurrent task for asynchronous execution.
-   *
-   * <p>This method spawns a task that runs concurrently with the main execution thread. The
-   * returned {@link JoinHandle} can be used to wait for completion, cancel the task, or check its
-   * status.
-   *
-   * <p>This corresponds to wasmtime's {@code Store::spawn} method for spawning concurrent tasks in
-   * async contexts.
-   *
-   * <p>Example usage:
-   *
-   * <pre>{@code
-   * JoinHandle<Integer> handle = store.spawn(() -> {
-   *     // Long-running computation
-   *     return computeExpensiveValue();
-   * });
-   *
-   * // Do other work while the task runs
-   * doOtherWork();
-   *
-   * // Wait for the result
-   * Integer result = handle.join();
-   * }</pre>
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param <R> the type of the task result
-   * @param task the task to spawn
-   * @return a handle to the spawned task
-   * @throws WasmException if spawning fails
-   * @throws IllegalArgumentException if task is null
-   * @since 1.0.0
-   */
-  <R> JoinHandle<R> spawn(SpawnableTask<R> task) throws WasmException;
 
   // ===== Debug Methods =====
 

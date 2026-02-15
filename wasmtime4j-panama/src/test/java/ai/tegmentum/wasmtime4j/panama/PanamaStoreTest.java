@@ -605,63 +605,6 @@ class PanamaStoreTest {
     }
   }
 
-  // ===== Debug and Concurrency Tests =====
-
-  @Nested
-  @DisplayName("Debug and Concurrency Tests")
-  class DebugAndConcurrencyTests {
-
-    @Test
-    @DisplayName("Should reject null concurrent task")
-    void shouldRejectNullConcurrentTask() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.runConcurrent(null));
-      LOGGER.info("Correctly rejected null concurrent task");
-    }
-
-    @Test
-    @DisplayName("Should reject null spawnable task")
-    void shouldRejectNullSpawnableTask() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.spawn(null));
-      LOGGER.info("Correctly rejected null spawnable task");
-    }
-
-    @Test
-    @DisplayName("Should run concurrent task")
-    void shouldRunConcurrentTask() throws Exception {
-      final PanamaStore store = createStore();
-      store.setData("test-state");
-
-      final String result =
-          store.runConcurrent(
-              accessor -> {
-                assertNotNull(accessor);
-                assertTrue(accessor.isValid());
-                return "completed";
-              });
-
-      assertEquals("completed", result);
-      LOGGER.info("Concurrent task executed successfully");
-    }
-
-    @Test
-    @DisplayName("Should spawn task and get result")
-    void shouldSpawnTask() throws Exception {
-      final PanamaStore store = createStore();
-
-      final ai.tegmentum.wasmtime4j.concurrent.JoinHandle<Integer> handle = store.spawn(() -> 42);
-
-      assertNotNull(handle, "Join handle should not be null");
-      final Integer result = handle.join();
-      assertEquals(42, result, "Spawned task should return 42");
-      assertTrue(handle.isDone(), "Task should be done");
-      LOGGER.info("Spawned task completed with result: " + result);
-    }
-  }
-
   // ===== Fuel Async Yield Interval Tests =====
 
   @Nested

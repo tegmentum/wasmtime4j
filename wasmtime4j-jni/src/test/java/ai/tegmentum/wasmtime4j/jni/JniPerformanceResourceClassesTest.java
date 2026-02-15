@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.jni.execution.JniResourceLimiter;
-import ai.tegmentum.wasmtime4j.jni.memory.PlatformMemoryManager;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
 import ai.tegmentum.wasmtime4j.jni.pool.JniPoolingAllocator;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
@@ -51,7 +50,6 @@ import org.junit.jupiter.api.Test;
  *   <li>{@link JniPoolingAllocator}
  *   <li>{@link JniResourceLimiter}
  *   <li>{@link NativeMethodBindings}
- *   <li>{@link PlatformMemoryManager}
  * </ul>
  */
 @DisplayName("JNI Performance and Resource Classes Tests")
@@ -625,302 +623,6 @@ class JniPerformanceResourceClassesTest {
   }
 
   // ===================================================================================
-  // PlatformMemoryManager Tests
-  // ===================================================================================
-
-  @Nested
-  @DisplayName("PlatformMemoryManager Tests")
-  class PlatformMemoryManagerTests {
-
-    @Nested
-    @DisplayName("Class Structure Tests")
-    class ClassStructureTests {
-
-      @Test
-      @DisplayName("PlatformMemoryManager should be final class")
-      void shouldBeFinalClass() {
-        assertTrue(
-            Modifier.isFinal(PlatformMemoryManager.class.getModifiers()),
-            "PlatformMemoryManager should be final");
-      }
-
-      @Test
-      @DisplayName("PlatformMemoryManager should be public")
-      void shouldBePublic() {
-        assertTrue(
-            Modifier.isPublic(PlatformMemoryManager.class.getModifiers()),
-            "PlatformMemoryManager should be public");
-      }
-
-      @Test
-      @DisplayName("PlatformMemoryManager should implement AutoCloseable")
-      void shouldImplementAutoCloseable() {
-        assertTrue(
-            AutoCloseable.class.isAssignableFrom(PlatformMemoryManager.class),
-            "PlatformMemoryManager should implement AutoCloseable");
-      }
-    }
-
-    @Nested
-    @DisplayName("Nested Class Tests")
-    class NestedClassTests {
-
-      @Test
-      @DisplayName("Should have Config nested class")
-      void shouldHaveConfigNestedClass() {
-        Class<?>[] nestedClasses = PlatformMemoryManager.class.getDeclaredClasses();
-        boolean found = false;
-        for (Class<?> clazz : nestedClasses) {
-          if (clazz.getSimpleName().equals("Config")) {
-            found = true;
-            assertTrue(Modifier.isStatic(clazz.getModifiers()), "Config should be static");
-            assertTrue(Modifier.isPublic(clazz.getModifiers()), "Config should be public");
-            break;
-          }
-        }
-        assertTrue(found, "Should have Config nested class");
-      }
-
-      @Test
-      @DisplayName("Should have AllocationInfo nested class")
-      void shouldHaveAllocationInfoNestedClass() {
-        Class<?>[] nestedClasses = PlatformMemoryManager.class.getDeclaredClasses();
-        boolean found = false;
-        for (Class<?> clazz : nestedClasses) {
-          if (clazz.getSimpleName().equals("AllocationInfo")) {
-            found = true;
-            assertTrue(Modifier.isStatic(clazz.getModifiers()), "AllocationInfo should be static");
-            assertTrue(Modifier.isPublic(clazz.getModifiers()), "AllocationInfo should be public");
-            break;
-          }
-        }
-        assertTrue(found, "Should have AllocationInfo nested class");
-      }
-
-      @Test
-      @DisplayName("Should have PlatformInfo nested class")
-      void shouldHavePlatformInfoNestedClass() {
-        Class<?>[] nestedClasses = PlatformMemoryManager.class.getDeclaredClasses();
-        boolean found = false;
-        for (Class<?> clazz : nestedClasses) {
-          if (clazz.getSimpleName().equals("PlatformInfo")) {
-            found = true;
-            assertTrue(Modifier.isStatic(clazz.getModifiers()), "PlatformInfo should be static");
-            assertTrue(Modifier.isPublic(clazz.getModifiers()), "PlatformInfo should be public");
-            break;
-          }
-        }
-        assertTrue(found, "Should have PlatformInfo nested class");
-      }
-
-      @Test
-      @DisplayName("Should have MemoryStats nested class")
-      void shouldHaveMemoryStatsNestedClass() {
-        Class<?>[] nestedClasses = PlatformMemoryManager.class.getDeclaredClasses();
-        boolean found = false;
-        for (Class<?> clazz : nestedClasses) {
-          if (clazz.getSimpleName().equals("MemoryStats")) {
-            found = true;
-            assertTrue(Modifier.isStatic(clazz.getModifiers()), "MemoryStats should be static");
-            assertTrue(Modifier.isPublic(clazz.getModifiers()), "MemoryStats should be public");
-            break;
-          }
-        }
-        assertTrue(found, "Should have MemoryStats nested class");
-      }
-
-      @Test
-      @DisplayName("Should have MemoryLeak nested class")
-      void shouldHaveMemoryLeakNestedClass() {
-        Class<?>[] nestedClasses = PlatformMemoryManager.class.getDeclaredClasses();
-        boolean found = false;
-        for (Class<?> clazz : nestedClasses) {
-          if (clazz.getSimpleName().equals("MemoryLeak")) {
-            found = true;
-            assertTrue(Modifier.isStatic(clazz.getModifiers()), "MemoryLeak should be static");
-            assertTrue(Modifier.isPublic(clazz.getModifiers()), "MemoryLeak should be public");
-            break;
-          }
-        }
-        assertTrue(found, "Should have MemoryLeak nested class");
-      }
-    }
-
-    @Nested
-    @DisplayName("Field Tests")
-    class FieldTests {
-
-      @Test
-      @DisplayName("Should have LOGGER field")
-      void shouldHaveLoggerField() throws NoSuchFieldException {
-        Field field = PlatformMemoryManager.class.getDeclaredField("LOGGER");
-        assertNotNull(field, "LOGGER field should exist");
-        assertEquals(Logger.class, field.getType(), "LOGGER should be Logger type");
-      }
-
-      @Test
-      @DisplayName("Should have nativeHandle field")
-      void shouldHaveNativeHandleField() throws NoSuchFieldException {
-        Field field = PlatformMemoryManager.class.getDeclaredField("nativeHandle");
-        assertNotNull(field, "nativeHandle field should exist");
-        assertEquals(long.class, field.getType(), "nativeHandle should be long type");
-      }
-
-      @Test
-      @DisplayName("Should have closed field")
-      void shouldHaveClosedField() throws NoSuchFieldException {
-        Field field = PlatformMemoryManager.class.getDeclaredField("closed");
-        assertNotNull(field, "closed field should exist");
-        assertEquals(boolean.class, field.getType(), "closed should be boolean type");
-      }
-    }
-
-    @Nested
-    @DisplayName("Constructor Tests")
-    class ConstructorTests {
-
-      @Test
-      @DisplayName("Should have no-arg constructor")
-      void shouldHaveNoArgConstructor() throws NoSuchMethodException {
-        Constructor<?> constructor = PlatformMemoryManager.class.getDeclaredConstructor();
-        assertNotNull(constructor, "No-arg constructor should exist");
-        assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
-      }
-
-      @Test
-      @DisplayName("Should have constructor with Config parameter")
-      void shouldHaveConfigConstructor() throws NoSuchMethodException {
-        Constructor<?> constructor =
-            PlatformMemoryManager.class.getDeclaredConstructor(PlatformMemoryManager.Config.class);
-        assertNotNull(constructor, "Config constructor should exist");
-        assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
-      }
-    }
-
-    @Nested
-    @DisplayName("Method Tests")
-    class MethodTests {
-
-      @Test
-      @DisplayName("Should have allocate method")
-      void shouldHaveAllocateMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("allocate", long.class, int.class);
-        assertNotNull(method, "allocate method should exist");
-        assertEquals(long.class, method.getReturnType(), "allocate should return long");
-      }
-
-      @Test
-      @DisplayName("Should have deallocate method")
-      void shouldHaveDeallocateMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("deallocate", long.class);
-        assertNotNull(method, "deallocate method should exist");
-        assertEquals(void.class, method.getReturnType(), "deallocate should return void");
-      }
-
-      @Test
-      @DisplayName("Should have getStats method")
-      void shouldHaveGetStatsMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("getStats");
-        assertNotNull(method, "getStats method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "getStats should be public");
-      }
-
-      @Test
-      @DisplayName("Should have getPlatformInfo method")
-      void shouldHaveGetPlatformInfoMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("getPlatformInfo");
-        assertNotNull(method, "getPlatformInfo method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "getPlatformInfo should be public");
-      }
-
-      @Test
-      @DisplayName("Should have detectLeaks method")
-      void shouldHaveDetectLeaksMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("detectLeaks");
-        assertNotNull(method, "detectLeaks method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "detectLeaks should be public");
-      }
-
-      @Test
-      @DisplayName("Should have prefetchMemory method")
-      void shouldHavePrefetchMemoryMethod() throws NoSuchMethodException {
-        Method method =
-            PlatformMemoryManager.class.getMethod("prefetchMemory", long.class, long.class);
-        assertNotNull(method, "prefetchMemory method should exist");
-        assertEquals(void.class, method.getReturnType(), "prefetchMemory should return void");
-      }
-
-      @Test
-      @DisplayName("Should have compressMemory method")
-      void shouldHaveCompressMemoryMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("compressMemory", byte[].class);
-        assertNotNull(method, "compressMemory method should exist");
-        assertEquals(byte[].class, method.getReturnType(), "compressMemory should return byte[]");
-      }
-
-      @Test
-      @DisplayName("Should have deduplicateMemory method")
-      void shouldHaveDeduplicateMemoryMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("deduplicateMemory", byte[].class);
-        assertNotNull(method, "deduplicateMemory method should exist");
-        assertEquals(long.class, method.getReturnType(), "deduplicateMemory should return long");
-      }
-
-      @Test
-      @DisplayName("Should have isClosed method")
-      void shouldHaveIsClosedMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("isClosed");
-        assertNotNull(method, "isClosed method should exist");
-        assertEquals(boolean.class, method.getReturnType(), "isClosed should return boolean");
-      }
-
-      @Test
-      @DisplayName("Should have close method")
-      void shouldHaveCloseMethod() throws NoSuchMethodException {
-        Method method = PlatformMemoryManager.class.getMethod("close");
-        assertNotNull(method, "close method should exist");
-        assertEquals(void.class, method.getReturnType(), "close should return void");
-      }
-    }
-
-    @Nested
-    @DisplayName("Native Method Tests")
-    class NativeMethodTests {
-
-      @Test
-      @DisplayName("Should have native methods for memory operations")
-      void shouldHaveNativeMemoryOperations() {
-        Set<String> nativeMethods = new HashSet<>();
-        for (Method method : PlatformMemoryManager.class.getDeclaredMethods()) {
-          if (Modifier.isNative(method.getModifiers())) {
-            nativeMethods.add(method.getName());
-          }
-        }
-
-        assertTrue(nativeMethods.contains("nativeCreate"), "Should have nativeCreate");
-        assertTrue(nativeMethods.contains("nativeAllocate"), "Should have nativeAllocate");
-        assertTrue(nativeMethods.contains("nativeDeallocate"), "Should have nativeDeallocate");
-        assertTrue(nativeMethods.contains("nativeGetStats"), "Should have nativeGetStats");
-        assertTrue(nativeMethods.contains("nativeDestroy"), "Should have nativeDestroy");
-      }
-    }
-
-    @Nested
-    @DisplayName("Package Location Tests")
-    class PackageLocationTests {
-
-      @Test
-      @DisplayName("Class should be in correct package")
-      void shouldBeInCorrectPackage() {
-        assertEquals(
-            "ai.tegmentum.wasmtime4j.jni.memory",
-            PlatformMemoryManager.class.getPackage().getName(),
-            "Should be in ai.tegmentum.wasmtime4j.jni.memory package");
-      }
-    }
-  }
-
-  // ===================================================================================
   // Cross-Class Consistency Tests
   // ===================================================================================
 
@@ -940,9 +642,6 @@ class JniPerformanceResourceClassesTest {
       assertTrue(
           Modifier.isFinal(NativeMethodBindings.class.getModifiers()),
           "NativeMethodBindings should be final");
-      assertTrue(
-          Modifier.isFinal(PlatformMemoryManager.class.getModifiers()),
-          "PlatformMemoryManager should be final");
     }
 
     @Test
@@ -957,9 +656,6 @@ class JniPerformanceResourceClassesTest {
       assertTrue(
           Modifier.isPublic(NativeMethodBindings.class.getModifiers()),
           "NativeMethodBindings should be public");
-      assertTrue(
-          Modifier.isPublic(PlatformMemoryManager.class.getModifiers()),
-          "PlatformMemoryManager should be public");
     }
 
     @Test
@@ -968,8 +664,7 @@ class JniPerformanceResourceClassesTest {
       Field[] loggerFields = {
         JniPoolingAllocator.class.getDeclaredField("LOGGER"),
         JniResourceLimiter.class.getDeclaredField("LOGGER"),
-        NativeMethodBindings.class.getDeclaredField("LOGGER"),
-        PlatformMemoryManager.class.getDeclaredField("LOGGER")
+        NativeMethodBindings.class.getDeclaredField("LOGGER")
       };
 
       for (Field field : loggerFields) {
@@ -984,26 +679,20 @@ class JniPerformanceResourceClassesTest {
     @DisplayName("Closeable classes should have close method")
     void closeableClassesShouldHaveCloseMethod() throws NoSuchMethodException {
       Method m1 = JniPoolingAllocator.class.getMethod("close");
-      Method m2 = PlatformMemoryManager.class.getMethod("close");
 
       assertNotNull(m1, "JniPoolingAllocator should have close method");
-      assertNotNull(m2, "PlatformMemoryManager should have close method");
 
       assertEquals(void.class, m1.getReturnType());
-      assertEquals(void.class, m2.getReturnType());
     }
 
     @Test
     @DisplayName("Classes with native handles should have nativeHandle field")
     void classesWithNativeHandlesShouldHaveField() throws NoSuchFieldException {
       Field f1 = JniPoolingAllocator.class.getDeclaredField("nativeHandle");
-      Field f2 = PlatformMemoryManager.class.getDeclaredField("nativeHandle");
 
       assertNotNull(f1, "JniPoolingAllocator should have nativeHandle");
-      assertNotNull(f2, "PlatformMemoryManager should have nativeHandle");
 
       assertEquals(long.class, f1.getType());
-      assertEquals(long.class, f2.getType());
     }
   }
 }

@@ -102,26 +102,6 @@ class JniWasmRuntimeTest {
       assertThat(field.getType()).isEqualTo(Object.class);
     }
 
-    @Test
-    @DisplayName("should have defaultSimdOperations field with volatile modifier")
-    void shouldHaveDefaultSimdOperationsField() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Field field = clazz.getDeclaredField("defaultSimdOperations");
-
-      assertThat(Modifier.isPrivate(field.getModifiers())).isTrue();
-      assertThat(Modifier.isVolatile(field.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have simdOperationsLock field")
-    void shouldHaveSimdOperationsLockField() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Field field = clazz.getDeclaredField("simdOperationsLock");
-
-      assertThat(Modifier.isPrivate(field.getModifiers())).isTrue();
-      assertThat(Modifier.isFinal(field.getModifiers())).isTrue();
-      assertThat(field.getType()).isEqualTo(Object.class);
-    }
   }
 
   @Nested
