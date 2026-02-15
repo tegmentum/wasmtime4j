@@ -303,18 +303,6 @@ public final class WasiHttpRequestResponseIntegrationTest {
     }
 
     @Test
-    @DisplayName("should have getStats method")
-    void shouldHaveGetStatsMethod(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var getStats = WasiHttpContext.class.getMethod("getStats");
-      assertNotNull(getStats, "getStats method should exist");
-      assertEquals(WasiHttpStats.class, getStats.getReturnType(), "Should return WasiHttpStats");
-
-      LOGGER.info("GetStats method verified");
-    }
-
-    @Test
     @DisplayName("should have isValid method")
     void shouldHaveIsValidMethod(final TestInfo testInfo) throws NoSuchMethodException {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
@@ -338,122 +326,6 @@ public final class WasiHttpRequestResponseIntegrationTest {
       LOGGER.info("IsHostAllowed method verified");
     }
 
-    @Test
-    @DisplayName("should have resetStats method")
-    void shouldHaveResetStatsMethod(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var resetStats = WasiHttpContext.class.getMethod("resetStats");
-      assertNotNull(resetStats, "resetStats method should exist");
-      assertEquals(void.class, resetStats.getReturnType(), "Should return void");
-
-      LOGGER.info("ResetStats method verified");
-    }
-  }
-
-  @Nested
-  @DisplayName("WasiHttpStats Interface Tests")
-  class StatsInterfaceTests {
-
-    @Test
-    @DisplayName("should have request count methods")
-    void shouldHaveRequestCountMethods(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var getTotalRequests = WasiHttpStats.class.getMethod("getTotalRequests");
-      assertNotNull(getTotalRequests, "getTotalRequests method should exist");
-      assertEquals(long.class, getTotalRequests.getReturnType(), "Should return long");
-
-      final var getSuccessfulRequests = WasiHttpStats.class.getMethod("getSuccessfulRequests");
-      assertNotNull(getSuccessfulRequests, "getSuccessfulRequests method should exist");
-
-      final var getFailedRequests = WasiHttpStats.class.getMethod("getFailedRequests");
-      assertNotNull(getFailedRequests, "getFailedRequests method should exist");
-
-      final var getActiveRequests = WasiHttpStats.class.getMethod("getActiveRequests");
-      assertNotNull(getActiveRequests, "getActiveRequests method should exist");
-      assertEquals(int.class, getActiveRequests.getReturnType(), "Should return int");
-
-      LOGGER.info("Request count methods verified");
-    }
-
-    @Test
-    @DisplayName("should have byte count methods")
-    void shouldHaveByteCountMethods(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var getTotalBytesSent = WasiHttpStats.class.getMethod("getTotalBytesSent");
-      assertNotNull(getTotalBytesSent, "getTotalBytesSent method should exist");
-      assertEquals(long.class, getTotalBytesSent.getReturnType(), "Should return long");
-
-      final var getTotalBytesReceived = WasiHttpStats.class.getMethod("getTotalBytesReceived");
-      assertNotNull(getTotalBytesReceived, "getTotalBytesReceived method should exist");
-
-      LOGGER.info("Byte count methods verified");
-    }
-
-    @Test
-    @DisplayName("should have duration methods")
-    void shouldHaveDurationMethods(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var getAverageDuration = WasiHttpStats.class.getMethod("getAverageRequestDuration");
-      assertNotNull(getAverageDuration, "getAverageRequestDuration method should exist");
-      assertEquals(Duration.class, getAverageDuration.getReturnType(), "Should return Duration");
-
-      final var getMinDuration = WasiHttpStats.class.getMethod("getMinRequestDuration");
-      assertNotNull(getMinDuration, "getMinRequestDuration method should exist");
-
-      final var getMaxDuration = WasiHttpStats.class.getMethod("getMaxRequestDuration");
-      assertNotNull(getMaxDuration, "getMaxRequestDuration method should exist");
-
-      LOGGER.info("Duration methods verified");
-    }
-
-    @Test
-    @DisplayName("should have timeout count methods")
-    void shouldHaveTimeoutCountMethods(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var getConnectionTimeouts = WasiHttpStats.class.getMethod("getConnectionTimeouts");
-      assertNotNull(getConnectionTimeouts, "getConnectionTimeouts method should exist");
-      assertEquals(long.class, getConnectionTimeouts.getReturnType(), "Should return long");
-
-      final var getReadTimeouts = WasiHttpStats.class.getMethod("getReadTimeouts");
-      assertNotNull(getReadTimeouts, "getReadTimeouts method should exist");
-
-      LOGGER.info("Timeout count methods verified");
-    }
-
-    @Test
-    @DisplayName("should have blocked request methods")
-    void shouldHaveBlockedRequestMethods(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var getBlockedRequests = WasiHttpStats.class.getMethod("getBlockedRequests");
-      assertNotNull(getBlockedRequests, "getBlockedRequests method should exist");
-      assertEquals(long.class, getBlockedRequests.getReturnType(), "Should return long");
-
-      final var getBodySizeLimits = WasiHttpStats.class.getMethod("getBodySizeLimitViolations");
-      assertNotNull(getBodySizeLimits, "getBodySizeLimitViolations method should exist");
-
-      LOGGER.info("Blocked request methods verified");
-    }
-
-    @Test
-    @DisplayName("should have connection pool methods")
-    void shouldHaveConnectionPoolMethods(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var getActiveConnections = WasiHttpStats.class.getMethod("getActiveConnections");
-      assertNotNull(getActiveConnections, "getActiveConnections method should exist");
-      assertEquals(int.class, getActiveConnections.getReturnType(), "Should return int");
-
-      final var getIdleConnections = WasiHttpStats.class.getMethod("getIdleConnections");
-      assertNotNull(getIdleConnections, "getIdleConnections method should exist");
-
-      LOGGER.info("Connection pool methods verified");
-    }
   }
 
   @Nested
@@ -612,48 +484,5 @@ public final class WasiHttpRequestResponseIntegrationTest {
       }
     }
 
-    @Test
-    @DisplayName("should get stats from HTTP context")
-    void shouldGetStatsFromHttpContext(final TestInfo testInfo) {
-      assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      try {
-        final WasiHttpConfig config = WasiHttpConfig.defaultConfig();
-        final WasiHttpContext context = WasiHttpFactory.createContext(config);
-        resources.add(context);
-
-        final WasiHttpStats stats = context.getStats();
-        assertNotNull(stats, "Stats should not be null");
-        assertEquals(0, stats.getTotalRequests(), "Initial total requests should be 0");
-
-        LOGGER.info("HTTP stats retrieved successfully");
-      } catch (final Exception e) {
-        LOGGER.info("HTTP stats test skipped: " + e.getMessage());
-      }
-    }
-
-    @Test
-    @DisplayName("should reset HTTP stats")
-    void shouldResetHttpStats(final TestInfo testInfo) {
-      assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      try {
-        final WasiHttpConfig config = WasiHttpConfig.defaultConfig();
-        final WasiHttpContext context = WasiHttpFactory.createContext(config);
-        resources.add(context);
-
-        // Reset stats (should not throw)
-        context.resetStats();
-
-        final WasiHttpStats stats = context.getStats();
-        assertEquals(0, stats.getTotalRequests(), "Stats should be reset");
-
-        LOGGER.info("HTTP stats reset successfully");
-      } catch (final Exception e) {
-        LOGGER.info("HTTP stats reset test skipped: " + e.getMessage());
-      }
-    }
   }
 }

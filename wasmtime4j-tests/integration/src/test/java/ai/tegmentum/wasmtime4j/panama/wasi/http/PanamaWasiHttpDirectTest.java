@@ -218,7 +218,7 @@ public class PanamaWasiHttpDirectTest {
 
       final Class<?> clazz = PanamaWasiHttpContext.class;
       final String[] expectedMethods = {
-        "getConfig", "getStats", "isValid", "isHostAllowed", "resetStats", "close"
+        "getConfig", "isValid", "isHostAllowed", "close"
       };
 
       for (final String methodName : expectedMethods) {
@@ -245,68 +245,4 @@ public class PanamaWasiHttpDirectTest {
     }
   }
 
-  @Nested
-  @DisplayName("PanamaWasiHttpStats Tests")
-  class HttpStatsTests {
-
-    @Test
-    @DisplayName("Should have correct class structure")
-    void shouldHaveCorrectClassStructure() {
-      LOGGER.info("Testing PanamaWasiHttpStats class structure");
-
-      final Class<?> clazz = PanamaWasiHttpStats.class;
-
-      assertTrue(
-          java.lang.reflect.Modifier.isPublic(clazz.getModifiers()), "Class should be public");
-      assertTrue(java.lang.reflect.Modifier.isFinal(clazz.getModifiers()), "Class should be final");
-
-      LOGGER.info("Class structure verified");
-    }
-
-    @Test
-    @DisplayName("Should have request statistics methods")
-    void shouldHaveRequestStatisticsMethods() {
-      LOGGER.info("Testing request statistics methods");
-
-      final Class<?> clazz = PanamaWasiHttpStats.class;
-      final String[] expectedMethods = {
-        "getTotalRequests", "getSuccessfulRequests", "getFailedRequests", "getActiveRequests"
-      };
-
-      for (final String methodName : expectedMethods) {
-        boolean found = false;
-        for (final Method method : clazz.getMethods()) {
-          if (method.getName().equals(methodName)) {
-            found = true;
-            LOGGER.info("Found method: " + methodName);
-            break;
-          }
-        }
-        assertTrue(found, "Should have method: " + methodName);
-      }
-    }
-
-    @Test
-    @DisplayName("Should have timing statistics methods")
-    void shouldHaveTimingStatisticsMethods() {
-      LOGGER.info("Testing timing statistics methods");
-
-      final Class<?> clazz = PanamaWasiHttpStats.class;
-      final String[] expectedMethods = {
-        "getAverageRequestDuration", "getMinRequestDuration", "getMaxRequestDuration"
-      };
-
-      for (final String methodName : expectedMethods) {
-        boolean found = false;
-        for (final Method method : clazz.getMethods()) {
-          if (method.getName().equals(methodName)) {
-            found = true;
-            LOGGER.info("Found method: " + methodName);
-            break;
-          }
-        }
-        assertTrue(found, "Should have method: " + methodName);
-      }
-    }
-  }
 }

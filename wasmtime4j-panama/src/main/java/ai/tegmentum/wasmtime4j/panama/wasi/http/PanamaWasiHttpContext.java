@@ -25,7 +25,6 @@ import ai.tegmentum.wasmtime4j.panama.PanamaStore;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
-import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
@@ -45,7 +44,6 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
   private final WasiHttpConfig config;
   private final MemorySegment contextPtr;
   private final NativeHttpBindings bindings;
-  private final PanamaWasiHttpStats stats;
   private final NativeResourceHandle resourceHandle;
   private final Arena arena;
 
@@ -66,8 +64,6 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
       if (this.contextPtr == null || this.contextPtr.equals(MemorySegment.NULL)) {
         throw new WasmException("Failed to create native WASI HTTP context");
       }
-      this.stats = new PanamaWasiHttpStats(contextPtr, bindings);
-
       // Capture values for safety net (must not capture 'this')
       final MemorySegment safetyCtxPtr = this.contextPtr;
       final NativeHttpBindings safetyBindings = this.bindings;
@@ -272,11 +268,6 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
   }
 
   @Override
-  public WasiHttpStats getStats() {
-    return stats;
-  }
-
-  @Override
   public boolean isValid() {
     if (resourceHandle.isClosed()) {
       return false;
@@ -295,14 +286,6 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
 
     final MemorySegment hostStr = arena.allocateFrom(host);
     return bindings.wasiHttpContextIsHostAllowed(contextPtr, hostStr) != 0;
-  }
-
-  @Override
-  public void resetStats() {
-    if (resourceHandle.isClosed()) {
-      throw new IllegalStateException("WASI HTTP context has been closed");
-    }
-    bindings.wasiHttpContextResetStats(contextPtr);
   }
 
   @Override

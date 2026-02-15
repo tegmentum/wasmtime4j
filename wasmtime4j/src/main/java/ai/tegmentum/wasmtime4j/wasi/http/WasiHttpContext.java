@@ -63,13 +63,6 @@ public interface WasiHttpContext extends Closeable {
   WasiHttpConfig getConfig();
 
   /**
-   * Gets statistics about HTTP requests made through this context.
-   *
-   * @return the HTTP statistics
-   */
-  WasiHttpStats getStats();
-
-  /**
    * Checks if the context is still valid and usable.
    *
    * @return true if the context is valid, false otherwise
@@ -83,14 +76,6 @@ public interface WasiHttpContext extends Closeable {
    * @return true if requests to the host are allowed, false otherwise
    */
   boolean isHostAllowed(String host);
-
-  /**
-   * Resets the statistics for this context.
-   *
-   * <p>This clears all accumulated statistics including request counts, byte counts, and error
-   * counts.
-   */
-  void resetStats();
 
   /**
    * Closes this HTTP context and releases associated resources.

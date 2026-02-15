@@ -22,7 +22,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.JniLibraryLoader;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
-import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,7 +44,6 @@ public final class JniWasiHttpContext implements WasiHttpContext {
   private final WasiHttpConfig config;
   private final long contextHandle;
   private final long contextId;
-  private final JniWasiHttpStats stats;
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /**
@@ -67,7 +65,6 @@ public final class JniWasiHttpContext implements WasiHttpContext {
       if (this.contextHandle == 0) {
         throw new WasmException("Failed to create native WASI HTTP context");
       }
-      this.stats = new JniWasiHttpStats(contextHandle);
       LOGGER.fine("Created WASI HTTP context: " + contextId);
     } catch (final WasmException e) {
       throw e;
@@ -100,11 +97,6 @@ public final class JniWasiHttpContext implements WasiHttpContext {
   }
 
   @Override
-  public WasiHttpStats getStats() {
-    return stats;
-  }
-
-  @Override
   public boolean isValid() {
     if (closed.get()) {
       return false;
@@ -134,15 +126,6 @@ public final class JniWasiHttpContext implements WasiHttpContext {
     }
 
     return matchesAnyPattern(host, allowedHosts);
-  }
-
-  @Override
-  public void resetStats() {
-    if (closed.get()) {
-      throw new IllegalStateException("WASI HTTP context has been closed");
-    }
-    stats.reset();
-    nativeResetStats(contextHandle);
   }
 
   @Override
@@ -209,8 +192,6 @@ public final class JniWasiHttpContext implements WasiHttpContext {
   private static native long nativeCreate(WasiHttpConfig config);
 
   private static native boolean nativeIsValid(long contextHandle);
-
-  private static native void nativeResetStats(long contextHandle);
 
   private static native void nativeFree(long contextHandle);
 }

@@ -24,7 +24,6 @@ import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
-import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -102,27 +101,6 @@ class PanamaWasiHttpContextTest {
       final Method method = PanamaWasiHttpContext.class.getMethod("getConfig");
       assertNotNull(method, "getConfig method should exist");
       assertEquals(WasiHttpConfig.class, method.getReturnType(), "Should return WasiHttpConfig");
-    }
-  }
-
-  @Nested
-  @DisplayName("Stats Method Tests")
-  class StatsMethodTests {
-
-    @Test
-    @DisplayName("should have getStats method")
-    void shouldHaveGetStatsMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiHttpContext.class.getMethod("getStats");
-      assertNotNull(method, "getStats method should exist");
-      assertEquals(WasiHttpStats.class, method.getReturnType(), "Should return WasiHttpStats");
-    }
-
-    @Test
-    @DisplayName("should have resetStats method")
-    void shouldHaveResetStatsMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiHttpContext.class.getMethod("resetStats");
-      assertNotNull(method, "resetStats method should exist");
-      assertEquals(void.class, method.getReturnType(), "Should return void");
     }
   }
 

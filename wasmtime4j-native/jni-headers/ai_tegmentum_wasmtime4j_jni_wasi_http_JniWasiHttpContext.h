@@ -25,14 +25,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHtt
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
- * Method:    nativeResetStats
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeResetStats
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
  * Method:    nativeFree
  * Signature: (J)V
  */

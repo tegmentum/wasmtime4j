@@ -48,8 +48,6 @@ class PanamaWasiHttpTest {
       "ai.tegmentum.wasmtime4j.panama.wasi.http.PanamaWasiHttpConfig";
   private static final String HTTP_CONFIG_BUILDER_CLASS =
       "ai.tegmentum.wasmtime4j.panama.wasi.http.PanamaWasiHttpConfigBuilder";
-  private static final String HTTP_STATS_CLASS =
-      "ai.tegmentum.wasmtime4j.panama.wasi.http.PanamaWasiHttpStats";
 
   /**
    * Loads a class without initializing it.
@@ -100,10 +98,8 @@ class PanamaWasiHttpTest {
       final Set<String> requiredMethods = new HashSet<>();
       requiredMethods.add("addToLinker");
       requiredMethods.add("getConfig");
-      requiredMethods.add("getStats");
       requiredMethods.add("isValid");
       requiredMethods.add("isHostAllowed");
-      requiredMethods.add("resetStats");
       requiredMethods.add("close");
 
       final Set<String> declaredMethods =
@@ -441,164 +437,6 @@ class PanamaWasiHttpTest {
   }
 
   @Nested
-  @DisplayName("PanamaWasiHttpStats Class Structure Tests")
-  class HttpStatsClassStructureTests {
-
-    @Test
-    @DisplayName("PanamaWasiHttpStats class should exist and be public final")
-    void statsClassShouldExistAndBePublicFinal() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-
-      assertNotNull(clazz, "PanamaWasiHttpStats class should exist");
-      assertTrue(Modifier.isPublic(clazz.getModifiers()), "Class should be public");
-      assertTrue(Modifier.isFinal(clazz.getModifiers()), "Class should be final");
-      LOGGER.info("PanamaWasiHttpStats class exists and is public final");
-    }
-
-    @Test
-    @DisplayName("PanamaWasiHttpStats should implement WasiHttpStats interface")
-    void statsShouldImplementInterface() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-      final Class<?>[] interfaces = clazz.getInterfaces();
-
-      final Set<String> interfaceNames =
-          Arrays.stream(interfaces).map(Class::getName).collect(Collectors.toSet());
-
-      assertTrue(
-          interfaceNames.contains("ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats"),
-          "Should implement WasiHttpStats interface");
-      LOGGER.info("PanamaWasiHttpStats implements WasiHttpStats interface");
-    }
-
-    @Test
-    @DisplayName("PanamaWasiHttpStats should have request count methods")
-    void statsShouldHaveRequestCountMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-
-      final Set<String> requiredMethods = new HashSet<>();
-      requiredMethods.add("getTotalRequests");
-      requiredMethods.add("getSuccessfulRequests");
-      requiredMethods.add("getFailedRequests");
-      requiredMethods.add("getActiveRequests");
-
-      final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
-              .map(Method::getName)
-              .collect(Collectors.toSet());
-
-      for (final String method : requiredMethods) {
-        assertTrue(
-            declaredMethods.contains(method), "PanamaWasiHttpStats should have method: " + method);
-      }
-      LOGGER.info("PanamaWasiHttpStats has request count methods: " + requiredMethods);
-    }
-
-    @Test
-    @DisplayName("PanamaWasiHttpStats should have bytes methods")
-    void statsShouldHaveBytesMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-
-      final Set<String> requiredMethods = new HashSet<>();
-      requiredMethods.add("getTotalBytesSent");
-      requiredMethods.add("getTotalBytesReceived");
-
-      final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
-              .map(Method::getName)
-              .collect(Collectors.toSet());
-
-      for (final String method : requiredMethods) {
-        assertTrue(
-            declaredMethods.contains(method), "PanamaWasiHttpStats should have method: " + method);
-      }
-      LOGGER.info("PanamaWasiHttpStats has bytes methods: " + requiredMethods);
-    }
-
-    @Test
-    @DisplayName("PanamaWasiHttpStats should have duration methods")
-    void statsShouldHaveDurationMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-
-      final Set<String> requiredMethods = new HashSet<>();
-      requiredMethods.add("getAverageRequestDuration");
-      requiredMethods.add("getMinRequestDuration");
-      requiredMethods.add("getMaxRequestDuration");
-
-      final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
-              .map(Method::getName)
-              .collect(Collectors.toSet());
-
-      for (final String method : requiredMethods) {
-        assertTrue(
-            declaredMethods.contains(method), "PanamaWasiHttpStats should have method: " + method);
-      }
-      LOGGER.info("PanamaWasiHttpStats has duration methods: " + requiredMethods);
-    }
-
-    @Test
-    @DisplayName("PanamaWasiHttpStats should have timeout and error methods")
-    void statsShouldHaveTimeoutMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-
-      final Set<String> requiredMethods = new HashSet<>();
-      requiredMethods.add("getConnectionTimeouts");
-      requiredMethods.add("getReadTimeouts");
-      requiredMethods.add("getBlockedRequests");
-      requiredMethods.add("getBodySizeLimitViolations");
-
-      final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
-              .map(Method::getName)
-              .collect(Collectors.toSet());
-
-      for (final String method : requiredMethods) {
-        assertTrue(
-            declaredMethods.contains(method), "PanamaWasiHttpStats should have method: " + method);
-      }
-      LOGGER.info("PanamaWasiHttpStats has timeout/error methods: " + requiredMethods);
-    }
-
-    @Test
-    @DisplayName("PanamaWasiHttpStats should have connection pool methods")
-    void statsShouldHaveConnectionPoolMethods() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-
-      final Set<String> requiredMethods = new HashSet<>();
-      requiredMethods.add("getActiveConnections");
-      requiredMethods.add("getIdleConnections");
-
-      final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
-              .map(Method::getName)
-              .collect(Collectors.toSet());
-
-      for (final String method : requiredMethods) {
-        assertTrue(
-            declaredMethods.contains(method), "PanamaWasiHttpStats should have method: " + method);
-      }
-      LOGGER.info("PanamaWasiHttpStats has connection pool methods: " + requiredMethods);
-    }
-
-    @Test
-    @DisplayName("PanamaWasiHttpStats should have context pointer field")
-    void statsShouldHaveContextPtrField() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-
-      boolean hasContextPtr = false;
-      for (final Field field : clazz.getDeclaredFields()) {
-        if (field.getName().equals("contextPtr")
-            && field.getType().getName().equals("java.lang.foreign.MemorySegment")) {
-          hasContextPtr = true;
-          break;
-        }
-      }
-      assertTrue(hasContextPtr, "Should have contextPtr field of type MemorySegment");
-      LOGGER.info("PanamaWasiHttpStats has contextPtr field");
-    }
-  }
-
-  @Nested
   @DisplayName("Interface Compliance Tests")
   class InterfaceComplianceTests {
 
@@ -659,7 +497,7 @@ class PanamaWasiHttpTest {
     @DisplayName("HTTP classes should have toString method")
     void httpClassesShouldHaveToString() throws ClassNotFoundException {
       final String[] classes = {
-        HTTP_CONTEXT_CLASS, HTTP_CONFIG_CLASS, HTTP_CONFIG_BUILDER_CLASS, HTTP_STATS_CLASS
+        HTTP_CONTEXT_CLASS, HTTP_CONFIG_CLASS, HTTP_CONFIG_BUILDER_CLASS
       };
 
       for (final String className : classes) {
@@ -716,21 +554,6 @@ class PanamaWasiHttpTest {
       LOGGER.info("PanamaWasiHttpContext has closed AtomicBoolean field");
     }
 
-    @Test
-    @DisplayName("PanamaWasiHttpStats should have bindings field")
-    void statsShouldHaveBindingsField() throws ClassNotFoundException {
-      final Class<?> clazz = loadClassWithoutInit(HTTP_STATS_CLASS);
-
-      boolean hasBindings = false;
-      for (final Field field : clazz.getDeclaredFields()) {
-        if (field.getName().equals("bindings")) {
-          hasBindings = true;
-          break;
-        }
-      }
-      assertTrue(hasBindings, "Should have bindings field");
-      LOGGER.info("PanamaWasiHttpStats has bindings field");
-    }
   }
 
   @Nested

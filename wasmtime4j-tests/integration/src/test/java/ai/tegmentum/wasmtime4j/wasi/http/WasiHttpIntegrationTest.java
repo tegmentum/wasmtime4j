@@ -510,30 +510,6 @@ public final class WasiHttpIntegrationTest {
     }
 
     @Test
-    @DisplayName("should track HTTP stats")
-    void shouldTrackHttpStats(final TestInfo testInfo) throws Exception {
-      assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final WasiHttpConfig config = WasiHttpConfig.defaultConfig();
-
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      final WasiHttpContext context =
-          (WasiHttpContext)
-              jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
-      resources.add(context);
-
-      final WasiHttpStats stats = context.getStats();
-      assertNotNull(stats, "Stats should not be null");
-
-      // Reset stats should not throw
-      context.resetStats();
-
-      LOGGER.info("HTTP stats tracking verification passed");
-    }
-
-    @Test
     @DisplayName("should close context properly")
     void shouldCloseContextProperly(final TestInfo testInfo) throws Exception {
       assumeWasiHttpAvailable();

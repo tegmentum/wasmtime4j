@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
-import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -37,7 +36,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
@@ -354,172 +352,6 @@ public class JniWasiHttpTest {
     }
   }
 
-  /** Tests for JniWasiHttpStats class structure and API. */
-  @Nested
-  @DisplayName("JniWasiHttpStats Tests")
-  class JniWasiHttpStatsTests {
-
-    @Test
-    @DisplayName("JniWasiHttpStats should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(JniWasiHttpStats.class.getModifiers()),
-          "JniWasiHttpStats should be final");
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should implement WasiHttpStats interface")
-    void shouldImplementWasiHttpStats() {
-      assertTrue(
-          WasiHttpStats.class.isAssignableFrom(JniWasiHttpStats.class),
-          "JniWasiHttpStats should implement WasiHttpStats");
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should have package-private constructor")
-    void shouldHavePackagePrivateConstructor() throws NoSuchMethodException {
-      Constructor<?> constructor = JniWasiHttpStats.class.getDeclaredConstructor(long.class);
-      assertNotNull(constructor, "Should have constructor(long)");
-      assertFalse(
-          Modifier.isPublic(constructor.getModifiers()), "Constructor should not be public");
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should use atomic counters for thread safety")
-    void shouldUseAtomicCounters() {
-      Set<String> expectedAtomicFields =
-          new HashSet<>(
-              Arrays.asList(
-                  "totalRequests",
-                  "successfulRequests",
-                  "failedRequests",
-                  "activeRequests",
-                  "totalBytesSent",
-                  "totalBytesReceived",
-                  "totalDurationMs",
-                  "minDurationMs",
-                  "maxDurationMs",
-                  "connectionTimeouts",
-                  "readTimeouts",
-                  "blockedRequests",
-                  "bodySizeViolations",
-                  "activeConnections",
-                  "idleConnections"));
-
-      for (String fieldName : expectedAtomicFields) {
-        try {
-          Field field = JniWasiHttpStats.class.getDeclaredField(fieldName);
-          Class<?> fieldType = field.getType();
-          assertTrue(
-              fieldType == AtomicLong.class || fieldType == AtomicInteger.class,
-              fieldName + " should be AtomicLong or AtomicInteger");
-        } catch (NoSuchFieldException e) {
-          // Field might be named differently, skip
-          LOGGER.fine("Field not found: " + fieldName);
-        }
-      }
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should have all WasiHttpStats methods")
-    void shouldHaveAllStatsMethods() {
-      Set<String> requiredMethods =
-          new HashSet<>(
-              Arrays.asList(
-                  "getTotalRequests",
-                  "getSuccessfulRequests",
-                  "getFailedRequests",
-                  "getActiveRequests",
-                  "getTotalBytesSent",
-                  "getTotalBytesReceived",
-                  "getAverageRequestDuration",
-                  "getMinRequestDuration",
-                  "getMaxRequestDuration",
-                  "getConnectionTimeouts",
-                  "getReadTimeouts",
-                  "getBlockedRequests",
-                  "getBodySizeLimitViolations",
-                  "getActiveConnections",
-                  "getIdleConnections"));
-
-      Set<String> actualMethods = new HashSet<>();
-      for (Method method : JniWasiHttpStats.class.getMethods()) {
-        actualMethods.add(method.getName());
-      }
-
-      for (String required : requiredMethods) {
-        assertTrue(
-            actualMethods.contains(required), "JniWasiHttpStats should have method: " + required);
-      }
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should have recording methods")
-    void shouldHaveRecordingMethods() {
-      Set<String> recordingMethods =
-          new HashSet<>(
-              Arrays.asList(
-                  "recordRequestStart",
-                  "recordRequestSuccess",
-                  "recordRequestFailure",
-                  "recordConnectionTimeout",
-                  "recordReadTimeout",
-                  "recordBlockedRequest",
-                  "recordBodySizeViolation",
-                  "setActiveConnections",
-                  "setIdleConnections"));
-
-      Set<String> actualMethods = new HashSet<>();
-      for (Method method : JniWasiHttpStats.class.getMethods()) {
-        actualMethods.add(method.getName());
-      }
-
-      for (String recording : recordingMethods) {
-        assertTrue(
-            actualMethods.contains(recording),
-            "JniWasiHttpStats should have recording method: " + recording);
-      }
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats recordRequestStart should return long")
-    void recordRequestStartShouldReturnLong() throws NoSuchMethodException {
-      Method method = JniWasiHttpStats.class.getMethod("recordRequestStart");
-      assertEquals(long.class, method.getReturnType());
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats getAverageRequestDuration should return Duration")
-    void getAverageRequestDurationShouldReturnDuration() throws NoSuchMethodException {
-      Method method = JniWasiHttpStats.class.getMethod("getAverageRequestDuration");
-      assertEquals(Duration.class, method.getReturnType());
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should have reset method")
-    void shouldHaveResetMethod() {
-      boolean foundReset = false;
-      for (Method method : JniWasiHttpStats.class.getDeclaredMethods()) {
-        if (method.getName().equals("reset")) {
-          foundReset = true;
-          assertFalse(Modifier.isPublic(method.getModifiers()), "reset should not be public");
-        }
-      }
-      assertTrue(foundReset, "Should have reset method");
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should have toString method")
-    void shouldHaveToStringMethod() throws NoSuchMethodException {
-      Method toString = JniWasiHttpStats.class.getMethod("toString");
-      assertNotNull(toString, "Should have toString method");
-      assertEquals(
-          JniWasiHttpStats.class,
-          toString.getDeclaringClass(),
-          "toString should be declared in JniWasiHttpStats");
-    }
-  }
-
   /** Tests for JniWasiHttpContext class structure and API. */
   @Nested
   @DisplayName("JniWasiHttpContext Tests")
@@ -557,10 +389,8 @@ public class JniWasiHttpTest {
               Arrays.asList(
                   "addToLinker",
                   "getConfig",
-                  "getStats",
                   "isValid",
                   "isHostAllowed",
-                  "resetStats",
                   "close"));
 
       Set<String> actualMethods = new HashSet<>();
@@ -599,7 +429,7 @@ public class JniWasiHttpTest {
       int nativeMethodCount = 0;
       Set<String> expectedNative =
           new HashSet<>(
-              Arrays.asList("nativeCreate", "nativeIsValid", "nativeResetStats", "nativeFree"));
+              Arrays.asList("nativeCreate", "nativeIsValid", "nativeFree"));
 
       for (Method method : JniWasiHttpContext.class.getDeclaredMethods()) {
         if (Modifier.isNative(method.getModifiers())) {
@@ -616,13 +446,6 @@ public class JniWasiHttpTest {
     void getConfigShouldReturnWasiHttpConfig() throws NoSuchMethodException {
       Method method = JniWasiHttpContext.class.getMethod("getConfig");
       assertEquals(WasiHttpConfig.class, method.getReturnType());
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpContext getStats should return WasiHttpStats")
-    void getStatsShouldReturnWasiHttpStats() throws NoSuchMethodException {
-      Method method = JniWasiHttpContext.class.getMethod("getStats");
-      assertEquals(WasiHttpStats.class, method.getReturnType());
     }
 
     @Test
@@ -692,15 +515,6 @@ public class JniWasiHttpTest {
     }
 
     @Test
-    @DisplayName("JniWasiHttpStats should be in wasi.http package")
-    void statsShouldBeInHttpPackage() {
-      assertEquals(
-          "ai.tegmentum.wasmtime4j.jni.wasi.http",
-          JniWasiHttpStats.class.getPackage().getName(),
-          "JniWasiHttpStats should be in wasi.http package");
-    }
-
-    @Test
     @DisplayName("JniWasiHttpContext should be in wasi.http package")
     void contextShouldBeInHttpPackage() {
       assertEquals(
@@ -718,9 +532,6 @@ public class JniWasiHttpTest {
       assertTrue(
           JniWasiHttpConfigBuilder.class.getSimpleName().startsWith("Jni"),
           "JniWasiHttpConfigBuilder should start with Jni prefix");
-      assertTrue(
-          JniWasiHttpStats.class.getSimpleName().startsWith("Jni"),
-          "JniWasiHttpStats should start with Jni prefix");
       assertTrue(
           JniWasiHttpContext.class.getSimpleName().startsWith("Jni"),
           "JniWasiHttpContext should start with Jni prefix");
@@ -769,31 +580,13 @@ public class JniWasiHttpTest {
     }
 
     @Test
-    @DisplayName("JniWasiHttpStats should implement all WasiHttpStats methods")
-    void statsShouldImplementAllInterfaceMethods() {
-      Class<?> clazz = JniWasiHttpStats.class;
-
-      assertMethodExists(clazz, "getTotalRequests");
-      assertMethodExists(clazz, "getSuccessfulRequests");
-      assertMethodExists(clazz, "getFailedRequests");
-      assertMethodExists(clazz, "getActiveRequests");
-      assertMethodExists(clazz, "getTotalBytesSent");
-      assertMethodExists(clazz, "getTotalBytesReceived");
-      assertMethodExists(clazz, "getAverageRequestDuration");
-      assertMethodExists(clazz, "getMinRequestDuration");
-      assertMethodExists(clazz, "getMaxRequestDuration");
-    }
-
-    @Test
     @DisplayName("JniWasiHttpContext should implement all WasiHttpContext methods")
     void contextShouldImplementAllInterfaceMethods() {
       Class<?> clazz = JniWasiHttpContext.class;
 
       assertMethodExists(clazz, "getConfig");
-      assertMethodExists(clazz, "getStats");
       assertMethodExists(clazz, "isValid");
       assertMethodExists(clazz, "isHostAllowed", String.class);
-      assertMethodExists(clazz, "resetStats");
       assertMethodExists(clazz, "close");
     }
 
@@ -831,31 +624,6 @@ public class JniWasiHttpTest {
         }
       }
       assertTrue(foundMethod, "Should have pattern matching helper method");
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should have contextHandle field")
-    void statsShouldHaveContextHandleField() throws NoSuchFieldException {
-      Field field = JniWasiHttpStats.class.getDeclaredField("contextHandle");
-      assertNotNull(field, "Should have contextHandle field");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "contextHandle should be private");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "contextHandle should be final");
-      assertEquals(long.class, field.getType(), "contextHandle should be of type long");
-    }
-
-    @Test
-    @DisplayName("JniWasiHttpStats should have getContextHandle method")
-    void statsShouldHaveGetContextHandleMethod() {
-      boolean foundMethod = false;
-      for (Method method : JniWasiHttpStats.class.getDeclaredMethods()) {
-        if (method.getName().equals("getContextHandle")) {
-          foundMethod = true;
-          assertFalse(
-              Modifier.isPublic(method.getModifiers()), "getContextHandle should not be public");
-          assertEquals(long.class, method.getReturnType());
-        }
-      }
-      assertTrue(foundMethod, "Should have getContextHandle method");
     }
 
     @Test
