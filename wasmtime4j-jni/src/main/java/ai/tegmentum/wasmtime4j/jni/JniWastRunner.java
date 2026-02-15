@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.wast.WastDirectiveResult;
+import ai.tegmentum.wasmtime4j.wast.WastExecutionResult;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 

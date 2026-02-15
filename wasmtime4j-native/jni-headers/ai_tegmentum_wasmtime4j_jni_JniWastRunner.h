@@ -10,7 +10,7 @@ extern "C" {
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWastRunner
  * Method:    nativeExecuteWastFile
- * Signature: (Ljava/lang/String;)Lai/tegmentum/wasmtime4j/jni/WastExecutionResult;
+ * Signature: (Ljava/lang/String;)Lai/tegmentum/wasmtime4j/wast/WastExecutionResult;
  */
 JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeExecuteWastFile
   (JNIEnv *, jclass, jstring);
@@ -18,7 +18,7 @@ JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeE
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWastRunner
  * Method:    nativeExecuteWastBuffer
- * Signature: (Ljava/lang/String;[B)Lai/tegmentum/wasmtime4j/jni/WastExecutionResult;
+ * Signature: (Ljava/lang/String;[B)Lai/tegmentum/wasmtime4j/wast/WastExecutionResult;
  */
 JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWastRunner_nativeExecuteWastBuffer
   (JNIEnv *, jclass, jstring, jbyteArray);

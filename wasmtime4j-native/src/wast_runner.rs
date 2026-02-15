@@ -4,12 +4,13 @@
 /// using Wasmtime's native WAST parser and test runner. This ensures 100%
 /// compatibility with Wasmtime's own test execution behavior.
 use anyhow::{Context, Result};
+use serde::Serialize;
 use std::path::Path;
 use wasmtime::*;
 use wasmtime_wast::WastContext;
 
 /// Result of executing a single WAST directive
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct WastDirectiveResult {
     pub line_number: usize,
     pub passed: bool,
@@ -17,7 +18,7 @@ pub struct WastDirectiveResult {
 }
 
 /// Results from executing a complete WAST file
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct WastExecutionResult {
     pub file_path: String,
     pub total_directives: usize,

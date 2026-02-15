@@ -138,7 +138,7 @@ fn wast_result_to_java<'local>(
 ) -> crate::error::WasmtimeResult<jobject> {
     // Find WastExecutionResult class
     let result_class = env
-        .find_class("ai/tegmentum/wasmtime4j/jni/WastExecutionResult")
+        .find_class("ai/tegmentum/wasmtime4j/wast/WastExecutionResult")
         .map_err(|e| {
             crate::error::WasmtimeError::JniError(format!(
                 "Failed to find WastExecutionResult class: {}",
@@ -169,7 +169,7 @@ fn wast_result_to_java<'local>(
     let directive_results_array = directive_results_to_java_array(env, &result.directive_results)?;
 
     // Find constructor
-    let ctor_sig = "(Ljava/lang/String;IIILjava/lang/String;[Lai/tegmentum/wasmtime4j/jni/WastDirectiveResult;)V";
+    let ctor_sig = "(Ljava/lang/String;IIILjava/lang/String;[Lai/tegmentum/wasmtime4j/wast/WastDirectiveResult;)V";
     let ctor = env
         .get_method_id(&result_class, "<init>", ctor_sig)
         .map_err(|e| {
@@ -211,7 +211,7 @@ fn directive_results_to_java_array<'local>(
 ) -> crate::error::WasmtimeResult<JObject<'local>> {
     // Find WastDirectiveResult class
     let directive_class = env
-        .find_class("ai/tegmentum/wasmtime4j/jni/WastDirectiveResult")
+        .find_class("ai/tegmentum/wasmtime4j/wast/WastDirectiveResult")
         .map_err(|e| {
             crate::error::WasmtimeError::JniError(format!(
                 "Failed to find WastDirectiveResult class: {}",
