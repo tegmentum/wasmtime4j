@@ -12,7 +12,6 @@ import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceLinker;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
 import java.io.IOException;
 import java.io.InputStream;
@@ -297,23 +296,9 @@ public final class PanamaComponentEngine implements ComponentEngine {
       }
     }
 
-    // Use WitInterfaceLinker for dependency analysis and validation
-    final WitInterfaceLinker linker = new WitInterfaceLinker();
-    final WitInterfaceLinker.ComponentLinkResult linkResult = linker.linkComponents(components);
-
-    if (!linkResult.isSuccess()) {
-      throw new WasmException("Component linking failed: " + linkResult.getMessage());
-    }
-
+    // TODO: Implement using Wasmtime's component composition API
     // For now, return the first component as the "linked" component
-    // Full native linking would require Wasmtime's component composition API
-    // which is more complex and may not be fully exposed yet
-    LOGGER.info(
-        "Linked "
-            + components.size()
-            + " components with "
-            + linkResult.getLinks().size()
-            + " interface links");
+    LOGGER.info("Linked " + components.size() + " components");
 
     return components.get(0);
   }

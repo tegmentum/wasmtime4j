@@ -8,7 +8,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceIntrospection;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceVersion;
 import java.util.HashSet;
 import java.util.Set;
@@ -184,17 +183,6 @@ public final class JniComponentImpl implements Component {
         "Full WIT compatibility (stub implementation)", new HashSet<>());
   }
 
-  /**
-   * Gets WIT interface introspection.
-   *
-   * @return introspection result
-   * @throws WasmException if introspection fails
-   */
-  public WitInterfaceIntrospection getWitIntrospection() throws WasmException {
-    ensureValid();
-    return new JniWitInterfaceIntrospection(componentId, componentId, "1.0.0");
-  }
-
   @Override
   public boolean isValid() {
     return !nativeComponent.isClosed() && nativeComponent.isValid();
@@ -347,90 +335,4 @@ public final class JniComponentImpl implements Component {
     }
   }
 
-  /** Stub implementation of WitInterfaceIntrospection. */
-  private static class JniWitInterfaceIntrospection implements WitInterfaceIntrospection {
-    private final String componentId;
-    private final String componentName;
-    private final String version;
-
-    JniWitInterfaceIntrospection(
-        final String componentId, final String componentName, final String version) {
-      this.componentId = componentId;
-      this.componentName = componentName;
-      this.version = version;
-    }
-
-    @Override
-    public String getInterfaceName() {
-      return componentName != null ? componentName : "component-" + componentId;
-    }
-
-    @Override
-    public String getVersion() {
-      return version;
-    }
-
-    @Override
-    public java.util.List<FunctionInfo> getFunctions() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<TypeInfo> getTypes() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<ResourceInfo> getResources() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public String getDocumentation() {
-      return "WIT interface for component " + componentId;
-    }
-
-    @Override
-    public java.util.Map<String, Object> getMetadata() {
-      final java.util.Map<String, Object> metadata = new java.util.HashMap<>();
-      metadata.put("componentId", componentId);
-      metadata.put("version", version);
-      return metadata;
-    }
-
-    @Override
-    public CompatibilityResult isCompatibleWith(final WitInterfaceIntrospection other) {
-      return new CompatibilityResult() {
-        @Override
-        public boolean isCompatible() {
-          return true;
-        }
-
-        @Override
-        public java.util.List<CompatibilityIssue> getIssues() {
-          return java.util.Collections.emptyList();
-        }
-
-        @Override
-        public double getScore() {
-          return 1.0;
-        }
-      };
-    }
-
-    @Override
-    public java.util.List<DependencyInfo> getDependencies() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<ExportInfo> getExports() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<ImportInfo> getImports() {
-      return java.util.Collections.emptyList();
-    }
-  }
 }
