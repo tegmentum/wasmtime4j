@@ -95,9 +95,6 @@ public final class EngineConfig {
   private ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails backtraceDetails =
       ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails.ENABLE;
 
-  // Experimental features configuration
-  // Note: ExperimentalFeatureConfig moved to advanced package
-
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
     // Default configuration

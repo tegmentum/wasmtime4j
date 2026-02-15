@@ -1148,17 +1148,6 @@ class GcPackageTest {
   }
 
   @Nested
-  @DisplayName("GcRootManager Tests")
-  class GcRootManagerTests {
-
-    @Test
-    @DisplayName("should exist as a class")
-    void shouldExistAsAClass() {
-      assertNotNull(GcRootManager.class, "GcRootManager class should exist");
-    }
-  }
-
-  @Nested
   @DisplayName("GcRuntime Tests")
   class GcRuntimeTests {
 

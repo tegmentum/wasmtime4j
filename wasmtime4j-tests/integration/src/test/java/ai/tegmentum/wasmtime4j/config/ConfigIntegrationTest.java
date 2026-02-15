@@ -165,18 +165,4 @@ public class ConfigIntegrationTest {
     }
   }
 
-  @Nested
-  @DisplayName("AdvancedConfiguration Tests")
-  class AdvancedConfigurationTests {
-
-    @Test
-    @DisplayName("Should verify AdvancedConfiguration class exists")
-    void shouldVerifyAdvancedConfigurationClassExists() {
-      LOGGER.info("Testing AdvancedConfiguration class existence");
-
-      assertNotNull(AdvancedConfiguration.class, "AdvancedConfiguration class should exist");
-
-      LOGGER.info("AdvancedConfiguration class verified");
-    }
-  }
 }
