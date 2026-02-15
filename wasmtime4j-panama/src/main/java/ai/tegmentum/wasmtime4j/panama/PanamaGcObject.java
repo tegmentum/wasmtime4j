@@ -56,13 +56,16 @@ class PanamaGcObject implements GcObject {
 
   @Override
   public GcObject castTo(final GcReferenceType type) {
-    throw new UnsupportedOperationException(
-        "not yet implemented: GC object type casting with validation");
+    if (!isOfType(type)) {
+      throw new ClassCastException(
+          "Cannot cast " + getReferenceType() + " to " + type + ": incompatible reference types");
+    }
+    return this;
   }
 
   @Override
   public boolean isOfType(final GcReferenceType type) {
-    throw new UnsupportedOperationException("not yet implemented: GC object type checking");
+    return getReferenceType().isSubtypeOf(type);
   }
 
   @Override

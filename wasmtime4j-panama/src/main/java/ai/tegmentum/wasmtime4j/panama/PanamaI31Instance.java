@@ -64,17 +64,6 @@ class PanamaI31Instance extends PanamaGcObject implements I31Instance {
   }
 
   @Override
-  public GcObject castTo(final GcReferenceType type) {
-    throw new UnsupportedOperationException(
-        "not yet implemented: GC I31 type casting with validation");
-  }
-
-  @Override
-  public boolean isOfType(final GcReferenceType type) {
-    throw new UnsupportedOperationException("not yet implemented: GC I31 type checking");
-  }
-
-  @Override
   public boolean isNull() {
     return false;
   }

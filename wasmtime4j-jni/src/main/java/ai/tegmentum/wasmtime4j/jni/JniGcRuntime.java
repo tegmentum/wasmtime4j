@@ -1234,11 +1234,16 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public boolean isOfType(final GcReferenceType type) {
-      return type == GcReferenceType.ANY_REF;
+      return getReferenceType().isSubtypeOf(type);
     }
 
     @Override
     public GcObject castTo(final GcReferenceType type) {
+      if (!isOfType(type)) {
+        throw new ClassCastException(
+            "Cannot cast " + getReferenceType() + " to " + type
+                + ": incompatible reference types");
+      }
       return this;
     }
 
@@ -1324,17 +1329,6 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     @Override
-    public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      throw new UnsupportedOperationException(
-          "not yet implemented: GC struct type casting with validation");
-    }
-
-    @Override
-    public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      throw new UnsupportedOperationException("not yet implemented: GC struct type checking");
-    }
-
-    @Override
     public boolean isNull() {
       return false;
     }
@@ -1411,17 +1405,6 @@ public final class JniGcRuntime implements GcRuntime {
     }
 
     @Override
-    public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      throw new UnsupportedOperationException(
-          "not yet implemented: GC array type casting with validation");
-    }
-
-    @Override
-    public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      throw new UnsupportedOperationException("not yet implemented: GC array type checking");
-    }
-
-    @Override
     public boolean isNull() {
       return false;
     }
@@ -1486,21 +1469,6 @@ public final class JniGcRuntime implements GcRuntime {
       return ai.tegmentum.wasmtime4j.gc.GcReferenceType.I31_REF;
     }
 
-    @Override
-    public boolean isOfType(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      // I31 is a subtype of ANY_REF and EQ_REF
-      return type == ai.tegmentum.wasmtime4j.gc.GcReferenceType.I31_REF
-          || type == ai.tegmentum.wasmtime4j.gc.GcReferenceType.ANY_REF
-          || type == ai.tegmentum.wasmtime4j.gc.GcReferenceType.EQ_REF;
-    }
-
-    @Override
-    public GcObject castTo(final ai.tegmentum.wasmtime4j.gc.GcReferenceType type) {
-      if (isOfType(type)) {
-        return this;
-      }
-      throw new ClassCastException("Cannot cast I31 to " + type + ": incompatible reference types");
-    }
   }
 
   /**

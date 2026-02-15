@@ -78,17 +78,6 @@ class PanamaStructInstance extends PanamaGcObject implements StructInstance {
   }
 
   @Override
-  public GcObject castTo(final GcReferenceType type) {
-    throw new UnsupportedOperationException(
-        "not yet implemented: GC struct type casting with validation");
-  }
-
-  @Override
-  public boolean isOfType(final GcReferenceType type) {
-    throw new UnsupportedOperationException("not yet implemented: GC struct type checking");
-  }
-
-  @Override
   public boolean isNull() {
     return false;
   }
