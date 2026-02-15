@@ -1464,46 +1464,6 @@ impl WasmtimeGcOperations {
         }
     }
 
-    fn convert_field_type_to_wasmtime(&self, field_type: &FieldType) -> WasmtimeResult<ValType> {
-        match field_type {
-            FieldType::I32 => Ok(ValType::I32),
-            FieldType::I64 => Ok(ValType::I64),
-            FieldType::F32 => Ok(ValType::F32),
-            FieldType::F64 => Ok(ValType::F64),
-            FieldType::V128 => Ok(ValType::V128),
-            FieldType::V256 => Ok(ValType::V128), // V256 not yet in Wasmtime, use V128
-            FieldType::V512 => Ok(ValType::V128), // V512 not yet in Wasmtime, use V128
-            FieldType::PackedI8 | FieldType::PackedI16 => Ok(ValType::I32),
-            FieldType::Reference(ref_type) => {
-                let heap_type = match ref_type {
-                    GcReferenceType::AnyRef => HeapType::Any,
-                    GcReferenceType::EqRef => HeapType::Eq,
-                    GcReferenceType::I31Ref => HeapType::I31,
-                    GcReferenceType::ExternRef => HeapType::Extern,
-                    GcReferenceType::FuncRef => HeapType::Func,
-                    GcReferenceType::NullRef => HeapType::None,
-                    GcReferenceType::NullFuncRef => HeapType::NoFunc,
-                    GcReferenceType::NullExternRef => HeapType::NoExtern,
-                    GcReferenceType::StructRef(struct_def) => {
-                        // Use registered struct type or fallback to Struct
-                        self.gc_types
-                            .get(&struct_def.type_id)
-                            .cloned()
-                            .unwrap_or(HeapType::Struct)
-                    }
-                    GcReferenceType::ArrayRef(array_def) => {
-                        // Use registered array type or fallback to Array
-                        self.gc_types
-                            .get(&array_def.type_id)
-                            .cloned()
-                            .unwrap_or(HeapType::Array)
-                    }
-                };
-                Ok(ValType::Ref(RefType::new(true, heap_type)))
-            }
-        }
-    }
-
     /// Convert GC value to Wasmtime Val within a RootScope (for struct/array field values)
     /// This version takes a scope to ensure GC references remain rooted
     fn convert_gc_value_to_wasmtime_in_scope<T>(

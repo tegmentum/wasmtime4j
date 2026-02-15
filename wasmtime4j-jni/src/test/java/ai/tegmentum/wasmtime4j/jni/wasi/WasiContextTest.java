@@ -61,14 +61,6 @@ class WasiContextTest {
   class ApiMethodTests {
 
     @Test
-    @DisplayName("should have getSecurityValidator method")
-    void shouldHaveGetSecurityValidatorMethod() throws NoSuchMethodException {
-      assertNotNull(
-          WasiContext.class.getMethod("getSecurityValidator"),
-          "Should have getSecurityValidator method");
-    }
-
-    @Test
     @DisplayName("should have getEnvironment method")
     void shouldHaveGetEnvironmentMethod() throws NoSuchMethodException {
       assertNotNull(
@@ -148,44 +140,6 @@ class WasiContextTest {
               .withWorkingDirectory("/app");
 
       assertNotNull(builder, "Fluent builder should work");
-    }
-  }
-
-  @Nested
-  @DisplayName("Native Method Tests")
-  class NativeMethodTests {
-
-    @Test
-    @DisplayName("should have nativeCreate method")
-    void shouldHaveNativeCreateMethod() {
-      // This is a structure test - we verify the expected native method exists
-      // The actual native implementation is tested separately
-      boolean hasNativeCreate = false;
-      for (final Method method : WasiContext.class.getDeclaredMethods()) {
-        if (method.getName().equals("nativeCreate") && Modifier.isNative(method.getModifiers())) {
-          hasNativeCreate = true;
-          break;
-        }
-      }
-      // Note: nativeCreate may be package-private or static, so we just check it exists
-      // If it doesn't exist as native, that's also acceptable as it may be implemented differently
-      assertTrue(true, "Structure test for native methods");
-    }
-  }
-
-  @Nested
-  @DisplayName("Thread Safety Tests")
-  class ThreadSafetyTests {
-
-    @Test
-    @DisplayName("WasiContext should be designed for thread safety")
-    void wasiContextShouldBeDesignedForThreadSafety() {
-      // This is a documentation/design test
-      // We verify that the class is final to prevent subclass-based thread safety issues
-      assertTrue(
-          Modifier.isFinal(WasiContext.class.getModifiers())
-              || !Modifier.isFinal(WasiContext.class.getModifiers()),
-          "WasiContext should have considered thread safety in design");
     }
   }
 

@@ -116,8 +116,6 @@ struct CollectionState {
 /// Weak reference entry for tracking object lifecycle
 #[derive(Debug)]
 struct WeakRefEntry {
-    /// When the weak reference was created
-    created_at: Instant,
     /// Whether the referenced object is still valid
     valid: bool,
 }
@@ -266,7 +264,6 @@ impl GcHeap {
             weak_refs.insert(
                 object_id,
                 WeakRefEntry {
-                    created_at: Instant::now(),
                     valid: true,
                 },
             );

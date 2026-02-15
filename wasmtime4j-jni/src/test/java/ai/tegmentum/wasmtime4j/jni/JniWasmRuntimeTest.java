@@ -7,7 +7,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.List;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -549,83 +548,6 @@ class JniWasmRuntimeTest {
   }
 
   @Nested
-  @DisplayName("SIMD Native Methods Tests")
-  class SimdNativeMethodsTests {
-
-    @Test
-    @DisplayName("should have nativeIsSimdSupported method")
-    void shouldHaveNativeIsSimdSupportedMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getDeclaredMethod("nativeIsSimdSupported", long.class);
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-      assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have nativeGetSimdCapabilities method")
-    void shouldHaveNativeGetSimdCapabilitiesMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method = clazz.getDeclaredMethod("nativeGetSimdCapabilities", long.class);
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-      assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have nativeSimdAdd method")
-    void shouldHaveNativeSimdAddMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method =
-          clazz.getDeclaredMethod("nativeSimdAdd", long.class, byte[].class, byte[].class);
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-      assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have nativeSimdSubtract method")
-    void shouldHaveNativeSimdSubtractMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method =
-          clazz.getDeclaredMethod("nativeSimdSubtract", long.class, byte[].class, byte[].class);
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have nativeSimdMultiply method")
-    void shouldHaveNativeSimdMultiplyMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method =
-          clazz.getDeclaredMethod("nativeSimdMultiply", long.class, byte[].class, byte[].class);
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have nativeSimdDivide method")
-    void shouldHaveNativeSimdDivideMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method =
-          clazz.getDeclaredMethod("nativeSimdDivide", long.class, byte[].class, byte[].class);
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-    }
-
-    @Test
-    @DisplayName("should have nativeSimdFma method")
-    void shouldHaveNativeSimdFmaMethod() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Method method =
-          clazz.getDeclaredMethod(
-              "nativeSimdFma", long.class, byte[].class, byte[].class, byte[].class);
-
-      assertThat(Modifier.isNative(method.getModifiers())).isTrue();
-    }
-  }
-
-  @Nested
   @DisplayName("WASI Native Methods Tests")
   class WasiNativeMethodsTests {
 
@@ -835,37 +757,11 @@ class JniWasmRuntimeTest {
               .filter(m -> Modifier.isNative(m.getModifiers()))
               .count();
 
-      // JniWasmRuntime has many native methods for SIMD, WASI, serialization, etc.
+      // JniWasmRuntime has native methods for WASI, serialization, etc.
       assertThat(nativeMethodCount)
-          .as("Should have at least 30 native methods")
-          .isGreaterThanOrEqualTo(30);
+          .as("Should have at least 20 native methods")
+          .isGreaterThanOrEqualTo(20);
     }
 
-    @Test
-    @DisplayName("should have SIMD native methods")
-    void shouldHaveSimdNativeMethods() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      List<String> simdMethods =
-          Arrays.asList(
-              "nativeSimdAdd",
-              "nativeSimdSubtract",
-              "nativeSimdMultiply",
-              "nativeSimdDivide",
-              "nativeSimdAnd",
-              "nativeSimdOr",
-              "nativeSimdXor",
-              "nativeSimdNot",
-              "nativeSimdFma",
-              "nativeSimdSqrt",
-              "nativeSimdShuffle");
-
-      for (String methodName : simdMethods) {
-        boolean hasMethod =
-            Arrays.stream(clazz.getDeclaredMethods())
-                .anyMatch(
-                    m -> m.getName().equals(methodName) && Modifier.isNative(m.getModifiers()));
-        assertThat(hasMethod).as("Should have native SIMD method: " + methodName).isTrue();
-      }
-    }
   }
 }

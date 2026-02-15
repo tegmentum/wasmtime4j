@@ -44,8 +44,6 @@ pub struct WasmGcRuntime {
     type_registry: Arc<GcTypeRegistry>,
     /// Heap manager for GC objects
     heap: Arc<GcHeap>,
-    /// Wasmtime engine for integration
-    engine: Engine,
     /// Real Wasmtime GC operations manager
     gc_operations: Mutex<WasmtimeGcOperations>,
     /// Object ID counter for unique tracking
@@ -123,7 +121,6 @@ impl WasmGcRuntime {
         Ok(Self {
             type_registry,
             heap,
-            engine,
             gc_operations: Mutex::new(gc_operations),
             next_object_id: Mutex::new(1),
             gc_objects: RwLock::new(HashMap::new()),
@@ -148,7 +145,6 @@ impl WasmGcRuntime {
         Ok(Self {
             type_registry,
             heap,
-            engine,
             gc_operations: Mutex::new(gc_operations),
             next_object_id: Mutex::new(1),
             gc_objects: RwLock::new(HashMap::new()),
