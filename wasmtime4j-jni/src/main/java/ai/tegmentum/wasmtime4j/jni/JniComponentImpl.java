@@ -9,7 +9,6 @@ import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceIntrospection;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceMigrationPlan;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceVersion;
 import java.util.HashSet;
 import java.util.Set;
@@ -183,47 +182,6 @@ public final class JniComponentImpl implements Component {
 
     return WitCompatibilityResult.compatible(
         "Full WIT compatibility (stub implementation)", new HashSet<>());
-  }
-
-  /**
-   * Migrates WIT interface to target version.
-   *
-   * @param targetVersion the target version
-   * @param migrationPlan the migration plan
-   * @return future that completes when migration is done
-   * @throws WasmException if migration fails
-   */
-  public CompletableFuture<Void> migrateWitInterface(
-      final WitInterfaceVersion targetVersion, final WitInterfaceMigrationPlan migrationPlan)
-      throws WasmException {
-    JniValidation.requireNonNull(targetVersion, "targetVersion");
-    JniValidation.requireNonNull(migrationPlan, "migrationPlan");
-    ensureValid();
-
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            LOGGER.info(
-                "WIT interface migration initiated for component "
-                    + componentId
-                    + " to version "
-                    + targetVersion);
-
-            // Validate target version compatibility
-            final String currentVersion = "1.0.0";
-            final String targetVersionStr = targetVersion.toString();
-
-            // Execute migration plan steps
-            for (final WitInterfaceMigrationPlan.MigrationStep step : migrationPlan.getSteps()) {
-              LOGGER.fine("Executing migration step: " + step.getName());
-            }
-
-            LOGGER.info("WIT interface migration completed for component " + componentId);
-            return null;
-          } catch (final Exception e) {
-            throw new RuntimeException("WIT interface migration failed", e);
-          }
-        });
   }
 
   /**
