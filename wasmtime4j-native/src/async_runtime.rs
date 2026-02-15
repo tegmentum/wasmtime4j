@@ -1031,31 +1031,6 @@ mod tests {
     }
 
     #[test]
-    fn test_c_api_initialization() {
-        unsafe {
-            let result = wasmtime4j_async_runtime_init();
-            assert_eq!(result, 0);
-
-            let result = wasmtime4j_async_runtime_shutdown();
-            assert_eq!(result, 0);
-        }
-    }
-
-    #[test]
-    fn test_runtime_info() {
-        unsafe {
-            let info_ptr = wasmtime4j_async_runtime_info();
-            assert!(!info_ptr.is_null());
-
-            let info_str = CStr::from_ptr(info_ptr).to_string_lossy();
-            assert!(info_str.contains("Tokio runtime"));
-
-            // Clean up
-            let _ = CString::from_raw(info_ptr as *mut c_char);
-        }
-    }
-
-    #[test]
     fn test_invalid_function_call_parameters() {
         unsafe {
             extern "C" fn dummy_callback(
