@@ -40,13 +40,6 @@ futures.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
-# Date/time and unique identifiers
-chrono.workspace = true
-uuid.workspace = true
-
-# File system operations
-filetime.workspace = true
-
 # Error handling
 anyhow.workspace = true
 thiserror.workspace = true
@@ -58,12 +51,6 @@ env_logger.workspace = true
 # Memory management utilities
 once_cell.workspace = true
 lazy_static.workspace = true
-
-# Thread pools and parallel execution
-num_cpus.workspace = true
-
-# Cross-thread communication
-crossbeam.workspace = true
 
 # Advanced threading and lock-free data structures
 parking_lot.workspace = true
@@ -83,9 +70,6 @@ libc.workspace = true
 winapi.workspace = true
 
 [build-dependencies]
-# Build script dependencies for cross-compilation
-cc.workspace = true
-pkg-config.workspace = true
 
 [dev-dependencies]
 # Testing dependencies
