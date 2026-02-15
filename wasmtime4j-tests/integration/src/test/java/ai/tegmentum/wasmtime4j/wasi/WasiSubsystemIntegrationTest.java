@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
 import ai.tegmentum.wasmtime4j.wasi.clocks.TimezoneDisplay;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueErrorCode;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.KeyValueException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnErrorCode;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnExecutionTarget;
@@ -43,7 +41,7 @@ import org.junit.jupiter.api.TestInfo;
 /**
  * Comprehensive functional tests for WASI subsystem classes.
  *
- * <p>Tests cover: DateTime, TimezoneDisplay, KeyValue enums/exceptions, NN enums/exceptions. These
+ * <p>Tests cover: DateTime, TimezoneDisplay, NN enums/exceptions. These
  * tests verify actual behavior, validation, and functional correctness beyond simple API structure
  * tests.
  *
@@ -322,70 +320,6 @@ public final class WasiSubsystemIntegrationTest {
       assertEquals("EDT", tz.getName(), "Name should match");
 
       LOGGER.info("Created EDT TimezoneDisplay with DST: " + tz);
-    }
-  }
-
-  // ========================================================================
-  // WASI KeyValue Enums Functional Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("WASI KeyValue Enums Functional Tests")
-  class WasiKeyValueEnumsFunctionalTests {
-
-    @Test
-    @DisplayName("KeyValueErrorCode should have all expected codes")
-    void keyValueErrorCodeShouldHaveAllExpectedCodes(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final Set<String> expected =
-          Set.of("KEY_NOT_FOUND", "CAPACITY_EXCEEDED", "INTERNAL_ERROR", "TIMEOUT");
-
-      final Set<String> actual = new HashSet<>();
-      for (final KeyValueErrorCode code : KeyValueErrorCode.values()) {
-        actual.add(code.name());
-      }
-
-      for (final String exp : expected) {
-        assertTrue(actual.contains(exp), "Should contain error code: " + exp);
-      }
-
-      LOGGER.info("Found " + actual.size() + " error codes: " + actual);
-    }
-  }
-
-  // ========================================================================
-  // WASI KeyValue Exception Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("WASI KeyValue Exception Tests")
-  class WasiKeyValueExceptionTests {
-
-    @Test
-    @DisplayName("should create KeyValueException with message")
-    void shouldCreateKeyValueExceptionWithMessage(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final KeyValueException ex = new KeyValueException("Test KV error");
-
-      assertEquals("Test KV error", ex.getMessage(), "Message should match");
-
-      LOGGER.info("Created KeyValueException: " + ex.getMessage());
-    }
-
-    @Test
-    @DisplayName("should create KeyValueException with error code")
-    void shouldCreateKeyValueExceptionWithErrorCode(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final KeyValueException ex =
-          new KeyValueException("Key missing", KeyValueErrorCode.KEY_NOT_FOUND);
-
-      assertEquals(KeyValueErrorCode.KEY_NOT_FOUND, ex.getErrorCode(), "Error code should match");
-      assertEquals("Key missing", ex.getMessage(), "Message should match");
-
-      LOGGER.info("Created KeyValueException with code: " + ex.getErrorCode());
     }
   }
 

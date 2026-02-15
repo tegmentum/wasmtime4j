@@ -23,10 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.wasi.clocks.JniWasiTimezone;
 import ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiPollable;
-import ai.tegmentum.wasmtime4j.jni.wasi.keyvalue.JniWasiKeyValue;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiTimezone;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
-import ai.tegmentum.wasmtime4j.wasi.keyvalue.WasiKeyValue;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -48,178 +46,12 @@ import org.junit.jupiter.api.Test;
  * <p>Classes tested:
  *
  * <ul>
- *   <li>{@link JniWasiKeyValue}
  *   <li>{@link JniWasiPollable}
  *   <li>{@link JniWasiTimezone}
  * </ul>
  */
 @DisplayName("JNI WASI Miscellaneous Classes Tests")
 class JniWasiMiscClassesTest {
-
-  // ===================================================================================
-  // JniWasiKeyValue Tests
-  // ===================================================================================
-
-  @Nested
-  @DisplayName("JniWasiKeyValue Tests")
-  class JniWasiKeyValueTests {
-
-    @Nested
-    @DisplayName("Class Structure Tests")
-    class ClassStructureTests {
-
-      @Test
-      @DisplayName("JniWasiKeyValue should be final class")
-      void shouldBeFinalClass() {
-        assertTrue(
-            Modifier.isFinal(JniWasiKeyValue.class.getModifiers()),
-            "JniWasiKeyValue should be final");
-      }
-
-      @Test
-      @DisplayName("JniWasiKeyValue should be public")
-      void shouldBePublic() {
-        assertTrue(
-            Modifier.isPublic(JniWasiKeyValue.class.getModifiers()),
-            "JniWasiKeyValue should be public");
-      }
-
-      @Test
-      @DisplayName("JniWasiKeyValue should implement WasiKeyValue")
-      void shouldImplementWasiKeyValue() {
-        assertTrue(
-            WasiKeyValue.class.isAssignableFrom(JniWasiKeyValue.class),
-            "JniWasiKeyValue should implement WasiKeyValue");
-      }
-    }
-
-    @Nested
-    @DisplayName("Field Tests")
-    class FieldTests {
-
-      @Test
-      @DisplayName("Should have LOGGER field")
-      void shouldHaveLoggerField() throws NoSuchFieldException {
-        Field field = JniWasiKeyValue.class.getDeclaredField("LOGGER");
-        assertNotNull(field, "LOGGER field should exist");
-        assertEquals(Logger.class, field.getType(), "LOGGER should be Logger type");
-      }
-
-      @Test
-      @DisplayName("Should have contextHandle field")
-      void shouldHaveContextHandleField() throws NoSuchFieldException {
-        Field field = JniWasiKeyValue.class.getDeclaredField("contextHandle");
-        assertNotNull(field, "contextHandle field should exist");
-        assertEquals(long.class, field.getType(), "contextHandle should be long type");
-      }
-
-      @Test
-      @DisplayName("Should have closed field")
-      void shouldHaveClosedField() throws NoSuchFieldException {
-        Field field = JniWasiKeyValue.class.getDeclaredField("closed");
-        assertNotNull(field, "closed field should exist");
-        assertEquals(boolean.class, field.getType(), "closed should be boolean type");
-        assertTrue(Modifier.isVolatile(field.getModifiers()), "closed should be volatile");
-      }
-    }
-
-    @Nested
-    @DisplayName("Method Tests")
-    class MethodTests {
-
-      @Test
-      @DisplayName("Should have get method")
-      void shouldHaveGetMethod() throws NoSuchMethodException {
-        Method method = JniWasiKeyValue.class.getMethod("get", String.class);
-        assertNotNull(method, "get method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "get should be public");
-      }
-
-      @Test
-      @DisplayName("Should have set method")
-      void shouldHaveSetMethod() throws NoSuchMethodException {
-        Method method = JniWasiKeyValue.class.getMethod("set", String.class, byte[].class);
-        assertNotNull(method, "set method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "set should be public");
-      }
-
-      @Test
-      @DisplayName("Should have delete method")
-      void shouldHaveDeleteMethod() throws NoSuchMethodException {
-        Method method = JniWasiKeyValue.class.getMethod("delete", String.class);
-        assertNotNull(method, "delete method should exist");
-        assertEquals(boolean.class, method.getReturnType(), "delete should return boolean");
-      }
-
-      @Test
-      @DisplayName("Should have exists method")
-      void shouldHaveExistsMethod() throws NoSuchMethodException {
-        Method method = JniWasiKeyValue.class.getMethod("exists", String.class);
-        assertNotNull(method, "exists method should exist");
-        assertEquals(boolean.class, method.getReturnType(), "exists should return boolean");
-      }
-
-      @Test
-      @DisplayName("Should have keys method")
-      void shouldHaveKeysMethod() throws NoSuchMethodException {
-        Method method = JniWasiKeyValue.class.getMethod("keys");
-        assertNotNull(method, "keys method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "keys should be public");
-      }
-
-      @Test
-      @DisplayName("Should have close method")
-      void shouldHaveCloseMethod() throws NoSuchMethodException {
-        Method method = JniWasiKeyValue.class.getMethod("close");
-        assertNotNull(method, "close method should exist");
-        assertEquals(void.class, method.getReturnType(), "close should return void");
-      }
-
-      @Test
-      @DisplayName("Should have isAvailable static method")
-      void shouldHaveIsAvailableMethod() throws NoSuchMethodException {
-        Method method = JniWasiKeyValue.class.getMethod("isAvailable");
-        assertNotNull(method, "isAvailable method should exist");
-        assertTrue(Modifier.isStatic(method.getModifiers()), "isAvailable should be static");
-        assertEquals(boolean.class, method.getReturnType(), "isAvailable should return boolean");
-      }
-    }
-
-    @Nested
-    @DisplayName("Native Method Tests")
-    class NativeMethodTests {
-
-      @Test
-      @DisplayName("Should have native methods for keyvalue operations")
-      void shouldHaveNativeKeyValueOperations() {
-        Set<String> nativeMethods = new HashSet<>();
-        for (Method method : JniWasiKeyValue.class.getDeclaredMethods()) {
-          if (Modifier.isNative(method.getModifiers())) {
-            nativeMethods.add(method.getName());
-          }
-        }
-
-        assertTrue(nativeMethods.contains("nativeGet"), "Should have nativeGet");
-        assertTrue(nativeMethods.contains("nativeSet"), "Should have nativeSet");
-        assertTrue(nativeMethods.contains("nativeDelete"), "Should have nativeDelete");
-        assertTrue(nativeMethods.contains("nativeExists"), "Should have nativeExists");
-      }
-    }
-
-    @Nested
-    @DisplayName("Package Location Tests")
-    class PackageLocationTests {
-
-      @Test
-      @DisplayName("Class should be in correct package")
-      void shouldBeInCorrectPackage() {
-        assertEquals(
-            "ai.tegmentum.wasmtime4j.jni.wasi.keyvalue",
-            JniWasiKeyValue.class.getPackage().getName(),
-            "Should be in ai.tegmentum.wasmtime4j.jni.wasi.keyvalue package");
-      }
-    }
-  }
 
   // ===================================================================================
   // JniWasiPollable Tests
@@ -536,9 +368,6 @@ class JniWasiMiscClassesTest {
     @DisplayName("All WASI resource classes should be final")
     void allWasiResourceClassesShouldBeFinal() {
       assertTrue(
-          Modifier.isFinal(JniWasiKeyValue.class.getModifiers()),
-          "JniWasiKeyValue should be final");
-      assertTrue(
           Modifier.isFinal(JniWasiPollable.class.getModifiers()),
           "JniWasiPollable should be final");
       assertTrue(
@@ -549,9 +378,6 @@ class JniWasiMiscClassesTest {
     @Test
     @DisplayName("All WASI resource classes should be public")
     void allWasiResourceClassesShouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(JniWasiKeyValue.class.getModifiers()),
-          "JniWasiKeyValue should be public");
       assertTrue(
           Modifier.isPublic(JniWasiPollable.class.getModifiers()),
           "JniWasiPollable should be public");
@@ -572,7 +398,6 @@ class JniWasiMiscClassesTest {
     @DisplayName("All classes should have LOGGER field")
     void allClassesShouldHaveLoggerField() throws NoSuchFieldException {
       Field[] loggerFields = {
-        JniWasiKeyValue.class.getDeclaredField("LOGGER"),
         JniWasiPollable.class.getDeclaredField("LOGGER"),
         JniWasiTimezone.class.getDeclaredField("LOGGER")
       };
@@ -593,12 +418,6 @@ class JniWasiMiscClassesTest {
   @Nested
   @DisplayName("Interface Compliance Tests")
   class InterfaceComplianceTests {
-
-    @Test
-    @DisplayName("JniWasiKeyValue should implement all WasiKeyValue methods")
-    void jniWasiKeyValueShouldImplementAllMethods() {
-      verifyInterfaceImplementation(JniWasiKeyValue.class, WasiKeyValue.class);
-    }
 
     @Test
     @DisplayName("JniWasiPollable should implement all WasiPollable methods")

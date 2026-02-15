@@ -60,7 +60,6 @@ pub mod module;
 pub mod serialization;
 pub mod store;
 pub mod table;
-// threading module removed (Phase 8: invented abstraction)
 pub mod typed_func; // Typed function wrapper for zero-cost calls
 pub mod value_serialization; // WASM value serialization for thread execution
 pub mod wast_runner; // WAST test execution
@@ -93,8 +92,6 @@ pub mod jni_gc_bindings;
 pub mod jni_module_cache_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_pooling_allocator_bindings;
-// jni_profiler_bindings module removed (Phase 11: no Java callers)
-// jni_thread_bindings module removed (Phase 8: invented abstraction)
 #[cfg(feature = "jni-bindings")]
 pub mod jni_typed_func_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -103,10 +100,6 @@ pub mod jni_wasi_bindings;
 pub mod jni_wasi_cli_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_io_bindings;
-#[cfg(all(feature = "jni-bindings", feature = "wasi-keyvalue"))]
-pub mod jni_wasi_keyvalue_bindings;
-#[cfg(all(feature = "jni-bindings", feature = "wasi-threads"))]
-pub mod jni_wasi_threads_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wast_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -121,11 +114,6 @@ pub mod panama_gc_ffi;
 pub mod panama_wasi_cli_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_io_ffi;
-#[cfg(all(feature = "panama-ffi", feature = "wasi-keyvalue"))]
-pub mod panama_wasi_keyvalue_ffi;
-#[cfg(all(feature = "panama-ffi", feature = "wasi-threads"))]
-pub mod panama_wasi_threads_ffi;
-// platform_memory_jni module removed (Phase 8: invented abstraction)
 
 // Advanced modules - will be implemented in later tasks
 #[cfg(feature = "wasi")]
@@ -135,12 +123,6 @@ pub mod wasi;
 #[cfg(feature = "wasi-http")]
 pub mod wasi_http;
 
-// WASI-Threads support (thread spawning - experimental)
-#[cfg(feature = "wasi-threads")]
-pub mod wasi_threads;
-
-// experimental_features module removed (Phase 24: all stubs returning "not implemented")
-
 // Async runtime for async WebAssembly operations
 pub mod async_runtime;
 
@@ -149,10 +131,6 @@ pub mod wasi_preview2;
 
 // Unified WASI stream operations trait (consolidates duplicated stream code)
 pub mod wasi_stream_ops;
-
-// Shared helper functions for WASI keyvalue operations (used by both JNI and Panama FFI)
-#[cfg(feature = "wasi-keyvalue")]
-pub mod wasi_keyvalue_helpers;
 
 // WIT value marshalling for Component Model
 pub mod wit_value_marshal;
@@ -169,16 +147,8 @@ pub mod resource_dynamic;
 #[cfg(feature = "component-model")]
 pub mod version_types;
 
-// simd module removed (Phase 25: host-side ops duplicate Wasmtime JIT)
-
 // Store resource limiter APIs
 pub mod store_limiter;
-
-// call_hooks module removed (Phase 17: 0 Java callers)
-// fuel_callback module removed (Phase 11: no Java callers)
-// epoch_callback module removed (Phase 17: 0 Java callers)
-
-// guest_profiler module removed (Phase 11: no Java callers)
 
 // WebAssembly GC implementation
 pub mod gc;

@@ -11,10 +11,7 @@ wasmtime = { version = "41.0.3", features = ["component-model", "component-model
 wasmtime-wasi = { version = "41.0.3" }
 wasmtime-wasi-http = { version = "41.0.3" }
 wasmtime-wasi-nn = { version = "41.0.3" }
-wasmtime-wasi-threads = { version = "41.0.3" }
-wasmtime-wasi-keyvalue = { version = "41.0.3" }
 wasmtime-wasi-config = { version = "41.0.3" }
-wasi-common = { version = "41.0.3" }
 wasmtime-wast = { version = "41.0.3", features = ["component-model", "component-model-async"] }
 
 # WebAssembly text format parser
@@ -72,10 +69,7 @@ wasmtime = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wa
 wasmtime-wasi = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
 wasmtime-wasi-http = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
 wasmtime-wasi-nn = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
-wasmtime-wasi-threads = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
-wasmtime-wasi-keyvalue = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
 wasmtime-wasi-config = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
-wasi-common = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
 wasmtime-wast = { git = "https://github.com/tegmentum/wasmtime.git", branch = "fix/wasmtime4j-patches-v41.0.3" }
 
 [profile.release]

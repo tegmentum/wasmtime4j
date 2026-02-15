@@ -207,37 +207,7 @@ public final class NativeExecutionBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // error_message (C string)
             ValueLayout.ADDRESS)); // out_info (TrapInfo struct)
 
-    // WASI-Threads Functions
-    addFunctionBinding(
-        "wasmtime4j_panama_wasi_threads_is_supported",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT)); // returns 1 if supported
-
-    addFunctionBinding(
-        "wasmtime4j_panama_wasi_threads_context_create",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return context*
-            ValueLayout.ADDRESS, // module_handle
-            ValueLayout.ADDRESS, // linker_handle
-            ValueLayout.ADDRESS)); // store_handle
-
-    addFunctionBinding(
-        "wasmtime4j_panama_wasi_threads_context_close",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // context_handle
-
-    addFunctionBinding(
-        "wasmtime4j_panama_wasi_threads_spawn",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // thread_id
-            ValueLayout.ADDRESS, // context_handle
-            ValueLayout.JAVA_INT)); // thread_start_arg
-
-    addFunctionBinding(
-        "wasmtime4j_panama_wasi_threads_add_to_linker",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return code
-            ValueLayout.ADDRESS, // linker_handle
-            ValueLayout.ADDRESS, // store_handle
-            ValueLayout.ADDRESS)); // module_handle
+    // WASI-Threads bindings removed (Phase 27: fake implementation with no Wasmtime API basis)
 
     // WIT Parser Functions
     addFunctionBinding(
@@ -894,104 +864,7 @@ public final class NativeExecutionBindings extends NativeBindingsBase {
     }
   }
 
-  // ===== WASI-Threads Functions =====
-
-  /**
-   * Checks if WASI-Threads is supported in this build.
-   *
-   * @return true if WASI-Threads is supported, false otherwise
-   */
-  public boolean wasiThreadsIsSupported() {
-    try {
-      final int result =
-          callNativeFunction("wasmtime4j_panama_wasi_threads_is_supported", Integer.class);
-      return result != 0;
-    } catch (final Exception e) {
-      LOGGER.fine("WASI-Threads support check failed: " + e.getMessage());
-      return false;
-    }
-  }
-
-  /**
-   * Creates a new WASI-Threads context.
-   *
-   * @param moduleHandle the module memory segment
-   * @param linkerHandle the linker memory segment
-   * @param storeHandle the store memory segment
-   * @param arena the arena for memory management
-   * @return the created context memory segment, or NULL on error
-   */
-  public MemorySegment wasiThreadsContextCreate(
-      final MemorySegment moduleHandle,
-      final MemorySegment linkerHandle,
-      final MemorySegment storeHandle,
-      final Arena arena) {
-    validatePointer(moduleHandle, "moduleHandle");
-    validatePointer(linkerHandle, "linkerHandle");
-    validatePointer(storeHandle, "storeHandle");
-    if (arena == null) {
-      throw new IllegalArgumentException("Arena cannot be null");
-    }
-
-    return callNativeFunction(
-        "wasmtime4j_panama_wasi_threads_context_create",
-        MemorySegment.class,
-        moduleHandle,
-        linkerHandle,
-        storeHandle);
-  }
-
-  /**
-   * Closes and frees a WASI-Threads context.
-   *
-   * @param contextHandle the context memory segment
-   */
-  public void wasiThreadsContextClose(final MemorySegment contextHandle) {
-    if (contextHandle != null && !contextHandle.equals(MemorySegment.NULL)) {
-      callNativeFunction("wasmtime4j_panama_wasi_threads_context_close", Void.class, contextHandle);
-    }
-  }
-
-  /**
-   * Spawns a new thread using WASI-Threads.
-   *
-   * @param contextHandle the WASI-Threads context
-   * @param threadStartArg the argument to pass to the thread start function
-   * @return the thread ID (positive) on success, negative on error
-   */
-  public int wasiThreadsSpawn(final MemorySegment contextHandle, final int threadStartArg) {
-    validatePointer(contextHandle, "contextHandle");
-    return callNativeFunction(
-        "wasmtime4j_panama_wasi_threads_spawn", Integer.class, contextHandle, threadStartArg);
-  }
-
-  /**
-   * Adds the WASI-Threads thread-spawn function to a linker.
-   *
-   * @param linkerHandle the linker memory segment
-   * @param storeHandle the store memory segment
-   * @param moduleHandle the module memory segment
-   */
-  public void wasiThreadsAddToLinker(
-      final MemorySegment linkerHandle,
-      final MemorySegment storeHandle,
-      final MemorySegment moduleHandle) {
-    validatePointer(linkerHandle, "linkerHandle");
-    validatePointer(storeHandle, "storeHandle");
-    validatePointer(moduleHandle, "moduleHandle");
-
-    final int result =
-        callNativeFunction(
-            "wasmtime4j_panama_wasi_threads_add_to_linker",
-            Integer.class,
-            linkerHandle,
-            storeHandle,
-            moduleHandle);
-
-    if (result != 0) {
-      throw new RuntimeException("Failed to add WASI-Threads to linker, error code: " + result);
-    }
-  }
+  // WASI-Threads methods removed (Phase 27: fake implementation with no Wasmtime API basis)
 
   // ===== Coredump Functions =====
 
