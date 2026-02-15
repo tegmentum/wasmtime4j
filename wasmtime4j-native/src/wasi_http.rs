@@ -75,8 +75,6 @@ pub struct WasiHttpConfig {
     max_request_body_size: Option<u64>,
     /// Maximum response body size in bytes
     max_response_body_size: Option<u64>,
-    /// Allowed HTTP methods (empty means all standard methods)
-    allowed_methods: Vec<String>,
     /// Whether HTTPS is required
     https_required: bool,
     /// Whether certificate validation is enabled
@@ -106,7 +104,6 @@ pub struct WasiHttpConfigBuilder {
     max_connections_per_host: Option<u32>,
     max_request_body_size: Option<u64>,
     max_response_body_size: Option<u64>,
-    allowed_methods: Vec<String>,
     https_required: bool,
     certificate_validation: bool,
     http2_enabled: bool,
@@ -213,16 +210,6 @@ impl WasiHttpConfigBuilder {
         self
     }
 
-    /// Set allowed HTTP methods
-    pub fn allow_methods<I, S>(mut self, methods: I) -> Self
-    where
-        I: IntoIterator<Item = S>,
-        S: Into<String>,
-    {
-        self.allowed_methods = methods.into_iter().map(|s| s.into()).collect();
-        self
-    }
-
     /// Require HTTPS for all requests
     pub fn require_https(mut self, required: bool) -> Self {
         self.https_required = required;
@@ -278,7 +265,6 @@ impl WasiHttpConfigBuilder {
             max_connections_per_host: self.max_connections_per_host,
             max_request_body_size: self.max_request_body_size,
             max_response_body_size: self.max_response_body_size,
-            allowed_methods: self.allowed_methods,
             https_required: self.https_required,
             certificate_validation: self.certificate_validation,
             http2_enabled: self.http2_enabled,

@@ -33,16 +33,9 @@ pub struct JniPoolingAllocatorWrapper {
     next_instance_id: AtomicU64,
     /// Statistics
     stats: RwLock<PoolingStatistics>,
-    /// Creation time for uptime calculation
-    created_at: Instant,
     /// Configuration parameters for reference
     instance_pool_size: u32,
     max_memory_per_instance: usize,
-    stack_size: usize,
-    max_stacks: u32,
-    max_tables_per_instance: u32,
-    max_tables: u32,
-    memory_decommit_enabled: bool,
     pool_warming_enabled: bool,
     pool_warming_percentage: f32,
 }
@@ -82,7 +75,7 @@ impl JniPoolingAllocatorWrapper {
     pub fn new(
         instance_pool_size: u32,
         max_memory_per_instance: usize,
-        stack_size: usize,
+        _stack_size: usize,
         max_stacks: u32,
         max_tables_per_instance: u32,
         max_tables: u32,
@@ -118,14 +111,8 @@ impl JniPoolingAllocatorWrapper {
             instances: RwLock::new(HashMap::new()),
             next_instance_id: AtomicU64::new(1),
             stats: RwLock::new(PoolingStatistics::default()),
-            created_at: Instant::now(),
             instance_pool_size,
             max_memory_per_instance,
-            stack_size,
-            max_stacks,
-            max_tables_per_instance,
-            max_tables,
-            memory_decommit_enabled,
             pool_warming_enabled,
             pool_warming_percentage,
         })

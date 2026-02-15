@@ -22,10 +22,6 @@ use wasmtime::component::ResourceAny;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 
-// Local placeholder types (component_core types have incompatible API)
-struct ComponentInstanceHandle;
-struct ComponentStoreData;
-
 /// Resource manager for component resource lifecycle and sharing
 pub struct ComponentResourceManager {
     /// Global resource registry
@@ -206,12 +202,6 @@ pub struct ResourceAccess {
 pub struct ResourceAccessControl {
     /// Access control lists for resources
     acls: HashMap<ResourceHandle, AccessControlList>,
-    /// Component permissions
-    component_permissions: HashMap<String, ComponentPermissions>,
-    /// Access policies
-    policies: HashMap<String, AccessPolicy>,
-    /// Active access sessions
-    active_sessions: HashMap<String, AccessSession>,
 }
 
 /// Access control list for a resource
@@ -352,12 +342,8 @@ pub struct ResourceQuotaManager {
     global_quotas: ResourceQuotas,
     /// Per-component quotas
     component_quotas: HashMap<String, ResourceQuotas>,
-    /// Per-type quotas
-    type_quotas: HashMap<String, ResourceQuotas>,
     /// Current usage tracking
     usage_tracking: UsageTracking,
-    /// Quota policies
-    quota_policies: Vec<QuotaPolicy>,
 }
 
 /// Resource quotas and limits
@@ -435,10 +421,6 @@ pub enum QuotaEnforcement {
 
 /// Resource garbage collector
 pub struct ResourceGarbageCollector {
-    /// Cleanup strategies
-    strategies: Vec<Box<dyn CleanupStrategy + Send + Sync>>,
-    /// Cleanup schedule
-    schedule: CleanupSchedule,
     /// Metrics for cleanup operations
     metrics: CleanupMetrics,
 }
@@ -487,12 +469,6 @@ pub struct CleanupMetrics {
 pub struct ResourceMonitor {
     /// Resource metrics
     metrics: HashMap<ResourceHandle, ResourceMetrics>,
-    /// Monitoring configuration
-    config: MonitoringConfig,
-    /// Alert thresholds
-    alert_thresholds: AlertThresholds,
-    /// Active alerts
-    active_alerts: Vec<ResourceAlert>,
 }
 
 /// Resource performance metrics
@@ -581,8 +557,6 @@ pub enum AlertSeverity {
 pub struct ResourceTypeRegistry {
     /// Registered resource types
     types: HashMap<String, ResourceTypeDefinition>,
-    /// Type hierarchies
-    hierarchies: HashMap<String, Vec<String>>,
 }
 
 /// Resource type definition
@@ -1265,13 +1239,6 @@ impl ResourceGarbageCollector {
     /// Create a new garbage collector
     pub fn new() -> Self {
         ResourceGarbageCollector {
-            strategies: Vec::new(),
-            schedule: CleanupSchedule {
-                interval: Duration::from_secs(60),
-                idle_threshold: Duration::from_secs(300),
-                max_age: Duration::from_secs(3600),
-                incremental: true,
-            },
             metrics: CleanupMetrics::default(),
         }
     }
@@ -1282,19 +1249,6 @@ impl ResourceMonitor {
     pub fn new() -> Self {
         ResourceMonitor {
             metrics: HashMap::new(),
-            config: MonitoringConfig {
-                interval: Duration::from_secs(30),
-                retention_period: Duration::from_secs(3600),
-                detailed_monitoring: false,
-                tags: HashMap::new(),
-            },
-            alert_thresholds: AlertThresholds {
-                memory_threshold: Some(100 * 1024 * 1024), // 100MB
-                access_time_threshold: Some(Duration::from_millis(1000)),
-                error_rate_threshold: Some(0.1), // 10%
-                health_threshold: Some(0.5),     // 50%
-            },
-            active_alerts: Vec::new(),
         }
     }
 }

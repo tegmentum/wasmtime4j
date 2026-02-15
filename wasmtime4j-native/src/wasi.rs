@@ -2380,19 +2380,13 @@ pub struct WasiFileDescriptor {
     path: String,
     /// The rights associated with this descriptor
     rights: u64,
-    /// The flags used to open this file
-    flags: u32,
 }
 
 /// Represents an open directory descriptor
 #[derive(Debug)]
 pub struct WasiDirectoryDescriptor {
-    /// The directory path
-    path: String,
     /// The rights associated with this descriptor
     rights: u64,
-    /// Current position for readdir operations
-    position: usize,
     /// Cached directory entries
     entries: Vec<WasiDirectoryEntry>,
 }
@@ -2502,9 +2496,7 @@ impl WasiDirectoryDescriptor {
         }
 
         Ok(Self {
-            path,
             rights,
-            position: 0,
             entries,
         })
     }
@@ -2553,7 +2545,7 @@ impl WasiContext {
         oflags: u32,
         rights: u64,
         _inherit_rights: u64, // Rights for newly created descriptors
-        fdflags: u32,
+        _fdflags: u32,
     ) -> WasmtimeResult<u32> {
         // Validate path is allowed
         if !self.is_path_allowed(path) {
@@ -2626,7 +2618,6 @@ impl WasiContext {
             file,
             path: full_path,
             rights,
-            flags: fdflags,
         };
 
         // Store in descriptor manager

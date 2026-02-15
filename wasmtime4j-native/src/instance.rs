@@ -58,8 +58,6 @@ pub struct Instance {
     metadata: InstanceMetadata,
     imports_map: HashMap<String, ImportBinding>,
     exports_map: HashMap<String, ExportBinding>,
-    /// Weak reference to the Store that created this instance
-    store_weak: std::sync::Weak<ReentrantLock<Store>>,
     /// Element segment manager for table.init() support
     element_segment_manager: Arc<ElementSegmentManager>,
     /// Data segment manager for memory.init() support
@@ -361,7 +359,6 @@ impl Instance {
             metadata,
             imports_map,
             exports_map,
-            store_weak: std::sync::Weak::new(), // Will be set later if needed
             element_segment_manager,
             data_segment_manager,
         })
@@ -440,7 +437,6 @@ impl Instance {
             metadata,
             imports_map,
             exports_map,
-            store_weak: std::sync::Weak::new(), // Will be set later if needed
             element_segment_manager,
             data_segment_manager,
         })
@@ -1120,16 +1116,6 @@ impl Instance {
     /// Get access to the inner wasmtime instance (for internal use)
     pub(crate) fn inner(&self) -> &Arc<ReentrantLock<WasmtimeInstance>> {
         &self.inner
-    }
-
-    /// Get the Store associated with this instance
-    pub(crate) fn get_store(&self) -> WasmtimeResult<Arc<ReentrantLock<Store>>> {
-        self.store_weak
-            .upgrade()
-            .ok_or_else(|| WasmtimeError::Runtime {
-                message: "Store has been dropped".to_string(),
-                backtrace: None,
-            })
     }
 
     /// Validate instance is still functional (defensive check)

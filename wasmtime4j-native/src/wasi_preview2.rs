@@ -34,10 +34,6 @@ pub struct WasiPreview2Context {
     /// Active components and instances
     components: Arc<RwLock<HashMap<u64, Arc<Component>>>>,
     instances: Arc<RwLock<HashMap<u64, ComponentInstance>>>,
-    /// Resource table for component model resources
-    resource_table: Arc<Mutex<ResourceTable>>,
-    /// WASI context for the preview 2 implementation
-    wasi_ctx: Arc<Mutex<WasiCtx>>,
     /// Async operation tracker
     async_operations: Arc<RwLock<HashMap<u64, AsyncWasiOperation>>>,
     /// Configuration
@@ -80,20 +76,12 @@ pub struct WasiPreview2StoreData {
 pub struct WasiPreview2State {
     /// Active streams
     streams: HashMap<u32, WasiStream>,
-    /// Pollable resources
-    pollables: HashMap<u32, WasiPollable>,
 }
 
 /// Component instance wrapper
 pub struct ComponentInstance {
-    /// Component instance
-    instance: Instance,
     /// Store for this instance
     store: Store<WasiPreview2StoreData>,
-    /// Instance ID
-    id: u64,
-    /// Creation timestamp
-    created_at: Instant,
     /// Captured stdout pipe (if output capture enabled)
     stdout_pipe: Option<MemoryOutputPipe>,
     /// Captured stderr pipe (if output capture enabled)
@@ -382,14 +370,8 @@ impl WasiPollable {
 
 /// Async WASI operation tracking
 pub struct AsyncWasiOperation {
-    /// Operation ID
-    id: u64,
-    /// Operation type
-    operation_type: AsyncWasiOperationType,
     /// Start time
     started_at: Instant,
-    /// Timeout duration
-    timeout: Option<Duration>,
     /// Cancellation sender
     cancel_tx: Option<oneshot::Sender<()>>,
     /// Status
@@ -471,16 +453,11 @@ impl WasiPreview2Context {
             message: format!("Failed to add WASI Preview 2 imports: {}", e),
         })?;
 
-        let resource_table = Arc::new(Mutex::new(ResourceTable::new()));
-        let wasi_ctx = Arc::new(Mutex::new(WasiCtx::builder().build()));
-
         Ok(Self {
             engine,
             linker,
             components: Arc::new(RwLock::new(HashMap::new())),
             instances: Arc::new(RwLock::new(HashMap::new())),
-            resource_table,
-            wasi_ctx,
             async_operations: Arc::new(RwLock::new(HashMap::new())),
             config,
             next_operation_id: std::sync::atomic::AtomicU64::new(1),
@@ -577,13 +554,12 @@ impl WasiPreview2Context {
             resource_table,
             preview2_state: WasiPreview2State {
                 streams: HashMap::new(),
-                pollables: HashMap::new(),
             },
         };
 
         let mut store = Store::new(&self.engine, store_data);
 
-        let instance = self
+        let _instance = self
             .linker
             .instantiate_async(&mut store, component)
             .await
@@ -596,10 +572,7 @@ impl WasiPreview2Context {
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
         let component_instance = ComponentInstance {
-            instance,
             store,
-            id: instance_id,
-            created_at: Instant::now(),
             stdout_pipe,
             stderr_pipe,
         };
@@ -694,10 +667,7 @@ impl WasiPreview2Context {
         // Create async operation tracking
         let (cancel_tx, cancel_rx) = oneshot::channel();
         let operation = AsyncWasiOperation {
-            id: operation_id,
-            operation_type: AsyncWasiOperationType::Read,
             started_at: Instant::now(),
-            timeout: Some(Duration::from_millis(self.config.default_timeout_ms)),
             cancel_tx: Some(cancel_tx),
             status: AsyncWasiOperationStatus::Running,
         };
@@ -815,10 +785,7 @@ impl WasiPreview2Context {
         // Create async operation tracking
         let (cancel_tx, cancel_rx) = oneshot::channel();
         let operation = AsyncWasiOperation {
-            id: operation_id,
-            operation_type: AsyncWasiOperationType::Write,
             started_at: Instant::now(),
-            timeout: Some(Duration::from_millis(self.config.default_timeout_ms)),
             cancel_tx: Some(cancel_tx),
             status: AsyncWasiOperationStatus::Running,
         };
@@ -1678,10 +1645,7 @@ mod tests {
 
         // Create a dummy operation
         let operation = AsyncWasiOperation {
-            id: operation_id,
-            operation_type: AsyncWasiOperationType::Read,
             started_at: Instant::now(),
-            timeout: Some(Duration::from_secs(10)),
             cancel_tx: None, // Would normally have a sender
             status: AsyncWasiOperationStatus::Running,
         };
@@ -1718,10 +1682,7 @@ mod tests {
             operations.insert(
                 1,
                 AsyncWasiOperation {
-                    id: 1,
-                    operation_type: AsyncWasiOperationType::Read,
                     started_at: now - Duration::from_secs(400), // Old operation
-                    timeout: None,
                     cancel_tx: None,
                     status: AsyncWasiOperationStatus::Completed,
                 },
@@ -1729,10 +1690,7 @@ mod tests {
             operations.insert(
                 2,
                 AsyncWasiOperation {
-                    id: 2,
-                    operation_type: AsyncWasiOperationType::Write,
                     started_at: now,
-                    timeout: None,
                     cancel_tx: None,
                     status: AsyncWasiOperationStatus::Running,
                 },

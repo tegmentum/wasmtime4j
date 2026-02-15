@@ -62,8 +62,8 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
     // Validate we can dereference the func pointer
     let _func = unsafe { &*(func_ptr as *const Func) };
 
-    // Get signature string
-    let sig_str: String = match env.get_string(&signature.into()) {
+    // Validate signature string is readable
+    let _sig_str: String = match env.get_string(&signature.into()) {
         Ok(s) => s.into(),
         Err(e) => {
             let _ = env.throw_new(
@@ -78,7 +78,6 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCreate(
     // This prevents Store binding issues - we get fresh Func reference on each call
     let handle = Box::new(TypedFuncHandle {
         func_ptr, // Store pointer, not cloned Func
-        signature: sig_str,
     });
 
     Box::into_raw(handle) as jlong
@@ -877,7 +876,6 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeDestroy(
 /// Instead stores func_ptr to get fresh Func reference on each call.
 struct TypedFuncHandle {
     func_ptr: jlong, // Pointer to Func, not the Func itself
-    signature: String,
 }
 
 // Helper functions for common typed call patterns

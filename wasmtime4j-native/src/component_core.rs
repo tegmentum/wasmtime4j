@@ -44,8 +44,6 @@ pub struct EnhancedComponentEngine {
     linker: ComponentLinker<ComponentStoreData>,
     /// Wasmtime engine configured for component model
     engine: Engine,
-    /// Resource table for component resources
-    resource_table: Arc<RwLock<ResourceTable>>,
     /// Next instance ID generator
     next_instance_id: Arc<Mutex<u64>>,
     /// Performance metrics
@@ -134,7 +132,6 @@ impl EnhancedComponentEngine {
             instances: Arc::new(RwLock::new(HashMap::new())),
             linker,
             engine,
-            resource_table: Arc::new(RwLock::new(ResourceTable::new())),
             next_instance_id: Arc::new(Mutex::new(1)),
             metrics: Arc::new(RwLock::new(ComponentMetrics::default())),
         })
@@ -167,7 +164,6 @@ impl EnhancedComponentEngine {
             instances: Arc::new(RwLock::new(HashMap::new())),
             linker,
             engine,
-            resource_table: Arc::new(RwLock::new(ResourceTable::new())),
             next_instance_id: Arc::new(Mutex::new(1)),
             metrics: Arc::new(RwLock::new(ComponentMetrics::default())),
         })
@@ -767,41 +763,6 @@ impl EnhancedComponentEngine {
                 message: "Failed to acquire metrics lock".to_string(),
             })?;
         Ok(metrics.clone())
-    }
-
-    /// Configure component linker with pre-instantiation setup
-    fn configure_component_linker(
-        &self,
-        store: &mut Store<ComponentStoreData>,
-        component: &WasmtimeComponent,
-    ) -> WasmtimeResult<()> {
-        // Extract component type to understand required imports
-        let component_type = component.component_type();
-
-        // Configure imports based on component type
-        for (name, import_type) in component_type.imports(&self.engine) {
-            self.configure_import(store, name, &import_type)?;
-        }
-
-        Ok(())
-    }
-
-    /// Configure a specific import for the component
-    fn configure_import(
-        &self,
-        _store: &mut Store<ComponentStoreData>,
-        import_name: &str,
-        _import_type: &ComponentItem,
-    ) -> WasmtimeResult<()> {
-        // Handle different types of imports
-        if import_name.starts_with("wasi:") {
-            // WASI imports are handled by add_host_interface
-            log::debug!("WASI import detected: {}", import_name);
-        } else {
-            // Custom imports would be configured here
-            log::debug!("Custom import detected: {}", import_name);
-        }
-        Ok(())
     }
 
     /// Bind custom interface implementation to the linker

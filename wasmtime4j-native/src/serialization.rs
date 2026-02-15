@@ -53,16 +53,12 @@ struct ModuleCache {
 struct CacheEntry {
     /// Serialized module data (compressed)
     data: Vec<u8>,
-    /// Uncompressed size
-    uncompressed_size: usize,
     /// Creation timestamp
     created_at: Instant,
     /// Last access timestamp
     last_accessed: Instant,
     /// Access count
     access_count: u64,
-    /// Module metadata
-    metadata: ModuleMetadata,
 }
 
 /// Module metadata for validation and compatibility
@@ -396,18 +392,16 @@ impl ModuleSerializer {
         &self,
         hash: String,
         data: Vec<u8>,
-        uncompressed_size: usize,
-        metadata: ModuleMetadata,
+        _uncompressed_size: usize,
+        _metadata: ModuleMetadata,
     ) -> WasmtimeResult<()> {
         let mut cache = self.cache.write().unwrap_or_else(|e| e.into_inner());
 
         let entry = CacheEntry {
             data: data.clone(),
-            uncompressed_size,
             created_at: Instant::now(),
             last_accessed: Instant::now(),
             access_count: 1,
-            metadata,
         };
 
         let entry_size = data.len();

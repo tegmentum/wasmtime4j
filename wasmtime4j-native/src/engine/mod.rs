@@ -206,22 +206,6 @@ impl Engine {
         std::ops::Deref::deref(&self.inner)
     }
 
-    /// Get reference to inner Wasmtime engine with error handling.
-    ///
-    /// Returns an error if the engine has been closed.
-    pub(crate) fn try_inner(&self) -> WasmtimeResult<&WasmtimeEngine> {
-        self.check_not_closed()?;
-        Ok(std::ops::Deref::deref(&self.inner))
-    }
-
-    /// Get a clone of the inner Arc (for ownership transfer to component linkers)
-    ///
-    /// This clones the Arc, incrementing the reference count, which ensures
-    /// the WasmtimeEngine stays alive even if the original Engine is dropped.
-    pub(crate) fn inner_arc(&self) -> Arc<WasmtimeEngine> {
-        Arc::clone(&self.inner)
-    }
-
     /// Get configuration summary
     pub fn config_summary(&self) -> &EngineConfigSummary {
         &self.config_summary
