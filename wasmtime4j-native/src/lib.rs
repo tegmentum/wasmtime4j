@@ -26,8 +26,7 @@
 // Remaining suppressions have documented justifications:
 
 #![allow(missing_docs)] // Large codebase - docs added incrementally
-#![allow(unused_imports)]
-// Reduced 62% (116→44); remaining are platform/test-specific
+#![allow(unused_imports)] // Many platform/feature-gated imports across files
 // Note: dead_code warnings addressed file-by-file; removed blanket suppression
 #![allow(unused_mut)] // Required: JNI env parameters need mut for API calls
 #![allow(non_snake_case)] // Required: JNI functions follow Java naming conventions

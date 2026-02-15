@@ -42,10 +42,6 @@
         <bytebuddy.version>1.18.4</bytebuddy.version>
         <assertj.version>3.24.2</assertj.version>
 
-        <!-- OpenTelemetry versions -->
-        <opentelemetry.version>1.44.0</opentelemetry.version>
-        <opentelemetry.alpha.version>1.44.0-alpha</opentelemetry.alpha.version>
-        <opentelemetry.instrumentation.version>2.8.0</opentelemetry.instrumentation.version>
 
         <!-- Plugin versions -->
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
@@ -210,83 +206,6 @@
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
                 <scope>test</scope>
-            </dependency>
-
-            <!-- OpenTelemetry Core Dependencies -->
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-bom</artifactId>
-                <version>${opentelemetry.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-api</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-sdk</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-sdk-metrics</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-sdk-logs</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-sdk-trace</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-
-            <!-- OpenTelemetry Instrumentation -->
-            <dependency>
-                <groupId>io.opentelemetry.instrumentation</groupId>
-                <artifactId>opentelemetry-instrumentation-bom</artifactId>
-                <version>${opentelemetry.instrumentation.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry.instrumentation</groupId>
-                <artifactId>opentelemetry-instrumentation-api</artifactId>
-                <version>${opentelemetry.instrumentation.version}</version>
-            </dependency>
-
-            <!-- OpenTelemetry Exporters -->
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-exporter-otlp</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-exporter-prometheus</artifactId>
-                <version>${opentelemetry.alpha.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-exporter-zipkin</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-exporter-logging</artifactId>
-                <version>${opentelemetry.version}</version>
-            </dependency>
-
-            <!-- OpenTelemetry Semantic Conventions -->
-            <dependency>
-                <groupId>io.opentelemetry.semconv</groupId>
-                <artifactId>opentelemetry-semconv</artifactId>
-                <version>1.26.0-alpha</version>
             </dependency>
 
             <!-- Project modules -->
