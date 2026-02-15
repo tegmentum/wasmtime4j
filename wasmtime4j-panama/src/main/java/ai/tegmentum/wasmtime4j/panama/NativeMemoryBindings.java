@@ -1164,6 +1164,20 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
   }
 
   /**
+   * Destroys a validated memory instance and unregisters it from the handle registry.
+   *
+   * <p>This must be called to properly free native memory pointers obtained from
+   * memory creation or instance export lookup.
+   *
+   * @param memoryPtr pointer to the validated memory to destroy
+   */
+  public void memoryDestroy(final MemorySegment memoryPtr) {
+    if (memoryPtr != null && !memoryPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_memory_destroy", Void.class, memoryPtr);
+    }
+  }
+
+  /**
    * Clears all memory and store handle registries (for testing purposes).
    *
    * <p>This function clears both memory and store handle registries to prevent stale handles from

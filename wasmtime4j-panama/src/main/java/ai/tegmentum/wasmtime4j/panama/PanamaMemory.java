@@ -1342,6 +1342,19 @@ public final class PanamaMemory implements WasmMemory {
     return new NativeResourceHandle(
         "PanamaMemory",
         () -> {
+          // Destroy native memory handles to prevent leaks.
+          // For instance-exported memories, cachedMemoryPointer holds the ValidatedMemory
+          // allocated by instanceGetMemoryByName. For store-created memories, nativeMemory
+          // holds the ValidatedMemory from creation. Both must be properly freed.
+          if (instance != null && cachedMemoryPointer != null
+              && !cachedMemoryPointer.equals(MemorySegment.NULL)) {
+            // Instance-exported memory: destroy the cached lookup result
+            NATIVE_BINDINGS.memoryDestroy(cachedMemoryPointer);
+          } else if (instance == null && nativeMemory != null
+              && !nativeMemory.equals(MemorySegment.NULL)) {
+            // Store-created memory: destroy the creation result
+            NATIVE_BINDINGS.memoryDestroy(nativeMemory);
+          }
           cachedMemoryPointer = null;
           smallBuffer = null;
           mediumBuffer = null;

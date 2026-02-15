@@ -21,8 +21,11 @@ pub extern "C" fn wasmtime4j_panama_memory_create(
 
         let memory = Memory::new(store, initial_pages)?;
 
+        // Wrap in ValidatedMemory for consistent pointer handling across all memory operations
+        let validated_ptr = crate::memory::core::create_validated_memory(memory)?;
+
         unsafe {
-            *memory_ptr = Box::into_raw(Box::new(memory)) as *mut c_void;
+            *memory_ptr = validated_ptr as *mut c_void;
         }
 
         Ok(())
@@ -1011,8 +1014,8 @@ pub extern "C" fn wasmtime4j_panama_memory_get_usage(
     utilization_percent_out: *mut f64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let memory = unsafe { ffi_utils::deref_ptr::<Memory>(memory_ptr, "memory")? };
-        let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+        let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+        let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
 
         let usage = memory.get_usage(store)?;
 
@@ -1122,11 +1125,13 @@ pub extern "C" fn wasmtime4j_panama_memory_release(memory_ptr: *mut c_void) {
 }
 
 /// Destroy a memory instance (Panama FFI version)
+///
+/// This properly destroys a ValidatedMemory handle, unregistering it from
+/// the handle registry and freeing the allocated memory.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_memory_destroy(memory_ptr: *mut c_void) {
-    // SAFETY IMPROVEMENT: Using safe resource destruction with validation
     unsafe {
-        crate::ffi_common::memory_utils::destroy_ffi_resource::<Memory>(memory_ptr, "Memory");
+        crate::memory::core::destroy_memory(memory_ptr);
     }
 }
 

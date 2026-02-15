@@ -99,8 +99,20 @@ public final class NativeResourceHandle implements AutoCloseable {
     PanamaValidation.requireNonNull(safetyNetAction, "safetyNetAction");
 
     this.resourceType = resourceType;
-    this.closeAction = closeAction;
-    this.cleanable = CLEANER.register(safetyNetOwner, safetyNetAction);
+
+    // Guard prevents double-free: when close() calls closeAction then cleanable.clean(),
+    // the safety net action becomes a no-op since the resource was already destroyed.
+    // When GC fires without close(), the safety net still destroys the resource.
+    final AtomicBoolean destroyed = new AtomicBoolean(false);
+    this.closeAction = () -> {
+      destroyed.set(true);
+      closeAction.cleanup();
+    };
+    this.cleanable = CLEANER.register(safetyNetOwner, () -> {
+      if (!destroyed.get()) {
+        safetyNetAction.run();
+      }
+    });
   }
 
   /**
