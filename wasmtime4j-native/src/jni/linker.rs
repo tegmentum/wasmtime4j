@@ -975,11 +975,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHo
     }
 
     jni_utils::jni_try_with_default(&mut env, 0, || {
-        use crate::error::debug_log;
         use crate::hostfunc::HostFunction;
         use wasmtime::{FuncType, ValType};
-
-        debug_log("nativeDefineHostFunction starting...");
 
         // Convert parameter types
         let param_val_types: Vec<ValType> = param_vals
@@ -993,26 +990,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHo
             .map(|&t| int_to_valtype(t))
             .collect::<Result<Vec<_>, _>>()?;
 
-        debug_log("Getting linker...");
         // Get linker (mutable because define_host_function needs &mut)
         let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
 
-        debug_log("Acquiring linker inner lock...");
         // Get engine from wasmtime linker
         let linker_lock = linker.inner()?;
-        debug_log("Got linker inner lock, getting engine...");
         let engine = linker_lock.engine();
 
-        debug_log("Creating FuncType...");
         // Create function type
         let func_type = FuncType::new(engine, param_val_types, return_val_types);
 
-        debug_log("Dropping linker lock...");
         // Drop lock before creating host function
         drop(linker_lock);
-        debug_log("Linker lock dropped");
 
-        debug_log("Creating JNI callback...");
         // Create JNI callback with Arc-wrapped JavaVM
         let callback = JniHostFunctionCallback {
             jvm: std::sync::Arc::new(jvm),
@@ -1020,16 +1010,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHo
             is_function_reference: false, // This is a Linker host function
         };
 
-        debug_log("Creating HostFunction...");
         // Create host function
         let host_func = HostFunction::new(
             format!("{}::{}", module_name_str, name_str),
             func_type,
             Box::new(callback),
         )?;
-        debug_log("HostFunction created");
 
-        debug_log("Calling define_host_function...");
         // Register host function - host_func is Arc<HostFunction>, clone it
         let host_func_clone = (*host_func).clone();
         linker.define_host_function(
@@ -1038,7 +1025,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHo
             host_func.func_type().clone(),
             host_func_clone,
         )?;
-        debug_log("define_host_function complete");
 
         Ok(1) // JNI_TRUE
     })

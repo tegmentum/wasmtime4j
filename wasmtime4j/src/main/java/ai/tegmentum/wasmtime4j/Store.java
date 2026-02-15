@@ -4,7 +4,6 @@ import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.func.CallHook;
 import ai.tegmentum.wasmtime4j.func.CallHookHandler;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
@@ -694,7 +693,7 @@ public interface Store extends Closeable {
    * @throws IllegalArgumentException if engine is null
    */
   static Store create(final Engine engine) throws WasmException {
-    return WasmRuntimeFactory.create().createStore(engine);
+    return engine.getRuntime().createStore(engine);
   }
 
   /**
@@ -718,7 +717,7 @@ public interface Store extends Closeable {
       final long memoryLimitBytes,
       final long executionTimeoutSeconds)
       throws WasmException {
-    return WasmRuntimeFactory.create()
+    return engine.getRuntime()
         .createStore(engine, fuelLimit, memoryLimitBytes, executionTimeoutSeconds);
   }
 
@@ -740,7 +739,7 @@ public interface Store extends Closeable {
     if (limits == null) {
       throw new IllegalArgumentException("StoreLimits cannot be null");
     }
-    return WasmRuntimeFactory.create().createStore(engine, limits);
+    return engine.getRuntime().createStore(engine, limits);
   }
 
   /**

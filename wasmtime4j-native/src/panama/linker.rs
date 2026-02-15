@@ -613,21 +613,6 @@ pub extern "C" fn wasmtime4j_panama_linker_define_memory(
             // Get store reference
             let store = crate::store::core::get_store_mut(store_ptr)?;
 
-            // Write debug to file since stderr may be captured
-            {
-                use std::io::Write;
-                if let Ok(mut f) = std::fs::OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open("/tmp/wasmtime4j_debug.log")
-                {
-                    let _ = writeln!(f,
-                        "DEBUG linker_define_memory: store_ptr={:p}, store_id={}, module_name={}, name={}, memory_ptr={:p}",
-                        store_ptr, store.id(), module_name_str, name_str, memory_ptr
-                    );
-                }
-            }
-
             // The memory_ptr is a pointer to our Memory wrapper (from instanceGetMemoryByName)
             let memory =
                 crate::memory::core::get_memory_ref(memory_ptr as *const std::ffi::c_void)?;

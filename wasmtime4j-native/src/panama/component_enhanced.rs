@@ -68,24 +68,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instantiate(
     component_ptr: *mut c_void,
     instance_id_out: *mut c_ulong,
 ) -> c_int {
-    use std::fs::OpenOptions;
-    use std::io::Write;
-
-    let _ = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("/tmp/wasmtime4j_debug.log")
-        .and_then(|mut log| {
-            writeln!(log, "\n===== RUST FFI ENTRY POINT =====")?;
-            writeln!(
-                log,
-                "RUST: Function called with engine_ptr={:?}",
-                engine_ptr
-            )?;
-            writeln!(log, "RUST: component_ptr={:?}", component_ptr)
-        });
-
-    let result = ffi_utils::ffi_try_code(|| {
+    ffi_utils::ffi_try_code(|| {
         let engine =
             unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
 
@@ -98,15 +81,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instantiate(
         }
 
         Ok(())
-    });
-
-    let _ = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("/tmp/wasmtime4j_debug.log")
-        .and_then(|mut log| writeln!(log, "RUST: Result = {:?}", result));
-
-    result
+    })
 }
 
 /// Invoke a component function using instance ID

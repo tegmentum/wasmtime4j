@@ -4,7 +4,7 @@
 //! binding imports, and resolving module dependencies before instantiation.
 
 use crate::engine::Engine;
-use crate::error::{debug_log, ffi_utils, WasmtimeError, WasmtimeResult};
+use crate::error::{ffi_utils, WasmtimeError, WasmtimeResult};
 use crate::hostfunc::HostFunction;
 use crate::instance::Instance;
 use crate::memory::Memory as WasmMemory;
@@ -341,25 +341,17 @@ impl Linker {
         function_type: FuncType,
         host_function: HostFunction,
     ) -> WasmtimeResult<()> {
-        debug_log(&format!(
-            "define_host_function: {}::{}",
-            module_name, function_name
-        ));
-
         if self.metadata.disposed {
-            debug_log("define_host_function: linker disposed");
             return Err(WasmtimeError::Runtime {
                 message: "Linker has been disposed".to_string(),
                 backtrace: None,
             });
         }
 
-        debug_log("define_host_function: acquiring inner lock...");
         let _linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
             message: format!("Failed to lock linker: {}", e),
             backtrace: None,
         })?;
-        debug_log("define_host_function: inner lock acquired");
 
         // Use the host function to create a proper Wasmtime function
         // This will be handled through the HostFunction callback system

@@ -250,17 +250,7 @@ impl Engine {
 
     /// Validate engine is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
-        // Check if engine has been closed
-        self.check_not_closed()?;
-
-        // Perform minimal validation to ensure engine is still usable
-        // This is a defensive programming measure
-        if Arc::strong_count(&self.inner) == 0 {
-            return Err(WasmtimeError::Internal {
-                message: "Engine reference count is invalid".to_string(),
-            });
-        }
-        Ok(())
+        self.check_not_closed()
     }
 
     /// Get memory limit in pages (64KB per page)

@@ -1285,29 +1285,3 @@ macro_rules! jni_try {
     };
 }
 
-/// Debug logging utility for FFI troubleshooting
-///
-/// Writes timestamped messages to a log file in the user's home directory
-/// or /tmp as fallback. Silent on failure to avoid disrupting FFI operations.
-pub fn debug_log(msg: &str) {
-    use std::io::Write;
-    let log_path = std::env::var("HOME")
-        .map(|h| format!("{}/wasmtime4j-debug.log", h))
-        .unwrap_or_else(|_| "/tmp/wasmtime4j-debug.log".to_string());
-    if let Ok(mut file) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_path)
-    {
-        let _ = writeln!(
-            file,
-            "[{}] {}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs())
-                .unwrap_or(0),
-            msg
-        );
-        let _ = file.flush();
-    }
-}

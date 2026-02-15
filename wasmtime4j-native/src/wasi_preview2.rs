@@ -1024,38 +1024,6 @@ impl WasiPreview2Context {
 
 // C API for FFI integration
 
-/// Create WASI Preview 2 context
-#[no_mangle]
-pub unsafe extern "C" fn wasi_preview2_context_new(
-    engine_ptr: *mut c_void,
-    enable_networking: c_int,
-    enable_filesystem: c_int,
-    enable_process: c_int,
-) -> *mut c_void {
-    if engine_ptr.is_null() {
-        return std::ptr::null_mut();
-    }
-
-    let _config = WasiPreview2Config {
-        enable_networking: enable_networking != 0,
-        enable_filesystem: enable_filesystem != 0,
-        enable_process: enable_process != 0,
-        ..Default::default()
-    };
-
-    // Note: This is a simplified implementation - real implementation would
-    // need proper Engine handling from the engine_ptr
-    std::ptr::null_mut()
-}
-
-/// Destroy WASI Preview 2 context
-#[no_mangle]
-pub unsafe extern "C" fn wasi_preview2_context_destroy(ctx_ptr: *mut c_void) {
-    if !ctx_ptr.is_null() {
-        let _ = Box::from_raw(ctx_ptr as *mut WasiPreview2Context);
-    }
-}
-
 /// Compile a WebAssembly component
 #[no_mangle]
 pub unsafe extern "C" fn wasi_preview2_compile_component(

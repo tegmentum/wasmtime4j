@@ -236,44 +236,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestr
     engine_ptr: jlong,
     instance_id: jlong,
 ) {
-    use std::io::Write;
-    let log = |msg: &str| {
-        if let Ok(mut f) = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("/tmp/wasmtime4j_debug.log")
-        {
-            let _ = writeln!(f, "[nativeDestroyComponentInstance] {}", msg);
-            let _ = f.flush();
-        }
-    };
-
-    log(&format!(
-        "called: engine_ptr={}, instance_id={}",
-        engine_ptr, instance_id
-    ));
-
     // Validate parameters
-    if engine_ptr == 0 {
-        log("ERROR: null engine pointer");
-        return;
-    }
-    if instance_id == 0 {
-        log("ERROR: zero instance ID");
+    if engine_ptr == 0 || instance_id == 0 {
         return;
     }
 
     // Get engine reference and remove instance from HashMap
     let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
-
-    log("About to call engine.remove_instance()");
-    let result = engine.remove_instance(instance_id as u64);
-    log(&format!("remove_instance returned: {:?}", result));
-
-    if let Err(e) = result {
-        log(&format!("Error: {:?}", e));
-    }
-    log("nativeDestroyComponentInstance completed");
+    let _ = engine.remove_instance(instance_id as u64);
 }
 
 /// Invoke a component function with marshalled WIT values

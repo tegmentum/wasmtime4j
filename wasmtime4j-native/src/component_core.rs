@@ -279,17 +279,6 @@ impl EnhancedComponentEngine {
             })?;
         }
 
-        {
-            use std::io::Write;
-            if let Ok(mut f) = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open("/tmp/wasmtime4j_debug.log")
-            {
-                let _ = writeln!(f, "DEBUG: Attempting component instantiation...");
-            }
-        }
-
         let instance = linker
             .instantiate(&mut store, component.wasmtime_component())
             .map_err(|e| WasmtimeError::Instance {
@@ -477,20 +466,6 @@ impl EnhancedComponentEngine {
     ///
     /// Returns Ok(()) on success, or an error if the instance was not found.
     pub fn remove_instance(&self, instance_id: u64) -> WasmtimeResult<()> {
-        use std::io::Write;
-        let log = |msg: &str| {
-            if let Ok(mut f) = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open("/tmp/wasmtime4j_debug.log")
-            {
-                let _ = writeln!(f, "[remove_instance] {}", msg);
-                let _ = f.flush();
-            }
-        };
-
-        log(&format!("called for instance_id={}", instance_id));
-
         let mut instances = self
             .instances
             .write()
@@ -498,17 +473,8 @@ impl EnhancedComponentEngine {
                 message: "Failed to acquire instances write lock".to_string(),
             })?;
 
-        log(&format!(
-            "Got instances lock, current count={}",
-            instances.len()
-        ));
-
-        if let Some(_handle) = instances.remove(&instance_id) {
-            log("Found instance, dropping it");
-            // Handle is dropped here - the Wasmtime fork now skips drop_fibers_and_futures
-            // when async_support is disabled, preventing the crash
-            drop(_handle);
-            log("Instance dropped successfully");
+        if let Some(handle) = instances.remove(&instance_id) {
+            drop(handle);
 
             // Update metrics
             if let Ok(mut metrics) = self.metrics.write() {
@@ -516,10 +482,8 @@ impl EnhancedComponentEngine {
                     metrics.instances_created -= 1;
                 }
             }
-            log("remove_instance completed successfully");
             Ok(())
         } else {
-            log(&format!("Instance {} not found in HashMap", instance_id));
             // Instance already removed or never existed - treat as success for idempotency
             Ok(())
         }
