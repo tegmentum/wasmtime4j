@@ -20,7 +20,7 @@ import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits;
-import ai.tegmentum.wasmtime4j.wasi.WasiSecurityPolicy;
+
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -48,7 +48,7 @@ public final class JniWasiConfig implements WasiConfig {
   private final String workingDirectory;
   private final boolean inheritEnvironment;
   private final Duration executionTimeout;
-  private final WasiSecurityPolicy securityPolicy;
+
   private final boolean validationEnabled;
   private final boolean strictModeEnabled;
   private final WasiVersion wasiVersion;
@@ -66,7 +66,6 @@ public final class JniWasiConfig implements WasiConfig {
    * @param workingDirectory working directory
    * @param inheritEnvironment whether to inherit host environment
    * @param executionTimeout execution timeout
-   * @param securityPolicy security policy
    * @param validationEnabled whether validation is enabled
    * @param strictModeEnabled whether strict mode is enabled
    * @param wasiVersion WASI version
@@ -82,7 +81,6 @@ public final class JniWasiConfig implements WasiConfig {
       final String workingDirectory,
       final boolean inheritEnvironment,
       final Duration executionTimeout,
-      final WasiSecurityPolicy securityPolicy,
       final boolean validationEnabled,
       final boolean strictModeEnabled,
       final WasiVersion wasiVersion,
@@ -96,7 +94,6 @@ public final class JniWasiConfig implements WasiConfig {
     this.workingDirectory = workingDirectory;
     this.inheritEnvironment = inheritEnvironment;
     this.executionTimeout = executionTimeout;
-    this.securityPolicy = securityPolicy;
     this.validationEnabled = validationEnabled;
     this.strictModeEnabled = strictModeEnabled;
     this.wasiVersion = wasiVersion != null ? wasiVersion : WasiVersion.PREVIEW_1;
@@ -140,10 +137,6 @@ public final class JniWasiConfig implements WasiConfig {
     return Optional.empty();
   }
 
-  @Override
-  public Optional<WasiSecurityPolicy> getSecurityPolicy() {
-    return Optional.ofNullable(securityPolicy);
-  }
 
   @Override
   public Map<String, WasiImportResolver> getImportResolvers() {
@@ -175,9 +168,6 @@ public final class JniWasiConfig implements WasiConfig {
     }
     if (executionTimeout != null) {
       builder.withExecutionTimeout(executionTimeout);
-    }
-    if (securityPolicy != null) {
-      builder.withSecurityPolicy(securityPolicy);
     }
     builder.withValidation(validationEnabled);
     builder.withStrictMode(strictModeEnabled);

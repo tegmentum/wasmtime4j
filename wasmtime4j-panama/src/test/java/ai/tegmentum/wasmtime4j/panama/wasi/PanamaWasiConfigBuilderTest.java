@@ -28,7 +28,7 @@ import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimitsBuilder;
-import ai.tegmentum.wasmtime4j.wasi.WasiSecurityPolicy;
+
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -756,55 +756,6 @@ class PanamaWasiConfigBuilderTest {
     }
   }
 
-  @Nested
-  @DisplayName("Security Policy Method Tests")
-  class SecurityPolicyMethodTests {
-
-    @Test
-    @DisplayName("Should set security policy")
-    void shouldSetSecurityPolicy() {
-      LOGGER.info("Testing withSecurityPolicy");
-
-      final WasiSecurityPolicy policy = new TestWasiSecurityPolicy();
-      final WasiConfig config = new PanamaWasiConfigBuilder().withSecurityPolicy(policy).build();
-
-      assertTrue(config.getSecurityPolicy().isPresent());
-      assertEquals(policy, config.getSecurityPolicy().get());
-
-      LOGGER.info("Security policy set");
-    }
-
-    @Test
-    @DisplayName("Should throw on null security policy")
-    void shouldThrowOnNullSecurityPolicy() {
-      LOGGER.info("Testing withSecurityPolicy with null");
-
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> builder.withSecurityPolicy(null),
-          "Should throw on null policy");
-
-      LOGGER.info("Null security policy throws exception");
-    }
-
-    @Test
-    @DisplayName("Should clear security policy")
-    void shouldClearSecurityPolicy() {
-      LOGGER.info("Testing withoutSecurityPolicy");
-
-      final WasiConfig config =
-          new PanamaWasiConfigBuilder()
-              .withSecurityPolicy(new TestWasiSecurityPolicy())
-              .withoutSecurityPolicy()
-              .build();
-
-      assertFalse(config.getSecurityPolicy().isPresent(), "Security policy should be empty");
-
-      LOGGER.info("Security policy cleared");
-    }
-  }
 
   @Nested
   @DisplayName("Import Resolver Method Tests")
@@ -1267,7 +1218,6 @@ class PanamaWasiConfigBuilderTest {
       panamaBuilder.inheritEnvironment();
       panamaBuilder
           .withExecutionTimeout(Duration.ofMinutes(5))
-          .withSecurityPolicy(new TestWasiSecurityPolicy())
           .withImportResolver("test", new TestWasiImportResolver())
           .withValidation(true)
           .withStrictMode(true)
@@ -1283,7 +1233,6 @@ class PanamaWasiConfigBuilderTest {
       assertEquals(1, config.getPreopenDirectories().size());
       assertTrue(config.getWorkingDirectory().isPresent());
       assertTrue(config.getExecutionTimeout().isPresent());
-      assertTrue(config.getSecurityPolicy().isPresent());
       assertEquals(1, config.getImportResolvers().size());
       assertTrue(config.isValidationEnabled());
       assertTrue(config.isStrictModeEnabled());
@@ -1335,8 +1284,6 @@ class PanamaWasiConfigBuilderTest {
               .withExecutionTimeout(Duration.ofSeconds(30))
               .withoutExecutionTimeout()
               .withExecutionTimeout(Duration.ofMinutes(1))
-              .withSecurityPolicy(new TestWasiSecurityPolicy())
-              .withoutSecurityPolicy()
               .withImportResolver("test", new TestWasiImportResolver())
               .clearImportResolvers()
               .withValidation(true)
@@ -1456,60 +1403,6 @@ class PanamaWasiConfigBuilderTest {
     }
   }
 
-  /** Test implementation of WasiSecurityPolicy. */
-  private static final class TestWasiSecurityPolicy implements WasiSecurityPolicy {
-
-    @Override
-    public boolean isFileSystemAccessAllowed(final Path path, final String operation) {
-      return true;
-    }
-
-    @Override
-    public boolean isNetworkAccessAllowed(
-        final String host, final int port, final String protocol) {
-      return true;
-    }
-
-    @Override
-    public java.util.Set<String> getAllowedFileSystemOperations() {
-      return java.util.Collections.emptySet();
-    }
-
-    @Override
-    public java.util.Set<String> getAllowedNetworkOperations() {
-      return java.util.Collections.emptySet();
-    }
-
-    @Override
-    public java.util.List<Path> getAllowedPaths() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<Path> getBlockedPaths() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public boolean isEnvironmentVariableAllowed(final String name) {
-      return true;
-    }
-
-    @Override
-    public boolean isProcessSpawningAllowed() {
-      return true;
-    }
-
-    @Override
-    public boolean isThreadingAllowed() {
-      return true;
-    }
-
-    @Override
-    public void validate() {
-      // No-op for testing
-    }
-  }
 
   /** Test implementation of WasiImportResolver. */
   private static final class TestWasiImportResolver implements WasiImportResolver {

@@ -119,12 +119,6 @@ public interface WasiConfig {
    */
   Optional<WasiResourceLimits> getResourceLimits();
 
-  /**
-   * Gets the security policy for the component.
-   *
-   * @return the security policy, or empty if not specified
-   */
-  Optional<WasiSecurityPolicy> getSecurityPolicy();
 
   /**
    * Gets the import resolvers for component dependencies.

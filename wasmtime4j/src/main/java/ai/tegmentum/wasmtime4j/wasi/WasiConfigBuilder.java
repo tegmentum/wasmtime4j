@@ -219,24 +219,6 @@ public interface WasiConfigBuilder {
    */
   WasiConfigBuilder withoutResourceLimits();
 
-  /**
-   * Sets the security policy for the component.
-   *
-   * <p>Security policies define allowed operations, file system access patterns, and other security
-   * constraints for component execution.
-   *
-   * @param policy security policy to enforce
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if policy is null
-   */
-  WasiConfigBuilder withSecurityPolicy(final WasiSecurityPolicy policy);
-
-  /**
-   * Removes the security policy, using default security settings.
-   *
-   * @return this builder for method chaining
-   */
-  WasiConfigBuilder withoutSecurityPolicy();
 
   /**
    * Adds an import resolver for component dependencies.

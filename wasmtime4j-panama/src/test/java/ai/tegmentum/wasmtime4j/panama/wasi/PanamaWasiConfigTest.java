@@ -107,8 +107,6 @@ class PanamaWasiConfigTest {
           config.getExecutionTimeout().isPresent(), "Execution timeout should be empty by default");
       assertFalse(
           config.getResourceLimits().isPresent(), "Resource limits should be empty by default");
-      assertFalse(
-          config.getSecurityPolicy().isPresent(), "Security policy should be empty by default");
 
       LOGGER.info("Default optional values are empty as expected");
     }
@@ -377,22 +375,6 @@ class PanamaWasiConfigTest {
     }
   }
 
-  @Nested
-  @DisplayName("Security Policy Tests")
-  class SecurityPolicyTests {
-
-    @Test
-    @DisplayName("Should return security policy")
-    void shouldReturnSecurityPolicy() {
-      LOGGER.info("Testing getSecurityPolicy");
-
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
-
-      assertFalse(config.getSecurityPolicy().isPresent(), "Security policy should be empty");
-
-      LOGGER.info("Security policy tested");
-    }
-  }
 
   @Nested
   @DisplayName("toBuilder Tests")

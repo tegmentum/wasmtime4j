@@ -20,7 +20,7 @@ import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiImportResolver;
 import ai.tegmentum.wasmtime4j.wasi.WasiResourceLimits;
-import ai.tegmentum.wasmtime4j.wasi.WasiSecurityPolicy;
+
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -43,7 +43,7 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
   private String workingDirectory;
   private boolean inheritEnvironment;
   private Duration executionTimeout;
-  private WasiSecurityPolicy securityPolicy;
+
   private boolean validationEnabled;
   private boolean strictModeEnabled;
   private WasiVersion wasiVersion = WasiVersion.PREVIEW_1;
@@ -218,20 +218,6 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
         "Resource limits must be configured through Store resource limits");
   }
 
-  @Override
-  public WasiConfigBuilder withSecurityPolicy(final WasiSecurityPolicy policy) {
-    if (policy == null) {
-      throw new IllegalArgumentException("Security policy cannot be null");
-    }
-    this.securityPolicy = policy;
-    return this;
-  }
-
-  @Override
-  public WasiConfigBuilder withoutSecurityPolicy() {
-    this.securityPolicy = null;
-    return this;
-  }
 
   @Override
   public WasiConfigBuilder withImportResolver(
@@ -344,7 +330,6 @@ public final class PanamaWasiConfigBuilder implements WasiConfigBuilder {
         workingDirectory,
         inheritEnvironment,
         executionTimeout,
-        securityPolicy,
         validationEnabled,
         strictModeEnabled,
         wasiVersion,

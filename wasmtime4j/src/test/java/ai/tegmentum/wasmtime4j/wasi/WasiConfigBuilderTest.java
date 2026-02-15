@@ -309,35 +309,6 @@ class WasiConfigBuilderTest {
     }
   }
 
-  // ========================================================================
-  // Security Builder Method Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Security Builder Method Tests")
-  class SecurityBuilderMethodTests {
-
-    @Test
-    @DisplayName("should have withSecurityPolicy method")
-    void shouldHaveWithSecurityPolicyMethod() throws NoSuchMethodException {
-      Method method =
-          WasiConfigBuilder.class.getMethod("withSecurityPolicy", WasiSecurityPolicy.class);
-      assertNotNull(method, "withSecurityPolicy method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
-
-    @Test
-    @DisplayName("should have withoutSecurityPolicy method")
-    void shouldHaveWithoutSecurityPolicyMethod() throws NoSuchMethodException {
-      Method method = WasiConfigBuilder.class.getMethod("withoutSecurityPolicy");
-      assertNotNull(method, "withoutSecurityPolicy method should exist");
-      assertTrue(Modifier.isAbstract(method.getModifiers()), "Should be abstract");
-      assertEquals(
-          WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
-    }
-  }
 
   // ========================================================================
   // Import Resolver Builder Method Tests
@@ -549,8 +520,7 @@ class WasiConfigBuilderTest {
               "withoutExecutionTimeout",
               "withResourceLimits",
               "withoutResourceLimits",
-              "withSecurityPolicy",
-              "withoutSecurityPolicy",
+
               "withImportResolver",
               "withImportResolvers",
               "withoutImportResolver",
@@ -578,14 +548,14 @@ class WasiConfigBuilderTest {
     }
 
     @Test
-    @DisplayName("should have at least 34 abstract methods")
-    void shouldHaveAtLeast34AbstractMethods() {
+    @DisplayName("should have at least 32 abstract methods")
+    void shouldHaveAtLeast32AbstractMethods() {
       long abstractCount =
           Arrays.stream(WasiConfigBuilder.class.getDeclaredMethods())
               .filter(m -> !m.isSynthetic())
               .filter(m -> Modifier.isAbstract(m.getModifiers()))
               .count();
-      assertTrue(abstractCount >= 34, "Should have at least 34 abstract methods");
+      assertTrue(abstractCount >= 32, "Should have at least 32 abstract methods");
     }
 
     @Test

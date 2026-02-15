@@ -179,14 +179,6 @@ public interface WasiComponentBuilder {
    */
   WasiComponentBuilder withResourceLimits(final WasiResourceLimits limits);
 
-  /**
-   * Sets the security policy for the component.
-   *
-   * @param policy security policy to enforce
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if policy is null
-   */
-  WasiComponentBuilder withSecurityPolicy(final WasiSecurityPolicy policy);
 
   /**
    * Adds an import resolver for component dependencies.
