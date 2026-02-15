@@ -131,8 +131,6 @@ public final class SimpleValidationTests {
               assertTrue(engine.isValid(), "Engine should be valid after creation");
               // Note: getConfig() may return null in current implementation
               logger.info("Engine config: " + (engine.getConfig() != null ? "available" : "null"));
-              assertTrue(
-                  engine.getReferenceCount() > 0, "Engine should have positive reference count");
 
               return "success";
             });
@@ -211,11 +209,9 @@ public final class SimpleValidationTests {
               final long stackSizeLimit = engine.getStackSizeLimit();
               final boolean fuelEnabled = engine.isFuelEnabled();
               final boolean epochInterruption = engine.isEpochInterruptionEnabled();
-              final int maxInstances = engine.getMaxInstances();
 
               assertTrue(memoryLimitPages >= 0, "Memory limit should be non-negative");
               assertTrue(stackSizeLimit >= 0, "Stack size limit should be non-negative");
-              assertTrue(maxInstances >= 0, "Max instances should be non-negative");
 
               logger.info(
                   "Engine limits - Memory: "
@@ -225,9 +221,7 @@ public final class SimpleValidationTests {
                       + " bytes, Fuel: "
                       + fuelEnabled
                       + ", Epoch: "
-                      + epochInterruption
-                      + ", MaxInstances: "
-                      + maxInstances);
+                      + epochInterruption);
 
               return "success";
             });

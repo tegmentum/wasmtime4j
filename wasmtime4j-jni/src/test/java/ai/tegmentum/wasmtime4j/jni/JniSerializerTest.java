@@ -213,16 +213,6 @@ class JniSerializerTest {
         }
 
         @Override
-        public long getReferenceCount() {
-          return 0;
-        }
-
-        @Override
-        public int getMaxInstances() {
-          return 0;
-        }
-
-        @Override
         public void close() {}
 
         @Override

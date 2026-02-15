@@ -271,18 +271,6 @@ public class JniEngine implements Engine {
   }
 
   @Override
-  public long getReferenceCount() {
-    throw new UnsupportedOperationException(
-        "not yet implemented: native engine reference counting");
-  }
-
-  @Override
-  public int getMaxInstances() {
-    throw new UnsupportedOperationException(
-        "not yet implemented: native engine max instances tracking");
-  }
-
-  @Override
   public void close() {
     if (!closed) {
       closed = true;

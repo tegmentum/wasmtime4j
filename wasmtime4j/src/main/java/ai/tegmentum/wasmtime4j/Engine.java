@@ -206,28 +206,6 @@ public interface Engine extends Closeable {
   boolean isEpochInterruptionEnabled();
 
   /**
-   * Gets the maximum number of instances that can be created with this engine.
-   *
-   * <p>Returns the maximum number of WebAssembly instances that can be active simultaneously. A
-   * value of 0 indicates no limit.
-   *
-   * @return the maximum number of instances, or 0 for unlimited
-   * @since 1.0.0
-   */
-  int getMaxInstances();
-
-  /**
-   * Gets the reference count for this engine.
-   *
-   * <p>Returns the number of stores and other objects that are currently holding references to this
-   * engine. This is useful for debugging and resource management.
-   *
-   * @return the current reference count
-   * @since 1.0.0
-   */
-  long getReferenceCount();
-
-  /**
    * Checks if coredump generation on trap is enabled for this engine.
    *
    * <p>When enabled, traps will generate a coredump that can be used for post-mortem debugging of

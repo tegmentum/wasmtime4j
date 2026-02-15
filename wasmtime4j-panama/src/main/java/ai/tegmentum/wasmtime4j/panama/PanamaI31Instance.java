@@ -20,7 +20,6 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.gc.GcObject;
 import ai.tegmentum.wasmtime4j.gc.GcReferenceType;
 import ai.tegmentum.wasmtime4j.gc.I31Instance;
-import ai.tegmentum.wasmtime4j.gc.I31Type;
 
 /**
  * Panama implementation of a GC I31 instance.
@@ -36,11 +35,6 @@ class PanamaI31Instance extends PanamaGcObject implements I31Instance {
     super(objectId);
     this.runtime = runtime;
     this.value = value;
-  }
-
-  @Override
-  public I31Type getType() {
-    throw new UnsupportedOperationException("not yet implemented: I31Type instance creation");
   }
 
   @Override

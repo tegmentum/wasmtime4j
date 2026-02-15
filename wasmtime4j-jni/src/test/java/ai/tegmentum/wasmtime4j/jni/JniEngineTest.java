@@ -419,27 +419,6 @@ class JniEngineTest {
           "getConfig should throw UnsupportedOperationException");
     }
 
-    @Test
-    @DisplayName("should throw UnsupportedOperationException for getReferenceCount")
-    void shouldThrowForGetReferenceCount() {
-      final JniEngine engine = new JniEngine(VALID_HANDLE);
-
-      assertThrows(
-          UnsupportedOperationException.class,
-          engine::getReferenceCount,
-          "getReferenceCount should throw UnsupportedOperationException");
-    }
-
-    @Test
-    @DisplayName("should throw UnsupportedOperationException for getMaxInstances")
-    void shouldThrowForGetMaxInstances() {
-      final JniEngine engine = new JniEngine(VALID_HANDLE);
-
-      assertThrows(
-          UnsupportedOperationException.class,
-          engine::getMaxInstances,
-          "getMaxInstances should throw UnsupportedOperationException");
-    }
   }
 
   @Nested

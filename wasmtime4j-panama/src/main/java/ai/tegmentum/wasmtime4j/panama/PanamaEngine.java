@@ -266,20 +266,6 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
-  public int getMaxInstances() {
-    // Max instances tracking not implemented - return unlimited
-    // Matches JNI backend which returns Integer.MAX_VALUE
-    return Integer.MAX_VALUE;
-  }
-
-  @Override
-  public long getReferenceCount() {
-    // Reference counting not implemented - return single reference
-    // Matches JNI backend behavior
-    return 1;
-  }
-
-  @Override
   public void incrementEpoch() {
     ensureNotClosed();
     NATIVE_BINDINGS.engineIncrementEpoch(nativeEngine);

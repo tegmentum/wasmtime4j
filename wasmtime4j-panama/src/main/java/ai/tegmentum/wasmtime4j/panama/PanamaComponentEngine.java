@@ -470,16 +470,6 @@ public final class PanamaComponentEngine implements ComponentEngine {
     return false;
   }
 
-  @Override
-  public int getMaxInstances() {
-    return 0; // Unlimited by default
-  }
-
-  @Override
-  public long getReferenceCount() {
-    return 1L; // Simplified reference counting
-  }
-
   // Helper methods
 
   private void ensureNotClosed() {

@@ -11,7 +11,6 @@ import ai.tegmentum.wasmtime4j.gc.GcRuntime;
 import ai.tegmentum.wasmtime4j.gc.GcStats;
 import ai.tegmentum.wasmtime4j.gc.GcValue;
 import ai.tegmentum.wasmtime4j.gc.I31Instance;
-import ai.tegmentum.wasmtime4j.gc.I31Type;
 import ai.tegmentum.wasmtime4j.gc.StructInstance;
 import ai.tegmentum.wasmtime4j.gc.StructType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
@@ -1449,11 +1448,6 @@ public final class JniGcRuntime implements GcRuntime {
       super(objectId);
       this.runtime = runtime;
       this.value = value;
-    }
-
-    @Override
-    public I31Type getType() {
-      throw new UnsupportedOperationException("not yet implemented: I31Type instance creation");
     }
 
     @Override

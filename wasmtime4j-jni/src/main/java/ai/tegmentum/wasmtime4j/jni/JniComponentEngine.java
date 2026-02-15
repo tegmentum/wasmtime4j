@@ -256,16 +256,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public int getMaxInstances() {
-    return 0; // Unlimited
-  }
-
-  @Override
-  public long getReferenceCount() {
-    return loadedComponents.size();
-  }
-
-  @Override
   public void incrementEpoch() {
     // Component engines don't support epoch interruption in the same way
     // This is a no-op for component engines

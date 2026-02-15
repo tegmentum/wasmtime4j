@@ -397,21 +397,6 @@ class PanamaEngineTest {
     }
 
     @Test
-    @DisplayName("getMaxInstances should return Integer.MAX_VALUE")
-    void shouldReturnMaxInstances() throws Exception {
-      final PanamaEngine engine = createEngine();
-      assertEquals(
-          Integer.MAX_VALUE, engine.getMaxInstances(), "Max instances should be Integer.MAX_VALUE");
-    }
-
-    @Test
-    @DisplayName("getReferenceCount should return 1")
-    void shouldReturnReferenceCount() throws Exception {
-      final PanamaEngine engine = createEngine();
-      assertEquals(1, engine.getReferenceCount(), "Reference count should be 1");
-    }
-
-    @Test
     @DisplayName("isAsync should return false")
     void shouldReturnIsAsync() throws Exception {
       final PanamaEngine engine = createEngine();

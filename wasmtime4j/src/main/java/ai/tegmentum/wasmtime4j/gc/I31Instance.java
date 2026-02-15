@@ -23,13 +23,6 @@ package ai.tegmentum.wasmtime4j.gc;
 public interface I31Instance extends GcObject {
 
   /**
-   * Gets the I31 type.
-   *
-   * @return the I31 type
-   */
-  I31Type getType();
-
-  /**
    * Gets the signed 31-bit integer value.
    *
    * @return the signed value

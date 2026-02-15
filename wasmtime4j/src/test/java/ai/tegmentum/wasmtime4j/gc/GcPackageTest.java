@@ -163,14 +163,6 @@ class GcPackageTest {
     }
 
     @Test
-    @DisplayName("should have getType method")
-    void shouldHaveGetTypeMethod() throws NoSuchMethodException {
-      final Method method = I31Instance.class.getMethod("getType");
-      assertNotNull(method, "getType method should exist");
-      assertEquals(I31Type.class, method.getReturnType(), "Should return I31Type");
-    }
-
-    @Test
     @DisplayName("should have getValue method")
     void shouldHaveGetValueMethod() throws NoSuchMethodException {
       final Method method = I31Instance.class.getMethod("getValue");

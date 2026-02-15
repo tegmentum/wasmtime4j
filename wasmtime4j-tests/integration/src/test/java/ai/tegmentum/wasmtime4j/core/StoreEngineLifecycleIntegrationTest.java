@@ -150,17 +150,6 @@ public final class StoreEngineLifecycleIntegrationTest {
       }
     }
 
-    @Test
-    @DisplayName("should report positive reference count for engine")
-    void shouldReportPositiveReferenceCountForEngine() throws Exception {
-      LOGGER.info("Testing engine reference count");
-
-      try (final Engine engine = Engine.create()) {
-        final long refCount = engine.getReferenceCount();
-        assertTrue(refCount > 0, "Engine should have positive reference count");
-        LOGGER.info("Engine reference count: " + refCount);
-      }
-    }
   }
 
   @Nested
