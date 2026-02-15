@@ -141,8 +141,7 @@ pub mod wasi_http;
 #[cfg(feature = "wasi-threads")]
 pub mod wasi_threads;
 
-// Experimental WebAssembly features (committee-stage proposals)
-pub mod experimental_features;
+// experimental_features module removed (Phase 24: all stubs returning "not implemented")
 
 // Async runtime for async WebAssembly operations
 pub mod async_runtime;

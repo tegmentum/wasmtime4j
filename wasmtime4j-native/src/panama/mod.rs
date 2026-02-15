@@ -6,7 +6,6 @@
 pub mod caller;
 pub mod component_enhanced;
 pub mod engine;
-pub mod experimental_features;
 pub mod function;
 pub mod global;
 pub mod instance;
