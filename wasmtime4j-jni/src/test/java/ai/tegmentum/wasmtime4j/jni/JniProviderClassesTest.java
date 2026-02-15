@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.async.AsyncRuntimeFactory;
-import ai.tegmentum.wasmtime4j.profiler.ProfilerFactory;
 import ai.tegmentum.wasmtime4j.spi.CallerContextProvider;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -43,7 +42,6 @@ import org.junit.jupiter.api.Test;
  * <ul>
  *   <li>{@link JniAsyncRuntimeProvider}
  *   <li>{@link JniCallerContextProvider}
- *   <li>{@link JniProfilerProvider}
  * </ul>
  */
 @DisplayName("JNI Provider Classes Tests")
@@ -279,113 +277,6 @@ class JniProviderClassesTest {
   }
 
   // ===================================================================================
-  // JniProfilerProvider Tests
-  // ===================================================================================
-
-  @Nested
-  @DisplayName("JniProfilerProvider Tests")
-  class JniProfilerProviderTests {
-
-    @Nested
-    @DisplayName("Class Structure Tests")
-    class ClassStructureTests {
-
-      @Test
-      @DisplayName("JniProfilerProvider should be final class")
-      void shouldBeFinalClass() {
-        assertTrue(
-            Modifier.isFinal(JniProfilerProvider.class.getModifiers()),
-            "JniProfilerProvider should be final");
-      }
-
-      @Test
-      @DisplayName("JniProfilerProvider should be public")
-      void shouldBePublic() {
-        assertTrue(
-            Modifier.isPublic(JniProfilerProvider.class.getModifiers()),
-            "JniProfilerProvider should be public");
-      }
-
-      @Test
-      @DisplayName("JniProfilerProvider should implement ProfilerProvider")
-      void shouldImplementProfilerProvider() {
-        assertTrue(
-            ProfilerFactory.ProfilerProvider.class.isAssignableFrom(JniProfilerProvider.class),
-            "JniProfilerProvider should implement ProfilerFactory.ProfilerProvider");
-      }
-    }
-
-    @Nested
-    @DisplayName("Field Tests")
-    class FieldTests {
-
-      @Test
-      @DisplayName("Should have LOGGER field")
-      void shouldHaveLoggerField() throws NoSuchFieldException {
-        Field field = JniProfilerProvider.class.getDeclaredField("LOGGER");
-        assertNotNull(field, "LOGGER field should exist");
-        assertEquals(Logger.class, field.getType(), "LOGGER should be Logger type");
-        assertTrue(Modifier.isPrivate(field.getModifiers()), "LOGGER should be private");
-        assertTrue(Modifier.isStatic(field.getModifiers()), "LOGGER should be static");
-        assertTrue(Modifier.isFinal(field.getModifiers()), "LOGGER should be final");
-      }
-    }
-
-    @Nested
-    @DisplayName("Constructor Tests")
-    class ConstructorTests {
-
-      @Test
-      @DisplayName("Should have public no-arg constructor for ServiceLoader")
-      void shouldHavePublicNoArgConstructor() throws NoSuchMethodException {
-        Constructor<?> constructor = JniProfilerProvider.class.getDeclaredConstructor();
-        assertNotNull(constructor, "No-arg constructor should exist");
-        assertTrue(
-            Modifier.isPublic(constructor.getModifiers()),
-            "Constructor should be public for ServiceLoader");
-      }
-
-      @Test
-      @DisplayName("No-arg constructor should be instantiable")
-      void noArgConstructorShouldBeInstantiable() throws Exception {
-        JniProfilerProvider provider = new JniProfilerProvider();
-        assertNotNull(provider, "Provider should be instantiable");
-      }
-    }
-
-    @Nested
-    @DisplayName("Method Tests")
-    class MethodTests {
-
-      @Test
-      @DisplayName("Should have create method returning Profiler")
-      void shouldHaveCreateMethod() throws NoSuchMethodException {
-        Method method = JniProfilerProvider.class.getMethod("create");
-        assertNotNull(method, "create method should exist");
-        assertEquals(
-            ai.tegmentum.wasmtime4j.profiler.Profiler.class,
-            method.getReturnType(),
-            "create should return Profiler");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "create should be public");
-      }
-    }
-
-    @Nested
-    @DisplayName("Package Location Tests")
-    class PackageLocationTests {
-
-      @Test
-      @DisplayName("Class should be in correct package")
-      void shouldBeInCorrectPackage() {
-        assertEquals(
-            "ai.tegmentum.wasmtime4j.jni",
-            JniProfilerProvider.class.getPackage().getName(),
-            "Should be in ai.tegmentum.wasmtime4j.jni package");
-      }
-    }
-  }
-
-  // ===================================================================================
   // Cross-Provider Consistency Tests
   // ===================================================================================
 
@@ -402,9 +293,6 @@ class JniProviderClassesTest {
       assertTrue(
           Modifier.isFinal(JniCallerContextProvider.class.getModifiers()),
           "JniCallerContextProvider should be final");
-      assertTrue(
-          Modifier.isFinal(JniProfilerProvider.class.getModifiers()),
-          "JniProfilerProvider should be final");
     }
 
     @Test
@@ -416,9 +304,6 @@ class JniProviderClassesTest {
       assertTrue(
           Modifier.isPublic(JniCallerContextProvider.class.getModifiers()),
           "JniCallerContextProvider should be public");
-      assertTrue(
-          Modifier.isPublic(JniProfilerProvider.class.getModifiers()),
-          "JniProfilerProvider should be public");
     }
 
     @Test
@@ -426,11 +311,9 @@ class JniProviderClassesTest {
     void allProvidersShouldHaveNoArgConstructors() throws NoSuchMethodException {
       final Constructor<?> c1 = JniAsyncRuntimeProvider.class.getDeclaredConstructor();
       final Constructor<?> c2 = JniCallerContextProvider.class.getDeclaredConstructor();
-      final Constructor<?> c3 = JniProfilerProvider.class.getDeclaredConstructor();
 
       assertTrue(Modifier.isPublic(c1.getModifiers()), "JniAsyncRuntimeProvider constructor");
       assertTrue(Modifier.isPublic(c2.getModifiers()), "JniCallerContextProvider constructor");
-      assertTrue(Modifier.isPublic(c3.getModifiers()), "JniProfilerProvider constructor");
     }
 
     @Test
@@ -439,7 +322,6 @@ class JniProviderClassesTest {
       String expectedPackage = "ai.tegmentum.wasmtime4j.jni";
       assertEquals(expectedPackage, JniAsyncRuntimeProvider.class.getPackage().getName());
       assertEquals(expectedPackage, JniCallerContextProvider.class.getPackage().getName());
-      assertEquals(expectedPackage, JniProfilerProvider.class.getPackage().getName());
     }
 
     @Test
@@ -449,7 +331,6 @@ class JniProviderClassesTest {
           new JniAsyncRuntimeProvider(), "JniAsyncRuntimeProvider should be instantiable");
       assertNotNull(
           new JniCallerContextProvider(), "JniCallerContextProvider should be instantiable");
-      assertNotNull(new JniProfilerProvider(), "JniProfilerProvider should be instantiable");
     }
   }
 
@@ -487,24 +368,6 @@ class JniProviderClassesTest {
         if (!interfaceMethod.isDefault() && !Modifier.isStatic(interfaceMethod.getModifiers())) {
           boolean found = false;
           for (Method implMethod : JniCallerContextProvider.class.getMethods()) {
-            if (methodsMatch(interfaceMethod, implMethod)) {
-              found = true;
-              break;
-            }
-          }
-          assertTrue(found, "Should implement: " + interfaceMethod.getName());
-        }
-      }
-    }
-
-    @Test
-    @DisplayName("JniProfilerProvider should implement all interface methods")
-    void profilerProviderShouldImplementAllMethods() {
-      Class<?> providerInterface = ProfilerFactory.ProfilerProvider.class;
-      for (Method interfaceMethod : providerInterface.getMethods()) {
-        if (!interfaceMethod.isDefault() && !Modifier.isStatic(interfaceMethod.getModifiers())) {
-          boolean found = false;
-          for (Method implMethod : JniProfilerProvider.class.getMethods()) {
             if (methodsMatch(interfaceMethod, implMethod)) {
               found = true;
               break;
@@ -556,10 +419,6 @@ class JniProviderClassesTest {
       // JniCallerContextProvider
       assertProviderFollowsServiceLoaderPattern(
           JniCallerContextProvider.class, CallerContextProvider.class);
-
-      // JniProfilerProvider
-      assertProviderFollowsServiceLoaderPattern(
-          JniProfilerProvider.class, ProfilerFactory.ProfilerProvider.class);
     }
 
     private void assertProviderFollowsServiceLoaderPattern(
