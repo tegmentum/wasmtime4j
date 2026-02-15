@@ -102,14 +102,6 @@ class PanamaWasiComponentTest {
     }
 
     @Test
-    @DisplayName("should have getStats method")
-    void shouldHaveGetStatsMethod() throws Exception {
-      Method method = PanamaWasiComponent.class.getMethod("getStats");
-
-      assertThat(method).isNotNull();
-    }
-
-    @Test
     @DisplayName("should have instantiate method")
     void shouldHaveInstantiateMethod() throws Exception {
       Method method =
@@ -149,22 +141,6 @@ class PanamaWasiComponentTest {
 
       assertThat(method).isNotNull();
       assertThat(method.getReturnType()).isEqualTo(void.class);
-    }
-
-    @Test
-    @DisplayName("should have getExportMetadata method")
-    void shouldHaveGetExportMetadataMethod() throws Exception {
-      Method method = PanamaWasiComponent.class.getMethod("getExportMetadata", String.class);
-
-      assertThat(method).isNotNull();
-    }
-
-    @Test
-    @DisplayName("should have getImportMetadata method")
-    void shouldHaveGetImportMetadataMethod() throws Exception {
-      Method method = PanamaWasiComponent.class.getMethod("getImportMetadata", String.class);
-
-      assertThat(method).isNotNull();
     }
 
     @Test

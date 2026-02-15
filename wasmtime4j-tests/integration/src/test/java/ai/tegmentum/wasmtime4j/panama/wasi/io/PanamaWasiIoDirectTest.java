@@ -132,13 +132,8 @@ public class PanamaWasiIoDirectTest {
         "isValid",
         "getAvailableOperations",
         "invoke",
-        "getStats",
-        "getState",
-        "getMetadata",
         "getLastAccessedAt",
-        "getCreatedAt",
-        "createHandle",
-        "transferOwnership"
+        "getCreatedAt"
       };
 
       for (final String methodName : expectedMethods) {
@@ -245,13 +240,8 @@ public class PanamaWasiIoDirectTest {
         "isValid",
         "getAvailableOperations",
         "invoke",
-        "getStats",
-        "getState",
-        "getMetadata",
         "getLastAccessedAt",
-        "getCreatedAt",
-        "createHandle",
-        "transferOwnership"
+        "getCreatedAt"
       };
 
       for (final String methodName : expectedMethods) {
@@ -338,13 +328,8 @@ public class PanamaWasiIoDirectTest {
         "isValid",
         "getAvailableOperations",
         "invoke",
-        "getStats",
-        "getState",
-        "getMetadata",
         "getLastAccessedAt",
-        "getCreatedAt",
-        "createHandle",
-        "transferOwnership"
+        "getCreatedAt"
       };
 
       for (final String methodName : expectedMethods) {

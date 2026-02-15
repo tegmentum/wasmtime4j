@@ -150,17 +150,6 @@ class WasiImportResolverTest {
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
-    @Test
-    @DisplayName("should have getFunctionMetadata method")
-    void shouldHaveGetFunctionMetadataMethod() throws NoSuchMethodException {
-      Method method = WasiImportResolver.class.getMethod("getFunctionMetadata", String.class);
-      assertNotNull(method, "getFunctionMetadata method should exist");
-      assertEquals(
-          WasiFunctionMetadata.class, method.getReturnType(), "Should return WasiFunctionMetadata");
-      assertTrue(
-          Arrays.asList(method.getExceptionTypes()).contains(WasmException.class),
-          "Should throw WasmException");
-    }
   }
 
   // ========================================================================
@@ -191,19 +180,6 @@ class WasiImportResolverTest {
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
-    @Test
-    @DisplayName("should have getResourceTypeMetadata method")
-    void shouldHaveGetResourceTypeMetadataMethod() throws NoSuchMethodException {
-      Method method = WasiImportResolver.class.getMethod("getResourceTypeMetadata", String.class);
-      assertNotNull(method, "getResourceTypeMetadata method should exist");
-      assertEquals(
-          WasiResourceTypeMetadata.class,
-          method.getReturnType(),
-          "Should return WasiResourceTypeMetadata");
-      assertTrue(
-          Arrays.asList(method.getExceptionTypes()).contains(WasmException.class),
-          "Should throw WasmException");
-    }
   }
 
   // ========================================================================
@@ -300,14 +276,14 @@ class WasiImportResolverTest {
   class MethodCountTests {
 
     @Test
-    @DisplayName("should have at least 13 abstract methods")
+    @DisplayName("should have at least 11 abstract methods")
     void shouldHaveExpectedMethodCount() {
       long abstractMethodCount =
           Arrays.stream(WasiImportResolver.class.getDeclaredMethods())
               .filter(m -> !m.isSynthetic())
               .filter(m -> Modifier.isAbstract(m.getModifiers()))
               .count();
-      assertTrue(abstractMethodCount >= 13, "Should have at least 13 abstract methods");
+      assertTrue(abstractMethodCount >= 11, "Should have at least 11 abstract methods");
     }
   }
 

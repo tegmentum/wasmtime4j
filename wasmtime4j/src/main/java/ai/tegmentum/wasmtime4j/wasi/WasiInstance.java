@@ -29,8 +29,8 @@ import java.util.concurrent.CompletableFuture;
  *     // Access resources
  *     List<WasiResource> resources = instance.getResources();
  *
- *     // Monitor execution
- *     WasiInstanceStats stats = instance.getStats();
+ *     // Access resources
+ *     boolean isRunning = instance.isExecuting();
  * }
  * }</pre>
  *
@@ -151,18 +151,6 @@ public interface WasiInstance extends Closeable {
   List<String> getExportedInterfaces() throws WasmException;
 
   /**
-   * Gets metadata for an exported function.
-   *
-   * <p>Returns detailed information about function signatures, parameter types, and return types.
-   *
-   * @param functionName the function name to inspect
-   * @return function metadata
-   * @throws WasmException if function doesn't exist or metadata cannot be retrieved
-   * @throws IllegalArgumentException if functionName is null or empty
-   */
-  WasiFunctionMetadata getFunctionMetadata(final String functionName) throws WasmException;
-
-  /**
    * Gets all resources owned by this instance.
    *
    * <p>Returns resources that have been created by or transferred to this instance. Resources are
@@ -188,40 +176,6 @@ public interface WasiInstance extends Closeable {
    * @return the resource with the specified ID, or empty if not found
    */
   Optional<WasiResource> getResource(final long resourceId);
-
-  /**
-   * Creates a new resource of the specified type.
-   *
-   * <p>This allows components to create new resources programmatically. The availability of
-   * resource creation depends on the component's permissions and capabilities.
-   *
-   * @param resourceType the type of resource to create
-   * @param parameters resource creation parameters
-   * @return the newly created resource
-   * @throws WasmException if resource creation fails
-   * @throws IllegalArgumentException if resourceType is null or parameters are invalid
-   */
-  WasiResource createResource(final String resourceType, final Object... parameters)
-      throws WasmException;
-
-  /**
-   * Gets comprehensive statistics about this instance.
-   *
-   * <p>Statistics include execution time, memory usage, resource counts, function call counts, and
-   * other metrics useful for monitoring and debugging.
-   *
-   * @return instance statistics
-   */
-  WasiInstanceStats getStats();
-
-  /**
-   * Gets the current memory usage of this instance.
-   *
-   * <p>Returns information about allocated memory, peak usage, and memory limits.
-   *
-   * @return memory usage information
-   */
-  WasiMemoryInfo getMemoryInfo();
 
   /**
    * Suspends execution of this instance.

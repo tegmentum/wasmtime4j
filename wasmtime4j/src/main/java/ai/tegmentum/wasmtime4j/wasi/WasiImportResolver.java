@@ -90,28 +90,6 @@ public interface WasiImportResolver {
       throws WasmException;
 
   /**
-   * Gets metadata about a function provided by this resolver.
-   *
-   * <p>Returns information about function signatures, parameter types, and return types.
-   *
-   * @param functionName the function name to inspect
-   * @return function metadata
-   * @throws WasmException if function doesn't exist or metadata cannot be retrieved
-   * @throws IllegalArgumentException if functionName is null or empty
-   */
-  WasiFunctionMetadata getFunctionMetadata(final String functionName) throws WasmException;
-
-  /**
-   * Gets metadata about a resource type provided by this resolver.
-   *
-   * @param resourceType the resource type name to inspect
-   * @return resource type metadata
-   * @throws WasmException if resource type doesn't exist or metadata cannot be retrieved
-   * @throws IllegalArgumentException if resourceType is null or empty
-   */
-  WasiResourceTypeMetadata getResourceTypeMetadata(final String resourceType) throws WasmException;
-
-  /**
    * Checks if this resolver can handle the specified function.
    *
    * @param functionName the function name to check

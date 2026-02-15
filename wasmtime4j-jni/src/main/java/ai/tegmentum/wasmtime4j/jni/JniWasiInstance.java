@@ -4,13 +4,9 @@ import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
-import ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstanceState;
-import ai.tegmentum.wasmtime4j.wasi.WasiInstanceStats;
-import ai.tegmentum.wasmtime4j.wasi.WasiMemoryInfo;
 import ai.tegmentum.wasmtime4j.wasi.WasiResource;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
 import ai.tegmentum.wasmtime4j.wit.WitFloat64;
@@ -320,23 +316,6 @@ public final class JniWasiInstance implements WasiInstance {
   }
 
   @Override
-  public WasiFunctionMetadata getFunctionMetadata(final String functionName) throws WasmException {
-    Objects.requireNonNull(functionName, "Function name cannot be null");
-    if (functionName.trim().isEmpty()) {
-      throw new IllegalArgumentException("Function name cannot be empty");
-    }
-    ensureNotClosed();
-
-    // Check if function exists
-    if (!getExportedFunctions().contains(functionName)) {
-      throw new WasmException("Function not found in exports: " + functionName);
-    }
-
-    throw new UnsupportedOperationException(
-        "not yet implemented: native function metadata extraction");
-  }
-
-  @Override
   public List<WasiResource> getResources() {
     ensureNotClosed();
     synchronized (resources) {
@@ -365,31 +344,6 @@ public final class JniWasiInstance implements WasiInstance {
     synchronized (resources) {
       return resources.stream().filter(resource -> resource.getId() == resourceId).findFirst();
     }
-  }
-
-  @Override
-  public WasiResource createResource(final String resourceType, final Object... parameters)
-      throws WasmException {
-    Objects.requireNonNull(resourceType, "Resource type cannot be null");
-    if (resourceType.trim().isEmpty()) {
-      throw new IllegalArgumentException("Resource type cannot be empty");
-    }
-    ensureNotClosed();
-
-    throw new UnsupportedOperationException("not yet implemented: native resource creation");
-  }
-
-  @Override
-  public WasiInstanceStats getStats() {
-    ensureNotClosed();
-    throw new UnsupportedOperationException(
-        "not yet implemented: native instance statistics collection");
-  }
-
-  @Override
-  public WasiMemoryInfo getMemoryInfo() {
-    ensureNotClosed();
-    throw new UnsupportedOperationException("not yet implemented: native memory info extraction");
   }
 
   @Override
@@ -457,9 +411,7 @@ public final class JniWasiInstance implements WasiInstance {
       // Clean up all resources
       for (final WasiResource resource : resources) {
         try {
-          if (resource.getState() != WasiResourceState.CLOSED) {
-            resource.close();
-          }
+          resource.close();
         } catch (final Exception e) {
           LOGGER.warning("Failed to close resource during termination: " + e.getMessage());
         }

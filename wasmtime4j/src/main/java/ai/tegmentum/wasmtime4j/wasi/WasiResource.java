@@ -101,38 +101,6 @@ public interface WasiResource extends Closeable {
   Optional<Instant> getLastAccessedAt();
 
   /**
-   * Gets resource-specific metadata and properties.
-   *
-   * <p>The metadata contains resource-type-specific information such as file size, socket state,
-   * timer settings, etc. The structure depends on the resource type.
-   *
-   * @return resource metadata
-   * @throws WasmException if metadata cannot be retrieved or resource is invalid
-   */
-  WasiResourceMetadata getMetadata() throws WasmException;
-
-  /**
-   * Gets the current state of the resource.
-   *
-   * <p>Resource states are type-specific and indicate the current condition of the resource (e.g.,
-   * open/closed for files, connected/disconnected for sockets).
-   *
-   * @return the current resource state
-   * @throws WasmException if state cannot be retrieved or resource is invalid
-   */
-  WasiResourceState getState() throws WasmException;
-
-  /**
-   * Gets usage statistics for this resource.
-   *
-   * <p>Statistics include access counts, data transfer amounts, error counts, and other
-   * type-specific metrics useful for monitoring and debugging.
-   *
-   * @return resource usage statistics
-   */
-  WasiResourceStats getStats();
-
-  /**
    * Performs a type-specific operation on this resource.
    *
    * <p>This provides a generic interface for resource-specific operations. The available operations
@@ -155,30 +123,6 @@ public interface WasiResource extends Closeable {
    * @return list of available operation names
    */
   List<String> getAvailableOperations();
-
-  /**
-   * Creates a representation of this resource that can be passed to other components.
-   *
-   * <p>Resource handles can be passed between components as interface parameters. The receiving
-   * component gets appropriate access to the resource based on ownership and permissions.
-   *
-   * @return a handle representing this resource
-   * @throws WasmException if a handle cannot be created or resource is invalid
-   */
-  WasiResourceHandle createHandle() throws WasmException;
-
-  /**
-   * Transfers ownership of this resource to another component.
-   *
-   * <p>Ownership transfer is only possible for owned resources. After transfer, this resource
-   * becomes invalid in the current component and the target component gains ownership.
-   *
-   * @param targetInstance the component instance to transfer ownership to
-   * @throws WasmException if transfer fails or is not allowed
-   * @throws IllegalArgumentException if targetInstance is null
-   * @throws IllegalStateException if the resource is not owned or already invalid
-   */
-  void transferOwnership(final WasiInstance targetInstance) throws WasmException;
 
   /**
    * Closes the resource and releases associated system resources.

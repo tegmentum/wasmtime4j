@@ -1547,18 +1547,6 @@ class PanamaWasiConfigBuilderTest {
     }
 
     @Override
-    public ai.tegmentum.wasmtime4j.wasi.WasiFunctionMetadata getFunctionMetadata(
-        final String functionName) {
-      throw new UnsupportedOperationException("Test implementation");
-    }
-
-    @Override
-    public ai.tegmentum.wasmtime4j.wasi.WasiResourceTypeMetadata getResourceTypeMetadata(
-        final String resourceType) {
-      throw new UnsupportedOperationException("Test implementation");
-    }
-
-    @Override
     public boolean canResolveFunction(final String functionName) {
       return false;
     }

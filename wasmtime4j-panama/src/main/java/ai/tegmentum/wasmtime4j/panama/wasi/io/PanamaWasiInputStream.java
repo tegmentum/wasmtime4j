@@ -381,23 +381,6 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.wasi.WasiResourceStats getStats() {
-    throw new UnsupportedOperationException("not yet implemented: WASI input stream statistics");
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.wasi.WasiResourceState getState() {
-    return isClosed()
-        ? ai.tegmentum.wasmtime4j.wasi.WasiResourceState.CLOSED
-        : ai.tegmentum.wasmtime4j.wasi.WasiResourceState.ACTIVE;
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata getMetadata() throws WasmException {
-    throw new UnsupportedOperationException("not yet implemented: WASI input stream metadata");
-  }
-
-  @Override
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
     return java.util.Optional.empty(); // Access tracking not yet implemented for WASI I/O streams
   }
@@ -406,77 +389,6 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   public java.time.Instant getCreatedAt() {
     return java.time.Instant
         .now(); // Creation time tracking not yet implemented for WASI I/O streams
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle createHandle() throws WasmException {
-    try {
-      ensureNotClosed();
-    } catch (final IllegalStateException e) {
-      throw new WasmException("Resource is closed: " + e.getMessage(), e);
-    }
-    return new PanamaWasiResourceHandle(nativeHandle.address(), getType(), getOwner());
-  }
-
-  @Override
-  public void transferOwnership(final ai.tegmentum.wasmtime4j.wasi.WasiInstance targetInstance)
-      throws WasmException {
-    if (targetInstance == null) {
-      throw new IllegalArgumentException("Target instance cannot be null");
-    }
-    try {
-      ensureNotClosed();
-    } catch (final IllegalStateException e) {
-      throw new WasmException("Resource is closed: " + e.getMessage(), e);
-    }
-    if (!isOwned()) {
-      throw new IllegalStateException("Cannot transfer ownership of a borrowed resource");
-    }
-    // In WASI Preview 2, ownership transfer is handled at the component model level
-    // For Panama streams, we log the transfer but don't change the underlying native resource
-    // The native resource will be managed by the target instance after transfer
-    LOGGER.fine(
-        "Transferring ownership of input stream "
-            + nativeHandle.address()
-            + " to instance "
-            + targetInstance.getId());
-  }
-
-  /** Internal implementation of WasiResourceHandle for Panama WASI resources. */
-  private static final class PanamaWasiResourceHandle
-      implements ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle {
-    private final long resourceId;
-    private final String resourceType;
-    private final ai.tegmentum.wasmtime4j.wasi.WasiInstance owner;
-
-    PanamaWasiResourceHandle(
-        final long resourceId,
-        final String resourceType,
-        final ai.tegmentum.wasmtime4j.wasi.WasiInstance owner) {
-      this.resourceId = resourceId;
-      this.resourceType = resourceType;
-      this.owner = owner;
-    }
-
-    @Override
-    public long getResourceId() {
-      return resourceId;
-    }
-
-    @Override
-    public String getResourceType() {
-      return resourceType;
-    }
-
-    @Override
-    public ai.tegmentum.wasmtime4j.wasi.WasiInstance getOwner() {
-      return owner;
-    }
-
-    @Override
-    public boolean isValid() {
-      return resourceId != 0;
-    }
   }
 
   /**

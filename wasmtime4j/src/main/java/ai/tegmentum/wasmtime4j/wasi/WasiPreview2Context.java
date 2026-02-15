@@ -263,13 +263,6 @@ public interface WasiPreview2Context extends AutoCloseable {
   WasiConfig getConfig();
 
   /**
-   * Gets performance metrics for this context.
-   *
-   * @return the performance metrics
-   */
-  WasiPerformanceMetrics getPerformanceMetrics();
-
-  /**
    * Closes the context and releases all associated resources.
    *
    * <p>After closing, no further operations can be performed on this context.

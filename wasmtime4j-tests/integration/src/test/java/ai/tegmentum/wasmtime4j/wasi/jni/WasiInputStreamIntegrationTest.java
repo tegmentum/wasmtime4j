@@ -27,7 +27,6 @@ import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.jni.wasi.cli.JniWasiStdio;
 import ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiInputStream;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.nio.file.Files;
@@ -207,7 +206,6 @@ class WasiInputStreamIntegrationTest {
 
       assertTrue(stdin.isValid(), "Stream should be valid when open");
       assertTrue(stdin.isOwned(), "Stream should be owned");
-      assertEquals(WasiResourceState.ACTIVE, stdin.getState(), "State should be ACTIVE when open");
 
       LOGGER.info("Stream state verified as open and valid");
     }
@@ -224,8 +222,6 @@ class WasiInputStreamIntegrationTest {
       stdin.close();
 
       assertFalse(stdin.isValid(), "Stream should be invalid after close");
-      assertEquals(
-          WasiResourceState.CLOSED, stdin.getState(), "State should be CLOSED after close");
 
       LOGGER.info("Stream state correctly updated after close");
     }
@@ -323,31 +319,6 @@ class WasiInputStreamIntegrationTest {
           "Should reject empty operation name");
 
       LOGGER.info("Invoke correctly rejected empty operation");
-    }
-  }
-
-  @Nested
-  @DisplayName("Resource Handle Tests")
-  class ResourceHandleTests {
-
-    @Test
-    @DisplayName("should create resource handle")
-    void shouldCreateResourceHandle() throws Exception {
-      LOGGER.info("Testing resource handle creation");
-
-      final JniWasiStdio stdio = new JniWasiStdio(wasiContext.getNativeHandle());
-      final WasiInputStream stdin = stdio.getStdin();
-      resources.add(stdin);
-
-      final var handle = stdin.createHandle();
-
-      assertNotNull(handle, "Resource handle should not be null");
-      assertTrue(handle.isValid(), "Handle should be valid");
-      assertEquals(stdin.getId(), handle.getResourceId(), "Handle ID should match stream ID");
-      assertEquals(
-          stdin.getType(), handle.getResourceType(), "Handle type should match stream type");
-
-      LOGGER.info("Resource handle created successfully");
     }
   }
 

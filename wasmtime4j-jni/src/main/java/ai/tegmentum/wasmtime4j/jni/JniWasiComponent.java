@@ -2,10 +2,8 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
-import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
-import ai.tegmentum.wasmtime4j.wasi.WasiInterfaceMetadata;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -45,7 +43,6 @@ public final class JniWasiComponent implements WasiComponent {
   // Cached metadata to avoid repeated native calls
   private volatile List<String> cachedExports;
   private volatile List<String> cachedImports;
-  private volatile WasiComponentStats cachedStats;
 
   /**
    * Creates a new JNI WASI component with the specified engine and component handle.
@@ -99,40 +96,6 @@ public final class JniWasiComponent implements WasiComponent {
       }
     }
     return new ArrayList<>(cachedImports);
-  }
-
-  @Override
-  public WasiInterfaceMetadata getExportMetadata(final String interfaceName) throws WasmException {
-    Objects.requireNonNull(interfaceName, "Interface name cannot be null");
-    if (interfaceName.trim().isEmpty()) {
-      throw new IllegalArgumentException("Interface name cannot be empty");
-    }
-    ensureNotClosed();
-
-    // Check if interface exists
-    if (!getExports().contains(interfaceName)) {
-      throw new WasmException("Interface not found in exports: " + interfaceName);
-    }
-
-    throw new UnsupportedOperationException(
-        "not yet implemented: native export metadata extraction");
-  }
-
-  @Override
-  public WasiInterfaceMetadata getImportMetadata(final String interfaceName) throws WasmException {
-    Objects.requireNonNull(interfaceName, "Interface name cannot be null");
-    if (interfaceName.trim().isEmpty()) {
-      throw new IllegalArgumentException("Interface name cannot be empty");
-    }
-    ensureNotClosed();
-
-    // Check if interface exists
-    if (!getImports().contains(interfaceName)) {
-      throw new WasmException("Interface not found in imports: " + interfaceName);
-    }
-
-    throw new UnsupportedOperationException(
-        "not yet implemented: native import metadata extraction");
   }
 
   @Override
@@ -200,20 +163,6 @@ public final class JniWasiComponent implements WasiComponent {
   }
 
   @Override
-  public WasiComponentStats getStats() {
-    ensureNotClosed();
-
-    if (cachedStats == null) {
-      synchronized (this) {
-        if (cachedStats == null) {
-          cachedStats = extractStats();
-        }
-      }
-    }
-    return cachedStats;
-  }
-
-  @Override
   public boolean isValid() {
     return !closed && componentEngine.isValid() && componentHandle.isValid();
   }
@@ -226,7 +175,6 @@ public final class JniWasiComponent implements WasiComponent {
       // Clear caches
       cachedExports = null;
       cachedImports = null;
-      cachedStats = null;
 
       try {
         componentHandle.close();
@@ -285,8 +233,4 @@ public final class JniWasiComponent implements WasiComponent {
         "not yet implemented: native component import extraction");
   }
 
-  private WasiComponentStats extractStats() {
-    throw new UnsupportedOperationException(
-        "not yet implemented: native component statistics extraction");
-  }
 }

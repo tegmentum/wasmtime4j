@@ -424,14 +424,6 @@ class JniWasiInstanceTest {
           Modifier.isPublic(method.getModifiers()), "getExportedInterfaces should be public");
     }
 
-    @Test
-    @DisplayName("Should have getFunctionMetadata method")
-    void shouldHaveGetFunctionMetadataMethod()
-        throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getMethod("getFunctionMetadata", String.class);
-      assertTrue(Modifier.isPublic(method.getModifiers()), "getFunctionMetadata should be public");
-    }
   }
 
   @Nested
@@ -466,34 +458,6 @@ class JniWasiInstanceTest {
       assertTrue(Modifier.isPublic(method.getModifiers()), "getResource should be public");
     }
 
-    @Test
-    @DisplayName("Should have createResource method")
-    void shouldHaveCreateResourceMethod() throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getMethod("createResource", String.class, Object[].class);
-      assertTrue(Modifier.isPublic(method.getModifiers()), "createResource should be public");
-    }
-  }
-
-  @Nested
-  @DisplayName("Statistics and Monitoring Method Tests")
-  class StatisticsMethodTests {
-
-    @Test
-    @DisplayName("Should have getStats method")
-    void shouldHaveGetStatsMethod() throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getMethod("getStats");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "getStats should be public");
-    }
-
-    @Test
-    @DisplayName("Should have getMemoryInfo method")
-    void shouldHaveGetMemoryInfoMethod() throws ClassNotFoundException, NoSuchMethodException {
-      Class<?> clazz = getTestedClass();
-      Method method = clazz.getMethod("getMemoryInfo");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "getMemoryInfo should be public");
-    }
   }
 
   @Nested
@@ -758,8 +722,8 @@ class JniWasiInstanceTest {
               .filter(m -> Modifier.isPublic(m.getModifiers()))
               .count();
       assertTrue(
-          publicMethodCount >= 25,
-          "Should have at least 25 public methods, found: " + publicMethodCount);
+          publicMethodCount >= 21,
+          "Should have at least 21 public methods, found: " + publicMethodCount);
     }
 
     @Test

@@ -57,32 +57,6 @@ public interface WasiComponent extends Closeable {
   List<String> getImports() throws WasmException;
 
   /**
-   * Gets metadata about an exported interface.
-   *
-   * <p>Returns detailed information about the specified exported interface, including function
-   * signatures, resource types, and parameter specifications.
-   *
-   * @param interfaceName the name of the interface to inspect
-   * @return metadata for the specified interface
-   * @throws WasmException if the component is invalid or interface doesn't exist
-   * @throws IllegalArgumentException if interfaceName is null or empty
-   */
-  WasiInterfaceMetadata getExportMetadata(final String interfaceName) throws WasmException;
-
-  /**
-   * Gets metadata about a required import interface.
-   *
-   * <p>Returns detailed information about the specified import interface, including function
-   * signatures, resource types, and parameter specifications.
-   *
-   * @param interfaceName the name of the interface to inspect
-   * @return metadata for the specified interface
-   * @throws WasmException if the component is invalid or interface doesn't exist
-   * @throws IllegalArgumentException if interfaceName is null or empty
-   */
-  WasiInterfaceMetadata getImportMetadata(final String interfaceName) throws WasmException;
-
-  /**
    * Instantiates the component with default configuration.
    *
    * <p>Creates a new instance of this component using default WASI configuration. The instance
@@ -128,16 +102,6 @@ public interface WasiComponent extends Closeable {
    * @throws IllegalArgumentException if config is null
    */
   void validate(final WasiConfig config) throws WasmException;
-
-  /**
-   * Gets component statistics and metrics.
-   *
-   * <p>Returns information about component size, complexity, and resource requirements. This can be
-   * useful for monitoring and optimization.
-   *
-   * @return component statistics
-   */
-  WasiComponentStats getStats();
 
   /**
    * Checks if the component is still valid and usable.

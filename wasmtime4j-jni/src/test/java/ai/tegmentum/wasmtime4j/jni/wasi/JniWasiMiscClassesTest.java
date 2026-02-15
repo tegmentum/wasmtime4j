@@ -666,14 +666,6 @@ class JniWasiMiscClassesTest {
       }
 
       @Test
-      @DisplayName("Should have getStats method")
-      void shouldHaveGetStatsMethod() throws NoSuchMethodException {
-        Method method = JniWasiComponent.class.getMethod("getStats");
-        assertNotNull(method, "getStats method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "getStats should be public");
-      }
-
-      @Test
       @DisplayName("Should have isValid method")
       void shouldHaveIsValidMethod() throws NoSuchMethodException {
         Method method = JniWasiComponent.class.getMethod("isValid");

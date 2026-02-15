@@ -26,7 +26,6 @@ import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.panama.wasi.cli.PanamaWasiStdio;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiOutputStream;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream;
 import ai.tegmentum.wasmtime4j.wasi.security.WasiSecurityValidator;
 import java.lang.foreign.MemorySegment;
@@ -228,7 +227,6 @@ class WasiOutputStreamIntegrationTest {
 
       assertTrue(stdout.isValid(), "Stream should be valid when open");
       assertTrue(stdout.isOwned(), "Stream should be owned");
-      assertEquals(WasiResourceState.ACTIVE, stdout.getState(), "State should be ACTIVE when open");
 
       LOGGER.info("Stream state verified as open and valid");
     }
@@ -245,8 +243,6 @@ class WasiOutputStreamIntegrationTest {
       stdout.close();
 
       assertFalse(stdout.isValid(), "Stream should be invalid after close");
-      assertEquals(
-          WasiResourceState.CLOSED, stdout.getState(), "State should be CLOSED after close");
 
       LOGGER.info("Stream state correctly updated after close");
     }
@@ -390,50 +386,4 @@ class WasiOutputStreamIntegrationTest {
     }
   }
 
-  @Nested
-  @DisplayName("Resource Handle Tests")
-  class ResourceHandleTests {
-
-    @Test
-    @DisplayName("should create resource handle")
-    void shouldCreateResourceHandle() throws Exception {
-      LOGGER.info("Testing resource handle creation");
-
-      final PanamaWasiStdio stdio = new PanamaWasiStdio(wasiContext.getNativeHandle());
-      final WasiOutputStream stdout = stdio.getStdout();
-      resources.add(stdout);
-
-      final var handle = stdout.createHandle();
-
-      assertNotNull(handle, "Resource handle should not be null");
-      assertTrue(handle.isValid(), "Handle should be valid");
-      assertEquals(stdout.getId(), handle.getResourceId(), "Handle ID should match stream ID");
-      assertEquals(
-          stdout.getType(), handle.getResourceType(), "Handle type should match stream type");
-
-      LOGGER.info("Resource handle created successfully");
-    }
-  }
-
-  @Nested
-  @DisplayName("Ownership Transfer Tests")
-  class OwnershipTransferTests {
-
-    @Test
-    @DisplayName("should reject null target instance for ownership transfer")
-    void shouldRejectNullTargetInstanceForOwnershipTransfer() throws Exception {
-      LOGGER.info("Testing ownership transfer rejection of null target");
-
-      final PanamaWasiStdio stdio = new PanamaWasiStdio(wasiContext.getNativeHandle());
-      final WasiOutputStream stdout = stdio.getStdout();
-      resources.add(stdout);
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> stdout.transferOwnership(null),
-          "Should reject null target instance");
-
-      LOGGER.info("Ownership transfer correctly rejected null target");
-    }
-  }
 }

@@ -21,10 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceHandle;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceMetadata;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceState;
-import ai.tegmentum.wasmtime4j.wasi.WasiResourceStats;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import java.lang.foreign.MemorySegment;
 import java.lang.reflect.Constructor;
@@ -154,14 +150,6 @@ class PanamaWasiPollableTest {
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
 
-    @Test
-    @DisplayName("should have transferOwnership method")
-    void shouldHaveTransferOwnershipMethod() throws NoSuchMethodException {
-      final Method method =
-          PanamaWasiPollable.class.getMethod("transferOwnership", WasiInstance.class);
-      assertNotNull(method, "transferOwnership method should exist");
-      assertEquals(void.class, method.getReturnType(), "Should return void");
-    }
   }
 
   @Nested
@@ -174,15 +162,6 @@ class PanamaWasiPollableTest {
       final Method method = PanamaWasiPollable.class.getMethod("isValid");
       assertNotNull(method, "isValid method should exist");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have getState method")
-    void shouldHaveGetStateMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiPollable.class.getMethod("getState");
-      assertNotNull(method, "getState method should exist");
-      assertEquals(
-          WasiResourceState.class, method.getReturnType(), "Should return WasiResourceState");
     }
   }
 
@@ -213,24 +192,6 @@ class PanamaWasiPollableTest {
   class MetadataMethodTests {
 
     @Test
-    @DisplayName("should have getStats method")
-    void shouldHaveGetStatsMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiPollable.class.getMethod("getStats");
-      assertNotNull(method, "getStats method should exist");
-      assertEquals(
-          WasiResourceStats.class, method.getReturnType(), "Should return WasiResourceStats");
-    }
-
-    @Test
-    @DisplayName("should have getMetadata method")
-    void shouldHaveGetMetadataMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiPollable.class.getMethod("getMetadata");
-      assertNotNull(method, "getMetadata method should exist");
-      assertEquals(
-          WasiResourceMetadata.class, method.getReturnType(), "Should return WasiResourceMetadata");
-    }
-
-    @Test
     @DisplayName("should have getLastAccessedAt method")
     void shouldHaveGetLastAccessedAtMethod() throws NoSuchMethodException {
       final Method method = PanamaWasiPollable.class.getMethod("getLastAccessedAt");
@@ -244,20 +205,6 @@ class PanamaWasiPollableTest {
       final Method method = PanamaWasiPollable.class.getMethod("getCreatedAt");
       assertNotNull(method, "getCreatedAt method should exist");
       assertEquals(Instant.class, method.getReturnType(), "Should return Instant");
-    }
-  }
-
-  @Nested
-  @DisplayName("Handle Method Tests")
-  class HandleMethodTests {
-
-    @Test
-    @DisplayName("should have createHandle method")
-    void shouldHaveCreateHandleMethod() throws NoSuchMethodException {
-      final Method method = PanamaWasiPollable.class.getMethod("createHandle");
-      assertNotNull(method, "createHandle method should exist");
-      assertEquals(
-          WasiResourceHandle.class, method.getReturnType(), "Should return WasiResourceHandle");
     }
   }
 }

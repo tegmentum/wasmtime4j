@@ -22,10 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiComponent;
-import ai.tegmentum.wasmtime4j.wasi.WasiComponentStats;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiInstance;
-import ai.tegmentum.wasmtime4j.wasi.WasiInterfaceMetadata;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -155,16 +153,6 @@ class JniWasiComponentTest {
       assertTrue(Modifier.isVolatile(field.getModifiers()), "cachedImports should be volatile");
     }
 
-    @Test
-    @DisplayName("should have cachedStats field")
-    void shouldHaveCachedStatsField() throws Exception {
-      Field field = JniWasiComponent.class.getDeclaredField("cachedStats");
-      assertNotNull(field, "cachedStats field should exist");
-      assertEquals(
-          WasiComponentStats.class, field.getType(), "cachedStats should be WasiComponentStats");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "cachedStats should be private");
-      assertTrue(Modifier.isVolatile(field.getModifiers()), "cachedStats should be volatile");
-    }
   }
 
   // ========================================================================
@@ -237,30 +225,6 @@ class JniWasiComponentTest {
     }
 
     @Test
-    @DisplayName("should have getExportMetadata method")
-    void shouldHaveGetExportMetadataMethod() throws Exception {
-      Method method = JniWasiComponent.class.getMethod("getExportMetadata", String.class);
-      assertNotNull(method, "getExportMetadata method should exist");
-      assertEquals(
-          WasiInterfaceMetadata.class,
-          method.getReturnType(),
-          "Return type should be WasiInterfaceMetadata");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "getExportMetadata should be public");
-    }
-
-    @Test
-    @DisplayName("should have getImportMetadata method")
-    void shouldHaveGetImportMetadataMethod() throws Exception {
-      Method method = JniWasiComponent.class.getMethod("getImportMetadata", String.class);
-      assertNotNull(method, "getImportMetadata method should exist");
-      assertEquals(
-          WasiInterfaceMetadata.class,
-          method.getReturnType(),
-          "Return type should be WasiInterfaceMetadata");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "getImportMetadata should be public");
-    }
-
-    @Test
     @DisplayName("should have instantiate method without parameters")
     void shouldHaveInstantiateMethodNoParams() throws Exception {
       Method method = JniWasiComponent.class.getMethod("instantiate");
@@ -296,18 +260,6 @@ class JniWasiComponentTest {
       assertNotNull(method, "validate(WasiConfig) method should exist");
       assertEquals(void.class, method.getReturnType(), "Return type should be void");
       assertTrue(Modifier.isPublic(method.getModifiers()), "validate should be public");
-    }
-
-    @Test
-    @DisplayName("should have getStats method")
-    void shouldHaveGetStatsMethod() throws Exception {
-      Method method = JniWasiComponent.class.getMethod("getStats");
-      assertNotNull(method, "getStats method should exist");
-      assertEquals(
-          WasiComponentStats.class,
-          method.getReturnType(),
-          "Return type should be WasiComponentStats");
-      assertTrue(Modifier.isPublic(method.getModifiers()), "getStats should be public");
     }
 
     @Test
@@ -391,17 +343,6 @@ class JniWasiComponentTest {
       assertEquals(List.class, method.getReturnType(), "Return type should be List");
     }
 
-    @Test
-    @DisplayName("should have extractStats private method")
-    void shouldHaveExtractStatsMethod() throws Exception {
-      Method method = JniWasiComponent.class.getDeclaredMethod("extractStats");
-      assertNotNull(method, "extractStats method should exist");
-      assertTrue(Modifier.isPrivate(method.getModifiers()), "extractStats should be private");
-      assertEquals(
-          WasiComponentStats.class,
-          method.getReturnType(),
-          "Return type should be WasiComponentStats");
-    }
   }
 
   // ========================================================================
@@ -426,7 +367,6 @@ class JniWasiComponentTest {
     void cachedFieldsShouldBeVolatile() throws Exception {
       Field cachedExports = JniWasiComponent.class.getDeclaredField("cachedExports");
       Field cachedImports = JniWasiComponent.class.getDeclaredField("cachedImports");
-      Field cachedStats = JniWasiComponent.class.getDeclaredField("cachedStats");
 
       assertTrue(
           Modifier.isVolatile(cachedExports.getModifiers()),
@@ -434,9 +374,6 @@ class JniWasiComponentTest {
       assertTrue(
           Modifier.isVolatile(cachedImports.getModifiers()),
           "cachedImports should be volatile for double-checked locking");
-      assertTrue(
-          Modifier.isVolatile(cachedStats.getModifiers()),
-          "cachedStats should be volatile for double-checked locking");
     }
   }
 
@@ -497,13 +434,6 @@ class JniWasiComponentTest {
       assertNotNull(cachedImports, "cachedImports field should exist for caching");
     }
 
-    @Test
-    @DisplayName("getStats should use caching pattern")
-    void getStatsShouldUseCaching() throws Exception {
-      // Verify cachedStats field exists and is used
-      Field cachedStats = JniWasiComponent.class.getDeclaredField("cachedStats");
-      assertNotNull(cachedStats, "cachedStats field should exist for caching");
-    }
   }
 
   // ========================================================================
@@ -526,8 +456,8 @@ class JniWasiComponentTest {
         }
       }
 
-      // Expected: ~12 public methods from WasiComponent interface
-      assertTrue(publicCount >= 10, "Should have at least 10 public methods from interface");
+      // Expected: ~9 public methods from WasiComponent interface (after removing invented stubs)
+      assertTrue(publicCount >= 7, "Should have at least 7 public methods from interface");
     }
 
     @Test

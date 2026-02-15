@@ -350,17 +350,6 @@ class WasiPreview2ContextTest {
     }
 
     @Test
-    @DisplayName("should have getPerformanceMetrics method")
-    void shouldHaveGetPerformanceMetricsMethod() throws NoSuchMethodException {
-      Method method = WasiPreview2Context.class.getMethod("getPerformanceMetrics");
-      assertNotNull(method, "getPerformanceMetrics method should exist");
-      assertEquals(
-          WasiPerformanceMetrics.class,
-          method.getReturnType(),
-          "Should return WasiPerformanceMetrics");
-    }
-
-    @Test
     @DisplayName("should have close method")
     void shouldHaveCloseMethod() throws NoSuchMethodException {
       Method method = WasiPreview2Context.class.getMethod("close");
@@ -456,14 +445,14 @@ class WasiPreview2ContextTest {
   class MethodCountTests {
 
     @Test
-    @DisplayName("should have at least 18 abstract methods")
+    @DisplayName("should have at least 17 abstract methods")
     void shouldHaveExpectedMethodCount() {
       long abstractMethodCount =
           Arrays.stream(WasiPreview2Context.class.getDeclaredMethods())
               .filter(m -> !m.isSynthetic())
               .filter(m -> Modifier.isAbstract(m.getModifiers()))
               .count();
-      assertTrue(abstractMethodCount >= 18, "Should have at least 18 abstract methods");
+      assertTrue(abstractMethodCount >= 17, "Should have at least 17 abstract methods");
     }
   }
 }
