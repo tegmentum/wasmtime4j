@@ -612,6 +612,17 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG)); // callback_id
 
     addFunctionBinding(
+        "wasmtime4j_panama_store_set_resource_limiter",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // callback_id
+            ValueLayout.ADDRESS, // memory_growing_fn
+            ValueLayout.ADDRESS, // table_growing_fn
+            ValueLayout.ADDRESS, // memory_grow_failed_fn (nullable)
+            ValueLayout.ADDRESS)); // table_grow_failed_fn (nullable)
+
+    addFunctionBinding(
         "wasmtime4j_store_set_epoch_deadline",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
@@ -2136,6 +2147,41 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         storePtr,
         callbackFn,
         callbackId);
+  }
+
+  /**
+   * Sets a dynamic resource limiter on the store with callback function pointers.
+   *
+   * <p>The callbacks are invoked by the Wasmtime runtime each time a memory or table needs to grow,
+   * allowing dynamic per-request resource allocation decisions.
+   *
+   * @param storePtr pointer to the store
+   * @param callbackId identifier passed to callbacks for Java-side dispatch
+   * @param memoryGrowingFn function pointer for memory grow decisions
+   * @param tableGrowingFn function pointer for table grow decisions
+   * @param memoryGrowFailedFn function pointer for memory grow failure notifications (nullable)
+   * @param tableGrowFailedFn function pointer for table grow failure notifications (nullable)
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeSetResourceLimiter(
+      final MemorySegment storePtr,
+      final long callbackId,
+      final MemorySegment memoryGrowingFn,
+      final MemorySegment tableGrowingFn,
+      final MemorySegment memoryGrowFailedFn,
+      final MemorySegment tableGrowFailedFn) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(memoryGrowingFn, "memoryGrowingFn");
+    validatePointer(tableGrowingFn, "tableGrowingFn");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_set_resource_limiter",
+        Integer.class,
+        storePtr,
+        callbackId,
+        memoryGrowingFn,
+        tableGrowingFn,
+        memoryGrowFailedFn,
+        tableGrowFailedFn);
   }
 
   /**

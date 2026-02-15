@@ -793,3 +793,54 @@ pub extern "C" fn wasmtime4j_panama_store_get_fuel(
         Ok(())
     })
 }
+
+/// Resource limiter callback type for memory grow decisions (Panama FFI)
+type PanamaMemoryGrowingCallbackFn =
+    extern "C" fn(callback_id: i64, current: u64, desired: u64, maximum: u64) -> i32;
+
+/// Resource limiter callback type for table grow decisions (Panama FFI)
+type PanamaTableGrowingCallbackFn =
+    extern "C" fn(callback_id: i64, current: u32, desired: u32, maximum: u32) -> i32;
+
+/// Resource limiter callback type for grow failure notifications (Panama FFI)
+type PanamaGrowFailedCallbackFn =
+    extern "C" fn(callback_id: i64, error: *const std::os::raw::c_char);
+
+/// Set a dynamic resource limiter on a store (Panama FFI version)
+///
+/// This allows setting callback functions that will be invoked when memory or table
+/// grows are requested. The callbacks can dynamically decide whether to allow or deny
+/// the growth.
+///
+/// # Arguments
+/// * `store_ptr` - Pointer to the store
+/// * `callback_id` - Identifier passed to callbacks for Java-side dispatch
+/// * `memory_growing_fn` - Function pointer for memory grow decisions
+/// * `table_growing_fn` - Function pointer for table grow decisions
+/// * `memory_grow_failed_fn` - Optional function pointer for memory grow failure notifications
+/// * `table_grow_failed_fn` - Optional function pointer for table grow failure notifications
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_set_resource_limiter(
+    store_ptr: *mut c_void,
+    callback_id: i64,
+    memory_growing_fn: PanamaMemoryGrowingCallbackFn,
+    table_growing_fn: PanamaTableGrowingCallbackFn,
+    memory_grow_failed_fn: Option<PanamaGrowFailedCallbackFn>,
+    table_grow_failed_fn: Option<PanamaGrowFailedCallbackFn>,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        core::set_resource_limiter(
+            store,
+            callback_id,
+            memory_growing_fn,
+            table_growing_fn,
+            memory_grow_failed_fn,
+            table_grow_failed_fn,
+        )?;
+        Ok(())
+    })
+}

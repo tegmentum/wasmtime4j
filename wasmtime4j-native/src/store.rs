@@ -10,6 +10,7 @@ use crate::hostfunc::{HostFunction, HostFunctionCallback};
 use crate::interop::ReentrantLock;
 use crate::module::Module;
 use once_cell::sync::Lazy;
+use std::ffi::CString;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 #[cfg(feature = "wasi-http")]
@@ -85,6 +86,8 @@ pub struct StoreData {
     /// Optional WASI-NN context for neural network inference
     #[cfg(feature = "wasi-nn")]
     pub wasi_nn_ctx: Option<WasiNnCtx>,
+    /// Optional callback-based resource limiter for dynamic resource limiting
+    pub callback_resource_limiter: Option<CallbackResourceLimiter>,
 }
 
 impl std::fmt::Debug for StoreData {
@@ -119,6 +122,13 @@ impl std::fmt::Debug for StoreData {
             "wasi_nn_ctx",
             &self.wasi_nn_ctx.as_ref().map(|_| "<WasiNnCtx>"),
         );
+        debug.field(
+            "callback_resource_limiter",
+            &self
+                .callback_resource_limiter
+                .as_ref()
+                .map(|_| "<CallbackResourceLimiter>"),
+        );
         debug.finish()
     }
 }
@@ -139,6 +149,7 @@ impl Clone for StoreData {
             resource_table: ResourceTable::new(), // Fresh table for cloned store
             #[cfg(feature = "wasi-nn")]
             wasi_nn_ctx: None, // WasiNnCtx is store-specific
+            callback_resource_limiter: None, // Limiter is store-specific, must be re-registered
         }
     }
 }
@@ -165,6 +176,80 @@ pub struct ResourceLimits {
     pub max_instances: Option<usize>,
     /// Maximum number of functions that can be instantiated
     pub max_functions: Option<usize>,
+}
+
+/// Resource limiter backed by C function pointer callbacks.
+///
+/// Implements wasmtime's `ResourceLimiter` trait by delegating to extern "C" function pointers,
+/// allowing Java code (via Panama FFI) to make dynamic resource allocation decisions at runtime.
+///
+/// This is the Rust-side counterpart to the Java `ResourceLimiter` interface.
+#[derive(Clone, Copy)]
+pub struct CallbackResourceLimiter {
+    /// Callback invoked when linear memory is about to grow.
+    /// Parameters: callback_id, current_bytes, desired_bytes, maximum_bytes
+    /// Returns: non-zero to allow, zero to deny
+    memory_growing_fn: extern "C" fn(i64, u64, u64, u64) -> i32,
+    /// Callback invoked when a table is about to grow.
+    /// Parameters: callback_id, current_elements, desired_elements, maximum_elements
+    /// Returns: non-zero to allow, zero to deny
+    table_growing_fn: extern "C" fn(i64, u32, u32, u32) -> i32,
+    /// Optional callback invoked when a memory grow operation fails after being allowed.
+    /// Parameters: callback_id, error_message (null-terminated C string)
+    memory_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+    /// Optional callback invoked when a table grow operation fails after being allowed.
+    /// Parameters: callback_id, error_message (null-terminated C string)
+    table_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+    /// Identifier passed back to callbacks so the Java side can identify which limiter is being called.
+    callback_id: i64,
+}
+
+impl wasmtime::ResourceLimiter for CallbackResourceLimiter {
+    fn memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> anyhow::Result<bool> {
+        let max_val = maximum.map(|m| m as u64).unwrap_or(u64::MAX);
+        let result =
+            (self.memory_growing_fn)(self.callback_id, current as u64, desired as u64, max_val);
+        Ok(result != 0)
+    }
+
+    fn table_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> anyhow::Result<bool> {
+        let max_val = maximum.map(|m| m as u32).unwrap_or(u32::MAX);
+        let result = (self.table_growing_fn)(
+            self.callback_id,
+            current as u32,
+            desired as u32,
+            max_val,
+        );
+        Ok(result != 0)
+    }
+
+    fn memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+        if let Some(callback) = self.memory_grow_failed_fn {
+            if let Ok(c_msg) = CString::new(error.to_string()) {
+                callback(self.callback_id, c_msg.as_ptr());
+            }
+        }
+        Ok(())
+    }
+
+    fn table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+        if let Some(callback) = self.table_grow_failed_fn {
+            if let Ok(c_msg) = CString::new(error.to_string()) {
+                callback(self.callback_id, c_msg.as_ptr());
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Execution state tracking
@@ -825,6 +910,54 @@ impl Store {
         data.wasi_fd_manager = None;
         Ok(())
     }
+
+    /// Set a callback-based resource limiter on this store.
+    ///
+    /// The limiter's callbacks will be invoked each time a WebAssembly linear memory
+    /// or table needs to grow, allowing dynamic resource allocation decisions.
+    ///
+    /// # Arguments
+    /// * `memory_growing_fn` - Callback for memory grow requests
+    /// * `table_growing_fn` - Callback for table grow requests
+    /// * `memory_grow_failed_fn` - Optional callback for memory grow failures
+    /// * `table_grow_failed_fn` - Optional callback for table grow failures
+    /// * `callback_id` - Identifier passed to callbacks for Java-side dispatch
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn set_resource_limiter(
+        &self,
+        memory_growing_fn: extern "C" fn(i64, u64, u64, u64) -> i32,
+        table_growing_fn: extern "C" fn(i64, u32, u32, u32) -> i32,
+        memory_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+        table_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+        callback_id: i64,
+    ) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+
+        log::debug!(
+            "Setting resource limiter on store {}: callback_id={}",
+            self.id,
+            callback_id
+        );
+
+        store.data_mut().callback_resource_limiter = Some(CallbackResourceLimiter {
+            memory_growing_fn,
+            table_growing_fn,
+            memory_grow_failed_fn,
+            table_grow_failed_fn,
+            callback_id,
+        });
+
+        store.limiter(|data| {
+            data.callback_resource_limiter
+                .as_mut()
+                .expect("CallbackResourceLimiter was set but is missing")
+        });
+
+        Ok(())
+    }
 }
 
 impl StoreBuilder {
@@ -918,6 +1051,7 @@ impl StoreBuilder {
             resource_table: ResourceTable::new(),
             #[cfg(feature = "wasi-nn")]
             wasi_nn_ctx: None,
+            callback_resource_limiter: None,
         };
 
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
@@ -1005,6 +1139,7 @@ impl StoreBuilder {
             resource_table: ResourceTable::new(),
             #[cfg(feature = "wasi-nn")]
             wasi_nn_ctx: None,
+            callback_resource_limiter: None,
         };
 
         // CRITICAL: Use the wasmtime Engine from the Module's internal wasmtime::Module
@@ -1346,6 +1481,24 @@ pub mod core {
         // Validation only - limits are typically set during store creation
         // Return success but note that limit cannot be changed at runtime
         Ok(())
+    }
+
+    /// Core function to set a callback-based resource limiter on a store
+    pub fn set_resource_limiter(
+        store: &Store,
+        callback_id: i64,
+        memory_growing_fn: extern "C" fn(i64, u64, u64, u64) -> i32,
+        table_growing_fn: extern "C" fn(i64, u32, u32, u32) -> i32,
+        memory_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+        table_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+    ) -> WasmtimeResult<()> {
+        store.set_resource_limiter(
+            memory_growing_fn,
+            table_growing_fn,
+            memory_grow_failed_fn,
+            table_grow_failed_fn,
+            callback_id,
+        )
     }
 }
 
@@ -2098,7 +2251,7 @@ mod tests {
 //
 
 use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
-use std::os::raw::{c_int, c_void};
+use std::os::raw::{c_char, c_int, c_void};
 
 /// Create a new store with engine
 ///
@@ -2387,5 +2540,51 @@ pub unsafe extern "C" fn wasmtime4j_store_has_wasi_context(store_ptr: *const c_v
             }
         }
         Err(_) => -1,
+    }
+}
+
+/// Resource limiter callback type for memory grow decisions (C FFI)
+type MemoryGrowingCallbackFn = extern "C" fn(callback_id: i64, current: u64, desired: u64, maximum: u64) -> i32;
+
+/// Resource limiter callback type for table grow decisions (C FFI)
+type TableGrowingCallbackFn =
+    extern "C" fn(callback_id: i64, current: u32, desired: u32, maximum: u32) -> i32;
+
+/// Resource limiter callback type for grow failure notifications (C FFI)
+type GrowFailedCallbackFn = extern "C" fn(callback_id: i64, error: *const c_char);
+
+/// Set a dynamic resource limiter on a store (C FFI)
+///
+/// # Safety
+///
+/// - store_ptr must be a valid pointer from wasmtime4j_store_new
+/// - Callback function pointers must be valid for the lifetime of the store
+/// - memory_grow_failed_fn and table_grow_failed_fn can be null
+///
+/// # Returns
+/// - 0 on success
+/// - non-zero on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_set_resource_limiter(
+    store_ptr: *const c_void,
+    callback_id: i64,
+    memory_growing_fn: MemoryGrowingCallbackFn,
+    table_growing_fn: TableGrowingCallbackFn,
+    memory_grow_failed_fn: Option<GrowFailedCallbackFn>,
+    table_grow_failed_fn: Option<GrowFailedCallbackFn>,
+) -> c_int {
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => match core::set_resource_limiter(
+            store,
+            callback_id,
+            memory_growing_fn,
+            table_growing_fn,
+            memory_grow_failed_fn,
+            table_grow_failed_fn,
+        ) {
+            Ok(_) => FFI_SUCCESS,
+            Err(_) => FFI_ERROR,
+        },
+        Err(_) => FFI_ERROR,
     }
 }

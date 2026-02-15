@@ -353,6 +353,22 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCall
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeSetResourceLimiter
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResourceLimiter
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeClearResourceLimiter
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearResourceLimiter
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeSetFuelAsyncYieldInterval
  * Signature: (JJ)V
  */

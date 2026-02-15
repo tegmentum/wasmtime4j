@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
@@ -101,6 +102,160 @@ public final class PanamaStore implements Store {
     }
   }
 
+  // Resource limiter callback infrastructure
+  private static final AtomicLong LIMITER_CALLBACK_ID_COUNTER = new AtomicLong(1);
+  private static final ConcurrentHashMap<Long, ResourceLimiter> RESOURCE_LIMITERS =
+      new ConcurrentHashMap<>();
+  private static final MemorySegment MEMORY_GROWING_STUB;
+  private static final MemorySegment TABLE_GROWING_STUB;
+  private static final MemorySegment MEMORY_GROW_FAILED_STUB;
+  private static final MemorySegment TABLE_GROW_FAILED_STUB;
+
+  private static final FunctionDescriptor MEMORY_GROWING_DESCRIPTOR =
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_INT, // return: non-zero to allow, zero to deny
+          ValueLayout.JAVA_LONG, // callback_id
+          ValueLayout.JAVA_LONG, // current_bytes
+          ValueLayout.JAVA_LONG, // desired_bytes
+          ValueLayout.JAVA_LONG); // maximum_bytes
+
+  private static final FunctionDescriptor TABLE_GROWING_DESCRIPTOR =
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_INT, // return: non-zero to allow, zero to deny
+          ValueLayout.JAVA_LONG, // callback_id
+          ValueLayout.JAVA_INT, // current_elements
+          ValueLayout.JAVA_INT, // desired_elements
+          ValueLayout.JAVA_INT); // maximum_elements
+
+  private static final FunctionDescriptor GROW_FAILED_DESCRIPTOR =
+      FunctionDescriptor.ofVoid(
+          ValueLayout.JAVA_LONG, // callback_id
+          ValueLayout.ADDRESS); // error message (C string)
+
+  static {
+    MemorySegment memGrowingStub = null;
+    MemorySegment tblGrowingStub = null;
+    MemorySegment memFailedStub = null;
+    MemorySegment tblFailedStub = null;
+    try {
+      final MethodHandles.Lookup lookup = MethodHandles.lookup();
+      final Linker linker = Linker.nativeLinker();
+
+      memGrowingStub =
+          linker.upcallStub(
+              lookup.findStatic(
+                  PanamaStore.class,
+                  "memoryGrowingStub",
+                  MethodType.methodType(
+                      int.class, long.class, long.class, long.class, long.class)),
+              MEMORY_GROWING_DESCRIPTOR,
+              Arena.global());
+
+      tblGrowingStub =
+          linker.upcallStub(
+              lookup.findStatic(
+                  PanamaStore.class,
+                  "tableGrowingStub",
+                  MethodType.methodType(int.class, long.class, int.class, int.class, int.class)),
+              TABLE_GROWING_DESCRIPTOR,
+              Arena.global());
+
+      memFailedStub =
+          linker.upcallStub(
+              lookup.findStatic(
+                  PanamaStore.class,
+                  "memoryGrowFailedStub",
+                  MethodType.methodType(void.class, long.class, MemorySegment.class)),
+              GROW_FAILED_DESCRIPTOR,
+              Arena.global());
+
+      tblFailedStub =
+          linker.upcallStub(
+              lookup.findStatic(
+                  PanamaStore.class,
+                  "tableGrowFailedStub",
+                  MethodType.methodType(void.class, long.class, MemorySegment.class)),
+              GROW_FAILED_DESCRIPTOR,
+              Arena.global());
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.severe("Failed to create resource limiter callback stubs: " + e.getMessage());
+    }
+    MEMORY_GROWING_STUB = memGrowingStub;
+    TABLE_GROWING_STUB = tblGrowingStub;
+    MEMORY_GROW_FAILED_STUB = memFailedStub;
+    TABLE_GROW_FAILED_STUB = tblFailedStub;
+  }
+
+  private static int memoryGrowingStub(
+      final long callbackId,
+      final long currentBytes,
+      final long desiredBytes,
+      final long maximumBytes) {
+    final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
+    if (limiter == null) {
+      LOGGER.warning("Resource limiter not found for ID: " + callbackId);
+      return 0; // Deny if limiter not found
+    }
+    try {
+      return limiter.memoryGrowing(currentBytes, desiredBytes, maximumBytes) ? 1 : 0;
+    } catch (final Exception e) {
+      LOGGER.warning("memoryGrowing callback threw exception: " + e.getMessage());
+      return 0; // Deny on exception
+    }
+  }
+
+  private static int tableGrowingStub(
+      final long callbackId,
+      final int currentElements,
+      final int desiredElements,
+      final int maximumElements) {
+    final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
+    if (limiter == null) {
+      LOGGER.warning("Resource limiter not found for ID: " + callbackId);
+      return 0; // Deny if limiter not found
+    }
+    try {
+      return limiter.tableGrowing(currentElements, desiredElements, maximumElements) ? 1 : 0;
+    } catch (final Exception e) {
+      LOGGER.warning("tableGrowing callback threw exception: " + e.getMessage());
+      return 0; // Deny on exception
+    }
+  }
+
+  private static void memoryGrowFailedStub(
+      final long callbackId, final MemorySegment errorMsg) {
+    final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
+    if (limiter == null) {
+      return;
+    }
+    try {
+      final String error =
+          (errorMsg != null && !errorMsg.equals(MemorySegment.NULL))
+              ? errorMsg.reinterpret(Long.MAX_VALUE).getString(0)
+              : "unknown error";
+      limiter.memoryGrowFailed(error);
+    } catch (final Exception e) {
+      LOGGER.warning("memoryGrowFailed callback threw exception: " + e.getMessage());
+    }
+  }
+
+  private static void tableGrowFailedStub(
+      final long callbackId, final MemorySegment errorMsg) {
+    final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
+    if (limiter == null) {
+      return;
+    }
+    try {
+      final String error =
+          (errorMsg != null && !errorMsg.equals(MemorySegment.NULL))
+              ? errorMsg.reinterpret(Long.MAX_VALUE).getString(0)
+              : "unknown error";
+      limiter.tableGrowFailed(error);
+    } catch (final Exception e) {
+      LOGGER.warning("tableGrowFailed callback threw exception: " + e.getMessage());
+    }
+  }
+
   private final PanamaEngine engine;
   private final Arena arena;
   private final MemorySegment nativeStore;
@@ -111,6 +266,9 @@ public final class PanamaStore implements Store {
 
   // Epoch callback ID for this store (0 = no callback registered)
   private volatile long epochCallbackId = 0;
+
+  // Resource limiter callback ID for this store (0 = no limiter registered)
+  private volatile long limiterCallbackId = 0;
 
   /**
    * Creates a new Panama store.
@@ -364,6 +522,45 @@ public final class PanamaStore implements Store {
   @Override
   public void setData(final Object data) {
     userData.set(data);
+  }
+
+  @Override
+  public void setResourceLimiter(final ResourceLimiter limiter) throws WasmException {
+    if (limiter == null) {
+      throw new IllegalArgumentException("ResourceLimiter cannot be null");
+    }
+    ensureNotClosed();
+
+    // Remove any previously registered limiter
+    if (limiterCallbackId != 0) {
+      RESOURCE_LIMITERS.remove(limiterCallbackId);
+      limiterCallbackId = 0;
+    }
+
+    // Check if upcall stubs were created successfully
+    if (MEMORY_GROWING_STUB == null || TABLE_GROWING_STUB == null) {
+      throw new WasmException("Resource limiter callback infrastructure not initialized");
+    }
+
+    final long newCallbackId = LIMITER_CALLBACK_ID_COUNTER.getAndIncrement();
+    RESOURCE_LIMITERS.put(newCallbackId, limiter);
+    limiterCallbackId = newCallbackId;
+
+    final int result =
+        NATIVE_BINDINGS.storeSetResourceLimiter(
+            nativeStore,
+            newCallbackId,
+            MEMORY_GROWING_STUB,
+            TABLE_GROWING_STUB,
+            MEMORY_GROW_FAILED_STUB != null ? MEMORY_GROW_FAILED_STUB : MemorySegment.NULL,
+            TABLE_GROW_FAILED_STUB != null ? TABLE_GROW_FAILED_STUB : MemorySegment.NULL);
+
+    if (result != 0) {
+      RESOURCE_LIMITERS.remove(newCallbackId);
+      limiterCallbackId = 0;
+      throw new WasmException(
+          "Failed to configure resource limiter: error code " + result);
+    }
   }
 
   @Override
@@ -1314,6 +1511,12 @@ public final class PanamaStore implements Store {
           if (epochCallbackId != 0) {
             EPOCH_CALLBACKS.remove(epochCallbackId);
             epochCallbackId = 0;
+          }
+
+          // Clean up resource limiter from static registry
+          if (limiterCallbackId != 0) {
+            RESOURCE_LIMITERS.remove(limiterCallbackId);
+            limiterCallbackId = 0;
           }
 
           // Close callback registry first (cleans up function references)

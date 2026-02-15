@@ -1219,3 +1219,333 @@ fn create_frame_symbol_object<'local>(
 
     Ok(symbol_obj)
 }
+
+// ============================================================================
+// Resource Limiter JNI Callbacks
+// ============================================================================
+
+// Static storage for JNI resource limiter callbacks
+static JNI_RESOURCE_LIMITER_CALLBACKS: std::sync::OnceLock<
+    std::sync::Mutex<std::collections::HashMap<i64, JniResourceLimiterContext>>,
+> = std::sync::OnceLock::new();
+
+struct JniResourceLimiterContext {
+    jvm: std::sync::Arc<jni::JavaVM>,
+    jni_store_global: jni::objects::GlobalRef,
+}
+
+fn get_jni_resource_limiter_callbacks(
+) -> &'static std::sync::Mutex<std::collections::HashMap<i64, JniResourceLimiterContext>> {
+    JNI_RESOURCE_LIMITER_CALLBACKS
+        .get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+fn register_jni_resource_limiter(
+    callback_id: i64,
+    jvm: std::sync::Arc<jni::JavaVM>,
+    jni_store_global: jni::objects::GlobalRef,
+) {
+    let mut callbacks = get_jni_resource_limiter_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks.insert(
+        callback_id,
+        JniResourceLimiterContext {
+            jvm,
+            jni_store_global,
+        },
+    );
+}
+
+pub(crate) fn unregister_jni_resource_limiter(callback_id: i64) {
+    let mut callbacks = get_jni_resource_limiter_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks.remove(&callback_id);
+}
+
+/// Helper to get JVM and GlobalRef raw pointer from the registry
+fn get_limiter_context(callback_id: i64) -> Option<(std::sync::Arc<jni::JavaVM>, usize)> {
+    let callbacks = get_jni_resource_limiter_callbacks().lock().ok()?;
+    callbacks.get(&callback_id).map(|ctx| {
+        (
+            ctx.jvm.clone(),
+            ctx.jni_store_global.as_obj().as_raw() as usize,
+        )
+    })
+}
+
+/// Dispatch function for JNI memory growing callbacks
+fn jni_memory_growing_dispatch(callback_id: i64, current: u64, desired: u64, maximum: u64) -> i32 {
+    let (jvm, global_ref_ptr) = match get_limiter_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::warn!("No JNI resource limiter found for ID: {}", callback_id);
+            return 0; // Deny
+        }
+    };
+
+    let result = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let jni_store_obj =
+                unsafe { jni::objects::JObject::from_raw(global_ref_ptr as jni::sys::jobject) };
+
+            match env.call_method(
+                &jni_store_obj,
+                "onMemoryGrowing",
+                "(JJJ)Z",
+                &[
+                    JValue::Long(current as i64),
+                    JValue::Long(desired as i64),
+                    JValue::Long(maximum as i64),
+                ],
+            ) {
+                Ok(result) => match result.z() {
+                    Ok(allowed) => {
+                        if allowed {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Failed to get memoryGrowing result: {}", e);
+                        0 // Deny
+                    }
+                },
+                Err(e) => {
+                    if env.exception_check().unwrap_or(false) {
+                        let _ = env.exception_clear();
+                    }
+                    log::error!("Failed to call onMemoryGrowing: {}", e);
+                    0 // Deny
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Failed to attach to JVM for memoryGrowing: {}", e);
+            0 // Deny
+        }
+    };
+    result
+}
+
+/// Dispatch function for JNI table growing callbacks
+fn jni_table_growing_dispatch(callback_id: i64, current: u32, desired: u32, maximum: u32) -> i32 {
+    let (jvm, global_ref_ptr) = match get_limiter_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::warn!("No JNI resource limiter found for ID: {}", callback_id);
+            return 0; // Deny
+        }
+    };
+
+    let result = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let jni_store_obj =
+                unsafe { jni::objects::JObject::from_raw(global_ref_ptr as jni::sys::jobject) };
+
+            match env.call_method(
+                &jni_store_obj,
+                "onTableGrowing",
+                "(III)Z",
+                &[
+                    JValue::Int(current as i32),
+                    JValue::Int(desired as i32),
+                    JValue::Int(maximum as i32),
+                ],
+            ) {
+                Ok(result) => match result.z() {
+                    Ok(allowed) => {
+                        if allowed {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Failed to get tableGrowing result: {}", e);
+                        0 // Deny
+                    }
+                },
+                Err(e) => {
+                    if env.exception_check().unwrap_or(false) {
+                        let _ = env.exception_clear();
+                    }
+                    log::error!("Failed to call onTableGrowing: {}", e);
+                    0 // Deny
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Failed to attach to JVM for tableGrowing: {}", e);
+            0 // Deny
+        }
+    };
+    result
+}
+
+/// Dispatch function for JNI memory grow failed callbacks
+fn jni_memory_grow_failed_dispatch(callback_id: i64, error: *const std::os::raw::c_char) {
+    let (jvm, global_ref_ptr) = match get_limiter_context(callback_id) {
+        Some(ctx) => ctx,
+        None => return,
+    };
+
+    let error_str = if !error.is_null() {
+        unsafe { std::ffi::CStr::from_ptr(error) }
+            .to_string_lossy()
+            .to_string()
+    } else {
+        "unknown error".to_string()
+    };
+
+    let _result = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let jni_store_obj =
+                unsafe { jni::objects::JObject::from_raw(global_ref_ptr as jni::sys::jobject) };
+
+            if let Ok(jni_error) = env.new_string(&error_str) {
+                let _ = env.call_method(
+                    &jni_store_obj,
+                    "onMemoryGrowFailed",
+                    "(Ljava/lang/String;)V",
+                    &[JValue::Object(&jni_error)],
+                );
+                if env.exception_check().unwrap_or(false) {
+                    let _ = env.exception_clear();
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Failed to attach to JVM for memoryGrowFailed: {}", e);
+        }
+    };
+}
+
+/// Dispatch function for JNI table grow failed callbacks
+fn jni_table_grow_failed_dispatch(callback_id: i64, error: *const std::os::raw::c_char) {
+    let (jvm, global_ref_ptr) = match get_limiter_context(callback_id) {
+        Some(ctx) => ctx,
+        None => return,
+    };
+
+    let error_str = if !error.is_null() {
+        unsafe { std::ffi::CStr::from_ptr(error) }
+            .to_string_lossy()
+            .to_string()
+    } else {
+        "unknown error".to_string()
+    };
+
+    let _result = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let jni_store_obj =
+                unsafe { jni::objects::JObject::from_raw(global_ref_ptr as jni::sys::jobject) };
+
+            if let Ok(jni_error) = env.new_string(&error_str) {
+                let _ = env.call_method(
+                    &jni_store_obj,
+                    "onTableGrowFailed",
+                    "(Ljava/lang/String;)V",
+                    &[JValue::Object(&jni_error)],
+                );
+                if env.exception_check().unwrap_or(false) {
+                    let _ = env.exception_clear();
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Failed to attach to JVM for tableGrowFailed: {}", e);
+        }
+    };
+}
+
+/// Set resource limiter with JNI callback support
+///
+/// This sets up callbacks that invoke Java methods on the JniStore object
+/// when memory or table growth is requested.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResourceLimiter(
+    mut env: JNIEnv,
+    jni_store_obj: JObject,
+    store_ptr: jlong,
+) {
+    // Get JavaVM reference
+    let jvm = match env.get_java_vm() {
+        Ok(vm) => std::sync::Arc::new(vm),
+        Err(e) => {
+            log::error!("Failed to get JavaVM for resource limiter: {}", e);
+            return;
+        }
+    };
+
+    // Create global reference to prevent GC
+    let jni_store_global = match env.new_global_ref(&jni_store_obj) {
+        Ok(global) => global,
+        Err(e) => {
+            log::error!("Failed to create global reference for resource limiter: {}", e);
+            return;
+        }
+    };
+
+    let callback_id = store_ptr;
+    register_jni_resource_limiter(callback_id, jvm, jni_store_global);
+
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+
+        // Define extern "C" trampolines that dispatch to JNI
+        extern "C" fn memory_growing_trampoline(
+            callback_id: i64,
+            current: u64,
+            desired: u64,
+            maximum: u64,
+        ) -> i32 {
+            jni_memory_growing_dispatch(callback_id, current, desired, maximum)
+        }
+
+        extern "C" fn table_growing_trampoline(
+            callback_id: i64,
+            current: u32,
+            desired: u32,
+            maximum: u32,
+        ) -> i32 {
+            jni_table_growing_dispatch(callback_id, current, desired, maximum)
+        }
+
+        extern "C" fn memory_grow_failed_trampoline(
+            callback_id: i64,
+            error: *const std::os::raw::c_char,
+        ) {
+            jni_memory_grow_failed_dispatch(callback_id, error)
+        }
+
+        extern "C" fn table_grow_failed_trampoline(
+            callback_id: i64,
+            error: *const std::os::raw::c_char,
+        ) {
+            jni_table_grow_failed_dispatch(callback_id, error)
+        }
+
+        core::set_resource_limiter(
+            store,
+            callback_id,
+            memory_growing_trampoline,
+            table_growing_trampoline,
+            Some(memory_grow_failed_trampoline),
+            Some(table_grow_failed_trampoline),
+        )?;
+        Ok(())
+    });
+}
+
+/// Clear resource limiter and clean up JNI resources
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearResourceLimiter(
+    _env: JNIEnv,
+    _jni_store_obj: JObject,
+    store_ptr: jlong,
+) {
+    unregister_jni_resource_limiter(store_ptr);
+}

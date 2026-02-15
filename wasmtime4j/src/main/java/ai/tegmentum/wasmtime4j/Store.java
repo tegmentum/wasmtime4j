@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -657,6 +658,23 @@ public interface Store extends Closeable {
    * @since 1.0.0
    */
   long getFuelAsyncYieldInterval();
+
+  /**
+   * Sets a dynamic resource limiter for this store.
+   *
+   * <p>Unlike {@link StoreLimits}, which sets static limits at store creation time, a {@link
+   * ResourceLimiter} provides dynamic, callback-based limiting. The Wasmtime runtime calls back
+   * into the limiter each time a memory or table needs to grow, allowing per-request decisions.
+   *
+   * <p>Only one limiter can be active at a time. Setting a new limiter replaces any previously set
+   * limiter. This method can be called at any time during the store's lifetime.
+   *
+   * @param limiter the resource limiter to set
+   * @throws WasmException if setting the limiter fails
+   * @throws IllegalArgumentException if limiter is null
+   * @since 1.0.0
+   */
+  void setResourceLimiter(ResourceLimiter limiter) throws WasmException;
 
   /**
    * Closes the store and releases associated resources.

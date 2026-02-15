@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 
@@ -28,6 +29,7 @@ public final class StoreBuilder<T> {
   private Long fuel;
   private Long epochDeadline;
   private StoreLimits limits;
+  private ResourceLimiter resourceLimiter;
 
   /**
    * Creates a new StoreBuilder for the given engine.
@@ -104,6 +106,25 @@ public final class StoreBuilder<T> {
   }
 
   /**
+   * Sets a dynamic resource limiter for the store.
+   *
+   * <p>A {@link ResourceLimiter} provides dynamic, callback-based resource limiting that is invoked
+   * each time a memory or table needs to grow. This is complementary to {@link StoreLimits}: static
+   * limits can be set via {@link #withLimits(StoreLimits)} and dynamic limiting via this method.
+   *
+   * @param resourceLimiter the resource limiter to set
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if resourceLimiter is null
+   */
+  public StoreBuilder<T> withResourceLimiter(final ResourceLimiter resourceLimiter) {
+    if (resourceLimiter == null) {
+      throw new IllegalArgumentException("ResourceLimiter cannot be null");
+    }
+    this.resourceLimiter = resourceLimiter;
+    return this;
+  }
+
+  /**
    * Builds a Store with the configured settings.
    *
    * @return a new Store instance
@@ -131,6 +152,11 @@ public final class StoreBuilder<T> {
     // Set epoch deadline if provided and epoch interruption is enabled
     if (epochDeadline != null && engine.isEpochInterruptionEnabled()) {
       store.setEpochDeadline(epochDeadline);
+    }
+
+    // Set resource limiter if provided
+    if (resourceLimiter != null) {
+      store.setResourceLimiter(resourceLimiter);
     }
 
     return store;
@@ -179,5 +205,14 @@ public final class StoreBuilder<T> {
    */
   StoreLimits getLimits() {
     return limits;
+  }
+
+  /**
+   * Gets the resource limiter.
+   *
+   * @return the resource limiter, or null if not set
+   */
+  ResourceLimiter getResourceLimiter() {
+    return resourceLimiter;
   }
 }

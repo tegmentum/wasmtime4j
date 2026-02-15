@@ -103,6 +103,7 @@ impl CallerContext {
                 resource_table: wasmtime::component::ResourceTable::new(),
                 #[cfg(feature = "wasi-nn")]
                 wasi_nn_ctx: None,
+                callback_resource_limiter: None,
             }),
             exports,
             fuel_consumed,

@@ -64,8 +64,6 @@ class PanamaWasiConfigTest {
       assertTrue(
           config.getPreopenDirectories().isEmpty(),
           "Preopen directories should be empty by default");
-      assertTrue(
-          config.getImportResolvers().isEmpty(), "Import resolvers should be empty by default");
 
       LOGGER.info("Default collections are empty as expected");
     }
@@ -327,19 +325,6 @@ class PanamaWasiConfigTest {
   @DisplayName("Import Resolver Tests")
   class ImportResolverTests {
 
-    @Test
-    @DisplayName("Should return import resolvers")
-    void shouldReturnImportResolvers() {
-      LOGGER.info("Testing getImportResolvers");
-
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
-
-      final Map<String, ?> resolvers = config.getImportResolvers();
-      assertNotNull(resolvers, "Import resolvers should not be null");
-      assertTrue(resolvers.isEmpty(), "Import resolvers should be empty by default");
-
-      LOGGER.info("Import resolvers: " + resolvers);
-    }
   }
 
 

@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -312,6 +313,19 @@ public final class JniStore extends JniResource implements Store {
   @Override
   public void setData(final Object data) {
     this.customData = data;
+  }
+
+  @Override
+  public void setResourceLimiter(final ResourceLimiter limiter) throws WasmException {
+    if (limiter == null) {
+      throw new IllegalArgumentException("ResourceLimiter cannot be null");
+    }
+    ensureNotClosed();
+
+    this.resourceLimiter = limiter;
+    nativeSetResourceLimiter(getNativeHandle());
+    LOGGER.fine(
+        "Set resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
   }
 
   @Override
@@ -763,6 +777,16 @@ public final class JniStore extends JniResource implements Store {
       callbackRegistry.close();
     } catch (Exception e) {
       LOGGER.warning("Error closing callback registry: " + e.getMessage());
+    }
+
+    // Clean up resource limiter callback
+    if (resourceLimiter != null && nativeHandle != 0) {
+      try {
+        nativeClearResourceLimiter(nativeHandle);
+      } catch (Exception e) {
+        LOGGER.warning("Error clearing resource limiter: " + e.getMessage());
+      }
+      resourceLimiter = null;
     }
 
     if (nativeHandle != 0) {
@@ -1481,6 +1505,9 @@ public final class JniStore extends JniResource implements Store {
   // Callback holder to prevent garbage collection
   private ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback epochDeadlineCallback;
 
+  /** Resource limiter callback holder to prevent garbage collection. */
+  private ResourceLimiter resourceLimiter;
+
   // Called from native code when epoch deadline is reached
   @SuppressWarnings("unused")
   @SuppressFBWarnings(
@@ -1496,6 +1523,54 @@ public final class JniStore extends JniResource implements Store {
       return action.getDeltaTicks();
     }
     return -1; // Signal trap
+  }
+
+  // Called from native code when memory growth is requested
+  @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
+  private boolean onMemoryGrowing(
+      final long currentBytes, final long desiredBytes, final long maximumBytes) {
+    if (resourceLimiter == null) {
+      return true; // Allow by default
+    }
+    return resourceLimiter.memoryGrowing(currentBytes, desiredBytes, maximumBytes);
+  }
+
+  // Called from native code when table growth is requested
+  @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
+  private boolean onTableGrowing(
+      final int currentElements, final int desiredElements, final int maximumElements) {
+    if (resourceLimiter == null) {
+      return true; // Allow by default
+    }
+    return resourceLimiter.tableGrowing(currentElements, desiredElements, maximumElements);
+  }
+
+  // Called from native code when memory growth fails
+  @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
+  private void onMemoryGrowFailed(final String error) {
+    if (resourceLimiter != null) {
+      resourceLimiter.memoryGrowFailed(error);
+    }
+  }
+
+  // Called from native code when table growth fails
+  @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
+  private void onTableGrowFailed(final String error) {
+    if (resourceLimiter != null) {
+      resourceLimiter.tableGrowFailed(error);
+    }
   }
 
   private native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeCaptureBacktrace(
@@ -1581,6 +1656,23 @@ public final class JniStore extends JniResource implements Store {
   private native void nativeSetCallHookAsync(long storeHandle);
 
   private native void nativeClearCallHookAsync(long storeHandle);
+
+  /**
+   * Sets the resource limiter on the native store with callback support.
+   *
+   * <p>This registers callbacks that will invoke {@link #onMemoryGrowing}, {@link #onTableGrowing},
+   * {@link #onMemoryGrowFailed}, and {@link #onTableGrowFailed} on this JniStore instance.
+   *
+   * @param storeHandle the native store handle
+   */
+  private native void nativeSetResourceLimiter(long storeHandle);
+
+  /**
+   * Clears the resource limiter callbacks from the native store.
+   *
+   * @param storeHandle the native store handle
+   */
+  private native void nativeClearResourceLimiter(long storeHandle);
 
   // ===== Fuel Async Methods =====
 
