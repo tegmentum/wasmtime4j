@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.func.CallHook;
 import ai.tegmentum.wasmtime4j.func.CallHookHandler;
@@ -630,81 +629,6 @@ public interface Store extends Closeable {
   }
 
   // ===== Debug Methods =====
-
-  // ===== Resource Limiter Methods =====
-
-  /**
-   * Sets a resource limiter for this store.
-   *
-   * <p>The resource limiter is invoked whenever WebAssembly code attempts to grow memory or tables.
-   * This provides fine-grained control over resource consumption per-store.
-   *
-   * <p>Only one limiter can be active at a time. Setting a new limiter replaces any existing one.
-   *
-   * <p>Example usage:
-   *
-   * <pre>{@code
-   * ResourceLimiter limiter = ResourceLimiter.create(config);
-   * store.limiter(limiter);
-   * // WebAssembly memory/table growth will now be controlled by the limiter
-   * }</pre>
-   *
-   * @param limiter the resource limiter to use, or null to remove any existing limiter
-   * @throws WasmException if setting the limiter fails
-   * @since 1.0.0
-   */
-  void limiter(ResourceLimiter limiter) throws WasmException;
-
-  /**
-   * Sets an async resource limiter for this store.
-   *
-   * <p>The async limiter is similar to {@link #limiter(ResourceLimiter)} but supports asynchronous
-   * decision-making. When memory or table growth is requested, the limiter can perform async
-   * operations (like checking quotas from a database) before allowing or denying the request.
-   *
-   * <p>The limiter callback receives the current and requested sizes and returns a
-   * CompletableFuture that resolves to true (allow) or false (deny).
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param limiter the async resource limiter callback
-   * @throws WasmException if setting the async limiter fails
-   * @since 1.0.0
-   */
-  void limiterAsync(AsyncResourceLimiter limiter) throws WasmException;
-
-  /**
-   * Gets the currently configured resource limiter, if any.
-   *
-   * @return the resource limiter, or null if none is configured
-   * @since 1.0.0
-   */
-  ResourceLimiter getLimiter();
-
-  /**
-   * Async resource limiter interface for controlling resource growth asynchronously.
-   *
-   * @since 1.0.0
-   */
-  interface AsyncResourceLimiter {
-    /**
-     * Decides whether memory growth should be allowed.
-     *
-     * @param currentPages current memory size in pages
-     * @param requestedPages requested additional pages
-     * @return a future that resolves to true to allow, false to deny
-     */
-    CompletableFuture<Boolean> allowMemoryGrow(long currentPages, long requestedPages);
-
-    /**
-     * Decides whether table growth should be allowed.
-     *
-     * @param currentElements current table size
-     * @param requestedElements requested additional elements
-     * @return a future that resolves to true to allow, false to deny
-     */
-    CompletableFuture<Boolean> allowTableGrow(long currentElements, long requestedElements);
-  }
 
   // ===== Fuel Async Methods =====
 

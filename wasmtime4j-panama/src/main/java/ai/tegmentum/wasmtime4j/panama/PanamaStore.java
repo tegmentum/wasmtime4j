@@ -4,7 +4,6 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
@@ -940,36 +939,6 @@ public final class PanamaStore implements Store {
   @Override
   public boolean isValid() {
     return !resourceHandle.isClosed();
-  }
-
-  private ResourceLimiter resourceLimiter;
-  private AsyncResourceLimiter asyncResourceLimiter;
-
-  @Override
-  public void limiter(final ResourceLimiter limiter) throws WasmException {
-    ensureNotClosed();
-    this.resourceLimiter = limiter;
-    if (limiter == null) {
-      LOGGER.fine("Cleared resource limiter on store");
-    } else {
-      LOGGER.fine("Set resource limiter with id " + limiter.getId() + " on store");
-    }
-  }
-
-  @Override
-  public void limiterAsync(final AsyncResourceLimiter limiter) throws WasmException {
-    ensureNotClosed();
-    this.asyncResourceLimiter = limiter;
-    if (limiter == null) {
-      LOGGER.fine("Cleared async resource limiter on store");
-    } else {
-      LOGGER.fine("Set async resource limiter on store");
-    }
-  }
-
-  @Override
-  public ResourceLimiter getLimiter() {
-    return resourceLimiter;
   }
 
   @Override

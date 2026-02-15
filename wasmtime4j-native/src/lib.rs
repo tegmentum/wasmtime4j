@@ -147,9 +147,6 @@ pub mod resource_dynamic;
 #[cfg(feature = "component-model")]
 pub mod version_types;
 
-// Store resource limiter APIs
-pub mod store_limiter;
-
 // WebAssembly GC implementation
 pub mod gc;
 pub mod gc_heap;

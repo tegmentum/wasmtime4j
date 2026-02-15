@@ -11,7 +11,6 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
@@ -1604,81 +1603,6 @@ public final class JniStore extends JniResource implements Store {
 
   // Native methods for new functionality
   private native void nativeSetFuelAsyncYieldInterval(long storeHandle, long interval);
-
-  // ===== Resource Limiter Methods =====
-
-  private ResourceLimiter resourceLimiter;
-  private AsyncResourceLimiter asyncResourceLimiter;
-
-  @Override
-  public void limiter(final ResourceLimiter limiter) throws WasmException {
-    ensureNotClosed();
-    this.resourceLimiter = limiter;
-    if (limiter == null) {
-      nativeClearLimiter(nativeHandle);
-    } else {
-      nativeSetLimiter(nativeHandle, limiter.getId());
-    }
-  }
-
-  @Override
-  public void limiterAsync(final AsyncResourceLimiter limiter) throws WasmException {
-    ensureNotClosed();
-    this.asyncResourceLimiter = limiter;
-    if (limiter == null) {
-      nativeClearAsyncLimiter(nativeHandle);
-    } else {
-      nativeSetAsyncLimiter(nativeHandle);
-    }
-  }
-
-  @Override
-  public ResourceLimiter getLimiter() {
-    return resourceLimiter;
-  }
-
-  // Called from native code when async memory growth is requested
-  @SuppressWarnings("unused")
-  @SuppressFBWarnings(
-      value = "UPM_UNCALLED_PRIVATE_METHOD",
-      justification = "Called from native JNI code")
-  private boolean onAsyncMemoryGrowRequest(final long currentPages, final long requestedPages) {
-    if (asyncResourceLimiter == null) {
-      return true;
-    }
-    try {
-      return asyncResourceLimiter.allowMemoryGrow(currentPages, requestedPages).get();
-    } catch (Exception e) {
-      LOGGER.warning("Async memory grow callback failed: " + e.getMessage());
-      return false;
-    }
-  }
-
-  // Called from native code when async table growth is requested
-  @SuppressWarnings("unused")
-  @SuppressFBWarnings(
-      value = "UPM_UNCALLED_PRIVATE_METHOD",
-      justification = "Called from native JNI code")
-  private boolean onAsyncTableGrowRequest(
-      final long currentElements, final long requestedElements) {
-    if (asyncResourceLimiter == null) {
-      return true;
-    }
-    try {
-      return asyncResourceLimiter.allowTableGrow(currentElements, requestedElements).get();
-    } catch (Exception e) {
-      LOGGER.warning("Async table grow callback failed: " + e.getMessage());
-      return false;
-    }
-  }
-
-  private native void nativeSetLimiter(long storeHandle, long limiterId);
-
-  private native void nativeClearLimiter(long storeHandle);
-
-  private native void nativeSetAsyncLimiter(long storeHandle);
-
-  private native void nativeClearAsyncLimiter(long storeHandle);
 
   // ===== Async Creation Methods =====
 

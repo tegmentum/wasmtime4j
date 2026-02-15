@@ -633,38 +633,4 @@ class PanamaStoreTest {
     }
   }
 
-  // ===== Limiter Tests =====
-
-  @Nested
-  @DisplayName("Limiter Tests")
-  class LimiterTests {
-
-    @Test
-    @DisplayName("limiter should accept null to clear limiter")
-    void limiterShouldAcceptNull() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertDoesNotThrow(() -> store.limiter(null));
-      assertNull(store.getLimiter(), "getLimiter should return null after setting null limiter");
-      LOGGER.info("limiter correctly accepts null to clear limiter");
-    }
-
-    @Test
-    @DisplayName("limiterAsync should accept null to clear async limiter")
-    void limiterAsyncShouldAcceptNull() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertDoesNotThrow(() -> store.limiterAsync(null));
-      LOGGER.info("limiterAsync correctly accepts null to clear async limiter");
-    }
-
-    @Test
-    @DisplayName("getLimiter should return null")
-    void getLimiterShouldReturnNull() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertNull(store.getLimiter(), "getLimiter should return null");
-      LOGGER.info("getLimiter correctly returns null");
-    }
-  }
 }

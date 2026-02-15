@@ -20,11 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
-import ai.tegmentum.wasmtime4j.jni.execution.JniResourceLimiter;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
 import ai.tegmentum.wasmtime4j.jni.pool.JniPoolingAllocator;
-import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -48,7 +45,6 @@ import org.junit.jupiter.api.Test;
  *
  * <ul>
  *   <li>{@link JniPoolingAllocator}
- *   <li>{@link JniResourceLimiter}
  *   <li>{@link NativeMethodBindings}
  * </ul>
  */
@@ -270,208 +266,6 @@ class JniPerformanceResourceClassesTest {
   }
 
   // ===================================================================================
-  // JniResourceLimiter Tests
-  // ===================================================================================
-
-  @Nested
-  @DisplayName("JniResourceLimiter Tests")
-  class JniResourceLimiterTests {
-
-    @Nested
-    @DisplayName("Class Structure Tests")
-    class ClassStructureTests {
-
-      @Test
-      @DisplayName("JniResourceLimiter should be final class")
-      void shouldBeFinalClass() {
-        assertTrue(
-            Modifier.isFinal(JniResourceLimiter.class.getModifiers()),
-            "JniResourceLimiter should be final");
-      }
-
-      @Test
-      @DisplayName("JniResourceLimiter should be public")
-      void shouldBePublic() {
-        assertTrue(
-            Modifier.isPublic(JniResourceLimiter.class.getModifiers()),
-            "JniResourceLimiter should be public");
-      }
-
-      @Test
-      @DisplayName("JniResourceLimiter should extend JniResource")
-      void shouldExtendJniResource() {
-        assertTrue(
-            JniResource.class.isAssignableFrom(JniResourceLimiter.class),
-            "JniResourceLimiter should extend JniResource");
-      }
-
-      @Test
-      @DisplayName("JniResourceLimiter should implement ResourceLimiter")
-      void shouldImplementResourceLimiter() {
-        assertTrue(
-            ResourceLimiter.class.isAssignableFrom(JniResourceLimiter.class),
-            "JniResourceLimiter should implement ResourceLimiter");
-      }
-    }
-
-    @Nested
-    @DisplayName("Field Tests")
-    class FieldTests {
-
-      @Test
-      @DisplayName("Should have LOGGER field")
-      void shouldHaveLoggerField() throws NoSuchFieldException {
-        Field field = JniResourceLimiter.class.getDeclaredField("LOGGER");
-        assertNotNull(field, "LOGGER field should exist");
-        assertEquals(Logger.class, field.getType(), "LOGGER should be Logger type");
-      }
-
-      @Test
-      @DisplayName("Should have config field")
-      void shouldHaveConfigField() throws NoSuchFieldException {
-        Field field = JniResourceLimiter.class.getDeclaredField("config");
-        assertNotNull(field, "config field should exist");
-        assertTrue(Modifier.isFinal(field.getModifiers()), "config should be final");
-      }
-    }
-
-    @Nested
-    @DisplayName("Factory Method Tests")
-    class FactoryMethodTests {
-
-      @Test
-      @DisplayName("Should have create static factory method")
-      void shouldHaveCreateMethod() throws NoSuchMethodException {
-        Method method =
-            JniResourceLimiter.class.getMethod(
-                "create", ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig.class);
-        assertNotNull(method, "create method should exist");
-        assertTrue(Modifier.isStatic(method.getModifiers()), "create should be static");
-        assertEquals(
-            JniResourceLimiter.class,
-            method.getReturnType(),
-            "create should return JniResourceLimiter");
-      }
-
-      @Test
-      @DisplayName("Should have createDefault static factory method")
-      void shouldHaveCreateDefaultMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("createDefault");
-        assertNotNull(method, "createDefault method should exist");
-        assertTrue(Modifier.isStatic(method.getModifiers()), "createDefault should be static");
-        assertEquals(
-            JniResourceLimiter.class,
-            method.getReturnType(),
-            "createDefault should return JniResourceLimiter");
-      }
-
-      @Test
-      @DisplayName("Should have getLimiterCount static method")
-      void shouldHaveGetLimiterCountMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("getLimiterCount");
-        assertNotNull(method, "getLimiterCount method should exist");
-        assertTrue(Modifier.isStatic(method.getModifiers()), "getLimiterCount should be static");
-        assertEquals(int.class, method.getReturnType(), "getLimiterCount should return int");
-      }
-    }
-
-    @Nested
-    @DisplayName("Method Tests")
-    class MethodTests {
-
-      @Test
-      @DisplayName("Should have getId method")
-      void shouldHaveGetIdMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("getId");
-        assertNotNull(method, "getId method should exist");
-        assertEquals(long.class, method.getReturnType(), "getId should return long");
-      }
-
-      @Test
-      @DisplayName("Should have getConfig method")
-      void shouldHaveGetConfigMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("getConfig");
-        assertNotNull(method, "getConfig method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "getConfig should be public");
-      }
-
-      @Test
-      @DisplayName("Should have allowMemoryGrow method")
-      void shouldHaveAllowMemoryGrowMethod() throws NoSuchMethodException {
-        Method method =
-            JniResourceLimiter.class.getMethod("allowMemoryGrow", long.class, long.class);
-        assertNotNull(method, "allowMemoryGrow method should exist");
-        assertEquals(
-            boolean.class, method.getReturnType(), "allowMemoryGrow should return boolean");
-      }
-
-      @Test
-      @DisplayName("Should have allowTableGrow method")
-      void shouldHaveAllowTableGrowMethod() throws NoSuchMethodException {
-        Method method =
-            JniResourceLimiter.class.getMethod("allowTableGrow", long.class, long.class);
-        assertNotNull(method, "allowTableGrow method should exist");
-        assertEquals(boolean.class, method.getReturnType(), "allowTableGrow should return boolean");
-      }
-
-      @Test
-      @DisplayName("Should have getStats method")
-      void shouldHaveGetStatsMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("getStats");
-        assertNotNull(method, "getStats method should exist");
-        assertTrue(Modifier.isPublic(method.getModifiers()), "getStats should be public");
-      }
-
-      @Test
-      @DisplayName("Should have resetStats method")
-      void shouldHaveResetStatsMethod() throws NoSuchMethodException {
-        Method method = JniResourceLimiter.class.getMethod("resetStats");
-        assertNotNull(method, "resetStats method should exist");
-        assertEquals(void.class, method.getReturnType(), "resetStats should return void");
-      }
-    }
-
-    @Nested
-    @DisplayName("Native Method Tests")
-    class NativeMethodTests {
-
-      @Test
-      @DisplayName("Should have native methods for resource limiting")
-      void shouldHaveNativeResourceLimitingOperations() {
-        Set<String> nativeMethods = new HashSet<>();
-        for (Method method : JniResourceLimiter.class.getDeclaredMethods()) {
-          if (Modifier.isNative(method.getModifiers())) {
-            nativeMethods.add(method.getName());
-          }
-        }
-
-        assertTrue(nativeMethods.contains("nativeCreate"), "Should have nativeCreate");
-        assertTrue(
-            nativeMethods.contains("nativeCreateDefault"), "Should have nativeCreateDefault");
-        assertTrue(nativeMethods.contains("nativeFree"), "Should have nativeFree");
-        assertTrue(
-            nativeMethods.contains("nativeAllowMemoryGrow"), "Should have nativeAllowMemoryGrow");
-        assertTrue(
-            nativeMethods.contains("nativeAllowTableGrow"), "Should have nativeAllowTableGrow");
-      }
-    }
-
-    @Nested
-    @DisplayName("Package Location Tests")
-    class PackageLocationTests {
-
-      @Test
-      @DisplayName("Class should be in correct package")
-      void shouldBeInCorrectPackage() {
-        assertEquals(
-            "ai.tegmentum.wasmtime4j.jni.execution",
-            JniResourceLimiter.class.getPackage().getName(),
-            "Should be in ai.tegmentum.wasmtime4j.jni.execution package");
-      }
-    }
-  }
-
-  // ===================================================================================
   // NativeMethodBindings Tests
   // ===================================================================================
 
@@ -637,9 +431,6 @@ class JniPerformanceResourceClassesTest {
           Modifier.isFinal(JniPoolingAllocator.class.getModifiers()),
           "JniPoolingAllocator should be final");
       assertTrue(
-          Modifier.isFinal(JniResourceLimiter.class.getModifiers()),
-          "JniResourceLimiter should be final");
-      assertTrue(
           Modifier.isFinal(NativeMethodBindings.class.getModifiers()),
           "NativeMethodBindings should be final");
     }
@@ -651,9 +442,6 @@ class JniPerformanceResourceClassesTest {
           Modifier.isPublic(JniPoolingAllocator.class.getModifiers()),
           "JniPoolingAllocator should be public");
       assertTrue(
-          Modifier.isPublic(JniResourceLimiter.class.getModifiers()),
-          "JniResourceLimiter should be public");
-      assertTrue(
           Modifier.isPublic(NativeMethodBindings.class.getModifiers()),
           "NativeMethodBindings should be public");
     }
@@ -663,7 +451,6 @@ class JniPerformanceResourceClassesTest {
     void allClassesShouldHaveLoggerField() throws NoSuchFieldException {
       Field[] loggerFields = {
         JniPoolingAllocator.class.getDeclaredField("LOGGER"),
-        JniResourceLimiter.class.getDeclaredField("LOGGER"),
         NativeMethodBindings.class.getDeclaredField("LOGGER")
       };
 

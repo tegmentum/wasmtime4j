@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,7 +30,6 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.execution.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
@@ -46,8 +44,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * async yield interval methods.
  *
  * <p>Covers: {@link Store#getExecutionCount()}, {@link Store#getTotalExecutionTimeMicros()}, {@link
- * Store#getCallbackRegistry()}, {@link Store#getLimiter()}, {@link
- * Store#setFuelAsyncYieldInterval(long)}, {@link Store#getFuelAsyncYieldInterval()}.
+ * Store#getCallbackRegistry()}, {@link Store#setFuelAsyncYieldInterval(long)}, {@link
+ * Store#getFuelAsyncYieldInterval()}.
  *
  * @since 1.0.0
  */
@@ -229,98 +227,6 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
           "getCallbackRegistry() should return the same instance on repeated calls");
       LOGGER.info(
           "[" + runtime + "] Both calls returned same instance: " + registry1.getClass().getName());
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getLimiter returns null by default")
-  void getLimiterReturnsNullByDefault(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getLimiter() returns null by default");
-
-    try (Engine engine = Engine.create();
-        Store store = engine.createStore()) {
-
-      final ResourceLimiter limiter = store.getLimiter();
-      assertNull(limiter, "getLimiter() should return null when no limiter has been set");
-      LOGGER.info("[" + runtime + "] getLimiter() returned null as expected");
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getLimiter returns limiter after setting one")
-  void getLimiterReturnsSetLimiter(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getLimiter() round-trip after setting a limiter");
-
-    try (Engine engine = Engine.create();
-        Store store = engine.createStore()) {
-
-      try {
-        store.limiter(
-            new ResourceLimiter() {
-              @Override
-              public long getId() {
-                return 42L;
-              }
-
-              @Override
-              public ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig getConfig()
-                  throws WasmException {
-                return ai.tegmentum.wasmtime4j.execution.ResourceLimiterConfig.defaults();
-              }
-
-              @Override
-              public boolean allowMemoryGrow(final long currentPages, final long requestedPages)
-                  throws WasmException {
-                return true;
-              }
-
-              @Override
-              public boolean allowTableGrow(
-                  final long currentElements, final long requestedElements) throws WasmException {
-                return true;
-              }
-
-              @Override
-              public ai.tegmentum.wasmtime4j.execution.ResourceLimiterStats getStats()
-                  throws WasmException {
-                return new ai.tegmentum.wasmtime4j.execution.ResourceLimiterStats(0, 0, 0, 0, 0, 0);
-              }
-
-              @Override
-              public void resetStats() throws WasmException {
-                // no-op
-              }
-
-              @Override
-              public void close() throws WasmException {
-                // no-op
-              }
-            });
-
-        final ResourceLimiter retrieved = store.getLimiter();
-        assertNotNull(retrieved, "getLimiter() should return non-null after setting a limiter");
-        LOGGER.info(
-            "["
-                + runtime
-                + "] getLimiter() returned: "
-                + retrieved.getClass().getName()
-                + " (id="
-                + retrieved.getId()
-                + ")");
-      } catch (final UnsupportedOperationException | UnsatisfiedLinkError e) {
-        LOGGER.info(
-            "["
-                + runtime
-                + "] store.limiter() not supported: "
-                + e.getClass().getSimpleName()
-                + " - "
-                + e.getMessage()
-                + " -- skipping round-trip assertion");
-      }
     }
   }
 

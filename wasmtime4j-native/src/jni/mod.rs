@@ -42,8 +42,6 @@ pub mod module;
 #[cfg(feature = "jni-bindings")]
 pub mod native_method_bindings;
 #[cfg(feature = "jni-bindings")]
-pub mod resource_limiter;
-#[cfg(feature = "jni-bindings")]
 pub mod runtime;
 #[cfg(feature = "jni-bindings")]
 pub mod store;
