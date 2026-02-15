@@ -103,15 +103,9 @@ pub mod jni_wasi_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_cli_bindings;
 #[cfg(feature = "jni-bindings")]
-pub mod jni_wasi_clocks_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_wasi_filesystem_bindings;
-#[cfg(feature = "jni-bindings")]
 pub mod jni_wasi_io_bindings;
 #[cfg(all(feature = "jni-bindings", feature = "wasi-keyvalue"))]
 pub mod jni_wasi_keyvalue_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_wasi_random_bindings;
 #[cfg(all(feature = "jni-bindings", feature = "wasi-threads"))]
 pub mod jni_wasi_threads_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -129,15 +123,9 @@ pub mod panama_simd_ffi;
 #[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_cli_ffi;
 #[cfg(feature = "panama-ffi")]
-pub mod panama_wasi_clocks_ffi;
-#[cfg(feature = "panama-ffi")]
-pub mod panama_wasi_filesystem_ffi;
-#[cfg(feature = "panama-ffi")]
 pub mod panama_wasi_io_ffi;
 #[cfg(all(feature = "panama-ffi", feature = "wasi-keyvalue"))]
 pub mod panama_wasi_keyvalue_ffi;
-#[cfg(feature = "panama-ffi")]
-pub mod panama_wasi_random_ffi;
 #[cfg(all(feature = "panama-ffi", feature = "wasi-threads"))]
 pub mod panama_wasi_threads_ffi;
 // platform_memory_jni module removed (Phase 8: invented abstraction)
@@ -163,20 +151,8 @@ pub mod async_runtime;
 // Enhanced WASI Preview 2 implementation
 pub mod wasi_preview2;
 
-// Shared helper functions for WASI I/O operations (used by both JNI and Panama FFI)
-pub mod wasi_io_helpers;
-
 // Unified WASI stream operations trait (consolidates duplicated stream code)
 pub mod wasi_stream_ops;
-
-// Shared helper functions for WASI filesystem operations (used by both JNI and Panama FFI)
-pub mod wasi_filesystem_helpers;
-
-// Shared helper functions for WASI clocks operations (used by both JNI and Panama FFI)
-pub mod wasi_clocks_helpers;
-
-// Shared helper functions for WASI random operations (used by both JNI and Panama FFI)
-pub mod wasi_random_helpers;
 
 // Shared helper functions for WASI keyvalue operations (used by both JNI and Panama FFI)
 #[cfg(feature = "wasi-keyvalue")]
@@ -203,13 +179,9 @@ pub mod simd;
 // Store resource limiter APIs
 pub mod store_limiter;
 
-// Store call hooks for execution monitoring
-pub mod call_hooks;
-
+// call_hooks module removed (Phase 17: 0 Java callers)
 // fuel_callback module removed (Phase 11: no Java callers)
-
-// Epoch deadline callback handling
-pub mod epoch_callback;
+// epoch_callback module removed (Phase 17: 0 Java callers)
 
 // guest_profiler module removed (Phase 11: no Java callers)
 
