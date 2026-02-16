@@ -115,13 +115,10 @@ public final class PanamaWasiConfig implements WasiConfig {
     return Optional.ofNullable(workingDirectory);
   }
 
-
   @Override
   public Optional<Duration> getExecutionTimeout() {
     return Optional.ofNullable(executionTimeout);
   }
-
-
 
   @Override
   public boolean isValidationEnabled() {

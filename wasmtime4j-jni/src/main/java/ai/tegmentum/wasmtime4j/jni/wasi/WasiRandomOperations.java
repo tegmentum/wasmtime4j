@@ -75,7 +75,8 @@ public final class WasiRandomOperations {
     JniValidation.requireNonNull(buffer, "buffer");
 
     if (buffer.isReadOnly()) {
-      throw new JniException("Buffer is read-only and cannot be filled with random data");
+      throw new IllegalArgumentException(
+          "Buffer is read-only and cannot be filled with random data");
     }
 
     final int remaining = buffer.remaining();
@@ -208,7 +209,7 @@ public final class WasiRandomOperations {
    */
   public int generateRandomInt(final int bound) throws WasiException {
     if (bound <= 0) {
-      throw new JniException("Bound must be positive: " + bound);
+      throw new IllegalArgumentException("Bound must be positive: " + bound);
     }
 
     // Use the same algorithm as SecureRandom to ensure uniform distribution
@@ -265,7 +266,8 @@ public final class WasiRandomOperations {
     JniValidation.requireNonNull(buffer, "buffer");
 
     if (buffer.isReadOnly()) {
-      throw new JniException("Buffer is read-only and cannot be filled with random data");
+      throw new IllegalArgumentException(
+          "Buffer is read-only and cannot be filled with random data");
     }
 
     final int remaining = buffer.remaining();
@@ -288,7 +290,7 @@ public final class WasiRandomOperations {
    */
   private void validateBufferSize(final int size) {
     if (size > MAX_BUFFER_SIZE) {
-      throw new JniException(
+      throw new IllegalArgumentException(
           "Buffer size too large: " + size + " bytes (maximum: " + MAX_BUFFER_SIZE + " bytes)");
     }
   }

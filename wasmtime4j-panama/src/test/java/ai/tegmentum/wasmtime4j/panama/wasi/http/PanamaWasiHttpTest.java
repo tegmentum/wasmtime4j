@@ -496,9 +496,7 @@ class PanamaWasiHttpTest {
     @Test
     @DisplayName("HTTP classes should have toString method")
     void httpClassesShouldHaveToString() throws ClassNotFoundException {
-      final String[] classes = {
-        HTTP_CONTEXT_CLASS, HTTP_CONFIG_CLASS, HTTP_CONFIG_BUILDER_CLASS
-      };
+      final String[] classes = {HTTP_CONTEXT_CLASS, HTTP_CONFIG_CLASS, HTTP_CONFIG_BUILDER_CLASS};
 
       for (final String className : classes) {
         final Class<?> clazz = loadClassWithoutInit(className);
@@ -550,10 +548,10 @@ class PanamaWasiHttpTest {
           break;
         }
       }
-      assertTrue(hasResourceHandle, "Should have resourceHandle field of type NativeResourceHandle");
+      assertTrue(
+          hasResourceHandle, "Should have resourceHandle field of type NativeResourceHandle");
       LOGGER.info("PanamaWasiHttpContext has NativeResourceHandle for lifecycle management");
     }
-
   }
 
   @Nested

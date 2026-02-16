@@ -323,11 +323,7 @@ class PanamaWasiConfigTest {
 
   @Nested
   @DisplayName("Import Resolver Tests")
-  class ImportResolverTests {
-
-  }
-
-
+  class ImportResolverTests {}
 
   @Nested
   @DisplayName("toBuilder Tests")

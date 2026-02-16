@@ -325,7 +325,6 @@ public final class WasiHttpRequestResponseIntegrationTest {
 
       LOGGER.info("IsHostAllowed method verified");
     }
-
   }
 
   @Nested
@@ -483,6 +482,5 @@ public final class WasiHttpRequestResponseIntegrationTest {
         LOGGER.info("HTTP context close test skipped: " + e.getMessage());
       }
     }
-
   }
 }

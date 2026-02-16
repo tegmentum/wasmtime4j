@@ -557,7 +557,6 @@ class PanamaWasmRuntimeTest {
       assertDoesNotThrow(() -> rt.close(), "Double close should not throw");
       LOGGER.info("Double close handled gracefully");
     }
-
   }
 
   @Nested

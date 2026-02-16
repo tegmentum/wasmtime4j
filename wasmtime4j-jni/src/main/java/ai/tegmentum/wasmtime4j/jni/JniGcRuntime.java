@@ -48,7 +48,7 @@ public final class JniGcRuntime implements GcRuntime {
    * @param engineHandle the native engine handle
    * @throws JniException if runtime creation fails
    */
-  public JniGcRuntime(final long engineHandle) {
+  public JniGcRuntime(final long engineHandle) throws JniException {
     if (engineHandle == 0) {
       throw new JniException("Invalid engine handle");
     }

@@ -1166,8 +1166,8 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
   /**
    * Destroys a validated memory instance and unregisters it from the handle registry.
    *
-   * <p>This must be called to properly free native memory pointers obtained from
-   * memory creation or instance export lookup.
+   * <p>This must be called to properly free native memory pointers obtained from memory creation or
+   * instance export lookup.
    *
    * @param memoryPtr pointer to the validated memory to destroy
    */

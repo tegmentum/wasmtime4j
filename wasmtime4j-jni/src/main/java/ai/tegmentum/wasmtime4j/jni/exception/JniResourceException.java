@@ -13,9 +13,12 @@ package ai.tegmentum.wasmtime4j.jni.exception;
  *   <li>Memory management operations fail
  * </ul>
  *
+ * <p>This is an unchecked exception because resource management errors typically indicate
+ * programming errors (like using a closed resource) rather than recoverable error conditions.
+ *
  * @since 1.0.0
  */
-public final class JniResourceException extends JniException {
+public final class JniResourceException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
@@ -36,27 +39,5 @@ public final class JniResourceException extends JniException {
    */
   public JniResourceException(final String message, final Throwable cause) {
     super(message, cause);
-  }
-
-  /**
-   * Creates a new JNI resource exception with the specified message and native error code.
-   *
-   * @param message the error message
-   * @param nativeErrorCode the native error code
-   */
-  public JniResourceException(final String message, final int nativeErrorCode) {
-    super(message, nativeErrorCode);
-  }
-
-  /**
-   * Creates a new JNI resource exception with all parameters.
-   *
-   * @param message the error message
-   * @param cause the underlying cause
-   * @param nativeErrorCode the native error code
-   */
-  public JniResourceException(
-      final String message, final Throwable cause, final int nativeErrorCode) {
-    super(message, cause, nativeErrorCode);
   }
 }

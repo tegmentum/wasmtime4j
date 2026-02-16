@@ -165,7 +165,8 @@ class PanamaWasiNnTest {
           break;
         }
       }
-      assertTrue(hasResourceHandle, "Should have resourceHandle field of type NativeResourceHandle");
+      assertTrue(
+          hasResourceHandle, "Should have resourceHandle field of type NativeResourceHandle");
       LOGGER.info("PanaNnContext has NativeResourceHandle for lifecycle management");
     }
 

@@ -21,7 +21,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  *
  * @since 1.0.0
  */
-public class JniException extends RuntimeException {
+public class JniException extends WasmException {
 
   private static final long serialVersionUID = 1L;
 

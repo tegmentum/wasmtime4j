@@ -149,7 +149,6 @@ public final class StoreEngineLifecycleIntegrationTest {
         LOGGER.info("Created 2 independent engines");
       }
     }
-
   }
 
   @Nested

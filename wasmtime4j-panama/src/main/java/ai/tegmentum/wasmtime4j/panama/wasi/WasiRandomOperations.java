@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
-import ai.tegmentum.wasmtime4j.exception.WasiException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;

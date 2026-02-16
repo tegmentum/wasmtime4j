@@ -66,7 +66,7 @@ public final class JniComponent {
    * @return a new component engine instance
    * @throws JniException if engine creation fails
    */
-  public static JniComponentEngine createComponentEngine() {
+  public static JniComponentEngine createComponentEngine() throws JniException {
     NativeMethodBindings.ensureInitialized();
 
     try {
@@ -389,8 +389,9 @@ public final class JniComponent {
      *
      * @return the number of active instances
      * @throws JniResourceException if this engine has been closed
+     * @throws JniException if operation fails
      */
-    public int getActiveInstancesCount() {
+    public int getActiveInstancesCount() throws JniException {
       ensureNotClosed();
 
       try {
@@ -408,8 +409,9 @@ public final class JniComponent {
      *
      * @return the number of instances that were cleaned up
      * @throws JniResourceException if this engine has been closed
+     * @throws JniException if operation fails
      */
-    public int cleanupInstances() {
+    public int cleanupInstances() throws JniException {
       ensureNotClosed();
 
       try {
@@ -461,14 +463,15 @@ public final class JniComponent {
      *
      * @return the component size in bytes
      * @throws JniResourceException if this component has been closed
+     * @throws WasmException if operation fails
      */
-    public long getSize() {
+    public long getSize() throws WasmException {
       ensureNotClosed();
 
       try {
         return nativeGetComponentSize(getNativeHandle());
       } catch (final Exception e) {
-        throw new JniException("Failed to get component size", e);
+        throw new WasmException("Failed to get component size", e);
       }
     }
 
@@ -478,15 +481,16 @@ public final class JniComponent {
      * @param interfaceName the interface name to check
      * @return true if the interface is exported, false otherwise
      * @throws JniResourceException if this component has been closed
+     * @throws WasmException if operation fails
      */
-    public boolean exportsInterface(final String interfaceName) {
+    public boolean exportsInterface(final String interfaceName) throws WasmException {
       JniValidation.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
 
       try {
         return nativeExportsInterface(getNativeHandle(), interfaceName);
       } catch (final Exception e) {
-        throw new JniException("Failed to check exported interface", e);
+        throw new WasmException("Failed to check exported interface", e);
       }
     }
 
@@ -496,15 +500,16 @@ public final class JniComponent {
      * @param interfaceName the interface name to check
      * @return true if the interface is imported, false otherwise
      * @throws JniResourceException if this component has been closed
+     * @throws WasmException if operation fails
      */
-    public boolean importsInterface(final String interfaceName) {
+    public boolean importsInterface(final String interfaceName) throws WasmException {
       JniValidation.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
 
       try {
         return nativeImportsInterface(getNativeHandle(), interfaceName);
       } catch (final Exception e) {
-        throw new JniException("Failed to check imported interface", e);
+        throw new WasmException("Failed to check imported interface", e);
       }
     }
 

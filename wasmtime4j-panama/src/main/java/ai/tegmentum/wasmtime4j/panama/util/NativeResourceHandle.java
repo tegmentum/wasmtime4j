@@ -104,15 +104,19 @@ public final class NativeResourceHandle implements AutoCloseable {
     // the safety net action becomes a no-op since the resource was already destroyed.
     // When GC fires without close(), the safety net still destroys the resource.
     final AtomicBoolean destroyed = new AtomicBoolean(false);
-    this.closeAction = () -> {
-      destroyed.set(true);
-      closeAction.cleanup();
-    };
-    this.cleanable = CLEANER.register(safetyNetOwner, () -> {
-      if (!destroyed.get()) {
-        safetyNetAction.run();
-      }
-    });
+    this.closeAction =
+        () -> {
+          destroyed.set(true);
+          closeAction.cleanup();
+        };
+    this.cleanable =
+        CLEANER.register(
+            safetyNetOwner,
+            () -> {
+              if (!destroyed.get()) {
+                safetyNetAction.run();
+              }
+            });
   }
 
   /**

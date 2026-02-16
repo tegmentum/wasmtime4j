@@ -313,8 +313,7 @@ public final class ExceptionHierarchyTest {
           new TrapException(TrapException.TrapType.UNKNOWN, TEST_MESSAGE);
       // TrapException extends RuntimeException (traps are unrecoverable)
       assertTrue(
-          exception instanceof RuntimeException,
-          "TrapException should extend RuntimeException");
+          exception instanceof RuntimeException, "TrapException should extend RuntimeException");
     }
 
     @Test

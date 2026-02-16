@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
@@ -277,11 +278,11 @@ class JniLibraryExceptionTest {
     }
 
     @Test
-    @DisplayName("Should be catchable as RuntimeException")
-    void shouldBeCatchableAsRuntimeException() {
+    @DisplayName("Should be catchable as WasmException")
+    void shouldBeCatchableAsWasmException() {
       try {
-        throw new JniLibraryException("Runtime library error");
-      } catch (RuntimeException e) {
+        throw new JniLibraryException("Library error");
+      } catch (WasmException e) {
         assertTrue(e instanceof JniLibraryException, "Should be instance of JniLibraryException");
       }
     }
@@ -294,8 +295,9 @@ class JniLibraryExceptionTest {
 
       assertTrue(
           libraryException instanceof JniException, "Library exception should be JniException");
-      assertTrue(
-          resourceException instanceof JniException, "Resource exception should be JniException");
+      assertFalse(
+          JniException.class.isAssignableFrom(JniResourceException.class),
+          "Resource exception should not be JniException (it is unchecked)");
       assertFalse(
           libraryException.getClass().equals(resourceException.getClass()),
           "Different exception types should be distinguishable");

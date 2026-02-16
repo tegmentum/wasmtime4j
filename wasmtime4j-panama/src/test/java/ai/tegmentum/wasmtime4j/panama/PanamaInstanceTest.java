@@ -287,7 +287,6 @@ class PanamaInstanceTest {
       final Method method = PanamaInstance.class.getMethod("getStatistics");
       assertThat(method.getReturnType().getName()).contains("InstanceStatistics");
     }
-
   }
 
   @Nested
@@ -841,7 +840,6 @@ class PanamaInstanceTest {
       final Method method = PanamaInstance.class.getMethod("getTableType", String.class);
       assertThat(method.getReturnType().getName()).contains("Optional");
     }
-
   }
 
   @Nested

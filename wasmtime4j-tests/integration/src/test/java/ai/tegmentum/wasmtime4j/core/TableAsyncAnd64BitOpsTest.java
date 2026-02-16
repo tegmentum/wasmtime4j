@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.core;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -35,9 +33,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for 64-bit table operations ({@link
- * WasmTable#getSize64()}, {@link WasmTable#get64(long)}, {@link WasmTable#set64(long, WasmValue)},
- * {@link WasmTable#grow64(long, WasmValue)}).
+ * Tests for 64-bit table operations ({@link WasmTable#getSize64()}, {@link WasmTable#get64(long)},
+ * {@link WasmTable#set64(long, WasmValue)}, {@link WasmTable#grow64(long, WasmValue)}).
  *
  * <p>The 64-bit operations throw {@link UnsupportedOperationException} because {@link
  * WasmTable#supports64BitAddressing()} defaults to false. The JNI implementation may throw {@link

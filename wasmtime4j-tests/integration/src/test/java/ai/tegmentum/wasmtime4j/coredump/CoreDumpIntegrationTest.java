@@ -41,9 +41,7 @@ public class CoreDumpIntegrationTest {
       LOGGER.info("Testing WasmCoreDump class existence");
 
       assertNotNull(WasmCoreDump.class, "WasmCoreDump class should exist");
-      assertFalse(
-          WasmCoreDump.class.isInterface(),
-          "WasmCoreDump should be a concrete class");
+      assertFalse(WasmCoreDump.class.isInterface(), "WasmCoreDump should be a concrete class");
 
       LOGGER.info("WasmCoreDump class verified");
     }
@@ -91,8 +89,7 @@ public class CoreDumpIntegrationTest {
       Method builder = WasmCoreDump.class.getMethod("builder");
       assertNotNull(builder, "builder method should exist");
       assertTrue(
-          java.lang.reflect.Modifier.isStatic(builder.getModifiers()),
-          "builder should be static");
+          java.lang.reflect.Modifier.isStatic(builder.getModifiers()), "builder should be static");
 
       LOGGER.info("WasmCoreDump builder method verified");
     }
@@ -108,9 +105,7 @@ public class CoreDumpIntegrationTest {
       LOGGER.info("Testing CoreDumpFrame class existence");
 
       assertNotNull(CoreDumpFrame.class, "CoreDumpFrame class should exist");
-      assertFalse(
-          CoreDumpFrame.class.isInterface(),
-          "CoreDumpFrame should be a concrete class");
+      assertFalse(CoreDumpFrame.class.isInterface(), "CoreDumpFrame should be a concrete class");
 
       LOGGER.info("CoreDumpFrame class verified");
     }
@@ -127,8 +122,7 @@ public class CoreDumpIntegrationTest {
 
       assertNotNull(CoreDumpInstance.class, "CoreDumpInstance class should exist");
       assertFalse(
-          CoreDumpInstance.class.isInterface(),
-          "CoreDumpInstance should be a concrete class");
+          CoreDumpInstance.class.isInterface(), "CoreDumpInstance should be a concrete class");
 
       LOGGER.info("CoreDumpInstance class verified");
     }
@@ -144,9 +138,7 @@ public class CoreDumpIntegrationTest {
       LOGGER.info("Testing CoreDumpGlobal class existence");
 
       assertNotNull(CoreDumpGlobal.class, "CoreDumpGlobal class should exist");
-      assertFalse(
-          CoreDumpGlobal.class.isInterface(),
-          "CoreDumpGlobal should be a concrete class");
+      assertFalse(CoreDumpGlobal.class.isInterface(), "CoreDumpGlobal should be a concrete class");
 
       LOGGER.info("CoreDumpGlobal class verified");
     }
@@ -162,9 +154,7 @@ public class CoreDumpIntegrationTest {
       LOGGER.info("Testing CoreDumpMemory class existence");
 
       assertNotNull(CoreDumpMemory.class, "CoreDumpMemory class should exist");
-      assertFalse(
-          CoreDumpMemory.class.isInterface(),
-          "CoreDumpMemory should be a concrete class");
+      assertFalse(CoreDumpMemory.class.isInterface(), "CoreDumpMemory should be a concrete class");
 
       LOGGER.info("CoreDumpMemory class verified");
     }

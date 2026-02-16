@@ -309,7 +309,6 @@ class PanamaStoreTest {
       assertThrows(IllegalArgumentException.class, () -> store.consumeFuel(-1));
       LOGGER.info("Correctly rejected negative fuel for consumeFuel");
     }
-
   }
 
   // ===== Callback Registry Tests =====
@@ -615,5 +614,4 @@ class PanamaStoreTest {
       LOGGER.info("Correctly rejected negative fuel async yield interval");
     }
   }
-
 }

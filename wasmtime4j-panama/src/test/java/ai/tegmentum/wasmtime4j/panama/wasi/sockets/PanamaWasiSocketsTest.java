@@ -779,8 +779,7 @@ class PanamaWasiSocketsTest {
                 + hasIsClosed);
 
         assertTrue(
-            hasStateTracking,
-            simpleName + " should have NativeResourceHandle or isClosed method");
+            hasStateTracking, simpleName + " should have NativeResourceHandle or isClosed method");
       }
     }
   }

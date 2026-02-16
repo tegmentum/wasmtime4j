@@ -448,8 +448,6 @@ class JniTypeSystemTest {
     }
   }
 
-
-
   @Nested
   @DisplayName("Interface Compatibility Tests")
   class InterfaceCompatibilityTests {

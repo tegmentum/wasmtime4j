@@ -140,7 +140,6 @@ class PanamaWasiPollableTest {
       assertNotNull(method, "isOwned method should exist");
       assertEquals(boolean.class, method.getReturnType(), "Should return boolean");
     }
-
   }
 
   @Nested

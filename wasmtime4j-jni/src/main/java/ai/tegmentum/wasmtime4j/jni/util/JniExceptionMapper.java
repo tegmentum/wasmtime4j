@@ -115,7 +115,7 @@ public final class JniExceptionMapper {
         return new JniException("Instance error: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_MEMORY:
-        return new JniResourceException("Memory access error: " + safeMessage, errorCode);
+        return new JniException("Memory access error: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_FUNCTION:
         return new JniException("Function invocation failed: " + safeMessage, errorCode);
@@ -127,7 +127,7 @@ public final class JniExceptionMapper {
         return new JniException("Type error: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_RESOURCE:
-        return new JniResourceException("Resource error: " + safeMessage, errorCode);
+        return new JniException("Resource error: " + safeMessage, errorCode);
 
       case NATIVE_ERROR_IO:
         return new JniException("I/O error: " + safeMessage, errorCode);
@@ -227,8 +227,7 @@ public final class JniExceptionMapper {
     }
 
     if (exception instanceof IllegalStateException) {
-      return new JniResourceException(
-          "Resource in invalid state: " + exception.getMessage(), exception);
+      return new JniException("Resource in invalid state: " + exception.getMessage(), exception);
     }
 
     if (exception instanceof IndexOutOfBoundsException) {

@@ -148,5 +148,4 @@ public class StoreAsyncMethodsTest extends DualRuntimeTest {
       }
     }
   }
-
 }

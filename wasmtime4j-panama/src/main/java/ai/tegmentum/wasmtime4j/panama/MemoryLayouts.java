@@ -27,8 +27,8 @@ import java.lang.invoke.VarHandle;
  * Memory layout definitions for Wasmtime C API value structures.
  *
  * <p>This class defines memory layouts matching the Wasmtime C API data structures used for value
- * conversion. All layouts are designed for direct memory access through MemorySegment operations and
- * provide type-safe access to native structure fields.
+ * conversion. All layouts are designed for direct memory access through MemorySegment operations
+ * and provide type-safe access to native structure fields.
  *
  * <p>Layout definitions follow Wasmtime C API structure alignment and padding requirements to
  * ensure binary compatibility across all supported platforms.
@@ -56,6 +56,7 @@ public final class MemoryLayouts {
    */
   // Value type constants
   public static final int WASM_I32 = 0;
+
   public static final int WASM_I64 = 1;
   public static final int WASM_F32 = 2;
   public static final int WASM_F64 = 3;

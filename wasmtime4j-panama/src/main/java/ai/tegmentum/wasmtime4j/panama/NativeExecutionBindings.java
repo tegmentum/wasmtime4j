@@ -25,9 +25,9 @@ import java.util.logging.Logger;
 /**
  * Native function bindings for execution-related operations.
  *
- * <p>Provides type-safe wrappers for thread-local storage, thread lifecycle, flame graph
- * collector, pooling allocator, trap introspection, async runtime, coredump, WASI
- * threads, and WIT parser native functions.
+ * <p>Provides type-safe wrappers for thread-local storage, thread lifecycle, flame graph collector,
+ * pooling allocator, trap introspection, async runtime, coredump, WASI threads, and WIT parser
+ * native functions.
  */
 public final class NativeExecutionBindings extends NativeBindingsBase {
 

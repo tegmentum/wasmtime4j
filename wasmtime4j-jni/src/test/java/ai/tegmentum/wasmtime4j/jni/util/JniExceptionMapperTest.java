@@ -90,20 +90,17 @@ class JniExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("Should map NATIVE_ERROR_MEMORY to JniResourceException")
+    @DisplayName("Should map NATIVE_ERROR_MEMORY")
     void shouldMapMemoryError() {
       final JniException ex = JniExceptionMapper.mapNativeError(-7, "out of bounds");
-      assertTrue(
-          ex instanceof JniResourceException, "Should be JniResourceException for memory errors");
       assertTrue(ex.getMessage().contains("Memory access error"), "Should indicate memory error");
     }
 
     @Test
-    @DisplayName("Should map NATIVE_ERROR_RESOURCE to JniResourceException")
+    @DisplayName("Should map NATIVE_ERROR_RESOURCE")
     void shouldMapResourceError() {
       final JniException ex = JniExceptionMapper.mapNativeError(-11, "resource exhausted");
-      assertTrue(
-          ex instanceof JniResourceException, "Should be JniResourceException for resource errors");
+      assertTrue(ex.getMessage().contains("Resource error"), "Should indicate resource error");
     }
 
     @Test
@@ -211,11 +208,13 @@ class JniExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("Should map IllegalStateException to JniResourceException")
+    @DisplayName("Should map IllegalStateException")
     void shouldMapIllegalStateException() {
       final IllegalStateException cause = new IllegalStateException("bad state");
       final JniException result = JniExceptionMapper.mapException(cause);
-      assertTrue(result instanceof JniResourceException, "Should be JniResourceException");
+      assertTrue(
+          result.getMessage().contains("Resource in invalid state"),
+          "Should indicate invalid state");
     }
 
     @Test

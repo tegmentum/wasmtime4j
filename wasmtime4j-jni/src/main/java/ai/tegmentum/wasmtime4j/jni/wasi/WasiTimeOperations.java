@@ -281,7 +281,7 @@ public final class WasiTimeOperations {
    */
   private void validateClockId(final int clockId) {
     if (!isClockSupported(clockId)) {
-      throw new JniException(
+      throw new IllegalArgumentException(
           "Invalid clock ID: " + clockId + " (valid range: 0-" + MAX_CLOCK_ID + ")");
     }
   }

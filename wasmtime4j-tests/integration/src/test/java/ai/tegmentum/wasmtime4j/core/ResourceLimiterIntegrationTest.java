@@ -101,8 +101,14 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
               final long currentBytes, final long desiredBytes, final long maximumBytes) {
             callCount.incrementAndGet();
             LOGGER.info(
-                "[" + runtime + "] memoryGrowing called: current=" + currentBytes
-                    + ", desired=" + desiredBytes + ", maximum=" + maximumBytes);
+                "["
+                    + runtime
+                    + "] memoryGrowing called: current="
+                    + currentBytes
+                    + ", desired="
+                    + desiredBytes
+                    + ", maximum="
+                    + maximumBytes);
             return true; // Always allow
           }
 
@@ -152,13 +158,23 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
               final long currentBytes, final long desiredBytes, final long maximumBytes) {
             if (!denyMode.get()) {
               LOGGER.info(
-                  "[" + runtime + "] memoryGrowing called during init: current=" + currentBytes
-                      + ", desired=" + desiredBytes + " -> ALLOW");
+                  "["
+                      + runtime
+                      + "] memoryGrowing called during init: current="
+                      + currentBytes
+                      + ", desired="
+                      + desiredBytes
+                      + " -> ALLOW");
               return true; // Allow during instantiation
             }
             LOGGER.info(
-                "[" + runtime + "] memoryGrowing called: current=" + currentBytes
-                    + ", desired=" + desiredBytes + " -> DENY");
+                "["
+                    + runtime
+                    + "] memoryGrowing called: current="
+                    + currentBytes
+                    + ", desired="
+                    + desiredBytes
+                    + " -> DENY");
             denied.set(true);
             return false; // Deny after instantiation
           }
@@ -220,8 +236,14 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
               final int currentElements, final int desiredElements, final int maximumElements) {
             callCount.incrementAndGet();
             LOGGER.info(
-                "[" + runtime + "] tableGrowing called: current=" + currentElements
-                    + ", desired=" + desiredElements + ", maximum=" + maximumElements);
+                "["
+                    + runtime
+                    + "] tableGrowing called: current="
+                    + currentElements
+                    + ", desired="
+                    + desiredElements
+                    + ", maximum="
+                    + maximumElements);
             return true; // Allow
           }
         };
@@ -270,13 +292,23 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
               final int currentElements, final int desiredElements, final int maximumElements) {
             if (!denyMode.get()) {
               LOGGER.info(
-                  "[" + runtime + "] tableGrowing called during init: current=" + currentElements
-                      + ", desired=" + desiredElements + " -> ALLOW");
+                  "["
+                      + runtime
+                      + "] tableGrowing called during init: current="
+                      + currentElements
+                      + ", desired="
+                      + desiredElements
+                      + " -> ALLOW");
               return true; // Allow during instantiation
             }
             LOGGER.info(
-                "[" + runtime + "] tableGrowing called: current=" + currentElements
-                    + ", desired=" + desiredElements + " -> DENY");
+                "["
+                    + runtime
+                    + "] tableGrowing called: current="
+                    + currentElements
+                    + ", desired="
+                    + desiredElements
+                    + " -> DENY");
             return false; // Deny after instantiation
           }
         };
@@ -316,8 +348,7 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing limiter receives correct memory values");
 
     final long pageSize = 65536L; // WebAssembly page size
-    final List<long[]> receivedValues =
-        Collections.synchronizedList(new ArrayList<>());
+    final List<long[]> receivedValues = Collections.synchronizedList(new ArrayList<>());
 
     final ResourceLimiter limiter =
         new ResourceLimiter() {
@@ -326,8 +357,14 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
               final long currentBytes, final long desiredBytes, final long maximumBytes) {
             receivedValues.add(new long[] {currentBytes, desiredBytes, maximumBytes});
             LOGGER.info(
-                "[" + runtime + "] memoryGrowing: current=" + currentBytes
-                    + ", desired=" + desiredBytes + ", maximum=" + maximumBytes);
+                "["
+                    + runtime
+                    + "] memoryGrowing: current="
+                    + currentBytes
+                    + ", desired="
+                    + desiredBytes
+                    + ", maximum="
+                    + maximumBytes);
             return true;
           }
 
@@ -353,9 +390,7 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
       // Find the callback for this specific grow operation
       final long[] lastValues = receivedValues.get(receivedValues.size() - 1);
       assertEquals(
-          1 * pageSize,
-          lastValues[0],
-          "Current bytes should be 1 page (" + pageSize + " bytes)");
+          1 * pageSize, lastValues[0], "Current bytes should be 1 page (" + pageSize + " bytes)");
       assertEquals(
           2 * pageSize,
           lastValues[1],
@@ -370,13 +405,9 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
       assertFalse(receivedValues.isEmpty(), "Limiter should have been called for second grow");
       final long[] secondValues = receivedValues.get(receivedValues.size() - 1);
       assertEquals(
-          2 * pageSize,
-          secondValues[0],
-          "Current bytes should be 2 pages after first grow");
+          2 * pageSize, secondValues[0], "Current bytes should be 2 pages after first grow");
       assertEquals(
-          4 * pageSize,
-          secondValues[1],
-          "Desired bytes should be 4 pages for second grow");
+          4 * pageSize, secondValues[1], "Desired bytes should be 4 pages for second grow");
 
       LOGGER.info("[" + runtime + "] Second grow also received correct values");
 
@@ -392,8 +423,7 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing limiter receives correct table values");
 
-    final List<int[]> receivedValues =
-        Collections.synchronizedList(new ArrayList<>());
+    final List<int[]> receivedValues = Collections.synchronizedList(new ArrayList<>());
 
     final ResourceLimiter limiter =
         new ResourceLimiter() {
@@ -408,8 +438,14 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
               final int currentElements, final int desiredElements, final int maximumElements) {
             receivedValues.add(new int[] {currentElements, desiredElements, maximumElements});
             LOGGER.info(
-                "[" + runtime + "] tableGrowing: current=" + currentElements
-                    + ", desired=" + desiredElements + ", maximum=" + maximumElements);
+                "["
+                    + runtime
+                    + "] tableGrowing: current="
+                    + currentElements
+                    + ", desired="
+                    + desiredElements
+                    + ", maximum="
+                    + maximumElements);
             return true;
           }
         };
@@ -454,8 +490,14 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
               final long currentBytes, final long desiredBytes, final long maximumBytes) {
             final boolean allowed = desiredBytes <= maxAllowedBytes;
             LOGGER.info(
-                "[" + runtime + "] memoryGrowing: desired=" + desiredBytes
-                    + ", threshold=" + maxAllowedBytes + " -> " + (allowed ? "ALLOW" : "DENY"));
+                "["
+                    + runtime
+                    + "] memoryGrowing: desired="
+                    + desiredBytes
+                    + ", threshold="
+                    + maxAllowedBytes
+                    + " -> "
+                    + (allowed ? "ALLOW" : "DENY"));
             return allowed;
           }
 
@@ -570,8 +612,12 @@ public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
       assertTrue(store2Calls.get() > 0, "Deny limiter should have been called for store 2");
 
       LOGGER.info(
-          "[" + runtime + "] Multiple stores: store1 calls=" + store1Calls.get()
-              + ", store2 calls=" + store2Calls.get());
+          "["
+              + runtime
+              + "] Multiple stores: store1 calls="
+              + store1Calls.get()
+              + ", store2 calls="
+              + store2Calls.get());
 
       instance1.close();
       instance2.close();

@@ -108,8 +108,7 @@ class JniWasiContextIntegrationTest {
     void shouldCreateBuilderFromStaticMethod() {
       LOGGER.info("Testing builder creation from static method");
 
-      final WasiContextBuilder builder =
-          WasiContext.builder();
+      final WasiContextBuilder builder = WasiContext.builder();
 
       assertNotNull(builder, "Builder should not be null");
       LOGGER.info("Builder created successfully");
@@ -142,9 +141,7 @@ class JniWasiContextIntegrationTest {
       LOGGER.info("Created temp preopen directory: " + existingDir);
 
       final WasiContext context =
-          WasiContext.builder()
-.withPreopenDirectory("/", existingDir.toString())
-              .build();
+          WasiContext.builder().withPreopenDirectory("/", existingDir.toString()).build();
       resources.add(context);
 
       assertNotNull(context, "Context should not be null");
@@ -162,7 +159,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-.withEnvironment("TEST_VAR", "test_value")
+              .withEnvironment("TEST_VAR", "test_value")
               .withEnvironment("HOME", "/home/test")
               .withEnvironment("PATH", "/usr/bin:/bin")
               .withPreopenDirectory("/", existingDir.toString())
@@ -192,7 +189,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-.withArgument("program")
+              .withArgument("program")
               .withArgument("--verbose")
               .withArgument("-o")
               .withArgument("output.txt")
@@ -228,7 +225,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-.withPreopenDirectory("/guest/tmp", dir1.toString())
+              .withPreopenDirectory("/guest/tmp", dir1.toString())
               .withPreopenDirectory("/guest/data", dir2.toString())
               .build();
       resources.add(context);
@@ -254,7 +251,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-.withWorkingDirectory("/app")
+              .withWorkingDirectory("/app")
               .withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
@@ -282,7 +279,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-.withEnvironment("APP_ENV", "production")
+              .withEnvironment("APP_ENV", "production")
               .withEnvironment("LOG_LEVEL", "debug")
               .withArgument("myapp")
               .withArgument("--config=/etc/app.conf")
@@ -320,9 +317,7 @@ class JniWasiContextIntegrationTest {
 
       assertThrows(
           RuntimeException.class,
-          () ->
-              WasiContext.builder()
-        .withEnvironment(null, "value"),
+          () -> WasiContext.builder().withEnvironment(null, "value"),
           "Should throw on null environment variable name");
 
       LOGGER.info("Validation correctly rejected null environment variable name");
@@ -335,9 +330,7 @@ class JniWasiContextIntegrationTest {
 
       assertThrows(
           RuntimeException.class,
-          () ->
-              WasiContext.builder()
-        .withEnvironment("", "value"),
+          () -> WasiContext.builder().withEnvironment("", "value"),
           "Should throw on empty environment variable name");
 
       LOGGER.info("Validation correctly rejected empty environment variable name");
@@ -350,9 +343,7 @@ class JniWasiContextIntegrationTest {
 
       assertThrows(
           RuntimeException.class,
-          () ->
-              WasiContext.builder()
-        .withArgument(null),
+          () -> WasiContext.builder().withArgument(null),
           "Should throw on null argument");
 
       LOGGER.info("Validation correctly rejected null argument");
@@ -365,9 +356,7 @@ class JniWasiContextIntegrationTest {
 
       assertThrows(
           RuntimeException.class,
-          () ->
-              WasiContext.builder()
-        .withPreopenDirectory("/guest", "/non/existent/path"),
+          () -> WasiContext.builder().withPreopenDirectory("/guest", "/non/existent/path"),
           "Should throw on non-existent host directory");
 
       LOGGER.info("Validation correctly rejected non-existent host directory");
@@ -383,9 +372,7 @@ class JniWasiContextIntegrationTest {
 
       assertThrows(
           RuntimeException.class,
-          () ->
-              WasiContext.builder()
-        .withPreopenDirectory("/guest", file.toString()),
+          () -> WasiContext.builder().withPreopenDirectory("/guest", file.toString()),
           "Should throw on file path instead of directory");
 
       LOGGER.info("Validation correctly rejected file path");
@@ -401,9 +388,7 @@ class JniWasiContextIntegrationTest {
 
       assertThrows(
           RuntimeException.class,
-          () ->
-              WasiContext.builder()
-        .withPreopenDirectory(null, hostDir.toString()),
+          () -> WasiContext.builder().withPreopenDirectory(null, hostDir.toString()),
           "Should throw on null guest directory path");
 
       LOGGER.info("Validation correctly rejected null guest path");
@@ -419,9 +404,7 @@ class JniWasiContextIntegrationTest {
 
       assertThrows(
           RuntimeException.class,
-          () ->
-              WasiContext.builder()
-        .withPreopenDirectory("", hostDir.toString()),
+          () -> WasiContext.builder().withPreopenDirectory("", hostDir.toString()),
           "Should throw on empty guest directory path");
 
       LOGGER.info("Validation correctly rejected empty guest path");
@@ -441,9 +424,7 @@ class JniWasiContextIntegrationTest {
       Files.createDirectories(existingDir);
 
       final WasiContext context =
-          WasiContext.builder()
-.withPreopenDirectory("/", existingDir.toString())
-              .build();
+          WasiContext.builder().withPreopenDirectory("/", existingDir.toString()).build();
 
       assertTrue(context.isValid(), "Context should be valid before close");
 
@@ -462,9 +443,7 @@ class JniWasiContextIntegrationTest {
       Files.createDirectories(existingDir);
 
       final WasiContext context =
-          WasiContext.builder()
-.withPreopenDirectory("/", existingDir.toString())
-              .build();
+          WasiContext.builder().withPreopenDirectory("/", existingDir.toString()).build();
 
       assertDoesNotThrow(
           () -> {
@@ -487,9 +466,7 @@ class JniWasiContextIntegrationTest {
       final long[] handleHolder = new long[1];
 
       try (final WasiContext context =
-          WasiContext.builder()
-.withPreopenDirectory("/", existingDir.toString())
-              .build()) {
+          WasiContext.builder().withPreopenDirectory("/", existingDir.toString()).build()) {
         assertTrue(context.isValid(), "Context should be valid inside try block");
         handleHolder[0] = context.getNativeHandle();
         LOGGER.info("Context is valid inside try block with handle: " + handleHolder[0]);
@@ -512,9 +489,7 @@ class JniWasiContextIntegrationTest {
       Files.createDirectories(existingDir);
 
       final WasiContext context =
-          WasiContext.builder()
-.withPreopenDirectory("/", existingDir.toString())
-              .build();
+          WasiContext.builder().withPreopenDirectory("/", existingDir.toString()).build();
       resources.add(context);
 
       final long handle = context.getNativeHandle();
@@ -537,9 +512,7 @@ class JniWasiContextIntegrationTest {
       Files.createDirectories(existingDir);
 
       final WasiContext context =
-          WasiContext.builder()
-.withPreopenDirectory("/guest", existingDir.toString())
-              .build();
+          WasiContext.builder().withPreopenDirectory("/guest", existingDir.toString()).build();
       resources.add(context);
 
       // Valid paths should not throw
@@ -564,7 +537,7 @@ class JniWasiContextIntegrationTest {
 
       final WasiContext context =
           WasiContext.builder()
-.withEnvironment("MY_VAR", "my_value")
+              .withEnvironment("MY_VAR", "my_value")
               .withPreopenDirectory("/", existingDir.toString())
               .build();
       resources.add(context);
@@ -584,9 +557,7 @@ class JniWasiContextIntegrationTest {
       Files.createDirectories(existingDir);
 
       final WasiContext context =
-          WasiContext.builder()
-.withPreopenDirectory("/", existingDir.toString())
-              .build();
+          WasiContext.builder().withPreopenDirectory("/", existingDir.toString()).build();
       resources.add(context);
 
       final String value = context.getEnvironmentVariable("NON_EXISTENT_VAR");

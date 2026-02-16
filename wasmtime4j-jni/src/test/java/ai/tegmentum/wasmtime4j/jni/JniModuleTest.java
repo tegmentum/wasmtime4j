@@ -466,5 +466,4 @@ class JniModuleTest {
       assertTrue(types.isEmpty(), "Should be empty for fake handle");
     }
   }
-
 }

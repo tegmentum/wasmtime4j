@@ -80,7 +80,6 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   /** Lock object for GC runtime lazy initialization. */
   private final Object gcRuntimeLock = new Object();
 
-
   /**
    * Creates a new Panama WebAssembly runtime.
    *

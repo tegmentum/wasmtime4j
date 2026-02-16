@@ -582,7 +582,6 @@ class PanamaWasiConfigBuilderTest {
     }
   }
 
-
   @Nested
   @DisplayName("Execution Timeout Method Tests")
   class ExecutionTimeoutMethodTests {
@@ -647,8 +646,6 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Execution timeout cleared");
     }
   }
-
-
 
   @Nested
   @DisplayName("Validation Mode Method Tests")
@@ -1032,5 +1029,4 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Method chaining works correctly");
     }
   }
-
 }

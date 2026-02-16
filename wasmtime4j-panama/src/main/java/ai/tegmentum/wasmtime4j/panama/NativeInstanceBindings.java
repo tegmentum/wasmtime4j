@@ -1503,9 +1503,9 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   /**
    * Sets a call hook with a function pointer callback on the store.
    *
-   * <p>The callback is invoked on every transition between host and WebAssembly code.
-   * The callback receives the callback ID and hook type (0=CallingWasm, 1=ReturningFromWasm,
-   * 2=CallingHost, 3=ReturningFromHost) and returns 0 to continue or non-zero to trap.
+   * <p>The callback is invoked on every transition between host and WebAssembly code. The callback
+   * receives the callback ID and hook type (0=CallingWasm, 1=ReturningFromWasm, 2=CallingHost,
+   * 3=ReturningFromHost) and returns 0 to continue or non-zero to trap.
    *
    * @param storePtr the store pointer
    * @param callbackFn the upcall stub function pointer
@@ -1517,7 +1517,10 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(storePtr, "storePtr");
     validatePointer(callbackFn, "callbackFn");
     return callNativeFunction(
-        "wasmtime4j_panama_store_set_call_hook_fn", Integer.class, storePtr, callbackFn,
+        "wasmtime4j_panama_store_set_call_hook_fn",
+        Integer.class,
+        storePtr,
+        callbackFn,
         callbackId);
   }
 

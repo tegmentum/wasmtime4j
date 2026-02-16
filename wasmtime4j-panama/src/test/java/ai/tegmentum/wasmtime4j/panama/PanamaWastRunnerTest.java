@@ -246,8 +246,7 @@ public final class PanamaWastRunnerTest {
             + ")\n"
             + "(assert_return (invoke \"test\") (i32.const 1))";
 
-    final WastExecutionResult result =
-        PanamaWastRunner.executeWastString("test.wast", wastContent);
+    final WastExecutionResult result = PanamaWastRunner.executeWastString("test.wast", wastContent);
 
     final String toString = result.toString();
     assertNotNull(toString, "toString should not be null");
@@ -281,8 +280,7 @@ public final class PanamaWastRunnerTest {
 
       final String dirToString = directive.toString();
       assertNotNull(dirToString, "Directive toString should not be null");
-      assertTrue(
-          dirToString.contains("WastDirectiveResult"), "toString should contain class name");
+      assertTrue(dirToString.contains("WastDirectiveResult"), "toString should contain class name");
     }
   }
 }

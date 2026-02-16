@@ -173,10 +173,10 @@ public final class JniStore extends JniResource implements Store {
    * debugging and monitoring.
    *
    * @return a string containing store runtime information
-   * @throws JniException if information cannot be retrieved
+   * @throws WasmException if information cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public String getRuntimeInfo() {
+  public String getRuntimeInfo() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -220,10 +220,10 @@ public final class JniStore extends JniResource implements Store {
    * prevent runaway computations.
    *
    * @param fuel the fuel limit (must be positive)
-   * @throws JniException if the fuel limit cannot be set
+   * @throws WasmException if the fuel limit cannot be set
    * @throws JniResourceException if this store has been closed
    */
-  public void setFuelLimit(final long fuel) {
+  public void setFuelLimit(final long fuel) throws WasmException {
     JniValidation.requirePositive(fuel, "fuel");
     ensureNotClosed();
 
@@ -249,10 +249,10 @@ public final class JniStore extends JniResource implements Store {
    * enabled, this method returns -1.
    *
    * @return the remaining fuel, or -1 if fuel is not enabled
-   * @throws JniException if the fuel amount cannot be retrieved
+   * @throws WasmException if the fuel amount cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public long getFuelRemaining() {
+  public long getFuelRemaining() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -702,7 +702,6 @@ public final class JniStore extends JniResource implements Store {
    * calls within WebAssembly modules.
    *
    * @return the number of executions performed in this store
-   * @throws JniException if the execution count cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
   @Override
@@ -712,7 +711,7 @@ public final class JniStore extends JniResource implements Store {
     try {
       return nativeGetExecutionCount(getNativeHandle());
     } catch (final Exception e) {
-      throw new JniException("Failed to get execution count", e);
+      throw new RuntimeException("Failed to get execution count", e);
     }
   }
 
@@ -723,10 +722,10 @@ public final class JniStore extends JniResource implements Store {
    * context, measured in microseconds for high precision timing.
    *
    * @return the total execution time in microseconds
-   * @throws JniException if the execution time cannot be retrieved
+   * @throws WasmException if the execution time cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public long getExecutionTime() {
+  public long getExecutionTime() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -752,7 +751,7 @@ public final class JniStore extends JniResource implements Store {
     try {
       return nativeGetExecutionTime(getNativeHandle());
     } catch (final Exception e) {
-      throw new JniException("Failed to get total execution time", e);
+      throw new RuntimeException("Failed to get total execution time", e);
     }
   }
 
@@ -764,11 +763,11 @@ public final class JniStore extends JniResource implements Store {
    * this metric to be meaningful.
    *
    * @return the total fuel consumed
-   * @throws JniException if the fuel consumption cannot be retrieved
+   * @throws WasmException if the fuel consumption cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
   @Override
-  public long getTotalFuelConsumed() {
+  public long getTotalFuelConsumed() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -810,10 +809,10 @@ public final class JniStore extends JniResource implements Store {
    * module with its own state and memory.
    *
    * @return the number of active instances
-   * @throws JniException if the instance count cannot be retrieved
+   * @throws WasmException if the instance count cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public long getInstanceCount() {
+  public long getInstanceCount() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -832,10 +831,10 @@ public final class JniStore extends JniResource implements Store {
    * within this store. If fuel tracking is disabled or no limit is set, this method returns -1.
    *
    * @return the fuel limit, or -1 if no limit is set or fuel tracking is disabled
-   * @throws JniException if the fuel limit cannot be retrieved
+   * @throws WasmException if the fuel limit cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public long getFuelLimit() {
+  public long getFuelLimit() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -853,10 +852,10 @@ public final class JniStore extends JniResource implements Store {
    * set, this method returns -1.
    *
    * @return the memory limit in bytes, or -1 if no limit is set
-   * @throws JniException if the memory limit cannot be retrieved
+   * @throws WasmException if the memory limit cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public long getMemoryLimit() {
+  public long getMemoryLimit() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -873,10 +872,10 @@ public final class JniStore extends JniResource implements Store {
    * operations within this store. If no timeout is set, this method returns -1.
    *
    * @return the execution timeout in seconds, or -1 if no timeout is set
-   * @throws JniException if the execution timeout cannot be retrieved
+   * @throws WasmException if the execution timeout cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public long getExecutionTimeout() {
+  public long getExecutionTimeout() throws WasmException {
     ensureNotClosed();
 
     try {
@@ -919,10 +918,10 @@ public final class JniStore extends JniResource implements Store {
    * debugging, monitoring, and performance analysis.
    *
    * @return formatted diagnostic information
-   * @throws JniException if diagnostic information cannot be retrieved
+   * @throws WasmException if diagnostic information cannot be retrieved
    * @throws JniResourceException if this store has been closed
    */
-  public String getDiagnosticInfo() {
+  public String getDiagnosticInfo() throws WasmException {
     return getRuntimeInfo();
   }
 

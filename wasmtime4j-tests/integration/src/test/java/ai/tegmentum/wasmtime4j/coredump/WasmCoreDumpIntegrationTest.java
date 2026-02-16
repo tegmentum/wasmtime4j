@@ -293,8 +293,7 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldReturnImmutableLists(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().addModule("test.wasm").build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addModule("test.wasm").build();
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -336,8 +335,7 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldThrowWhenSerializingWithoutData(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().name("no-serialization").build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().name("no-serialization").build();
 
       final UnsupportedOperationException exception =
           assertThrows(
@@ -355,8 +353,7 @@ public final class WasmCoreDumpIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final byte[] originalData = new byte[] {0x01, 0x02, 0x03};
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().serializedData(originalData).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().serializedData(originalData).build();
 
       final byte[] serialized1 = coreDump.serialize();
       final byte[] serialized2 = coreDump.serialize();

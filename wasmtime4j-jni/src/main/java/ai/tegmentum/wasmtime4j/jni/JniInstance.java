@@ -11,7 +11,6 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.type.FuncType;
@@ -576,7 +575,7 @@ public final class JniInstance extends JniResource implements Instance {
     try {
       return nativeGetCreatedAtMicros(getNativeHandle());
     } catch (final Exception e) {
-      throw new JniException("Failed to get creation timestamp", e);
+      throw new RuntimeException("Failed to get creation timestamp", e);
     }
   }
 
@@ -596,7 +595,7 @@ public final class JniInstance extends JniResource implements Instance {
     try {
       return (int) nativeGetMetadataExportCount(getNativeHandle());
     } catch (final Exception e) {
-      throw new JniException("Failed to get metadata export count", e);
+      throw new RuntimeException("Failed to get metadata export count", e);
     }
   }
 

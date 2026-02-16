@@ -41,9 +41,8 @@ import org.junit.jupiter.api.TestInfo;
 /**
  * Comprehensive functional tests for WASI subsystem classes.
  *
- * <p>Tests cover: DateTime, TimezoneDisplay, NN enums/exceptions. These
- * tests verify actual behavior, validation, and functional correctness beyond simple API structure
- * tests.
+ * <p>Tests cover: DateTime, TimezoneDisplay, NN enums/exceptions. These tests verify actual
+ * behavior, validation, and functional correctness beyond simple API structure tests.
  *
  * @since 1.0.0
  */

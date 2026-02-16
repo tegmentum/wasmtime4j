@@ -350,5 +350,4 @@ public class InstanceIndexedAccessTest extends DualRuntimeTest {
       module.close();
     }
   }
-
 }

@@ -160,7 +160,7 @@ public class StoreLifecycleFuzzer {
             // Expected: double close
           }
         }
-        default -> { }
+        default -> {}
       }
     } catch (WasmException e) {
       // Expected

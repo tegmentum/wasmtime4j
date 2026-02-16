@@ -122,8 +122,7 @@ public final class PanamaStore implements Store {
                   "callHookCallbackStub",
                   MethodType.methodType(int.class, long.class, int.class));
       callHookStub =
-          Linker.nativeLinker()
-              .upcallStub(callHookHandle, CALL_HOOK_DESCRIPTOR, Arena.global());
+          Linker.nativeLinker().upcallStub(callHookHandle, CALL_HOOK_DESCRIPTOR, Arena.global());
     } catch (final NoSuchMethodException | IllegalAccessException e) {
       LOGGER.severe("Failed to create call hook callback stub: " + e.getMessage());
     }
@@ -140,8 +139,7 @@ public final class PanamaStore implements Store {
    */
   private static int callHookCallbackStub(final long callbackId, final int hookType) {
     LOGGER.fine("Call hook stub invoked: callbackId=" + callbackId + ", hookType=" + hookType);
-    final ai.tegmentum.wasmtime4j.func.CallHookHandler handler =
-        CALL_HOOK_HANDLERS.get(callbackId);
+    final ai.tegmentum.wasmtime4j.func.CallHookHandler handler = CALL_HOOK_HANDLERS.get(callbackId);
     if (handler == null) {
       LOGGER.warning("Call hook handler not found for ID: " + callbackId);
       return -1; // Trap - handler not found
@@ -205,8 +203,7 @@ public final class PanamaStore implements Store {
               lookup.findStatic(
                   PanamaStore.class,
                   "memoryGrowingStub",
-                  MethodType.methodType(
-                      int.class, long.class, long.class, long.class, long.class)),
+                  MethodType.methodType(int.class, long.class, long.class, long.class, long.class)),
               MEMORY_GROWING_DESCRIPTOR,
               Arena.global());
 
@@ -281,8 +278,7 @@ public final class PanamaStore implements Store {
     }
   }
 
-  private static void memoryGrowFailedStub(
-      final long callbackId, final MemorySegment errorMsg) {
+  private static void memoryGrowFailedStub(final long callbackId, final MemorySegment errorMsg) {
     final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
     if (limiter == null) {
       return;
@@ -298,8 +294,7 @@ public final class PanamaStore implements Store {
     }
   }
 
-  private static void tableGrowFailedStub(
-      final long callbackId, final MemorySegment errorMsg) {
+  private static void tableGrowFailedStub(final long callbackId, final MemorySegment errorMsg) {
     final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
     if (limiter == null) {
       return;
@@ -617,8 +612,7 @@ public final class PanamaStore implements Store {
     if (result != 0) {
       RESOURCE_LIMITERS.remove(newCallbackId);
       limiterCallbackId = 0;
-      throw new WasmException(
-          "Failed to configure resource limiter: error code " + result);
+      throw new WasmException("Failed to configure resource limiter: error code " + result);
     }
   }
 
@@ -1672,5 +1666,4 @@ public final class PanamaStore implements Store {
   public long getFuelAsyncYieldInterval() {
     return fuelAsyncYieldInterval;
   }
-
 }

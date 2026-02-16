@@ -408,7 +408,6 @@ public class ExceptionIntegrationTest {
 
       LOGGER.info("WasiException hierarchy verified");
     }
-
   }
 
   @Nested

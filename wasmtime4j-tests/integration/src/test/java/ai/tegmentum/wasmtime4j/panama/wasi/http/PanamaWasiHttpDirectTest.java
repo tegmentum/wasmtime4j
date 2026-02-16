@@ -217,9 +217,7 @@ public class PanamaWasiHttpDirectTest {
       LOGGER.info("Testing context management methods");
 
       final Class<?> clazz = PanamaWasiHttpContext.class;
-      final String[] expectedMethods = {
-        "getConfig", "isValid", "isHostAllowed", "close"
-      };
+      final String[] expectedMethods = {"getConfig", "isValid", "isHostAllowed", "close"};
 
       for (final String methodName : expectedMethods) {
         boolean found = false;
@@ -244,5 +242,4 @@ public class PanamaWasiHttpDirectTest {
           "Should implement AutoCloseable");
     }
   }
-
 }

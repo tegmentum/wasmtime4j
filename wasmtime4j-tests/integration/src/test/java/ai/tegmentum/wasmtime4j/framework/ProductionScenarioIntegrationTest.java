@@ -178,8 +178,9 @@ public class ProductionScenarioIntegrationTest {
           FRAMEWORK_LOGGER.warning("error-recovery: Expected compilation to fail");
           return false;
         } catch (final Exception expected) {
-          FRAMEWORK_LOGGER.info("error-recovery: Compilation correctly failed: "
-              + expected.getClass().getSimpleName());
+          FRAMEWORK_LOGGER.info(
+              "error-recovery: Compilation correctly failed: "
+                  + expected.getClass().getSimpleName());
         }
 
         // Recover by performing a valid operation
@@ -256,32 +257,39 @@ public class ProductionScenarioIntegrationTest {
 
       for (int t = 0; t < threadCount; t++) {
         final int threadId = t;
-        new Thread(() -> {
-          try (final Engine engine = Engine.create();
-              final Store store = engine.createStore();
-              final Module module = engine.compileModule(ADD_WASM);
-              final Instance instance = module.instantiate(store)) {
-            final Optional<WasmFunction> addFunc = instance.getFunction("add");
-            if (addFunc.isPresent()) {
-              final WasmValue[] result =
-                  addFunc.get().call(WasmValue.i32(threadId), WasmValue.i32(1));
-              if (result[0].asInt() == threadId + 1) {
-                successes.incrementAndGet();
-              }
-            }
-          } catch (final Exception e) {
-            FRAMEWORK_LOGGER.warning(
-                "concurrent-stress: Thread " + threadId + " failed: " + e.getMessage());
-          } finally {
-            latch.countDown();
-          }
-        }).start();
+        new Thread(
+                () -> {
+                  try (final Engine engine = Engine.create();
+                      final Store store = engine.createStore();
+                      final Module module = engine.compileModule(ADD_WASM);
+                      final Instance instance = module.instantiate(store)) {
+                    final Optional<WasmFunction> addFunc = instance.getFunction("add");
+                    if (addFunc.isPresent()) {
+                      final WasmValue[] result =
+                          addFunc.get().call(WasmValue.i32(threadId), WasmValue.i32(1));
+                      if (result[0].asInt() == threadId + 1) {
+                        successes.incrementAndGet();
+                      }
+                    }
+                  } catch (final Exception e) {
+                    FRAMEWORK_LOGGER.warning(
+                        "concurrent-stress: Thread " + threadId + " failed: " + e.getMessage());
+                  } finally {
+                    latch.countDown();
+                  }
+                })
+            .start();
       }
 
       try {
         final boolean completed = latch.await(30, TimeUnit.SECONDS);
-        FRAMEWORK_LOGGER.info("concurrent-stress: " + successes.get()
-            + "/" + threadCount + " threads succeeded, completed=" + completed);
+        FRAMEWORK_LOGGER.info(
+            "concurrent-stress: "
+                + successes.get()
+                + "/"
+                + threadCount
+                + " threads succeeded, completed="
+                + completed);
         return completed && successes.get() == threadCount;
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();

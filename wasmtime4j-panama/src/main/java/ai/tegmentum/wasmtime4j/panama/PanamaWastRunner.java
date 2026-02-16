@@ -42,8 +42,7 @@ import java.util.logging.Logger;
  * Wasmtime's own test behavior.
  *
  * <p>WAST files are the standard test format used by the WebAssembly specification and contain
- * module definitions along with test assertions (e.g., assert_return, assert_trap,
- * assert_invalid).
+ * module definitions along with test assertions (e.g., assert_return, assert_trap, assert_invalid).
  *
  * <p><b>Thread Safety:</b> This class is thread-safe. Multiple threads can execute WAST files
  * concurrently.
@@ -74,8 +73,7 @@ public final class PanamaWastRunner {
   // wasmtime4j_panama_wast_execute_file(file_path: *const c_char, result_json: *mut *mut c_char)
   // -> i32
   private static final FunctionDescriptor EXECUTE_FILE_DESC =
-      FunctionDescriptor.of(
-          ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS);
+      FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS);
 
   // wasmtime4j_panama_wast_execute_buffer(filename: *const c_char, content: *const u8,
   //   content_len: usize, result_json: *mut *mut c_char) -> i32
@@ -121,14 +119,22 @@ public final class PanamaWastRunner {
 
       if (result != 0) {
         return new WastExecutionResult(
-            filePath, 0, 0, 0, "Native WAST execution failed with error code: " + result,
+            filePath,
+            0,
+            0,
+            0,
+            "Native WAST execution failed with error code: " + result,
             new WastDirectiveResult[0]);
       }
 
       final MemorySegment resultPtr = resultPtrPtr.get(ValueLayout.ADDRESS, 0);
       if (resultPtr.equals(MemorySegment.NULL)) {
         return new WastExecutionResult(
-            filePath, 0, 0, 0, "Native WAST execution returned null result",
+            filePath,
+            0,
+            0,
+            0,
+            "Native WAST execution returned null result",
             new WastDirectiveResult[0]);
       }
 
@@ -143,8 +149,7 @@ public final class PanamaWastRunner {
     } catch (Throwable e) {
       LOGGER.log(Level.SEVERE, "Failed to execute WAST file: " + filePath, e);
       return new WastExecutionResult(
-          filePath, 0, 0, 0, "Panama FFI error: " + e.getMessage(),
-          new WastDirectiveResult[0]);
+          filePath, 0, 0, 0, "Panama FFI error: " + e.getMessage(), new WastDirectiveResult[0]);
     }
   }
 
@@ -257,19 +262,27 @@ public final class PanamaWastRunner {
 
       final MethodHandle mh = getExecuteBufferHandle();
       final int result =
-          (int) mh.invokeExact(
-              filenameSegment, contentSegment, (long) content.length, resultPtrPtr);
+          (int)
+              mh.invokeExact(filenameSegment, contentSegment, (long) content.length, resultPtrPtr);
 
       if (result != 0) {
         return new WastExecutionResult(
-            filename, 0, 0, 0, "Native WAST execution failed with error code: " + result,
+            filename,
+            0,
+            0,
+            0,
+            "Native WAST execution failed with error code: " + result,
             new WastDirectiveResult[0]);
       }
 
       final MemorySegment resultPtr = resultPtrPtr.get(ValueLayout.ADDRESS, 0);
       if (resultPtr.equals(MemorySegment.NULL)) {
         return new WastExecutionResult(
-            filename, 0, 0, 0, "Native WAST execution returned null result",
+            filename,
+            0,
+            0,
+            0,
+            "Native WAST execution returned null result",
             new WastDirectiveResult[0]);
       }
 
@@ -282,8 +295,7 @@ public final class PanamaWastRunner {
     } catch (Throwable e) {
       LOGGER.log(Level.SEVERE, "Failed to execute WAST buffer: " + filename, e);
       return new WastExecutionResult(
-          filename, 0, 0, 0, "Panama FFI error: " + e.getMessage(),
-          new WastDirectiveResult[0]);
+          filename, 0, 0, 0, "Panama FFI error: " + e.getMessage(), new WastDirectiveResult[0]);
     }
   }
 
@@ -317,8 +329,7 @@ public final class PanamaWastRunner {
         final JsonObject directive = element.getAsJsonObject();
         final int lineNumber =
             directive.has("line_number") ? directive.get("line_number").getAsInt() : 0;
-        final boolean passed =
-            directive.has("passed") && directive.get("passed").getAsBoolean();
+        final boolean passed = directive.has("passed") && directive.get("passed").getAsBoolean();
         final String errorMessage =
             directive.has("error_message") && !directive.get("error_message").isJsonNull()
                 ? directive.get("error_message").getAsString()
@@ -328,7 +339,11 @@ public final class PanamaWastRunner {
     }
 
     return new WastExecutionResult(
-        filePath, totalDirectives, passedDirectives, failedDirectives, executionError,
+        filePath,
+        totalDirectives,
+        passedDirectives,
+        failedDirectives,
+        executionError,
         directiveResults);
   }
 
@@ -352,11 +367,14 @@ public final class PanamaWastRunner {
       synchronized (PanamaWastRunner.class) {
         mh = executeFileHandle;
         if (mh == null) {
-          final Optional<MethodHandle> handle = NativeLibraryLoader.getInstance()
-              .lookupFunction("wasmtime4j_panama_wast_execute_file", EXECUTE_FILE_DESC);
-          mh = handle.orElseThrow(
-              () -> new IllegalStateException(
-                  "Failed to find wasmtime4j_panama_wast_execute_file"));
+          final Optional<MethodHandle> handle =
+              NativeLibraryLoader.getInstance()
+                  .lookupFunction("wasmtime4j_panama_wast_execute_file", EXECUTE_FILE_DESC);
+          mh =
+              handle.orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Failed to find wasmtime4j_panama_wast_execute_file"));
           executeFileHandle = mh;
         }
       }
@@ -370,11 +388,14 @@ public final class PanamaWastRunner {
       synchronized (PanamaWastRunner.class) {
         mh = executeBufferHandle;
         if (mh == null) {
-          final Optional<MethodHandle> handle = NativeLibraryLoader.getInstance()
-              .lookupFunction("wasmtime4j_panama_wast_execute_buffer", EXECUTE_BUFFER_DESC);
-          mh = handle.orElseThrow(
-              () -> new IllegalStateException(
-                  "Failed to find wasmtime4j_panama_wast_execute_buffer"));
+          final Optional<MethodHandle> handle =
+              NativeLibraryLoader.getInstance()
+                  .lookupFunction("wasmtime4j_panama_wast_execute_buffer", EXECUTE_BUFFER_DESC);
+          mh =
+              handle.orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Failed to find wasmtime4j_panama_wast_execute_buffer"));
           executeBufferHandle = mh;
         }
       }
@@ -388,11 +409,14 @@ public final class PanamaWastRunner {
       synchronized (PanamaWastRunner.class) {
         mh = freeResultHandle;
         if (mh == null) {
-          final Optional<MethodHandle> handle = NativeLibraryLoader.getInstance()
-              .lookupFunction("wasmtime4j_panama_wast_free_result", FREE_RESULT_DESC);
-          mh = handle.orElseThrow(
-              () -> new IllegalStateException(
-                  "Failed to find wasmtime4j_panama_wast_free_result"));
+          final Optional<MethodHandle> handle =
+              NativeLibraryLoader.getInstance()
+                  .lookupFunction("wasmtime4j_panama_wast_free_result", FREE_RESULT_DESC);
+          mh =
+              handle.orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Failed to find wasmtime4j_panama_wast_free_result"));
           freeResultHandle = mh;
         }
       }
@@ -427,8 +451,7 @@ public final class PanamaWastRunner {
     private static String createMessage(final WastExecutionResult result) {
       if (result.getExecutionError() != null) {
         return String.format(
-            "WAST execution failed for %s: %s",
-            result.getFilePath(), result.getExecutionError());
+            "WAST execution failed for %s: %s", result.getFilePath(), result.getExecutionError());
       } else {
         return String.format(
             "WAST execution failed for %s: %d of %d directives failed",

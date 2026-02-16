@@ -46,8 +46,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 /**
  * Tests for {@link InstancePre#instantiate(Store, ImportMap)}.
  *
- * <p>Verifies import-map-based instantiation from pre-instantiated modules. The JNI
- * implementation may throw {@link UnsatisfiedLinkError} if nativeInstantiatePre is not yet bound.
+ * <p>Verifies import-map-based instantiation from pre-instantiated modules. The JNI implementation
+ * may throw {@link UnsatisfiedLinkError} if nativeInstantiatePre is not yet bound.
  *
  * @since 1.0.0
  */
