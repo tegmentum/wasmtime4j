@@ -2,11 +2,10 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.wasi.WasiContextData;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -41,17 +40,8 @@ public final class WasiContext implements AutoCloseable {
   /** Resource manager for native memory management. */
   private final ArenaResourceManager resourceManager;
 
-  /** Environment variables for the WASI context. */
-  private final Map<String, String> environment;
-
-  /** Command-line arguments for the WASI context. */
-  private final String[] arguments;
-
-  /** Pre-opened directories with their sandbox permissions. */
-  private final Map<String, Path> preopenedDirectories;
-
-  /** Working directory for the WASI context. */
-  private final Path workingDirectory;
+  /** Shared WASI context data (environment, arguments, preopen dirs, working dir). */
+  private final WasiContextData contextData;
 
   /** Resource handle for lifecycle management. */
   private final NativeResourceHandle resourceHandle;
@@ -80,13 +70,16 @@ public final class WasiContext implements AutoCloseable {
 
     this.nativeHandle = nativeHandle;
     this.resourceManager = resourceManager;
-    this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
-    this.arguments = builder.getArguments().toArray(new String[0]);
-    this.preopenedDirectories = new ConcurrentHashMap<>(builder.getPreopenedDirectories());
-    this.workingDirectory = builder.getWorkingDirectory();
+    this.contextData =
+        new WasiContextData(
+            builder.getEnvironment(),
+            builder.getArguments(),
+            builder.getPreopenedDirectories(),
+            builder.getWorkingDirectory());
 
     // Capture handle locally for safety net (must NOT capture 'this')
     final MemorySegment handle = this.nativeHandle;
+    final WasiContextData data = this.contextData;
     this.resourceHandle =
         new NativeResourceHandle(
             "WasiContext",
@@ -97,8 +90,7 @@ public final class WasiContext implements AutoCloseable {
               nativeClose(handle);
 
               // Clear local state
-              environment.clear();
-              preopenedDirectories.clear();
+              data.clearState();
 
               // Close resource manager
               resourceManager.close();
@@ -112,7 +104,9 @@ public final class WasiContext implements AutoCloseable {
         String.format(
             "Created Panama WASI context with %d preopen directories, %d environment variables, %d"
                 + " arguments",
-            preopenedDirectories.size(), environment.size(), arguments.length));
+            contextData.getPreopenedDirectoryCount(),
+            contextData.getEnvironmentCount(),
+            contextData.getArgumentCount()));
   }
 
   /**
@@ -136,12 +130,7 @@ public final class WasiContext implements AutoCloseable {
    */
   public String getEnvironmentVariable(final String name) {
     ensureNotClosed();
-
-    if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Environment variable name cannot be null or empty");
-    }
-
-    return environment.get(name);
+    return contextData.getEnvironmentVariable(name);
   }
 
   /**
@@ -152,9 +141,7 @@ public final class WasiContext implements AutoCloseable {
    */
   public Map<String, String> getEnvironment() {
     ensureNotClosed();
-
-    // Return defensive copy
-    return new ConcurrentHashMap<>(environment);
+    return contextData.getEnvironment();
   }
 
   /**
@@ -165,9 +152,7 @@ public final class WasiContext implements AutoCloseable {
    */
   public String[] getArguments() {
     ensureNotClosed();
-
-    // Return defensive copy
-    return arguments.clone();
+    return contextData.getArguments();
   }
 
   /**
@@ -178,9 +163,7 @@ public final class WasiContext implements AutoCloseable {
    */
   public Map<String, Path> getPreopenedDirectories() {
     ensureNotClosed();
-
-    // Return defensive copy
-    return new ConcurrentHashMap<>(preopenedDirectories);
+    return contextData.getPreopenedDirectories();
   }
 
   /**
@@ -191,7 +174,7 @@ public final class WasiContext implements AutoCloseable {
    */
   public Path getWorkingDirectory() {
     ensureNotClosed();
-    return workingDirectory;
+    return contextData.getWorkingDirectory();
   }
 
   /**
@@ -204,18 +187,10 @@ public final class WasiContext implements AutoCloseable {
    * @return the resolved and validated path
    * @throws IllegalArgumentException if path is null or empty
    * @throws IllegalStateException if the context is closed
-   * @throws RuntimeException if the path is not accessible or validation fails
    */
   public Path validatePath(final String path) {
     ensureNotClosed();
-
-    if (path == null || path.isEmpty()) {
-      throw new IllegalArgumentException("Path cannot be null or empty");
-    }
-
-    final Path resolvedPath = Paths.get(path);
-
-    return resolvedPath.normalize().toAbsolutePath();
+    return contextData.validatePath(path);
   }
 
   /**
@@ -292,8 +267,8 @@ public final class WasiContext implements AutoCloseable {
         "WasiContext{handle=%s, closed=%s, env=%d, args=%d, preopen=%d}",
         nativeHandle.address(),
         resourceHandle.isClosed(),
-        environment.size(),
-        arguments.length,
-        preopenedDirectories.size());
+        contextData.getEnvironmentCount(),
+        contextData.getArgumentCount(),
+        contextData.getPreopenedDirectoryCount());
   }
 }

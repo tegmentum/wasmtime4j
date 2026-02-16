@@ -3,10 +3,9 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.wasi.WasiContextData;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -32,17 +31,8 @@ public final class WasiContext extends JniResource {
 
   private static final Logger LOGGER = Logger.getLogger(WasiContext.class.getName());
 
-  /** Environment variables for the WASI context. */
-  private final Map<String, String> environment;
-
-  /** Command-line arguments for the WASI context. */
-  private final String[] arguments;
-
-  /** Pre-opened directories with their sandbox permissions. */
-  private final Map<String, Path> preopenedDirectories;
-
-  /** Working directory for the WASI context. */
-  private final Path workingDirectory;
+  /** Shared WASI context data (environment, arguments, preopen dirs, working dir). */
+  private final WasiContextData contextData;
 
   /**
    * Creates a new WASI context with the specified configuration.
@@ -56,16 +46,20 @@ public final class WasiContext extends JniResource {
 
     JniValidation.requireNonNull(builder, "builder");
 
-    this.environment = new ConcurrentHashMap<>(builder.getEnvironment());
-    this.arguments = builder.getArguments().toArray(new String[0]);
-    this.preopenedDirectories = new ConcurrentHashMap<>(builder.getPreopenedDirectories());
-    this.workingDirectory = builder.getWorkingDirectory();
+    this.contextData =
+        new WasiContextData(
+            builder.getEnvironment(),
+            builder.getArguments(),
+            builder.getPreopenedDirectories(),
+            builder.getWorkingDirectory());
 
     LOGGER.info(
         String.format(
             "Created WASI context with %d preopen directories, %d environment variables, %d"
                 + " arguments",
-            preopenedDirectories.size(), environment.size(), arguments.length));
+            contextData.getPreopenedDirectoryCount(),
+            contextData.getEnvironmentCount(),
+            contextData.getArgumentCount()));
   }
 
   /**
@@ -78,8 +72,7 @@ public final class WasiContext extends JniResource {
   public String getEnvironmentVariable(final String name) {
     ensureNotClosed();
     JniValidation.requireNonEmpty(name, "name");
-
-    return environment.get(name);
+    return contextData.getEnvironmentVariable(name);
   }
 
   /**
@@ -90,9 +83,7 @@ public final class WasiContext extends JniResource {
    */
   public Map<String, String> getEnvironment() {
     ensureNotClosed();
-
-    // Return defensive copy
-    return new ConcurrentHashMap<>(environment);
+    return contextData.getEnvironment();
   }
 
   /**
@@ -103,9 +94,7 @@ public final class WasiContext extends JniResource {
    */
   public String[] getArguments() {
     ensureNotClosed();
-
-    // Return defensive copy
-    return arguments.clone();
+    return contextData.getArguments();
   }
 
   /**
@@ -116,9 +105,7 @@ public final class WasiContext extends JniResource {
    */
   public Map<String, Path> getPreopenedDirectories() {
     ensureNotClosed();
-
-    // Return defensive copy
-    return new ConcurrentHashMap<>(preopenedDirectories);
+    return contextData.getPreopenedDirectories();
   }
 
   /**
@@ -129,7 +116,7 @@ public final class WasiContext extends JniResource {
    */
   public Path getWorkingDirectory() {
     ensureNotClosed();
-    return workingDirectory;
+    return contextData.getWorkingDirectory();
   }
 
   /**
@@ -145,12 +132,7 @@ public final class WasiContext extends JniResource {
   public Path validatePath(final String path) {
     ensureNotClosed();
     JniValidation.requireNonEmpty(path, "path");
-
-    // Resolve relative paths against the working directory
-    final Path pathObj = Paths.get(path);
-    final Path resolvedPath = pathObj.isAbsolute() ? pathObj : workingDirectory.resolve(path);
-
-    return resolvedPath.normalize().toAbsolutePath();
+    return contextData.validatePath(path);
   }
 
   /**
@@ -181,8 +163,7 @@ public final class WasiContext extends JniResource {
     nativeClose(nativeHandle);
 
     // Clear local state
-    environment.clear();
-    preopenedDirectories.clear();
+    contextData.clearState();
 
     LOGGER.info("WASI context closed successfully");
   }
