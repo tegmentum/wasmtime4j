@@ -112,7 +112,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToI
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0
@@ -150,7 +150,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0
@@ -187,7 +187,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0
@@ -225,7 +225,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0
@@ -262,7 +262,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32ToF
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0.0
@@ -299,7 +299,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64ToF
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0.0
@@ -333,7 +333,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallVoidTo
 
     if let Err(e) = call_typed_void_to_void(func, store) {
         let _ = env.throw_new(
-            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
             format!("{}", e),
         );
     }
@@ -366,7 +366,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32ToV
 
     if let Err(e) = call_typed_i32_to_void(func, store, param) {
         let _ = env.throw_new(
-            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
             format!("{}", e),
         );
     }
@@ -400,7 +400,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
 
     if let Err(e) = call_typed_i32i32_to_void(func, store, param1, param2) {
         let _ = env.throw_new(
-            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
             format!("{}", e),
         );
     }
@@ -433,7 +433,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToV
 
     if let Err(e) = call_typed_i64_to_void(func, store, param) {
         let _ = env.throw_new(
-            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
             format!("{}", e),
         );
     }
@@ -467,7 +467,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
 
     if let Err(e) = call_typed_i64i64_to_void(func, store, param1, param2) {
         let _ = env.throw_new(
-            "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
             format!("{}", e),
         );
     }
@@ -503,7 +503,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0.0
@@ -541,7 +541,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0.0
@@ -580,7 +580,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0
@@ -619,7 +619,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64I64
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0
@@ -658,7 +658,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32F32
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0.0
@@ -697,7 +697,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF64F64
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0.0
@@ -735,7 +735,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32I32
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0
@@ -772,7 +772,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI64ToI
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0
@@ -810,7 +810,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallI32F32
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0.0
@@ -848,7 +848,7 @@ pub extern "C" fn Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32I32
         Ok(result) => result,
         Err(e) => {
             let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/WasmRuntimeException",
+                "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
                 format!("{}", e),
             );
             0.0
