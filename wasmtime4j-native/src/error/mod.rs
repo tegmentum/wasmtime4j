@@ -187,27 +187,6 @@ pub enum WasmtimeError {
         message: String,
     },
 
-    /// WebAssembly coredump errors
-    #[error("Coredump error: {message}")]
-    Coredump {
-        /// Error message describing the coredump-related error
-        message: String,
-    },
-
-    /// Call hook errors
-    #[error("Call hook error: {message}")]
-    CallHook {
-        /// Error message describing the call hook error
-        message: String,
-    },
-
-    /// Guest profiler errors
-    #[error("Guest profiler error: {message}")]
-    GuestProfiler {
-        /// Error message describing the profiler error
-        message: String,
-    },
-
     /// Function execution errors
     #[error("Function execution failed: {message}")]
     Execution {
@@ -238,20 +217,6 @@ pub enum WasmtimeError {
         message: String,
     },
 
-    /// Network-related errors
-    #[error("Network error: {message}")]
-    Network {
-        /// Error message describing the network error
-        message: String,
-    },
-
-    /// Process-related errors
-    #[error("Process error: {message}")]
-    Process {
-        /// Error message describing the process error
-        message: String,
-    },
-
     /// Caller context errors
     #[error("Caller context error: {message}")]
     CallerContextError {
@@ -268,38 +233,6 @@ pub enum WasmtimeError {
         actual: String,
     },
 
-    // Note: ExecutionError was removed - use Execution instead
-    // Note: SerializationError was removed - use Serialization instead
-    /// Invalid state errors
-    #[error("Invalid state: {message}")]
-    InvalidState {
-        /// Error message describing the invalid state
-        message: String,
-    },
-
-    /// Operation would block (for non-blocking I/O)
-    #[error("Operation would block: {message}")]
-    WouldBlock {
-        /// Error message describing why the operation would block
-        message: String,
-    },
-
-    // Note: ValidationError was removed - use Validation instead
-    // Note: RuntimeError was removed - use Runtime { message, backtrace: None } instead
-    /// Invalid data errors
-    #[error("Invalid data: {message}")]
-    InvalidData {
-        /// Error message describing the invalid data error
-        message: String,
-    },
-
-    /// I/O errors with custom message
-    #[error("I/O error: {message}")]
-    IO {
-        /// Error message describing the I/O error
-        message: String,
-    },
-
     /// UTF-8 encoding errors
     #[error("UTF-8 error: {message}")]
     Utf8Error {
@@ -307,74 +240,10 @@ pub enum WasmtimeError {
         message: String,
     },
 
-    /// Invalid operation errors
-    #[error("Invalid operation: {message}")]
-    InvalidOperation {
-        /// Error message describing the invalid operation
-        message: String,
-    },
-
-    /// Access denied errors
-    #[error("Access denied: {message}")]
-    AccessDenied {
-        /// Error message describing the access denied error
-        message: String,
-    },
-
-    /// Timeout errors
-    #[error("Timeout: {message}")]
-    Timeout {
-        /// Error message describing the timeout error
-        message: String,
-    },
-
-    /// Resource limit errors
-    #[error("Resource limit: {message}")]
-    ResourceLimit {
-        /// Error message describing the resource limit error
-        message: String,
-    },
-
-    /// Cryptographic errors
-    #[error("Cryptographic error: {message}")]
-    Cryptographic {
-        /// Error message describing the cryptographic error
-        message: String,
-    },
-
-    /// Serialization errors (alternative naming)
-    #[error("Serialization error: {message}")]
-    Serialization {
-        /// Error message describing the serialization error
-        message: String,
-    },
-
-    /// Quota exceeded errors
-    #[error("Quota exceeded: {message}")]
-    QuotaExceeded {
-        /// Error message describing the quota exceeded error
-        message: String,
-    },
-
     /// Unsupported feature errors
     #[error("Unsupported feature: {message}")]
     UnsupportedFeature {
         /// Error message describing the unsupported feature error
-        message: String,
-    },
-
-    /// System errors
-    #[error("System error: {message}")]
-    SystemError {
-        /// Error message describing the system error
-        message: String,
-    },
-
-    // Note: CompilationError was removed - use Compilation instead
-    /// Deadlock detection error
-    #[error("Operation would cause deadlock: {message}")]
-    WouldDeadlock {
-        /// Error message describing the potential deadlock
         message: String,
     },
 
@@ -456,12 +325,6 @@ impl Clone for WasmtimeError {
             WasmtimeError::Instantiation { message } => WasmtimeError::Instantiation {
                 message: message.clone(),
             },
-            WasmtimeError::Network { message } => WasmtimeError::Network {
-                message: message.clone(),
-            },
-            WasmtimeError::Process { message } => WasmtimeError::Process {
-                message: message.clone(),
-            },
             WasmtimeError::CallerContextError { message } => WasmtimeError::CallerContextError {
                 message: message.clone(),
             },
@@ -469,49 +332,15 @@ impl Clone for WasmtimeError {
                 expected: expected.clone(),
                 actual: actual.clone(),
             },
-            WasmtimeError::InvalidState { message } => WasmtimeError::InvalidState {
-                message: message.clone(),
-            },
-            WasmtimeError::InvalidData { message } => WasmtimeError::InvalidData {
-                message: message.clone(),
-            },
-            WasmtimeError::IO { message } => WasmtimeError::IO {
-                message: message.clone(),
-            },
             WasmtimeError::Utf8Error { message } => WasmtimeError::Utf8Error {
-                message: message.clone(),
-            },
-            WasmtimeError::InvalidOperation { message } => WasmtimeError::InvalidOperation {
-                message: message.clone(),
-            },
-            WasmtimeError::AccessDenied { message } => WasmtimeError::AccessDenied {
-                message: message.clone(),
-            },
-            WasmtimeError::Timeout { message } => WasmtimeError::Timeout {
-                message: message.clone(),
-            },
-            WasmtimeError::ResourceLimit { message } => WasmtimeError::ResourceLimit {
-                message: message.clone(),
-            },
-            WasmtimeError::Cryptographic { message } => WasmtimeError::Cryptographic {
-                message: message.clone(),
-            },
-            WasmtimeError::Serialization { message } => WasmtimeError::Serialization {
-                message: message.clone(),
-            },
-            WasmtimeError::QuotaExceeded { message } => WasmtimeError::QuotaExceeded {
                 message: message.clone(),
             },
             WasmtimeError::UnsupportedFeature { message } => WasmtimeError::UnsupportedFeature {
                 message: message.clone(),
             },
-            WasmtimeError::SystemError { message } => WasmtimeError::SystemError {
-                message: message.clone(),
-            },
-            // FIX: Clone Io properly - convert to IO variant preserving the error message
-            // (std::io::Error doesn't implement Clone, so we convert to the message-based IO variant)
-            WasmtimeError::Io { source } => WasmtimeError::IO {
-                message: format!("{} (kind: {:?})", source, source.kind()),
+            // std::io::Error doesn't implement Clone, convert to Internal variant
+            WasmtimeError::Io { source } => WasmtimeError::Internal {
+                message: format!("I/O error: {} (kind: {:?})", source, source.kind()),
             },
             WasmtimeError::ImportExport { message } => WasmtimeError::ImportExport {
                 message: message.clone(),
@@ -534,25 +363,10 @@ impl Clone for WasmtimeError {
             WasmtimeError::Security { message } => WasmtimeError::Security {
                 message: message.clone(),
             },
-            WasmtimeError::WouldDeadlock { message } => WasmtimeError::WouldDeadlock {
-                message: message.clone(),
-            },
             WasmtimeError::WastExecutionError(message) => {
                 WasmtimeError::WastExecutionError(message.clone())
             }
             WasmtimeError::JniError(message) => WasmtimeError::JniError(message.clone()),
-            WasmtimeError::Coredump { message } => WasmtimeError::Coredump {
-                message: message.clone(),
-            },
-            WasmtimeError::CallHook { message } => WasmtimeError::CallHook {
-                message: message.clone(),
-            },
-            WasmtimeError::GuestProfiler { message } => WasmtimeError::GuestProfiler {
-                message: message.clone(),
-            },
-            WasmtimeError::WouldBlock { message } => WasmtimeError::WouldBlock {
-                message: message.clone(),
-            },
         }
     }
 }
@@ -674,33 +488,15 @@ impl WasmtimeError {
             WasmtimeError::ExportNotFound { .. } => ErrorCode::ImportExportError,
             WasmtimeError::Multiple { .. } => ErrorCode::InternalError,
             WasmtimeError::Instantiation { .. } => ErrorCode::InstanceError,
-            WasmtimeError::Network { .. } => ErrorCode::NetworkError,
-            WasmtimeError::Process { .. } => ErrorCode::ProcessError,
             WasmtimeError::CallerContextError { .. } => ErrorCode::FunctionError,
             WasmtimeError::TypeMismatch { .. } => ErrorCode::TypeError,
-            WasmtimeError::InvalidState { .. } => ErrorCode::InternalError,
             WasmtimeError::Table { .. } => ErrorCode::RuntimeError,
             WasmtimeError::Global { .. } => ErrorCode::RuntimeError,
             WasmtimeError::Linker { .. } => ErrorCode::ImportExportError,
-            WasmtimeError::InvalidData { .. } => ErrorCode::InvalidParameterError,
-            WasmtimeError::IO { .. } => ErrorCode::IoError,
             WasmtimeError::Utf8Error { .. } => ErrorCode::InvalidParameterError,
-            WasmtimeError::InvalidOperation { .. } => ErrorCode::InvalidParameterError,
-            WasmtimeError::AccessDenied { .. } => ErrorCode::SecurityViolation,
-            WasmtimeError::Timeout { .. } => ErrorCode::RuntimeError,
-            WasmtimeError::ResourceLimit { .. } => ErrorCode::ResourceError,
-            WasmtimeError::Cryptographic { .. } => ErrorCode::SecurityViolation,
-            WasmtimeError::Serialization { .. } => ErrorCode::InternalError,
-            WasmtimeError::QuotaExceeded { .. } => ErrorCode::ResourceError,
             WasmtimeError::UnsupportedFeature { .. } => ErrorCode::UnsupportedOperation,
-            WasmtimeError::SystemError { .. } => ErrorCode::InternalError,
-            WasmtimeError::WouldDeadlock { .. } => ErrorCode::ConcurrencyError,
             WasmtimeError::WastExecutionError(..) => ErrorCode::ValidationError,
             WasmtimeError::JniError(..) => ErrorCode::InternalError,
-            WasmtimeError::Coredump { .. } => ErrorCode::InternalError,
-            WasmtimeError::CallHook { .. } => ErrorCode::FunctionError,
-            WasmtimeError::GuestProfiler { .. } => ErrorCode::InternalError,
-            WasmtimeError::WouldBlock { .. } => ErrorCode::WouldBlock,
         }
     }
 
@@ -858,53 +654,6 @@ impl WasmtimeError {
         }
     }
 
-    /// Get performance metrics for the error (how long it might take to recover)
-    pub fn get_recovery_time_estimate(&self) -> std::time::Duration {
-        match self {
-            WasmtimeError::Compilation { .. } | WasmtimeError::Validation { .. } => {
-                // Compilation/validation errors require module reload - significant time
-                std::time::Duration::from_millis(100)
-            }
-            WasmtimeError::Runtime { .. } | WasmtimeError::Function { .. } => {
-                // Runtime errors often recoverable quickly
-                std::time::Duration::from_millis(10)
-            }
-            WasmtimeError::Memory { .. } | WasmtimeError::Resource { .. } => {
-                // Memory/resource errors may require GC - moderate time
-                std::time::Duration::from_millis(50)
-            }
-            WasmtimeError::Security { .. } => {
-                // Security errors require careful recovery - significant time
-                std::time::Duration::from_millis(200)
-            }
-            WasmtimeError::Multiple { errors, .. } => {
-                // Multiple errors - sum of individual recovery times
-                errors
-                    .iter()
-                    .map(|e| e.get_recovery_time_estimate())
-                    .fold(std::time::Duration::ZERO, |acc, time| acc + time)
-            }
-            _ => {
-                // Default recovery time
-                std::time::Duration::from_millis(25)
-            }
-        }
-    }
-
-    /// Enhance compilation error message with additional context
-    pub fn enhance_compilation_error_message(base_message: &str) -> Self {
-        WasmtimeError::Compilation {
-            message: format!("Enhanced compilation error: {}", base_message),
-        }
-    }
-
-    /// Enhance runtime error message with additional context
-    pub fn enhance_runtime_error_message(base_message: &str) -> Self {
-        WasmtimeError::Runtime {
-            message: format!("Enhanced runtime error: {}", base_message),
-            backtrace: None,
-        }
-    }
 }
 
 /// Defensive parameter validation macros

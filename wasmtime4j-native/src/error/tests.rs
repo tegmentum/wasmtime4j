@@ -185,28 +185,6 @@ fn test_error_aggregation_single_error() {
 }
 
 #[test]
-fn test_error_recovery_time_estimates() {
-    let compilation_error = WasmtimeError::Compilation {
-        message: "Test".to_string(),
-    };
-    let runtime_error = WasmtimeError::Runtime {
-        message: "Test".to_string(),
-        backtrace: None,
-    };
-
-    // Compilation errors should take longer to recover
-    assert!(
-        compilation_error.get_recovery_time_estimate() > runtime_error.get_recovery_time_estimate()
-    );
-
-    // Multiple errors should sum recovery times
-    let multiple = WasmtimeError::multiple(vec![compilation_error.clone(), runtime_error.clone()]);
-    let expected_time =
-        compilation_error.get_recovery_time_estimate() + runtime_error.get_recovery_time_estimate();
-    assert_eq!(multiple.get_recovery_time_estimate(), expected_time);
-}
-
-#[test]
 fn test_try_all_operations() {
     use ffi_utils::*;
 
@@ -589,22 +567,6 @@ fn test_to_error_code_wasi() {
 }
 
 #[test]
-fn test_to_error_code_network() {
-    let error = WasmtimeError::Network {
-        message: "Network error".to_string(),
-    };
-    assert!(matches!(error.to_error_code(), ErrorCode::NetworkError));
-}
-
-#[test]
-fn test_to_error_code_process() {
-    let error = WasmtimeError::Process {
-        message: "Process error".to_string(),
-    };
-    assert!(matches!(error.to_error_code(), ErrorCode::ProcessError));
-}
-
-#[test]
 fn test_to_error_code_component() {
     let error = WasmtimeError::Component {
         message: "Component error".to_string(),
@@ -658,14 +620,6 @@ fn test_from_string_helper() {
     let error = WasmtimeError::from_string("Custom error");
     assert!(matches!(error, WasmtimeError::Runtime { .. }));
     assert!(error.to_string().contains("Custom error"));
-}
-
-#[test]
-fn test_enhance_compilation_error() {
-    let error = WasmtimeError::enhance_compilation_error_message("Parse failed");
-    assert!(matches!(error, WasmtimeError::Compilation { .. }));
-    assert!(error.to_string().contains("Enhanced"));
-    assert!(error.to_string().contains("Parse failed"));
 }
 
 // =========================================================================
@@ -760,14 +714,6 @@ fn test_to_c_string_empty_message() {
 // =========================================================================
 // Additional Error Type Tests (2 tests)
 // =========================================================================
-
-#[test]
-fn test_would_block_error() {
-    let error = WasmtimeError::WouldBlock {
-        message: "Operation would block".to_string(),
-    };
-    assert!(matches!(error.to_error_code(), ErrorCode::WouldBlock));
-}
 
 #[test]
 fn test_linker_error() {

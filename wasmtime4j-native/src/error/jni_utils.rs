@@ -53,9 +53,6 @@ pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
         WasmtimeError::TypeMismatch { .. } => {
             "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException"
         }
-        WasmtimeError::InvalidState { .. } => {
-            "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException"
-        }
         _ => "ai/tegmentum/wasmtime4j/exception/WasmException",
     }
 }

@@ -5,7 +5,6 @@
 #[cfg(test)]
 mod tests {
     use crate::engine::Engine;
-    use crate::error::WasmtimeError;
     use crate::instance::{Instance, WasmValue};
     use crate::module::Module;
     use crate::store::Store;
@@ -13,18 +12,6 @@ mod tests {
     // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
     fn shared_engine() -> Engine {
         crate::engine::get_shared_engine()
-    }
-
-    /// Test enhanced error mapping functionality
-    #[test]
-    fn test_enhanced_error_mapping() {
-        // Test compilation error enhancement
-        let enhanced = WasmtimeError::enhance_compilation_error_message("invalid magic number");
-        assert!(enhanced.to_string().contains("Enhanced compilation error"));
-
-        // Test runtime error enhancement
-        let enhanced = WasmtimeError::enhance_runtime_error_message("stack overflow occurred");
-        assert!(enhanced.to_string().contains("Enhanced runtime error"));
     }
 
     /// Test fuel tracking implementation
