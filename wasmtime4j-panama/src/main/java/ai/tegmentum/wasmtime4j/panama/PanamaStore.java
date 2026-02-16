@@ -1646,21 +1646,14 @@ public final class PanamaStore implements Store {
 
   // ===== Fuel Async Methods =====
 
-  private long fuelAsyncYieldInterval = 0;
-
   @Override
   public void setFuelAsyncYieldInterval(final long interval)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    if (interval < 0) {
-      throw new IllegalArgumentException("Interval cannot be negative");
-    }
-    this.fuelAsyncYieldInterval = interval;
-    // Native binding would be called here: NATIVE_BINDINGS.storeSetFuelAsyncYieldInterval(...)
+    throw new UnsupportedOperationException("setFuelAsyncYieldInterval not yet implemented");
   }
 
   @Override
   public long getFuelAsyncYieldInterval() {
-    return fuelAsyncYieldInterval;
+    throw new UnsupportedOperationException("getFuelAsyncYieldInterval not yet implemented");
   }
 }

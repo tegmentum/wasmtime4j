@@ -594,24 +594,25 @@ class PanamaStoreTest {
   class FuelAsyncYieldTests {
 
     @Test
-    @DisplayName("Should set and get fuel async yield interval")
-    void shouldSetAndGetFuelAsyncYieldInterval() throws Exception {
+    @DisplayName("Should throw UnsupportedOperationException for setFuelAsyncYieldInterval")
+    void shouldThrowUnsupportedForSet() throws Exception {
       final PanamaStore store = createStore();
 
-      assertEquals(0, store.getFuelAsyncYieldInterval(), "Default should be 0");
-
-      store.setFuelAsyncYieldInterval(1000);
-      assertEquals(1000, store.getFuelAsyncYieldInterval());
-      LOGGER.info("Fuel async yield interval set and retrieved correctly");
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> store.setFuelAsyncYieldInterval(1000));
+      LOGGER.info("setFuelAsyncYieldInterval correctly throws UnsupportedOperationException");
     }
 
     @Test
-    @DisplayName("Should reject negative interval")
-    void shouldRejectNegativeInterval() throws Exception {
+    @DisplayName("Should throw UnsupportedOperationException for getFuelAsyncYieldInterval")
+    void shouldThrowUnsupportedForGet() throws Exception {
       final PanamaStore store = createStore();
 
-      assertThrows(IllegalArgumentException.class, () -> store.setFuelAsyncYieldInterval(-1));
-      LOGGER.info("Correctly rejected negative fuel async yield interval");
+      assertThrows(
+          UnsupportedOperationException.class,
+          store::getFuelAsyncYieldInterval);
+      LOGGER.info("getFuelAsyncYieldInterval correctly throws UnsupportedOperationException");
     }
   }
 }

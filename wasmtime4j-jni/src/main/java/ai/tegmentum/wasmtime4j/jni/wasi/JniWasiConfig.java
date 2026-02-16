@@ -201,7 +201,6 @@ public final class JniWasiConfig implements WasiConfig {
 
   @Override
   public void validate() {
-    // Basic validation - ensure no null values
-    // More complex validation can be added later
+    throw new UnsupportedOperationException("validate not yet implemented");
   }
 }

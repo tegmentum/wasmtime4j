@@ -16,10 +16,10 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
@@ -392,14 +392,17 @@ class PanamaWasiConfigTest {
   class ValidationTests {
 
     @Test
-    @DisplayName("Should validate successfully")
-    void shouldValidateSuccessfully() {
-      LOGGER.info("Testing validate");
+    @DisplayName("Should throw UnsupportedOperationException for validate")
+    void shouldThrowUnsupportedForValidate() {
+      LOGGER.info("Testing validate throws UnsupportedOperationException");
 
       final WasiConfig config = new PanamaWasiConfigBuilder().build();
-      assertDoesNotThrow(config::validate, "Validation should not throw");
+      assertThrows(
+          UnsupportedOperationException.class,
+          config::validate,
+          "validate should throw UnsupportedOperationException");
 
-      LOGGER.info("Validation passed");
+      LOGGER.info("validate correctly throws UnsupportedOperationException");
     }
   }
 

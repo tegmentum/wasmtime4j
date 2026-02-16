@@ -786,19 +786,17 @@ public final class JniStore extends JniResource implements Store {
    * @return always 0
    */
   public long getTotalMemoryBytes() {
-    return 0;
+    throw new UnsupportedOperationException("getTotalMemoryBytes not yet implemented");
   }
 
   /**
    * Gets the currently used memory by this store.
    *
-   * <p>Always returns 0. Wasmtime does not expose per-store memory aggregation. For per-memory
-   * statistics, use the memory-level API instead. Retained for API compatibility.
-   *
-   * @return always 0
+   * @return the used memory in bytes
+   * @throws UnsupportedOperationException always, not yet implemented
    */
   public long getUsedMemoryBytes() {
-    return 0;
+    throw new UnsupportedOperationException("getUsedMemoryBytes not yet implemented");
   }
 
   /**

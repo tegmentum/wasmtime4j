@@ -372,24 +372,13 @@ final class PanamaComponentInstance implements ComponentInstance {
 
   @Override
   public Map<String, WitInterfaceDefinition> getExportedInterfaces() throws WasmException {
-    ensureNotClosed();
-    // Interface definition extraction requires full WIT type system implementation including:
-    // 1. WIT parser for component metadata
-    // 2. Interface definition extraction with full type information
-    // 3. Type hierarchy and relationship resolution
-    // Currently returns empty map - use getExportedFunctions() for interface names only
-    return Map.of();
+    throw new UnsupportedOperationException("getExportedInterfaces not yet implemented");
   }
 
   @Override
   public void bindInterface(final String interfaceName, final Object implementation)
       throws WasmException {
-    Objects.requireNonNull(interfaceName, "interfaceName cannot be null");
-    Objects.requireNonNull(implementation, "implementation cannot be null");
-    ensureNotClosed();
-    // Interface binding stores the implementation for later use during invocations
-    // The actual binding happens at the native layer during component instantiation
-    LOGGER.fine("Bound interface " + interfaceName + " to instance: " + instanceId);
+    throw new UnsupportedOperationException("bindInterface not yet implemented");
   }
 
   @Override

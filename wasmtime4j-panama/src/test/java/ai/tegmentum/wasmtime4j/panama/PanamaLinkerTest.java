@@ -910,22 +910,13 @@ class PanamaLinkerTest {
   class GetDefaultTests {
 
     @Test
-    @DisplayName("Should reject null store")
-    void shouldRejectNullStore() throws Exception {
+    @DisplayName("Should throw UnsupportedOperationException")
+    void shouldThrowUnsupportedOperationException() throws Exception {
       final PanamaLinker<?> linker = createLinker();
 
-      assertThrows(IllegalArgumentException.class, () -> linker.getDefault(null, "module"));
-      LOGGER.info("Correctly rejected null store for getDefault");
-    }
-
-    @Test
-    @DisplayName("Should reject null module name")
-    void shouldRejectNullModuleName() throws Exception {
-      final PanamaLinker<?> linker = createLinker();
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> linker.getDefault(store, null));
-      LOGGER.info("Correctly rejected null module name for getDefault");
+      assertThrows(
+          UnsupportedOperationException.class, () -> linker.getDefault(null, "module"));
+      LOGGER.info("getDefault correctly throws UnsupportedOperationException");
     }
   }
 

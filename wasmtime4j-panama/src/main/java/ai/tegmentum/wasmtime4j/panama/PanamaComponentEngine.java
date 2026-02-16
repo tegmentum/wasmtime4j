@@ -284,41 +284,12 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public Component linkComponents(final List<Component> components) throws WasmException {
-    Objects.requireNonNull(components, "components cannot be null");
-    if (components.isEmpty()) {
-      throw new IllegalArgumentException("components cannot be empty");
-    }
-    ensureNotClosed();
-
-    // Validate all components are Panama implementations
-    for (final Component comp : components) {
-      if (!(comp instanceof PanamaComponentImpl)) {
-        throw new IllegalArgumentException("All components must be Panama implementation");
-      }
-    }
-
-    // TODO: Implement using Wasmtime's component composition API
-    // For now, return the first component as the "linked" component
-    LOGGER.info("Linked " + components.size() + " components");
-
-    return components.get(0);
+    throw new UnsupportedOperationException("linkComponents not yet implemented");
   }
 
   @Override
   public WitCompatibilityResult checkCompatibility(final Component source, final Component target) {
-    Objects.requireNonNull(source, "source cannot be null");
-    Objects.requireNonNull(target, "target cannot be null");
-    ensureNotClosed();
-
-    // Query exports from source and imports from target
-    // Check if interfaces match
-    // Return compatibility result
-
-    return new WitCompatibilityResult(
-        true, // compatible
-        "Components are compatible", // details
-        Set.of(), // satisfiedImports
-        Set.of()); // unsatisfiedImports
+    throw new UnsupportedOperationException("checkCompatibility not yet implemented");
   }
 
   @Override

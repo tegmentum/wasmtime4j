@@ -542,32 +542,13 @@ public final class JniTable extends JniResource implements WasmTable {
 
   @Override
   public void dropElementSegment(final int segmentIndex) {
-    JniValidation.requireNonNegative(segmentIndex, "segmentIndex");
-    ensureNotClosed();
-
-    // Element segments are dropped automatically by the runtime
-    // This is a no-op in the JNI implementation as Wasmtime manages element segments internally
-    LOGGER.fine("Dropped element segment: " + segmentIndex);
+    throw new UnsupportedOperationException("dropElementSegment not yet implemented");
   }
 
   @Override
   public void init(
       final int destOffset, final int srcOffset, final int srcSegmentIndex, final int length) {
-    JniValidation.requireNonNegative(destOffset, "destOffset");
-    JniValidation.requireNonNegative(srcOffset, "srcOffset");
-    JniValidation.requireNonNegative(srcSegmentIndex, "srcSegmentIndex");
-    JniValidation.requireNonNegative(length, "length");
-    ensureNotClosed();
-
-    // Table initialization from element segments is handled by the runtime during instantiation
-    // This is a no-op in the JNI implementation as Wasmtime manages table initialization internally
-    LOGGER.fine(
-        "Initialized table range ["
-            + destOffset
-            + ", "
-            + (destOffset + length)
-            + ") from segment "
-            + srcSegmentIndex);
+    throw new UnsupportedOperationException("table init not yet implemented");
   }
 
   /**
