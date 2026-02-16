@@ -18,11 +18,18 @@ package ai.tegmentum.wasmtime4j.framework;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -851,13 +858,177 @@ public class ProductionScenarioIntegrationTest {
   }
 
   private static class ResilienceTestFramework {
+    private static final Logger FRAMEWORK_LOGGER =
+        Logger.getLogger(ResilienceTestFramework.class.getName());
+
+    private static final byte[] ADD_WASM = {
+      0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f,
+      0x01, 0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00,
+      0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b
+    };
+
     public boolean executeResilienceTest(final ResilienceTest test) {
-      // Simulate resilience test execution
+      FRAMEWORK_LOGGER.info("Executing resilience test: " + test.getName());
+      switch (test.getName()) {
+        case "error-recovery":
+          return testErrorRecovery();
+        case "timeout-handling":
+          return testTimeoutHandling();
+        case "resource-exhaustion":
+          return testResourceExhaustion();
+        case "concurrent-stress":
+          return testConcurrentStress();
+        case "graceful-degradation":
+          return testGracefulDegradation();
+        default:
+          FRAMEWORK_LOGGER.warning("Unknown resilience test: " + test.getName());
+          return false;
+      }
+    }
+
+    private boolean testErrorRecovery() {
+      // Verify that after a failed operation (invalid WASM), a subsequent valid
+      // operation on a new store succeeds.
+      try (final Engine engine = Engine.create()) {
+        // Trigger an error with invalid WASM bytes
+        try {
+          engine.compileModule(new byte[] {0x00, 0x01, 0x02, 0x03});
+          FRAMEWORK_LOGGER.warning("error-recovery: Expected compilation to fail");
+          return false;
+        } catch (final Exception expected) {
+          FRAMEWORK_LOGGER.info("error-recovery: Compilation correctly failed: "
+              + expected.getClass().getSimpleName());
+        }
+
+        // Recover by performing a valid operation
+        try (final Store store = engine.createStore();
+            final Module module = engine.compileModule(ADD_WASM);
+            final Instance instance = module.instantiate(store)) {
+          final Optional<WasmFunction> addFunc = instance.getFunction("add");
+          if (!addFunc.isPresent()) {
+            FRAMEWORK_LOGGER.warning("error-recovery: add function not found after recovery");
+            return false;
+          }
+          final WasmValue[] result = addFunc.get().call(WasmValue.i32(10), WasmValue.i32(20));
+          final int sum = result[0].asInt();
+          FRAMEWORK_LOGGER.info("error-recovery: Recovered successfully, 10+20=" + sum);
+          return sum == 30;
+        }
+      } catch (final Exception e) {
+        FRAMEWORK_LOGGER.warning("error-recovery: Unexpected exception: " + e.getMessage());
+        return false;
+      }
+    }
+
+    private boolean testTimeoutHandling() {
+      // Verify that store creation and module compilation complete within a reasonable time.
       try {
-        Thread.sleep(10 + (int) (Math.random() * 50)); // 10-60ms execution
-        return Math.random() > 0.1; // 90% success rate for resilience tests
-      } catch (InterruptedException e) {
+        final long startTime = System.nanoTime();
+        try (final Engine engine = Engine.create();
+            final Store store = engine.createStore();
+            final Module module = engine.compileModule(ADD_WASM);
+            final Instance instance = module.instantiate(store)) {
+          final Optional<WasmFunction> addFunc = instance.getFunction("add");
+          if (!addFunc.isPresent()) {
+            return false;
+          }
+          addFunc.get().call(WasmValue.i32(1), WasmValue.i32(2));
+        }
+        final long elapsedMs = (System.nanoTime() - startTime) / 1_000_000;
+        FRAMEWORK_LOGGER.info("timeout-handling: Completed in " + elapsedMs + "ms");
+        return elapsedMs < 5000; // Should complete well within 5 seconds
+      } catch (final Exception e) {
+        FRAMEWORK_LOGGER.warning("timeout-handling: Unexpected exception: " + e.getMessage());
+        return false;
+      }
+    }
+
+    private boolean testResourceExhaustion() {
+      // Create and destroy many engines/stores to verify resources are properly released.
+      try {
+        for (int i = 0; i < 20; i++) {
+          try (final Engine engine = Engine.create();
+              final Store store = engine.createStore();
+              final Module module = engine.compileModule(ADD_WASM);
+              final Instance instance = module.instantiate(store)) {
+            final Optional<WasmFunction> addFunc = instance.getFunction("add");
+            if (!addFunc.isPresent()) {
+              return false;
+            }
+            addFunc.get().call(WasmValue.i32(i), WasmValue.i32(i));
+          }
+        }
+        FRAMEWORK_LOGGER.info("resource-exhaustion: 20 engine/store cycles completed");
+        return true;
+      } catch (final Exception e) {
+        FRAMEWORK_LOGGER.warning("resource-exhaustion: Failed: " + e.getMessage());
+        return false;
+      }
+    }
+
+    private boolean testConcurrentStress() {
+      // Run multiple threads each creating their own engine/store/instance and calling add.
+      final int threadCount = 5;
+      final CountDownLatch latch = new CountDownLatch(threadCount);
+      final AtomicInteger successes = new AtomicInteger(0);
+
+      for (int t = 0; t < threadCount; t++) {
+        final int threadId = t;
+        new Thread(() -> {
+          try (final Engine engine = Engine.create();
+              final Store store = engine.createStore();
+              final Module module = engine.compileModule(ADD_WASM);
+              final Instance instance = module.instantiate(store)) {
+            final Optional<WasmFunction> addFunc = instance.getFunction("add");
+            if (addFunc.isPresent()) {
+              final WasmValue[] result =
+                  addFunc.get().call(WasmValue.i32(threadId), WasmValue.i32(1));
+              if (result[0].asInt() == threadId + 1) {
+                successes.incrementAndGet();
+              }
+            }
+          } catch (final Exception e) {
+            FRAMEWORK_LOGGER.warning(
+                "concurrent-stress: Thread " + threadId + " failed: " + e.getMessage());
+          } finally {
+            latch.countDown();
+          }
+        }).start();
+      }
+
+      try {
+        final boolean completed = latch.await(30, TimeUnit.SECONDS);
+        FRAMEWORK_LOGGER.info("concurrent-stress: " + successes.get()
+            + "/" + threadCount + " threads succeeded, completed=" + completed);
+        return completed && successes.get() == threadCount;
+      } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
+        return false;
+      }
+    }
+
+    private boolean testGracefulDegradation() {
+      // Verify that closing a store does not crash and subsequent operations on a
+      // new store still work.
+      try (final Engine engine = Engine.create()) {
+        // Create and immediately close a store
+        final Store store1 = engine.createStore();
+        store1.close();
+
+        // Verify a new store works fine after the first was closed
+        try (final Store store2 = engine.createStore();
+            final Module module = engine.compileModule(ADD_WASM);
+            final Instance instance = module.instantiate(store2)) {
+          final Optional<WasmFunction> addFunc = instance.getFunction("add");
+          if (!addFunc.isPresent()) {
+            return false;
+          }
+          final WasmValue[] result = addFunc.get().call(WasmValue.i32(100), WasmValue.i32(200));
+          FRAMEWORK_LOGGER.info("graceful-degradation: 100+200=" + result[0].asInt());
+          return result[0].asInt() == 300;
+        }
+      } catch (final Exception e) {
+        FRAMEWORK_LOGGER.warning("graceful-degradation: Failed: " + e.getMessage());
         return false;
       }
     }
