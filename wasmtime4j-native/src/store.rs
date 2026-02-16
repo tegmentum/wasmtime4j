@@ -626,28 +626,6 @@ impl Store {
         })
     }
 
-    /// Set fuel async yield interval for cooperative multitasking
-    ///
-    /// Configures the store to yield back to the caller periodically during
-    /// async fuel consumption. This enables cooperative multitasking where
-    /// long-running computations can be interrupted.
-    ///
-    /// # Arguments
-    /// * `interval` - The fuel interval at which to yield, or None to disable
-    ///
-    /// # Errors
-    /// Returns an error if the store has been closed.
-    pub fn fuel_async_yield_interval(&self, interval: Option<u64>) -> WasmtimeResult<()> {
-        self.check_not_closed()?;
-        let mut store = self.inner.lock();
-        store
-            .fuel_async_yield_interval(interval)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to set fuel async yield interval: {}", e),
-                backtrace: None,
-            })
-    }
-
     /// Set epoch deadline with async yield and update
     ///
     /// Configures the store to yield when the epoch deadline is reached during
@@ -1318,13 +1296,6 @@ pub mod core {
         Ok(Box::new(store))
     }
 
-    /// Get store ID from pointer
-    pub fn get_store_id(store_ptr: *const c_void) -> WasmtimeResult<u64> {
-        validate_ptr_not_null!(store_ptr, "store");
-        let store_ref = unsafe { &*(store_ptr as *const Store) };
-        Ok(store_ref.id())
-    }
-
     /// Core function to create a store with custom configuration
     pub fn create_store_with_config(
         engine: &Engine,
@@ -1481,19 +1452,6 @@ pub mod core {
         F: FnOnce(&mut wasmtime::StoreContextMut<StoreData>) -> WasmtimeResult<T>,
     {
         store.with_context(func)
-    }
-
-    /// Core function to execute with read-only store context
-    pub fn with_store_context_ro<T, F>(store: &Store, func: F) -> WasmtimeResult<T>
-    where
-        F: FnOnce(&wasmtime::StoreContext<StoreData>) -> WasmtimeResult<T>,
-    {
-        store.with_context_ro(func)
-    }
-
-    /// Core function to get current fuel level
-    pub fn get_fuel_level(store: &Store) -> WasmtimeResult<Option<u64>> {
-        store.fuel_remaining()
     }
 
     /// Core function to set fuel level

@@ -7,13 +7,6 @@ use super::ffi_utils::clear_last_error;
 use super::{ErrorCode, WasmtimeError, WasmtimeResult};
 use std::os::raw::c_void;
 
-/// Clear the last error (stub for JNI compatibility)
-#[allow(dead_code)]
-fn jni_clear_last_error() {
-    // For now, this is a no-op since we don't maintain global error state
-    // This could be extended to clear thread-local error storage if needed
-}
-
 /// Convert WasmtimeError to JNI exception class name
 pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
     match error {
