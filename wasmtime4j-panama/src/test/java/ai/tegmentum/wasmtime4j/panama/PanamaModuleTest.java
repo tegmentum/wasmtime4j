@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -785,14 +786,14 @@ class PanamaModuleTest {
   class WasmBytesTests {
 
     @Test
-    @DisplayName("WAT-compiled module getWasmBytes should throw NPE due to null internal bytes")
-    void watCompiledModuleShouldThrowForGetWasmBytes() throws Exception {
+    @DisplayName("WAT-compiled module getWasmBytes should return null")
+    void watCompiledModuleShouldReturnNullForGetWasmBytes() throws Exception {
       final PanamaModule module = compileWat(GLOBAL_MODULE_WAT);
 
       // WAT-compiled modules don't store the original WASM bytes internally,
-      // so getWasmBytes() attempts to clone a null field and throws NullPointerException
-      assertThrows(NullPointerException.class, module::getWasmBytes);
-      LOGGER.info("WAT-compiled module correctly throws NullPointerException for getWasmBytes()");
+      // so getWasmBytes() returns null
+      assertNull(module.getWasmBytes(), "WAT-compiled module should return null for getWasmBytes()");
+      LOGGER.info("WAT-compiled module correctly returns null for getWasmBytes()");
     }
   }
 

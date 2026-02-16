@@ -238,34 +238,6 @@ public final class FunctionType implements WasmType {
   }
 
   /**
-   * Gets the maximum number of values (parameters or returns) supported.
-   *
-   * @return the maximum value count
-   */
-  public static int getMaxValueCount() {
-    return 16; // WebAssembly multi-value limit
-  }
-
-  /**
-   * Validates that the function type doesn't exceed multi-value limits.
-   *
-   * @throws IllegalArgumentException if limits are exceeded
-   */
-  public void validateMultiValueLimits() {
-    final int maxValues = getMaxValueCount();
-
-    if (paramTypes.length > maxValues) {
-      throw new IllegalArgumentException(
-          "Too many parameters: " + paramTypes.length + " (max allowed: " + maxValues + ")");
-    }
-
-    if (returnTypes.length > maxValues) {
-      throw new IllegalArgumentException(
-          "Too many return values: " + returnTypes.length + " (max allowed: " + maxValues + ")");
-    }
-  }
-
-  /**
    * Checks if this function type is compatible with another function type. Two function types are
    * compatible if they have the same parameter and return types.
    *

@@ -34,9 +34,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link FunctionType} validation methods: {@link FunctionType#validateReturnValues},
- * {@link FunctionType#matchesMultiValuePattern}, {@link FunctionType#validateMultiValueLimits}, and
- * {@link FunctionType#getMaxValueCount}.
+ * Tests for {@link FunctionType} validation methods: {@link FunctionType#validateReturnValues} and
+ * {@link FunctionType#matchesMultiValuePattern}.
  *
  * <p>All methods under test are pure Java with no native calls, but DualRuntimeTest is used for
  * consistency with the project testing pattern.
@@ -265,61 +264,4 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] matchesMultiValuePattern returned false for null arguments");
   }
 
-  // ---------- getMaxValueCount + validateMultiValueLimits ----------
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getMaxValueCount returns 16")
-  void getMaxValueCountReturns16(final RuntimeType runtime) {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getMaxValueCount");
-
-    assertEquals(16, FunctionType.getMaxValueCount(), "WebAssembly multi-value limit should be 16");
-
-    LOGGER.info("[" + runtime + "] getMaxValueCount returned 16");
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("validateMultiValueLimits passes within limit")
-  void validateMultiValueLimitsWithinLimit(final RuntimeType runtime) {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing validateMultiValueLimits with 16 params and 16 returns");
-
-    final WasmValueType[] sixteenTypes = new WasmValueType[16];
-    for (int i = 0; i < 16; i++) {
-      sixteenTypes[i] = WasmValueType.I32;
-    }
-
-    final FunctionType funcType = new FunctionType(sixteenTypes, sixteenTypes.clone());
-
-    assertDoesNotThrow(
-        funcType::validateMultiValueLimits, "16 params + 16 returns should not exceed limits");
-
-    LOGGER.info("[" + runtime + "] validateMultiValueLimits passed with 16+16 types");
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("validateMultiValueLimits too many params throws")
-  void validateMultiValueLimitsTooManyParams(final RuntimeType runtime) {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing validateMultiValueLimits with 17 params");
-
-    final WasmValueType[] seventeenTypes = new WasmValueType[17];
-    for (int i = 0; i < 17; i++) {
-      seventeenTypes[i] = WasmValueType.I32;
-    }
-
-    final FunctionType funcType =
-        new FunctionType(seventeenTypes, new WasmValueType[] {WasmValueType.I32});
-
-    final IllegalArgumentException ex =
-        assertThrows(
-            IllegalArgumentException.class,
-            funcType::validateMultiValueLimits,
-            "17 params should exceed multi-value limit");
-
-    LOGGER.info("[" + runtime + "] Threw as expected for 17 params: " + ex.getMessage());
-  }
 }

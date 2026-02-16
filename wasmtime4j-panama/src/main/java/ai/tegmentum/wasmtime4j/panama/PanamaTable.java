@@ -51,10 +51,13 @@ public final class PanamaTable implements WasmTable {
             "PanamaTable",
             () -> {
               try {
-                // TODO: Destroy native table
+                final MethodHandle deleteHandle = NATIVE_BINDINGS.getPanamaTableDelete();
+                if (deleteHandle != null) {
+                  deleteHandle.invoke(nativeTable);
+                }
                 arena.close();
                 LOGGER.fine("Closed Panama table");
-              } catch (final Exception e) {
+              } catch (final Throwable e) {
                 LOGGER.warning("Error closing table: " + e.getMessage());
               }
             });
@@ -89,10 +92,13 @@ public final class PanamaTable implements WasmTable {
             "PanamaTable",
             () -> {
               try {
-                // TODO: Destroy native table
+                final MethodHandle deleteHandle = NATIVE_BINDINGS.getPanamaTableDelete();
+                if (deleteHandle != null) {
+                  deleteHandle.invoke(nativeTable);
+                }
                 arena.close();
                 LOGGER.fine("Closed Panama table");
-              } catch (final Exception e) {
+              } catch (final Throwable e) {
                 LOGGER.warning("Error closing table: " + e.getMessage());
               }
             });

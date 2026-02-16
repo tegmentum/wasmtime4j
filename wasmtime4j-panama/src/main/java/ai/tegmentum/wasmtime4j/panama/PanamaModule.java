@@ -931,6 +931,9 @@ public final class PanamaModule implements Module {
    * @return a copy of the WebAssembly bytecode
    */
   public byte[] getWasmBytes() {
+    if (wasmBytes == null) {
+      return null;
+    }
     return wasmBytes.clone();
   }
 

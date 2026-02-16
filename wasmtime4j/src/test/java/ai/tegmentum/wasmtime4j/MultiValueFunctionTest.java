@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
@@ -153,36 +152,6 @@ class MultiValueFunctionTest {
     }
 
     @Test
-    @DisplayName("Should validate multi-value limits")
-    void testMultiValueLimits() throws ValidationException {
-      // Valid case - within limits
-      WasmValue[] validArray = new WasmValue[10];
-      for (int i = 0; i < 10; i++) {
-        validArray[i] = WasmValue.i32(i);
-      }
-      WasmValue.validateMultiValueLimits(validArray);
-
-      // Edge case - exactly at limit
-      WasmValue[] atLimit = new WasmValue[16];
-      for (int i = 0; i < 16; i++) {
-        atLimit[i] = WasmValue.i32(i);
-      }
-      WasmValue.validateMultiValueLimits(atLimit);
-
-      // Invalid case - exceeds limit
-      WasmValue[] exceedsLimit = new WasmValue[17];
-      for (int i = 0; i < 17; i++) {
-        exceedsLimit[i] = WasmValue.i32(i);
-      }
-      ValidationException exception =
-          assertThrows(
-              ValidationException.class, () -> WasmValue.validateMultiValueLimits(exceedsLimit));
-
-      assertTrue(exception.getMessage().contains("17"), "Should mention actual count");
-      assertTrue(exception.getMessage().contains("16"), "Should mention limit");
-    }
-
-    @Test
     @DisplayName("Should handle multi-value string representation")
     void testMultiValueToString() {
       // Test null
@@ -311,46 +280,6 @@ class MultiValueFunctionTest {
       assertFalse(funcType.matchesMultiValuePattern(params, null));
     }
 
-    @Test
-    @DisplayName("Should validate multi-value limits for function types")
-    void testFunctionTypeMultiValueLimits() {
-      // Valid function type within limits
-      WasmValueType[] validParams = new WasmValueType[8];
-      WasmValueType[] validReturns = new WasmValueType[8];
-      for (int i = 0; i < 8; i++) {
-        validParams[i] = WasmValueType.I32;
-        validReturns[i] = WasmValueType.I32;
-      }
-
-      FunctionType validType = new FunctionType(validParams, validReturns);
-      validType.validateMultiValueLimits(); // Should not throw
-
-      // Too many parameters
-      WasmValueType[] tooManyParams = new WasmValueType[17];
-      for (int i = 0; i < 17; i++) {
-        tooManyParams[i] = WasmValueType.I32;
-      }
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> {
-            FunctionType invalidType = new FunctionType(tooManyParams, new WasmValueType[0]);
-            invalidType.validateMultiValueLimits();
-          });
-
-      // Too many returns
-      WasmValueType[] tooManyReturns = new WasmValueType[17];
-      for (int i = 0; i < 17; i++) {
-        tooManyReturns[i] = WasmValueType.I32;
-      }
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> {
-            FunctionType invalidType = new FunctionType(new WasmValueType[0], tooManyReturns);
-            invalidType.validateMultiValueLimits();
-          });
-    }
   }
 
   @Nested

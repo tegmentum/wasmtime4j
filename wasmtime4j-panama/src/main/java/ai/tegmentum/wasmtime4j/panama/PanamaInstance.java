@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -108,6 +109,8 @@ public final class PanamaInstance implements Instance {
   // Optimization: Cache function name MemorySegments to avoid repeated string encoding
   private final ConcurrentHashMap<String, MemorySegment> functionNameCache =
       new ConcurrentHashMap<>();
+  // Track ExternRef IDs registered by this instance for cleanup
+  private final Set<Long> registeredExternRefIds = ConcurrentHashMap.newKeySet();
 
   /**
    * Creates a new Panama instance.
@@ -967,8 +970,7 @@ public final class PanamaInstance implements Instance {
     if (disposed.get()) {
       return false;
     }
-    // TODO: Implement resource cleanup
-    disposed.set(true);
+    close();
     return true;
   }
 
@@ -982,7 +984,7 @@ public final class PanamaInstance implements Instance {
     if (disposed.getAndSet(true)) {
       return false;
     }
-    // TODO: Implement disposal
+    close();
     return true;
   }
 
@@ -1384,7 +1386,7 @@ public final class PanamaInstance implements Instance {
    * @param ptr pointer to the array
    * @param index index in the array
    */
-  private static void marshalWasmValue(
+  private void marshalWasmValue(
       final WasmValue value, final MemorySegment ptr, final int index) {
     final long offset = index * 20L;
 
@@ -1446,12 +1448,14 @@ public final class PanamaInstance implements Instance {
           final long externId = externRef.getId();
           // Register in global registry for later lookup
           EXTERN_REF_REGISTRY.put(externId, externRef);
+          registeredExternRefIds.add(externId);
           ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, externId);
         } else {
           // Wrap raw object in ExternRef
           final ExternRef<Object> newRef = ExternRef.of(externValue);
           final long externId = newRef.getId();
           EXTERN_REF_REGISTRY.put(externId, newRef);
+          registeredExternRefIds.add(externId);
           ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, externId);
         }
         break;
@@ -1543,6 +1547,11 @@ public final class PanamaInstance implements Instance {
         () -> {
           disposed.set(true);
           functionNameCache.clear();
+          // Clean up ExternRef entries registered by this instance
+          for (final Long id : registeredExternRefIds) {
+            EXTERN_REF_REGISTRY.remove(id);
+          }
+          registeredExternRefIds.clear();
           if (callArena != null && callArena.scope().isAlive()) {
             callArena.close();
           }

@@ -40,7 +40,7 @@ public interface WasiConfig {
     try {
       // Try Panama implementation first
       final Class<?> builderClass =
-          Class.forName("ai.tegmentum.wasmtime4j.panama.wasi.WasiConfigBuilder");
+          Class.forName("ai.tegmentum.wasmtime4j.panama.wasi.PanamaWasiConfigBuilder");
       return (WasiConfigBuilder) builderClass.getDeclaredConstructor().newInstance();
     } catch (final ClassNotFoundException e) {
       // Panama not available, try JNI implementation

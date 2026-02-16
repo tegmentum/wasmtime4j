@@ -757,20 +757,6 @@ public final class WasmValue {
   }
 
   /**
-   * Validates that a multi-value array doesn't exceed WebAssembly limits.
-   *
-   * @param values the values to check
-   * @throws ai.tegmentum.wasmtime4j.exception.ValidationException if limits are exceeded
-   */
-  public static void validateMultiValueLimits(final WasmValue[] values)
-      throws ai.tegmentum.wasmtime4j.exception.ValidationException {
-    if (values != null && values.length > 16) {
-      throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
-          String.format("Multi-value count %d exceeds maximum of %d", values.length, 16));
-    }
-  }
-
-  /**
    * Checks if an array of values represents a multi-value result (more than one value).
    *
    * @param values the values to check

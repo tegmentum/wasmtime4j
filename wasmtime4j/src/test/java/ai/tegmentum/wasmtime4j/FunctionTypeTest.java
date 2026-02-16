@@ -198,21 +198,6 @@ class FunctionTypeTest {
       assertEquals(0, funcType.getReturnCount(), "Should have 0 return values");
     }
 
-    @Test
-    @DisplayName("should validate multi-value limits")
-    void shouldValidateMultiValueLimits() {
-      final FunctionType validFunc =
-          new FunctionType(
-              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
-      assertDoesNotThrow(
-          () -> validFunc.validateMultiValueLimits(), "Valid function should not throw");
-    }
-
-    @Test
-    @DisplayName("should get max value count")
-    void shouldGetMaxValueCount() {
-      assertEquals(16, FunctionType.getMaxValueCount(), "Max value count should be 16");
-    }
   }
 
   @Nested
