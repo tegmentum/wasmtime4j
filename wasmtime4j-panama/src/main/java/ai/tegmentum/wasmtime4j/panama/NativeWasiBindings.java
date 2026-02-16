@@ -32,8 +32,10 @@ public final class NativeWasiBindings extends NativeBindingsBase {
 
   private static final Logger LOGGER = Logger.getLogger(NativeWasiBindings.class.getName());
 
-  private static volatile NativeWasiBindings instance;
-  private static final Object INSTANCE_LOCK = new Object();
+  /** Initialization-on-demand holder for thread-safe lazy singleton. */
+  private static final class Holder {
+    static final NativeWasiBindings INSTANCE = new NativeWasiBindings();
+  }
 
   private NativeWasiBindings() {
     super();
@@ -49,16 +51,7 @@ public final class NativeWasiBindings extends NativeBindingsBase {
    * @throws RuntimeException if initialization fails
    */
   public static NativeWasiBindings getInstance() {
-    NativeWasiBindings result = instance;
-    if (result == null) {
-      synchronized (INSTANCE_LOCK) {
-        result = instance;
-        if (result == null) {
-          instance = result = new NativeWasiBindings();
-        }
-      }
-    }
-    return result;
+    return Holder.INSTANCE;
   }
 
   private void initializeBindings() {

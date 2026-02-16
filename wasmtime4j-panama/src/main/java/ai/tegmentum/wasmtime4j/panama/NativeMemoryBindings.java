@@ -42,8 +42,10 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
 
   private static final Logger LOGGER = Logger.getLogger(NativeMemoryBindings.class.getName());
 
-  private static volatile NativeMemoryBindings instance;
-  private static final Object INSTANCE_LOCK = new Object();
+  /** Initialization-on-demand holder for thread-safe lazy singleton. */
+  private static final class Holder {
+    static final NativeMemoryBindings INSTANCE = new NativeMemoryBindings();
+  }
 
   /** Hot-path MethodHandle for memory read bytes (invokeExact optimization). */
   private volatile MethodHandle mhPanamaMemoryReadBytes;
@@ -77,16 +79,7 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
    * @throws RuntimeException if initialization fails
    */
   public static NativeMemoryBindings getInstance() {
-    NativeMemoryBindings result = instance;
-    if (result == null) {
-      synchronized (INSTANCE_LOCK) {
-        result = instance;
-        if (result == null) {
-          instance = result = new NativeMemoryBindings();
-        }
-      }
-    }
-    return result;
+    return Holder.INSTANCE;
   }
 
   private void initializeBindings() {

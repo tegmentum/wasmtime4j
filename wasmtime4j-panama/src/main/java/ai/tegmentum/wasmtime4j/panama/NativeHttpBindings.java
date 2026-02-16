@@ -32,8 +32,10 @@ public final class NativeHttpBindings extends NativeBindingsBase {
 
   private static final Logger LOGGER = Logger.getLogger(NativeHttpBindings.class.getName());
 
-  private static volatile NativeHttpBindings instance;
-  private static final Object INSTANCE_LOCK = new Object();
+  /** Initialization-on-demand holder for thread-safe lazy singleton. */
+  private static final class Holder {
+    static final NativeHttpBindings INSTANCE = new NativeHttpBindings();
+  }
 
   private NativeHttpBindings() {
     super();
@@ -49,16 +51,7 @@ public final class NativeHttpBindings extends NativeBindingsBase {
    * @throws RuntimeException if initialization fails
    */
   public static NativeHttpBindings getInstance() {
-    NativeHttpBindings result = instance;
-    if (result == null) {
-      synchronized (INSTANCE_LOCK) {
-        result = instance;
-        if (result == null) {
-          instance = result = new NativeHttpBindings();
-        }
-      }
-    }
-    return result;
+    return Holder.INSTANCE;
   }
 
   private void initializeBindings() {

@@ -31,8 +31,10 @@ public final class NativeWasiPreview2Bindings extends NativeBindingsBase {
 
   private static final Logger LOGGER = Logger.getLogger(NativeWasiPreview2Bindings.class.getName());
 
-  private static volatile NativeWasiPreview2Bindings instance;
-  private static final Object INSTANCE_LOCK = new Object();
+  /** Initialization-on-demand holder for thread-safe lazy singleton. */
+  private static final class Holder {
+    static final NativeWasiPreview2Bindings INSTANCE = new NativeWasiPreview2Bindings();
+  }
 
   private NativeWasiPreview2Bindings() {
     super();
@@ -48,16 +50,7 @@ public final class NativeWasiPreview2Bindings extends NativeBindingsBase {
    * @throws RuntimeException if initialization fails
    */
   public static NativeWasiPreview2Bindings getInstance() {
-    NativeWasiPreview2Bindings result = instance;
-    if (result == null) {
-      synchronized (INSTANCE_LOCK) {
-        result = instance;
-        if (result == null) {
-          instance = result = new NativeWasiPreview2Bindings();
-        }
-      }
-    }
-    return result;
+    return Holder.INSTANCE;
   }
 
   private void initializeBindings() {

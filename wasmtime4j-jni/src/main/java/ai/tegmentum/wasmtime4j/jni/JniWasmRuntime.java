@@ -13,7 +13,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniResourceCache;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
@@ -35,7 +34,6 @@ import java.util.logging.Logger;
  * <p>Key features:
  *
  * <ul>
- *   <li>Performance optimizations through resource caching
  *   <li>Comprehensive error handling and validation
  *   <li>Integration with public wasmtime4j API
  * </ul>
@@ -54,9 +52,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     }
   }
 
-  /** Resource cache for engines and modules. */
-  private final JniResourceCache<String, Object> resourceCache;
-
   /** Cached default GC runtime for lazy initialization. */
   private volatile ai.tegmentum.wasmtime4j.gc.GcRuntime defaultGcRuntime;
 
@@ -71,23 +66,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public JniWasmRuntime() throws WasmException {
     super(initializeRuntime());
 
-    try {
-      // Initialize performance and resource management utilities
-      this.resourceCache = new JniResourceCache<>(500); // Cache up to 500 resources
-
-      LOGGER.fine(
-          "Created JNI WebAssembly runtime with handle: 0x" + Long.toHexString(nativeHandle));
-    } catch (final Exception e) {
-      // Clean up if initialization fails
-      try {
-        nativeDestroyRuntime(nativeHandle);
-      } catch (final Exception cleanupException) {
-        LOGGER.warning(
-            "Failed to cleanup runtime after initialization failure: "
-                + cleanupException.getMessage());
-      }
-      throw new WasmException("Failed to initialize JNI runtime", e);
-    }
+    LOGGER.fine("Created JNI WebAssembly runtime with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
   /**
@@ -124,9 +103,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       }
 
       final JniEngine engine = new JniEngine(engineHandle, JniWasmRuntime.this);
-
-      // Cache the engine
-      resourceCache.put("engine-" + engineHandle, engine);
 
       LOGGER.fine("Created engine with handle: 0x" + Long.toHexString(engineHandle));
       return engine;
@@ -347,9 +323,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
       final JniGcRuntime gcRuntime = new JniGcRuntime(engineHandle);
 
-      // Cache the GC runtime
-      resourceCache.put("gc-runtime-" + engineHandle, gcRuntime);
-
       LOGGER.fine("Created GC runtime for engine: 0x" + Long.toHexString(engineHandle));
       return gcRuntime;
     } catch (final Exception e) {
@@ -399,10 +372,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     try {
       final JniEngine jniEngine = (JniEngine) engine;
       final Module module = jniEngine.compileWat(watText);
-
-      // Cache the module (using WAT hash as key for potential reuse)
-      final String cacheKey = "wat-module-" + watText.hashCode();
-      resourceCache.put(cacheKey, module);
 
       LOGGER.fine(
           "Compiled WAT module with handle: 0x"
@@ -462,10 +431,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       // Note: This creates a module without a proper engine reference
       // which can cause cross-Engine instantiation issues
       final JniModule module = new JniModule(moduleHandle, null);
-
-      // Cache the module (using bytecode hash as key for potential reuse)
-      final String cacheKey = "module-" + java.util.Arrays.hashCode(wasmBytes);
-      resourceCache.put(cacheKey, module);
 
       LOGGER.fine("Compiled module with handle: 0x" + Long.toHexString(moduleHandle));
       return module;
@@ -652,17 +617,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   protected void doClose() throws Exception {
-    // Close resource cache first
-    if (resourceCache != null && !resourceCache.isClosed()) {
-      try {
-        resourceCache.close();
-        LOGGER.fine("Closed resource cache");
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing resource cache: " + e.getMessage());
-      }
-    }
-
-    // Close native resource
     nativeDestroyRuntime(nativeHandle);
   }
 

@@ -46,8 +46,10 @@ public final class NativeComponentBindings extends NativeBindingsBase {
 
   private static final Logger LOGGER = Logger.getLogger(NativeComponentBindings.class.getName());
 
-  private static volatile NativeComponentBindings instance;
-  private static final Object INSTANCE_LOCK = new Object();
+  /** Initialization-on-demand holder for thread-safe lazy singleton. */
+  private static final class Holder {
+    static final NativeComponentBindings INSTANCE = new NativeComponentBindings();
+  }
 
   private NativeComponentBindings() {
     super();
@@ -63,16 +65,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    * @throws RuntimeException if initialization fails
    */
   public static NativeComponentBindings getInstance() {
-    NativeComponentBindings result = instance;
-    if (result == null) {
-      synchronized (INSTANCE_LOCK) {
-        result = instance;
-        if (result == null) {
-          instance = result = new NativeComponentBindings();
-        }
-      }
-    }
-    return result;
+    return Holder.INSTANCE;
   }
 
   private void initializeBindings() {

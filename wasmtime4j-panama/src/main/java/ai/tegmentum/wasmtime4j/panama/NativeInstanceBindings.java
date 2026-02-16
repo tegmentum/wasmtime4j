@@ -39,8 +39,10 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
 
   private static final Logger LOGGER = Logger.getLogger(NativeInstanceBindings.class.getName());
 
-  private static volatile NativeInstanceBindings instance;
-  private static final Object INSTANCE_LOCK = new Object();
+  /** Initialization-on-demand holder for thread-safe lazy singleton. */
+  private static final class Holder {
+    static final NativeInstanceBindings INSTANCE = new NativeInstanceBindings();
+  }
 
   // Hot-path volatile MethodHandle fields for invokeExact optimization
   // Signature: (ADDRESS, ADDRESS) -> ADDRESS
@@ -64,16 +66,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    * @throws RuntimeException if initialization fails
    */
   public static NativeInstanceBindings getInstance() {
-    NativeInstanceBindings result = instance;
-    if (result == null) {
-      synchronized (INSTANCE_LOCK) {
-        result = instance;
-        if (result == null) {
-          instance = result = new NativeInstanceBindings();
-        }
-      }
-    }
-    return result;
+    return Holder.INSTANCE;
   }
 
   /** Eagerly initializes hot-path MethodHandles after all bindings are registered. */

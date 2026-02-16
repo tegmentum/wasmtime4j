@@ -1,54 +1,31 @@
 //! # Shared FFI Architecture
 //!
-//! This module provides a unified trait-based architecture for converting between
-//! Rust types and FFI-compatible types, supporting both JNI and Panama interfaces.
+//! This module provides shared FFI types, return value converters, validation utilities,
+//! and consolidated implementations for WebAssembly operations shared between JNI and
+//! Panama interfaces.
 //!
 //! ## Design Principles
 //!
-//! - **Zero-cost abstractions**: All conversions are compile-time resolved
-//! - **Type safety**: Invalid conversions caught at compile time
 //! - **Defensive programming**: All operations include validation and error handling
-//! - **Extensibility**: Easy to add new types using the same trait patterns
+//! - **Code sharing**: Consolidated implementations eliminate duplication between JNI/Panama
+//! - **Type safety**: FFI enum types provide safe conversion with validation
 //!
-//! ## Core Traits
+//! ## Core Components
 //!
-//! - `ParameterConverter<T>`: Bidirectional conversion between FFI and native types
 //! - `ReturnValueConverter<T>`: Consistent return value handling with error codes
-//!
-//! ## Usage Example
-//!
-//! ```rust,ignore
-//! use wasmtime4j::shared_ffi::{ParameterConverter, FfiStrategy};
-//! use wasmtime::Strategy;
-//!
-//! // Convert FFI parameter to native type with validation
-//! let strategy = FfiStrategy::from_ffi(1)?; // Cranelift
-//! ```
+//! - `FfiOptLevel`, `FfiWasmFeature`: FFI-compatible enum representations
+//! - `validation`: Pointer and bounds validation utilities
+//! - `error_mapping`: Error code mapping for FFI boundaries
 
 use crate::engine::WasmFeature;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::os::raw::c_void;
-use wasmtime::{OptLevel, Strategy};
+use wasmtime::OptLevel;
 
 /// Standard FFI return codes
 pub const FFI_SUCCESS: i32 = 0;
 /// Standard FFI error return code
 pub const FFI_ERROR: i32 = -1;
-
-/// Trait for converting between FFI-compatible and native Rust types
-///
-/// This trait provides bidirectional conversion with compile-time type safety
-/// and runtime validation. All implementations must handle error cases gracefully.
-pub trait ParameterConverter<T> {
-    /// Convert from FFI representation to native type with validation
-    fn from_ffi(value: i32) -> WasmtimeResult<T>;
-
-    /// Convert from native type to FFI representation
-    fn to_ffi(enum_value: T) -> i32;
-
-    /// Validate FFI value without conversion (for early parameter checking)
-    fn validate(value: i32) -> WasmtimeResult<()>;
-}
 
 /// Trait for handling return value conversions across FFI boundaries
 ///
@@ -67,69 +44,6 @@ pub trait ReturnValueConverter<T> {
     fn to_ffi_code(result: WasmtimeResult<()>) -> i32;
 }
 
-/// FFI-compatible Strategy enum representation
-#[repr(i32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(missing_docs)]
-pub enum FfiStrategy {
-    Auto = 0,
-    Cranelift = 1,
-}
-
-impl ParameterConverter<Strategy> for FfiStrategy {
-    fn from_ffi(value: i32) -> WasmtimeResult<Strategy> {
-        match value {
-            0 => Ok(Strategy::Auto),
-            1 => Ok(Strategy::Cranelift),
-            _ => Err(WasmtimeError::InvalidParameter {
-                message: format!(
-                    "Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)",
-                    value
-                ),
-            }),
-        }
-    }
-
-    fn to_ffi(enum_value: Strategy) -> i32 {
-        match enum_value {
-            Strategy::Auto => 0,
-            Strategy::Cranelift => 1,
-            _ => 1, // Default to Cranelift for unknown strategies
-        }
-    }
-
-    fn validate(value: i32) -> WasmtimeResult<()> {
-        match value {
-            0 | 1 => Ok(()),
-            _ => Err(WasmtimeError::InvalidParameter {
-                message: format!(
-                    "Invalid strategy value: {}. Expected 0 (Auto) or 1 (Cranelift)",
-                    value
-                ),
-            }),
-        }
-    }
-}
-
-impl FfiStrategy {
-    /// Convert FFI strategy to native Strategy enum
-    pub fn to_native(self) -> Strategy {
-        match self {
-            FfiStrategy::Auto => Strategy::Auto,
-            FfiStrategy::Cranelift => Strategy::Cranelift,
-        }
-    }
-
-    /// Create FFI strategy from native Strategy enum
-    pub fn from_native(strategy: Strategy) -> Self {
-        match strategy {
-            Strategy::Auto => FfiStrategy::Auto,
-            Strategy::Cranelift => FfiStrategy::Cranelift,
-            _ => FfiStrategy::Cranelift, // Default to Cranelift for unknown strategies
-        }
-    }
-}
-
 /// FFI-compatible OptLevel enum representation
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -140,8 +54,9 @@ pub enum FfiOptLevel {
     SpeedAndSize = 2,
 }
 
-impl ParameterConverter<OptLevel> for FfiOptLevel {
-    fn from_ffi(value: i32) -> WasmtimeResult<OptLevel> {
+impl FfiOptLevel {
+    /// Convert from FFI representation to native OptLevel with validation
+    pub fn from_ffi(value: i32) -> WasmtimeResult<OptLevel> {
         match value {
             0 => Ok(OptLevel::None),
             1 => Ok(OptLevel::Speed),
@@ -152,7 +67,8 @@ impl ParameterConverter<OptLevel> for FfiOptLevel {
         }
     }
 
-    fn to_ffi(enum_value: OptLevel) -> i32 {
+    /// Convert from native OptLevel to FFI representation
+    pub fn to_ffi(enum_value: OptLevel) -> i32 {
         match enum_value {
             OptLevel::None => 0,
             OptLevel::Speed => 1,
@@ -161,7 +77,8 @@ impl ParameterConverter<OptLevel> for FfiOptLevel {
         }
     }
 
-    fn validate(value: i32) -> WasmtimeResult<()> {
+    /// Validate FFI value without conversion (for early parameter checking)
+    pub fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
             0..=2 => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
@@ -169,9 +86,7 @@ impl ParameterConverter<OptLevel> for FfiOptLevel {
             }),
         }
     }
-}
 
-impl FfiOptLevel {
     /// Convert FFI optimization level to native OptLevel enum
     pub fn to_native(self) -> OptLevel {
         match self {
@@ -222,8 +137,9 @@ pub enum FfiWasmFeature {
     ComponentModelGc = 22,
 }
 
-impl ParameterConverter<WasmFeature> for FfiWasmFeature {
-    fn from_ffi(value: i32) -> WasmtimeResult<WasmFeature> {
+impl FfiWasmFeature {
+    /// Convert from FFI representation to native WasmFeature with validation
+    pub fn from_ffi(value: i32) -> WasmtimeResult<WasmFeature> {
         match value {
             0 => Ok(WasmFeature::Threads),
             1 => Ok(WasmFeature::ReferenceTypes),
@@ -254,7 +170,8 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
         }
     }
 
-    fn to_ffi(enum_value: WasmFeature) -> i32 {
+    /// Convert from native WasmFeature to FFI representation
+    pub fn to_ffi(enum_value: WasmFeature) -> i32 {
         match enum_value {
             WasmFeature::Threads => 0,
             WasmFeature::ReferenceTypes => 1,
@@ -282,7 +199,8 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
         }
     }
 
-    fn validate(value: i32) -> WasmtimeResult<()> {
+    /// Validate FFI value without conversion (for early parameter checking)
+    pub fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
             0..=22 => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
@@ -290,9 +208,7 @@ impl ParameterConverter<WasmFeature> for FfiWasmFeature {
             }),
         }
     }
-}
 
-impl FfiWasmFeature {
     /// Convert FFI WASM feature to native WasmFeature enum
     pub fn to_native(self) -> WasmFeature {
         match self {
@@ -1917,25 +1833,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_strategy_conversion() {
-        // Test valid conversions
-        assert_eq!(FfiStrategy::from_ffi(0).unwrap(), Strategy::Auto);
-        assert_eq!(FfiStrategy::from_ffi(1).unwrap(), Strategy::Cranelift);
-
-        // Test invalid conversion
-        assert!(FfiStrategy::from_ffi(99).is_err());
-
-        // Test bidirectional conversion
-        assert_eq!(FfiStrategy::to_ffi(Strategy::Auto), 0);
-        assert_eq!(FfiStrategy::to_ffi(Strategy::Cranelift), 1);
-
-        // Test validation
-        assert!(FfiStrategy::validate(0).is_ok());
-        assert!(FfiStrategy::validate(1).is_ok());
-        assert!(FfiStrategy::validate(99).is_err());
-    }
-
-    #[test]
     fn test_opt_level_conversion() {
         // Test valid conversions
         assert_eq!(FfiOptLevel::from_ffi(0).unwrap(), OptLevel::None);
@@ -2021,23 +1918,6 @@ mod tests {
         let slice = &[1, 2, 3, 4, 5];
         assert!(validate_slice_bounds(slice, 1, 3, "test_slice").is_ok());
         assert!(validate_slice_bounds(slice, 3, 5, "test_slice").is_err());
-    }
-
-    #[test]
-    fn test_strategy_boundary_values() {
-        // Test boundary values for strategy conversion
-        assert!(
-            FfiStrategy::from_ffi(-1).is_err(),
-            "Negative values should fail"
-        );
-        assert!(
-            FfiStrategy::from_ffi(i32::MAX).is_err(),
-            "Max i32 should fail"
-        );
-        assert!(
-            FfiStrategy::from_ffi(i32::MIN).is_err(),
-            "Min i32 should fail"
-        );
     }
 
     #[test]
@@ -2237,49 +2117,6 @@ mod tests {
             FFI_SUCCESS, FFI_ERROR,
             "Success and error codes should differ"
         );
-    }
-
-    // =========================================================================
-    // FfiStrategy Native Conversion Tests (5 tests)
-    // =========================================================================
-
-    #[test]
-    fn test_ffi_strategy_to_native() {
-        assert_eq!(FfiStrategy::Auto.to_native(), Strategy::Auto);
-        assert_eq!(FfiStrategy::Cranelift.to_native(), Strategy::Cranelift);
-    }
-
-    #[test]
-    fn test_ffi_strategy_from_native() {
-        assert_eq!(FfiStrategy::from_native(Strategy::Auto), FfiStrategy::Auto);
-        assert_eq!(
-            FfiStrategy::from_native(Strategy::Cranelift),
-            FfiStrategy::Cranelift
-        );
-    }
-
-    #[test]
-    fn test_ffi_strategy_roundtrip() {
-        for strategy in [Strategy::Auto, Strategy::Cranelift] {
-            let ffi = FfiStrategy::from_native(strategy.clone());
-            let native = ffi.to_native();
-            assert_eq!(native, strategy);
-        }
-    }
-
-    #[test]
-    fn test_ffi_strategy_repr_values() {
-        assert_eq!(FfiStrategy::Auto as i32, 0);
-        assert_eq!(FfiStrategy::Cranelift as i32, 1);
-    }
-
-    #[test]
-    fn test_ffi_strategy_clone_and_copy() {
-        let strategy = FfiStrategy::Cranelift;
-        let cloned = strategy.clone();
-        let copied = strategy;
-        assert_eq!(strategy, cloned);
-        assert_eq!(strategy, copied);
     }
 
     // =========================================================================
