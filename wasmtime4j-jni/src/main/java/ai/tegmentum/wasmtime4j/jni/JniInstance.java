@@ -45,9 +45,6 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
-  /** Flag to track if this instance has been closed. */
-  private final AtomicBoolean closed = new AtomicBoolean(false);
-
   /** Flag to track if resources have been cleaned up. */
   private final AtomicBoolean cleanedUp = new AtomicBoolean(false);
 

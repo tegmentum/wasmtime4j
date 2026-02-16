@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -37,7 +36,6 @@ class JniFunctionTest {
     assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
     assertThat(function.getResourceType()).isEqualTo("Function[" + FUNCTION_NAME + "]");
     assertFalse(function.isClosed());
-    assertThat(function.getCallCount()).isEqualTo(0);
   }
 
   @Test
@@ -88,13 +86,6 @@ class JniFunctionTest {
   }
 
   @Test
-  void testGetCallCount() {
-    final JniFunction function =
-        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
-    assertThat(function.getCallCount()).isEqualTo(0);
-  }
-
-  @Test
   void testCallWithNullParameters() {
     final JniFunction function =
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
@@ -116,24 +107,6 @@ class JniFunctionTest {
 
     assertThat(exception.getMessage()).contains("parameters");
     assertThat(exception.getMessage()).contains("must not be null");
-  }
-
-  @Test
-  void testClearCache() {
-    final JniFunction function =
-        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
-
-    // Should not throw any exception
-    assertDoesNotThrow(function::clearCache);
-  }
-
-  @Test
-  void testGetCacheHitRatio() {
-    final JniFunction function =
-        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
-
-    // Should return initial cache hit ratio (0.0)
-    assertThat(function.getCacheHitRatio()).isEqualTo(0.0);
   }
 
   @Test

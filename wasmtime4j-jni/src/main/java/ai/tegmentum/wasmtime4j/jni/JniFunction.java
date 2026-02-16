@@ -12,9 +12,6 @@ import ai.tegmentum.wasmtime4j.jni.util.JniTypeConverter;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,9 +28,7 @@ import java.util.logging.Logger;
  *   <li>Complete WebAssembly type system support
  *   <li>Multi-value parameter and return handling
  *   <li>Type validation and conversion between Java and WebAssembly
- *   <li>Function result caching for frequently called functions
  *   <li>Asynchronous execution support with CompletableFuture
- *   <li>Optimized call paths for common type combinations
  * </ul>
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
@@ -65,35 +60,6 @@ public final class JniFunction extends JniResource
 
   /** Cached function type for performance optimization. */
   private volatile FunctionType cachedFunctionType;
-
-  /** Function result cache for frequently called functions. */
-  private final ConcurrentHashMap<String, CachedResult> resultCache = new ConcurrentHashMap<>();
-
-  /** Call count for cache eviction and performance monitoring. */
-  private final AtomicLong callCount = new AtomicLong(0);
-
-  /** Maximum cache size per function. */
-  private static final int MAX_CACHE_SIZE = 100;
-
-  /** Hot path optimization - cache the most frequently called function signature. */
-  private final AtomicReference<Object[]> cachedNativeParams = new AtomicReference<>();
-
-  private volatile String cachedParamSignature;
-  private volatile long lastOptimizationCheck = 0;
-  private static final long OPTIMIZATION_CHECK_INTERVAL = 1000; // Check every 1000 calls
-
-  /** Cache entry for function results. */
-  private static final class CachedResult {
-    final WasmValue[] result;
-    final long timestamp;
-    final int hitCount;
-
-    CachedResult(final WasmValue[] result, final long timestamp, final int hitCount) {
-      this.result = result;
-      this.timestamp = timestamp;
-      this.hitCount = hitCount;
-    }
-  }
 
   /**
    * Creates a new JNI function with the given native handle, name, module handle, and store
@@ -227,33 +193,10 @@ public final class JniFunction extends JniResource
     ensureNotClosed();
 
     try {
-      // Increment call count
-      final long currentCall = callCount.incrementAndGet();
-
-      // Hot path optimization for frequently called functions
-      if (currentCall % OPTIMIZATION_CHECK_INTERVAL == 0) {
-        optimizeHotPath(params);
-      }
-
       final FunctionType functionType = getFunctionType();
 
-      // Fast path validation for cached parameter pattern
-      final String paramSignature = getParameterSignature(params);
-      if (paramSignature.equals(cachedParamSignature)) {
-        // Use pre-validated hot path
-        return callOptimizedPath(params, functionType);
-      }
-
-      // Standard path with full validation
+      // Validate parameter types
       JniTypeConverter.validateParameterTypes(params, functionType.getParamTypes());
-
-      // Check cache for frequently called functions with consistent parameters
-      final String cacheKey = createCacheKey(params);
-      final CachedResult cached = resultCache.get(cacheKey);
-      if (cached != null && shouldUseCachedResult(cached, currentCall)) {
-        LOGGER.fine("Using cached result for function '" + name + "'");
-        return cached.result.clone();
-      }
 
       // Marshal parameters
       final Object[] nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
@@ -266,15 +209,8 @@ public final class JniFunction extends JniResource
       }
 
       // Convert native results back to WasmValue array
-      final WasmValue[] results =
-          JniTypeConverter.nativeResultsToWasmValues(nativeResults, functionType.getReturnTypes());
-
-      // Cache result for frequently called functions
-      if (shouldCacheResult(currentCall)) {
-        cacheResult(cacheKey, results);
-      }
-
-      return results;
+      return JniTypeConverter.nativeResultsToWasmValues(
+          nativeResults, functionType.getReturnTypes());
     } catch (final JniValidationException e) {
       throw new WasmException("Parameter validation failed for function '" + name + "'", e);
     } catch (final RuntimeException e) {
@@ -454,233 +390,16 @@ public final class JniFunction extends JniResource
    */
   @Override
   protected void doClose() throws Exception {
-    // Clear cache before closing
-    clearCache();
-
-    // Log performance stats
     if (LOGGER.isLoggable(Level.FINE)) {
       LOGGER.fine(
           String.format(
-              "Function '%s' marked as closed: %d calls, %.2f%% cache hit ratio. "
+              "Function '%s' marked as closed. "
                   + "Native resources will be freed when Store is destroyed.",
-              name, getCallCount(), getCacheHitRatio() * 100));
+              name));
     }
-
     // Note: Do NOT call nativeDestroyFunction here. Functions are Store-owned resources.
     // Destroying them while the Store exists causes "object used with wrong store" panics.
     // The Store will clean up all its Functions when it is destroyed.
-  }
-
-  /**
-   * Creates a cache key for the given parameters.
-   *
-   * @param params the function parameters
-   * @return a string key for caching
-   */
-  private String createCacheKey(final WasmValue[] params) {
-    if (params.length == 0) {
-      return "empty";
-    }
-
-    final StringBuilder key = new StringBuilder();
-    for (int i = 0; i < params.length; i++) {
-      if (i > 0) {
-        key.append(",");
-      }
-      final WasmValue param = params[i];
-      key.append(param.getType()).append(":");
-
-      // Create a simple hash for the value to avoid storing large objects in keys
-      if (param.getType() == WasmValueType.V128) {
-        key.append(java.util.Arrays.hashCode(param.asV128()));
-      } else {
-        key.append(param.getValue());
-      }
-    }
-    return key.toString();
-  }
-
-  /**
-   * Determines if a cached result should be used.
-   *
-   * @param cached the cached result
-   * @param currentCall the current call number
-   * @return true if the cached result should be used
-   */
-  private boolean shouldUseCachedResult(final CachedResult cached, final long currentCall) {
-    // Only use cache for pure functions (no side effects)
-    // This is a simple heuristic - in a real implementation, this would be configurable
-    return cached.hitCount > 3 && (currentCall - cached.timestamp) < 1000;
-  }
-
-  /**
-   * Determines if the result should be cached.
-   *
-   * @param currentCall the current call number
-   * @return true if the result should be cached
-   */
-  private boolean shouldCacheResult(final long currentCall) {
-    return currentCall % 10 == 0 && resultCache.size() < MAX_CACHE_SIZE;
-  }
-
-  /**
-   * Caches the result for the given key.
-   *
-   * @param key the cache key
-   * @param result the result to cache
-   */
-  private void cacheResult(final String key, final WasmValue[] result) {
-    final CachedResult existing = resultCache.get(key);
-    final int hitCount = existing != null ? existing.hitCount + 1 : 1;
-    resultCache.put(key, new CachedResult(result.clone(), System.currentTimeMillis(), hitCount));
-
-    // Simple cache eviction
-    if (resultCache.size() > MAX_CACHE_SIZE) {
-      final String oldestKey =
-          resultCache.entrySet().stream()
-              .min((e1, e2) -> Long.compare(e1.getValue().timestamp, e2.getValue().timestamp))
-              .map(java.util.Map.Entry::getKey)
-              .orElse(null);
-      if (oldestKey != null) {
-        resultCache.remove(oldestKey);
-      }
-    }
-  }
-
-  /** Clears the function result cache. */
-  public void clearCache() {
-    resultCache.clear();
-    LOGGER.fine("Cleared result cache for function '" + name + "'");
-  }
-
-  /**
-   * Optimizes hot path for frequently called parameter patterns.
-   *
-   * @param params current parameters
-   */
-  private void optimizeHotPath(final WasmValue[] params) {
-    final String paramSignature = getParameterSignature(params);
-    if (!paramSignature.equals(cachedParamSignature)) {
-      // Pre-compute and cache marshalling for this parameter pattern
-      try {
-        cachedNativeParams.set(JniTypeConverter.wasmValuesToNativeParams(params));
-        cachedParamSignature = paramSignature;
-        lastOptimizationCheck = System.currentTimeMillis();
-        LOGGER.fine(
-            "Optimized hot path for function '" + name + "' with signature: " + paramSignature);
-      } catch (final Exception e) {
-        LOGGER.warning(
-            "Failed to optimize hot path for function '" + name + "': " + e.getMessage());
-      }
-    }
-  }
-
-  /**
-   * Gets a signature for the parameter pattern to identify repeated calls.
-   *
-   * @param params function parameters
-   * @return signature string
-   */
-  private String getParameterSignature(final WasmValue[] params) {
-    if (params.length == 0) {
-      return "()";
-    }
-
-    final StringBuilder sig = new StringBuilder();
-    sig.append("(");
-    for (int i = 0; i < params.length; i++) {
-      if (i > 0) {
-        sig.append(",");
-      }
-      sig.append(params[i].getType().name());
-    }
-    sig.append(")");
-    return sig.toString();
-  }
-
-  /**
-   * Executes optimized call path for pre-validated parameters.
-   *
-   * @param params function parameters
-   * @param functionType function type info
-   * @return function results
-   * @throws WasmException if call fails
-   */
-  private WasmValue[] callOptimizedPath(final WasmValue[] params, final FunctionType functionType)
-      throws WasmException {
-    try {
-      // Use fast marshalling for known parameter types
-      final Object[] nativeParams;
-      if (params.length <= 4) {
-        // For small parameter sets, use direct conversion
-        nativeParams = new Object[params.length];
-        for (int i = 0; i < params.length; i++) {
-          nativeParams[i] = convertValueDirect(params[i]);
-        }
-      } else {
-        // Use standard marshalling for larger sets
-        nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
-      }
-
-      // Direct native call without additional overhead
-      final Object[] nativeResults =
-          nativeCallMultiValue(getNativeHandle(), store.getNativeHandle(), nativeParams);
-      if (nativeResults == null) {
-        throw new WasmException("Native function call returned null for '" + name + "'");
-      }
-
-      // Convert results
-      return JniTypeConverter.nativeResultsToWasmValues(
-          nativeResults, functionType.getReturnTypes());
-
-    } catch (final Exception e) {
-      throw new WasmException("Optimized function call failed for '" + name + "'", e);
-    }
-  }
-
-  /**
-   * Direct value conversion for hot path optimization.
-   *
-   * @param value WasmValue to convert
-   * @return native representation
-   */
-  private Object convertValueDirect(final WasmValue value) {
-    switch (value.getType()) {
-      case I32:
-        return value.asI32();
-      case I64:
-        return value.asI64();
-      case F32:
-        return value.asF32();
-      case F64:
-        return value.asF64();
-      default:
-        // Fallback to general conversion
-        return JniTypeConverter.wasmValueToNativeParam(value);
-    }
-  }
-
-  /**
-   * Gets the number of calls made to this function.
-   *
-   * @return the call count
-   */
-  public long getCallCount() {
-    return callCount.get();
-  }
-
-  /**
-   * Gets the cache hit ratio for this function.
-   *
-   * @return the cache hit ratio (0.0 to 1.0)
-   */
-  public double getCacheHitRatio() {
-    final long totalCalls = callCount.get();
-    if (totalCalls == 0) {
-      return 0.0;
-    }
-    final int totalHits = resultCache.values().stream().mapToInt(r -> r.hitCount).sum();
-    return (double) totalHits / totalCalls;
   }
 
   // Native method declarations
