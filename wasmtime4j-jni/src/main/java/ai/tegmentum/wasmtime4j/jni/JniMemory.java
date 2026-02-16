@@ -672,13 +672,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
   private static native ByteBuffer nativeGetBuffer(long memoryHandle);
 
   /**
-   * Destroys a native memory.
-   *
-   * @param memoryHandle the native memory handle
-   */
-  private static native void nativeDestroyMemory(long memoryHandle);
-
-  /**
    * Gets memory type information directly from the memory.
    *
    * @param memoryHandle the native memory handle

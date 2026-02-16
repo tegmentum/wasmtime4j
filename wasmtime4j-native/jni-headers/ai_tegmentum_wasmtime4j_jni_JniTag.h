@@ -31,14 +31,6 @@ JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeGetRet
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeEquals
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniTag
- * Method:    nativeDestroy
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeDestroy
-  (JNIEnv *, jclass, jlong);
-
 #ifdef __cplusplus
 }
 #endif

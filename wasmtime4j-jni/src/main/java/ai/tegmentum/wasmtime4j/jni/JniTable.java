@@ -524,12 +524,6 @@ public final class JniTable extends JniResource implements WasmTable {
   private static native boolean nativeCopyFromTable(
       long dstTableHandle, int dst, long srcTableHandle, int src, int count);
 
-  /**
-   * Destroys a native table.
-   *
-   * @param tableHandle the native table handle
-   */
-  private static native void nativeDestroy(long tableHandle);
 
   /**
    * Gets table type information directly from the table.

@@ -9,22 +9,6 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeCreateStore
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateStore
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeCreateStoreWithConfig
- * Signature: (JJJJIII)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateStoreWithConfig
-  (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jint, jint, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeCreateStoreForModule
  * Signature: (J)J
  */
@@ -62,14 +46,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetFuelR
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochDeadline
   (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeGarbageCollect
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGarbageCollect
-  (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore

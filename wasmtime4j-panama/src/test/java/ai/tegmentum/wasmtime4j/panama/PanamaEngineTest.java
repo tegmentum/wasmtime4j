@@ -526,15 +526,6 @@ class PanamaEngineTest {
       assertNotNull(engine.getNativeEngine(), "Native engine pointer should not be null");
     }
 
-    @Test
-    @DisplayName("getEnginePointer should return same as getNativeEngine")
-    void shouldReturnSamePointer() throws Exception {
-      final PanamaEngine engine = createEngine();
-      assertEquals(
-          engine.getNativeEngine(),
-          engine.getEnginePointer(),
-          "getEnginePointer and getNativeEngine should return same pointer");
-    }
 
     @Test
     @DisplayName("same with self should return true")

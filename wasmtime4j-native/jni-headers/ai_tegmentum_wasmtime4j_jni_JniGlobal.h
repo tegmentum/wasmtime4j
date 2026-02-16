@@ -105,14 +105,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetD
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
- * Method:    nativeDestroyGlobal
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroyGlobal
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniGlobal
  * Method:    nativeGetGlobalTypeInfo
  * Signature: (J)[J
  */

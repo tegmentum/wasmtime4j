@@ -628,12 +628,6 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   private static native boolean nativeSetDoubleValue(
       long globalHandle, long storeHandle, double value);
 
-  /**
-   * Destroys a native global.
-   *
-   * @param globalHandle the native global handle
-   */
-  private static native void nativeDestroyGlobal(long globalHandle);
 
   /**
    * Gets global type information directly from the global.

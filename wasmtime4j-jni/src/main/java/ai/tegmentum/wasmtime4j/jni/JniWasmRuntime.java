@@ -18,7 +18,6 @@ import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.logging.Logger;
 
 /**
@@ -405,41 +404,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     return engine.compileModule(wasmBytes);
   }
 
-  /**
-   * Legacy compile method that creates a module without an explicit engine reference.
-   *
-   * @deprecated This method creates a new engine internally which can lead to cross-Engine
-   *     instantiation errors. Use {@link #compileModule(Engine, byte[])} instead.
-   */
-  @Deprecated
-  @SuppressFBWarnings(
-      value = "UPM_UNCALLED_PRIVATE_METHOD",
-      justification = "Deprecated method retained for backward compatibility")
-  private Module compileModuleLegacy(final byte[] wasmBytes) throws WasmException {
-    JniValidation.requireNonNull(wasmBytes, "wasmBytes");
-
-    if (wasmBytes.length == 0) {
-      throw new WasmException("WebAssembly bytecode cannot be empty");
-    }
-
-    try {
-      final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
-      if (moduleHandle == 0) {
-        throw new WasmException("Failed to compile WebAssembly module");
-      }
-
-      // Note: This creates a module without a proper engine reference
-      // which can cause cross-Engine instantiation issues
-      final JniModule module = new JniModule(moduleHandle, null);
-
-      LOGGER.fine("Compiled module with handle: 0x" + Long.toHexString(moduleHandle));
-      return module;
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Unexpected error compiling module", e);
-    }
-  }
 
   @Override
   public Instance instantiate(final Module module) throws WasmException {

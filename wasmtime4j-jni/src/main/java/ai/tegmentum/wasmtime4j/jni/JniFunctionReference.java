@@ -551,12 +551,6 @@ public final class JniFunctionReference extends JniResource implements FunctionR
   private static native int nativeCallFunctionReference(
       long functionReferenceHandle, byte[] paramsData, byte[] resultsBuffer);
 
-  /**
-   * Destroys a native function reference and releases all associated resources.
-   *
-   * @param functionReferenceHandle the native function reference handle
-   */
-  private static native void nativeDestroyFunctionReference(long functionReferenceHandle);
 
   @Override
   public String toString() {

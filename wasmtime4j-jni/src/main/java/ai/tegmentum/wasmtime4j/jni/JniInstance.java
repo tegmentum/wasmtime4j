@@ -48,8 +48,6 @@ public final class JniInstance extends JniResource implements Instance {
   /** Flag to track if resources have been cleaned up. */
   private final AtomicBoolean cleanedUp = new AtomicBoolean(false);
 
-  /** Creation timestamp in microseconds. */
-  private final long createdAtMicros = System.currentTimeMillis() * 1000;
 
   /** Reference to the module used to create this instance. */
   private final Module module;
@@ -857,12 +855,6 @@ public final class JniInstance extends JniResource implements Instance {
    */
   private static native String[] nativeGetExportNames(long instanceHandle);
 
-  /**
-   * Destroys a native instance.
-   *
-   * @param instanceHandle the native instance handle
-   */
-  private static native void nativeDestroyInstance(long instanceHandle);
 
   /**
    * Disposes of a native instance.

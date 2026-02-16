@@ -144,41 +144,6 @@ public final class JniFunction extends JniResource
     }
   }
 
-  /**
-   * Gets the parameter types for this function.
-   *
-   * @return array of parameter type names
-   * @throws JniResourceException if this function is closed
-   * @throws RuntimeException if the types cannot be retrieved
-   * @deprecated Use {@link #getFunctionType()} instead
-   */
-  @Deprecated
-  public String[] getParameterTypes() {
-    try {
-      final FunctionType funcType = getFunctionType();
-      return JniTypeConverter.typesToStrings(funcType.getParamTypes());
-    } catch (final RuntimeException e) {
-      throw new RuntimeException("Error getting parameter types", e);
-    }
-  }
-
-  /**
-   * Gets the return types for this function.
-   *
-   * @return array of return type names
-   * @throws JniResourceException if this function is closed
-   * @throws RuntimeException if the types cannot be retrieved
-   * @deprecated Use {@link #getFunctionType()} instead
-   */
-  @Deprecated
-  public String[] getReturnTypes() {
-    try {
-      final FunctionType funcType = getFunctionType();
-      return JniTypeConverter.typesToStrings(funcType.getReturnTypes());
-    } catch (final RuntimeException e) {
-      throw new RuntimeException("Error getting return types", e);
-    }
-  }
 
   /**
    * Calls this function with the given WebAssembly parameters.
@@ -478,10 +443,4 @@ public final class JniFunction extends JniResource
    */
   private static native double nativeCallDouble(long functionHandle, double[] parameters);
 
-  /**
-   * Destroys a native function.
-   *
-   * @param functionHandle the native function handle
-   */
-  private static native void nativeDestroyFunction(long functionHandle);
 }

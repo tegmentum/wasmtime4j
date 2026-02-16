@@ -145,14 +145,6 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIncremen
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeCreateEngineWithConfig
- * Signature: (IIZZZZZZZIIZIZ)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithConfig
-  (JNIEnv *, jclass, jint, jint, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jint, jboolean, jint, jboolean);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeCreateEngineWithExtendedConfig
  * Signature: (IIZZZZZZZIIZIZZZZJJJZZZZZZZZZZ)J
  */

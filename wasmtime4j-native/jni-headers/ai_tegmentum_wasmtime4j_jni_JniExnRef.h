@@ -23,14 +23,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetTag
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeIsValid
   (JNIEnv *, jclass, jlong, jlong);
 
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef
- * Method:    nativeDestroy
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeDestroy
-  (JNIEnv *, jclass, jlong);
-
 #ifdef __cplusplus
 }
 #endif

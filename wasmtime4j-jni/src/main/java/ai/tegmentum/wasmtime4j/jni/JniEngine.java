@@ -469,21 +469,6 @@ public class JniEngine implements Engine {
     return new JniEngine(handle, runtime, config);
   }
 
-  private static native long nativeCreateEngineWithConfig(
-      int strategy,
-      int optLevel,
-      boolean debugInfo,
-      boolean wasmThreads,
-      boolean wasmSimd,
-      boolean wasmReferenceTypes,
-      boolean wasmBulkMemory,
-      boolean wasmMultiValue,
-      boolean fuelEnabled,
-      int maxMemoryPages,
-      int maxStackSize,
-      boolean epochInterruption,
-      int maxInstances,
-      boolean asyncSupport);
 
   private static native long nativeCreateEngineWithExtendedConfig(
       int strategy,

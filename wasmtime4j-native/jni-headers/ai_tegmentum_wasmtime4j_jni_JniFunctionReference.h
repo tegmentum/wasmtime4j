@@ -31,14 +31,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_na
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeCallFunctionReference
   (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
 
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniFunctionReference
- * Method:    nativeDestroyFunctionReference
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeDestroyFunctionReference
-  (JNIEnv *, jclass, jlong);
-
 #ifdef __cplusplus
 }
 #endif

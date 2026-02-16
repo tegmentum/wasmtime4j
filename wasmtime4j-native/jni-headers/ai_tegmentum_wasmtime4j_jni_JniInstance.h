@@ -57,14 +57,6 @@ JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nati
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
- * Method:    nativeDestroyInstance
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDestroyInstance
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeDispose
  * Signature: (J)Z
  */

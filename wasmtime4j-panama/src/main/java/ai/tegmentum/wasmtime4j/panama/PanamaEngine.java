@@ -297,14 +297,6 @@ public final class PanamaEngine implements Engine {
     return System.identityHashCode(this);
   }
 
-  /**
-   * Gets the engine pointer.
-   *
-   * @return engine pointer
-   */
-  public MemorySegment getEnginePointer() {
-    return nativeEngine;
-  }
 
   /**
    * Ensures the engine is not closed.

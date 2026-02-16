@@ -17,14 +17,10 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiClockId;
-import ai.tegmentum.wasmtime4j.wasi.WasiEventRwFlags;
-import ai.tegmentum.wasmtime4j.wasi.WasiEventType;
-import ai.tegmentum.wasmtime4j.wasi.WasiWhence;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,8 +29,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Integration tests for WASI enum types.
  *
- * <p>These tests exercise actual code execution for WasiClockId, WasiEventType, WasiWhence, and
- * WasiEventRwFlags WASI enums to improve JaCoCo coverage.
+ * <p>These tests exercise actual code execution for WasiClockId to improve JaCoCo coverage.
  */
 @DisplayName("WASI Enum Integration Tests")
 public class WasiEnumIntegrationTest {
@@ -109,133 +104,6 @@ public class WasiEnumIntegrationTest {
       }
 
       LOGGER.info("All clock IDs verified");
-    }
-  }
-
-  @Nested
-  @DisplayName("WasiEventType Tests")
-  class WasiEventTypeTests {
-
-    @Test
-    @DisplayName("Should have correct enum values")
-    void shouldHaveCorrectEnumValues() {
-      LOGGER.info("Testing WasiEventType enum values");
-
-      assertEquals(0, WasiEventType.CLOCK.getValue(), "CLOCK should be 0");
-      assertEquals(1, WasiEventType.FD_READ.getValue(), "FD_READ should be 1");
-      assertEquals(2, WasiEventType.FD_WRITE.getValue(), "FD_WRITE should be 2");
-
-      LOGGER.info("WasiEventType values verified");
-    }
-
-    @Test
-    @DisplayName("Should find event type by value")
-    void shouldFindEventTypeByValue() {
-      LOGGER.info("Testing WasiEventType.fromValue");
-
-      assertEquals(WasiEventType.CLOCK, WasiEventType.fromValue(0), "Value 0 should return CLOCK");
-      assertEquals(
-          WasiEventType.FD_READ, WasiEventType.fromValue(1), "Value 1 should return FD_READ");
-      assertEquals(
-          WasiEventType.FD_WRITE, WasiEventType.fromValue(2), "Value 2 should return FD_WRITE");
-
-      LOGGER.info("WasiEventType.fromValue verified");
-    }
-
-    @Test
-    @DisplayName("Should throw exception for invalid event type")
-    void shouldThrowExceptionForInvalidEventType() {
-      LOGGER.info("Testing invalid event type");
-
-      assertThrows(IllegalArgumentException.class, () -> WasiEventType.fromValue(99));
-
-      LOGGER.info("Correctly threw exception for invalid event type");
-    }
-  }
-
-  @Nested
-  @DisplayName("WasiWhence Tests")
-  class WasiWhenceTests {
-
-    @Test
-    @DisplayName("Should have correct enum values")
-    void shouldHaveCorrectEnumValues() {
-      LOGGER.info("Testing WasiWhence enum values");
-
-      assertEquals(0, WasiWhence.SET.getValue(), "SET should be 0");
-      assertEquals(1, WasiWhence.CUR.getValue(), "CUR should be 1");
-      assertEquals(2, WasiWhence.END.getValue(), "END should be 2");
-
-      LOGGER.info("WasiWhence values verified");
-    }
-
-    @Test
-    @DisplayName("Should find whence by value")
-    void shouldFindWhenceByValue() {
-      LOGGER.info("Testing WasiWhence.fromValue");
-
-      assertEquals(WasiWhence.SET, WasiWhence.fromValue(0), "Value 0 should return SET");
-      assertEquals(WasiWhence.CUR, WasiWhence.fromValue(1), "Value 1 should return CUR");
-      assertEquals(WasiWhence.END, WasiWhence.fromValue(2), "Value 2 should return END");
-
-      LOGGER.info("WasiWhence.fromValue verified");
-    }
-
-    @Test
-    @DisplayName("Should throw exception for invalid whence")
-    void shouldThrowExceptionForInvalidWhence() {
-      LOGGER.info("Testing invalid whence");
-
-      assertThrows(IllegalArgumentException.class, () -> WasiWhence.fromValue(99));
-
-      LOGGER.info("Correctly threw exception for invalid whence");
-    }
-  }
-
-  @Nested
-  @DisplayName("WasiEventRwFlags Tests")
-  class WasiEventRwFlagsTests {
-
-    @Test
-    @DisplayName("Should have correct enum values")
-    void shouldHaveCorrectEnumValues() {
-      LOGGER.info("Testing WasiEventRwFlags enum values");
-
-      assertEquals(
-          1, WasiEventRwFlags.FD_READWRITE_HANGUP.getValue(), "FD_READWRITE_HANGUP should be 1");
-
-      LOGGER.info("WasiEventRwFlags values verified");
-    }
-
-    @Test
-    @DisplayName("Should combine flags")
-    void shouldCombineFlags() {
-      LOGGER.info("Testing WasiEventRwFlags.combine");
-
-      final int combined = WasiEventRwFlags.combine(WasiEventRwFlags.FD_READWRITE_HANGUP);
-      assertEquals(1, combined, "Combined flags should be FD_READWRITE_HANGUP");
-
-      final int empty = WasiEventRwFlags.combine();
-      assertEquals(0, empty, "Empty combine should be 0");
-
-      LOGGER.info("WasiEventRwFlags.combine verified");
-    }
-
-    @Test
-    @DisplayName("Should check if mask contains flag")
-    void shouldCheckIfMaskContainsFlag() {
-      LOGGER.info("Testing WasiEventRwFlags.contains");
-
-      final int mask = WasiEventRwFlags.combine(WasiEventRwFlags.FD_READWRITE_HANGUP);
-
-      assertTrue(
-          WasiEventRwFlags.contains(mask, WasiEventRwFlags.FD_READWRITE_HANGUP),
-          "Mask should contain FD_READWRITE_HANGUP");
-      assertFalse(
-          WasiEventRwFlags.contains(0, WasiEventRwFlags.FD_READWRITE_HANGUP),
-          "Empty mask should not contain FD_READWRITE_HANGUP");
-
-      LOGGER.info("WasiEventRwFlags.contains verified");
     }
   }
 }

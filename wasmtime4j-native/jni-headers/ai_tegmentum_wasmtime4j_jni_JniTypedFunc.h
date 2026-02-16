@@ -183,14 +183,6 @@ JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCal
 JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeCallF32I32ToF32
   (JNIEnv *, jclass, jlong, jlong, jfloat, jint);
 
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniTypedFunc
- * Method:    nativeDestroy
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTypedFunc_nativeDestroy
-  (JNIEnv *, jclass, jlong);
-
 #ifdef __cplusplus
 }
 #endif

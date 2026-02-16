@@ -120,5 +120,4 @@ public final class JniTag extends JniResource implements Tag {
 
   private static native boolean nativeEquals(long tag1Handle, long tag2Handle, long storeHandle);
 
-  private static native void nativeDestroy(long tagHandle);
 }

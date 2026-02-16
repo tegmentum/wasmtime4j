@@ -908,83 +908,9 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  /**
-   * Gets comprehensive diagnostic information about this store.
-   *
-   * <p>This method returns a formatted string containing detailed diagnostic information about the
-   * store's current state, configuration, and runtime metrics. This information is useful for
-   * debugging, monitoring, and performance analysis.
-   *
-   * @return formatted diagnostic information
-   * @throws WasmException if diagnostic information cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  public String getDiagnosticInfo() throws WasmException {
-    return getRuntimeInfo();
-  }
-
-  /**
-   * Checks if the store is in a healthy state.
-   *
-   * <p>This method performs a health check that combines validation with runtime state analysis. A
-   * store is considered healthy if it passes validation and all key metrics are within expected
-   * ranges.
-   *
-   * @return true if the store is healthy, false otherwise
-   */
-  public boolean isHealthy() {
-    if (!isValid()) {
-      return false;
-    }
-
-    try {
-      // Check if fuel system is consistent
-      final long fuelLimit = getFuelLimit();
-      final long fuelRemaining = getFuel();
-
-      // If fuel is enabled, remaining fuel should not exceed limit
-      if (fuelLimit >= 0 && fuelRemaining > fuelLimit) {
-        LOGGER.warning("Store health check failed: remaining fuel exceeds limit");
-        return false;
-      }
-
-      return true;
-    } catch (final Exception e) {
-      LOGGER.warning("Store health check failed due to exception: " + e.getMessage());
-      return false;
-    }
-  }
 
   // Native method declarations
 
-  /**
-   * Creates a new store with default configuration.
-   *
-   * @param engineHandle the native engine handle
-   * @return the native store handle, or 0 on failure
-   */
-  private static native long nativeCreateStore(long engineHandle);
-
-  /**
-   * Creates a new store with custom configuration.
-   *
-   * @param engineHandle the native engine handle
-   * @param fuelLimit the fuel limit (0 = no limit)
-   * @param memoryLimitBytes the memory limit in bytes (0 = no limit)
-   * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
-   * @param maxInstances the maximum number of instances (0 = no limit)
-   * @param maxTableElements the maximum table elements (0 = no limit)
-   * @param maxFunctions the maximum functions (0 = no limit)
-   * @return the native store handle, or 0 on failure
-   */
-  private static native long nativeCreateStoreWithConfig(
-      long engineHandle,
-      long fuelLimit,
-      long memoryLimitBytes,
-      long executionTimeoutSecs,
-      int maxInstances,
-      int maxTableElements,
-      int maxFunctions);
 
   /**
    * Creates a new store that is compatible with a specific module.
@@ -1033,13 +959,6 @@ public final class JniStore extends JniResource implements Store {
    */
   private static native boolean nativeSetEpochDeadline(long storeHandle, long ticks);
 
-  /**
-   * Triggers garbage collection within a store.
-   *
-   * @param storeHandle the native store handle
-   * @return true on success, false on failure
-   */
-  private static native boolean nativeGarbageCollect(long storeHandle);
 
   /**
    * Validates the store and checks its current state.

@@ -99,5 +99,4 @@ public final class JniExnRef extends JniResource implements ExnRef {
 
   private static native boolean nativeIsValid(long exnRefHandle, long storeHandle);
 
-  private static native void nativeDestroy(long exnRefHandle);
 }
