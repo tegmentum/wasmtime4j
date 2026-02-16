@@ -1466,3 +1466,63 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearReso
 ) {
     unregister_jni_resource_limiter(store_ptr);
 }
+
+// ============================================================================
+// Call Hook JNI Functions
+// ============================================================================
+
+/// Set a call hook on the store
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetCallHook(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) {
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        core::set_call_hook(store)?;
+        Ok(())
+    });
+}
+
+/// Clear the call hook from the store
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCallHook(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) {
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        core::clear_call_hook(store)?;
+        Ok(())
+    });
+}
+
+/// Set an async call hook on the store
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetCallHookAsync(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) {
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        core::set_call_hook(store)?;
+        Ok(())
+    });
+}
+
+/// Clear the async call hook from the store
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCallHookAsync(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) {
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        core::clear_call_hook(store)?;
+        Ok(())
+    });
+}
