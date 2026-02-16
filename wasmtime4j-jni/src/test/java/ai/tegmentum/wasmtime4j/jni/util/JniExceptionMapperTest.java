@@ -26,6 +26,8 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Comprehensive tests for {@link JniExceptionMapper}. */
 @DisplayName("JniExceptionMapper Tests")
@@ -55,52 +57,124 @@ class JniExceptionMapperTest {
   }
 
   @Nested
-  @DisplayName("mapNativeError Tests")
+  @DisplayName("mapNativeError Tests - All Error Codes")
   class MapNativeErrorTests {
 
-    @Test
-    @DisplayName("Should map NATIVE_ERROR_NONE")
-    void shouldMapErrorNone() {
-      final JniException ex = JniExceptionMapper.mapNativeError(0, "test message");
-      assertNotNull(ex, "Exception should not be null");
-      assertTrue(ex.getMessage().contains("No error occurred"), "Should indicate no error");
+    @ParameterizedTest(name = "Error code {0} should produce message containing \"{1}\"")
+    @CsvSource({
+      "0, No error occurred",
+      "-1, Compilation failed",
+      "-2, Validation failed",
+      "-3, Runtime error",
+      "-4, Engine configuration error",
+      "-5, Store error",
+      "-6, Instance error",
+      "-7, Memory access error",
+      "-8, Function invocation failed",
+      "-9, Import/Export error",
+      "-10, Type error",
+      "-11, Resource error",
+      "-12, I/O error",
+      "-13, Invalid parameter",
+      "-14, Concurrency error",
+      "-15, WASI error",
+      "-16, Security error",
+      "-17, Component error",
+      "-18, Interface error",
+      "-19, Network error",
+      "-20, Process error",
+      "-21, Internal error",
+      "-22, Security violation",
+      "-23, Invalid data",
+      "-24, I/O operation error",
+      "-25, Unsupported operation",
+      "-26, Would block"
+    })
+    @DisplayName("Should map all 27 error codes correctly")
+    void shouldMapAllErrorCodes(final int errorCode, final String expectedMessagePart) {
+      final JniException ex = JniExceptionMapper.mapNativeError(errorCode, "test detail");
+      assertNotNull(ex, "Exception should not be null for error code " + errorCode);
+      assertTrue(
+          ex.getMessage().contains(expectedMessagePart),
+          "Error code "
+              + errorCode
+              + " should produce message containing '"
+              + expectedMessagePart
+              + "' but got: "
+              + ex.getMessage());
     }
 
     @Test
-    @DisplayName("Should map NATIVE_ERROR_COMPILATION")
-    void shouldMapCompilationError() {
-      final JniException ex = JniExceptionMapper.mapNativeError(-1, "bad wasm");
-      assertNotNull(ex, "Exception should not be null");
-      assertTrue(ex.getMessage().contains("Compilation failed"), "Should indicate compilation");
-      assertTrue(ex.getMessage().contains("bad wasm"), "Should include message");
+    @DisplayName("Error code -16 should map to Security, not Component (bug fix verification)")
+    void shouldMapMinusSixteenToSecurity() {
+      final JniException ex = JniExceptionMapper.mapNativeError(-16, "access denied");
+      assertTrue(
+          ex.getMessage().contains("Security error"),
+          "Error code -16 must map to 'Security error' (Rust SecurityError), "
+              + "not 'Component error'. Got: "
+              + ex.getMessage());
+      assertTrue(
+          ex.getMessage().contains("access denied"), "Should include the error message detail");
     }
 
     @Test
-    @DisplayName("Should map NATIVE_ERROR_VALIDATION")
-    void shouldMapValidationError() {
-      final JniException ex = JniExceptionMapper.mapNativeError(-2, "invalid module");
-      assertTrue(ex.getMessage().contains("Validation failed"), "Should indicate validation");
+    @DisplayName("Error code -17 should map to Component, not Interface (bug fix verification)")
+    void shouldMapMinusSeventeenToComponent() {
+      final JniException ex = JniExceptionMapper.mapNativeError(-17, "component failure");
+      assertTrue(
+          ex.getMessage().contains("Component error"),
+          "Error code -17 must map to 'Component error' (Rust ComponentError), "
+              + "not 'Interface error'. Got: "
+              + ex.getMessage());
     }
 
     @Test
-    @DisplayName("Should map NATIVE_ERROR_RUNTIME")
-    void shouldMapRuntimeError() {
-      final JniException ex = JniExceptionMapper.mapNativeError(-3, "trap");
-      assertTrue(ex.getMessage().contains("Runtime error"), "Should indicate runtime error");
+    @DisplayName("Error code -18 should map to Interface, not Internal (bug fix verification)")
+    void shouldMapMinusEighteenToInterface() {
+      final JniException ex = JniExceptionMapper.mapNativeError(-18, "binding error");
+      assertTrue(
+          ex.getMessage().contains("Interface error"),
+          "Error code -18 must map to 'Interface error' (Rust InterfaceError), "
+              + "not 'Internal error'. Got: "
+              + ex.getMessage());
     }
 
     @Test
-    @DisplayName("Should map NATIVE_ERROR_MEMORY")
-    void shouldMapMemoryError() {
-      final JniException ex = JniExceptionMapper.mapNativeError(-7, "out of bounds");
-      assertTrue(ex.getMessage().contains("Memory access error"), "Should indicate memory error");
+    @DisplayName("Error code -21 should map to Internal (previously unmapped)")
+    void shouldMapMinusTwentyOneToInternal() {
+      final JniException ex = JniExceptionMapper.mapNativeError(-21, "internal failure");
+      assertTrue(
+          ex.getMessage().contains("Internal error"),
+          "Error code -21 must map to 'Internal error' (Rust InternalError). Got: "
+              + ex.getMessage());
     }
 
     @Test
-    @DisplayName("Should map NATIVE_ERROR_RESOURCE")
-    void shouldMapResourceError() {
-      final JniException ex = JniExceptionMapper.mapNativeError(-11, "resource exhausted");
-      assertTrue(ex.getMessage().contains("Resource error"), "Should indicate resource error");
+    @DisplayName("All mapped error codes should include the native error code")
+    void allMappedErrorCodesShouldPreserveCode() {
+      for (int code = -1; code >= -26; code--) {
+        final JniException ex = JniExceptionMapper.mapNativeError(code, "test");
+        assertNotNull(ex, "Exception should not be null for code " + code);
+        assertTrue(
+            ex.hasNativeErrorCode(),
+            "Exception for code " + code + " should have native error code");
+        assertEquals(
+            code,
+            ex.getNativeErrorCode(),
+            "Exception for code " + code + " should preserve the native error code");
+      }
+    }
+
+    @Test
+    @DisplayName("Should include error message in all mapped exceptions")
+    void shouldIncludeErrorMessageInAllMappedExceptions() {
+      final String testMessage = "specific error detail";
+      for (int code = -1; code >= -26; code--) {
+        final JniException ex = JniExceptionMapper.mapNativeError(code, testMessage);
+        assertTrue(
+            ex.getMessage().contains(testMessage),
+            "Error code " + code + " should include the message. Got: " + ex.getMessage());
+      }
     }
 
     @Test

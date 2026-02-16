@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
+import ai.tegmentum.wasmtime4j.exception.WasmErrorCode;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import java.util.logging.Logger;
@@ -11,70 +12,13 @@ import java.util.logging.Logger;
  * meaningful Java exceptions. It ensures that native errors don't propagate as generic runtime
  * errors and provides proper exception hierarchy mapping.
  *
- * <p>The mapper supports various categories of WebAssembly-related exceptions including compilation
- * errors, runtime errors, validation errors, and system errors.
+ * <p>Error codes are defined by the Rust {@code ErrorCode} enum and mirrored in {@link
+ * WasmErrorCode}. This mapper uses {@link WasmErrorCode} as the single source of truth for error
+ * code classification.
  */
 public final class JniExceptionMapper {
 
   private static final Logger LOGGER = Logger.getLogger(JniExceptionMapper.class.getName());
-
-  // Native error code constants (must match the Rust error.rs enum ErrorCode exactly)
-  /** No error occurred. */
-  private static final int NATIVE_ERROR_NONE = 0;
-
-  /** WebAssembly compilation failed. */
-  private static final int NATIVE_ERROR_COMPILATION = -1;
-
-  /** WebAssembly module validation failed. */
-  private static final int NATIVE_ERROR_VALIDATION = -2;
-
-  /** WebAssembly runtime error occurred. */
-  private static final int NATIVE_ERROR_RUNTIME = -3;
-
-  /** Engine configuration error. */
-  private static final int NATIVE_ERROR_ENGINE_CONFIG = -4;
-
-  /** Store creation or management error. */
-  private static final int NATIVE_ERROR_STORE = -5;
-
-  /** Instance creation or management error. */
-  private static final int NATIVE_ERROR_INSTANCE = -6;
-
-  /** Memory access or allocation error. */
-  private static final int NATIVE_ERROR_MEMORY = -7;
-
-  /** Function invocation error. */
-  private static final int NATIVE_ERROR_FUNCTION = -8;
-
-  /** Import or export resolution error. */
-  private static final int NATIVE_ERROR_IMPORT_EXPORT = -9;
-
-  /** Type conversion or validation error. */
-  private static final int NATIVE_ERROR_TYPE = -10;
-
-  /** Resource management error. */
-  private static final int NATIVE_ERROR_RESOURCE = -11;
-
-  /** I/O operation error. */
-  private static final int NATIVE_ERROR_IO = -12;
-
-  /** Invalid parameter provided. */
-  private static final int NATIVE_ERROR_INVALID_PARAMETER = -13;
-
-  /** Threading or concurrency error. */
-  private static final int NATIVE_ERROR_CONCURRENCY = -14;
-
-  /** WASI-related error. */
-  private static final int NATIVE_ERROR_WASI = -15;
-
-  /** Component model error. */
-  private static final int NATIVE_ERROR_COMPONENT = -16;
-
-  /** Interface definition or binding error. */
-  private static final int NATIVE_ERROR_INTERFACE = -17;
-
-  /** Internal system error. */
-  private static final int NATIVE_ERROR_INTERNAL = -18;
 
   /** Private constructor to prevent instantiation of utility class. */
   private JniExceptionMapper() {
@@ -90,68 +34,99 @@ public final class JniExceptionMapper {
    */
   public static JniException mapNativeError(final int errorCode, final String message) {
     final String safeMessage = message != null ? message : "Unknown native error";
+    final WasmErrorCode wasmErrorCode = WasmErrorCode.fromCode(errorCode);
 
-    switch (errorCode) {
-      case NATIVE_ERROR_NONE:
-        LOGGER.warning("mapNativeError called with NATIVE_ERROR_NONE");
+    if (wasmErrorCode == null) {
+      LOGGER.warning("Unknown native error code: " + errorCode);
+      return new JniException(
+          "Unknown native error (code " + errorCode + "): " + safeMessage, errorCode);
+    }
+
+    switch (wasmErrorCode) {
+      case SUCCESS:
+        LOGGER.warning("mapNativeError called with SUCCESS");
         return new JniException("No error occurred", errorCode);
 
-      case NATIVE_ERROR_COMPILATION:
+      case COMPILATION_ERROR:
         return new JniException("Compilation failed: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_VALIDATION:
+      case VALIDATION_ERROR:
         return new JniException("Validation failed: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_RUNTIME:
+      case RUNTIME_ERROR:
         return new JniException("Runtime error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_ENGINE_CONFIG:
+      case ENGINE_CONFIG_ERROR:
         return new JniException("Engine configuration error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_STORE:
+      case STORE_ERROR:
         return new JniException("Store error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_INSTANCE:
+      case INSTANCE_ERROR:
         return new JniException("Instance error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_MEMORY:
+      case MEMORY_ERROR:
         return new JniException("Memory access error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_FUNCTION:
+      case FUNCTION_ERROR:
         return new JniException("Function invocation failed: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_IMPORT_EXPORT:
+      case IMPORT_EXPORT_ERROR:
         return new JniException("Import/Export error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_TYPE:
+      case TYPE_ERROR:
         return new JniException("Type error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_RESOURCE:
+      case RESOURCE_ERROR:
         return new JniException("Resource error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_IO:
+      case IO_ERROR:
         return new JniException("I/O error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_INVALID_PARAMETER:
+      case INVALID_PARAMETER_ERROR:
         return new JniException("Invalid parameter: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_CONCURRENCY:
+      case CONCURRENCY_ERROR:
         return new JniException("Concurrency error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_WASI:
+      case WASI_ERROR:
         return new JniException("WASI error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_COMPONENT:
+      case SECURITY_ERROR:
+        return new JniException("Security error: " + safeMessage, errorCode);
+
+      case COMPONENT_ERROR:
         return new JniException("Component error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_INTERFACE:
+      case INTERFACE_ERROR:
         return new JniException("Interface error: " + safeMessage, errorCode);
 
-      case NATIVE_ERROR_INTERNAL:
+      case NETWORK_ERROR:
+        return new JniException("Network error: " + safeMessage, errorCode);
+
+      case PROCESS_ERROR:
+        return new JniException("Process error: " + safeMessage, errorCode);
+
+      case INTERNAL_ERROR:
         return new JniException("Internal error: " + safeMessage, errorCode);
 
+      case SECURITY_VIOLATION:
+        return new JniException("Security violation: " + safeMessage, errorCode);
+
+      case INVALID_DATA:
+        return new JniException("Invalid data: " + safeMessage, errorCode);
+
+      case IO_OPERATION_ERROR:
+        return new JniException("I/O operation error: " + safeMessage, errorCode);
+
+      case UNSUPPORTED_OPERATION:
+        return new JniException("Unsupported operation: " + safeMessage, errorCode);
+
+      case WOULD_BLOCK:
+        return new JniException("Would block: " + safeMessage, errorCode);
+
       default:
-        LOGGER.warning("Unknown native error code: " + errorCode);
+        LOGGER.warning("Unhandled WasmErrorCode: " + wasmErrorCode);
         return new JniException(
             "Unknown native error (code " + errorCode + "): " + safeMessage, errorCode);
     }
