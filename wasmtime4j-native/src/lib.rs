@@ -65,11 +65,6 @@ pub mod wast_runner; // WAST test execution
 
 // Additional core functionality for comprehensive API coverage
 
-// Platform optimization integration tests (NUMA, cache, memory bandwidth)
-// DISABLED: Requires platform optimization modules (398 type definitions needed)
-// #[cfg(test)]
-// pub mod platform_optimization_integration_test;
-
 // Shared FFI architecture with trait-based conversions
 pub mod shared_ffi;
 

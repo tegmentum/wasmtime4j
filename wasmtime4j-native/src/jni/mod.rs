@@ -69,7 +69,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetLib
     mut env: JNIEnv,
     _class: JClass,
 ) -> jstring {
-    let version = "wasmtime4j-native-DEBUG-2025-10-06-18:45-WITH-SIGNALS-DISABLED";
+    let version = crate::WASMTIME_VERSION;
     match env.new_string(version) {
         Ok(s) => s.into_raw(),
         Err(_) => std::ptr::null_mut(),

@@ -31,6 +31,7 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_config(
     max_stack_size: c_int,
     epoch_interruption: c_int,
     max_instances: c_int,
+    async_support: c_int,
 ) -> *mut c_void {
     ffi_utils::ffi_try_ptr(|| {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
@@ -55,7 +56,7 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_config(
             max_stack_size_opt,
             parameter_conversion::convert_int_to_bool(epoch_interruption),
             max_instances_opt,
-            false, // async_support - TODO: add Panama parameter
+            parameter_conversion::convert_int_to_bool(async_support),
         )
     })
 }

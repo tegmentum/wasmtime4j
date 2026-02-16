@@ -54,6 +54,7 @@ fn test_engine_create_with_config_all_features() {
         -1, // max_stack_size: default
         1,  // epoch_interruption: true
         -1, // max_instances: default
+        0,  // async_support: false
     );
     assert!(
         !engine_ptr.is_null(),
@@ -215,6 +216,7 @@ fn test_engine_supports_feature() {
         1, // bulk_memory
         1, // multi_value
         0, -1, -1, 0, -1,
+        0, // async_support: false
     );
     assert!(!engine_ptr.is_null());
 
