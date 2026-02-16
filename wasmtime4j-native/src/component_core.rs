@@ -208,8 +208,16 @@ impl EnhancedComponentEngine {
         if let Ok(mut metrics) = self.metrics.write() {
             metrics.components_loaded += 1;
             let compilation_time = start_time.elapsed();
-            metrics.avg_instantiation_time =
-                (metrics.avg_instantiation_time + compilation_time) / 2;
+            let n = metrics.components_loaded;
+            if n == 1 {
+                metrics.avg_instantiation_time = compilation_time;
+            } else {
+                let prev_nanos = metrics.avg_instantiation_time.as_nanos() as i128;
+                let curr_nanos = compilation_time.as_nanos() as i128;
+                let new_avg = prev_nanos + (curr_nanos - prev_nanos) / (n as i128);
+                metrics.avg_instantiation_time =
+                    Duration::from_nanos(new_avg.max(0) as u64);
+            }
         }
 
         Ok(Component::new(component, metadata))
