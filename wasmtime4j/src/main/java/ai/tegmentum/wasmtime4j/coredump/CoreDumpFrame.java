@@ -16,79 +16,189 @@
 
 package ai.tegmentum.wasmtime4j.coredump;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Represents a single stack frame captured in a WebAssembly coredump.
- *
- * <p>Each frame corresponds to a function call that was active at the time of the trap. The frame
- * contains information about the function, its location, and the values of local variables.
+ * Represents a single stack frame in a WebAssembly core dump.
  *
  * @since 1.0.0
  */
-public interface CoreDumpFrame {
+public final class CoreDumpFrame {
+
+  private final int funcIndex;
+  private final String funcName;
+  private final int moduleIndex;
+  private final String moduleName;
+  private final int offset;
+  private final List<byte[]> locals;
+  private final List<byte[]> stack;
+  private final boolean trapFrame;
+
+  private CoreDumpFrame(final Builder builder) {
+    this.funcIndex = builder.funcIndex;
+    this.funcName = builder.funcName;
+    this.moduleIndex = builder.moduleIndex;
+    this.moduleName = builder.moduleName;
+    this.offset = builder.offset;
+    this.locals = copyByteArrayList(builder.locals);
+    this.stack = copyByteArrayList(builder.stack);
+    this.trapFrame = builder.trapFrame;
+  }
+
+  private static List<byte[]> copyByteArrayList(final List<byte[]> source) {
+    final List<byte[]> copy = new ArrayList<>(source.size());
+    for (final byte[] arr : source) {
+      copy.add(arr != null ? arr.clone() : null);
+    }
+    return Collections.unmodifiableList(copy);
+  }
 
   /**
-   * Returns the index of the function within its module.
+   * Creates a new builder for constructing a CoreDumpFrame.
    *
-   * @return the function index
+   * @return a new builder instance
    */
-  int getFuncIndex();
+  public static Builder builder() {
+    return new Builder();
+  }
 
-  /**
-   * Returns the name of the function, if available.
-   *
-   * <p>Function names are typically available when debug information is present in the module.
-   *
-   * @return an Optional containing the function name, or empty if not available
-   */
-  Optional<String> getFuncName();
+  public int getFuncIndex() {
+    return funcIndex;
+  }
 
-  /**
-   * Returns the index of the module containing this function.
-   *
-   * @return the module index
-   */
-  int getModuleIndex();
+  public Optional<String> getFuncName() {
+    return Optional.ofNullable(funcName);
+  }
 
-  /**
-   * Returns the name of the module containing this function, if available.
-   *
-   * @return an Optional containing the module name, or empty if not available
-   */
-  Optional<String> getModuleName();
+  public int getModuleIndex() {
+    return moduleIndex;
+  }
 
-  /**
-   * Returns the byte offset within the function where execution was at the time of the trap.
-   *
-   * @return the offset in bytes from the start of the function
-   */
-  int getOffset();
+  public Optional<String> getModuleName() {
+    return Optional.ofNullable(moduleName);
+  }
 
-  /**
-   * Returns the values of local variables in this frame.
-   *
-   * <p>The list includes both function parameters and local variables. Values are represented as
-   * raw byte arrays in their WebAssembly encoding.
-   *
-   * @return an unmodifiable list of local variable values
-   */
-  List<byte[]> getLocals();
+  public int getOffset() {
+    return offset;
+  }
 
-  /**
-   * Returns the values on the operand stack in this frame.
-   *
-   * <p>Stack values are represented as raw byte arrays in their WebAssembly encoding.
-   *
-   * @return an unmodifiable list of stack values
-   */
-  List<byte[]> getStack();
+  public List<byte[]> getLocals() {
+    return new java.util.ArrayList<>(locals);
+  }
 
-  /**
-   * Returns whether this is the trap frame (the frame where the trap occurred).
-   *
-   * @return true if this is the trap frame
-   */
-  boolean isTrapFrame();
+  public List<byte[]> getStack() {
+    return new java.util.ArrayList<>(stack);
+  }
+
+  public boolean isTrapFrame() {
+    return trapFrame;
+  }
+
+  @Override
+  public String toString() {
+    return "CoreDumpFrame{"
+        + "funcIndex="
+        + funcIndex
+        + ", funcName='"
+        + funcName
+        + '\''
+        + ", moduleIndex="
+        + moduleIndex
+        + ", moduleName='"
+        + moduleName
+        + '\''
+        + ", offset="
+        + offset
+        + ", trapFrame="
+        + trapFrame
+        + '}';
+  }
+
+  /** Builder for constructing {@link CoreDumpFrame} instances. */
+  public static final class Builder {
+
+    private int funcIndex;
+    private String funcName;
+    private int moduleIndex;
+    private String moduleName;
+    private int offset;
+    private final List<byte[]> locals = new ArrayList<>();
+    private final List<byte[]> stack = new ArrayList<>();
+    private boolean trapFrame;
+
+    private Builder() {}
+
+    public Builder funcIndex(final int funcIndex) {
+      this.funcIndex = funcIndex;
+      return this;
+    }
+
+    public Builder funcName(final String funcName) {
+      this.funcName = funcName;
+      return this;
+    }
+
+    public Builder moduleIndex(final int moduleIndex) {
+      this.moduleIndex = moduleIndex;
+      return this;
+    }
+
+    public Builder moduleName(final String moduleName) {
+      this.moduleName = moduleName;
+      return this;
+    }
+
+    public Builder offset(final int offset) {
+      this.offset = offset;
+      return this;
+    }
+
+    public Builder addLocal(final byte[] value) {
+      this.locals.add(value != null ? value.clone() : null);
+      return this;
+    }
+
+    /**
+     * Adds multiple local variable values to this frame.
+     *
+     * @param values the list of local values to add
+     * @return this builder
+     */
+    public Builder addLocals(final List<byte[]> values) {
+      for (final byte[] value : values) {
+        this.locals.add(value != null ? value.clone() : null);
+      }
+      return this;
+    }
+
+    public Builder addStackValue(final byte[] value) {
+      this.stack.add(value != null ? value.clone() : null);
+      return this;
+    }
+
+    /**
+     * Adds multiple operand stack values to this frame.
+     *
+     * @param values the list of stack values to add
+     * @return this builder
+     */
+    public Builder addStackValues(final List<byte[]> values) {
+      for (final byte[] value : values) {
+        this.stack.add(value != null ? value.clone() : null);
+      }
+      return this;
+    }
+
+    public Builder trapFrame(final boolean trapFrame) {
+      this.trapFrame = trapFrame;
+      return this;
+    }
+
+    public CoreDumpFrame build() {
+      return new CoreDumpFrame(this);
+    }
+  }
 }

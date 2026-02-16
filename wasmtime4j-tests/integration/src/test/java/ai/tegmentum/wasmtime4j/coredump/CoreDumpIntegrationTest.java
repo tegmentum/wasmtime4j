@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Integration tests for coredump package.
  *
- * <p>This test class validates the coredump interfaces and default implementations.
+ * <p>This test class validates the coredump classes and their public APIs.
  */
 @DisplayName("CoreDump Integration Tests")
 public class CoreDumpIntegrationTest {
@@ -32,23 +32,26 @@ public class CoreDumpIntegrationTest {
   }
 
   @Nested
-  @DisplayName("WasmCoreDump Interface Tests")
-  class WasmCoreDumpInterfaceTests {
+  @DisplayName("WasmCoreDump Class Tests")
+  class WasmCoreDumpClassTests {
 
     @Test
-    @DisplayName("Should verify WasmCoreDump interface exists")
-    void shouldVerifyWasmCoreDumpInterfaceExists() {
-      LOGGER.info("Testing WasmCoreDump interface existence");
+    @DisplayName("Should verify WasmCoreDump class exists and is concrete")
+    void shouldVerifyWasmCoreDumpClassExists() {
+      LOGGER.info("Testing WasmCoreDump class existence");
 
-      assertTrue(WasmCoreDump.class.isInterface(), "WasmCoreDump should be an interface");
+      assertNotNull(WasmCoreDump.class, "WasmCoreDump class should exist");
+      assertFalse(
+          WasmCoreDump.class.isInterface(),
+          "WasmCoreDump should be a concrete class");
 
-      LOGGER.info("WasmCoreDump interface verified");
+      LOGGER.info("WasmCoreDump class verified");
     }
 
     @Test
-    @DisplayName("Should have required interface methods")
-    void shouldHaveRequiredInterfaceMethods() throws Exception {
-      LOGGER.info("Testing WasmCoreDump interface methods");
+    @DisplayName("Should have required public methods")
+    void shouldHaveRequiredPublicMethods() throws Exception {
+      LOGGER.info("Testing WasmCoreDump public methods");
 
       Method getName = WasmCoreDump.class.getMethod("getName");
       assertNotNull(getName, "getName method should exist");
@@ -77,205 +80,93 @@ public class CoreDumpIntegrationTest {
       Method getTrapMessage = WasmCoreDump.class.getMethod("getTrapMessage");
       assertNotNull(getTrapMessage, "getTrapMessage method should exist");
 
-      LOGGER.info("WasmCoreDump interface methods verified");
+      LOGGER.info("WasmCoreDump public methods verified");
+    }
+
+    @Test
+    @DisplayName("Should have builder factory method")
+    void shouldHaveBuilderFactoryMethod() throws Exception {
+      LOGGER.info("Testing WasmCoreDump builder method");
+
+      Method builder = WasmCoreDump.class.getMethod("builder");
+      assertNotNull(builder, "builder method should exist");
+      assertTrue(
+          java.lang.reflect.Modifier.isStatic(builder.getModifiers()),
+          "builder should be static");
+
+      LOGGER.info("WasmCoreDump builder method verified");
     }
   }
 
   @Nested
-  @DisplayName("DefaultWasmCoreDump Implementation Tests")
-  class DefaultWasmCoreDumpImplementationTests {
+  @DisplayName("CoreDumpFrame Class Tests")
+  class CoreDumpFrameClassTests {
 
     @Test
-    @DisplayName("Should verify DefaultWasmCoreDump class exists")
-    void shouldVerifyDefaultWasmCoreDumpClassExists() {
-      LOGGER.info("Testing DefaultWasmCoreDump class existence");
+    @DisplayName("Should verify CoreDumpFrame class exists and is concrete")
+    void shouldVerifyCoreDumpFrameClassExists() {
+      LOGGER.info("Testing CoreDumpFrame class existence");
 
-      assertNotNull(DefaultWasmCoreDump.class, "DefaultWasmCoreDump class should exist");
+      assertNotNull(CoreDumpFrame.class, "CoreDumpFrame class should exist");
       assertFalse(
-          DefaultWasmCoreDump.class.isInterface(),
-          "DefaultWasmCoreDump should not be an interface");
+          CoreDumpFrame.class.isInterface(),
+          "CoreDumpFrame should be a concrete class");
 
-      LOGGER.info("DefaultWasmCoreDump class verified");
-    }
-
-    @Test
-    @DisplayName("Should implement WasmCoreDump interface")
-    void shouldImplementWasmCoreDumpInterface() {
-      LOGGER.info("Testing DefaultWasmCoreDump implements WasmCoreDump");
-
-      assertTrue(
-          WasmCoreDump.class.isAssignableFrom(DefaultWasmCoreDump.class),
-          "DefaultWasmCoreDump should implement WasmCoreDump");
-
-      LOGGER.info("DefaultWasmCoreDump implements WasmCoreDump verified");
+      LOGGER.info("CoreDumpFrame class verified");
     }
   }
 
   @Nested
-  @DisplayName("CoreDumpFrame Interface Tests")
-  class CoreDumpFrameInterfaceTests {
+  @DisplayName("CoreDumpInstance Class Tests")
+  class CoreDumpInstanceClassTests {
 
     @Test
-    @DisplayName("Should verify CoreDumpFrame interface exists")
-    void shouldVerifyCoreDumpFrameInterfaceExists() {
-      LOGGER.info("Testing CoreDumpFrame interface existence");
+    @DisplayName("Should verify CoreDumpInstance class exists and is concrete")
+    void shouldVerifyCoreDumpInstanceClassExists() {
+      LOGGER.info("Testing CoreDumpInstance class existence");
 
-      assertTrue(CoreDumpFrame.class.isInterface(), "CoreDumpFrame should be an interface");
+      assertNotNull(CoreDumpInstance.class, "CoreDumpInstance class should exist");
+      assertFalse(
+          CoreDumpInstance.class.isInterface(),
+          "CoreDumpInstance should be a concrete class");
 
-      LOGGER.info("CoreDumpFrame interface verified");
+      LOGGER.info("CoreDumpInstance class verified");
     }
   }
 
   @Nested
-  @DisplayName("DefaultCoreDumpFrame Implementation Tests")
-  class DefaultCoreDumpFrameImplementationTests {
+  @DisplayName("CoreDumpGlobal Class Tests")
+  class CoreDumpGlobalClassTests {
 
     @Test
-    @DisplayName("Should verify DefaultCoreDumpFrame class exists")
-    void shouldVerifyDefaultCoreDumpFrameClassExists() {
-      LOGGER.info("Testing DefaultCoreDumpFrame class existence");
+    @DisplayName("Should verify CoreDumpGlobal class exists and is concrete")
+    void shouldVerifyCoreDumpGlobalClassExists() {
+      LOGGER.info("Testing CoreDumpGlobal class existence");
 
-      assertNotNull(DefaultCoreDumpFrame.class, "DefaultCoreDumpFrame class should exist");
+      assertNotNull(CoreDumpGlobal.class, "CoreDumpGlobal class should exist");
+      assertFalse(
+          CoreDumpGlobal.class.isInterface(),
+          "CoreDumpGlobal should be a concrete class");
 
-      LOGGER.info("DefaultCoreDumpFrame class verified");
-    }
-
-    @Test
-    @DisplayName("Should implement CoreDumpFrame interface")
-    void shouldImplementCoreDumpFrameInterface() {
-      LOGGER.info("Testing DefaultCoreDumpFrame implements CoreDumpFrame");
-
-      assertTrue(
-          CoreDumpFrame.class.isAssignableFrom(DefaultCoreDumpFrame.class),
-          "DefaultCoreDumpFrame should implement CoreDumpFrame");
-
-      LOGGER.info("DefaultCoreDumpFrame implements CoreDumpFrame verified");
+      LOGGER.info("CoreDumpGlobal class verified");
     }
   }
 
   @Nested
-  @DisplayName("CoreDumpInstance Interface Tests")
-  class CoreDumpInstanceInterfaceTests {
+  @DisplayName("CoreDumpMemory Class Tests")
+  class CoreDumpMemoryClassTests {
 
     @Test
-    @DisplayName("Should verify CoreDumpInstance interface exists")
-    void shouldVerifyCoreDumpInstanceInterfaceExists() {
-      LOGGER.info("Testing CoreDumpInstance interface existence");
+    @DisplayName("Should verify CoreDumpMemory class exists and is concrete")
+    void shouldVerifyCoreDumpMemoryClassExists() {
+      LOGGER.info("Testing CoreDumpMemory class existence");
 
-      assertTrue(CoreDumpInstance.class.isInterface(), "CoreDumpInstance should be an interface");
+      assertNotNull(CoreDumpMemory.class, "CoreDumpMemory class should exist");
+      assertFalse(
+          CoreDumpMemory.class.isInterface(),
+          "CoreDumpMemory should be a concrete class");
 
-      LOGGER.info("CoreDumpInstance interface verified");
-    }
-  }
-
-  @Nested
-  @DisplayName("DefaultCoreDumpInstance Implementation Tests")
-  class DefaultCoreDumpInstanceImplementationTests {
-
-    @Test
-    @DisplayName("Should verify DefaultCoreDumpInstance class exists")
-    void shouldVerifyDefaultCoreDumpInstanceClassExists() {
-      LOGGER.info("Testing DefaultCoreDumpInstance class existence");
-
-      assertNotNull(DefaultCoreDumpInstance.class, "DefaultCoreDumpInstance class should exist");
-
-      LOGGER.info("DefaultCoreDumpInstance class verified");
-    }
-
-    @Test
-    @DisplayName("Should implement CoreDumpInstance interface")
-    void shouldImplementCoreDumpInstanceInterface() {
-      LOGGER.info("Testing DefaultCoreDumpInstance implements CoreDumpInstance");
-
-      assertTrue(
-          CoreDumpInstance.class.isAssignableFrom(DefaultCoreDumpInstance.class),
-          "DefaultCoreDumpInstance should implement CoreDumpInstance");
-
-      LOGGER.info("DefaultCoreDumpInstance implements CoreDumpInstance verified");
-    }
-  }
-
-  @Nested
-  @DisplayName("CoreDumpGlobal Interface Tests")
-  class CoreDumpGlobalInterfaceTests {
-
-    @Test
-    @DisplayName("Should verify CoreDumpGlobal interface exists")
-    void shouldVerifyCoreDumpGlobalInterfaceExists() {
-      LOGGER.info("Testing CoreDumpGlobal interface existence");
-
-      assertTrue(CoreDumpGlobal.class.isInterface(), "CoreDumpGlobal should be an interface");
-
-      LOGGER.info("CoreDumpGlobal interface verified");
-    }
-  }
-
-  @Nested
-  @DisplayName("DefaultCoreDumpGlobal Implementation Tests")
-  class DefaultCoreDumpGlobalImplementationTests {
-
-    @Test
-    @DisplayName("Should verify DefaultCoreDumpGlobal class exists")
-    void shouldVerifyDefaultCoreDumpGlobalClassExists() {
-      LOGGER.info("Testing DefaultCoreDumpGlobal class existence");
-
-      assertNotNull(DefaultCoreDumpGlobal.class, "DefaultCoreDumpGlobal class should exist");
-
-      LOGGER.info("DefaultCoreDumpGlobal class verified");
-    }
-
-    @Test
-    @DisplayName("Should implement CoreDumpGlobal interface")
-    void shouldImplementCoreDumpGlobalInterface() {
-      LOGGER.info("Testing DefaultCoreDumpGlobal implements CoreDumpGlobal");
-
-      assertTrue(
-          CoreDumpGlobal.class.isAssignableFrom(DefaultCoreDumpGlobal.class),
-          "DefaultCoreDumpGlobal should implement CoreDumpGlobal");
-
-      LOGGER.info("DefaultCoreDumpGlobal implements CoreDumpGlobal verified");
-    }
-  }
-
-  @Nested
-  @DisplayName("CoreDumpMemory Interface Tests")
-  class CoreDumpMemoryInterfaceTests {
-
-    @Test
-    @DisplayName("Should verify CoreDumpMemory interface exists")
-    void shouldVerifyCoreDumpMemoryInterfaceExists() {
-      LOGGER.info("Testing CoreDumpMemory interface existence");
-
-      assertTrue(CoreDumpMemory.class.isInterface(), "CoreDumpMemory should be an interface");
-
-      LOGGER.info("CoreDumpMemory interface verified");
-    }
-  }
-
-  @Nested
-  @DisplayName("DefaultCoreDumpMemory Implementation Tests")
-  class DefaultCoreDumpMemoryImplementationTests {
-
-    @Test
-    @DisplayName("Should verify DefaultCoreDumpMemory class exists")
-    void shouldVerifyDefaultCoreDumpMemoryClassExists() {
-      LOGGER.info("Testing DefaultCoreDumpMemory class existence");
-
-      assertNotNull(DefaultCoreDumpMemory.class, "DefaultCoreDumpMemory class should exist");
-
-      LOGGER.info("DefaultCoreDumpMemory class verified");
-    }
-
-    @Test
-    @DisplayName("Should implement CoreDumpMemory interface")
-    void shouldImplementCoreDumpMemoryInterface() {
-      LOGGER.info("Testing DefaultCoreDumpMemory implements CoreDumpMemory");
-
-      assertTrue(
-          CoreDumpMemory.class.isAssignableFrom(DefaultCoreDumpMemory.class),
-          "DefaultCoreDumpMemory should implement CoreDumpMemory");
-
-      LOGGER.info("DefaultCoreDumpMemory implements CoreDumpMemory verified");
+      LOGGER.info("CoreDumpMemory class verified");
     }
   }
 }

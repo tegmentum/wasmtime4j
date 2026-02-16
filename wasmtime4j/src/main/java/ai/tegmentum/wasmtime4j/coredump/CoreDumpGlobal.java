@@ -17,98 +17,205 @@
 package ai.tegmentum.wasmtime4j.coredump;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Represents a global variable value captured in a WebAssembly coredump.
- *
- * <p>Global values represent the state of WebAssembly globals at the time of the trap.
+ * Represents a global variable snapshot in a WebAssembly core dump.
  *
  * @since 1.0.0
  */
-public interface CoreDumpGlobal {
+public final class CoreDumpGlobal {
+
+  private final int instanceIndex;
+  private final int globalIndex;
+  private final String name;
+  private final WasmValueType valueType;
+  private final boolean mutable;
+  private final byte[] rawValue;
+
+  private CoreDumpGlobal(final Builder builder) {
+    this.instanceIndex = builder.instanceIndex;
+    this.globalIndex = builder.globalIndex;
+    this.name = builder.name;
+    this.valueType = Objects.requireNonNull(builder.valueType, "Value type cannot be null");
+    this.mutable = builder.mutable;
+    this.rawValue = builder.rawValue != null ? builder.rawValue.clone() : new byte[0];
+  }
 
   /**
-   * Returns the index of the instance containing this global.
+   * Creates a new builder for constructing a CoreDumpGlobal.
    *
-   * @return the instance index
+   * @return a new builder instance
    */
-  int getInstanceIndex();
+  public static Builder builder() {
+    return new Builder();
+  }
 
-  /**
-   * Returns the index of this global within its instance.
-   *
-   * @return the global index
-   */
-  int getGlobalIndex();
+  public int getInstanceIndex() {
+    return instanceIndex;
+  }
 
-  /**
-   * Returns the name of this global, if available.
-   *
-   * @return an Optional containing the global name, or empty if not available
-   */
-  Optional<String> getName();
+  public int getGlobalIndex() {
+    return globalIndex;
+  }
 
-  /**
-   * Returns the WebAssembly value type of this global.
-   *
-   * @return the value type
-   */
-  WasmValueType getValueType();
+  public Optional<String> getName() {
+    return Optional.ofNullable(name);
+  }
 
-  /**
-   * Returns whether this global is mutable.
-   *
-   * @return true if the global is mutable
-   */
-  boolean isMutable();
+  public WasmValueType getValueType() {
+    return valueType;
+  }
 
-  /**
-   * Returns the raw value of this global as a byte array.
-   *
-   * <p>The encoding follows WebAssembly's binary format for the value type.
-   *
-   * @return the raw value bytes
-   */
-  byte[] getRawValue();
+  public boolean isMutable() {
+    return mutable;
+  }
 
-  /**
-   * Returns the value as a 32-bit integer.
-   *
-   * <p>This method should only be called if the value type is I32.
-   *
-   * @return the integer value
-   * @throws IllegalStateException if the value type is not I32
-   */
-  int getI32Value();
+  public byte[] getRawValue() {
+    return rawValue.clone();
+  }
 
-  /**
-   * Returns the value as a 64-bit integer.
-   *
-   * <p>This method should only be called if the value type is I64.
-   *
-   * @return the long value
-   * @throws IllegalStateException if the value type is not I64
-   */
-  long getI64Value();
+  public int getI32Value() {
+    if (valueType != WasmValueType.I32) {
+      throw new IllegalStateException("Value type is not I32: " + valueType);
+    }
+    return ByteBuffer.wrap(rawValue).order(ByteOrder.LITTLE_ENDIAN).getInt();
+  }
 
-  /**
-   * Returns the value as a 32-bit float.
-   *
-   * <p>This method should only be called if the value type is F32.
-   *
-   * @return the float value
-   * @throws IllegalStateException if the value type is not F32
-   */
-  float getF32Value();
+  public long getI64Value() {
+    if (valueType != WasmValueType.I64) {
+      throw new IllegalStateException("Value type is not I64: " + valueType);
+    }
+    return ByteBuffer.wrap(rawValue).order(ByteOrder.LITTLE_ENDIAN).getLong();
+  }
 
-  /**
-   * Returns the value as a 64-bit float.
-   *
-   * <p>This method should only be called if the value type is F64.
-   *
-   * @return the double value
-   * @throws IllegalStateException if the value type is not F64
-   */
-  double getF64Value();
+  public float getF32Value() {
+    if (valueType != WasmValueType.F32) {
+      throw new IllegalStateException("Value type is not F32: " + valueType);
+    }
+    return ByteBuffer.wrap(rawValue).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+  }
+
+  public double getF64Value() {
+    if (valueType != WasmValueType.F64) {
+      throw new IllegalStateException("Value type is not F64: " + valueType);
+    }
+    return ByteBuffer.wrap(rawValue).order(ByteOrder.LITTLE_ENDIAN).getDouble();
+  }
+
+  @Override
+  public String toString() {
+    return "CoreDumpGlobal{"
+        + "instanceIndex="
+        + instanceIndex
+        + ", globalIndex="
+        + globalIndex
+        + ", name='"
+        + name
+        + '\''
+        + ", valueType="
+        + valueType
+        + ", mutable="
+        + mutable
+        + '}';
+  }
+
+  /** Builder for constructing {@link CoreDumpGlobal} instances. */
+  public static final class Builder {
+
+    private int instanceIndex;
+    private int globalIndex;
+    private String name;
+    private WasmValueType valueType;
+    private boolean mutable;
+    private byte[] rawValue;
+
+    private Builder() {}
+
+    public Builder instanceIndex(final int instanceIndex) {
+      this.instanceIndex = instanceIndex;
+      return this;
+    }
+
+    public Builder globalIndex(final int globalIndex) {
+      this.globalIndex = globalIndex;
+      return this;
+    }
+
+    public Builder name(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder valueType(final WasmValueType valueType) {
+      this.valueType = valueType;
+      return this;
+    }
+
+    public Builder mutable(final boolean mutable) {
+      this.mutable = mutable;
+      return this;
+    }
+
+    public Builder rawValue(final byte[] rawValue) {
+      this.rawValue = rawValue != null ? rawValue.clone() : null;
+      return this;
+    }
+
+    /**
+     * Sets the global value as an i32.
+     *
+     * @param value the i32 value
+     * @return this builder
+     */
+    public Builder i32Value(final int value) {
+      this.valueType = WasmValueType.I32;
+      this.rawValue = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array();
+      return this;
+    }
+
+    /**
+     * Sets the global value as an i64.
+     *
+     * @param value the i64 value
+     * @return this builder
+     */
+    public Builder i64Value(final long value) {
+      this.valueType = WasmValueType.I64;
+      this.rawValue = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
+      return this;
+    }
+
+    /**
+     * Sets the global value as an f32.
+     *
+     * @param value the f32 value
+     * @return this builder
+     */
+    public Builder f32Value(final float value) {
+      this.valueType = WasmValueType.F32;
+      this.rawValue = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putFloat(value).array();
+      return this;
+    }
+
+    /**
+     * Sets the global value as an f64.
+     *
+     * @param value the f64 value
+     * @return this builder
+     */
+    public Builder f64Value(final double value) {
+      this.valueType = WasmValueType.F64;
+      this.rawValue =
+          ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putDouble(value).array();
+      return this;
+    }
+
+    public CoreDumpGlobal build() {
+      return new CoreDumpGlobal(this);
+    }
+  }
 }

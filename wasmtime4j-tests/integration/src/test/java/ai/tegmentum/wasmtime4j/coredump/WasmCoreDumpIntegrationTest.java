@@ -52,7 +52,7 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldCreateEmptyCoreDump(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().build();
 
       assertNotNull(coreDump, "Core dump should not be null");
       assertTrue(coreDump.getFrames().isEmpty(), "Frames should be empty");
@@ -69,8 +69,8 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldCreateCoreDumpWithNameAndTrapMessage(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder()
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder()
               .name("test-coredump")
               .trapMessage("Unreachable instruction executed")
               .build();
@@ -89,8 +89,8 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldCreateCoreDumpWithModules(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder()
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder()
               .addModule("main.wasm")
               .addModule("lib.wasm")
               .addModules(Arrays.asList("util1.wasm", "util2.wasm"))
@@ -113,7 +113,7 @@ public final class WasmCoreDumpIntegrationTest {
       final NullPointerException exception =
           assertThrows(
               NullPointerException.class,
-              () -> DefaultWasmCoreDump.builder().addFrame(null),
+              () -> WasmCoreDump.builder().addFrame(null),
               "Should reject null frame");
       assertNotNull(exception.getMessage(), "Exception should have message");
       LOGGER.info("Rejected null frame: " + exception.getMessage());
@@ -127,7 +127,7 @@ public final class WasmCoreDumpIntegrationTest {
       final NullPointerException exception =
           assertThrows(
               NullPointerException.class,
-              () -> DefaultWasmCoreDump.builder().addModule(null),
+              () -> WasmCoreDump.builder().addModule(null),
               "Should reject null module");
       assertNotNull(exception.getMessage(), "Exception should have message");
       LOGGER.info("Rejected null module: " + exception.getMessage());
@@ -143,8 +143,8 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldCreateFrameWithAllFields(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder()
               .funcIndex(5)
               .funcName("test_function")
               .moduleIndex(0)
@@ -170,8 +170,8 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldCreateFrameWithoutOptionalFields(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder().funcIndex(3).moduleIndex(1).offset(0x5678).build();
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder().funcIndex(3).moduleIndex(1).offset(0x5678).build();
 
       assertEquals(3, frame.getFuncIndex(), "Function index");
       assertFalse(frame.getFuncName().isPresent(), "Function name should be absent");
@@ -191,8 +191,8 @@ public final class WasmCoreDumpIntegrationTest {
       final byte[] local1 = new byte[] {0x01, 0x02, 0x03, 0x04};
       final byte[] local2 = new byte[] {0x10, 0x20, 0x30, 0x40};
 
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder()
               .funcIndex(0)
               .moduleIndex(0)
               .offset(0)
@@ -216,8 +216,8 @@ public final class WasmCoreDumpIntegrationTest {
       final byte[] stack2 = new byte[] {(byte) 0xAA, (byte) 0xBB};
       final byte[] stack3 = new byte[] {(byte) 0xCC, (byte) 0xDD};
 
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder()
               .funcIndex(0)
               .moduleIndex(0)
               .offset(0)
@@ -244,15 +244,15 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldReturnFramesFromCoreDump(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultCoreDumpFrame frame1 =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame1 =
+          CoreDumpFrame.builder()
               .funcIndex(0)
               .funcName("main")
               .moduleIndex(0)
               .offset(0x100)
               .build();
-      final DefaultCoreDumpFrame frame2 =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame2 =
+          CoreDumpFrame.builder()
               .funcIndex(1)
               .funcName("helper")
               .moduleIndex(0)
@@ -260,8 +260,8 @@ public final class WasmCoreDumpIntegrationTest {
               .trapFrame(true)
               .build();
 
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().name("test").addFrame(frame1).addFrame(frame2).build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().name("test").addFrame(frame1).addFrame(frame2).build();
 
       assertEquals(2, coreDump.getFrames().size(), "Should have 2 frames");
       assertEquals("main", coreDump.getFrames().get(0).getFuncName().orElse(null), "First frame");
@@ -279,8 +279,8 @@ public final class WasmCoreDumpIntegrationTest {
 
       // Create a core dump with serialized data
       final byte[] serializedData = new byte[1024];
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().name("sized-dump").serializedData(serializedData).build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().name("sized-dump").serializedData(serializedData).build();
 
       final long size = coreDump.getSize();
       assertTrue(size >= 1024, "Size should include serialized data: " + size);
@@ -293,8 +293,8 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldReturnImmutableLists(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().addModule("test.wasm").build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().addModule("test.wasm").build();
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -320,8 +320,8 @@ public final class WasmCoreDumpIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final byte[] originalData = new byte[] {0x00, 0x61, 0x73, 0x6D}; // WASM magic
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().name("serializable").serializedData(originalData).build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().name("serializable").serializedData(originalData).build();
 
       final byte[] serialized = coreDump.serialize();
 
@@ -336,8 +336,8 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldThrowWhenSerializingWithoutData(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().name("no-serialization").build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().name("no-serialization").build();
 
       final UnsupportedOperationException exception =
           assertThrows(
@@ -355,8 +355,8 @@ public final class WasmCoreDumpIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final byte[] originalData = new byte[] {0x01, 0x02, 0x03};
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().serializedData(originalData).build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().serializedData(originalData).build();
 
       final byte[] serialized1 = coreDump.serialize();
       final byte[] serialized2 = coreDump.serialize();
@@ -380,8 +380,8 @@ public final class WasmCoreDumpIntegrationTest {
     void shouldProduceReadableToString(final TestInfo testInfo) {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder()
               .funcIndex(5)
               .funcName("test")
               .moduleIndex(0)
@@ -390,8 +390,8 @@ public final class WasmCoreDumpIntegrationTest {
               .trapFrame(true)
               .build();
 
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder()
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder()
               .name("test-dump")
               .trapMessage("Test trap")
               .addFrame(frame)

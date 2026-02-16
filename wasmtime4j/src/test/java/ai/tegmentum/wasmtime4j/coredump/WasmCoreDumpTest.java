@@ -30,12 +30,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link DefaultWasmCoreDump} class.
+ * Tests for {@link WasmCoreDump} class.
  *
- * <p>DefaultWasmCoreDump is the default implementation of the WasmCoreDump interface.
+ * <p>WasmCoreDump is the default implementation of the WasmCoreDump interface.
  */
-@DisplayName("DefaultWasmCoreDump Tests")
-class DefaultWasmCoreDumpTest {
+@DisplayName("WasmCoreDump Tests")
+class WasmCoreDumpTest {
 
   @Nested
   @DisplayName("Builder Tests")
@@ -44,23 +44,23 @@ class DefaultWasmCoreDumpTest {
     @Test
     @DisplayName("should create builder via static method")
     void shouldCreateBuilderViaStaticMethod() {
-      final DefaultWasmCoreDump.Builder builder = DefaultWasmCoreDump.builder();
+      final WasmCoreDump.Builder builder = WasmCoreDump.builder();
       assertNotNull(builder, "Builder should not be null");
     }
 
     @Test
     @DisplayName("should build with name")
     void shouldBuildWithName() {
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().name("test-coredump").build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().name("test-coredump").build();
       assertEquals("test-coredump", coreDump.getName(), "Name should match");
     }
 
     @Test
     @DisplayName("should build with trap message")
     void shouldBuildWithTrapMessage() {
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().trapMessage("unreachable executed").build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().trapMessage("unreachable executed").build();
       assertEquals("unreachable executed", coreDump.getTrapMessage(), "Trap message should match");
     }
 
@@ -68,16 +68,16 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should build with serialized data")
     void shouldBuildWithSerializedData() {
       final byte[] data = {0x00, 0x61, 0x73, 0x6D};
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().serializedData(data).build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().serializedData(data).build();
       assertArrayEquals(data, coreDump.serialize(), "Serialized data should match");
     }
 
     @Test
     @DisplayName("should build with modules")
     void shouldBuildWithModules() {
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().addModule("module1.wasm").addModule("module2.wasm").build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().addModule("module1.wasm").addModule("module2.wasm").build();
       assertEquals(2, coreDump.getModules().size(), "Should have 2 modules");
       assertEquals("module1.wasm", coreDump.getModules().get(0), "First module should match");
     }
@@ -86,8 +86,8 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should build with modules list")
     void shouldBuildWithModulesList() {
       final List<String> modules = Arrays.asList("a.wasm", "b.wasm", "c.wasm");
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().addModules(modules).build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().addModules(modules).build();
       assertEquals(3, coreDump.getModules().size(), "Should have 3 modules");
     }
 
@@ -95,8 +95,8 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should build with frames")
     void shouldBuildWithFrames() {
       final CoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder().funcIndex(0).funcName("main").build();
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().addFrame(frame).build();
+          CoreDumpFrame.builder().funcIndex(0).funcName("main").build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addFrame(frame).build();
       assertEquals(1, coreDump.getFrames().size(), "Should have 1 frame");
     }
 
@@ -105,9 +105,9 @@ class DefaultWasmCoreDumpTest {
     void shouldBuildWithFramesList() {
       final List<CoreDumpFrame> frames =
           Arrays.asList(
-              DefaultCoreDumpFrame.builder().funcIndex(0).build(),
-              DefaultCoreDumpFrame.builder().funcIndex(1).build());
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().addFrames(frames).build();
+              CoreDumpFrame.builder().funcIndex(0).build(),
+              CoreDumpFrame.builder().funcIndex(1).build());
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addFrames(frames).build();
       assertEquals(2, coreDump.getFrames().size(), "Should have 2 frames");
     }
 
@@ -115,9 +115,9 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should build with instances")
     void shouldBuildWithInstances() {
       final CoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder().index(0).name("instance0").build();
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().addInstance(instance).build();
+          CoreDumpInstance.builder().index(0).name("instance0").build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().addInstance(instance).build();
       assertEquals(1, coreDump.getInstances().size(), "Should have 1 instance");
     }
 
@@ -125,8 +125,8 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should build with globals")
     void shouldBuildWithGlobals() {
       final CoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().globalIndex(0).i32Value(42).build();
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().addGlobal(global).build();
+          CoreDumpGlobal.builder().globalIndex(0).i32Value(42).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addGlobal(global).build();
       assertEquals(1, coreDump.getGlobals().size(), "Should have 1 global");
     }
 
@@ -134,8 +134,8 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should build with memories")
     void shouldBuildWithMemories() {
       final CoreDumpMemory memory =
-          DefaultCoreDumpMemory.builder().memoryIndex(0).sizeInPages(1).build();
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().addMemory(memory).build();
+          CoreDumpMemory.builder().memoryIndex(0).sizeInPages(1).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addMemory(memory).build();
       assertEquals(1, coreDump.getMemories().size(), "Should have 1 memory");
     }
   }
@@ -147,8 +147,8 @@ class DefaultWasmCoreDumpTest {
     @Test
     @DisplayName("modules list should be immutable")
     void modulesListShouldBeImmutable() {
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().addModule("module.wasm").build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().addModule("module.wasm").build();
       assertThrows(
           UnsupportedOperationException.class,
           () -> coreDump.getModules().add("another.wasm"),
@@ -158,8 +158,8 @@ class DefaultWasmCoreDumpTest {
     @Test
     @DisplayName("frames list should be immutable")
     void framesListShouldBeImmutable() {
-      final CoreDumpFrame frame = DefaultCoreDumpFrame.builder().build();
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().addFrame(frame).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addFrame(frame).build();
       assertThrows(
           UnsupportedOperationException.class,
           () -> coreDump.getFrames().add(frame),
@@ -169,9 +169,9 @@ class DefaultWasmCoreDumpTest {
     @Test
     @DisplayName("instances list should be immutable")
     void instancesListShouldBeImmutable() {
-      final CoreDumpInstance instance = DefaultCoreDumpInstance.builder().build();
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().addInstance(instance).build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().addInstance(instance).build();
       assertThrows(
           UnsupportedOperationException.class,
           () -> coreDump.getInstances().add(instance),
@@ -182,8 +182,8 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("globals list should be immutable")
     void globalsListShouldBeImmutable() {
       final CoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().valueType(WasmValueType.I32).build();
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().addGlobal(global).build();
+          CoreDumpGlobal.builder().valueType(WasmValueType.I32).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addGlobal(global).build();
       assertThrows(
           UnsupportedOperationException.class,
           () -> coreDump.getGlobals().add(global),
@@ -193,8 +193,8 @@ class DefaultWasmCoreDumpTest {
     @Test
     @DisplayName("memories list should be immutable")
     void memoriesListShouldBeImmutable() {
-      final CoreDumpMemory memory = DefaultCoreDumpMemory.builder().build();
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().addMemory(memory).build();
+      final CoreDumpMemory memory = CoreDumpMemory.builder().build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addMemory(memory).build();
       assertThrows(
           UnsupportedOperationException.class,
           () -> coreDump.getMemories().add(memory),
@@ -209,7 +209,7 @@ class DefaultWasmCoreDumpTest {
     @Test
     @DisplayName("should throw when no serialized data")
     void shouldThrowWhenNoSerializedData() {
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().build();
       assertThrows(
           UnsupportedOperationException.class,
           coreDump::serialize,
@@ -220,8 +220,8 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should return copy of serialized data")
     void shouldReturnCopyOfSerializedData() {
       final byte[] original = {0x01, 0x02, 0x03};
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().serializedData(original).build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().serializedData(original).build();
       final byte[] retrieved = coreDump.serialize();
       retrieved[0] = (byte) 0xFF;
       assertArrayEquals(original, coreDump.serialize(), "Internal data should not be modified");
@@ -235,7 +235,7 @@ class DefaultWasmCoreDumpTest {
     @Test
     @DisplayName("should return zero for empty coredump")
     void shouldReturnZeroForEmptyCoredump() {
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().build();
       assertEquals(0, coreDump.getSize(), "Size should be zero");
     }
 
@@ -243,8 +243,8 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should include serialized data size")
     void shouldIncludeSerializedDataSize() {
       final byte[] data = new byte[100];
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder().serializedData(data).build();
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder().serializedData(data).build();
       assertEquals(100, coreDump.getSize(), "Size should include serialized data");
     }
 
@@ -252,12 +252,12 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should include memory segment sizes")
     void shouldIncludeMemorySegmentSizes() {
       final CoreDumpMemory memory =
-          DefaultCoreDumpMemory.builder()
+          CoreDumpMemory.builder()
               .sizeInPages(1)
               .addSegment(0, new byte[50])
               .addSegment(100, new byte[25])
               .build();
-      final DefaultWasmCoreDump coreDump = DefaultWasmCoreDump.builder().addMemory(memory).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addMemory(memory).build();
       assertEquals(75, coreDump.getSize(), "Size should include memory segments");
     }
   }
@@ -269,8 +269,8 @@ class DefaultWasmCoreDumpTest {
     @Test
     @DisplayName("should return meaningful string representation")
     void shouldReturnMeaningfulStringRepresentation() {
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder()
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder()
               .name("test-dump")
               .trapMessage("trap occurred")
               .addModule("module.wasm")
@@ -290,7 +290,7 @@ class DefaultWasmCoreDumpTest {
     @DisplayName("should build complete coredump")
     void shouldBuildCompleteCoredump() {
       final CoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+          CoreDumpFrame.builder()
               .funcIndex(0)
               .funcName("main")
               .moduleIndex(0)
@@ -300,7 +300,7 @@ class DefaultWasmCoreDumpTest {
               .build();
 
       final CoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder()
+          CoreDumpInstance.builder()
               .index(0)
               .moduleIndex(0)
               .name("test-instance")
@@ -310,7 +310,7 @@ class DefaultWasmCoreDumpTest {
               .build();
 
       final CoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder()
+          CoreDumpGlobal.builder()
               .instanceIndex(0)
               .globalIndex(0)
               .name("counter")
@@ -319,7 +319,7 @@ class DefaultWasmCoreDumpTest {
               .build();
 
       final CoreDumpMemory memory =
-          DefaultCoreDumpMemory.builder()
+          CoreDumpMemory.builder()
               .instanceIndex(0)
               .memoryIndex(0)
               .name("memory")
@@ -329,8 +329,8 @@ class DefaultWasmCoreDumpTest {
               .addSegment(0, new byte[] {0x01, 0x02, 0x03})
               .build();
 
-      final DefaultWasmCoreDump coreDump =
-          DefaultWasmCoreDump.builder()
+      final WasmCoreDump coreDump =
+          WasmCoreDump.builder()
               .name("test-coredump")
               .trapMessage("unreachable")
               .addModule("test.wasm")

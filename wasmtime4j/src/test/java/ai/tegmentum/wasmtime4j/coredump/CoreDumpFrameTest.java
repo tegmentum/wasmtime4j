@@ -29,12 +29,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link DefaultCoreDumpFrame} class.
+ * Tests for {@link CoreDumpFrame} class.
  *
- * <p>DefaultCoreDumpFrame is the default implementation of the CoreDumpFrame interface.
+ * <p>CoreDumpFrame is the default implementation of the CoreDumpFrame interface.
  */
-@DisplayName("DefaultCoreDumpFrame Tests")
-class DefaultCoreDumpFrameTest {
+@DisplayName("CoreDumpFrame Tests")
+class CoreDumpFrameTest {
 
   @Nested
   @DisplayName("Builder Tests")
@@ -43,22 +43,22 @@ class DefaultCoreDumpFrameTest {
     @Test
     @DisplayName("should create builder via static method")
     void shouldCreateBuilderViaStaticMethod() {
-      final DefaultCoreDumpFrame.Builder builder = DefaultCoreDumpFrame.builder();
+      final CoreDumpFrame.Builder builder = CoreDumpFrame.builder();
       assertNotNull(builder, "Builder should not be null");
     }
 
     @Test
     @DisplayName("should build with funcIndex")
     void shouldBuildWithFuncIndex() {
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().funcIndex(5).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().funcIndex(5).build();
       assertEquals(5, frame.getFuncIndex(), "FuncIndex should match");
     }
 
     @Test
     @DisplayName("should build with funcName")
     void shouldBuildWithFuncName() {
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder().funcName("calculate").build();
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder().funcName("calculate").build();
       assertTrue(frame.getFuncName().isPresent(), "FuncName should be present");
       assertEquals("calculate", frame.getFuncName().get(), "FuncName should match");
     }
@@ -66,22 +66,22 @@ class DefaultCoreDumpFrameTest {
     @Test
     @DisplayName("should build without funcName")
     void shouldBuildWithoutFuncName() {
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().build();
       assertFalse(frame.getFuncName().isPresent(), "FuncName should not be present");
     }
 
     @Test
     @DisplayName("should build with moduleIndex")
     void shouldBuildWithModuleIndex() {
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().moduleIndex(2).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().moduleIndex(2).build();
       assertEquals(2, frame.getModuleIndex(), "ModuleIndex should match");
     }
 
     @Test
     @DisplayName("should build with moduleName")
     void shouldBuildWithModuleName() {
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder().moduleName("test.wasm").build();
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder().moduleName("test.wasm").build();
       assertTrue(frame.getModuleName().isPresent(), "ModuleName should be present");
       assertEquals("test.wasm", frame.getModuleName().get(), "ModuleName should match");
     }
@@ -89,28 +89,28 @@ class DefaultCoreDumpFrameTest {
     @Test
     @DisplayName("should build without moduleName")
     void shouldBuildWithoutModuleName() {
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().build();
       assertFalse(frame.getModuleName().isPresent(), "ModuleName should not be present");
     }
 
     @Test
     @DisplayName("should build with offset")
     void shouldBuildWithOffset() {
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().offset(256).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().offset(256).build();
       assertEquals(256, frame.getOffset(), "Offset should match");
     }
 
     @Test
     @DisplayName("should build with trapFrame flag")
     void shouldBuildWithTrapFrameFlag() {
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().trapFrame(true).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().trapFrame(true).build();
       assertTrue(frame.isTrapFrame(), "TrapFrame should be true");
     }
 
     @Test
     @DisplayName("should build without trapFrame flag defaulting to false")
     void shouldBuildWithoutTrapFrameFlagDefaultingToFalse() {
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().build();
       assertFalse(frame.isTrapFrame(), "TrapFrame should default to false");
     }
   }
@@ -123,7 +123,7 @@ class DefaultCoreDumpFrameTest {
     @DisplayName("should build with single local")
     void shouldBuildWithSingleLocal() {
       final byte[] local = {0x01, 0x02, 0x03, 0x04};
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().addLocal(local).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().addLocal(local).build();
       assertEquals(1, frame.getLocals().size(), "Should have 1 local");
       assertArrayEquals(local, frame.getLocals().get(0), "Local data should match");
     }
@@ -131,8 +131,8 @@ class DefaultCoreDumpFrameTest {
     @Test
     @DisplayName("should build with multiple locals")
     void shouldBuildWithMultipleLocals() {
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder()
               .addLocal(new byte[] {0x01})
               .addLocal(new byte[] {0x02})
               .addLocal(new byte[] {0x03})
@@ -144,7 +144,7 @@ class DefaultCoreDumpFrameTest {
     @DisplayName("should build with locals list")
     void shouldBuildWithLocalsList() {
       final List<byte[]> locals = Arrays.asList(new byte[] {0x01, 0x02}, new byte[] {0x03, 0x04});
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().addLocals(locals).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().addLocals(locals).build();
       assertEquals(2, frame.getLocals().size(), "Should have 2 locals");
     }
 
@@ -152,7 +152,7 @@ class DefaultCoreDumpFrameTest {
     @DisplayName("should return copy of locals list")
     void shouldReturnCopyOfLocals() {
       final byte[] original = {0x01, 0x02};
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().addLocal(original).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().addLocal(original).build();
       // getLocals() returns a new ArrayList each time, but the byte arrays are the same references
       // The implementation stores clones, so the internal byte array is a clone of original
       final List<byte[]> locals = frame.getLocals();
@@ -164,7 +164,7 @@ class DefaultCoreDumpFrameTest {
     @Test
     @DisplayName("should handle null local")
     void shouldHandleNullLocal() {
-      final DefaultCoreDumpFrame frame = DefaultCoreDumpFrame.builder().addLocal(null).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().addLocal(null).build();
       assertEquals(1, frame.getLocals().size(), "Should have 1 local");
     }
   }
@@ -177,8 +177,8 @@ class DefaultCoreDumpFrameTest {
     @DisplayName("should build with single stack value")
     void shouldBuildWithSingleStackValue() {
       final byte[] stackValue = {0x0A, 0x0B, 0x0C};
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder().addStackValue(stackValue).build();
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder().addStackValue(stackValue).build();
       assertEquals(1, frame.getStack().size(), "Should have 1 stack value");
       assertArrayEquals(stackValue, frame.getStack().get(0), "Stack value should match");
     }
@@ -186,8 +186,8 @@ class DefaultCoreDumpFrameTest {
     @Test
     @DisplayName("should build with multiple stack values")
     void shouldBuildWithMultipleStackValues() {
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder()
               .addStackValue(new byte[] {0x01})
               .addStackValue(new byte[] {0x02})
               .build();
@@ -199,8 +199,8 @@ class DefaultCoreDumpFrameTest {
     void shouldBuildWithStackValuesList() {
       final List<byte[]> stackValues =
           Arrays.asList(new byte[] {0x10}, new byte[] {0x20}, new byte[] {0x30});
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder().addStackValues(stackValues).build();
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder().addStackValues(stackValues).build();
       assertEquals(3, frame.getStack().size(), "Should have 3 stack values");
     }
   }
@@ -212,8 +212,8 @@ class DefaultCoreDumpFrameTest {
     @Test
     @DisplayName("should return meaningful string representation")
     void shouldReturnMeaningfulStringRepresentation() {
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder()
               .funcIndex(5)
               .funcName("testFunc")
               .moduleIndex(0)
@@ -236,8 +236,8 @@ class DefaultCoreDumpFrameTest {
     @Test
     @DisplayName("should build complete frame")
     void shouldBuildCompleteFrame() {
-      final DefaultCoreDumpFrame frame =
-          DefaultCoreDumpFrame.builder()
+      final CoreDumpFrame frame =
+          CoreDumpFrame.builder()
               .funcIndex(10)
               .funcName("main")
               .moduleIndex(0)

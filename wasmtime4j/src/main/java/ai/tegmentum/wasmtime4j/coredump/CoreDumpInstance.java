@@ -19,53 +19,124 @@ package ai.tegmentum.wasmtime4j.coredump;
 import java.util.Optional;
 
 /**
- * Represents information about a WebAssembly instance captured in a coredump.
- *
- * <p>Each instance corresponds to an instantiated module that was active at the time of the trap.
+ * Represents a WebAssembly instance snapshot in a core dump.
  *
  * @since 1.0.0
  */
-public interface CoreDumpInstance {
+public final class CoreDumpInstance {
+
+  private final int index;
+  private final int moduleIndex;
+  private final String name;
+  private final int memoryCount;
+  private final int globalCount;
+  private final int tableCount;
+
+  private CoreDumpInstance(final Builder builder) {
+    this.index = builder.index;
+    this.moduleIndex = builder.moduleIndex;
+    this.name = builder.name;
+    this.memoryCount = builder.memoryCount;
+    this.globalCount = builder.globalCount;
+    this.tableCount = builder.tableCount;
+  }
 
   /**
-   * Returns the index of this instance in the coredump.
+   * Creates a new builder for constructing a CoreDumpInstance.
    *
-   * @return the instance index
+   * @return a new builder instance
    */
-  int getIndex();
+  public static Builder builder() {
+    return new Builder();
+  }
 
-  /**
-   * Returns the index of the module this instance was created from.
-   *
-   * @return the module index
-   */
-  int getModuleIndex();
+  public int getIndex() {
+    return index;
+  }
 
-  /**
-   * Returns the name of this instance, if available.
-   *
-   * @return an Optional containing the instance name, or empty if not available
-   */
-  Optional<String> getName();
+  public int getModuleIndex() {
+    return moduleIndex;
+  }
 
-  /**
-   * Returns the number of memories in this instance.
-   *
-   * @return the memory count
-   */
-  int getMemoryCount();
+  public Optional<String> getName() {
+    return Optional.ofNullable(name);
+  }
 
-  /**
-   * Returns the number of globals in this instance.
-   *
-   * @return the global count
-   */
-  int getGlobalCount();
+  public int getMemoryCount() {
+    return memoryCount;
+  }
 
-  /**
-   * Returns the number of tables in this instance.
-   *
-   * @return the table count
-   */
-  int getTableCount();
+  public int getGlobalCount() {
+    return globalCount;
+  }
+
+  public int getTableCount() {
+    return tableCount;
+  }
+
+  @Override
+  public String toString() {
+    return "CoreDumpInstance{"
+        + "index="
+        + index
+        + ", moduleIndex="
+        + moduleIndex
+        + ", name='"
+        + name
+        + '\''
+        + ", memoryCount="
+        + memoryCount
+        + ", globalCount="
+        + globalCount
+        + ", tableCount="
+        + tableCount
+        + '}';
+  }
+
+  /** Builder for constructing {@link CoreDumpInstance} instances. */
+  public static final class Builder {
+
+    private int index;
+    private int moduleIndex;
+    private String name;
+    private int memoryCount;
+    private int globalCount;
+    private int tableCount;
+
+    private Builder() {}
+
+    public Builder index(final int index) {
+      this.index = index;
+      return this;
+    }
+
+    public Builder moduleIndex(final int moduleIndex) {
+      this.moduleIndex = moduleIndex;
+      return this;
+    }
+
+    public Builder name(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder memoryCount(final int memoryCount) {
+      this.memoryCount = memoryCount;
+      return this;
+    }
+
+    public Builder globalCount(final int globalCount) {
+      this.globalCount = globalCount;
+      return this;
+    }
+
+    public Builder tableCount(final int tableCount) {
+      this.tableCount = tableCount;
+      return this;
+    }
+
+    public CoreDumpInstance build() {
+      return new CoreDumpInstance(this);
+    }
+  }
 }

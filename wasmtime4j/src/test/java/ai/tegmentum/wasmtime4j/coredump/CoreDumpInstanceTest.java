@@ -26,12 +26,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link DefaultCoreDumpInstance} class.
+ * Tests for {@link CoreDumpInstance} class.
  *
- * <p>DefaultCoreDumpInstance is the default implementation of the CoreDumpInstance interface.
+ * <p>CoreDumpInstance is the default implementation of the CoreDumpInstance interface.
  */
-@DisplayName("DefaultCoreDumpInstance Tests")
-class DefaultCoreDumpInstanceTest {
+@DisplayName("CoreDumpInstance Tests")
+class CoreDumpInstanceTest {
 
   @Nested
   @DisplayName("Builder Tests")
@@ -40,30 +40,30 @@ class DefaultCoreDumpInstanceTest {
     @Test
     @DisplayName("should create builder via static method")
     void shouldCreateBuilderViaStaticMethod() {
-      final DefaultCoreDumpInstance.Builder builder = DefaultCoreDumpInstance.builder();
+      final CoreDumpInstance.Builder builder = CoreDumpInstance.builder();
       assertNotNull(builder, "Builder should not be null");
     }
 
     @Test
     @DisplayName("should build with index")
     void shouldBuildWithIndex() {
-      final DefaultCoreDumpInstance instance = DefaultCoreDumpInstance.builder().index(5).build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().index(5).build();
       assertEquals(5, instance.getIndex(), "Index should match");
     }
 
     @Test
     @DisplayName("should build with moduleIndex")
     void shouldBuildWithModuleIndex() {
-      final DefaultCoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder().moduleIndex(2).build();
+      final CoreDumpInstance instance =
+          CoreDumpInstance.builder().moduleIndex(2).build();
       assertEquals(2, instance.getModuleIndex(), "ModuleIndex should match");
     }
 
     @Test
     @DisplayName("should build with name")
     void shouldBuildWithName() {
-      final DefaultCoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder().name("test-instance").build();
+      final CoreDumpInstance instance =
+          CoreDumpInstance.builder().name("test-instance").build();
       assertTrue(instance.getName().isPresent(), "Name should be present");
       assertEquals("test-instance", instance.getName().get(), "Name should match");
     }
@@ -71,31 +71,31 @@ class DefaultCoreDumpInstanceTest {
     @Test
     @DisplayName("should build without name")
     void shouldBuildWithoutName() {
-      final DefaultCoreDumpInstance instance = DefaultCoreDumpInstance.builder().build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().build();
       assertFalse(instance.getName().isPresent(), "Name should not be present");
     }
 
     @Test
     @DisplayName("should build with memoryCount")
     void shouldBuildWithMemoryCount() {
-      final DefaultCoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder().memoryCount(2).build();
+      final CoreDumpInstance instance =
+          CoreDumpInstance.builder().memoryCount(2).build();
       assertEquals(2, instance.getMemoryCount(), "MemoryCount should match");
     }
 
     @Test
     @DisplayName("should build with globalCount")
     void shouldBuildWithGlobalCount() {
-      final DefaultCoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder().globalCount(5).build();
+      final CoreDumpInstance instance =
+          CoreDumpInstance.builder().globalCount(5).build();
       assertEquals(5, instance.getGlobalCount(), "GlobalCount should match");
     }
 
     @Test
     @DisplayName("should build with tableCount")
     void shouldBuildWithTableCount() {
-      final DefaultCoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder().tableCount(1).build();
+      final CoreDumpInstance instance =
+          CoreDumpInstance.builder().tableCount(1).build();
       assertEquals(1, instance.getTableCount(), "TableCount should match");
     }
   }
@@ -107,35 +107,35 @@ class DefaultCoreDumpInstanceTest {
     @Test
     @DisplayName("should have zero index by default")
     void shouldHaveZeroIndexByDefault() {
-      final DefaultCoreDumpInstance instance = DefaultCoreDumpInstance.builder().build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().build();
       assertEquals(0, instance.getIndex(), "Index should default to 0");
     }
 
     @Test
     @DisplayName("should have zero moduleIndex by default")
     void shouldHaveZeroModuleIndexByDefault() {
-      final DefaultCoreDumpInstance instance = DefaultCoreDumpInstance.builder().build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().build();
       assertEquals(0, instance.getModuleIndex(), "ModuleIndex should default to 0");
     }
 
     @Test
     @DisplayName("should have zero memoryCount by default")
     void shouldHaveZeroMemoryCountByDefault() {
-      final DefaultCoreDumpInstance instance = DefaultCoreDumpInstance.builder().build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().build();
       assertEquals(0, instance.getMemoryCount(), "MemoryCount should default to 0");
     }
 
     @Test
     @DisplayName("should have zero globalCount by default")
     void shouldHaveZeroGlobalCountByDefault() {
-      final DefaultCoreDumpInstance instance = DefaultCoreDumpInstance.builder().build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().build();
       assertEquals(0, instance.getGlobalCount(), "GlobalCount should default to 0");
     }
 
     @Test
     @DisplayName("should have zero tableCount by default")
     void shouldHaveZeroTableCountByDefault() {
-      final DefaultCoreDumpInstance instance = DefaultCoreDumpInstance.builder().build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().build();
       assertEquals(0, instance.getTableCount(), "TableCount should default to 0");
     }
   }
@@ -147,8 +147,8 @@ class DefaultCoreDumpInstanceTest {
     @Test
     @DisplayName("should return meaningful string representation")
     void shouldReturnMeaningfulStringRepresentation() {
-      final DefaultCoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder()
+      final CoreDumpInstance instance =
+          CoreDumpInstance.builder()
               .index(0)
               .moduleIndex(0)
               .name("main-instance")
@@ -172,8 +172,8 @@ class DefaultCoreDumpInstanceTest {
     @Test
     @DisplayName("should build complete instance")
     void shouldBuildCompleteInstance() {
-      final DefaultCoreDumpInstance instance =
-          DefaultCoreDumpInstance.builder()
+      final CoreDumpInstance instance =
+          CoreDumpInstance.builder()
               .index(1)
               .moduleIndex(0)
               .name("calculator")
@@ -193,12 +193,12 @@ class DefaultCoreDumpInstanceTest {
     @Test
     @DisplayName("should support multiple instances with different indices")
     void shouldSupportMultipleInstancesWithDifferentIndices() {
-      final DefaultCoreDumpInstance instance1 =
-          DefaultCoreDumpInstance.builder().index(0).name("instance0").build();
-      final DefaultCoreDumpInstance instance2 =
-          DefaultCoreDumpInstance.builder().index(1).name("instance1").build();
-      final DefaultCoreDumpInstance instance3 =
-          DefaultCoreDumpInstance.builder().index(2).name("instance2").build();
+      final CoreDumpInstance instance1 =
+          CoreDumpInstance.builder().index(0).name("instance0").build();
+      final CoreDumpInstance instance2 =
+          CoreDumpInstance.builder().index(1).name("instance1").build();
+      final CoreDumpInstance instance3 =
+          CoreDumpInstance.builder().index(2).name("instance2").build();
 
       assertEquals(0, instance1.getIndex(), "First instance index should be 0");
       assertEquals(1, instance2.getIndex(), "Second instance index should be 1");

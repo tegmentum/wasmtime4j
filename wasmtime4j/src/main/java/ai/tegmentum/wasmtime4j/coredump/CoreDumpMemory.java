@@ -16,120 +16,274 @@
 
 package ai.tegmentum.wasmtime4j.coredump;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Represents a memory snapshot captured in a WebAssembly coredump.
- *
- * <p>Memory snapshots contain the contents of WebAssembly linear memory at the time of the trap. To
- * reduce coredump size, only non-zero memory regions are typically captured.
+ * Represents a memory snapshot in a WebAssembly core dump.
  *
  * @since 1.0.0
  */
-public interface CoreDumpMemory {
+public final class CoreDumpMemory {
+
+  /** Number of bytes per WebAssembly memory page. */
+  private static final long PAGE_SIZE = 65536L;
+
+  private final int instanceIndex;
+  private final int memoryIndex;
+  private final String name;
+  private final long sizeInPages;
+  private final boolean memory64;
+  private final long minPages;
+  private final Long maxPages;
+  private final List<MemorySegment> segments;
+
+  private CoreDumpMemory(final Builder builder) {
+    this.instanceIndex = builder.instanceIndex;
+    this.memoryIndex = builder.memoryIndex;
+    this.name = builder.name;
+    this.sizeInPages = builder.sizeInPages;
+    this.memory64 = builder.memory64;
+    this.minPages = builder.minPages;
+    this.maxPages = builder.maxPages;
+    this.segments = Collections.unmodifiableList(new ArrayList<>(builder.segments));
+  }
 
   /**
-   * Returns the index of the instance containing this memory.
+   * Creates a new builder for constructing a CoreDumpMemory.
    *
-   * @return the instance index
+   * @return a new builder instance
    */
-  int getInstanceIndex();
+  public static Builder builder() {
+    return new Builder();
+  }
 
-  /**
-   * Returns the index of this memory within its instance.
-   *
-   * @return the memory index
-   */
-  int getMemoryIndex();
+  public int getInstanceIndex() {
+    return instanceIndex;
+  }
 
-  /**
-   * Returns the name of this memory, if available.
-   *
-   * @return an Optional containing the memory name, or empty if not available
-   */
-  Optional<String> getName();
+  public int getMemoryIndex() {
+    return memoryIndex;
+  }
 
-  /**
-   * Returns the current size of this memory in pages.
-   *
-   * <p>Each page is 64KB (65536 bytes).
-   *
-   * @return the size in pages
-   */
-  long getSizeInPages();
+  public Optional<String> getName() {
+    return Optional.ofNullable(name);
+  }
 
-  /**
-   * Returns the current size of this memory in bytes.
-   *
-   * @return the size in bytes
-   */
-  long getSizeInBytes();
+  public long getSizeInPages() {
+    return sizeInPages;
+  }
 
-  /**
-   * Returns whether this is a 64-bit memory.
-   *
-   * @return true if this is a memory64 memory
-   */
-  boolean isMemory64();
+  public long getSizeInBytes() {
+    return sizeInPages * PAGE_SIZE;
+  }
 
-  /**
-   * Returns the minimum size of this memory in pages.
-   *
-   * @return the minimum size in pages
-   */
-  long getMinPages();
+  public boolean isMemory64() {
+    return memory64;
+  }
 
-  /**
-   * Returns the maximum size of this memory in pages, if specified.
-   *
-   * @return an Optional containing the maximum size, or empty if unbounded
-   */
-  Optional<Long> getMaxPages();
+  public long getMinPages() {
+    return minPages;
+  }
 
-  /**
-   * Returns the list of memory segments containing non-zero data.
-   *
-   * <p>Segments are ordered by their starting address and do not overlap.
-   *
-   * @return an unmodifiable list of memory segments
-   */
-  List<MemorySegment> getSegments();
+  public Optional<Long> getMaxPages() {
+    return Optional.ofNullable(maxPages);
+  }
 
-  /**
-   * Reads a range of bytes from this memory snapshot.
-   *
-   * @param offset the starting offset in bytes
-   * @param length the number of bytes to read
-   * @return the bytes read from memory
-   * @throws IndexOutOfBoundsException if the range exceeds memory bounds
-   */
-  byte[] read(long offset, int length);
+  public List<MemorySegment> getSegments() {
+    return segments;
+  }
+
+  public byte[] read(final long offset, final int length) {
+    if (offset < 0 || length < 0) {
+      throw new IndexOutOfBoundsException("Offset and length must be non-negative");
+    }
+    final long endOffset = offset + length;
+    if (endOffset > getSizeInBytes()) {
+      throw new IndexOutOfBoundsException(
+          "Read range exceeds memory bounds: " + endOffset + " > " + getSizeInBytes());
+    }
+
+    final byte[] result = new byte[length];
+
+    for (final MemorySegment segment : segments) {
+      final long segmentStart = segment.getOffset();
+      final long segmentEnd = segmentStart + segment.getSize();
+
+      // Check if this segment overlaps with the requested range
+      if (segmentEnd > offset && segmentStart < endOffset) {
+        final long overlapStart = Math.max(offset, segmentStart);
+        final long overlapEnd = Math.min(endOffset, segmentEnd);
+        final int srcOffset = (int) (overlapStart - segmentStart);
+        final int dstOffset = (int) (overlapStart - offset);
+        final int copyLength = (int) (overlapEnd - overlapStart);
+
+        System.arraycopy(segment.getData(), srcOffset, result, dstOffset, copyLength);
+      }
+    }
+
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "CoreDumpMemory{"
+        + "instanceIndex="
+        + instanceIndex
+        + ", memoryIndex="
+        + memoryIndex
+        + ", name='"
+        + name
+        + '\''
+        + ", sizeInPages="
+        + sizeInPages
+        + ", memory64="
+        + memory64
+        + ", segments="
+        + segments.size()
+        + '}';
+  }
 
   /** Represents a contiguous segment of non-zero memory data. */
-  interface MemorySegment {
+  public static final class MemorySegment {
+
+    private final long offset;
+    private final byte[] data;
 
     /**
-     * Returns the starting address of this segment.
+     * Creates a new memory segment.
      *
-     * @return the offset in bytes from the start of memory
+     * @param offset the offset in bytes
+     * @param data the segment data
      */
-    long getOffset();
+    public MemorySegment(final long offset, final byte[] data) {
+      if (offset < 0) {
+        throw new IllegalArgumentException("Offset must be non-negative");
+      }
+      this.offset = offset;
+      this.data = Objects.requireNonNull(data, "Data cannot be null").clone();
+    }
+
+    public long getOffset() {
+      return offset;
+    }
+
+    public byte[] getData() {
+      return data.clone();
+    }
+
+    public int getSize() {
+      return data.length;
+    }
+
+    @Override
+    public String toString() {
+      return "MemorySegment{offset=" + offset + ", size=" + data.length + '}';
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final MemorySegment that = (MemorySegment) o;
+      return offset == that.offset && Arrays.equals(data, that.data);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = Long.hashCode(offset);
+      result = 31 * result + Arrays.hashCode(data);
+      return result;
+    }
+  }
+
+  /** Builder for constructing {@link CoreDumpMemory} instances. */
+  public static final class Builder {
+
+    private int instanceIndex;
+    private int memoryIndex;
+    private String name;
+    private long sizeInPages;
+    private boolean memory64;
+    private long minPages;
+    private Long maxPages;
+    private final List<MemorySegment> segments = new ArrayList<>();
+
+    private Builder() {}
+
+    public Builder instanceIndex(final int instanceIndex) {
+      this.instanceIndex = instanceIndex;
+      return this;
+    }
+
+    public Builder memoryIndex(final int memoryIndex) {
+      this.memoryIndex = memoryIndex;
+      return this;
+    }
+
+    public Builder name(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder sizeInPages(final long sizeInPages) {
+      this.sizeInPages = sizeInPages;
+      return this;
+    }
+
+    public Builder memory64(final boolean memory64) {
+      this.memory64 = memory64;
+      return this;
+    }
+
+    public Builder minPages(final long minPages) {
+      this.minPages = minPages;
+      return this;
+    }
+
+    public Builder maxPages(final Long maxPages) {
+      this.maxPages = maxPages;
+      return this;
+    }
 
     /**
-     * Returns the data contained in this segment.
+     * Adds a memory segment to this memory dump.
      *
-     * @return the segment data
+     * @param segment the memory segment to add
+     * @return this builder
      */
-    byte[] getData();
+    public Builder addSegment(final MemorySegment segment) {
+      Objects.requireNonNull(segment, "Segment cannot be null");
+      this.segments.add(segment);
+      return this;
+    }
+
+    public Builder addSegment(final long offset, final byte[] data) {
+      return addSegment(new MemorySegment(offset, data));
+    }
 
     /**
-     * Returns the size of this segment in bytes.
+     * Adds multiple memory segments to this memory dump.
      *
-     * @return the segment size
+     * @param segments the list of memory segments to add
+     * @return this builder
      */
-    default int getSize() {
-      return getData().length;
+    public Builder addSegments(final List<MemorySegment> segments) {
+      Objects.requireNonNull(segments, "Segments cannot be null");
+      this.segments.addAll(segments);
+      return this;
+    }
+
+    public CoreDumpMemory build() {
+      return new CoreDumpMemory(this);
     }
   }
 }

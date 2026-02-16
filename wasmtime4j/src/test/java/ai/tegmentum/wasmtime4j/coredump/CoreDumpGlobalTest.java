@@ -29,12 +29,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link DefaultCoreDumpGlobal} class.
+ * Tests for {@link CoreDumpGlobal} class.
  *
- * <p>DefaultCoreDumpGlobal is the default implementation of the CoreDumpGlobal interface.
+ * <p>CoreDumpGlobal is the default implementation of the CoreDumpGlobal interface.
  */
-@DisplayName("DefaultCoreDumpGlobal Tests")
-class DefaultCoreDumpGlobalTest {
+@DisplayName("CoreDumpGlobal Tests")
+class CoreDumpGlobalTest {
 
   @Nested
   @DisplayName("Builder Tests")
@@ -43,31 +43,31 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should create builder via static method")
     void shouldCreateBuilderViaStaticMethod() {
-      final DefaultCoreDumpGlobal.Builder builder = DefaultCoreDumpGlobal.builder();
+      final CoreDumpGlobal.Builder builder = CoreDumpGlobal.builder();
       assertNotNull(builder, "Builder should not be null");
     }
 
     @Test
     @DisplayName("should build with instanceIndex")
     void shouldBuildWithInstanceIndex() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().instanceIndex(3).valueType(WasmValueType.I32).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().instanceIndex(3).valueType(WasmValueType.I32).build();
       assertEquals(3, global.getInstanceIndex(), "InstanceIndex should match");
     }
 
     @Test
     @DisplayName("should build with globalIndex")
     void shouldBuildWithGlobalIndex() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().globalIndex(5).valueType(WasmValueType.I32).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().globalIndex(5).valueType(WasmValueType.I32).build();
       assertEquals(5, global.getGlobalIndex(), "GlobalIndex should match");
     }
 
     @Test
     @DisplayName("should build with name")
     void shouldBuildWithName() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().name("counter").valueType(WasmValueType.I32).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().name("counter").valueType(WasmValueType.I32).build();
       assertTrue(global.getName().isPresent(), "Name should be present");
       assertEquals("counter", global.getName().get(), "Name should match");
     }
@@ -75,24 +75,24 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should build without name")
     void shouldBuildWithoutName() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().valueType(WasmValueType.I32).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().valueType(WasmValueType.I32).build();
       assertFalse(global.getName().isPresent(), "Name should not be present");
     }
 
     @Test
     @DisplayName("should build with mutable flag")
     void shouldBuildWithMutableFlag() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().mutable(true).valueType(WasmValueType.I32).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().mutable(true).valueType(WasmValueType.I32).build();
       assertTrue(global.isMutable(), "Mutable should be true");
     }
 
     @Test
     @DisplayName("should build with mutable false by default")
     void shouldBuildWithMutableFalseByDefault() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().valueType(WasmValueType.I32).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().valueType(WasmValueType.I32).build();
       assertFalse(global.isMutable(), "Mutable should default to false");
     }
 
@@ -101,7 +101,7 @@ class DefaultCoreDumpGlobalTest {
     void shouldThrowWhenValueTypeIsNull() {
       assertThrows(
           NullPointerException.class,
-          () -> DefaultCoreDumpGlobal.builder().build(),
+          () -> CoreDumpGlobal.builder().build(),
           "Should throw when valueType is null");
     }
   }
@@ -113,7 +113,7 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should build with i32 value")
     void shouldBuildWithI32Value() {
-      final DefaultCoreDumpGlobal global = DefaultCoreDumpGlobal.builder().i32Value(42).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().i32Value(42).build();
       assertEquals(WasmValueType.I32, global.getValueType(), "ValueType should be I32");
       assertEquals(42, global.getI32Value(), "I32 value should match");
     }
@@ -121,30 +121,30 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should handle negative i32 value")
     void shouldHandleNegativeI32Value() {
-      final DefaultCoreDumpGlobal global = DefaultCoreDumpGlobal.builder().i32Value(-100).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().i32Value(-100).build();
       assertEquals(-100, global.getI32Value(), "Negative I32 value should match");
     }
 
     @Test
     @DisplayName("should handle max i32 value")
     void shouldHandleMaxI32Value() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().i32Value(Integer.MAX_VALUE).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().i32Value(Integer.MAX_VALUE).build();
       assertEquals(Integer.MAX_VALUE, global.getI32Value(), "Max I32 value should match");
     }
 
     @Test
     @DisplayName("should handle min i32 value")
     void shouldHandleMinI32Value() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().i32Value(Integer.MIN_VALUE).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().i32Value(Integer.MIN_VALUE).build();
       assertEquals(Integer.MIN_VALUE, global.getI32Value(), "Min I32 value should match");
     }
 
     @Test
     @DisplayName("should throw when getting i32 from wrong type")
     void shouldThrowWhenGettingI32FromWrongType() {
-      final DefaultCoreDumpGlobal global = DefaultCoreDumpGlobal.builder().i64Value(100L).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().i64Value(100L).build();
       assertThrows(
           IllegalStateException.class,
           global::getI32Value,
@@ -159,8 +159,8 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should build with i64 value")
     void shouldBuildWithI64Value() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().i64Value(123456789L).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().i64Value(123456789L).build();
       assertEquals(WasmValueType.I64, global.getValueType(), "ValueType should be I64");
       assertEquals(123456789L, global.getI64Value(), "I64 value should match");
     }
@@ -169,15 +169,15 @@ class DefaultCoreDumpGlobalTest {
     @DisplayName("should handle large i64 value")
     void shouldHandleLargeI64Value() {
       final long largeValue = Long.MAX_VALUE - 1000;
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().i64Value(largeValue).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().i64Value(largeValue).build();
       assertEquals(largeValue, global.getI64Value(), "Large I64 value should match");
     }
 
     @Test
     @DisplayName("should throw when getting i64 from wrong type")
     void shouldThrowWhenGettingI64FromWrongType() {
-      final DefaultCoreDumpGlobal global = DefaultCoreDumpGlobal.builder().i32Value(100).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().i32Value(100).build();
       assertThrows(
           IllegalStateException.class,
           global::getI64Value,
@@ -192,7 +192,7 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should build with f32 value")
     void shouldBuildWithF32Value() {
-      final DefaultCoreDumpGlobal global = DefaultCoreDumpGlobal.builder().f32Value(3.14f).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().f32Value(3.14f).build();
       assertEquals(WasmValueType.F32, global.getValueType(), "ValueType should be F32");
       assertEquals(3.14f, global.getF32Value(), 0.001f, "F32 value should match");
     }
@@ -200,14 +200,14 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should handle negative f32 value")
     void shouldHandleNegativeF32Value() {
-      final DefaultCoreDumpGlobal global = DefaultCoreDumpGlobal.builder().f32Value(-2.5f).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().f32Value(-2.5f).build();
       assertEquals(-2.5f, global.getF32Value(), 0.001f, "Negative F32 value should match");
     }
 
     @Test
     @DisplayName("should throw when getting f32 from wrong type")
     void shouldThrowWhenGettingF32FromWrongType() {
-      final DefaultCoreDumpGlobal global = DefaultCoreDumpGlobal.builder().i32Value(100).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().i32Value(100).build();
       assertThrows(
           IllegalStateException.class,
           global::getF32Value,
@@ -222,8 +222,8 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should build with f64 value")
     void shouldBuildWithF64Value() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().f64Value(3.141592653589793).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().f64Value(3.141592653589793).build();
       assertEquals(WasmValueType.F64, global.getValueType(), "ValueType should be F64");
       assertEquals(3.141592653589793, global.getF64Value(), 0.000001, "F64 value should match");
     }
@@ -232,15 +232,15 @@ class DefaultCoreDumpGlobalTest {
     @DisplayName("should handle very small f64 value")
     void shouldHandleVerySmallF64Value() {
       final double smallValue = 1.0e-300;
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().f64Value(smallValue).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().f64Value(smallValue).build();
       assertEquals(smallValue, global.getF64Value(), 1.0e-310, "Very small F64 value should match");
     }
 
     @Test
     @DisplayName("should throw when getting f64 from wrong type")
     void shouldThrowWhenGettingF64FromWrongType() {
-      final DefaultCoreDumpGlobal global = DefaultCoreDumpGlobal.builder().i32Value(100).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().i32Value(100).build();
       assertThrows(
           IllegalStateException.class,
           global::getF64Value,
@@ -256,8 +256,8 @@ class DefaultCoreDumpGlobalTest {
     @DisplayName("should build with raw value")
     void shouldBuildWithRawValue() {
       final byte[] rawValue = {0x2A, 0x00, 0x00, 0x00}; // 42 in little-endian
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().valueType(WasmValueType.I32).rawValue(rawValue).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().valueType(WasmValueType.I32).rawValue(rawValue).build();
       assertArrayEquals(rawValue, global.getRawValue(), "Raw value should match");
     }
 
@@ -265,8 +265,8 @@ class DefaultCoreDumpGlobalTest {
     @DisplayName("should return copy of raw value")
     void shouldReturnCopyOfRawValue() {
       final byte[] original = {0x01, 0x02, 0x03, 0x04};
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().valueType(WasmValueType.I32).rawValue(original).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().valueType(WasmValueType.I32).rawValue(original).build();
       final byte[] retrieved = global.getRawValue();
       retrieved[0] = (byte) 0xFF;
       assertArrayEquals(original, global.getRawValue(), "Internal data should not be modified");
@@ -275,8 +275,8 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should return empty array for null raw value")
     void shouldReturnEmptyArrayForNullRawValue() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder().valueType(WasmValueType.I32).rawValue(null).build();
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder().valueType(WasmValueType.I32).rawValue(null).build();
       assertEquals(0, global.getRawValue().length, "Raw value should be empty");
     }
   }
@@ -288,8 +288,8 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should return meaningful string representation")
     void shouldReturnMeaningfulStringRepresentation() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder()
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder()
               .instanceIndex(0)
               .globalIndex(1)
               .name("counter")
@@ -311,8 +311,8 @@ class DefaultCoreDumpGlobalTest {
     @Test
     @DisplayName("should build complete i32 global")
     void shouldBuildCompleteI32Global() {
-      final DefaultCoreDumpGlobal global =
-          DefaultCoreDumpGlobal.builder()
+      final CoreDumpGlobal global =
+          CoreDumpGlobal.builder()
               .instanceIndex(0)
               .globalIndex(0)
               .name("stack_pointer")
@@ -332,23 +332,23 @@ class DefaultCoreDumpGlobalTest {
     @DisplayName("should correctly encode and decode all types")
     void shouldCorrectlyEncodeAndDecodeAllTypes() {
       // Test I32
-      final DefaultCoreDumpGlobal i32Global =
-          DefaultCoreDumpGlobal.builder().i32Value(12345).build();
+      final CoreDumpGlobal i32Global =
+          CoreDumpGlobal.builder().i32Value(12345).build();
       assertEquals(12345, i32Global.getI32Value(), "I32 should roundtrip correctly");
 
       // Test I64
-      final DefaultCoreDumpGlobal i64Global =
-          DefaultCoreDumpGlobal.builder().i64Value(9876543210L).build();
+      final CoreDumpGlobal i64Global =
+          CoreDumpGlobal.builder().i64Value(9876543210L).build();
       assertEquals(9876543210L, i64Global.getI64Value(), "I64 should roundtrip correctly");
 
       // Test F32
-      final DefaultCoreDumpGlobal f32Global =
-          DefaultCoreDumpGlobal.builder().f32Value(1.5f).build();
+      final CoreDumpGlobal f32Global =
+          CoreDumpGlobal.builder().f32Value(1.5f).build();
       assertEquals(1.5f, f32Global.getF32Value(), 0.0001f, "F32 should roundtrip correctly");
 
       // Test F64
-      final DefaultCoreDumpGlobal f64Global =
-          DefaultCoreDumpGlobal.builder().f64Value(2.718281828).build();
+      final CoreDumpGlobal f64Global =
+          CoreDumpGlobal.builder().f64Value(2.718281828).build();
       assertEquals(
           2.718281828, f64Global.getF64Value(), 0.000001, "F64 should roundtrip correctly");
     }
