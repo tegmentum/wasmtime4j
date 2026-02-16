@@ -7,6 +7,15 @@
 //! - wasi_io_helpers.rs (Preview 2)
 //! - panama_wasi_io_ffi.rs (Panama FFI for Preview 1)
 //! - jni_wasi_io_bindings.rs (JNI for Preview 1)
+//!
+//! ## `blocking` parameter convention
+//!
+//! Several functions accept a `blocking` parameter that is currently unused.
+//! All stream entries are in-memory buffers where reads/writes complete
+//! immediately, so blocking vs non-blocking has no observable effect. The
+//! parameter is preserved in the signature for forward compatibility with
+//! future real I/O stream backends (e.g., host file descriptors, sockets)
+//! where blocking semantics would matter.
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
@@ -59,8 +68,10 @@ pub fn read_from_stream_generic<C: WasiStreamContext>(
     context: &C,
     stream_id: u64,
     length: usize,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<Vec<u8>> {
+    // See module-level docs for why blocking is unused on in-memory buffers.
+    let _ = blocking;
     let mut streams = context.streams_write()?;
     let stream =
         streams
@@ -85,8 +96,9 @@ pub fn skip_in_stream_generic<C: WasiStreamContext>(
     context: &C,
     stream_id: u64,
     length: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<u64> {
+    let _ = blocking;
     let mut streams = context.streams_write()?;
     let stream =
         streams
@@ -146,8 +158,9 @@ pub fn write_to_stream_generic<C: WasiStreamContext>(
     context: &C,
     stream_id: u64,
     data: &[u8],
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<()> {
+    let _ = blocking;
     let mut streams = context.streams_write()?;
     let stream =
         streams
@@ -170,8 +183,9 @@ pub fn write_to_stream_generic<C: WasiStreamContext>(
 pub fn flush_stream_generic<C: WasiStreamContext>(
     context: &C,
     stream_id: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<()> {
+    let _ = blocking;
     let streams = context.streams_read()?;
     let stream =
         streams
@@ -195,8 +209,9 @@ pub fn write_zeroes_to_stream_generic<C: WasiStreamContext>(
     context: &C,
     stream_id: u64,
     length: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<()> {
+    let _ = blocking;
     let mut streams = context.streams_write()?;
     let stream =
         streams
@@ -225,8 +240,9 @@ pub fn splice_streams_generic<C: WasiStreamContext>(
     dest_stream_id: u64,
     source_stream_id: u64,
     length: u64,
-    _blocking: bool,
+    blocking: bool,
 ) -> WasmtimeResult<u64> {
+    let _ = blocking;
     let mut streams = context.streams_write()?;
 
     // First check source stream
