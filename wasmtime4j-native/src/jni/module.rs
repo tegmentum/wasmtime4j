@@ -875,13 +875,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         };
 
         // Create ExportType(String name, WasmType type)
-        let export_type_class = match env.find_class("ai/tegmentum/wasmtime4j/ExportType") {
+        let export_type_class = match env.find_class("ai/tegmentum/wasmtime4j/type/ExportType") {
             Ok(c) => c,
             Err(_) => continue,
         };
         let export_type_obj = match env.new_object(
             export_type_class,
-            "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/WasmType;)V",
+            "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/type/WasmType;)V",
             &[
                 JValue::Object(&name_jstring),
                 JValue::Object(&wasm_type_obj),
@@ -898,7 +898,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         };
         let module_export_obj = match env.new_object(
             module_export_class,
-            "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/ExportType;)V",
+            "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/type/ExportType;)V",
             &[
                 JValue::Object(&name_jstring),
                 JValue::Object(&export_type_obj),
@@ -1005,13 +1005,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         };
 
         // Create ImportType(String moduleName, String name, WasmType type)
-        let import_type_class = match env.find_class("ai/tegmentum/wasmtime4j/ImportType") {
+        let import_type_class = match env.find_class("ai/tegmentum/wasmtime4j/type/ImportType") {
             Ok(c) => c,
             Err(_) => continue,
         };
         let import_type_obj = match env.new_object(
             import_type_class,
-            "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/WasmType;)V",
+            "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/type/WasmType;)V",
             &[
                 JValue::Object(&module_name_jstring),
                 JValue::Object(&field_name_jstring),
@@ -1029,7 +1029,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         };
         let module_import_obj = match env.new_object(
             module_import_class,
-            "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/ImportType;)V",
+            "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/type/ImportType;)V",
             &[
                 JValue::Object(&module_name_jstring),
                 JValue::Object(&field_name_jstring),
