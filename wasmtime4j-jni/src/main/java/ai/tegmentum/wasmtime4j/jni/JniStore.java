@@ -404,96 +404,6 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  /**
-   * Increments the epoch counter for this store.
-   *
-   * @throws WasmException if the epoch increment fails
-   */
-  public void incrementEpoch() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      nativeIncrementEpoch(getNativeHandle());
-    } catch (final Exception e) {
-      throw new WasmException("Failed to increment epoch", e);
-    }
-  }
-
-  /**
-   * Sets the memory limit for this store.
-   *
-   * @param bytes the memory limit in bytes
-   * @throws WasmException if setting the memory limit fails
-   */
-  public void setMemoryLimit(final long bytes) throws WasmException {
-    if (bytes < 0) {
-      throw new IllegalArgumentException("Memory limit cannot be negative");
-    }
-    ensureNotClosed();
-
-    try {
-      final boolean success = nativeSetMemoryLimit(getNativeHandle(), bytes);
-      if (!success) {
-        throw new WasmException("Failed to set memory limit to " + bytes);
-      }
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
-      }
-      throw new WasmException("Unexpected error setting memory limit", e);
-    }
-  }
-
-  /**
-   * Sets the table element limit for this store.
-   *
-   * @param elements the maximum number of table elements
-   * @throws WasmException if setting the table element limit fails
-   */
-  public void setTableElementLimit(final long elements) throws WasmException {
-    if (elements < 0) {
-      throw new IllegalArgumentException("Table element limit cannot be negative");
-    }
-    ensureNotClosed();
-
-    try {
-      final boolean success = nativeSetTableElementLimit(getNativeHandle(), elements);
-      if (!success) {
-        throw new WasmException("Failed to set table element limit to " + elements);
-      }
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
-      }
-      throw new WasmException("Unexpected error setting table element limit", e);
-    }
-  }
-
-  /**
-   * Sets the instance limit for this store.
-   *
-   * @param count the maximum number of instances
-   * @throws WasmException if setting the instance limit fails
-   */
-  public void setInstanceLimit(final int count) throws WasmException {
-    if (count < 0) {
-      throw new IllegalArgumentException("Instance limit cannot be negative");
-    }
-    ensureNotClosed();
-
-    try {
-      final boolean success = nativeSetInstanceLimit(getNativeHandle(), count);
-      if (!success) {
-        throw new WasmException("Failed to set instance limit to " + count);
-      }
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
-      }
-      throw new WasmException("Unexpected error setting instance limit", e);
-    }
-  }
-
   @Override
   public WasmFunction createHostFunction(
       final String name, final FunctionType functionType, final HostFunction implementation)
@@ -1267,40 +1177,6 @@ public final class JniStore extends JniResource implements Store {
    * @return the actual amount of fuel consumed
    */
   private static native long nativeConsumeFuel(long storeHandle, long fuel);
-
-  /**
-   * Increments the epoch counter for this store.
-   *
-   * @param storeHandle the native store handle
-   */
-  private static native void nativeIncrementEpoch(long storeHandle);
-
-  /**
-   * Sets the memory limit for this store.
-   *
-   * @param storeHandle the native store handle
-   * @param bytes the memory limit in bytes (0 for unlimited)
-   * @return true if successful, false otherwise
-   */
-  private static native boolean nativeSetMemoryLimit(long storeHandle, long bytes);
-
-  /**
-   * Sets the table element limit for this store.
-   *
-   * @param storeHandle the native store handle
-   * @param elements the maximum number of table elements (0 for unlimited)
-   * @return true if successful, false otherwise
-   */
-  private static native boolean nativeSetTableElementLimit(long storeHandle, long elements);
-
-  /**
-   * Sets the instance limit for this store.
-   *
-   * @param storeHandle the native store handle
-   * @param count the maximum number of instances (0 for unlimited)
-   * @return true if successful, false otherwise
-   */
-  private static native boolean nativeSetInstanceLimit(long storeHandle, int count);
 
   /**
    * Creates a new global variable.

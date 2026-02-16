@@ -57,7 +57,6 @@ pub mod interop; // FFI interop utilities
 pub mod linker;
 pub mod memory;
 pub mod module;
-pub mod serialization;
 pub mod store;
 pub mod table;
 pub mod typed_func; // Typed function wrapper for zero-cost calls
@@ -88,8 +87,6 @@ pub mod jni;
 pub mod jni_component_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_gc_bindings;
-#[cfg(feature = "jni-bindings")]
-pub mod jni_module_cache_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_pooling_allocator_bindings;
 #[cfg(feature = "jni-bindings")]
@@ -143,8 +140,6 @@ pub mod component;
 #[cfg(feature = "component-model")]
 pub mod component_core;
 #[cfg(feature = "component-model")]
-pub mod component_resources;
-#[cfg(feature = "component-model")]
 pub mod resource_dynamic;
 #[cfg(feature = "component-model")]
 pub mod version_types;
@@ -181,11 +176,6 @@ pub use table::{Table, TableElement, TableMetadata};
 
 // Re-export additional core functionality
 pub use caller::{CallerContext, CallerExport, CallerExportType, ExportCounts};
-pub use serialization::{
-    CacheInfo, ModuleSerializer, ModuleSizeInfo, SerializationConfig, SerializationStats,
-    ValidationLevel,
-};
-
 // Optional re-exports based on features
 #[cfg(feature = "wasi")]
 pub use wasi::{
@@ -224,12 +214,6 @@ pub use component_core::{ComponentInstanceHandle, ComponentMetrics, EnhancedComp
 
 #[cfg(feature = "component-model")]
 pub use version_types::{ComponentId, SemanticVersion, VersionConstraint};
-
-#[cfg(feature = "component-model")]
-pub use component_resources::{
-    AccessType, ComponentResourceManager, ManagedResource, ResourceHandle, ResourcePermissions,
-    ResourceQuotas, ResourceState, UsageTracking,
-};
 
 // Re-export WebAssembly GC types for garbage collection support
 pub use gc::{

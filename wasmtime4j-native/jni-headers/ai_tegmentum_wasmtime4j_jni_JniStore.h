@@ -161,38 +161,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeConsumeF
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeIncrementEpoch
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeIncrementEpoch
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeSetMemoryLimit
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetMemoryLimit
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeSetTableElementLimit
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetTableElementLimit
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeSetInstanceLimit
- * Signature: (JI)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetInstanceLimit
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeCreateGlobal
  * Signature: (JII[Ljava/lang/Object;)J
  */

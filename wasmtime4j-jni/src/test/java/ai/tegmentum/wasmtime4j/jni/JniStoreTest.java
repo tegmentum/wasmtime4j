@@ -142,39 +142,6 @@ class JniStoreTest {
   }
 
   @Test
-  void testSetMemoryLimitWithNegativeValue() {
-    final JniStore store = new JniStore(VALID_HANDLE, testEngine);
-
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> store.setMemoryLimit(-1));
-
-    assertThat(exception.getMessage()).contains("Memory limit");
-    assertThat(exception.getMessage()).contains("cannot be negative");
-  }
-
-  @Test
-  void testSetTableElementLimitWithNegativeValue() {
-    final JniStore store = new JniStore(VALID_HANDLE, testEngine);
-
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> store.setTableElementLimit(-1));
-
-    assertThat(exception.getMessage()).contains("Table element limit");
-    assertThat(exception.getMessage()).contains("cannot be negative");
-  }
-
-  @Test
-  void testSetInstanceLimitWithNegativeValue() {
-    final JniStore store = new JniStore(VALID_HANDLE, testEngine);
-
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> store.setInstanceLimit(-1));
-
-    assertThat(exception.getMessage()).contains("Instance limit");
-    assertThat(exception.getMessage()).contains("cannot be negative");
-  }
-
-  @Test
   void testCreateMemoryWithNegativeInitialPages() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
@@ -439,9 +406,6 @@ class JniStoreTest {
     assertThrows(JniValidationException.class, () -> store.addFuel(-1));
     assertThrows(JniValidationException.class, () -> store.setFuel(-1));
     assertThrows(JniValidationException.class, () -> store.consumeFuel(-1));
-    assertThrows(IllegalArgumentException.class, () -> store.setMemoryLimit(-1));
-    assertThrows(IllegalArgumentException.class, () -> store.setTableElementLimit(-1));
-    assertThrows(IllegalArgumentException.class, () -> store.setInstanceLimit(-1));
     assertThrows(IllegalArgumentException.class, () -> store.createMemory(-1, 10));
     assertThrows(
         IllegalArgumentException.class, () -> store.createTable(WasmValueType.FUNCREF, -1, 10));
