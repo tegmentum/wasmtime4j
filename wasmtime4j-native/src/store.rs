@@ -90,6 +90,46 @@ pub struct StoreData {
     pub callback_resource_limiter: Option<CallbackResourceLimiter>,
 }
 
+impl StoreData {
+    /// Create a new StoreData with the given resource limits and all other fields at defaults.
+    pub fn new(resource_limits: ResourceLimits) -> Self {
+        Self {
+            user_data: None,
+            resource_limits,
+            execution_state: ExecutionState::default(),
+            wasi_ctx: None,
+            wasi_stdout_pipe: None,
+            wasi_stderr_pipe: None,
+            wasi_fd_manager: None,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_ctx: None,
+            #[cfg(feature = "wasi-http")]
+            resource_table: ResourceTable::new(),
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_ctx: None,
+            callback_resource_limiter: None,
+        }
+    }
+}
+
+impl StoreMetadata {
+    /// Create a new StoreMetadata with the given limits and a fresh creation timestamp.
+    pub fn new(
+        fuel_limit: Option<u64>,
+        memory_limit_bytes: Option<usize>,
+        execution_timeout: Option<Duration>,
+    ) -> Self {
+        Self {
+            created_at: Instant::now(),
+            fuel_limit,
+            memory_limit_bytes,
+            execution_timeout,
+            instance_count: 0,
+            is_closed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        }
+    }
+}
+
 impl std::fmt::Debug for StoreData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug = f.debug_struct("StoreData");
@@ -1032,28 +1072,7 @@ impl StoreBuilder {
             id
         };
 
-        let store_data = StoreData {
-            user_data: None,
-            resource_limits: self.resource_limits,
-            execution_state: ExecutionState {
-                execution_count: 0,
-                last_execution: None,
-                total_execution_time: Duration::new(0, 0),
-                fuel_consumed: 0,
-            },
-            wasi_ctx: None,
-            wasi_stdout_pipe: None,
-            wasi_stderr_pipe: None,
-            wasi_fd_manager: None,
-            #[cfg(feature = "wasi-http")]
-            wasi_http_ctx: None,
-            #[cfg(feature = "wasi-http")]
-            resource_table: ResourceTable::new(),
-            #[cfg(feature = "wasi-nn")]
-            wasi_nn_ctx: None,
-            callback_resource_limiter: None,
-        };
-
+        let store_data = StoreData::new(self.resource_limits);
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
 
         // Configure fuel if specified OR if Engine requires it
@@ -1066,14 +1085,8 @@ impl StoreBuilder {
                 })?;
         }
 
-        let metadata = StoreMetadata {
-            created_at: Instant::now(),
-            fuel_limit: self.fuel_limit,
-            memory_limit_bytes: self.memory_limit_bytes,
-            execution_timeout: self.execution_timeout,
-            instance_count: 0,
-            is_closed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
-        };
+        let metadata =
+            StoreMetadata::new(self.fuel_limit, self.memory_limit_bytes, self.execution_timeout);
 
         Ok(Store {
             id: store_id,
@@ -1120,27 +1133,7 @@ impl StoreBuilder {
             id
         };
 
-        let store_data = StoreData {
-            user_data: None,
-            resource_limits: self.resource_limits,
-            execution_state: ExecutionState {
-                execution_count: 0,
-                last_execution: None,
-                total_execution_time: Duration::new(0, 0),
-                fuel_consumed: 0,
-            },
-            wasi_ctx: None,
-            wasi_stdout_pipe: None,
-            wasi_stderr_pipe: None,
-            wasi_fd_manager: None,
-            #[cfg(feature = "wasi-http")]
-            wasi_http_ctx: None,
-            #[cfg(feature = "wasi-http")]
-            resource_table: ResourceTable::new(),
-            #[cfg(feature = "wasi-nn")]
-            wasi_nn_ctx: None,
-            callback_resource_limiter: None,
-        };
+        let store_data = StoreData::new(self.resource_limits);
 
         // CRITICAL: Use the wasmtime Engine from the Module's internal wasmtime::Module
         // This ensures the Store's internal Arc matches the Module's internal Arc
@@ -1158,14 +1151,8 @@ impl StoreBuilder {
                 })?;
         }
 
-        let metadata = StoreMetadata {
-            created_at: Instant::now(),
-            fuel_limit: self.fuel_limit,
-            memory_limit_bytes: self.memory_limit_bytes,
-            execution_timeout: self.execution_timeout,
-            instance_count: 0,
-            is_closed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
-        };
+        let metadata =
+            StoreMetadata::new(self.fuel_limit, self.memory_limit_bytes, self.execution_timeout);
 
         Ok(Store {
             id: store_id,

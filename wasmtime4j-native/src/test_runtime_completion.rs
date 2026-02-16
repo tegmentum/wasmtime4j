@@ -246,7 +246,7 @@ fn test_complete_runtime_integration() {
     assert!(result.execution_time_ns > 0);
 
     // Test memory access function
-    let memory = instance
+    let _memory = instance
         .get_memory(&mut store, "memory")
         .expect("Failed to get memory")
         .expect("Memory export not found");

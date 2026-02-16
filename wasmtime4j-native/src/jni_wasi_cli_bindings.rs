@@ -40,16 +40,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     );
 
     // Get environment variables from context
-    let env_map = match context.environment_rw.read() {
-        Ok(env_map) => env_map,
-        Err(e) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                format!("Failed to read environment variables: {}", e),
-            );
-            return JObject::null().into_raw();
-        }
-    };
+    let env_map = &context.environment;
 
     // Convert to array of "key=value" strings
     let env_strings: Vec<String> = env_map
@@ -140,16 +131,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     };
 
     // Get environment variables from context
-    let env_map = match context.environment_rw.read() {
-        Ok(env_map) => env_map,
-        Err(e) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                format!("Failed to read environment variables: {}", e),
-            );
-            return JObject::null().into_raw();
-        }
-    };
+    let env_map = &context.environment;
 
     // Look up the variable
     match env_map.get(&name_str) {
@@ -188,16 +170,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_cli_JniWasiEnvironm
     );
 
     // Get arguments from context
-    let args = match context.arguments_rw.read() {
-        Ok(args) => args,
-        Err(e) => {
-            let _ = env.throw_new(
-                "java/lang/RuntimeException",
-                format!("Failed to read arguments: {}", e),
-            );
-            return JObject::null().into_raw();
-        }
-    };
+    let args = &context.arguments;
 
     // Create Java String array
     let string_class = match env.find_class("java/lang/String") {

@@ -27,10 +27,10 @@ pub struct WasiContext {
     config: WasiConfig,
     /// Directory mappings for filesystem access
     directory_mappings: HashMap<String, DirectoryMapping>,
-    /// Environment variables (also accessible via RwLock for CLI bindings)
-    environment: HashMap<String, String>,
-    /// Command line arguments (also accessible via RwLock for CLI bindings)
-    arguments: Vec<String>,
+    /// Environment variables
+    pub(crate) environment: HashMap<String, String>,
+    /// Command line arguments
+    pub(crate) arguments: Vec<String>,
     /// Standard stream configurations
     stdio_config: StdioConfig,
     /// Captured stdout pipe (when using Buffer mode)
@@ -47,10 +47,6 @@ pub struct WasiContext {
     pub stderr_handle: Arc<RwLock<Option<u64>>>,
     /// Exit code (if process has exited)
     pub exit_code: Arc<RwLock<Option<i32>>>,
-    /// Environment variables (RwLock-wrapped for CLI bindings)
-    pub environment_rw: Arc<RwLock<HashMap<String, String>>>,
-    /// Arguments (RwLock-wrapped for CLI bindings)
-    pub arguments_rw: Arc<RwLock<Vec<String>>>,
     /// Initial working directory (RwLock-wrapped for CLI bindings)
     pub initial_cwd: Arc<RwLock<Option<String>>>,
     /// Operation counter for generating unique IDs
@@ -73,8 +69,6 @@ impl Clone for WasiContext {
             stdout_handle: Arc::clone(&self.stdout_handle),
             stderr_handle: Arc::clone(&self.stderr_handle),
             exit_code: Arc::clone(&self.exit_code),
-            environment_rw: Arc::clone(&self.environment_rw),
-            arguments_rw: Arc::clone(&self.arguments_rw),
             initial_cwd: Arc::clone(&self.initial_cwd),
             next_operation_id: std::sync::atomic::AtomicU64::new(
                 self.next_operation_id
@@ -426,8 +420,6 @@ impl WasiContext {
             stdout_handle: Arc::new(RwLock::new(None)),
             stderr_handle: Arc::new(RwLock::new(None)),
             exit_code: Arc::new(RwLock::new(None)),
-            environment_rw: Arc::new(RwLock::new(HashMap::new())),
-            arguments_rw: Arc::new(RwLock::new(default_args)),
             initial_cwd: Arc::new(RwLock::new(None)),
             next_operation_id: std::sync::atomic::AtomicU64::new(100), // Start at 100 to avoid conflicts with stdio handles
         })
@@ -496,7 +488,10 @@ impl WasiContext {
         builder.args(&self.arguments);
 
         // Configure stdio
-        self.configure_stdio(&mut builder)?;
+        let (stdout_pipe, stderr_pipe) =
+            Self::apply_stdio_config(&mut builder, &self.stdio_config, None, None);
+        self.stdout_pipe = stdout_pipe;
+        self.stderr_pipe = stderr_pipe;
 
         // Build and update context
         let new_ctx = builder.build_p1();
@@ -632,11 +627,8 @@ impl WasiContext {
         &self.config
     }
 
-    /// Rebuild the WASI context with current configuration
-    fn rebuild_context(&mut self) -> WasmtimeResult<()> {
-        let mut builder = WasiCtxBuilder::new();
-
-        // Add directory mappings
+    /// Populate a WasiCtxBuilder with directory mappings, environment variables, and arguments.
+    fn populate_builder(&self, builder: &mut WasiCtxBuilder) -> WasmtimeResult<()> {
         for (guest_path, mapping) in &self.directory_mappings {
             builder
                 .preopened_dir(
@@ -649,21 +641,23 @@ impl WasiContext {
                     message: format!("Failed to add directory mapping {}: {}", guest_path, e),
                 })?;
         }
-
-        // Add environment variables
         for (key, value) in &self.environment {
             builder.env(key, value);
         }
-
-        // Add command line arguments
         builder.args(&self.arguments);
+        Ok(())
+    }
 
-        // Configure stdio
-        self.configure_stdio(&mut builder)?;
+    /// Rebuild the WASI context with current configuration
+    fn rebuild_context(&mut self) -> WasmtimeResult<()> {
+        let mut builder = WasiCtxBuilder::new();
+        self.populate_builder(&mut builder)?;
+        let (stdout_pipe, stderr_pipe) =
+            Self::apply_stdio_config(&mut builder, &self.stdio_config, None, None);
+        self.stdout_pipe = stdout_pipe;
+        self.stderr_pipe = stderr_pipe;
 
-        // Build new context
         let new_ctx = builder.build_p1();
-
         let mut inner = self.inner.lock().map_err(|_| WasmtimeError::Concurrency {
             message: "Failed to acquire WASI context lock".to_string(),
         })?;
@@ -681,187 +675,84 @@ impl WasiContext {
         Option<MemoryOutputPipe>,
         Option<MemoryOutputPipe>,
     )> {
-        use wasmtime_wasi::p2::pipe::MemoryInputPipe;
-        const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
-
         let mut builder = WasiCtxBuilder::new();
-        let mut stdout_pipe = None;
-        let mut stderr_pipe = None;
+        self.populate_builder(&mut builder)?;
+        let (stdout_pipe, stderr_pipe) = Self::apply_stdio_config(
+            &mut builder,
+            &self.stdio_config,
+            self.stdout_pipe.as_ref(),
+            self.stderr_pipe.as_ref(),
+        );
 
-        // Add directory mappings
-        for (guest_path, mapping) in &self.directory_mappings {
-            builder
-                .preopened_dir(
-                    &mapping.host_path,
-                    guest_path,
-                    mapping.dir_perms.to_wasmtime_perms(),
-                    mapping.file_perms.to_wasmtime_perms(),
-                )
-                .map_err(|e| WasmtimeError::Wasi {
-                    message: format!("Failed to add directory mapping {}: {}", guest_path, e),
-                })?;
-        }
-
-        // Add environment variables
-        for (key, value) in &self.environment {
-            builder.env(key, value);
-        }
-
-        // Add command line arguments
-        builder.args(&self.arguments);
-
-        // Configure stdin
-        match &self.stdio_config.stdin {
-            StdioSource::Inherit => {
-                builder.inherit_stdin();
-            }
-            StdioSource::Buffer(data) => {
-                let pipe = MemoryInputPipe::new(data.clone());
-                builder.stdin(pipe);
-            }
-            StdioSource::File(_path) => {
-                builder.inherit_stdin();
-            }
-            StdioSource::Null => {
-                let empty: Vec<u8> = Vec::new();
-                let pipe = MemoryInputPipe::new(empty);
-                builder.stdin(pipe);
-            }
-        }
-
-        // Configure stdout - reuse existing pipe if available, otherwise create new
-        match &self.stdio_config.stdout {
-            StdioSink::Inherit => {
-                builder.inherit_stdout();
-            }
-            StdioSink::Buffer => {
-                // Reuse existing stdout pipe if available (from enable_output_capture)
-                let pipe = if let Some(existing_pipe) = &self.stdout_pipe {
-                    existing_pipe.clone()
-                } else {
-                    MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY)
-                };
-                builder.stdout(pipe.clone());
-                stdout_pipe = Some(pipe);
-            }
-            StdioSink::File(_path) => {
-                builder.inherit_stdout();
-            }
-            StdioSink::Null => {
-                let pipe = MemoryOutputPipe::new(0);
-                builder.stdout(pipe);
-            }
-        }
-
-        // Configure stderr - reuse existing pipe if available, otherwise create new
-        match &self.stdio_config.stderr {
-            StdioSink::Inherit => {
-                builder.inherit_stderr();
-            }
-            StdioSink::Buffer => {
-                // Reuse existing stderr pipe if available (from enable_output_capture)
-                let pipe = if let Some(existing_pipe) = &self.stderr_pipe {
-                    existing_pipe.clone()
-                } else {
-                    MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY)
-                };
-                builder.stderr(pipe.clone());
-                stderr_pipe = Some(pipe);
-            }
-            StdioSink::File(_path) => {
-                builder.inherit_stderr();
-            }
-            StdioSink::Null => {
-                let pipe = MemoryOutputPipe::new(0);
-                builder.stderr(pipe);
-            }
-        }
-
-        // Build and return the context with pipes
         let ctx = builder.build_p1();
         Ok((ctx, stdout_pipe, stderr_pipe))
     }
 
-    /// Configure standard I/O streams in the builder
-    fn configure_stdio(&mut self, builder: &mut WasiCtxBuilder) -> WasmtimeResult<()> {
+    /// Configure stdio streams on a builder, returning any capture pipes.
+    ///
+    /// When `existing_stdout`/`existing_stderr` are provided, they are reused
+    /// for `Buffer` mode instead of creating fresh pipes.
+    fn apply_stdio_config(
+        builder: &mut WasiCtxBuilder,
+        stdio_config: &StdioConfig,
+        existing_stdout: Option<&MemoryOutputPipe>,
+        existing_stderr: Option<&MemoryOutputPipe>,
+    ) -> (Option<MemoryOutputPipe>, Option<MemoryOutputPipe>) {
         use wasmtime_wasi::p2::pipe::MemoryInputPipe;
+        const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
 
-        // Configure stdin based on stdio_config
-        match &self.stdio_config.stdin {
-            StdioSource::Inherit => {
+        // Configure stdin
+        match &stdio_config.stdin {
+            StdioSource::Inherit | StdioSource::File(_) => {
                 builder.inherit_stdin();
             }
             StdioSource::Buffer(data) => {
-                let pipe = MemoryInputPipe::new(data.clone());
-                builder.stdin(pipe);
-            }
-            StdioSource::File(_path) => {
-                // File-based stdin requires async file operations
-                // For now, fall back to inherit
-                builder.inherit_stdin();
+                builder.stdin(MemoryInputPipe::new(data.clone()));
             }
             StdioSource::Null => {
-                // Empty input - use empty buffer
-                let empty: Vec<u8> = Vec::new();
-                let pipe = MemoryInputPipe::new(empty);
-                builder.stdin(pipe);
+                builder.stdin(MemoryInputPipe::new(Vec::new()));
             }
         }
 
-        // Configure stdout based on stdio_config
-        // Default buffer capacity of 64KB
-        const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
-
-        match &self.stdio_config.stdout {
-            StdioSink::Inherit => {
+        // Configure stdout
+        let stdout_pipe = match &stdio_config.stdout {
+            StdioSink::Inherit | StdioSink::File(_) => {
                 builder.inherit_stdout();
-                self.stdout_pipe = None;
+                None
             }
             StdioSink::Buffer => {
-                let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+                let pipe = existing_stdout
+                    .cloned()
+                    .unwrap_or_else(|| MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY));
                 builder.stdout(pipe.clone());
-                self.stdout_pipe = Some(pipe);
-            }
-            StdioSink::File(_path) => {
-                // File-based stdout requires async file operations
-                // For now, fall back to inherit
-                builder.inherit_stdout();
-                self.stdout_pipe = None;
+                Some(pipe)
             }
             StdioSink::Null => {
-                // Discard output - use a buffer but don't store reference
-                let pipe = MemoryOutputPipe::new(0);
-                builder.stdout(pipe);
-                self.stdout_pipe = None;
+                builder.stdout(MemoryOutputPipe::new(0));
+                None
             }
-        }
+        };
 
-        // Configure stderr based on stdio_config
-        match &self.stdio_config.stderr {
-            StdioSink::Inherit => {
+        // Configure stderr
+        let stderr_pipe = match &stdio_config.stderr {
+            StdioSink::Inherit | StdioSink::File(_) => {
                 builder.inherit_stderr();
-                self.stderr_pipe = None;
+                None
             }
             StdioSink::Buffer => {
-                let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
+                let pipe = existing_stderr
+                    .cloned()
+                    .unwrap_or_else(|| MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY));
                 builder.stderr(pipe.clone());
-                self.stderr_pipe = Some(pipe);
-            }
-            StdioSink::File(_path) => {
-                // File-based stderr requires async file operations
-                // For now, fall back to inherit
-                builder.inherit_stderr();
-                self.stderr_pipe = None;
+                Some(pipe)
             }
             StdioSink::Null => {
-                // Discard output - use a buffer but don't store reference
-                let pipe = MemoryOutputPipe::new(0);
-                builder.stderr(pipe);
-                self.stderr_pipe = None;
+                builder.stderr(MemoryOutputPipe::new(0));
+                None
             }
-        }
+        };
 
-        Ok(())
+        (stdout_pipe, stderr_pipe)
     }
 
     /// Get captured stdout data
@@ -937,8 +828,6 @@ impl Default for WasiContext {
                     stdout_handle: Arc::new(RwLock::new(None)),
                     stderr_handle: Arc::new(RwLock::new(None)),
                     exit_code: Arc::new(RwLock::new(None)),
-                    environment_rw: Arc::new(RwLock::new(HashMap::new())),
-                    arguments_rw: Arc::new(RwLock::new(default_args)),
                     initial_cwd: Arc::new(RwLock::new(None)),
                     next_operation_id: std::sync::atomic::AtomicU64::new(100),
                 }

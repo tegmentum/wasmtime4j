@@ -44,10 +44,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_all(
             &*ptr
         };
 
-        let env_map = match context.environment_rw.read() {
-            Ok(env_map) => env_map,
-            Err(_) => return Ok(-1),
-        };
+        let env_map = &context.environment;
 
         let env_strings: Vec<String> = env_map
             .iter()
@@ -124,10 +121,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get(
             }
         };
 
-        let env_map = match context.environment_rw.read() {
-            Ok(env_map) => env_map,
-            Err(_) => return Ok(-1),
-        };
+        let env_map = &context.environment;
 
         match env_map.get(name_str) {
             Some(value) => match CString::new(value.as_str()) {
@@ -183,10 +177,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_arguments(
             &*ptr
         };
 
-        let args = match context.arguments_rw.read() {
-            Ok(args) => args,
-            Err(_) => return Ok(-1),
-        };
+        let args = &context.arguments;
 
         let json_array = format!(
             "[{}]",

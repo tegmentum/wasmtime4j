@@ -942,7 +942,7 @@ fn test_engine_same_after_clone() {
 #[test]
 fn test_shared_component_engine() {
     let engine1 = get_shared_component_wasmtime_engine();
-    let engine2 = get_shared_component_wasmtime_engine();
+    let _engine2 = get_shared_component_wasmtime_engine();
 
     // Both should be valid engines
     assert!(

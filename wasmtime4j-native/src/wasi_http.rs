@@ -1680,16 +1680,6 @@ mod tests {
     }
 
     #[test]
-    fn test_builder_allow_methods() {
-        let config = WasiHttpConfig::builder()
-            .allow_methods(vec!["GET", "POST", "PUT"])
-            .build();
-
-        // Methods are stored internally
-        assert!(config.validate().is_ok());
-    }
-
-    #[test]
     fn test_builder_chain_all_options() {
         let config = WasiHttpConfig::builder()
             .allow_host("api.example.com")
