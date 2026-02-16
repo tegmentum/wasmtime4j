@@ -102,10 +102,10 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryFi
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeMemoryInit
- * Signature: (JIIII)V
+ * Signature: (JJJIIII)V
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryInit
-  (JNIEnv *, jclass, jlong, jint, jint, jint, jint);
+  (JNIEnv *, jclass, jlong, jlong, jlong, jint, jint, jint, jint);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
@@ -278,10 +278,10 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryFi
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeMemoryInit64
- * Signature: (JJIJJ)V
+ * Signature: (JJJJIJJ)V
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryInit64
-  (JNIEnv *, jclass, jlong, jlong, jint, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jint, jlong, jlong);
 
 #ifdef __cplusplus
 }

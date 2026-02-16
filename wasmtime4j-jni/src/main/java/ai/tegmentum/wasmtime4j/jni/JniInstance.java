@@ -168,7 +168,9 @@ public final class JniInstance extends JniResource implements Instance {
       if (memoryHandle == 0) {
         return Optional.empty();
       }
-      return Optional.of(new JniMemory(memoryHandle, (JniStore) store));
+      final JniMemory memory = new JniMemory(memoryHandle, (JniStore) store);
+      memory.setInstanceHandle(getNativeHandle());
+      return Optional.of(memory);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {

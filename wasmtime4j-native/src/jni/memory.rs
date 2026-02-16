@@ -1476,3 +1476,105 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemor
         }
     }
 }
+
+/// Initialize memory from a data segment (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryInit(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    instance_ptr: jlong,
+    dest_offset: jint,
+    data_segment_index: jint,
+    src_offset: jint,
+    length: jint,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        if memory_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Memory handle cannot be null".to_string(),
+            });
+        }
+        if store_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+        }
+        if instance_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Instance handle cannot be null".to_string(),
+            });
+        }
+
+        let memory =
+            unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store =
+            unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        let instance = unsafe {
+            crate::instance::core::get_instance_ref(instance_ptr as *const std::os::raw::c_void)?
+        };
+
+        core::memory_init(
+            memory,
+            store,
+            instance,
+            dest_offset as u32,
+            data_segment_index as u32,
+            src_offset as u32,
+            length as u32,
+        )
+    });
+}
+
+/// Initialize memory from a data segment using 64-bit offsets (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryInit64(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    instance_ptr: jlong,
+    dest_offset: jlong,
+    data_segment_index: jint,
+    src_offset: jlong,
+    length: jlong,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        if memory_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Memory handle cannot be null".to_string(),
+            });
+        }
+        if store_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+        }
+        if instance_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Instance handle cannot be null".to_string(),
+            });
+        }
+
+        let memory =
+            unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store =
+            unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        let instance = unsafe {
+            crate::instance::core::get_instance_ref(instance_ptr as *const std::os::raw::c_void)?
+        };
+
+        // For 64-bit memory, we still use the same core function but with truncated values
+        // since the core function uses u32 parameters
+        core::memory_init(
+            memory,
+            store,
+            instance,
+            dest_offset as u32,
+            data_segment_index as u32,
+            src_offset as u32,
+            length as u32,
+        )
+    });
+}
