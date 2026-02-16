@@ -174,38 +174,39 @@ pub fn create_engine_with_extended_config(
     builder.build().map(Box::new)
 }
 
-/// Core function to detect if a host CPU feature is available
+/// Core function to detect if a host CPU feature is available at **runtime**.
 ///
-/// Note: In wasmtime 39, the Config::detect_host_feature method is used
-/// to override feature detection (for testing), not to query features.
-/// The actual feature detection happens automatically during compilation.
-/// This function uses Rust's std_detect crate features where available,
-/// or returns false for unknown features.
+/// On x86/x86_64 this uses `std::arch::is_x86_feature_detected!()` which
+/// queries CPUID at runtime, giving correct results even when the binary was
+/// cross-compiled or built with a different `-C target-cpu`.
+///
+/// On AArch64, NEON is architecturally mandatory so a static `true` suffices.
 pub fn detect_host_feature(feature_name: &str) -> bool {
-    // Wasmtime 39's detect_host_feature is for overriding detection, not querying.
-    // We use target_feature detection at compile time and cfg checks for runtime.
-    // For common CPU features, we check using Rust's built-in capabilities.
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     match feature_name {
-        // x86_64 features
-        "sse" => cfg!(target_feature = "sse"),
-        "sse2" => cfg!(target_feature = "sse2"),
-        "sse3" => cfg!(target_feature = "sse3"),
-        "ssse3" => cfg!(target_feature = "ssse3"),
-        "sse4.1" | "sse41" => cfg!(target_feature = "sse4.1"),
-        "sse4.2" | "sse42" => cfg!(target_feature = "sse4.2"),
-        "avx" => cfg!(target_feature = "avx"),
-        "avx2" => cfg!(target_feature = "avx2"),
-        "avx512f" => cfg!(target_feature = "avx512f"),
-        "bmi1" => cfg!(target_feature = "bmi1"),
-        "bmi2" => cfg!(target_feature = "bmi2"),
-        "lzcnt" => cfg!(target_feature = "lzcnt"),
-        "popcnt" => cfg!(target_feature = "popcnt"),
-        "fma" => cfg!(target_feature = "fma"),
-        // ARM features
-        "neon" => cfg!(target_feature = "neon"),
-        // Unknown features
-        _ => false,
+        "sse" => return std::arch::is_x86_feature_detected!("sse"),
+        "sse2" => return std::arch::is_x86_feature_detected!("sse2"),
+        "sse3" => return std::arch::is_x86_feature_detected!("sse3"),
+        "ssse3" => return std::arch::is_x86_feature_detected!("ssse3"),
+        "sse4.1" | "sse41" => return std::arch::is_x86_feature_detected!("sse4.1"),
+        "sse4.2" | "sse42" => return std::arch::is_x86_feature_detected!("sse4.2"),
+        "avx" => return std::arch::is_x86_feature_detected!("avx"),
+        "avx2" => return std::arch::is_x86_feature_detected!("avx2"),
+        "avx512f" => return std::arch::is_x86_feature_detected!("avx512f"),
+        "bmi1" => return std::arch::is_x86_feature_detected!("bmi1"),
+        "bmi2" => return std::arch::is_x86_feature_detected!("bmi2"),
+        "lzcnt" => return std::arch::is_x86_feature_detected!("lzcnt"),
+        "popcnt" => return std::arch::is_x86_feature_detected!("popcnt"),
+        "fma" => return std::arch::is_x86_feature_detected!("fma"),
+        _ => {}
     }
+
+    #[cfg(target_arch = "aarch64")]
+    if feature_name == "neon" {
+        return true;
+    }
+
+    false
 }
 
 /// Core function to validate engine pointer and get reference
