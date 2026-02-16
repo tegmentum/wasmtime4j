@@ -1,9 +1,9 @@
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
-import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
@@ -106,7 +106,8 @@ public final class WasiPreview2Operations {
    * @return the new resource handle
    * @throws WasiException if resource creation fails
    */
-  public long createResource(final String resourceType, final ByteBuffer data) {
+  public long createResource(final String resourceType, final ByteBuffer data)
+      throws WasiException {
     JniValidation.requireNonEmpty(resourceType, "resourceType");
     JniValidation.requireNonNull(data, "data");
 
@@ -135,6 +136,9 @@ public final class WasiPreview2Operations {
           () -> String.format("Created resource: handle=%d, type=%s", handle, resourceType));
       return handle;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to create resource: " + resourceType, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to create resource: " + resourceType, e);
       throw new WasiException("Resource creation failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -147,7 +151,7 @@ public final class WasiPreview2Operations {
    * @param handle the resource handle to destroy
    * @throws WasiException if resource destruction fails
    */
-  public void destroyResource(final long handle) {
+  public void destroyResource(final long handle) throws WasiException {
     LOGGER.fine(() -> String.format("Destroying resource: handle=%d", handle));
 
     try {
@@ -163,6 +167,9 @@ public final class WasiPreview2Operations {
 
       LOGGER.fine(() -> String.format("Destroyed resource: handle=%d", handle));
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to destroy resource: " + handle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to destroy resource: " + handle, e);
       throw new WasiException("Resource destruction failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -178,12 +185,15 @@ public final class WasiPreview2Operations {
    * @return the input stream handle
    * @throws WasiException if stream creation fails
    */
-  public long openInputStream(final long resourceHandle) {
+  public long openInputStream(final long resourceHandle) throws WasiException {
     LOGGER.fine(() -> String.format("Opening input stream: resource=%d", resourceHandle));
 
     try {
       return streamOperations.openInputStream(resourceHandle);
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to open input stream for resource: " + resourceHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to open input stream for resource: " + resourceHandle, e);
       throw new WasiException("Input stream creation failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -199,12 +209,15 @@ public final class WasiPreview2Operations {
    * @return the output stream handle
    * @throws WasiException if stream creation fails
    */
-  public long openOutputStream(final long resourceHandle) {
+  public long openOutputStream(final long resourceHandle) throws WasiException {
     LOGGER.fine(() -> String.format("Opening output stream: resource=%d", resourceHandle));
 
     try {
       return streamOperations.openOutputStream(resourceHandle);
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to open output stream for resource: " + resourceHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to open output stream for resource: " + resourceHandle, e);
       throw new WasiException(
@@ -281,12 +294,15 @@ public final class WasiPreview2Operations {
    * @return the TCP socket handle
    * @throws WasiException if socket creation fails
    */
-  public long createTcpSocket(final int addressFamily) {
+  public long createTcpSocket(final int addressFamily) throws WasiException {
     LOGGER.fine(() -> String.format("Creating TCP socket: addressFamily=%d", addressFamily));
 
     try {
       return networkOperations.createTcpSocket(addressFamily);
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to create TCP socket", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to create TCP socket", e);
       throw new WasiException("TCP socket creation failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -336,12 +352,15 @@ public final class WasiPreview2Operations {
    * @return the UDP socket handle
    * @throws WasiException if socket creation fails
    */
-  public long createUdpSocket(final int addressFamily) {
+  public long createUdpSocket(final int addressFamily) throws WasiException {
     LOGGER.fine(() -> String.format("Creating UDP socket: addressFamily=%d", addressFamily));
 
     try {
       return networkOperations.createUdpSocket(addressFamily);
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to create UDP socket", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to create UDP socket", e);
       throw new WasiException("UDP socket creation failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -430,7 +449,8 @@ public final class WasiPreview2Operations {
    * @return list of ready pollable indices
    * @throws WasiException if polling fails
    */
-  public List<Integer> poll(final List<Long> pollables, final long timeoutNanos) {
+  public List<Integer> poll(final List<Long> pollables, final long timeoutNanos)
+      throws WasiException {
     JniValidation.requireNonNull(pollables, "pollables");
     JniValidation.requireNonNegative(timeoutNanos, "timeoutNanos");
 

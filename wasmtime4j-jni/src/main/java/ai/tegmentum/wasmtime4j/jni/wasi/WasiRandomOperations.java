@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
-import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.logging.Level;
@@ -71,7 +71,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws JniException if the buffer is null, read-only, or a JNI error occurs
    */
-  public void getRandomBytes(final ByteBuffer buffer) {
+  public void getRandomBytes(final ByteBuffer buffer) throws WasiException {
     JniValidation.requireNonNull(buffer, "buffer");
 
     if (buffer.isReadOnly()) {
@@ -120,6 +120,9 @@ public final class WasiRandomOperations {
 
       LOGGER.fine(() -> String.format("Successfully generated %d random bytes", remaining));
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Error generating " + remaining + " random bytes", e);
+      throw e;
     } catch (final RuntimeException e) {
       LOGGER.log(Level.WARNING, "Error generating " + remaining + " random bytes", e);
       throw e;
@@ -137,7 +140,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws JniException if the length is invalid or a JNI error occurs
    */
-  public byte[] generateRandomBytes(final int length) {
+  public byte[] generateRandomBytes(final int length) throws WasiException {
     JniValidation.requireNonNegative(length, "length");
     validateBufferSize(length);
 
@@ -168,6 +171,9 @@ public final class WasiRandomOperations {
       LOGGER.fine(() -> String.format("Successfully generated %d random bytes", length));
       return randomBytes;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Error generating " + length + " random bytes", e);
+      throw e;
     } catch (final RuntimeException e) {
       LOGGER.log(Level.WARNING, "Error generating " + length + " random bytes", e);
       throw e;
@@ -184,7 +190,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws JniException if a JNI error occurs
    */
-  public int generateRandomInt() {
+  public int generateRandomInt() throws WasiException {
     final byte[] randomBytes = generateRandomBytes(4);
     return ByteBuffer.wrap(randomBytes).getInt();
   }
@@ -200,7 +206,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws JniException if the bound is not positive or a JNI error occurs
    */
-  public int generateRandomInt(final int bound) {
+  public int generateRandomInt(final int bound) throws WasiException {
     if (bound <= 0) {
       throw new JniException("Bound must be positive: " + bound);
     }
@@ -226,7 +232,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws JniException if a JNI error occurs
    */
-  public long generateRandomLong() {
+  public long generateRandomLong() throws WasiException {
     final byte[] randomBytes = generateRandomBytes(8);
     return ByteBuffer.wrap(randomBytes).getLong();
   }
@@ -241,7 +247,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws JniException if a JNI error occurs
    */
-  public double generateRandomDouble() {
+  public double generateRandomDouble() throws WasiException {
     final long randomLong = generateRandomLong() >>> 11; // Use 53 bits for IEEE 754 double
     return (randomLong * 0x1.0p-53);
   }

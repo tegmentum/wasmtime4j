@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
 import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -169,17 +169,29 @@ class WasiExceptionTest {
     }
 
     @Test
-    @DisplayName("should throw IllegalArgumentException for null or empty message")
-    void shouldThrowForNullOrEmptyMessage() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> new WasiException(null, "op", "res", false, WasiException.ErrorCategory.SYSTEM),
-          "Should throw for null message");
+    @DisplayName("should handle null message gracefully with fallback text")
+    void shouldHandleNullMessageGracefully() {
+      final WasiException exception =
+          new WasiException(null, "op", "res", false, WasiException.ErrorCategory.SYSTEM);
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> new WasiException("", "op", "res", false, WasiException.ErrorCategory.SYSTEM),
-          "Should throw for empty message");
+      assertNotNull(exception.getMessage(), "Message should not be null");
+      assertTrue(
+          exception.getMessage().contains("WASI operation failed"),
+          "Should use fallback message for null");
+      assertTrue(exception.getMessage().contains("op"), "Should still contain operation");
+      assertTrue(exception.getMessage().contains("res"), "Should still contain resource");
+    }
+
+    @Test
+    @DisplayName("should handle empty message gracefully with fallback text")
+    void shouldHandleEmptyMessageGracefully() {
+      final WasiException exception =
+          new WasiException("", "op", "res", false, WasiException.ErrorCategory.SYSTEM);
+
+      assertNotNull(exception.getMessage(), "Message should not be null");
+      assertTrue(
+          exception.getMessage().contains("WASI operation failed"),
+          "Should use fallback message for empty");
     }
   }
 
@@ -579,6 +591,203 @@ class WasiExceptionTest {
       assertFalse(exception.isResourceLimitError());
       assertFalse(exception.isComponentError());
       assertFalse(exception.isConfigurationError());
+    }
+  }
+
+  @Nested
+  @DisplayName("WasiErrorCode Constructor Tests")
+  class WasiErrorCodeConstructorTests {
+
+    @Test
+    @DisplayName("Constructor(message, errorCode) should set error code and derive category")
+    void shouldCreateExceptionWithMessageAndErrorCode() {
+      final WasiException exception = new WasiException("Simple error", WasiErrorCode.EINVAL);
+
+      assertEquals(WasiErrorCode.EINVAL, exception.getErrorCode(), "Error code should match");
+      assertNull(exception.getOperation(), "Operation should be null");
+      assertNull(exception.getResource(), "Resource should be null");
+      assertEquals(
+          WasiException.ErrorCategory.SYSTEM,
+          exception.getCategory(),
+          "EINVAL should map to SYSTEM category");
+    }
+
+    @Test
+    @DisplayName("Constructor(errorCode, operation) should use error code description as message")
+    void shouldCreateExceptionFromErrorCodeAndOperation() {
+      final WasiException exception = new WasiException(WasiErrorCode.EPERM, "chmod");
+
+      assertEquals(WasiErrorCode.EPERM, exception.getErrorCode(), "Error code should match");
+      assertEquals("chmod", exception.getOperation(), "Operation should match");
+      assertTrue(
+          exception.getMessage().contains("Operation not permitted"),
+          "Message should contain error description");
+    }
+
+    @Test
+    @DisplayName("Constructor(errorCode, operation, resource) should set all fields")
+    void shouldCreateExceptionFromErrorCodeOperationAndResource() {
+      final WasiException exception =
+          new WasiException(WasiErrorCode.ENOSPC, "write", "/disk/full");
+
+      assertEquals(WasiErrorCode.ENOSPC, exception.getErrorCode(), "Error code should match");
+      assertEquals("write", exception.getOperation(), "Operation should match");
+      assertEquals("/disk/full", exception.getResource(), "Resource should match");
+    }
+
+    @Test
+    @DisplayName("Constructor(message, errorCode, operation, resource) should set all fields")
+    void shouldCreateExceptionWithAllParameters() {
+      final WasiException exception =
+          new WasiException("Test error", WasiErrorCode.ENOENT, "open", "/path/to/file");
+
+      assertNotNull(exception.getMessage(), "Message should not be null");
+      assertTrue(exception.getMessage().contains("Test error"), "Should contain base message");
+      assertEquals(WasiErrorCode.ENOENT, exception.getErrorCode(), "Error code should match");
+      assertEquals("open", exception.getOperation(), "Operation should match");
+      assertEquals("/path/to/file", exception.getResource(), "Resource should match");
+    }
+
+    @Test
+    @DisplayName("Message should include operation, resource, and errno")
+    void messageShouldIncludeOperationResourceAndErrno() {
+      final WasiException exception =
+          new WasiException("File error", WasiErrorCode.EIO, "read", "/tmp/data.txt");
+
+      final String message = exception.getMessage();
+      assertTrue(message.contains("read"), "Message should contain operation");
+      assertTrue(message.contains("/tmp/data.txt"), "Message should contain resource");
+      assertTrue(message.contains("5"), "Message should contain errno");
+    }
+
+    @Test
+    @DisplayName("Should handle null message with error code fallback")
+    void shouldHandleNullMessageWithErrorCode() {
+      final WasiException exception =
+          new WasiException(null, WasiErrorCode.ENOENT, "stat", "/file");
+
+      assertNotNull(exception.getMessage(), "Message should not be null");
+      assertTrue(
+          exception.getMessage().contains("No such file"), "Should use error code description");
+    }
+
+    @Test
+    @DisplayName("Should handle null operation and resource")
+    void shouldHandleNullOperationAndResource() {
+      final WasiException exception =
+          new WasiException("Error occurred", WasiErrorCode.EIO, null, null);
+
+      assertNull(exception.getOperation(), "Operation should be null");
+      assertNull(exception.getResource(), "Resource should be null");
+      assertNotNull(exception.getMessage(), "Message should not be null");
+    }
+
+    @Test
+    @DisplayName("Constructor with cause should preserve cause")
+    void shouldPreserveCause() {
+      final RuntimeException cause = new RuntimeException("Underlying error");
+      final WasiException exception =
+          new WasiException("WASI error", WasiErrorCode.EIO, "write", "/output", cause);
+
+      assertSame(cause, exception.getCause(), "Cause should be preserved");
+    }
+
+    @Test
+    @DisplayName("Constructor with null cause should be null")
+    void shouldHandleNullCause() {
+      final WasiException exception =
+          new WasiException("Error", WasiErrorCode.EACCES, "open", "/file", null);
+
+      assertNull(exception.getCause(), "Cause should be null");
+    }
+  }
+
+  @Nested
+  @DisplayName("WasiErrorCode Category Derivation Tests")
+  class WasiErrorCodeCategoryDerivationTests {
+
+    @Test
+    @DisplayName("File system error codes should derive FILE_SYSTEM category")
+    void fileSystemErrorCodesShouldDeriveFileSystemCategory() {
+      final WasiException fsException = new WasiException("FS error", WasiErrorCode.ENOENT);
+      assertTrue(fsException.isFileSystemError(), "ENOENT should be file system error");
+    }
+
+    @Test
+    @DisplayName("Network error codes should derive NETWORK category")
+    void networkErrorCodesShouldDeriveNetworkCategory() {
+      final WasiException netException = new WasiException("Net error", WasiErrorCode.ETIMEDOUT);
+      assertTrue(netException.isNetworkError(), "ETIMEDOUT should be network error");
+    }
+
+    @Test
+    @DisplayName("Permission error codes should derive PERMISSION category")
+    void permissionErrorCodesShouldDerivePermissionCategory() {
+      final WasiException permException = new WasiException("Perm error", WasiErrorCode.EPERM);
+      assertTrue(permException.isPermissionError(), "EPERM should be permission error");
+    }
+
+    @Test
+    @DisplayName("Resource limit error codes should derive RESOURCE_LIMIT category")
+    void resourceLimitErrorCodesShouldDeriveResourceLimitCategory() {
+      final WasiException memException = new WasiException("Memory error", WasiErrorCode.ENOMEM);
+      assertTrue(memException.isResourceLimitError(), "ENOMEM should be resource limit error");
+    }
+
+    @Test
+    @DisplayName("Retryable flag should be derived from error code")
+    void retryableShouldBeDerivedFromErrorCode() {
+      final WasiException retryable = new WasiException("Retry error", WasiErrorCode.EAGAIN);
+      final WasiException notRetryable = new WasiException("No retry", WasiErrorCode.EINVAL);
+
+      assertTrue(retryable.isRetryable(), "EAGAIN should be retryable");
+      assertFalse(notRetryable.isRetryable(), "EINVAL should not be retryable");
+    }
+
+    @Test
+    @DisplayName("Non-categorized error codes should default to SYSTEM category")
+    void nonCategorizedErrorCodesShouldDefaultToSystem() {
+      final WasiException exception = new WasiException("IO error", WasiErrorCode.EIO);
+      assertNotNull(exception.getCategory(), "Category should not be null");
+    }
+  }
+
+  @Nested
+  @DisplayName("Integration Tests")
+  class IntegrationTests {
+
+    @Test
+    @DisplayName("Should be throwable and catchable")
+    void shouldBeThrowableAndCatchable() {
+      try {
+        throw new WasiException(WasiErrorCode.ENOENT, "open", "/missing");
+      } catch (final WasiException e) {
+        assertEquals(WasiErrorCode.ENOENT, e.getErrorCode(), "Should catch with correct code");
+        assertEquals("open", e.getOperation(), "Should have correct operation");
+      }
+    }
+
+    @Test
+    @DisplayName("Should be catchable as WasmException")
+    void shouldBeCatchableAsWasmException() {
+      try {
+        throw new WasiException(WasiErrorCode.EIO, "read");
+      } catch (final WasmException e) {
+        assertTrue(e instanceof WasiException, "Should be instance of WasiException");
+      }
+    }
+
+    @Test
+    @DisplayName("Full message format should be correct with error code")
+    void fullMessageFormatShouldBeCorrect() {
+      final WasiException exception =
+          new WasiException("Custom message", WasiErrorCode.EACCES, "write", "/secret/file");
+
+      final String message = exception.getMessage();
+      assertTrue(message.contains("Custom message"), "Should contain custom message");
+      assertTrue(message.contains("write"), "Should contain operation");
+      assertTrue(message.contains("/secret/file"), "Should contain resource");
+      assertTrue(message.contains("13"), "Should contain errno 13 for EACCES");
     }
   }
 }

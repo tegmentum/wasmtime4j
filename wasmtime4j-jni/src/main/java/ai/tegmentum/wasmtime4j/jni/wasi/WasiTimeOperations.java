@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
-import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -78,7 +78,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws JniException if a JNI error occurs
    */
-  public long getClockResolution(final int clockId) {
+  public long getClockResolution(final int clockId) throws WasiException {
     validateClockId(clockId);
 
     try {
@@ -103,6 +103,9 @@ public final class WasiTimeOperations {
       LOGGER.fine(() -> String.format("Clock %d resolution: %d nanoseconds", clockId, resolution));
       return resolution;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Error getting clock resolution for clock ID " + clockId, e);
+      throw e;
     } catch (final RuntimeException e) {
       LOGGER.log(Level.WARNING, "Error getting clock resolution for clock ID " + clockId, e);
       throw e;
@@ -121,7 +124,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws JniException if a JNI error occurs
    */
-  public long getCurrentTime(final int clockId, final long precision) {
+  public long getCurrentTime(final int clockId, final long precision) throws WasiException {
     validateClockId(clockId);
     JniValidation.requireNonNegative(precision, "precision");
 
@@ -151,6 +154,9 @@ public final class WasiTimeOperations {
       LOGGER.fine(() -> String.format("Clock %d current time: %d nanoseconds", clockId, timestamp));
       return timestamp;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Error getting current time for clock ID " + clockId, e);
+      throw e;
     } catch (final RuntimeException e) {
       LOGGER.log(Level.WARNING, "Error getting current time for clock ID " + clockId, e);
       throw e;
@@ -168,7 +174,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws JniException if a JNI error occurs
    */
-  public long getCurrentTime(final int clockId) {
+  public long getCurrentTime(final int clockId) throws WasiException {
     return getCurrentTime(clockId, 0);
   }
 
@@ -182,7 +188,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws JniException if a JNI error occurs
    */
-  public long getRealtime() {
+  public long getRealtime() throws WasiException {
     return getCurrentTime(WASI_CLOCK_REALTIME);
   }
 
@@ -197,7 +203,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws JniException if a JNI error occurs
    */
-  public long getMonotonicTime() {
+  public long getMonotonicTime() throws WasiException {
     return getCurrentTime(WASI_CLOCK_MONOTONIC);
   }
 
@@ -211,7 +217,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws JniException if a JNI error occurs
    */
-  public long getProcessCpuTime() {
+  public long getProcessCpuTime() throws WasiException {
     return getCurrentTime(WASI_CLOCK_PROCESS_CPUTIME_ID);
   }
 
@@ -225,7 +231,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws JniException if a JNI error occurs
    */
-  public long getThreadCpuTime() {
+  public long getThreadCpuTime() throws WasiException {
     return getCurrentTime(WASI_CLOCK_THREAD_CPUTIME_ID);
   }
 

@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
-import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiException;
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -108,7 +108,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getClockResolution(final int clockId) throws PanamaException {
+  public long getClockResolution(final int clockId) throws PanamaException, WasiException {
     validateClockId(clockId);
 
     try (final Arena arena = Arena.ofConfined()) {
@@ -129,6 +129,9 @@ public final class WasiTimeOperations {
       LOGGER.fine(() -> String.format("Clock %d resolution: %d nanoseconds", clockId, resolution));
       return resolution;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Error getting clock resolution for clock ID " + clockId, e);
+      throw e;
     } catch (final Throwable e) {
       LOGGER.log(Level.WARNING, "Error getting clock resolution for clock ID " + clockId, e);
       if (e instanceof RuntimeException) {
@@ -151,7 +154,8 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getCurrentTime(final int clockId, final long precision) throws PanamaException {
+  public long getCurrentTime(final int clockId, final long precision)
+      throws PanamaException, WasiException {
     validateClockId(clockId);
     PanamaValidation.requireNonNegative(precision, "precision");
 
@@ -176,6 +180,9 @@ public final class WasiTimeOperations {
       LOGGER.fine(() -> String.format("Clock %d current time: %d nanoseconds", clockId, timestamp));
       return timestamp;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Error getting current time for clock ID " + clockId, e);
+      throw e;
     } catch (final Throwable e) {
       LOGGER.log(Level.WARNING, "Error getting current time for clock ID " + clockId, e);
       if (e instanceof RuntimeException) {
@@ -197,7 +204,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the clock ID is invalid or the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getCurrentTime(final int clockId) throws PanamaException {
+  public long getCurrentTime(final int clockId) throws PanamaException, WasiException {
     return getCurrentTime(clockId, 0);
   }
 
@@ -211,7 +218,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getRealtime() throws PanamaException {
+  public long getRealtime() throws PanamaException, WasiException {
     return getCurrentTime(WASI_CLOCK_REALTIME);
   }
 
@@ -226,7 +233,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getMonotonicTime() throws PanamaException {
+  public long getMonotonicTime() throws PanamaException, WasiException {
     return getCurrentTime(WASI_CLOCK_MONOTONIC);
   }
 
@@ -240,7 +247,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getProcessCpuTime() throws PanamaException {
+  public long getProcessCpuTime() throws PanamaException, WasiException {
     return getCurrentTime(WASI_CLOCK_PROCESS_CPUTIME_ID);
   }
 
@@ -254,7 +261,7 @@ public final class WasiTimeOperations {
    * @throws WasiException if the operation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long getThreadCpuTime() throws PanamaException {
+  public long getThreadCpuTime() throws PanamaException, WasiException {
     return getCurrentTime(WASI_CLOCK_THREAD_CPUTIME_ID);
   }
 

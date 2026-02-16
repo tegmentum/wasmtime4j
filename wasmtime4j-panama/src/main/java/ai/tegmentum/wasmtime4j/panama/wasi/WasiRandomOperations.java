@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
-import ai.tegmentum.wasmtime4j.panama.wasi.exception.WasiException;
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -99,7 +99,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if the buffer is null, read-only, or a Panama FFI error occurs
    */
-  public void getRandomBytes(final ByteBuffer buffer) throws PanamaException {
+  public void getRandomBytes(final ByteBuffer buffer) throws PanamaException, WasiException {
     PanamaValidation.requireNonNull(buffer, "buffer");
 
     if (buffer.isReadOnly()) {
@@ -133,6 +133,9 @@ public final class WasiRandomOperations {
 
       LOGGER.fine(() -> String.format("Successfully generated %d random bytes", remaining));
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Error generating " + remaining + " random bytes", e);
+      throw e;
     } catch (final Throwable e) {
       LOGGER.log(Level.WARNING, "Error generating " + remaining + " random bytes", e);
       if (e instanceof RuntimeException) {
@@ -154,7 +157,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if the length is invalid or a Panama FFI error occurs
    */
-  public byte[] generateRandomBytes(final int length) throws PanamaException {
+  public byte[] generateRandomBytes(final int length) throws PanamaException, WasiException {
     PanamaValidation.requireNonNegative(length, "length");
     validateBufferSize(length);
 
@@ -180,6 +183,9 @@ public final class WasiRandomOperations {
       LOGGER.fine(() -> String.format("Successfully generated %d random bytes", length));
       return randomBytes;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Error generating " + length + " random bytes", e);
+      throw e;
     } catch (final Throwable e) {
       LOGGER.log(Level.WARNING, "Error generating " + length + " random bytes", e);
       if (e instanceof RuntimeException) {
@@ -200,7 +206,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public int generateRandomInt() throws PanamaException {
+  public int generateRandomInt() throws PanamaException, WasiException {
     final byte[] randomBytes = generateRandomBytes(4);
     return ByteBuffer.wrap(randomBytes).getInt();
   }
@@ -216,7 +222,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if the bound is not positive or a Panama FFI error occurs
    */
-  public int generateRandomInt(final int bound) throws PanamaException {
+  public int generateRandomInt(final int bound) throws PanamaException, WasiException {
     if (bound <= 0) {
       throw new PanamaException("Bound must be positive: " + bound);
     }
@@ -242,7 +248,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public long generateRandomLong() throws PanamaException {
+  public long generateRandomLong() throws PanamaException, WasiException {
     final byte[] randomBytes = generateRandomBytes(8);
     return ByteBuffer.wrap(randomBytes).getLong();
   }
@@ -257,7 +263,7 @@ public final class WasiRandomOperations {
    * @throws WasiException if the random generation fails
    * @throws PanamaException if a Panama FFI error occurs
    */
-  public double generateRandomDouble() throws PanamaException {
+  public double generateRandomDouble() throws PanamaException, WasiException {
     final long randomLong = generateRandomLong() >>> 11; // Use 53 bits for IEEE 754 double
     return (randomLong * 0x1.0p-53);
   }

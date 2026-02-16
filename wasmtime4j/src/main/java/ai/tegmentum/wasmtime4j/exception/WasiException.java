@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.exception;
 
+import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
+
 /**
  * Base class for all WASI-related exceptions.
  *
@@ -13,10 +15,12 @@ package ai.tegmentum.wasmtime4j.exception;
  *   <li>Resource information (file paths, handles, etc.)
  *   <li>Error categorization for recovery strategies
  *   <li>Retry guidance for transient errors
+ *   <li>WASI error codes (errno values) when available
  * </ul>
  *
- * <p>This class serves as the public API exception base and abstracts implementation-specific error
- * details from JNI and Panama runtimes into a unified error handling interface.
+ * <p>This class serves as the single WASI exception type for both JNI and Panama runtimes. It
+ * accepts either an explicit {@link ErrorCategory} or a {@link WasiErrorCode} (from which the
+ * category is automatically derived).
  *
  * @since 1.0.0
  */
@@ -35,6 +39,9 @@ public class WasiException extends WasmException {
 
   /** The error category for handling strategies. */
   private final ErrorCategory category;
+
+  /** The WASI error code (errno), or null when not applicable. */
+  private final WasiErrorCode errorCode;
 
   /** Error categories for WASI exceptions to guide error handling strategies. */
   public enum ErrorCategory {
@@ -60,7 +67,7 @@ public class WasiException extends WasmException {
    * @param message the error message
    */
   public WasiException(final String message) {
-    this(message, null, null, false, ErrorCategory.SYSTEM);
+    this(message, (String) null, null, false, ErrorCategory.SYSTEM);
   }
 
   /**
@@ -88,11 +95,12 @@ public class WasiException extends WasmException {
       final String resource,
       final boolean retryable,
       final ErrorCategory category) {
-    super(formatMessage(message, operation, resource));
+    super(formatMessage(message, operation, resource, null));
     this.operation = operation;
     this.resource = resource;
     this.retryable = retryable;
     this.category = category;
+    this.errorCode = null;
   }
 
   /**
@@ -112,11 +120,106 @@ public class WasiException extends WasmException {
       final boolean retryable,
       final ErrorCategory category,
       final Throwable cause) {
-    super(formatMessage(message, operation, resource), cause);
+    super(formatMessage(message, operation, resource, null), cause);
     this.operation = operation;
     this.resource = resource;
     this.retryable = retryable;
     this.category = category;
+    this.errorCode = null;
+  }
+
+  // ---- WasiErrorCode-based constructors (used by JNI/Panama implementations) ----
+
+  /**
+   * Creates a new WASI exception with message and error code.
+   *
+   * <p>The {@link ErrorCategory} is automatically derived from the error code's classification
+   * flags.
+   *
+   * @param message the error message
+   * @param errorCode the WASI error code
+   */
+  public WasiException(final String message, final WasiErrorCode errorCode) {
+    this(message, errorCode, null, null);
+  }
+
+  /**
+   * Creates a new WASI exception with error code and operation context.
+   *
+   * <p>The message is taken from the error code's description.
+   *
+   * @param errorCode the WASI error code
+   * @param operation the system operation that failed
+   */
+  public WasiException(final WasiErrorCode errorCode, final String operation) {
+    this(errorCode.getDescription(), errorCode, operation, null);
+  }
+
+  /**
+   * Creates a new WASI exception with error code, operation, and resource context.
+   *
+   * <p>The message is taken from the error code's description.
+   *
+   * @param errorCode the WASI error code
+   * @param operation the system operation that failed
+   * @param resource the resource associated with the error
+   */
+  public WasiException(
+      final WasiErrorCode errorCode, final String operation, final String resource) {
+    this(errorCode.getDescription(), errorCode, operation, resource);
+  }
+
+  /**
+   * Creates a new WASI exception with full error code context.
+   *
+   * @param message the error message
+   * @param errorCode the WASI error code
+   * @param operation the system operation that failed
+   * @param resource the resource associated with the error
+   */
+  public WasiException(
+      final String message,
+      final WasiErrorCode errorCode,
+      final String operation,
+      final String resource) {
+    super(formatMessage(message, operation, resource, errorCode));
+    this.errorCode = errorCode;
+    this.operation = operation;
+    this.resource = resource;
+    this.retryable = errorCode != null && errorCode.isRetryable();
+    this.category = categoryFromErrorCode(errorCode);
+  }
+
+  /**
+   * Creates a new WASI exception with full error code context and cause.
+   *
+   * @param message the error message
+   * @param errorCode the WASI error code
+   * @param operation the system operation that failed
+   * @param resource the resource associated with the error
+   * @param cause the underlying cause
+   */
+  public WasiException(
+      final String message,
+      final WasiErrorCode errorCode,
+      final String operation,
+      final String resource,
+      final Throwable cause) {
+    super(formatMessage(message, operation, resource, errorCode), cause);
+    this.errorCode = errorCode;
+    this.operation = operation;
+    this.resource = resource;
+    this.retryable = errorCode != null && errorCode.isRetryable();
+    this.category = categoryFromErrorCode(errorCode);
+  }
+
+  /**
+   * Gets the WASI error code, if one was provided.
+   *
+   * @return the WASI error code, or null if constructed without one
+   */
+  public WasiErrorCode getErrorCode() {
+    return errorCode;
   }
 
   /**
@@ -210,20 +313,57 @@ public class WasiException extends WasmException {
   }
 
   /**
+   * Derives an {@link ErrorCategory} from a {@link WasiErrorCode} using its classification flags.
+   *
+   * <p>Priority order when multiple flags are set: permission > network > file system > resource
+   * limit > system.
+   *
+   * @param code the error code (may be null)
+   * @return the derived category
+   */
+  private static ErrorCategory categoryFromErrorCode(final WasiErrorCode code) {
+    if (code == null) {
+      return ErrorCategory.SYSTEM;
+    }
+    if (code.isPermissionError()) {
+      return ErrorCategory.PERMISSION;
+    }
+    if (code.isNetworkError()) {
+      return ErrorCategory.NETWORK;
+    }
+    if (code.isFileSystemError()) {
+      return ErrorCategory.FILE_SYSTEM;
+    }
+    if (code.isResourceLimitError()) {
+      return ErrorCategory.RESOURCE_LIMIT;
+    }
+    return ErrorCategory.SYSTEM;
+  }
+
+  /**
    * Formats the exception message with error details.
    *
    * @param message the base message
    * @param operation the operation
    * @param resource the resource
+   * @param errorCode the error code (may be null)
    * @return the formatted message
    */
   private static String formatMessage(
-      final String message, final String operation, final String resource) {
-    if (message == null || message.isEmpty()) {
-      throw new IllegalArgumentException("Message cannot be null or empty");
-    }
+      final String message,
+      final String operation,
+      final String resource,
+      final WasiErrorCode errorCode) {
 
-    final StringBuilder sb = new StringBuilder(message);
+    final StringBuilder sb = new StringBuilder();
+
+    if (message != null && !message.isEmpty()) {
+      sb.append(message);
+    } else if (errorCode != null) {
+      sb.append(errorCode.getDescription());
+    } else {
+      sb.append("WASI operation failed");
+    }
 
     if (operation != null && !operation.isEmpty()) {
       sb.append(" (operation: ").append(operation).append(")");
@@ -231,6 +371,10 @@ public class WasiException extends WasmException {
 
     if (resource != null && !resource.isEmpty()) {
       sb.append(" (resource: ").append(resource).append(")");
+    }
+
+    if (errorCode != null) {
+      sb.append(" (errno: ").append(errorCode.getErrno()).append(")");
     }
 
     return sb.toString();

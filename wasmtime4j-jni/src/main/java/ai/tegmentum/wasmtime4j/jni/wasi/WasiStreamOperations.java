@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
-import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,7 +76,7 @@ public final class WasiStreamOperations {
    * @return the input stream handle
    * @throws WasiException if stream creation fails
    */
-  public long openInputStream(final long resourceHandle) {
+  public long openInputStream(final long resourceHandle) throws WasiException {
     LOGGER.fine(() -> String.format("Opening input stream for resource: %d", resourceHandle));
 
     try {
@@ -102,6 +102,9 @@ public final class WasiStreamOperations {
                   "Opened input stream: handle=%d, resource=%d", streamHandle, resourceHandle));
       return streamHandle;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to open input stream for resource: " + resourceHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to open input stream for resource: " + resourceHandle, e);
       throw new WasiException("Input stream creation failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -117,7 +120,7 @@ public final class WasiStreamOperations {
    * @return the output stream handle
    * @throws WasiException if stream creation fails
    */
-  public long openOutputStream(final long resourceHandle) {
+  public long openOutputStream(final long resourceHandle) throws WasiException {
     LOGGER.fine(() -> String.format("Opening output stream for resource: %d", resourceHandle));
 
     try {
@@ -143,6 +146,9 @@ public final class WasiStreamOperations {
                   "Opened output stream: handle=%d, resource=%d", streamHandle, resourceHandle));
       return streamHandle;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to open output stream for resource: " + resourceHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to open output stream for resource: " + resourceHandle, e);
       throw new WasiException(
@@ -160,7 +166,7 @@ public final class WasiStreamOperations {
    * @return the number of bytes read
    * @throws WasiException if the read operation fails
    */
-  public int read(final long streamHandle, final ByteBuffer buffer) {
+  public int read(final long streamHandle, final ByteBuffer buffer) throws WasiException {
     JniValidation.requireNonNull(buffer, "buffer");
     validateInputStream(streamHandle);
 
@@ -196,6 +202,9 @@ public final class WasiStreamOperations {
               String.format("Read from stream: handle=%d, bytesRead=%d", streamHandle, bytesRead));
       return bytesRead;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to read from stream: " + streamHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to read from stream: " + streamHandle, e);
       throw new WasiException("Stream read failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -212,7 +221,7 @@ public final class WasiStreamOperations {
    * @return the number of bytes written
    * @throws WasiException if the write operation fails
    */
-  public int write(final long streamHandle, final ByteBuffer buffer) {
+  public int write(final long streamHandle, final ByteBuffer buffer) throws WasiException {
     JniValidation.requireNonNull(buffer, "buffer");
     validateOutputStream(streamHandle);
 
@@ -250,6 +259,9 @@ public final class WasiStreamOperations {
                   "Wrote to stream: handle=%d, bytesWritten=%d", streamHandle, bytesWritten));
       return bytesWritten;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to write to stream: " + streamHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to write to stream: " + streamHandle, e);
       throw new WasiException("Stream write failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -264,7 +276,7 @@ public final class WasiStreamOperations {
    * @param streamHandle the output stream handle
    * @throws WasiException if the flush operation fails
    */
-  public void flush(final long streamHandle) {
+  public void flush(final long streamHandle) throws WasiException {
     validateOutputStream(streamHandle);
 
     LOGGER.fine(() -> String.format("Flushing stream: handle=%d", streamHandle));
@@ -282,6 +294,9 @@ public final class WasiStreamOperations {
 
       LOGGER.fine(() -> String.format("Flushed stream: handle=%d", streamHandle));
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to flush stream: " + streamHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to flush stream: " + streamHandle, e);
       throw new WasiException("Stream flush failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -351,7 +366,7 @@ public final class WasiStreamOperations {
   }
 
   /** Validates that a stream is an input stream. */
-  private void validateInputStream(final long streamHandle) {
+  private void validateInputStream(final long streamHandle) throws WasiException {
     final StreamInfo streamInfo = activeStreams.get(streamHandle);
     if (streamInfo == null) {
       throw new WasiException("Invalid stream handle: " + streamHandle, WasiErrorCode.EBADF);
@@ -363,7 +378,7 @@ public final class WasiStreamOperations {
   }
 
   /** Validates that a stream is an output stream. */
-  private void validateOutputStream(final long streamHandle) {
+  private void validateOutputStream(final long streamHandle) throws WasiException {
     final StreamInfo streamInfo = activeStreams.get(streamHandle);
     if (streamInfo == null) {
       throw new WasiException("Invalid stream handle: " + streamHandle, WasiErrorCode.EBADF);

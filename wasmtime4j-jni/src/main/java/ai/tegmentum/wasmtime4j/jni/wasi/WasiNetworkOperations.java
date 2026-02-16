@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
-import ai.tegmentum.wasmtime4j.jni.wasi.exception.WasiException;
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -83,7 +83,7 @@ public final class WasiNetworkOperations {
    * @return the TCP socket handle
    * @throws WasiException if socket creation fails
    */
-  public long createTcpSocket(final int addressFamily) {
+  public long createTcpSocket(final int addressFamily) throws WasiException {
     validateAddressFamily(addressFamily);
 
     LOGGER.fine(() -> String.format("Creating TCP socket: addressFamily=%d", addressFamily));
@@ -111,6 +111,9 @@ public final class WasiNetworkOperations {
                   "Created TCP socket: handle=%d, addressFamily=%d", socketHandle, addressFamily));
       return socketHandle;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to create TCP socket", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to create TCP socket", e);
       throw new WasiException("TCP socket creation failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -127,7 +130,8 @@ public final class WasiNetworkOperations {
    * @param port the port to bind to
    * @throws WasiException if binding fails
    */
-  public void bindTcp(final long socketHandle, final String address, final int port) {
+  public void bindTcp(final long socketHandle, final String address, final int port)
+      throws WasiException {
     JniValidation.requireNonEmpty(address, "address");
     JniValidation.requireValidPort(port);
     validateTcpSocket(socketHandle);
@@ -158,6 +162,9 @@ public final class WasiNetworkOperations {
 
       LOGGER.fine(() -> String.format("Bound TCP socket: handle=%d", socketHandle));
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to bind TCP socket: " + socketHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to bind TCP socket: " + socketHandle, e);
       throw new WasiException("TCP bind failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -173,7 +180,7 @@ public final class WasiNetworkOperations {
    * @param backlog the maximum number of pending connections
    * @throws WasiException if listen operation fails
    */
-  public void listenTcp(final long socketHandle, final int backlog) {
+  public void listenTcp(final long socketHandle, final int backlog) throws WasiException {
     if (backlog < 0 || backlog > 1024) {
       throw new WasiException("Invalid backlog: " + backlog, WasiErrorCode.EINVAL);
     }
@@ -205,6 +212,9 @@ public final class WasiNetworkOperations {
       socketInfo.state = SocketState.LISTENING;
       LOGGER.fine(() -> String.format("TCP socket listening: handle=%d", socketHandle));
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to listen on TCP socket: " + socketHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to listen on TCP socket: " + socketHandle, e);
       throw new WasiException("TCP listen failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -220,7 +230,7 @@ public final class WasiNetworkOperations {
    * @return the handle of the accepted connection
    * @throws WasiException if accept operation fails
    */
-  public long acceptTcp(final long socketHandle) {
+  public long acceptTcp(final long socketHandle) throws WasiException {
     validateTcpSocket(socketHandle);
 
     final SocketInfo socketInfo = activeSockets.get(socketHandle);
@@ -260,6 +270,9 @@ public final class WasiNetworkOperations {
 
       return acceptedSocketHandle;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to accept TCP connection: " + socketHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to accept TCP connection: " + socketHandle, e);
       throw new WasiException("TCP accept failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -276,7 +289,8 @@ public final class WasiNetworkOperations {
    * @param port the port to connect to
    * @throws WasiException if connection fails
    */
-  public void connectTcp(final long socketHandle, final String address, final int port) {
+  public void connectTcp(final long socketHandle, final String address, final int port)
+      throws WasiException {
     JniValidation.requireNonEmpty(address, "address");
     JniValidation.requireValidPort(port);
     validateTcpSocket(socketHandle);
@@ -309,6 +323,9 @@ public final class WasiNetworkOperations {
 
       LOGGER.fine(() -> String.format("Connected TCP socket: handle=%d", socketHandle));
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to connect TCP socket: " + socketHandle, e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to connect TCP socket: " + socketHandle, e);
       throw new WasiException("TCP connect failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -325,7 +342,7 @@ public final class WasiNetworkOperations {
    * @return the number of bytes sent
    * @throws WasiException if send fails
    */
-  public int sendTcp(final long socketHandle, final ByteBuffer data) {
+  public int sendTcp(final long socketHandle, final ByteBuffer data) throws WasiException {
     JniValidation.requireNonNull(data, "data");
     validateTcpSocket(socketHandle);
 
@@ -364,6 +381,9 @@ public final class WasiNetworkOperations {
 
       return result.bytesSent;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to send TCP data", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to send TCP data", e);
       throw new WasiException("TCP send failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -380,7 +400,7 @@ public final class WasiNetworkOperations {
    * @return the number of bytes received
    * @throws WasiException if receive fails
    */
-  public int receiveTcp(final long socketHandle, final ByteBuffer buffer) {
+  public int receiveTcp(final long socketHandle, final ByteBuffer buffer) throws WasiException {
     JniValidation.requireNonNull(buffer, "buffer");
     validateTcpSocket(socketHandle);
 
@@ -422,6 +442,9 @@ public final class WasiNetworkOperations {
 
       return result.bytesReceived;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to receive TCP data", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to receive TCP data", e);
       throw new WasiException("TCP receive failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -437,7 +460,7 @@ public final class WasiNetworkOperations {
    * @return the UDP socket handle
    * @throws WasiException if socket creation fails
    */
-  public long createUdpSocket(final int addressFamily) {
+  public long createUdpSocket(final int addressFamily) throws WasiException {
     validateAddressFamily(addressFamily);
 
     LOGGER.fine(() -> String.format("Creating UDP socket: addressFamily=%d", addressFamily));
@@ -465,6 +488,9 @@ public final class WasiNetworkOperations {
                   "Created UDP socket: handle=%d, addressFamily=%d", socketHandle, addressFamily));
       return socketHandle;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to create UDP socket", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to create UDP socket", e);
       throw new WasiException("UDP socket creation failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -483,7 +509,8 @@ public final class WasiNetworkOperations {
    * @throws WasiException if send fails
    */
   public void sendUdp(
-      final long socketHandle, final ByteBuffer data, final String address, final int port) {
+      final long socketHandle, final ByteBuffer data, final String address, final int port)
+      throws WasiException {
     JniValidation.requireNonNull(data, "data");
     JniValidation.requireNonEmpty(address, "address");
     JniValidation.requireValidPort(port);
@@ -521,6 +548,9 @@ public final class WasiNetworkOperations {
       LOGGER.fine(
           () -> String.format("Sent UDP data: handle=%d, bytes=%d", socketHandle, dataSize));
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to send UDP data", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to send UDP data", e);
       throw new WasiException("UDP send failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -537,7 +567,8 @@ public final class WasiNetworkOperations {
    * @return the UDP datagram information
    * @throws WasiException if receive fails
    */
-  public UdpDatagram receiveUdp(final long socketHandle, final ByteBuffer buffer) {
+  public UdpDatagram receiveUdp(final long socketHandle, final ByteBuffer buffer)
+      throws WasiException {
     JniValidation.requireNonNull(buffer, "buffer");
     validateUdpSocket(socketHandle);
 
@@ -576,6 +607,9 @@ public final class WasiNetworkOperations {
 
       return datagram;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "Failed to receive UDP data", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Failed to receive UDP data", e);
       throw new WasiException("UDP receive failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -598,7 +632,8 @@ public final class WasiNetworkOperations {
       final String method,
       final String uri,
       final Map<String, String> headers,
-      final ByteBuffer body) {
+      final ByteBuffer body)
+      throws WasiException {
     JniValidation.requireNonEmpty(method, "method");
     JniValidation.requireNonEmpty(uri, "uri");
     JniValidation.requireNonNull(headers, "headers");
@@ -657,6 +692,9 @@ public final class WasiNetworkOperations {
       LOGGER.fine(() -> String.format("HTTP request completed: status=%d", response.statusCode));
       return httpResponse;
 
+    } catch (final WasiException e) {
+      LOGGER.log(Level.WARNING, "HTTP request failed", e);
+      throw e;
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "HTTP request failed", e);
       throw new WasiException("HTTP request failed: " + e.getMessage(), WasiErrorCode.EIO);
@@ -716,14 +754,14 @@ public final class WasiNetworkOperations {
   }
 
   /** Validates address family. */
-  private void validateAddressFamily(final int addressFamily) {
+  private void validateAddressFamily(final int addressFamily) throws WasiException {
     if (addressFamily != AF_INET && addressFamily != AF_INET6) {
       throw new WasiException("Invalid address family: " + addressFamily, WasiErrorCode.EINVAL);
     }
   }
 
   /** Validates that a socket is a TCP socket. */
-  private void validateTcpSocket(final long socketHandle) {
+  private void validateTcpSocket(final long socketHandle) throws WasiException {
     final SocketInfo socketInfo = activeSockets.get(socketHandle);
     if (socketInfo == null) {
       throw new WasiException("Invalid socket handle: " + socketHandle, WasiErrorCode.EBADF);
@@ -734,7 +772,7 @@ public final class WasiNetworkOperations {
   }
 
   /** Validates that a socket is a UDP socket. */
-  private void validateUdpSocket(final long socketHandle) {
+  private void validateUdpSocket(final long socketHandle) throws WasiException {
     final SocketInfo socketInfo = activeSockets.get(socketHandle);
     if (socketInfo == null) {
       throw new WasiException("Invalid socket handle: " + socketHandle, WasiErrorCode.EBADF);
