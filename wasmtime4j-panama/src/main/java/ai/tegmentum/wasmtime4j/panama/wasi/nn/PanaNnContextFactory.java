@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
-import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeWasiNnBindings;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnContext;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnContextFactory;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
@@ -47,7 +47,7 @@ public final class PanaNnContextFactory implements NnContextFactory {
       throw new NnException("WASI-NN is not available in this build");
     }
 
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
     final MemorySegment contextPtr = bindings.wasiNnContextCreate();
     if (contextPtr == null || contextPtr.equals(MemorySegment.NULL)) {
       throw new NnException("Failed to create WASI-NN context");
@@ -58,13 +58,13 @@ public final class PanaNnContextFactory implements NnContextFactory {
 
   @Override
   public boolean isNnAvailable() {
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
     return bindings.wasiNnIsAvailable() != 0;
   }
 
   @Override
   public NnExecutionTarget getDefaultExecutionTarget() {
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
     final int ordinal = bindings.wasiNnGetDefaultTarget();
     if (ordinal >= 0 && ordinal < NnExecutionTarget.values().length) {
       return NnExecutionTarget.values()[ordinal];

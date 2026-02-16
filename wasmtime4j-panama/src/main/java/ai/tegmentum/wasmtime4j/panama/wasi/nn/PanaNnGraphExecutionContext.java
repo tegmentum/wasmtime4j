@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
-import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeWasiNnBindings;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraph;
@@ -72,7 +72,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
             () -> {
               LOGGER.log(
                   Level.FINE, "Closing PanaNnGraphExecutionContext with handle: {0}", nativeHandle);
-              final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+              final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
               bindings.wasiNnExecClose(nativeHandle);
             });
     LOGGER.log(Level.FINE, "Created PanaNnGraphExecutionContext with handle: {0}", nativeHandle);
@@ -157,7 +157,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
       final MemorySegment dataSegment = arena.allocate(data.length);
       dataSegment.copyFrom(MemorySegment.ofArray(data));
 
-      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
       final int result =
           bindings.wasiNnExecSetInput(
               nativeHandle,
@@ -191,7 +191,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
   public List<NnTensor> computeNoInputs() throws NnException {
     ensureNotClosed();
 
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
     final int result = bindings.wasiNnExecCompute(nativeHandle);
 
     if (result != 0) {
@@ -214,7 +214,7 @@ public final class PanaNnGraphExecutionContext implements NnGraphExecutionContex
     }
     ensureNotClosed();
 
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
 
     // Get output size first
     final long outputSize = bindings.wasiNnExecGetOutputSize(nativeHandle, index);

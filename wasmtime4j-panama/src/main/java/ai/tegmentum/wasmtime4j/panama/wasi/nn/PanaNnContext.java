@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.nn;
 
-import ai.tegmentum.wasmtime4j.panama.NativeInstanceBindings;
+import ai.tegmentum.wasmtime4j.panama.NativeWasiNnBindings;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnContext;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
@@ -70,7 +70,7 @@ public final class PanaNnContext implements NnContext {
             "PanaNnContext",
             () -> {
               LOGGER.log(Level.FINE, "Closing PanaNnContext with handle: {0}", nativeHandle);
-              final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+              final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
               bindings.wasiNnContextClose(nativeHandle);
             });
     LOGGER.log(Level.FINE, "Created PanaNnContext with handle: {0}", nativeHandle);
@@ -89,7 +89,7 @@ public final class PanaNnContext implements NnContext {
       final MemorySegment dataSegment = arena.allocate(modelData.length);
       dataSegment.copyFrom(MemorySegment.ofArray(modelData));
 
-      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
       final MemorySegment graphHandle =
           bindings.wasiNnLoadGraph(
               nativeHandle, dataSegment, modelData.length, encoding.ordinal(), target.ordinal());
@@ -155,7 +155,7 @@ public final class PanaNnContext implements NnContext {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment nameSegment = arena.allocateFrom(name);
 
-      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
       final MemorySegment graphHandle =
           bindings.wasiNnLoadGraphByName(
               nativeHandle, nameSegment, NnExecutionTarget.CPU.ordinal());
@@ -176,7 +176,7 @@ public final class PanaNnContext implements NnContext {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment outEncodings = arena.allocate(ValueLayout.JAVA_INT, MAX_ENCODINGS);
 
-      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
       final int count =
           bindings.wasiNnGetSupportedEncodings(nativeHandle, outEncodings, MAX_ENCODINGS);
 
@@ -200,7 +200,7 @@ public final class PanaNnContext implements NnContext {
     try (Arena arena = Arena.ofConfined()) {
       final MemorySegment outTargets = arena.allocate(ValueLayout.JAVA_INT, MAX_TARGETS);
 
-      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
       final int count = bindings.wasiNnGetSupportedTargets(nativeHandle, outTargets, MAX_TARGETS);
 
       final Set<NnExecutionTarget> targets = EnumSet.noneOf(NnExecutionTarget.class);
@@ -221,7 +221,7 @@ public final class PanaNnContext implements NnContext {
     Objects.requireNonNull(encoding, "encoding cannot be null");
     ensureNotClosed();
 
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
     return bindings.wasiNnIsEncodingSupported(nativeHandle, encoding.ordinal()) != 0;
   }
 
@@ -230,13 +230,13 @@ public final class PanaNnContext implements NnContext {
     Objects.requireNonNull(target, "target cannot be null");
     ensureNotClosed();
 
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
     return bindings.wasiNnIsTargetSupported(nativeHandle, target.ordinal()) != 0;
   }
 
   @Override
   public boolean isAvailable() {
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
     return bindings.wasiNnIsAvailable() != 0;
   }
 
