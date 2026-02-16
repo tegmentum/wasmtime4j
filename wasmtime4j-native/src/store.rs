@@ -16,7 +16,8 @@ use std::time::{Duration, Instant};
 #[cfg(feature = "wasi-http")]
 use wasmtime::component::ResourceTable;
 use wasmtime::{
-    AsContext, AsContextMut, Func, FuncType, Store as WasmtimeStore, StoreContext, StoreContextMut,
+    AsContext, AsContextMut, CallHook, Func, FuncType, Store as WasmtimeStore, StoreContext,
+    StoreContextMut,
 };
 use wasmtime_wasi::p1::WasiP1Ctx;
 use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
@@ -994,6 +995,104 @@ impl Store {
 
         Ok(())
     }
+
+    /// Set a call hook on the store.
+    ///
+    /// This installs a no-op call hook on the underlying wasmtime Store,
+    /// enabling the call hook machinery. The actual callback dispatch happens
+    /// on the Java side.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn set_call_hook(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+
+        log::debug!("Setting call hook on store {}", self.id);
+
+        store.call_hook(|_ctx, _hook| Ok(()));
+
+        Ok(())
+    }
+
+    /// Clear the call hook on the store.
+    ///
+    /// Replaces the active call hook with a no-op, effectively disabling it.
+    /// Wasmtime does not provide a way to remove a call hook entirely, so this
+    /// installs a trivial no-op hook instead.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn clear_call_hook(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+
+        log::debug!("Clearing call hook on store {}", self.id);
+
+        store.call_hook(|_ctx, _hook| Ok(()));
+
+        Ok(())
+    }
+
+    /// Set a call hook with a function pointer callback.
+    ///
+    /// When WebAssembly transitions between host and wasm code, the provided
+    /// callback function will be invoked with the callback ID and hook type.
+    ///
+    /// # Arguments
+    /// * `callback_fn` - A C-compatible function pointer that takes a callback ID and hook type,
+    ///                   and returns 0 for OK or non-zero to trap.
+    /// * `callback_id` - An ID to pass to the callback function (used to identify the Java callback)
+    ///
+    /// Hook type values:
+    /// * 0 = CallingWasm
+    /// * 1 = ReturningFromWasm
+    /// * 2 = CallingHost
+    /// * 3 = ReturningFromHost
+    ///
+    /// # Safety
+    /// The callback function must be valid for the lifetime of the Store.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn set_call_hook_with_fn(
+        &self,
+        callback_fn: extern "C" fn(callback_id: i64, hook_type: i32) -> i32,
+        callback_id: i64,
+    ) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+
+        log::debug!(
+            "Registering call hook callback: callback_id={}, fn_ptr={:?}",
+            callback_id,
+            callback_fn as *const ()
+        );
+
+        store.call_hook(move |_ctx, hook| {
+            let hook_type = match hook {
+                CallHook::CallingWasm => 0,
+                CallHook::ReturningFromWasm => 1,
+                CallHook::CallingHost => 2,
+                CallHook::ReturningFromHost => 3,
+            };
+
+            log::trace!(
+                "Call hook fired: callback_id={}, hook_type={}",
+                callback_id,
+                hook_type
+            );
+
+            let result = callback_fn(callback_id, hook_type);
+            if result == 0 {
+                Ok(())
+            } else {
+                Err(anyhow::anyhow!("Call hook requested trap (result={})", result))
+            }
+        });
+
+        Ok(())
+    }
 }
 
 impl StoreBuilder {
@@ -1418,6 +1517,31 @@ pub mod core {
             table_grow_failed_fn,
             callback_id,
         )
+    }
+
+    /// Core function to set a call hook on a store
+    pub fn set_call_hook(store: &Store) -> WasmtimeResult<()> {
+        store.set_call_hook()
+    }
+
+    /// Core function to clear a call hook on a store
+    pub fn clear_call_hook(store: &Store) -> WasmtimeResult<()> {
+        store.clear_call_hook()
+    }
+
+    /// Core function to set a call hook with a function pointer callback
+    ///
+    /// # Arguments
+    /// * `store` - The store to configure
+    /// * `callback_fn` - A C-compatible function pointer that takes a callback ID and hook type,
+    ///                   and returns 0 for OK or non-zero to trap
+    /// * `callback_id` - An ID to pass to the callback function
+    pub fn set_call_hook_with_fn(
+        store: &Store,
+        callback_fn: extern "C" fn(callback_id: i64, hook_type: i32) -> i32,
+        callback_id: i64,
+    ) -> WasmtimeResult<()> {
+        store.set_call_hook_with_fn(callback_fn, callback_id)
     }
 }
 

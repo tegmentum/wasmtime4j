@@ -848,3 +848,94 @@ pub extern "C" fn wasmtime4j_panama_store_set_resource_limiter(
         Ok(())
     })
 }
+
+/// C-compatible function pointer type for call hook callbacks.
+///
+/// # Arguments
+/// * `callback_id` - Identifier for the Java callback
+/// * `hook_type` - The type of call transition:
+///   * 0 = CallingWasm
+///   * 1 = ReturningFromWasm
+///   * 2 = CallingHost
+///   * 3 = ReturningFromHost
+///
+/// # Returns
+/// * 0 = OK (continue execution)
+/// * Non-zero = trap execution
+type CallHookCallbackFn = extern "C" fn(callback_id: i64, hook_type: i32) -> i32;
+
+/// Set a call hook on the store (Panama FFI version)
+///
+/// Installs a no-op call hook on the wasmtime Store, enabling the call hook
+/// machinery. The actual callback dispatch happens on the Java side.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_set_call_hook(store_ptr: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        core::set_call_hook(store)?;
+        Ok(())
+    })
+}
+
+/// Set a call hook with a function pointer callback (Panama FFI version)
+///
+/// Installs a call hook that invokes the provided callback function on every
+/// transition between host and WebAssembly code.
+///
+/// # Arguments
+/// * `store_ptr` - Pointer to the store
+/// * `callback_fn` - Function pointer for the call hook callback
+/// * `callback_id` - Identifier passed to the callback (for Java dispatch)
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_set_call_hook_fn(
+    store_ptr: *mut c_void,
+    callback_fn: CallHookCallbackFn,
+    callback_id: i64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        core::set_call_hook_with_fn(store, callback_fn, callback_id)?;
+        Ok(())
+    })
+}
+
+/// Clear the call hook on the store (Panama FFI version)
+///
+/// Replaces the active call hook with a no-op, effectively disabling it.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_clear_call_hook(store_ptr: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        core::clear_call_hook(store)?;
+        Ok(())
+    })
+}
+
+/// Set an async call hook on the store (Panama FFI version)
+///
+/// Installs a no-op async call hook on the wasmtime Store.
+/// For the async variant, we use the same synchronous no-op hook since
+/// the Java side handles the actual async dispatch.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_set_call_hook_async(store_ptr: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        core::set_call_hook(store)?;
+        Ok(())
+    })
+}
+
+/// Clear the async call hook on the store (Panama FFI version)
+///
+/// Replaces the active async call hook with a no-op.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_clear_call_hook_async(store_ptr: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        core::clear_call_hook(store)?;
+        Ok(())
+    })
+}

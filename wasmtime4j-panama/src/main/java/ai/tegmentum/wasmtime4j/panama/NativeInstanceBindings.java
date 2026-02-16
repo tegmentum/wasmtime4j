@@ -1512,6 +1512,27 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * Sets a call hook with a function pointer callback on the store.
+   *
+   * <p>The callback is invoked on every transition between host and WebAssembly code.
+   * The callback receives the callback ID and hook type (0=CallingWasm, 1=ReturningFromWasm,
+   * 2=CallingHost, 3=ReturningFromHost) and returns 0 to continue or non-zero to trap.
+   *
+   * @param storePtr the store pointer
+   * @param callbackFn the upcall stub function pointer
+   * @param callbackId the callback identifier for dispatch
+   * @return 0 on success, non-zero on error
+   */
+  public int storeSetCallHookFn(
+      final MemorySegment storePtr, final MemorySegment callbackFn, final long callbackId) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(callbackFn, "callbackFn");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_set_call_hook_fn", Integer.class, storePtr, callbackFn,
+        callbackId);
+  }
+
+  /**
    * Clears the call hook from the store.
    *
    * @param storePtr the store pointer
@@ -2365,6 +2386,14 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_store_set_call_hook",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_call_hook_fn",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: error code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // callback_fn (function pointer)
+            ValueLayout.JAVA_LONG)); // callback_id
 
     addFunctionBinding(
         "wasmtime4j_panama_store_clear_call_hook",

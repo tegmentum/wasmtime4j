@@ -102,6 +102,66 @@ public final class PanamaStore implements Store {
     }
   }
 
+  // Call hook callback infrastructure
+  private static final AtomicLong CALL_HOOK_CALLBACK_ID_COUNTER = new AtomicLong(1);
+  private static final ConcurrentHashMap<Long, ai.tegmentum.wasmtime4j.func.CallHookHandler>
+      CALL_HOOK_HANDLERS = new ConcurrentHashMap<>();
+  private static final MemorySegment CALL_HOOK_STUB;
+  private static final FunctionDescriptor CALL_HOOK_DESCRIPTOR =
+      FunctionDescriptor.of(
+          ValueLayout.JAVA_INT, // return: 0=OK, non-zero=trap
+          ValueLayout.JAVA_LONG, // callback_id
+          ValueLayout.JAVA_INT); // hook_type (0-3)
+
+  static {
+    MemorySegment callHookStub = null;
+    try {
+      final MethodHandle callHookHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaStore.class,
+                  "callHookCallbackStub",
+                  MethodType.methodType(int.class, long.class, int.class));
+      callHookStub =
+          Linker.nativeLinker()
+              .upcallStub(callHookHandle, CALL_HOOK_DESCRIPTOR, Arena.global());
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.severe("Failed to create call hook callback stub: " + e.getMessage());
+    }
+    CALL_HOOK_STUB = callHookStub;
+  }
+
+  /**
+   * Static callback method invoked from native code on call hook transitions.
+   *
+   * @param callbackId the callback identifier
+   * @param hookType the hook type (0=CallingWasm, 1=ReturningFromWasm, 2=CallingHost,
+   *     3=ReturningFromHost)
+   * @return 0 to continue execution, non-zero to trap
+   */
+  private static int callHookCallbackStub(final long callbackId, final int hookType) {
+    LOGGER.fine("Call hook stub invoked: callbackId=" + callbackId + ", hookType=" + hookType);
+    final ai.tegmentum.wasmtime4j.func.CallHookHandler handler =
+        CALL_HOOK_HANDLERS.get(callbackId);
+    if (handler == null) {
+      LOGGER.warning("Call hook handler not found for ID: " + callbackId);
+      return -1; // Trap - handler not found
+    }
+
+    try {
+      final ai.tegmentum.wasmtime4j.func.CallHook hook =
+          ai.tegmentum.wasmtime4j.func.CallHook.fromValue(hookType);
+      handler.onCallHook(hook);
+      return 0; // Continue execution
+    } catch (final ai.tegmentum.wasmtime4j.exception.TrapException e) {
+      LOGGER.fine("Call hook handler requested trap: " + e.getMessage());
+      return -1; // Trap
+    } catch (final Exception e) {
+      LOGGER.warning("Call hook handler threw exception: " + e.getMessage());
+      return -1; // Trap on unexpected exception
+    }
+  }
+
   // Resource limiter callback infrastructure
   private static final AtomicLong LIMITER_CALLBACK_ID_COUNTER = new AtomicLong(1);
   private static final ConcurrentHashMap<Long, ResourceLimiter> RESOURCE_LIMITERS =
@@ -1460,20 +1520,41 @@ public final class PanamaStore implements Store {
 
   // Call hook support
   private ai.tegmentum.wasmtime4j.func.CallHookHandler callHookHandler;
+  private long callHookCallbackId;
   private ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler asyncCallHookHandler;
 
   @Override
   public void setCallHook(final ai.tegmentum.wasmtime4j.func.CallHookHandler handler)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
+
+    // Remove previous callback registration if any
+    if (callHookCallbackId != 0) {
+      CALL_HOOK_HANDLERS.remove(callHookCallbackId);
+      callHookCallbackId = 0;
+    }
+
     this.callHookHandler = handler;
     int result;
     if (handler == null) {
       result = NATIVE_BINDINGS.storeClearCallHook(nativeStore);
-    } else {
+    } else if (CALL_HOOK_STUB == null) {
+      // Fallback to no-op hook if stub creation failed
+      LOGGER.warning("Call hook stub not available, installing no-op hook");
       result = NATIVE_BINDINGS.storeSetCallHook(nativeStore);
+    } else {
+      // Register callback and install hook with function pointer
+      final long id = CALL_HOOK_CALLBACK_ID_COUNTER.getAndIncrement();
+      CALL_HOOK_HANDLERS.put(id, handler);
+      this.callHookCallbackId = id;
+      result = INSTANCE_BINDINGS.storeSetCallHookFn(nativeStore, CALL_HOOK_STUB, id);
     }
     if (result != 0) {
+      // Clean up on failure
+      if (callHookCallbackId != 0) {
+        CALL_HOOK_HANDLERS.remove(callHookCallbackId);
+        callHookCallbackId = 0;
+      }
       throw new ai.tegmentum.wasmtime4j.exception.WasmException(
           "Failed to configure call hook: error code " + result);
     }
@@ -1511,6 +1592,12 @@ public final class PanamaStore implements Store {
           if (epochCallbackId != 0) {
             EPOCH_CALLBACKS.remove(epochCallbackId);
             epochCallbackId = 0;
+          }
+
+          // Clean up call hook callback from static registry
+          if (callHookCallbackId != 0) {
+            CALL_HOOK_HANDLERS.remove(callHookCallbackId);
+            callHookCallbackId = 0;
           }
 
           // Clean up resource limiter from static registry
