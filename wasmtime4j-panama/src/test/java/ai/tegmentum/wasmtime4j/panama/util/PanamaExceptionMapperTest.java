@@ -17,16 +17,13 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.lang.foreign.MemorySegment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -359,27 +356,6 @@ class PanamaExceptionMapperTest {
   }
 
   @Nested
-  @DisplayName("mapNativeError(MemorySegment) Tests")
-  class MapNativeErrorPointerTests {
-
-    @Test
-    @DisplayName("mapNativeError should return null for null pointer")
-    void mapNativeErrorShouldReturnNullForNullPointer() {
-      final WasmException result = mapper.mapNativeError((MemorySegment) null);
-
-      assertNull(result, "Should return null for null pointer");
-    }
-
-    @Test
-    @DisplayName("mapNativeError should return null for NULL segment")
-    void mapNativeErrorShouldReturnNullForNullSegment() {
-      final WasmException result = mapper.mapNativeError(MemorySegment.NULL);
-
-      assertNull(result, "Should return null for NULL segment");
-    }
-  }
-
-  @Nested
   @DisplayName("createXxxException Tests")
   class CreateExceptionTests {
 
@@ -405,113 +381,12 @@ class PanamaExceptionMapperTest {
     }
 
     @Test
-    @DisplayName("createRuntimeException should create WasmException with prefix")
-    void createRuntimeExceptionShouldCreateWasmExceptionWithPrefix() {
-      final WasmException result = mapper.createRuntimeException("Runtime error", null);
-
-      assertNotNull(result, "Result should not be null");
-      assertTrue(result.getMessage().contains("Panama FFI"), "Should contain prefix");
-    }
-
-    @Test
     @DisplayName("createValidationException should create with prefix")
     void createValidationExceptionShouldCreateWithPrefix() {
       final ValidationException result = mapper.createValidationException("Validation error", null);
 
       assertNotNull(result, "Result should not be null");
       assertTrue(result.getMessage().contains("Panama FFI"), "Should contain prefix");
-    }
-
-    @Test
-    @DisplayName("createWasmException should create with prefix")
-    void createWasmExceptionShouldCreateWithPrefix() {
-      final WasmException result = mapper.createWasmException("Generic error", null);
-
-      assertNotNull(result, "Result should not be null");
-      assertTrue(result.getMessage().contains("Panama FFI"), "Should contain prefix");
-    }
-  }
-
-  @Nested
-  @DisplayName("isRecoverableError Tests")
-  class IsRecoverableErrorTests {
-
-    @Test
-    @DisplayName("isRecoverableError should return false for null")
-    void isRecoverableErrorShouldReturnFalseForNull() {
-      assertFalse(mapper.isRecoverableError(null), "Should return false for null");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return false for ValidationException")
-    void isRecoverableErrorShouldReturnFalseForValidationException() {
-      final ValidationException ve = new ValidationException("Validation error");
-
-      assertFalse(mapper.isRecoverableError(ve), "ValidationException should not be recoverable");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return false for CompilationException")
-    void isRecoverableErrorShouldReturnFalseForCompilationException() {
-      final CompilationException ce = new CompilationException("Compilation error");
-
-      assertFalse(mapper.isRecoverableError(ce), "CompilationException should not be recoverable");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return true for 'not found' error")
-    void isRecoverableErrorShouldReturnTrueForNotFoundError() {
-      final WasmException we = new WasmException("Export not found");
-
-      assertTrue(mapper.isRecoverableError(we), "'Not found' error should be recoverable");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return true for 'unavailable' error")
-    void isRecoverableErrorShouldReturnTrueForUnavailableError() {
-      final WasmException we = new WasmException("Resource unavailable");
-
-      assertTrue(mapper.isRecoverableError(we), "'Unavailable' error should be recoverable");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return true for 'timeout' error")
-    void isRecoverableErrorShouldReturnTrueForTimeoutError() {
-      final WasmException we = new WasmException("Operation timeout");
-
-      assertTrue(mapper.isRecoverableError(we), "'Timeout' error should be recoverable");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return false for 'out of memory' error")
-    void isRecoverableErrorShouldReturnFalseForOutOfMemoryError() {
-      final WasmException we = new WasmException("Out of memory");
-
-      assertFalse(mapper.isRecoverableError(we), "'Out of memory' error should not be recoverable");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return false for 'corruption' error")
-    void isRecoverableErrorShouldReturnFalseForCorruptionError() {
-      final WasmException we = new WasmException("Memory corruption detected");
-
-      assertFalse(mapper.isRecoverableError(we), "'Corruption' error should not be recoverable");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return false for 'invalid' error")
-    void isRecoverableErrorShouldReturnFalseForInvalidError() {
-      final WasmException we = new WasmException("Invalid state");
-
-      assertFalse(mapper.isRecoverableError(we), "'Invalid' error should not be recoverable");
-    }
-
-    @Test
-    @DisplayName("isRecoverableError should return false for generic WasmException")
-    void isRecoverableErrorShouldReturnFalseForGenericWasmException() {
-      final WasmException we = new WasmException("Generic runtime error");
-
-      assertFalse(mapper.isRecoverableError(we), "Generic WasmException should not be recoverable");
     }
   }
 }

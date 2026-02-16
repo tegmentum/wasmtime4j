@@ -1501,17 +1501,6 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   // =============================================================================
 
   /**
-   * Sets a call hook on the store.
-   *
-   * @param storePtr the store pointer
-   * @return 0 on success, non-zero on error
-   */
-  public int storeSetCallHook(final MemorySegment storePtr) {
-    validatePointer(storePtr, "storePtr");
-    return callNativeFunction("wasmtime4j_panama_store_set_call_hook", Integer.class, storePtr);
-  }
-
-  /**
    * Sets a call hook with a function pointer callback on the store.
    *
    * <p>The callback is invoked on every transition between host and WebAssembly code.
@@ -1530,41 +1519,6 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     return callNativeFunction(
         "wasmtime4j_panama_store_set_call_hook_fn", Integer.class, storePtr, callbackFn,
         callbackId);
-  }
-
-  /**
-   * Clears the call hook from the store.
-   *
-   * @param storePtr the store pointer
-   * @return 0 on success, non-zero on error
-   */
-  public int storeClearCallHook(final MemorySegment storePtr) {
-    validatePointer(storePtr, "storePtr");
-    return callNativeFunction("wasmtime4j_panama_store_clear_call_hook", Integer.class, storePtr);
-  }
-
-  /**
-   * Sets an async call hook on the store.
-   *
-   * @param storePtr the store pointer
-   * @return 0 on success, non-zero on error
-   */
-  public int storeSetCallHookAsync(final MemorySegment storePtr) {
-    validatePointer(storePtr, "storePtr");
-    return callNativeFunction(
-        "wasmtime4j_panama_store_set_call_hook_async", Integer.class, storePtr);
-  }
-
-  /**
-   * Clears the async call hook from the store.
-   *
-   * @param storePtr the store pointer
-   * @return 0 on success, non-zero on error
-   */
-  public int storeClearCallHookAsync(final MemorySegment storePtr) {
-    validatePointer(storePtr, "storePtr");
-    return callNativeFunction(
-        "wasmtime4j_panama_store_clear_call_hook_async", Integer.class, storePtr);
   }
 
   // =============================================================================
@@ -2384,28 +2338,12 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
     addFunctionBinding(
-        "wasmtime4j_panama_store_set_call_hook",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
         "wasmtime4j_panama_store_set_call_hook_fn",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return: error code
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.ADDRESS, // callback_fn (function pointer)
             ValueLayout.JAVA_LONG)); // callback_id
-
-    addFunctionBinding(
-        "wasmtime4j_panama_store_clear_call_hook",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_store_set_call_hook_async",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_store_clear_call_hook_async",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
   }
 
   private void initializeWasiNnBindings() {

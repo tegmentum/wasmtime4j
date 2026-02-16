@@ -35,7 +35,6 @@ public final class PanamaStore implements Store {
   private static final NativeInstanceBindings INSTANCE_BINDINGS =
       NativeInstanceBindings.getInstance();
   private static final NativeMemoryBindings MEMORY_BINDINGS = NativeMemoryBindings.getInstance();
-  private static final NativeEngineBindings ENGINE_BINDINGS = NativeEngineBindings.getInstance();
 
   // Epoch callback infrastructure
   private static final AtomicLong EPOCH_CALLBACK_ID_COUNTER = new AtomicLong(1);
@@ -631,7 +630,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle setFuelHandle = ENGINE_BINDINGS.getPanamaStoreSetFuel();
+      final MethodHandle setFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetFuel();
       if (setFuelHandle == null) {
         throw new WasmException("Panama store set fuel function not available");
       }
@@ -654,7 +653,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle getFuelHandle = ENGINE_BINDINGS.getPanamaStoreGetFuel();
+      final MethodHandle getFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetFuel();
       if (getFuelHandle == null) {
         throw new WasmException("Panama store get fuel function not available");
       }
@@ -684,7 +683,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle addFuelHandle = ENGINE_BINDINGS.getPanamaStoreAddFuel();
+      final MethodHandle addFuelHandle = NATIVE_BINDINGS.getPanamaStoreAddFuel();
       if (addFuelHandle == null) {
         throw new WasmException("Panama store add fuel function not available");
       }
@@ -707,7 +706,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle setEpochDeadlineHandle = ENGINE_BINDINGS.getPanamaStoreSetEpochDeadline();
+      final MethodHandle setEpochDeadlineHandle = NATIVE_BINDINGS.getPanamaStoreSetEpochDeadline();
       if (setEpochDeadlineHandle == null) {
         throw new WasmException("Panama store set epoch deadline function not available");
       }
@@ -733,7 +732,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     try {
-      final MethodHandle consumeFuelHandle = ENGINE_BINDINGS.getPanamaStoreConsumeFuel();
+      final MethodHandle consumeFuelHandle = NATIVE_BINDINGS.getPanamaStoreConsumeFuel();
       if (consumeFuelHandle == null) {
         throw new WasmException("Panama store consume fuel function not available");
       }
@@ -1274,7 +1273,7 @@ public final class PanamaStore implements Store {
    */
   private ExecutionStats getExecutionStats() throws WasmException {
     try {
-      final MethodHandle getStatsHandle = ENGINE_BINDINGS.getPanamaStoreGetExecutionStats();
+      final MethodHandle getStatsHandle = NATIVE_BINDINGS.getPanamaStoreGetExecutionStats();
       if (getStatsHandle == null) {
         throw new WasmException("Panama store get execution stats function not available");
       }

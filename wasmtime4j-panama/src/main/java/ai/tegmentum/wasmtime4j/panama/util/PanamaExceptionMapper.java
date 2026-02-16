@@ -22,7 +22,6 @@ import ai.tegmentum.wasmtime4j.exception.TrapException.TrapType;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
-import java.lang.foreign.MemorySegment;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -278,33 +277,6 @@ public final class PanamaExceptionMapper {
   }
 
   /**
-   * Maps a native error pointer to a WebAssembly exception.
-   *
-   * <p>Many Wasmtime functions return error pointers instead of error codes. This method extracts
-   * error information from such pointers and creates appropriate exceptions.
-   *
-   * @param errorPtr the native error pointer
-   * @return the mapped WebAssembly exception, or null if no error
-   */
-  public WasmException mapNativeError(final MemorySegment errorPtr) {
-    if (errorPtr == null || errorPtr == MemorySegment.NULL) {
-      return null; // No error
-    }
-
-    try {
-      // TODO: Implement error pointer interpretation
-      // This would extract error type and message from the native error structure
-      logger.fine("Mapping native error pointer: " + errorPtr.address());
-
-      // For now, create a generic error
-      return new WasmException("Native error occurred (error pointer: " + errorPtr.address() + ")");
-    } catch (Exception e) {
-      logger.warning("Failed to interpret native error pointer: " + e.getMessage());
-      return new WasmException("Failed to interpret native error", e);
-    }
-  }
-
-  /**
    * Creates a compilation exception with additional context.
    *
    * @param message the error message
@@ -314,17 +286,6 @@ public final class PanamaExceptionMapper {
   public CompilationException createCompilationException(
       final String message, final Throwable cause) {
     return new CompilationException("Panama FFI: " + message, cause);
-  }
-
-  /**
-   * Creates a runtime exception with additional context.
-   *
-   * @param message the error message
-   * @param cause the underlying cause, if any
-   * @return a new runtime exception
-   */
-  public WasmException createRuntimeException(final String message, final Throwable cause) {
-    return new WasmException("Panama FFI: " + message, cause);
   }
 
   /**
@@ -339,61 +300,4 @@ public final class PanamaExceptionMapper {
     return new ValidationException("Panama FFI: " + message, cause);
   }
 
-  /**
-   * Creates a generic WebAssembly exception with additional context.
-   *
-   * @param message the error message
-   * @param cause the underlying cause, if any
-   * @return a new WebAssembly exception
-   */
-  public WasmException createWasmException(final String message, final Throwable cause) {
-    return new WasmException("Panama FFI: " + message, cause);
-  }
-
-  /**
-   * Checks if an exception indicates a recoverable error.
-   *
-   * <p>Some errors may be recoverable or represent expected failure conditions (e.g., function not
-   * found). This method helps identify such cases.
-   *
-   * @param exception the exception to check
-   * @return true if the error may be recoverable, false otherwise
-   */
-  public boolean isRecoverableError(final WasmException exception) {
-    if (exception == null) {
-      return false;
-    }
-
-    // Validation errors are typically not recoverable
-    if (exception instanceof ValidationException) {
-      return false;
-    }
-
-    // Compilation errors are typically not recoverable
-    if (exception instanceof CompilationException) {
-      return false;
-    }
-
-    final String message = exception.getMessage();
-    if (message != null) {
-      final String lowerMessage = message.toLowerCase();
-
-      // These types of errors might be recoverable
-      if (lowerMessage.contains("not found")
-          || lowerMessage.contains("unavailable")
-          || lowerMessage.contains("timeout")) {
-        return true;
-      }
-
-      // These are typically not recoverable
-      if (lowerMessage.contains("out of memory")
-          || lowerMessage.contains("corruption")
-          || lowerMessage.contains("invalid")) {
-        return false;
-      }
-    }
-
-    // Unrecognized exceptions default to non-recoverable (fail-safe)
-    return false;
-  }
 }
