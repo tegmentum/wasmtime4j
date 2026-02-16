@@ -242,5 +242,4 @@ public final class JniExceptionMapper {
     // Default mapping for all other exceptions
     return new JniException("Operation failed: " + exception.getMessage(), exception);
   }
-
 }

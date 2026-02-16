@@ -77,8 +77,8 @@ public interface ResourceLimiter {
    * @param desiredBytes the desired new size of the memory in bytes
    * @param maximumBytes the maximum size of the memory in bytes as declared by the WebAssembly
    *     module, or {@link Long#MAX_VALUE} if no maximum is specified
-   * @return {@code true} to allow the growth, {@code false} to deny it (which will cause the
-   *     {@code memory.grow} instruction to return -1)
+   * @return {@code true} to allow the growth, {@code false} to deny it (which will cause the {@code
+   *     memory.grow} instruction to return -1)
    */
   boolean memoryGrowing(long currentBytes, long desiredBytes, long maximumBytes);
 
@@ -92,8 +92,8 @@ public interface ResourceLimiter {
    * @param desiredElements the desired new number of elements
    * @param maximumElements the maximum number of elements as declared by the WebAssembly module, or
    *     {@link Integer#MAX_VALUE} if no maximum is specified
-   * @return {@code true} to allow the growth, {@code false} to deny it (which will cause the
-   *     {@code table.grow} instruction to return -1)
+   * @return {@code true} to allow the growth, {@code false} to deny it (which will cause the {@code
+   *     table.grow} instruction to return -1)
    */
   boolean tableGrowing(int currentElements, int desiredElements, int maximumElements);
 
@@ -115,8 +115,8 @@ public interface ResourceLimiter {
   /**
    * Called when a table growth operation fails.
    *
-   * <p>This is an optional notification callback. It is called after a table growth that was allowed
-   * by {@link #tableGrowing} fails for some other reason.
+   * <p>This is an optional notification callback. It is called after a table growth that was
+   * allowed by {@link #tableGrowing} fails for some other reason.
    *
    * <p>The default implementation does nothing.
    *

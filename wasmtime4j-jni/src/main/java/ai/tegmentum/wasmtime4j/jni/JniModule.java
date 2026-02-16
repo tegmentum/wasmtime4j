@@ -183,38 +183,6 @@ public class JniModule implements Module {
     return java.util.Collections.unmodifiableList(functionTypes);
   }
 
-  @Override
-  public List<ai.tegmentum.wasmtime4j.ExportDescriptor> getExportDescriptors() {
-    final List<ai.tegmentum.wasmtime4j.ModuleExport> moduleExports = getModuleExports();
-    final List<ai.tegmentum.wasmtime4j.ExportDescriptor> descriptors =
-        new java.util.ArrayList<>(moduleExports.size());
-
-    for (final ai.tegmentum.wasmtime4j.ModuleExport moduleExport : moduleExports) {
-      final ai.tegmentum.wasmtime4j.type.ExportType exportType = moduleExport.getExportType();
-      descriptors.add(
-          new ai.tegmentum.wasmtime4j.jni.type.JniExportDescriptor(
-              exportType.getName(), exportType.getType()));
-    }
-
-    return java.util.Collections.unmodifiableList(descriptors);
-  }
-
-  @Override
-  public List<ai.tegmentum.wasmtime4j.ImportDescriptor> getImportDescriptors() {
-    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
-    final List<ai.tegmentum.wasmtime4j.ImportDescriptor> descriptors =
-        new java.util.ArrayList<>(moduleImports.size());
-
-    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
-      descriptors.add(
-          new ai.tegmentum.wasmtime4j.jni.type.JniImportDescriptor(
-              importType.getModuleName(), importType.getName(), importType.getType()));
-    }
-
-    return java.util.Collections.unmodifiableList(descriptors);
-  }
-
   /**
    * Check if native handle looks valid. This is a heuristic check to prevent crashes from obviously
    * fake test pointers.
@@ -572,23 +540,23 @@ public class JniModule implements Module {
                 actualTypeStr));
       } else {
         validCount++;
-        // Determine ImportInfo.ImportType from WasmTypeKind
-        final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType infoType;
+        // Determine ImportInfo.ImportKind from WasmTypeKind
+        final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind infoType;
         switch (expectedKind) {
           case GLOBAL:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.GLOBAL;
             break;
           case TABLE:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.TABLE;
             break;
           case MEMORY:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.MEMORY;
             break;
           case FUNCTION:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
             break;
           default:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
         }
 
         validatedImports.add(

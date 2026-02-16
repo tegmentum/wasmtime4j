@@ -97,15 +97,12 @@ public interface WasiConfig {
    */
   Optional<String> getWorkingDirectory();
 
-
   /**
    * Gets the execution timeout for component operations.
    *
    * @return the execution timeout, or empty if not specified
    */
   Optional<Duration> getExecutionTimeout();
-
-
 
   /**
    * Gets whether validation is enabled.

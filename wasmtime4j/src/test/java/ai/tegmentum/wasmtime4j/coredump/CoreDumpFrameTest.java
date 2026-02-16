@@ -57,8 +57,7 @@ class CoreDumpFrameTest {
     @Test
     @DisplayName("should build with funcName")
     void shouldBuildWithFuncName() {
-      final CoreDumpFrame frame =
-          CoreDumpFrame.builder().funcName("calculate").build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().funcName("calculate").build();
       assertTrue(frame.getFuncName().isPresent(), "FuncName should be present");
       assertEquals("calculate", frame.getFuncName().get(), "FuncName should match");
     }
@@ -80,8 +79,7 @@ class CoreDumpFrameTest {
     @Test
     @DisplayName("should build with moduleName")
     void shouldBuildWithModuleName() {
-      final CoreDumpFrame frame =
-          CoreDumpFrame.builder().moduleName("test.wasm").build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().moduleName("test.wasm").build();
       assertTrue(frame.getModuleName().isPresent(), "ModuleName should be present");
       assertEquals("test.wasm", frame.getModuleName().get(), "ModuleName should match");
     }
@@ -177,8 +175,7 @@ class CoreDumpFrameTest {
     @DisplayName("should build with single stack value")
     void shouldBuildWithSingleStackValue() {
       final byte[] stackValue = {0x0A, 0x0B, 0x0C};
-      final CoreDumpFrame frame =
-          CoreDumpFrame.builder().addStackValue(stackValue).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().addStackValue(stackValue).build();
       assertEquals(1, frame.getStack().size(), "Should have 1 stack value");
       assertArrayEquals(stackValue, frame.getStack().get(0), "Stack value should match");
     }
@@ -199,8 +196,7 @@ class CoreDumpFrameTest {
     void shouldBuildWithStackValuesList() {
       final List<byte[]> stackValues =
           Arrays.asList(new byte[] {0x10}, new byte[] {0x20}, new byte[] {0x30});
-      final CoreDumpFrame frame =
-          CoreDumpFrame.builder().addStackValues(stackValues).build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().addStackValues(stackValues).build();
       assertEquals(3, frame.getStack().size(), "Should have 3 stack values");
     }
   }

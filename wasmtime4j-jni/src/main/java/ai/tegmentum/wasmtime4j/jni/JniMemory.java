@@ -734,8 +734,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
     try {
       nativeMemoryInit(
-          getNativeHandle(), store.getNativeHandle(), instanceHandle,
-          destOffset, dataSegmentIndex, srcOffset, length);
+          getNativeHandle(),
+          store.getNativeHandle(),
+          instanceHandle,
+          destOffset,
+          dataSegmentIndex,
+          srcOffset,
+          length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -791,8 +796,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param length the number of bytes to copy
    */
   private static native void nativeMemoryInit(
-      long memoryHandle, long storeHandle, long instanceHandle,
-      int destOffset, int dataSegmentIndex, int srcOffset, int length);
+      long memoryHandle,
+      long storeHandle,
+      long instanceHandle,
+      int destOffset,
+      int dataSegmentIndex,
+      int srcOffset,
+      int length);
 
   /**
    * Drops a data segment.
@@ -1504,8 +1514,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
     try {
       nativeMemoryInit64(
-          getNativeHandle(), store.getNativeHandle(), instanceHandle,
-          destOffset, dataSegmentIndex, srcOffset, length);
+          getNativeHandle(),
+          store.getNativeHandle(),
+          instanceHandle,
+          destOffset,
+          dataSegmentIndex,
+          srcOffset,
+          length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -1664,6 +1679,11 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param length the number of bytes to copy (64-bit)
    */
   private static native void nativeMemoryInit64(
-      long memoryHandle, long storeHandle, long instanceHandle,
-      long destOffset, int dataSegmentIndex, long srcOffset, long length);
+      long memoryHandle,
+      long storeHandle,
+      long instanceHandle,
+      long destOffset,
+      int dataSegmentIndex,
+      long srcOffset,
+      long length);
 }

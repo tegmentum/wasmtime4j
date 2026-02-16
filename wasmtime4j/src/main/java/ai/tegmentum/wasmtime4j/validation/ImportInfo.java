@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.validation;
 
-import ai.tegmentum.wasmtime4j.type.ImportType;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -17,7 +16,7 @@ public final class ImportInfo {
 
   private final String moduleName;
   private final String importName;
-  private final ImportType importType;
+  private final ImportKind importKind;
   private final Optional<String> typeSignature;
   private final Instant definedAt;
   private final boolean isHostFunction;
@@ -28,7 +27,7 @@ public final class ImportInfo {
    *
    * @param moduleName the module name for the import
    * @param importName the import name
-   * @param importType the type of import
+   * @param importKind the kind of import
    * @param typeSignature the type signature (if applicable)
    * @param definedAt when this import was defined
    * @param isHostFunction whether this is a host function
@@ -37,14 +36,14 @@ public final class ImportInfo {
   public ImportInfo(
       final String moduleName,
       final String importName,
-      final ImportType importType,
+      final ImportKind importKind,
       final Optional<String> typeSignature,
       final Instant definedAt,
       final boolean isHostFunction,
       final Optional<String> sourceDescription) {
     this.moduleName = Objects.requireNonNull(moduleName, "moduleName");
     this.importName = Objects.requireNonNull(importName, "importName");
-    this.importType = Objects.requireNonNull(importType, "importType");
+    this.importKind = Objects.requireNonNull(importKind, "importKind");
     this.typeSignature = Objects.requireNonNull(typeSignature, "typeSignature");
     this.definedAt = Objects.requireNonNull(definedAt, "definedAt");
     this.isHostFunction = isHostFunction;
@@ -74,8 +73,8 @@ public final class ImportInfo {
    *
    * @return the import type
    */
-  public ImportType getImportType() {
-    return importType;
+  public ImportKind getImportKind() {
+    return importKind;
   }
 
   /**
@@ -134,7 +133,7 @@ public final class ImportInfo {
     final StringBuilder sb = new StringBuilder();
     sb.append("ImportInfo{");
     sb.append(getImportIdentifier());
-    sb.append(", type=").append(importType);
+    sb.append(", type=").append(importKind);
 
     if (typeSignature.isPresent()) {
       sb.append(", signature=").append(typeSignature.get());
@@ -166,7 +165,7 @@ public final class ImportInfo {
     return isHostFunction == that.isHostFunction
         && Objects.equals(moduleName, that.moduleName)
         && Objects.equals(importName, that.importName)
-        && importType == that.importType
+        && importKind == that.importKind
         && Objects.equals(typeSignature, that.typeSignature)
         && Objects.equals(definedAt, that.definedAt)
         && Objects.equals(sourceDescription, that.sourceDescription);
@@ -177,7 +176,7 @@ public final class ImportInfo {
     return Objects.hash(
         moduleName,
         importName,
-        importType,
+        importKind,
         typeSignature,
         definedAt,
         isHostFunction,
@@ -185,7 +184,7 @@ public final class ImportInfo {
   }
 
   /** Types of imports that can be defined in a linker. */
-  public enum ImportType {
+  public enum ImportKind {
     /** Function import. */
     FUNCTION,
     /** Memory import. */

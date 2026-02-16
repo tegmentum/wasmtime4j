@@ -422,8 +422,7 @@ public interface WasmRuntime extends Closeable {
    * <p>The SIMD operations provide access to WebAssembly's SIMD features including 128-bit vector
    * operations, lane manipulation, and memory load/store operations.
    *
-  /**
-   * Creates a new WASI-NN context for neural network inference operations.
+   * <p>/** Creates a new WASI-NN context for neural network inference operations.
    *
    * <p>The WASI-NN context provides access to machine learning inference capabilities, allowing
    * WebAssembly modules to load ML models and run inference. This is an experimental feature (Tier

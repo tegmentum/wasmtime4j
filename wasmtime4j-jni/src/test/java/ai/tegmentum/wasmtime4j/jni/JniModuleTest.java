@@ -467,32 +467,4 @@ class JniModuleTest {
     }
   }
 
-  @Nested
-  @DisplayName("Descriptor Tests")
-  class DescriptorTests {
-
-    @Test
-    @DisplayName("should return empty export descriptors for fake handle")
-    void shouldReturnEmptyExportDescriptorsForFakeHandle() {
-      final JniModule module = new JniModule(VALID_HANDLE, testEngine);
-
-      final List<ai.tegmentum.wasmtime4j.ExportDescriptor> descriptors =
-          module.getExportDescriptors();
-
-      assertNotNull(descriptors, "Descriptors should not be null");
-      assertTrue(descriptors.isEmpty(), "Should be empty for fake handle");
-    }
-
-    @Test
-    @DisplayName("should return empty import descriptors for fake handle")
-    void shouldReturnEmptyImportDescriptorsForFakeHandle() {
-      final JniModule module = new JniModule(VALID_HANDLE, testEngine);
-
-      final List<ai.tegmentum.wasmtime4j.ImportDescriptor> descriptors =
-          module.getImportDescriptors();
-
-      assertNotNull(descriptors, "Descriptors should not be null");
-      assertTrue(descriptors.isEmpty(), "Should be empty for fake handle");
-    }
-  }
 }

@@ -310,23 +310,6 @@ class PanamaStoreTest {
       LOGGER.info("Correctly rejected negative fuel for consumeFuel");
     }
 
-    @Test
-    @DisplayName("getRemainingFuel should delegate to getFuel")
-    void getRemainingFuelShouldDelegateToGetFuel() throws Exception {
-      final PanamaStore store = createStore();
-
-      // Both methods should return the same value or throw the same exception
-      try {
-        final long fuel = store.getFuel();
-        final long remaining = store.getRemainingFuel();
-        assertEquals(fuel, remaining, "getRemainingFuel should match getFuel");
-        LOGGER.info("getRemainingFuel correctly delegates to getFuel: " + fuel);
-      } catch (final WasmException e) {
-        // If getFuel throws, getRemainingFuel should also throw
-        assertThrows(WasmException.class, store::getRemainingFuel);
-        LOGGER.info("Both getFuel and getRemainingFuel throw consistently");
-      }
-    }
   }
 
   // ===== Callback Registry Tests =====

@@ -67,8 +67,7 @@ class CoreDumpMemoryTest {
     @Test
     @DisplayName("should build with name")
     void shouldBuildWithName() {
-      final CoreDumpMemory memory =
-          CoreDumpMemory.builder().name("main-memory").build();
+      final CoreDumpMemory memory = CoreDumpMemory.builder().name("main-memory").build();
       assertTrue(memory.getName().isPresent(), "Name should be present");
       assertEquals("main-memory", memory.getName().get(), "Name should match");
     }
@@ -194,8 +193,7 @@ class CoreDumpMemoryTest {
     @DisplayName("should create segment with offset and data")
     void shouldCreateSegmentWithOffsetAndData() {
       final byte[] data = {0x01, 0x02, 0x03};
-      final CoreDumpMemory.MemorySegment segment =
-          new CoreDumpMemory.MemorySegment(100, data);
+      final CoreDumpMemory.MemorySegment segment = new CoreDumpMemory.MemorySegment(100, data);
       assertEquals(100, segment.getOffset(), "Offset should match");
       assertArrayEquals(data, segment.getData(), "Data should match");
     }
@@ -204,8 +202,7 @@ class CoreDumpMemoryTest {
     @DisplayName("should return size from data length")
     void shouldReturnSizeFromDataLength() {
       final byte[] data = new byte[50];
-      final CoreDumpMemory.MemorySegment segment =
-          new CoreDumpMemory.MemorySegment(0, data);
+      final CoreDumpMemory.MemorySegment segment = new CoreDumpMemory.MemorySegment(0, data);
       assertEquals(50, segment.getSize(), "Size should be 50");
     }
 
@@ -213,8 +210,7 @@ class CoreDumpMemoryTest {
     @DisplayName("should return copy of data")
     void shouldReturnCopyOfData() {
       final byte[] original = {0x01, 0x02, 0x03};
-      final CoreDumpMemory.MemorySegment segment =
-          new CoreDumpMemory.MemorySegment(0, original);
+      final CoreDumpMemory.MemorySegment segment = new CoreDumpMemory.MemorySegment(0, original);
       final byte[] retrieved = segment.getData();
       retrieved[0] = (byte) 0xFF;
       assertArrayEquals(original, segment.getData(), "Internal data should not be modified");

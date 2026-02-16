@@ -43,7 +43,7 @@ class ImportInfoTest {
     return new ImportInfo(
         "env",
         "log",
-        ImportInfo.ImportType.FUNCTION,
+        ImportInfo.ImportKind.FUNCTION,
         Optional.of("(i32) -> void"),
         Instant.parse("2025-01-01T00:00:00Z"),
         true,
@@ -62,7 +62,7 @@ class ImportInfoTest {
           new ImportInfo(
               "wasi_snapshot_preview1",
               "fd_write",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.of("(i32, i32, i32, i32) -> i32"),
               now,
               true,
@@ -71,7 +71,7 @@ class ImportInfoTest {
       assertEquals("wasi_snapshot_preview1", info.getModuleName(), "moduleName should match");
       assertEquals("fd_write", info.getImportName(), "importName should match");
       assertEquals(
-          ImportInfo.ImportType.FUNCTION, info.getImportType(), "importType should be FUNCTION");
+          ImportInfo.ImportKind.FUNCTION, info.getImportKind(), "importType should be FUNCTION");
       assertTrue(info.getTypeSignature().isPresent(), "typeSignature should be present");
       assertEquals(now, info.getDefinedAt(), "definedAt should match");
       assertTrue(info.isHostFunction(), "isHostFunction should be true");
@@ -85,7 +85,7 @@ class ImportInfoTest {
           new ImportInfo(
               "mod",
               "imp",
-              ImportInfo.ImportType.MEMORY,
+              ImportInfo.ImportKind.MEMORY,
               Optional.empty(),
               Instant.EPOCH,
               false,
@@ -105,7 +105,7 @@ class ImportInfoTest {
               new ImportInfo(
                   null,
                   "imp",
-                  ImportInfo.ImportType.FUNCTION,
+                  ImportInfo.ImportKind.FUNCTION,
                   Optional.empty(),
                   Instant.now(),
                   false,
@@ -122,7 +122,7 @@ class ImportInfoTest {
               new ImportInfo(
                   "mod",
                   null,
-                  ImportInfo.ImportType.FUNCTION,
+                  ImportInfo.ImportKind.FUNCTION,
                   Optional.empty(),
                   Instant.now(),
                   false,
@@ -150,7 +150,7 @@ class ImportInfoTest {
               new ImportInfo(
                   "mod",
                   "imp",
-                  ImportInfo.ImportType.FUNCTION,
+                  ImportInfo.ImportKind.FUNCTION,
                   null,
                   Instant.now(),
                   false,
@@ -167,7 +167,7 @@ class ImportInfoTest {
               new ImportInfo(
                   "mod",
                   "imp",
-                  ImportInfo.ImportType.FUNCTION,
+                  ImportInfo.ImportKind.FUNCTION,
                   Optional.empty(),
                   null,
                   false,
@@ -184,7 +184,7 @@ class ImportInfoTest {
               new ImportInfo(
                   "mod",
                   "imp",
-                  ImportInfo.ImportType.FUNCTION,
+                  ImportInfo.ImportKind.FUNCTION,
                   Optional.empty(),
                   Instant.now(),
                   false,
@@ -200,26 +200,26 @@ class ImportInfoTest {
     @Test
     @DisplayName("should have all expected import types")
     void shouldHaveAllExpectedImportTypes() {
-      final ImportInfo.ImportType[] values = ImportInfo.ImportType.values();
+      final ImportInfo.ImportKind[] values = ImportInfo.ImportKind.values();
 
       assertEquals(5, values.length, "Should have 5 ImportType values");
-      assertNotNull(ImportInfo.ImportType.FUNCTION, "FUNCTION should exist");
-      assertNotNull(ImportInfo.ImportType.MEMORY, "MEMORY should exist");
-      assertNotNull(ImportInfo.ImportType.TABLE, "TABLE should exist");
-      assertNotNull(ImportInfo.ImportType.GLOBAL, "GLOBAL should exist");
-      assertNotNull(ImportInfo.ImportType.INSTANCE, "INSTANCE should exist");
+      assertNotNull(ImportInfo.ImportKind.FUNCTION, "FUNCTION should exist");
+      assertNotNull(ImportInfo.ImportKind.MEMORY, "MEMORY should exist");
+      assertNotNull(ImportInfo.ImportKind.TABLE, "TABLE should exist");
+      assertNotNull(ImportInfo.ImportKind.GLOBAL, "GLOBAL should exist");
+      assertNotNull(ImportInfo.ImportKind.INSTANCE, "INSTANCE should exist");
     }
 
     @Test
     @DisplayName("valueOf should return correct enum values")
     void valueOfShouldReturnCorrectEnumValues() {
       assertEquals(
-          ImportInfo.ImportType.FUNCTION,
-          ImportInfo.ImportType.valueOf("FUNCTION"),
+          ImportInfo.ImportKind.FUNCTION,
+          ImportInfo.ImportKind.valueOf("FUNCTION"),
           "valueOf('FUNCTION') should return FUNCTION");
       assertEquals(
-          ImportInfo.ImportType.MEMORY,
-          ImportInfo.ImportType.valueOf("MEMORY"),
+          ImportInfo.ImportKind.MEMORY,
+          ImportInfo.ImportKind.valueOf("MEMORY"),
           "valueOf('MEMORY') should return MEMORY");
     }
   }
@@ -244,7 +244,7 @@ class ImportInfoTest {
           new ImportInfo(
               "wasi",
               "fd_write",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.empty(),
               Instant.EPOCH,
               false,
@@ -269,7 +269,7 @@ class ImportInfoTest {
           new ImportInfo(
               "mod",
               "imp",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.of("sig"),
               now,
               true,
@@ -278,7 +278,7 @@ class ImportInfoTest {
           new ImportInfo(
               "mod",
               "imp",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.of("sig"),
               now,
               true,
@@ -295,7 +295,7 @@ class ImportInfoTest {
           new ImportInfo(
               "modA",
               "imp",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.empty(),
               now,
               false,
@@ -304,7 +304,7 @@ class ImportInfoTest {
           new ImportInfo(
               "modB",
               "imp",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.empty(),
               now,
               false,
@@ -321,7 +321,7 @@ class ImportInfoTest {
           new ImportInfo(
               "mod",
               "imp",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.empty(),
               now,
               false,
@@ -330,7 +330,7 @@ class ImportInfoTest {
           new ImportInfo(
               "mod",
               "imp",
-              ImportInfo.ImportType.MEMORY,
+              ImportInfo.ImportKind.MEMORY,
               Optional.empty(),
               now,
               false,
@@ -363,7 +363,7 @@ class ImportInfoTest {
           new ImportInfo(
               "mod",
               "imp",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.of("sig"),
               now,
               true,
@@ -372,7 +372,7 @@ class ImportInfoTest {
           new ImportInfo(
               "mod",
               "imp",
-              ImportInfo.ImportType.FUNCTION,
+              ImportInfo.ImportKind.FUNCTION,
               Optional.of("sig"),
               now,
               true,

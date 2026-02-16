@@ -63,7 +63,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   /** Lock object for GC runtime lazy initialization. */
   private final Object gcRuntimeLock = new Object();
 
-
   /**
    * Creates a new JNI WebAssembly runtime.
    *

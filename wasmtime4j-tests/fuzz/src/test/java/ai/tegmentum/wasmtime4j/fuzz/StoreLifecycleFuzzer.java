@@ -209,7 +209,7 @@ public class StoreLifecycleFuzzer {
           }
 
           try {
-            store.getRemainingFuel();
+            store.getFuel();
           } catch (WasmException e) {
             // Expected
           } catch (UnsupportedOperationException e) {

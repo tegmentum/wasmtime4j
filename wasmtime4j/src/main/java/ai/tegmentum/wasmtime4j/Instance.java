@@ -164,27 +164,6 @@ public interface Instance extends Closeable {
   String[] getExportNames();
 
   /**
-   * Gets runtime type information for all exports.
-   *
-   * <p>This method provides comprehensive type introspection for all exported items, including
-   * their specific type information at runtime.
-   *
-   * @return an immutable list of export descriptors with runtime type information
-   * @since 1.0.0
-   */
-  java.util.List<ExportDescriptor> getExportDescriptors();
-
-  /**
-   * Gets runtime type information for a specific export.
-   *
-   * @param name the name of the export
-   * @return the export descriptor with type information, or empty if not found
-   * @throws IllegalArgumentException if name is null
-   * @since 1.0.0
-   */
-  java.util.Optional<ExportDescriptor> getExportDescriptor(final String name);
-
-  /**
    * Gets the runtime function type for a specific exported function.
    *
    * @param functionName the name of the exported function

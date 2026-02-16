@@ -1,8 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.ExportDescriptor;
-import ai.tegmentum.wasmtime4j.ImportDescriptor;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.ModuleExport;
@@ -191,38 +189,6 @@ public final class PanamaModule implements Module {
       imports.add(moduleImport.getImportType());
     }
     return java.util.Collections.unmodifiableList(imports);
-  }
-
-  @Override
-  public List<ExportDescriptor> getExportDescriptors() {
-    final List<ai.tegmentum.wasmtime4j.ModuleExport> moduleExports = getModuleExports();
-    final List<ai.tegmentum.wasmtime4j.ExportDescriptor> descriptors =
-        new java.util.ArrayList<>(moduleExports.size());
-
-    for (final ai.tegmentum.wasmtime4j.ModuleExport moduleExport : moduleExports) {
-      final ai.tegmentum.wasmtime4j.type.ExportType exportType = moduleExport.getExportType();
-      descriptors.add(
-          new ai.tegmentum.wasmtime4j.panama.type.PanamaExportDescriptor(
-              exportType.getName(), exportType.getType()));
-    }
-
-    return java.util.Collections.unmodifiableList(descriptors);
-  }
-
-  @Override
-  public List<ImportDescriptor> getImportDescriptors() {
-    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
-    final List<ai.tegmentum.wasmtime4j.ImportDescriptor> descriptors =
-        new java.util.ArrayList<>(moduleImports.size());
-
-    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
-      descriptors.add(
-          new ai.tegmentum.wasmtime4j.panama.type.PanamaImportDescriptor(
-              importType.getModuleName(), importType.getName(), importType.getType()));
-    }
-
-    return java.util.Collections.unmodifiableList(descriptors);
   }
 
   @Override
@@ -533,23 +499,23 @@ public final class PanamaModule implements Module {
                 actualTypeStr));
       } else {
         validCount++;
-        // Determine ImportInfo.ImportType from WasmTypeKind
-        final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType infoType;
+        // Determine ImportInfo.ImportKind from WasmTypeKind
+        final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind infoType;
         switch (expectedKind) {
           case GLOBAL:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.GLOBAL;
             break;
           case TABLE:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.TABLE;
             break;
           case MEMORY:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.MEMORY;
             break;
           case FUNCTION:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
             break;
           default:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
         }
 
         validatedImports.add(

@@ -243,5 +243,4 @@ class JniExceptionMapperTest {
       assertTrue(result.getMessage().contains("Unknown error"), "Should indicate unknown error");
     }
   }
-
 }

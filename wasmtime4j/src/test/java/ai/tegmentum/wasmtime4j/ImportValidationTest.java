@@ -53,7 +53,7 @@ class ImportValidationTest {
     return new ImportInfo(
         moduleName,
         importName,
-        ImportInfo.ImportType.FUNCTION,
+        ImportInfo.ImportKind.FUNCTION,
         Optional.empty(),
         Instant.EPOCH,
         false,

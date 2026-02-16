@@ -75,28 +75,6 @@ public interface Module extends Closeable {
   List<ImportType> getImports();
 
   /**
-   * Gets detailed export descriptors with comprehensive type information.
-   *
-   * <p>This method provides more detailed type introspection than {@link #getExports()}, including
-   * specific type information for functions, globals, memories, and tables.
-   *
-   * @return an immutable list of detailed export descriptors
-   * @since 1.0.0
-   */
-  List<ExportDescriptor> getExportDescriptors();
-
-  /**
-   * Gets detailed import descriptors with comprehensive type information.
-   *
-   * <p>This method provides more detailed type introspection than {@link #getImports()}, including
-   * specific type information for functions, globals, memories, and tables.
-   *
-   * @return an immutable list of detailed import descriptors
-   * @since 1.0.0
-   */
-  List<ImportDescriptor> getImportDescriptors();
-
-  /**
    * Gets the function type for a specific exported function.
    *
    * @param functionName the name of the exported function

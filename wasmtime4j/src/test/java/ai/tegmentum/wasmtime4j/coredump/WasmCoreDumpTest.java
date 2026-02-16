@@ -51,8 +51,7 @@ class WasmCoreDumpTest {
     @Test
     @DisplayName("should build with name")
     void shouldBuildWithName() {
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().name("test-coredump").build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().name("test-coredump").build();
       assertEquals("test-coredump", coreDump.getName(), "Name should match");
     }
 
@@ -68,8 +67,7 @@ class WasmCoreDumpTest {
     @DisplayName("should build with serialized data")
     void shouldBuildWithSerializedData() {
       final byte[] data = {0x00, 0x61, 0x73, 0x6D};
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().serializedData(data).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().serializedData(data).build();
       assertArrayEquals(data, coreDump.serialize(), "Serialized data should match");
     }
 
@@ -86,16 +84,14 @@ class WasmCoreDumpTest {
     @DisplayName("should build with modules list")
     void shouldBuildWithModulesList() {
       final List<String> modules = Arrays.asList("a.wasm", "b.wasm", "c.wasm");
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().addModules(modules).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addModules(modules).build();
       assertEquals(3, coreDump.getModules().size(), "Should have 3 modules");
     }
 
     @Test
     @DisplayName("should build with frames")
     void shouldBuildWithFrames() {
-      final CoreDumpFrame frame =
-          CoreDumpFrame.builder().funcIndex(0).funcName("main").build();
+      final CoreDumpFrame frame = CoreDumpFrame.builder().funcIndex(0).funcName("main").build();
       final WasmCoreDump coreDump = WasmCoreDump.builder().addFrame(frame).build();
       assertEquals(1, coreDump.getFrames().size(), "Should have 1 frame");
     }
@@ -116,16 +112,14 @@ class WasmCoreDumpTest {
     void shouldBuildWithInstances() {
       final CoreDumpInstance instance =
           CoreDumpInstance.builder().index(0).name("instance0").build();
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().addInstance(instance).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addInstance(instance).build();
       assertEquals(1, coreDump.getInstances().size(), "Should have 1 instance");
     }
 
     @Test
     @DisplayName("should build with globals")
     void shouldBuildWithGlobals() {
-      final CoreDumpGlobal global =
-          CoreDumpGlobal.builder().globalIndex(0).i32Value(42).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().globalIndex(0).i32Value(42).build();
       final WasmCoreDump coreDump = WasmCoreDump.builder().addGlobal(global).build();
       assertEquals(1, coreDump.getGlobals().size(), "Should have 1 global");
     }
@@ -133,8 +127,7 @@ class WasmCoreDumpTest {
     @Test
     @DisplayName("should build with memories")
     void shouldBuildWithMemories() {
-      final CoreDumpMemory memory =
-          CoreDumpMemory.builder().memoryIndex(0).sizeInPages(1).build();
+      final CoreDumpMemory memory = CoreDumpMemory.builder().memoryIndex(0).sizeInPages(1).build();
       final WasmCoreDump coreDump = WasmCoreDump.builder().addMemory(memory).build();
       assertEquals(1, coreDump.getMemories().size(), "Should have 1 memory");
     }
@@ -147,8 +140,7 @@ class WasmCoreDumpTest {
     @Test
     @DisplayName("modules list should be immutable")
     void modulesListShouldBeImmutable() {
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().addModule("module.wasm").build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addModule("module.wasm").build();
       assertThrows(
           UnsupportedOperationException.class,
           () -> coreDump.getModules().add("another.wasm"),
@@ -170,8 +162,7 @@ class WasmCoreDumpTest {
     @DisplayName("instances list should be immutable")
     void instancesListShouldBeImmutable() {
       final CoreDumpInstance instance = CoreDumpInstance.builder().build();
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().addInstance(instance).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().addInstance(instance).build();
       assertThrows(
           UnsupportedOperationException.class,
           () -> coreDump.getInstances().add(instance),
@@ -181,8 +172,7 @@ class WasmCoreDumpTest {
     @Test
     @DisplayName("globals list should be immutable")
     void globalsListShouldBeImmutable() {
-      final CoreDumpGlobal global =
-          CoreDumpGlobal.builder().valueType(WasmValueType.I32).build();
+      final CoreDumpGlobal global = CoreDumpGlobal.builder().valueType(WasmValueType.I32).build();
       final WasmCoreDump coreDump = WasmCoreDump.builder().addGlobal(global).build();
       assertThrows(
           UnsupportedOperationException.class,
@@ -220,8 +210,7 @@ class WasmCoreDumpTest {
     @DisplayName("should return copy of serialized data")
     void shouldReturnCopyOfSerializedData() {
       final byte[] original = {0x01, 0x02, 0x03};
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().serializedData(original).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().serializedData(original).build();
       final byte[] retrieved = coreDump.serialize();
       retrieved[0] = (byte) 0xFF;
       assertArrayEquals(original, coreDump.serialize(), "Internal data should not be modified");
@@ -243,8 +232,7 @@ class WasmCoreDumpTest {
     @DisplayName("should include serialized data size")
     void shouldIncludeSerializedDataSize() {
       final byte[] data = new byte[100];
-      final WasmCoreDump coreDump =
-          WasmCoreDump.builder().serializedData(data).build();
+      final WasmCoreDump coreDump = WasmCoreDump.builder().serializedData(data).build();
       assertEquals(100, coreDump.getSize(), "Size should include serialized data");
     }
 

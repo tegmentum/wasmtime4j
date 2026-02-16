@@ -168,9 +168,7 @@ class ResourceLimiterTest {
 
             @Override
             public boolean tableGrowing(
-                final int currentElements,
-                final int desiredElements,
-                final int maximumElements) {
+                final int currentElements, final int desiredElements, final int maximumElements) {
               return true;
             }
           };

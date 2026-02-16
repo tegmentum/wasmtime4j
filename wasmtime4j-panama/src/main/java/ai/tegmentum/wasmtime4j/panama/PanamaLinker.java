@@ -190,7 +190,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       addImportWithMetadata(
           moduleName,
           name,
-          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION,
+          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
           functionType.toString());
 
       LOGGER.fine(
@@ -707,7 +707,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
           validImports++;
 
           // Create ImportInfo for valid import
-          final ImportInfo.ImportType infoType = mapImportTypeToInfoType(importType);
+          final ImportInfo.ImportKind infoType = mapImportTypeToImportKind(importType);
           final Optional<String> typeSignature = Optional.of(importType.getType().toString());
 
           final ImportInfo info =
@@ -749,27 +749,27 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   }
 
   /**
-   * Maps ImportType to ImportInfo.ImportType.
+   * Maps ImportType to ImportInfo.ImportKind.
    *
    * @param importType the import type from module
-   * @return the corresponding ImportInfo.ImportType
+   * @return the corresponding ImportInfo.ImportKind
    */
-  private ImportInfo.ImportType mapImportTypeToInfoType(
+  private ImportInfo.ImportKind mapImportTypeToImportKind(
       final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     final WasmTypeKind kind = importType.getType().getKind();
 
     switch (kind) {
       case FUNCTION:
-        return ImportInfo.ImportType.FUNCTION;
+        return ImportInfo.ImportKind.FUNCTION;
       case MEMORY:
-        return ImportInfo.ImportType.MEMORY;
+        return ImportInfo.ImportKind.MEMORY;
       case TABLE:
-        return ImportInfo.ImportType.TABLE;
+        return ImportInfo.ImportKind.TABLE;
       case GLOBAL:
-        return ImportInfo.ImportType.GLOBAL;
+        return ImportInfo.ImportKind.GLOBAL;
       default:
         // Default to FUNCTION if we can't determine
-        return ImportInfo.ImportType.FUNCTION;
+        return ImportInfo.ImportKind.FUNCTION;
     }
   }
 
@@ -880,13 +880,13 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    *
    * @param moduleName the module name
    * @param name the import name
-   * @param importType the import type
+   * @param importKind the import kind
    * @param typeSignature the type signature (optional)
    */
   void addImportWithMetadata(
       final String moduleName,
       final String name,
-      final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType importType,
+      final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind importKind,
       final String typeSignature) {
     imports.add(moduleName + "::" + name);
     final String key = moduleName + "::" + name;
@@ -894,7 +894,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
         new ai.tegmentum.wasmtime4j.validation.ImportInfo(
             moduleName,
             name,
-            importType,
+            importKind,
             java.util.Optional.ofNullable(typeSignature),
             java.time.Instant.now(),
             true, // All imports registered via define* methods are host-provided
@@ -1379,7 +1379,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     // Convert import registry to LinkerDefinition objects
     for (final ImportInfo info : importRegistry.values()) {
       final ai.tegmentum.wasmtime4j.type.ExternType externType;
-      switch (info.getImportType()) {
+      switch (info.getImportKind()) {
         case FUNCTION:
           externType = ai.tegmentum.wasmtime4j.type.ExternType.FUNC;
           break;
@@ -1486,7 +1486,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
         throw new WasmException("Failed to define name: " + name + " (error code: " + result + ")");
       }
 
-      addImportWithMetadata("", name, getExternImportType(extern), extern.toString());
+      addImportWithMetadata("", name, getExternImportKind(extern), extern.toString());
       LOGGER.fine("Defined name: " + name);
     } catch (final WasmException e) {
       throw e;
@@ -1521,18 +1521,18 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     throw new IllegalArgumentException("Unknown extern type: " + extern.getClass().getName());
   }
 
-  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType getExternImportType(
+  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind getExternImportKind(
       final Extern extern) {
     if (extern instanceof PanamaExternFunc) {
-      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
     } else if (extern instanceof PanamaExternTable) {
-      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.TABLE;
     } else if (extern instanceof PanamaExternMemory) {
-      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.MEMORY;
     } else if (extern instanceof PanamaExternGlobal) {
-      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.GLOBAL;
     }
-    return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+    return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
   }
 
   @Override

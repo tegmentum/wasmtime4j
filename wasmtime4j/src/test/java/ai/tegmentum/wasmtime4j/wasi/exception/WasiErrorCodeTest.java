@@ -322,10 +322,8 @@ class WasiErrorCodeTest {
       assertEquals(
           WasiErrorCode.SUCCESS, WasiErrorCode.fromErrnoOrNull(0), "Should return SUCCESS");
       assertEquals(WasiErrorCode.EPERM, WasiErrorCode.fromErrnoOrNull(1), "Should return EPERM");
-      assertEquals(
-          WasiErrorCode.ENOENT, WasiErrorCode.fromErrnoOrNull(2), "Should return ENOENT");
-      assertEquals(
-          WasiErrorCode.EINVAL, WasiErrorCode.fromErrnoOrNull(22), "Should return EINVAL");
+      assertEquals(WasiErrorCode.ENOENT, WasiErrorCode.fromErrnoOrNull(2), "Should return ENOENT");
+      assertEquals(WasiErrorCode.EINVAL, WasiErrorCode.fromErrnoOrNull(22), "Should return EINVAL");
     }
 
     @Test

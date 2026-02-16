@@ -755,11 +755,6 @@ public final class PanamaStore implements Store {
   }
 
   @Override
-  public long getRemainingFuel() throws WasmException {
-    return getFuel();
-  }
-
-  @Override
   public ai.tegmentum.wasmtime4j.WasmFunction createHostFunction(
       final String name,
       final ai.tegmentum.wasmtime4j.type.FunctionType functionType,

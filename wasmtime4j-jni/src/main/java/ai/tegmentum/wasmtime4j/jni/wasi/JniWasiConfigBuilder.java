@@ -169,7 +169,6 @@ public final class JniWasiConfigBuilder implements WasiConfigBuilder {
     return this;
   }
 
-
   @Override
   public WasiConfigBuilder withExecutionTimeout(final Duration timeout) {
     if (timeout == null || timeout.isNegative()) {
@@ -184,8 +183,6 @@ public final class JniWasiConfigBuilder implements WasiConfigBuilder {
     this.executionTimeout = null;
     return this;
   }
-
-
 
   @Override
   public WasiConfigBuilder withValidation(final boolean validate) {

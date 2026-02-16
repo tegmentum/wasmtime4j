@@ -101,7 +101,7 @@ public class JniLinker<T> implements Linker<T> {
       addImportWithMetadata(
           moduleName,
           name,
-          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION,
+          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
           functionType.toString());
       return;
     }
@@ -118,7 +118,7 @@ public class JniLinker<T> implements Linker<T> {
       addImportWithMetadata(
           moduleName,
           name,
-          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION,
+          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
           functionType.toString());
     } catch (final Exception e) {
       if (e instanceof WasmException) {
@@ -438,8 +438,8 @@ public class JniLinker<T> implements Linker<T> {
           validImports++;
 
           // Create ImportInfo for valid import
-          final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType infoType =
-              mapImportTypeToInfoType(importType);
+          final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind infoType =
+              mapImportTypeToImportKind(importType);
           final java.util.Optional<String> typeSignature =
               java.util.Optional.of(importType.getType().toString());
 
@@ -482,27 +482,27 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   /**
-   * Maps ImportType to ImportInfo.ImportType.
+   * Maps ImportType to ImportInfo.ImportKind.
    *
    * @param importType the import type from module
-   * @return the corresponding ImportInfo.ImportType
+   * @return the corresponding ImportInfo.ImportKind
    */
-  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType mapImportTypeToInfoType(
+  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind mapImportTypeToImportKind(
       final ai.tegmentum.wasmtime4j.type.ImportType importType) {
     final ai.tegmentum.wasmtime4j.type.WasmTypeKind kind = importType.getType().getKind();
 
     switch (kind) {
       case FUNCTION:
-        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
       case MEMORY:
-        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.MEMORY;
       case TABLE:
-        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.TABLE;
       case GLOBAL:
-        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.GLOBAL;
       default:
         // Default to FUNCTION if we can't determine
-        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+        return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
     }
   }
 
@@ -533,13 +533,13 @@ public class JniLinker<T> implements Linker<T> {
    *
    * @param moduleName the module name
    * @param name the import name
-   * @param importType the import type
+   * @param importKind the import kind
    * @param typeSignature the type signature
    */
   void addImportWithMetadata(
       final String moduleName,
       final String name,
-      final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType importType,
+      final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind importKind,
       final String typeSignature) {
     imports.add(moduleName + "::" + name);
     final String key = moduleName + "::" + name;
@@ -547,7 +547,7 @@ public class JniLinker<T> implements Linker<T> {
         new ai.tegmentum.wasmtime4j.validation.ImportInfo(
             moduleName,
             name,
-            importType,
+            importKind,
             java.util.Optional.ofNullable(typeSignature),
             java.time.Instant.now(),
             true, // All imports registered via define* methods are host-provided
@@ -1020,7 +1020,7 @@ public class JniLinker<T> implements Linker<T> {
 
     for (final ai.tegmentum.wasmtime4j.validation.ImportInfo info : importRegistry.values()) {
       final ai.tegmentum.wasmtime4j.type.ExternType externType;
-      switch (info.getImportType()) {
+      switch (info.getImportKind()) {
         case FUNCTION:
           externType = ai.tegmentum.wasmtime4j.type.ExternType.FUNC;
           break;
@@ -1118,7 +1118,7 @@ public class JniLinker<T> implements Linker<T> {
       addImportWithMetadata(
           "", // No module name for top-level definitions
           name,
-          getExternImportType(extern),
+          getExternImportKind(extern),
           extern.toString());
       return;
     }
@@ -1136,7 +1136,7 @@ public class JniLinker<T> implements Linker<T> {
         throw new WasmException("Failed to define name: " + name);
       }
 
-      addImportWithMetadata("", name, getExternImportType(extern), extern.toString());
+      addImportWithMetadata("", name, getExternImportKind(extern), extern.toString());
     } catch (final Exception e) {
       if (e instanceof WasmException) {
         throw e;
@@ -1184,23 +1184,23 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   /**
-   * Gets the ImportInfo.ImportType for an Extern.
+   * Gets the ImportInfo.ImportKind for an Extern.
    *
    * @param extern the extern to get the type from
-   * @return the import type
+   * @return the import kind
    */
-  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType getExternImportType(
+  private ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind getExternImportKind(
       final Extern extern) {
     if (extern instanceof JniExternFunc) {
-      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
     } else if (extern instanceof JniExternTable) {
-      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.TABLE;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.TABLE;
     } else if (extern instanceof JniExternMemory) {
-      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.MEMORY;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.MEMORY;
     } else if (extern instanceof JniExternGlobal) {
-      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.GLOBAL;
+      return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.GLOBAL;
     }
-    return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportType.FUNCTION;
+    return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
   }
 
   @Override

@@ -416,7 +416,6 @@ class JniEngineTest {
       final ai.tegmentum.wasmtime4j.config.EngineConfig config = engine.getConfig();
       assertNotNull(config, "getConfig should return a non-null EngineConfig");
     }
-
   }
 
   @Nested

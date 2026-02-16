@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.wast;
 
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,8 +60,10 @@ final class WastRunnerFactory {
       try {
         return createPanamaRunner();
       } catch (IllegalStateException e) {
-        LOGGER.log(Level.WARNING,
-            "Panama WastRunner not available on Java " + javaVersion + ", falling back to JNI", e);
+        LOGGER.log(
+            Level.WARNING,
+            "Panama WastRunner not available on Java " + javaVersion + ", falling back to JNI",
+            e);
       }
     }
 

@@ -290,7 +290,7 @@ public final class FuelManagementIntegrationTest {
           final Store store = engine.createStore()) {
 
         store.setFuel(50000L);
-        final long remaining = store.getRemainingFuel();
+        final long remaining = store.getFuel();
 
         LOGGER.info("Remaining fuel after setting 50000: " + remaining);
         assertTrue(remaining > 0, "Remaining fuel should be positive");

@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstanceState;
 import ai.tegmentum.wasmtime4j.InstanceStatistics;
@@ -19,7 +18,6 @@ import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.TableType;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -328,41 +326,6 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting function type: " + functionName, e);
-    }
-  }
-
-  @Override
-  public Optional<ExportDescriptor> getExportDescriptor(final String name) {
-    JniValidation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
-    try {
-      // Delegate to module's export descriptors - module knows all export types
-      final List<ExportDescriptor> descriptors = module.getExportDescriptors();
-      for (final ExportDescriptor descriptor : descriptors) {
-        if (descriptor.getName().equals(name)) {
-          return Optional.of(descriptor);
-        }
-      }
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting export descriptor: " + name, e);
-    }
-  }
-
-  @Override
-  public List<ExportDescriptor> getExportDescriptors() {
-    ensureNotClosed();
-
-    try {
-      // Delegate to module's export descriptors - module knows all export types
-      return module.getExportDescriptors();
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting export descriptors", e);
     }
   }
 

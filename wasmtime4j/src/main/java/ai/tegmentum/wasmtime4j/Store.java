@@ -97,13 +97,6 @@ public interface Store extends Closeable {
   long consumeFuel(final long fuel) throws WasmException;
 
   /**
-   * Gets the remaining fuel amount.
-   *
-   * @return the remaining fuel, or -1 if fuel consumption is disabled
-   */
-  long getRemainingFuel() throws WasmException;
-
-  /**
    * Creates a host function that can be imported by WebAssembly modules.
    *
    * <p>The created function will be bound to this store and can be added to import maps for module
@@ -717,7 +710,8 @@ public interface Store extends Closeable {
       final long memoryLimitBytes,
       final long executionTimeoutSeconds)
       throws WasmException {
-    return engine.getRuntime()
+    return engine
+        .getRuntime()
         .createStore(engine, fuelLimit, memoryLimitBytes, executionTimeoutSeconds);
   }
 

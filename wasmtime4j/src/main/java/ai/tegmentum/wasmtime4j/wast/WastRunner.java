@@ -18,15 +18,12 @@ package ai.tegmentum.wasmtime4j.wast;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.nio.file.Path;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Interface for executing WAST (WebAssembly Test) files.
  *
  * <p>WAST files are the standard test format used by the WebAssembly specification and contain
- * module definitions along with test assertions (e.g., assert_return, assert_trap,
- * assert_invalid).
+ * module definitions along with test assertions (e.g., assert_return, assert_trap, assert_invalid).
  *
  * <p>Implementations use Wasmtime's built-in WAST parser and test runner to ensure 100%
  * compatibility with Wasmtime's own test behavior.
@@ -132,8 +129,8 @@ public interface WastRunner {
   /**
    * Creates a WastRunner using the appropriate runtime implementation.
    *
-   * <p>Selects Panama on Java 23+, JNI otherwise. Can be overridden via the
-   * {@code wasmtime4j.runtime} system property.
+   * <p>Selects Panama on Java 23+, JNI otherwise. Can be overridden via the {@code
+   * wasmtime4j.runtime} system property.
    *
    * @return a new WastRunner instance
    * @throws IllegalStateException if no WastRunner implementation is available
@@ -169,8 +166,7 @@ public interface WastRunner {
     private static String createMessage(final WastExecutionResult result) {
       if (result.getExecutionError() != null) {
         return String.format(
-            "WAST execution failed for %s: %s",
-            result.getFilePath(), result.getExecutionError());
+            "WAST execution failed for %s: %s", result.getFilePath(), result.getExecutionError());
       } else {
         return String.format(
             "WAST execution failed for %s: %d of %d directives failed",

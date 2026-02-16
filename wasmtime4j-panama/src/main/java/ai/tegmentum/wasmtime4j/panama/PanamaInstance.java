@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.ExportDescriptor;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstanceState;
@@ -482,29 +481,6 @@ public final class PanamaInstance implements Instance {
 
       return exportNames;
     }
-  }
-
-  @Override
-  public List<ExportDescriptor> getExportDescriptors() {
-    ensureNotClosed();
-    // Delegate to module's export descriptors - module knows all export types
-    return module.getExportDescriptors();
-  }
-
-  @Override
-  public Optional<ExportDescriptor> getExportDescriptor(final String name) {
-    if (name == null) {
-      throw new IllegalArgumentException("Name cannot be null");
-    }
-    ensureNotClosed();
-    // Delegate to module's export descriptors - module knows all export types
-    final List<ExportDescriptor> descriptors = module.getExportDescriptors();
-    for (final ExportDescriptor descriptor : descriptors) {
-      if (descriptor.getName().equals(name)) {
-        return Optional.of(descriptor);
-      }
-    }
-    return Optional.empty();
   }
 
   @Override

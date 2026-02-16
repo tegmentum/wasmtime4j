@@ -8,10 +8,8 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceVersion;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -334,5 +332,4 @@ public final class JniComponentImpl implements Component {
       return java.util.Collections.emptyList();
     }
   }
-
 }

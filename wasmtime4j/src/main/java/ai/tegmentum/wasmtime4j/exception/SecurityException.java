@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.exception;
 /**
  * Exception thrown for WebAssembly security-related errors.
  *
- * <p>This exception is thrown when security constraints are violated, such as unauthorized access to
- * resources or violation of sandboxing policies.
+ * <p>This exception is thrown when security constraints are violated, such as unauthorized access
+ * to resources or violation of sandboxing policies.
  *
  * @since 1.0.0
  */

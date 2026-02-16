@@ -247,7 +247,6 @@ class WasiConfigBuilderTest {
   @DisplayName("Resource Limit Builder Method Tests")
   class ResourceLimitBuilderMethodTests {
 
-
     @Test
     @DisplayName("should have withExecutionTimeout method")
     void shouldHaveWithExecutionTimeoutMethod() throws NoSuchMethodException {
@@ -267,9 +266,7 @@ class WasiConfigBuilderTest {
       assertEquals(
           WasiConfigBuilder.class, method.getReturnType(), "Should return WasiConfigBuilder");
     }
-
   }
-
 
   // ========================================================================
   // Validation and Mode Builder Method Tests

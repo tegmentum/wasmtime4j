@@ -8,8 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ExportDescriptor;
-import ai.tegmentum.wasmtime4j.ImportDescriptor;
 import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.ModuleImport;
 import ai.tegmentum.wasmtime4j.type.ExportType;
@@ -325,21 +323,6 @@ class PanamaModuleTest {
     }
 
     @Test
-    @DisplayName("Should retrieve export descriptors")
-    void shouldRetrieveExportDescriptors() throws Exception {
-      final PanamaModule module = compileWat(FUNCTION_MODULE_WAT);
-
-      final List<ExportDescriptor> descriptors = module.getExportDescriptors();
-      assertThat(descriptors).isNotEmpty();
-
-      for (final ExportDescriptor desc : descriptors) {
-        assertNotNull(desc.getName(), "Export descriptor name should not be null");
-        assertNotNull(desc.getType(), "Export descriptor type should not be null");
-        LOGGER.info("Export descriptor: " + desc.getName() + " kind=" + desc.getType().getKind());
-      }
-    }
-
-    @Test
     @DisplayName("Should return unmodifiable exports list")
     void shouldReturnUnmodifiableExportsList() throws Exception {
       final PanamaModule module = compileWat(FUNCTION_MODULE_WAT);
@@ -395,28 +378,6 @@ class PanamaModuleTest {
       assertTrue(hasFuncImport, "Should have function import env.log");
       assertTrue(hasMemImport, "Should have memory import env.memory");
       LOGGER.info("Found imports: func=" + hasFuncImport + ", mem=" + hasMemImport);
-    }
-
-    @Test
-    @DisplayName("Should retrieve import descriptors")
-    void shouldRetrieveImportDescriptors() throws Exception {
-      final PanamaModule module = compileWat(IMPORT_MODULE_WAT);
-
-      final List<ImportDescriptor> descriptors = module.getImportDescriptors();
-      assertThat(descriptors).hasSize(2);
-
-      for (final ImportDescriptor desc : descriptors) {
-        assertNotNull(desc.getModuleName(), "Import descriptor module name should not be null");
-        assertNotNull(desc.getName(), "Import descriptor field name should not be null");
-        assertNotNull(desc.getType(), "Import descriptor type should not be null");
-        LOGGER.info(
-            "Import descriptor: "
-                + desc.getModuleName()
-                + "."
-                + desc.getName()
-                + " kind="
-                + desc.getType().getKind());
-      }
     }
 
     @Test

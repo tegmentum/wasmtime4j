@@ -1241,8 +1241,7 @@ public final class JniGcRuntime implements GcRuntime {
     public GcObject castTo(final GcReferenceType type) {
       if (!isOfType(type)) {
         throw new ClassCastException(
-            "Cannot cast " + getReferenceType() + " to " + type
-                + ": incompatible reference types");
+            "Cannot cast " + getReferenceType() + " to " + type + ": incompatible reference types");
       }
       return this;
     }
@@ -1468,7 +1467,6 @@ public final class JniGcRuntime implements GcRuntime {
     public ai.tegmentum.wasmtime4j.gc.GcReferenceType getReferenceType() {
       return ai.tegmentum.wasmtime4j.gc.GcReferenceType.I31_REF;
     }
-
   }
 
   /**

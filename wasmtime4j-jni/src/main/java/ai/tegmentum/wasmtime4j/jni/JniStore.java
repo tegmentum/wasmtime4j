@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -11,6 +10,7 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
@@ -318,8 +318,7 @@ public final class JniStore extends JniResource implements Store {
 
     this.resourceLimiter = limiter;
     nativeSetResourceLimiter(getNativeHandle());
-    LOGGER.fine(
-        "Set resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+    LOGGER.fine("Set resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
   }
 
   @Override
@@ -384,17 +383,6 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Unexpected error consuming fuel", e);
-    }
-  }
-
-  @Override
-  public long getRemainingFuel() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeGetFuelRemaining(getNativeHandle());
-    } catch (final Exception e) {
-      throw new WasmException("Failed to get remaining fuel", e);
     }
   }
 
@@ -1566,5 +1554,4 @@ public final class JniStore extends JniResource implements Store {
           }
         });
   }
-
 }

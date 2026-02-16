@@ -162,7 +162,6 @@ public interface WasiConfigBuilder {
    */
   WasiConfigBuilder withoutWorkingDirectory();
 
-
   /**
    * Sets the execution timeout for component operations.
    *
@@ -181,8 +180,6 @@ public interface WasiConfigBuilder {
    * @return this builder for method chaining
    */
   WasiConfigBuilder withoutExecutionTimeout();
-
-
 
   /**
    * Enables or disables component validation during instantiation.

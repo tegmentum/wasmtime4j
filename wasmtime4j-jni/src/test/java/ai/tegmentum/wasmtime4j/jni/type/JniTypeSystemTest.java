@@ -37,8 +37,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Unit tests for JNI type system classes.
  *
- * <p>Tests JniFuncType, JniGlobalType, JniMemoryType, JniTableType, JniImportDescriptor, and
- * JniExportDescriptor without requiring native code.
+ * <p>Tests JniFuncType, JniGlobalType, JniMemoryType, and JniTableType without requiring native
+ * code.
  */
 @DisplayName("JNI Type System Tests")
 class JniTypeSystemTest {
@@ -448,150 +448,7 @@ class JniTypeSystemTest {
     }
   }
 
-  @Nested
-  @DisplayName("JniImportDescriptor Tests")
-  class JniImportDescriptorTests {
 
-    @Test
-    @DisplayName("should create ImportDescriptor with valid parameters")
-    void shouldCreateImportDescriptorWithValidParameters() {
-      final JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
-      final JniImportDescriptor descriptor = new JniImportDescriptor("env", "memory", funcType);
-
-      assertThat(descriptor.getModuleName()).isEqualTo("env");
-      assertThat(descriptor.getName()).isEqualTo("memory");
-      assertThat(descriptor.getType()).isEqualTo(funcType);
-    }
-
-    @Test
-    @DisplayName("should reject null module name")
-    void shouldRejectNullModuleName() {
-      final JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
-
-      assertThrows(
-          JniValidationException.class, () -> new JniImportDescriptor(null, "name", funcType));
-    }
-
-    @Test
-    @DisplayName("should reject null name")
-    void shouldRejectNullName() {
-      final JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
-
-      assertThrows(
-          JniValidationException.class, () -> new JniImportDescriptor("module", null, funcType));
-    }
-
-    @Test
-    @DisplayName("should reject null type")
-    void shouldRejectNullType() {
-      assertThrows(
-          JniValidationException.class, () -> new JniImportDescriptor("module", "name", null));
-    }
-
-    @Test
-    @DisplayName("should implement equals correctly")
-    void shouldImplementEqualsCorrectly() {
-      final JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
-      final JniImportDescriptor descriptor1 = new JniImportDescriptor("env", "func", funcType);
-      final JniImportDescriptor descriptor2 = new JniImportDescriptor("env", "func", funcType);
-      final JniImportDescriptor descriptor3 = new JniImportDescriptor("other", "func", funcType);
-
-      assertThat(descriptor1).isEqualTo(descriptor2);
-      assertThat(descriptor1).isNotEqualTo(descriptor3);
-    }
-
-    @Test
-    @DisplayName("should implement hashCode correctly")
-    void shouldImplementHashCodeCorrectly() {
-      final JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
-      final JniImportDescriptor descriptor1 = new JniImportDescriptor("env", "func", funcType);
-      final JniImportDescriptor descriptor2 = new JniImportDescriptor("env", "func", funcType);
-
-      assertThat(descriptor1.hashCode()).isEqualTo(descriptor2.hashCode());
-    }
-
-    @Test
-    @DisplayName("should implement toString correctly")
-    void shouldImplementToStringCorrectly() {
-      final JniFuncType funcType =
-          new JniFuncType(Collections.emptyList(), Collections.emptyList());
-      final JniImportDescriptor descriptor = new JniImportDescriptor("env", "memory", funcType);
-
-      final String result = descriptor.toString();
-
-      assertThat(result).contains("ImportDescriptor");
-      assertThat(result).contains("env");
-      assertThat(result).contains("memory");
-    }
-  }
-
-  @Nested
-  @DisplayName("JniExportDescriptor Tests")
-  class JniExportDescriptorTests {
-
-    @Test
-    @DisplayName("should create ExportDescriptor with valid parameters")
-    void shouldCreateExportDescriptorWithValidParameters() {
-      final JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, false);
-      final JniExportDescriptor descriptor = new JniExportDescriptor("counter", globalType);
-
-      assertThat(descriptor.getName()).isEqualTo("counter");
-      assertThat(descriptor.getType()).isEqualTo(globalType);
-    }
-
-    @Test
-    @DisplayName("should reject null name")
-    void shouldRejectNullName() {
-      final JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, false);
-
-      assertThrows(JniValidationException.class, () -> new JniExportDescriptor(null, globalType));
-    }
-
-    @Test
-    @DisplayName("should reject null type")
-    void shouldRejectNullType() {
-      assertThrows(JniValidationException.class, () -> new JniExportDescriptor("name", null));
-    }
-
-    @Test
-    @DisplayName("should implement equals correctly")
-    void shouldImplementEqualsCorrectly() {
-      final JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, false);
-      final JniExportDescriptor descriptor1 = new JniExportDescriptor("counter", globalType);
-      final JniExportDescriptor descriptor2 = new JniExportDescriptor("counter", globalType);
-      final JniExportDescriptor descriptor3 = new JniExportDescriptor("other", globalType);
-
-      assertThat(descriptor1).isEqualTo(descriptor2);
-      assertThat(descriptor1).isNotEqualTo(descriptor3);
-    }
-
-    @Test
-    @DisplayName("should implement hashCode correctly")
-    void shouldImplementHashCodeCorrectly() {
-      final JniGlobalType globalType = new JniGlobalType(WasmValueType.F64, true);
-      final JniExportDescriptor descriptor1 = new JniExportDescriptor("value", globalType);
-      final JniExportDescriptor descriptor2 = new JniExportDescriptor("value", globalType);
-
-      assertThat(descriptor1.hashCode()).isEqualTo(descriptor2.hashCode());
-    }
-
-    @Test
-    @DisplayName("should implement toString correctly")
-    void shouldImplementToStringCorrectly() {
-      final JniMemoryType memoryType = new JniMemoryType(1, 10L, false, false);
-      final JniExportDescriptor descriptor = new JniExportDescriptor("memory", memoryType);
-
-      final String result = descriptor.toString();
-
-      assertThat(result).contains("ExportDescriptor");
-      assertThat(result).contains("memory");
-    }
-  }
 
   @Nested
   @DisplayName("Interface Compatibility Tests")

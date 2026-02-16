@@ -288,12 +288,6 @@ class PanamaInstanceTest {
       assertThat(method.getReturnType().getName()).contains("InstanceStatistics");
     }
 
-    @Test
-    @DisplayName("PanamaInstance should have getExportDescriptors method")
-    void panamaInstanceShouldHaveGetExportDescriptorsMethod() throws NoSuchMethodException {
-      final Method method = PanamaInstance.class.getMethod("getExportDescriptors");
-      assertThat(method.getReturnType().getName()).contains("List");
-    }
   }
 
   @Nested
@@ -848,12 +842,6 @@ class PanamaInstanceTest {
       assertThat(method.getReturnType().getName()).contains("Optional");
     }
 
-    @Test
-    @DisplayName("PanamaInstance should have getExportDescriptor method")
-    void panamaInstanceShouldHaveGetExportDescriptorMethod() throws NoSuchMethodException {
-      final Method method = PanamaInstance.class.getMethod("getExportDescriptor", String.class);
-      assertThat(method.getReturnType().getName()).contains("Optional");
-    }
   }
 
   @Nested

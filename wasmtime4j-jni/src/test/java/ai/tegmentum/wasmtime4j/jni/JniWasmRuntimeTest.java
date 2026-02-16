@@ -100,7 +100,6 @@ class JniWasmRuntimeTest {
       assertThat(Modifier.isFinal(field.getModifiers())).isTrue();
       assertThat(field.getType()).isEqualTo(Object.class);
     }
-
   }
 
   @Nested
@@ -304,7 +303,6 @@ class JniWasmRuntimeTest {
 
       assertThat(method.getReturnType().getName()).isEqualTo("ai.tegmentum.wasmtime4j.Module");
     }
-
   }
 
   @Nested
@@ -646,7 +644,6 @@ class JniWasmRuntimeTest {
       assertThat(Modifier.isPrivate(method.getModifiers())).isTrue();
       assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
     }
-
   }
 
   @Nested
@@ -762,6 +759,5 @@ class JniWasmRuntimeTest {
           .as("Should have at least 20 native methods")
           .isGreaterThanOrEqualTo(20);
     }
-
   }
 }

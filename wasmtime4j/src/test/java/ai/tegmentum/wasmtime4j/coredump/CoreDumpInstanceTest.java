@@ -54,16 +54,14 @@ class CoreDumpInstanceTest {
     @Test
     @DisplayName("should build with moduleIndex")
     void shouldBuildWithModuleIndex() {
-      final CoreDumpInstance instance =
-          CoreDumpInstance.builder().moduleIndex(2).build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().moduleIndex(2).build();
       assertEquals(2, instance.getModuleIndex(), "ModuleIndex should match");
     }
 
     @Test
     @DisplayName("should build with name")
     void shouldBuildWithName() {
-      final CoreDumpInstance instance =
-          CoreDumpInstance.builder().name("test-instance").build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().name("test-instance").build();
       assertTrue(instance.getName().isPresent(), "Name should be present");
       assertEquals("test-instance", instance.getName().get(), "Name should match");
     }
@@ -78,24 +76,21 @@ class CoreDumpInstanceTest {
     @Test
     @DisplayName("should build with memoryCount")
     void shouldBuildWithMemoryCount() {
-      final CoreDumpInstance instance =
-          CoreDumpInstance.builder().memoryCount(2).build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().memoryCount(2).build();
       assertEquals(2, instance.getMemoryCount(), "MemoryCount should match");
     }
 
     @Test
     @DisplayName("should build with globalCount")
     void shouldBuildWithGlobalCount() {
-      final CoreDumpInstance instance =
-          CoreDumpInstance.builder().globalCount(5).build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().globalCount(5).build();
       assertEquals(5, instance.getGlobalCount(), "GlobalCount should match");
     }
 
     @Test
     @DisplayName("should build with tableCount")
     void shouldBuildWithTableCount() {
-      final CoreDumpInstance instance =
-          CoreDumpInstance.builder().tableCount(1).build();
+      final CoreDumpInstance instance = CoreDumpInstance.builder().tableCount(1).build();
       assertEquals(1, instance.getTableCount(), "TableCount should match");
     }
   }

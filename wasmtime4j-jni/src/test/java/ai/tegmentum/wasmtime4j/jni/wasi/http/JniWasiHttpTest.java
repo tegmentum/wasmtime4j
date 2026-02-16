@@ -386,12 +386,7 @@ public class JniWasiHttpTest {
     void shouldHaveAllContextMethods() {
       Set<String> requiredMethods =
           new HashSet<>(
-              Arrays.asList(
-                  "addToLinker",
-                  "getConfig",
-                  "isValid",
-                  "isHostAllowed",
-                  "close"));
+              Arrays.asList("addToLinker", "getConfig", "isValid", "isHostAllowed", "close"));
 
       Set<String> actualMethods = new HashSet<>();
       for (Method method : JniWasiHttpContext.class.getMethods()) {
@@ -428,8 +423,7 @@ public class JniWasiHttpTest {
     void shouldHaveNativeMethods() {
       int nativeMethodCount = 0;
       Set<String> expectedNative =
-          new HashSet<>(
-              Arrays.asList("nativeCreate", "nativeIsValid", "nativeFree"));
+          new HashSet<>(Arrays.asList("nativeCreate", "nativeIsValid", "nativeFree"));
 
       for (Method method : JniWasiHttpContext.class.getDeclaredMethods()) {
         if (Modifier.isNative(method.getModifiers())) {
