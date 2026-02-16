@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.util;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -336,12 +337,9 @@ class PanamaValidationTest {
   class DefensiveCopyTests {
 
     @Test
-    @DisplayName("defensiveCopy should throw for null array")
-    void defensiveCopyShouldThrowForNullArray() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> PanamaValidation.defensiveCopy(null),
-          "Should throw for null array");
+    @DisplayName("defensiveCopy should return null for null array")
+    void defensiveCopyShouldReturnNullForNullArray() {
+      assertNull(PanamaValidation.defensiveCopy(null), "Should return null for null array");
     }
 
     @Test

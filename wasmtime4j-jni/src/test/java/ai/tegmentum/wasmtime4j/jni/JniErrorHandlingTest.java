@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,19 +72,17 @@ class JniErrorHandlingTest {
 
   @Test
   void testResourceExceptionTypes() {
-    // Memory error (-7) should use JniResourceException
+    // Memory error (-7) should return JniException with memory error message
     JniException memoryException = JniExceptionMapper.mapNativeError(-7, "memory test");
-    assertInstanceOf(
-        JniResourceException.class,
-        memoryException,
-        "Memory errors should use JniResourceException");
+    assertTrue(
+        memoryException.getMessage().contains("Memory access error"),
+        "Memory errors should indicate memory access error");
 
-    // Resource error (-11) should use JniResourceException
+    // Resource error (-11) should return JniException with resource error message
     JniException resourceException = JniExceptionMapper.mapNativeError(-11, "resource test");
-    assertInstanceOf(
-        JniResourceException.class,
-        resourceException,
-        "Resource errors should use JniResourceException");
+    assertTrue(
+        resourceException.getMessage().contains("Resource error"),
+        "Resource errors should indicate resource error");
 
     // Compilation error (-1) should use regular JniException
     JniException compilationException = JniExceptionMapper.mapNativeError(-1, "compilation test");

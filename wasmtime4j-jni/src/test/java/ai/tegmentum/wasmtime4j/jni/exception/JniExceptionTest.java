@@ -81,9 +81,9 @@ class JniExceptionTest {
   }
 
   @Test
-  void testInheritanceFromRuntimeException() {
+  void testInheritanceFromWasmException() {
     final JniException exception = new JniException("test");
-    assertThat(exception).isInstanceOf(RuntimeException.class);
+    assertThat(exception).isInstanceOf(ai.tegmentum.wasmtime4j.exception.WasmException.class);
   }
 
   @Test

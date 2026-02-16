@@ -62,11 +62,11 @@ class JniLibraryExceptionTest {
     }
 
     @Test
-    @DisplayName("JniLibraryException should be a RuntimeException")
-    void shouldBeRuntimeException() {
+    @DisplayName("JniLibraryException should be a WasmException")
+    void shouldBeWasmException() {
       assertTrue(
-          RuntimeException.class.isAssignableFrom(JniLibraryException.class),
-          "JniLibraryException should be a RuntimeException");
+          WasmException.class.isAssignableFrom(JniLibraryException.class),
+          "JniLibraryException should be a WasmException (via JniException)");
     }
   }
 

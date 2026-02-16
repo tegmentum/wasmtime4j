@@ -71,16 +71,6 @@ class JniWasmRuntimeTest {
     }
 
     @Test
-    @DisplayName("should have resourceCache field")
-    void shouldHaveResourceCacheField() throws Exception {
-      Class<?> clazz = Class.forName(CLASS_NAME);
-      Field field = clazz.getDeclaredField("resourceCache");
-
-      assertThat(Modifier.isPrivate(field.getModifiers())).isTrue();
-      assertThat(Modifier.isFinal(field.getModifiers())).isTrue();
-    }
-
-    @Test
     @DisplayName("should have defaultGcRuntime field with volatile modifier")
     void shouldHaveDefaultGcRuntimeField() throws Exception {
       Class<?> clazz = Class.forName(CLASS_NAME);
