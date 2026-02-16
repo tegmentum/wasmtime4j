@@ -1949,9 +1949,13 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   /**
    * Gets memory usage statistics for a WebAssembly store.
    *
+   * <p>Note: {@code totalBytesPtr} and {@code usedBytesPtr} are always written as 0 because
+   * Wasmtime does not expose per-store memory aggregation. Only {@code instanceCountPtr}
+   * provides meaningful data.
+   *
    * @param storePtr pointer to the store
-   * @param totalBytesPtr pointer to store total bytes
-   * @param usedBytesPtr pointer to store used bytes
+   * @param totalBytesPtr pointer to store total bytes (always 0)
+   * @param usedBytesPtr pointer to store used bytes (always 0)
    * @param instanceCountPtr pointer to store instance count
    * @return 0 on success, negative error code on failure
    */

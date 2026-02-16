@@ -290,7 +290,11 @@ pub extern "C" fn wasmtime4j_panama_store_get_execution_stats(
     })
 }
 
-/// Get store memory usage statistics (Panama FFI version)
+/// Get store memory usage statistics (Panama FFI version).
+///
+/// `total_bytes_ptr` and `used_bytes_ptr` are always written as 0 —
+/// Wasmtime does not expose per-store memory aggregation.
+/// The parameters are preserved for ABI compatibility.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_get_memory_usage(
     store_ptr: *mut c_void,
@@ -303,8 +307,8 @@ pub extern "C" fn wasmtime4j_panama_store_get_memory_usage(
         let usage = core::get_memory_usage(store)?;
 
         unsafe {
-            *total_bytes_ptr = usage.total_bytes as c_ulong;
-            *used_bytes_ptr = usage.used_bytes as c_ulong;
+            *total_bytes_ptr = 0;
+            *used_bytes_ptr = 0;
             *instance_count_ptr = usage.instance_count as c_ulong;
         }
 

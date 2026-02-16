@@ -765,11 +765,7 @@ impl Store {
         self.check_not_closed()?;
         let store = self.inner.lock();
 
-        // Note: Wasmtime doesn't provide direct memory usage stats
-        // We approximate based on what we can measure
         Ok(MemoryUsage {
-            total_bytes: 0, // Not easily available
-            used_bytes: 0,  // Not easily available
             instance_count: store.data().execution_state.execution_count as usize,
         })
     }
@@ -1163,14 +1159,14 @@ impl StoreBuilder {
     }
 }
 
-/// Memory usage statistics
+/// Memory usage statistics for a store.
+///
+/// Note: Wasmtime does not expose per-store memory aggregation, so only
+/// `instance_count` (actually execution count) is tracked. The removed
+/// `total_bytes` and `used_bytes` fields always returned 0.
 #[derive(Debug, Clone)]
 pub struct MemoryUsage {
-    /// Total allocated memory in bytes
-    pub total_bytes: usize,
-    /// Currently used memory in bytes  
-    pub used_bytes: usize,
-    /// Number of active instances
+    /// Number of executions performed in this store
     pub instance_count: usize,
 }
 

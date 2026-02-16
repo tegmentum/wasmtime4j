@@ -196,12 +196,6 @@ public final class JniStore extends JniResource implements Store {
       info.append("  Fuel Consumed: ")
           .append(nativeGetTotalFuelConsumed(getNativeHandle()))
           .append("\n");
-      info.append("  Total Memory (bytes): ")
-          .append(nativeGetTotalMemoryBytes(getNativeHandle()))
-          .append("\n");
-      info.append("  Used Memory (bytes): ")
-          .append(nativeGetUsedMemoryBytes(getNativeHandle()))
-          .append("\n");
       info.append("  Active Instances: ")
           .append(nativeGetInstanceCount(getNativeHandle()))
           .append("\n");
@@ -799,42 +793,25 @@ public final class JniStore extends JniResource implements Store {
   /**
    * Gets the total memory allocated by this store.
    *
-   * <p>This method returns the total amount of memory (in bytes) that has been allocated for
-   * WebAssembly linear memories, tables, and other runtime structures within this store context.
+   * <p>Always returns 0. Wasmtime does not expose per-store memory aggregation. For per-memory
+   * statistics, use the memory-level API instead. Retained for API compatibility.
    *
-   * @return the total memory in bytes
-   * @throws JniException if the memory information cannot be retrieved
-   * @throws JniResourceException if this store has been closed
+   * @return always 0
    */
   public long getTotalMemoryBytes() {
-    ensureNotClosed();
-
-    try {
-      return nativeGetTotalMemoryBytes(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get total memory bytes", e);
-    }
+    return 0;
   }
 
   /**
    * Gets the currently used memory by this store.
    *
-   * <p>This method returns the amount of memory (in bytes) currently in use by active WebAssembly
-   * instances, linear memories, and other runtime structures within this store. This represents the
-   * subset of total allocated memory that is actively being used.
+   * <p>Always returns 0. Wasmtime does not expose per-store memory aggregation. For per-memory
+   * statistics, use the memory-level API instead. Retained for API compatibility.
    *
-   * @return the used memory in bytes
-   * @throws JniException if the memory information cannot be retrieved
-   * @throws JniResourceException if this store has been closed
+   * @return always 0
    */
   public long getUsedMemoryBytes() {
-    ensureNotClosed();
-
-    try {
-      return nativeGetUsedMemoryBytes(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get used memory bytes", e);
-    }
+    return 0;
   }
 
   /**
@@ -976,16 +953,6 @@ public final class JniStore extends JniResource implements Store {
     }
 
     try {
-      // Check if any critical resources are exhausted
-      final long usedMemory = getUsedMemoryBytes();
-      final long totalMemory = getTotalMemoryBytes();
-
-      // Memory usage should not exceed total memory (this would indicate corruption)
-      if (usedMemory > totalMemory && totalMemory > 0) {
-        LOGGER.warning("Store health check failed: used memory exceeds total memory");
-        return false;
-      }
-
       // Check if fuel system is consistent
       final long fuelLimit = getFuelLimit();
       final long fuelRemaining = getFuel();
@@ -1122,18 +1089,18 @@ public final class JniStore extends JniResource implements Store {
   private static native long nativeGetTotalFuelConsumed(long storeHandle);
 
   /**
-   * Gets the total memory allocated by this store.
+   * Gets the total memory allocated by this store. Always returns 0.
    *
    * @param storeHandle the native store handle
-   * @return the total memory in bytes
+   * @return always 0
    */
   private static native long nativeGetTotalMemoryBytes(long storeHandle);
 
   /**
-   * Gets the currently used memory by this store.
+   * Gets the currently used memory by this store. Always returns 0.
    *
    * @param storeHandle the native store handle
-   * @return the used memory in bytes
+   * @return always 0
    */
   private static native long nativeGetUsedMemoryBytes(long storeHandle);
 

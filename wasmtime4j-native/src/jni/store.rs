@@ -454,32 +454,30 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotalF
     })
 }
 
-/// Get store total memory bytes
+/// Get store total memory bytes.
+///
+/// Always returns 0 — Wasmtime does not expose per-store memory aggregation.
+/// Preserved for JNI ABI compatibility with `JniStore.nativeGetTotalMemoryBytes`.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotalMemoryBytes(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
-    store_ptr: jlong,
+    _store_ptr: jlong,
 ) -> jlong {
-    jni_utils::jni_try_with_default(&mut env, -1, || {
-        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
-        let usage = core::get_memory_usage(store)?;
-        Ok(usage.total_bytes as jlong)
-    })
+    0
 }
 
-/// Get store used memory bytes
+/// Get store used memory bytes.
+///
+/// Always returns 0 — Wasmtime does not expose per-store memory aggregation.
+/// Preserved for JNI ABI compatibility with `JniStore.nativeGetUsedMemoryBytes`.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetUsedMemoryBytes(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
-    store_ptr: jlong,
+    _store_ptr: jlong,
 ) -> jlong {
-    jni_utils::jni_try_with_default(&mut env, -1, || {
-        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
-        let usage = core::get_memory_usage(store)?;
-        Ok(usage.used_bytes as jlong)
-    })
+    0
 }
 
 /// Get store instance count
