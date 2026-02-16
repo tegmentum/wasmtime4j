@@ -144,19 +144,6 @@ public interface PoolingAllocator extends Closeable {
   PoolStatistics getStatistics();
 
   /**
-   * Gets runtime metrics for the pooling allocator.
-   *
-   * <p>Metrics provide real-time statistics about pool utilization, performance, and health. These
-   * are more detailed than statistics and include timing information.
-   *
-   * @return the allocator metrics
-   * @since 1.1.0
-   */
-  default PoolingAllocatorMetrics getMetrics() {
-    throw new UnsupportedOperationException("Metrics not implemented by this allocator");
-  }
-
-  /**
    * Resets the pool statistics.
    *
    * @throws WasmException if statistics cannot be reset

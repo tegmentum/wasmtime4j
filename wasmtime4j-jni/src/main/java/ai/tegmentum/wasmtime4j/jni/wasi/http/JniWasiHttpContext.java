@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi.http;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.JniLibraryLoader;
+import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
 import java.util.Objects;
@@ -58,7 +58,7 @@ public final class JniWasiHttpContext implements WasiHttpContext {
     this.contextId = CONTEXT_ID_GENERATOR.incrementAndGet();
 
     // Ensure native library is loaded
-    JniLibraryLoader.ensureLoaded();
+    NativeLibraryLoader.loadLibrary();
 
     try {
       this.contextHandle = nativeCreate(config);

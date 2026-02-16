@@ -96,28 +96,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  void testErrorCodeDescriptions() {
-    for (int errorCode = -1; errorCode >= -18; errorCode--) {
-      String description = JniExceptionMapper.getErrorCodeDescription(errorCode);
-
-      assertNotNull(description, "Error code " + errorCode + " should have description");
-      assertFalse(description.isEmpty(), "Description should not be empty");
-      assertFalse(
-          description.startsWith("Unknown error"),
-          "Error code " + errorCode + " should not be unknown");
-    }
-
-    // Test success case
-    assertEquals("No error", JniExceptionMapper.getErrorCodeDescription(0));
-
-    // Test unknown error code
-    String unknownDesc = JniExceptionMapper.getErrorCodeDescription(-999);
-    assertTrue(
-        unknownDesc.startsWith("Unknown error"),
-        "Unknown error codes should be identified as such");
-  }
-
-  @Test
   void testNullMessageHandling() {
     // Test null message
     JniException nullException = JniExceptionMapper.mapNativeError(-1, null);
@@ -163,54 +141,6 @@ class JniErrorHandlingTest {
   }
 
   @Test
-  void testNativeResultValidation() {
-    // True result should not throw
-    assertDoesNotThrow(
-        () -> {
-          JniExceptionMapper.validateNativeResult(true, "test operation");
-        });
-
-    // False result should throw
-    JniException exception =
-        assertThrows(
-            JniException.class,
-            () -> {
-              JniExceptionMapper.validateNativeResult(false, "test operation");
-            });
-    assertTrue(exception.getMessage().contains("test operation"));
-
-    // Null operation should work
-    assertThrows(
-        JniException.class,
-        () -> {
-          JniExceptionMapper.validateNativeResult(false, null);
-        });
-  }
-
-  @Test
-  void testSafeErrorMessageExtraction() {
-    // Valid message
-    String result1 = JniExceptionMapper.getSafeErrorMessage("valid message", "default");
-    assertEquals("valid message", result1);
-
-    // Null message with default
-    String result2 = JniExceptionMapper.getSafeErrorMessage(null, "default message");
-    assertEquals("default message", result2);
-
-    // Empty message with default
-    String result3 = JniExceptionMapper.getSafeErrorMessage("", "default message");
-    assertEquals("default message", result3);
-
-    // Whitespace message with default
-    String result4 = JniExceptionMapper.getSafeErrorMessage("   ", "default message");
-    assertEquals("default message", result4);
-
-    // Null message and null default
-    String result5 = JniExceptionMapper.getSafeErrorMessage(null, null);
-    assertEquals("Unknown error", result5);
-  }
-
-  @Test
   void testNativeExceptionWrapping() {
     RuntimeException cause = new RuntimeException("Original error");
 
@@ -224,43 +154,6 @@ class JniErrorHandlingTest {
     JniException wrapped2 = JniExceptionMapper.wrapNativeException(null, cause);
     assertNotNull(wrapped2);
     assertTrue(wrapped2.getMessage().contains("Native operation failed"));
-  }
-
-  @Test
-  void testCleanupExceptionCreation() {
-    // Test with cause
-    RuntimeException cause = new RuntimeException("cleanup failed");
-    JniResourceException cleanupEx = JniExceptionMapper.createCleanupException("engine", cause);
-
-    assertNotNull(cleanupEx);
-    assertTrue(cleanupEx.getMessage().contains("engine"));
-    assertEquals(cause, cleanupEx.getCause());
-
-    // Test without cause
-    JniResourceException cleanupEx2 = JniExceptionMapper.createCleanupException("module", null);
-    assertNotNull(cleanupEx2);
-    assertTrue(cleanupEx2.getMessage().contains("module"));
-    assertNull(cleanupEx2.getCause());
-
-    // Test null resource type
-    JniResourceException cleanupEx3 = JniExceptionMapper.createCleanupException(null, null);
-    assertNotNull(cleanupEx3);
-    assertTrue(cleanupEx3.getMessage().contains("resource"));
-  }
-
-  @Test
-  void testInvalidStateExceptionCreation() {
-    JniException stateEx = JniExceptionMapper.createInvalidStateException("engine", "disposed");
-
-    assertNotNull(stateEx);
-    assertTrue(stateEx.getMessage().contains("engine"));
-    assertTrue(stateEx.getMessage().contains("disposed"));
-
-    // Test null parameters
-    JniException stateEx2 = JniExceptionMapper.createInvalidStateException(null, null);
-    assertNotNull(stateEx2);
-    assertTrue(stateEx2.getMessage().contains("Resource"));
-    assertTrue(stateEx2.getMessage().contains("invalid state"));
   }
 
   @Test

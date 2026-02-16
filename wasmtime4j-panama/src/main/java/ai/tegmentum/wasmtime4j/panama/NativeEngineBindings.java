@@ -185,29 +185,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG)); // wasm_size
 
     addFunctionBinding(
-        "wasmtime4j_engine_supports_feature",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN,
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.JAVA_INT)); // feature_id
-
-    addFunctionBinding(
-        "wasmtime4j_engine_memory_limit_pages",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_engine_stack_size_limit",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_engine_fuel_enabled",
-        FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_engine_epoch_interruption_enabled",
-        FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
         "wasmtime4j_panama_engine_is_fuel_enabled",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
 
@@ -578,13 +555,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // remaining_out_ptr
 
     addFunctionBinding(
-        "wasmtime4j_panama_store_get_fuel_remaining",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS)); // remaining_out_ptr
-
-    addFunctionBinding(
         "wasmtime4j_panama_store_set_epoch_deadline",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
@@ -593,10 +563,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
 
     addFunctionBinding(
         "wasmtime4j_panama_store_epoch_deadline_trap",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_panama_store_set_epoch_deadline_callback",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
     addFunctionBinding(
@@ -628,10 +594,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.JAVA_LONG)); // ticks
-
-    addFunctionBinding(
-        "wasmtime4j_store_gc",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
     addFunctionBinding(
         "wasmtime4j_store_get_execution_stats",

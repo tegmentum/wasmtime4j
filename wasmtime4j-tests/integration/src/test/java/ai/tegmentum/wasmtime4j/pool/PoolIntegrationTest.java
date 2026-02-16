@@ -195,21 +195,6 @@ public class PoolIntegrationTest {
   }
 
   @Nested
-  @DisplayName("PoolingAllocatorMetrics Tests")
-  class PoolingAllocatorMetricsTests {
-
-    @Test
-    @DisplayName("Should verify PoolingAllocatorMetrics class exists")
-    void shouldVerifyPoolingAllocatorMetricsClassExists() {
-      LOGGER.info("Testing PoolingAllocatorMetrics class existence");
-
-      assertNotNull(PoolingAllocatorMetrics.class, "PoolingAllocatorMetrics class should exist");
-
-      LOGGER.info("PoolingAllocatorMetrics class verified");
-    }
-  }
-
-  @Nested
   @DisplayName("PoolingAllocatorPlatformSupport Tests")
   class PoolingAllocatorPlatformSupportTests {
 
