@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
+import ai.tegmentum.wasmtime4j.util.Validation;
+
 /**
  * Utility class providing defensive programming validation methods for Panama FFI operations.
  *
@@ -27,9 +29,7 @@ public final class PanamaValidation {
    * @throws IllegalArgumentException if the object is null
    */
   public static void requireNonNull(final Object obj, final String parameterName) {
-    if (obj == null) {
-      throw new IllegalArgumentException("Parameter '" + parameterName + "' must not be null");
-    }
+    Validation.requireNonNull(obj, parameterName);
   }
 
   /**
@@ -40,10 +40,7 @@ public final class PanamaValidation {
    * @throws IllegalArgumentException if the string is null or empty
    */
   public static void requireNonEmpty(final String str, final String parameterName) {
-    requireNonNull(str, parameterName);
-    if (str.isEmpty()) {
-      throw new IllegalArgumentException("Parameter '" + parameterName + "' must not be empty");
-    }
+    Validation.requireNonEmpty(str, parameterName);
   }
 
   /**
@@ -54,10 +51,7 @@ public final class PanamaValidation {
    * @throws IllegalArgumentException if the array is null or empty
    */
   public static void requireNonEmpty(final byte[] array, final String parameterName) {
-    requireNonNull(array, parameterName);
-    if (array.length == 0) {
-      throw new IllegalArgumentException("Parameter '" + parameterName + "' must not be empty");
-    }
+    Validation.requireNonEmpty(array, parameterName);
   }
 
   /**
@@ -68,10 +62,7 @@ public final class PanamaValidation {
    * @throws IllegalArgumentException if the string is null, empty, or blank
    */
   public static void requireNonBlank(final String str, final String parameterName) {
-    requireNonNull(str, parameterName);
-    if (str.trim().isEmpty()) {
-      throw new IllegalArgumentException("Parameter '" + parameterName + "' must not be blank");
-    }
+    Validation.requireNonBlank(str, parameterName);
   }
 
   /**
@@ -85,11 +76,7 @@ public final class PanamaValidation {
    */
   public static void requireInRange(
       final int value, final int min, final int max, final String parameterName) {
-    if (value < min || value > max) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Parameter '%s' must be in range [%d, %d], got %d", parameterName, min, max, value));
-    }
+    Validation.requireInRange(value, min, max, parameterName);
   }
 
   /**
@@ -103,11 +90,7 @@ public final class PanamaValidation {
    */
   public static void requireInRange(
       final long value, final long min, final long max, final String parameterName) {
-    if (value < min || value > max) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Parameter '%s' must be in range [%d, %d], got %d", parameterName, min, max, value));
-    }
+    Validation.requireInRange(value, min, max, parameterName);
   }
 
   /**
@@ -118,24 +101,18 @@ public final class PanamaValidation {
    * @throws IllegalArgumentException if the value is negative
    */
   public static void requireNonNegative(final long value, final String parameterName) {
-    if (value < 0) {
-      throw new IllegalArgumentException(
-          "Parameter '" + parameterName + "' must be non-negative, got " + value);
-    }
+    Validation.requireNonNegative(value, parameterName);
   }
 
   /**
-   * Validates that a native handle is valid (non-zero).
+   * Validates that a native handle is valid (non-zero and non-negative).
    *
    * @param handle the native handle to validate
    * @param handleName the handle name for error messages
    * @throws IllegalArgumentException if the handle is invalid
    */
   public static void requireValidHandle(final long handle, final String handleName) {
-    if (handle == 0) {
-      throw new IllegalArgumentException(
-          "Native handle '" + handleName + "' is invalid (null pointer)");
-    }
+    Validation.requireValidHandle(handle, handleName);
   }
 
   /**
@@ -158,12 +135,10 @@ public final class PanamaValidation {
    * Creates a defensive copy of a byte array.
    *
    * @param array the array to copy
-   * @return a defensive copy of the array
-   * @throws IllegalArgumentException if the array is null
+   * @return a defensive copy of the array, or null if the original is null
    */
   public static byte[] defensiveCopy(final byte[] array) {
-    requireNonNull(array, "array");
-    return array.clone();
+    return Validation.defensiveCopy(array);
   }
 
   /**
@@ -175,10 +150,7 @@ public final class PanamaValidation {
    * @throws IllegalArgumentException if the value is not positive
    */
   public static int requirePositive(final int value, final String parameterName) {
-    if (value <= 0) {
-      throw new IllegalArgumentException(
-          "Parameter '" + parameterName + "' must be positive: " + value);
-    }
+    Validation.requirePositive(value, parameterName);
     return value;
   }
 
@@ -191,10 +163,7 @@ public final class PanamaValidation {
    * @throws IllegalArgumentException if the value is not positive
    */
   public static long requirePositive(final long value, final String parameterName) {
-    if (value <= 0) {
-      throw new IllegalArgumentException(
-          "Parameter '" + parameterName + "' must be positive: " + value);
-    }
+    Validation.requirePositive(value, parameterName);
     return value;
   }
 
@@ -205,9 +174,7 @@ public final class PanamaValidation {
    * @throws IllegalArgumentException if the port is not valid
    */
   public static void requireValidPort(final int port) {
-    if (port < 1 || port > 65535) {
-      throw new IllegalArgumentException("Port number must be between 1 and 65535, got: " + port);
-    }
+    Validation.requireValidPort(port);
   }
 
   /**
@@ -219,26 +186,19 @@ public final class PanamaValidation {
    */
   public static void requireValidConnectionId(
       final long connectionId, final java.util.Map<Long, ?> activeConnections) {
-    requireNonNull(activeConnections, "activeConnections");
-    if (connectionId <= 0) {
-      throw new IllegalArgumentException("Connection ID must be positive, got: " + connectionId);
-    }
-    if (!activeConnections.containsKey(connectionId)) {
-      throw new IllegalArgumentException("Connection not found for ID: " + connectionId);
-    }
+    Validation.requireValidConnectionId(connectionId, activeConnections);
   }
 
   /**
    * Validates that a string is non-null and non-empty.
+   *
+   * <p>This is a convenience alias for {@link Validation#requireNonBlank(String, String)}.
    *
    * @param str the string to validate
    * @param parameterName the parameter name for error messages
    * @throws IllegalArgumentException if the string is null or empty
    */
   public static void requireValidString(final String str, final String parameterName) {
-    requireNonNull(str, parameterName);
-    if (str.trim().isEmpty()) {
-      throw new IllegalArgumentException("Parameter '" + parameterName + "' cannot be empty");
-    }
+    Validation.requireNonBlank(str, parameterName);
   }
 }

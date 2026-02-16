@@ -1,8 +1,9 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
+import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
-import ai.tegmentum.wasmtime4j.exception.WasiException;
+import ai.tegmentum.wasmtime4j.wasi.WasiClockId;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -45,19 +46,19 @@ public final class WasiTimeOperations {
   private static final Logger LOGGER = Logger.getLogger(WasiTimeOperations.class.getName());
 
   /** Clock ID for wall clock time (since Unix epoch). */
-  public static final int WASI_CLOCK_REALTIME = 0;
+  public static final int WASI_CLOCK_REALTIME = WasiClockId.REALTIME.getValue();
 
   /** Clock ID for monotonic time (suitable for measuring time intervals). */
-  public static final int WASI_CLOCK_MONOTONIC = 1;
+  public static final int WASI_CLOCK_MONOTONIC = WasiClockId.MONOTONIC.getValue();
 
   /** Clock ID for process CPU time. */
-  public static final int WASI_CLOCK_PROCESS_CPUTIME_ID = 2;
+  public static final int WASI_CLOCK_PROCESS_CPUTIME_ID = WasiClockId.PROCESS_CPUTIME_ID.getValue();
 
   /** Clock ID for thread CPU time. */
-  public static final int WASI_CLOCK_THREAD_CPUTIME_ID = 3;
+  public static final int WASI_CLOCK_THREAD_CPUTIME_ID = WasiClockId.THREAD_CPUTIME_ID.getValue();
 
   /** Maximum valid clock ID value. */
-  private static final int MAX_CLOCK_ID = 3;
+  private static final int MAX_CLOCK_ID = WasiClockId.MAX_CLOCK_ID;
 
   /** The WASI context this time operations instance belongs to. */
   private final WasiContext wasiContext;
@@ -276,8 +277,7 @@ public final class WasiTimeOperations {
    * @return the time converted to the specified unit
    */
   public static long convertTime(final long nanoseconds, final TimeUnit unit) {
-    PanamaValidation.requireNonNull(unit, "unit");
-    return unit.convert(nanoseconds, TimeUnit.NANOSECONDS);
+    return WasiClockId.convertTime(nanoseconds, unit);
   }
 
   /**
@@ -290,7 +290,7 @@ public final class WasiTimeOperations {
    * @return true if the clock ID is supported, false otherwise
    */
   public static boolean isClockSupported(final int clockId) {
-    return clockId >= 0 && clockId <= MAX_CLOCK_ID;
+    return WasiClockId.isClockSupported(clockId);
   }
 
   /**
@@ -300,18 +300,7 @@ public final class WasiTimeOperations {
    * @return the human-readable clock name
    */
   public static String getClockName(final int clockId) {
-    switch (clockId) {
-      case WASI_CLOCK_REALTIME:
-        return "REALTIME";
-      case WASI_CLOCK_MONOTONIC:
-        return "MONOTONIC";
-      case WASI_CLOCK_PROCESS_CPUTIME_ID:
-        return "PROCESS_CPUTIME";
-      case WASI_CLOCK_THREAD_CPUTIME_ID:
-        return "THREAD_CPUTIME";
-      default:
-        return "UNKNOWN(" + clockId + ")";
-    }
+    return WasiClockId.getClockName(clockId);
   }
 
   /**

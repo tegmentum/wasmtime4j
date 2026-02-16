@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
+import ai.tegmentum.wasmtime4j.util.Validation;
 
 /**
  * Utility class providing defensive programming validation methods for JNI operations.
@@ -29,9 +30,10 @@ public final class JniValidation {
    * @throws JniValidationException if the object is null
    */
   public static void requireNonNull(final Object obj, final String parameterName) {
-    if (obj == null) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' must not be null", parameterName, null);
+    try {
+      Validation.requireNonNull(obj, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, obj);
     }
   }
 
@@ -43,10 +45,10 @@ public final class JniValidation {
    * @throws JniValidationException if the string is null or empty
    */
   public static void requireNonEmpty(final String str, final String parameterName) {
-    requireNonNull(str, parameterName);
-    if (str.isEmpty()) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' must not be empty", parameterName, str);
+    try {
+      Validation.requireNonEmpty(str, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, str);
     }
   }
 
@@ -58,10 +60,10 @@ public final class JniValidation {
    * @throws JniValidationException if the array is null or empty
    */
   public static void requireNonEmpty(final byte[] array, final String parameterName) {
-    requireNonNull(array, parameterName);
-    if (array.length == 0) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' must not be empty", parameterName, "byte[0]");
+    try {
+      Validation.requireNonEmpty(array, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, "byte[0]");
     }
   }
 
@@ -73,12 +75,10 @@ public final class JniValidation {
    * @throws JniValidationException if the string is null, empty, or only whitespace
    */
   public static void requireNonBlank(final String str, final String parameterName) {
-    requireNonNull(str, parameterName);
-    if (str.trim().isEmpty()) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' must not be empty or whitespace-only",
-          parameterName,
-          str);
+    try {
+      Validation.requireNonBlank(str, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, str);
     }
   }
 
@@ -93,12 +93,10 @@ public final class JniValidation {
    */
   public static void requireInRange(
       final int value, final int min, final int max, final String parameterName) {
-    if (value < min || value > max) {
-      throw new JniValidationException(
-          String.format(
-              "Parameter '%s' must be in range [%d, %d], got %d", parameterName, min, max, value),
-          parameterName,
-          value);
+    try {
+      Validation.requireInRange(value, min, max, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, value);
     }
   }
 
@@ -113,12 +111,10 @@ public final class JniValidation {
    */
   public static void requireInRange(
       final long value, final long min, final long max, final String parameterName) {
-    if (value < min || value > max) {
-      throw new JniValidationException(
-          String.format(
-              "Parameter '%s' must be in range [%d, %d], got %d", parameterName, min, max, value),
-          parameterName,
-          value);
+    try {
+      Validation.requireInRange(value, min, max, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, value);
     }
   }
 
@@ -130,9 +126,10 @@ public final class JniValidation {
    * @throws JniValidationException if the value is not positive
    */
   public static void requirePositive(final int value, final String parameterName) {
-    if (value <= 0) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' must be positive, got " + value, parameterName, value);
+    try {
+      Validation.requirePositive(value, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, value);
     }
   }
 
@@ -144,9 +141,10 @@ public final class JniValidation {
    * @throws JniValidationException if the value is not positive
    */
   public static void requirePositive(final long value, final String parameterName) {
-    if (value <= 0L) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' must be positive, got " + value, parameterName, value);
+    try {
+      Validation.requirePositive(value, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, value);
     }
   }
 
@@ -158,11 +156,10 @@ public final class JniValidation {
    * @throws JniValidationException if the value is negative
    */
   public static void requireNonNegative(final int value, final String parameterName) {
-    if (value < 0) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' must be non-negative, got " + value,
-          parameterName,
-          value);
+    try {
+      Validation.requireNonNegative(value, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, value);
     }
   }
 
@@ -174,11 +171,10 @@ public final class JniValidation {
    * @throws JniValidationException if the value is negative
    */
   public static void requireNonNegative(final long value, final String parameterName) {
-    if (value < 0L) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' must be non-negative, got " + value,
-          parameterName,
-          value);
+    try {
+      Validation.requireNonNegative(value, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, value);
     }
   }
 
@@ -190,17 +186,10 @@ public final class JniValidation {
    * @throws JniValidationException if the handle is invalid (zero)
    */
   public static void requireValidHandle(final long handle, final String parameterName) {
-    if (handle == 0L) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' is an invalid native handle (null pointer)",
-          parameterName,
-          handle);
-    }
-    if (handle < 0L) {
-      throw new JniValidationException(
-          "Parameter '" + parameterName + "' is an invalid native handle (negative value)",
-          parameterName,
-          handle);
+    try {
+      Validation.requireValidHandle(handle, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, handle);
     }
   }
 
@@ -215,23 +204,13 @@ public final class JniValidation {
    */
   public static void requireValidBounds(
       final byte[] array, final int offset, final int length, final String parameterName) {
-    requireNonNull(array, parameterName);
-    requireNonNegative(offset, "offset");
-    requireNonNegative(length, "length");
-
-    if (offset > array.length) {
-      throw new JniValidationException(
-          String.format("Offset %d exceeds array length %d", offset, array.length),
-          "offset",
-          offset);
-    }
-
-    if (offset + length > array.length) {
-      throw new JniValidationException(
-          String.format(
-              "Offset %d + length %d exceeds array length %d", offset, length, array.length),
-          "length",
-          length);
+    try {
+      Validation.requireValidBounds(array, offset, length, parameterName);
+    } catch (IllegalArgumentException e) {
+      // Extract which parameter failed from the exception message
+      String failedParam = e.getMessage().contains("Offset") ? "offset" : "length";
+      Object failedValue = failedParam.equals("offset") ? offset : length;
+      throw new JniValidationException(e.getMessage(), failedParam, failedValue);
     }
   }
 
@@ -243,8 +222,10 @@ public final class JniValidation {
    * @throws JniValidationException if the condition is false
    */
   public static void require(final boolean condition, final String message) {
-    if (!condition) {
-      throw new JniValidationException(message);
+    try {
+      Validation.require(condition, message);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage());
     }
   }
 
@@ -274,7 +255,11 @@ public final class JniValidation {
    * @throws JniValidationException if the port is invalid
    */
   public static void requireValidPort(final int port) {
-    requireInRange(port, 1, 65535, "port");
+    try {
+      Validation.requireValidPort(port);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), "port", port);
+    }
   }
 
   /**
@@ -286,13 +271,11 @@ public final class JniValidation {
    */
   public static void requireValidConnectionId(
       final long connectionId, final java.util.Map<Long, ?> activeConnections) {
-    requireNonNull(activeConnections, "activeConnections");
-    require(connectionId > 0, "Connection ID must be positive", "connectionId", connectionId);
-    require(
-        activeConnections.containsKey(connectionId),
-        "Connection not found",
-        "connectionId",
-        connectionId);
+    try {
+      Validation.requireValidConnectionId(connectionId, activeConnections);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), "connectionId", connectionId);
+    }
   }
 
   /**
@@ -314,7 +297,7 @@ public final class JniValidation {
    * @return a defensive copy of the array, or null if the original is null
    */
   public static byte[] defensiveCopy(final byte[] original) {
-    return original == null ? null : original.clone();
+    return Validation.defensiveCopy(original);
   }
 
   /**
@@ -326,7 +309,10 @@ public final class JniValidation {
    * @throws JniValidationException if the string is null
    */
   public static byte[] toBytes(final String str, final String parameterName) {
-    requireNonNull(str, parameterName);
-    return str.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    try {
+      return Validation.toBytes(str, parameterName);
+    } catch (IllegalArgumentException e) {
+      throw new JniValidationException(e.getMessage(), parameterName, str);
+    }
   }
 }
