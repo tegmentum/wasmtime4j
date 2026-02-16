@@ -369,22 +369,22 @@ class PanamaTypedFuncTest {
     }
 
     @Test
-    @DisplayName("should have volatile closed field")
-    void shouldHaveVolatileClosedField() {
+    @DisplayName("should have NativeResourceHandle for lifecycle management")
+    void shouldHaveNativeResourceHandle() {
       java.lang.reflect.Field[] fields = PanamaTypedFunc.class.getDeclaredFields();
 
-      boolean foundClosedField = false;
+      boolean foundResourceHandle = false;
       for (java.lang.reflect.Field field : fields) {
-        if (field.getName().equals("closed")) {
-          foundClosedField = true;
-          assertThat(Modifier.isVolatile(field.getModifiers()))
-              .as("'closed' field should be volatile for thread safety")
-              .isTrue();
+        if (field.getName().equals("resourceHandle")
+            && field.getType().getSimpleName().equals("NativeResourceHandle")) {
+          foundResourceHandle = true;
           break;
         }
       }
 
-      assertThat(foundClosedField).as("Should have a 'closed' field").isTrue();
+      assertThat(foundResourceHandle)
+          .as("Should have a 'resourceHandle' field of type NativeResourceHandle")
+          .isTrue();
     }
 
     @Test

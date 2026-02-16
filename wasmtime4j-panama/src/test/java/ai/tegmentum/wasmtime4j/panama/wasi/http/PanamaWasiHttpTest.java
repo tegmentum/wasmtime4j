@@ -538,20 +538,20 @@ class PanamaWasiHttpTest {
     }
 
     @Test
-    @DisplayName("PanamaWasiHttpContext should have closed atomic boolean")
-    void contextShouldHaveClosedFlag() throws ClassNotFoundException {
+    @DisplayName("PanamaWasiHttpContext should have NativeResourceHandle for lifecycle management")
+    void contextShouldHaveResourceHandle() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(HTTP_CONTEXT_CLASS);
 
-      boolean hasClosed = false;
+      boolean hasResourceHandle = false;
       for (final Field field : clazz.getDeclaredFields()) {
-        if (field.getName().equals("closed")
-            && field.getType().getName().contains("AtomicBoolean")) {
-          hasClosed = true;
+        if (field.getName().equals("resourceHandle")
+            && field.getType().getSimpleName().equals("NativeResourceHandle")) {
+          hasResourceHandle = true;
           break;
         }
       }
-      assertTrue(hasClosed, "Should have closed AtomicBoolean field");
-      LOGGER.info("PanamaWasiHttpContext has closed AtomicBoolean field");
+      assertTrue(hasResourceHandle, "Should have resourceHandle field of type NativeResourceHandle");
+      LOGGER.info("PanamaWasiHttpContext has NativeResourceHandle for lifecycle management");
     }
 
   }

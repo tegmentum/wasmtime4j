@@ -741,7 +741,7 @@ class PanamaWasiSocketsTest {
     }
 
     @Test
-    @DisplayName("Socket classes should have isClosed method or closed field")
+    @DisplayName("Socket classes should have closed state tracking via NativeResourceHandle")
     void socketClassesShouldHaveClosedStateTracking() {
       final String[] classNames = {
         TCP_SOCKET_CLASS, UDP_SOCKET_CLASS, NETWORK_CLASS, RESOLVE_ADDRESS_STREAM_CLASS
@@ -752,6 +752,15 @@ class PanamaWasiSocketsTest {
             assertDoesNotThrow(
                 () -> loadClassWithoutInit(className), "Class should exist: " + className);
 
+        boolean hasResourceHandle = false;
+        for (Field field : clazz.getDeclaredFields()) {
+          if ("resourceHandle".equals(field.getName())
+              && field.getType().getSimpleName().equals("NativeResourceHandle")) {
+            hasResourceHandle = true;
+            break;
+          }
+        }
+
         boolean hasIsClosed = false;
         for (Method method : clazz.getDeclaredMethods()) {
           if ("isClosed".equals(method.getName())) {
@@ -760,24 +769,18 @@ class PanamaWasiSocketsTest {
           }
         }
 
-        boolean hasClosedField = false;
-        for (Field field : clazz.getDeclaredFields()) {
-          if ("closed".equals(field.getName())) {
-            hasClosedField = true;
-            break;
-          }
-        }
-
         final String simpleName = className.substring(className.lastIndexOf('.') + 1);
-        final boolean hasStateTracking = hasIsClosed || hasClosedField;
+        final boolean hasStateTracking = hasResourceHandle || hasIsClosed;
         LOGGER.info(
             simpleName
-                + " has isClosed method: "
-                + hasIsClosed
-                + ", has closed field: "
-                + hasClosedField);
+                + " has resourceHandle: "
+                + hasResourceHandle
+                + ", has isClosed method: "
+                + hasIsClosed);
 
-        assertTrue(hasStateTracking, simpleName + " should have isClosed method or closed field");
+        assertTrue(
+            hasStateTracking,
+            simpleName + " should have NativeResourceHandle or isClosed method");
       }
     }
   }

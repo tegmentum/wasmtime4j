@@ -248,20 +248,21 @@ class PanamaWasiContextValidationTest {
   class ThreadSafetyTests {
 
     @Test
-    @DisplayName("should use AtomicBoolean for closed state")
-    void shouldUseAtomicBooleanForClosedState() {
+    @DisplayName("should use NativeResourceHandle for thread-safe lifecycle management")
+    void shouldUseNativeResourceHandle() {
       java.lang.reflect.Field[] fields = PanamaWasiContext.class.getDeclaredFields();
 
-      boolean foundAtomicBoolean = false;
+      boolean foundResourceHandle = false;
       for (java.lang.reflect.Field field : fields) {
-        if (field.getType().equals(java.util.concurrent.atomic.AtomicBoolean.class)) {
-          foundAtomicBoolean = true;
+        if (field.getName().equals("resourceHandle")
+            && field.getType().getSimpleName().equals("NativeResourceHandle")) {
+          foundResourceHandle = true;
           break;
         }
       }
 
-      assertThat(foundAtomicBoolean)
-          .as("Should use AtomicBoolean for thread-safe closed state")
+      assertThat(foundResourceHandle)
+          .as("Should use NativeResourceHandle for thread-safe lifecycle management")
           .isTrue();
     }
   }

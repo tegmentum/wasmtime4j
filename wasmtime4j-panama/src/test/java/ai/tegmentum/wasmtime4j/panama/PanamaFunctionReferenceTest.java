@@ -778,7 +778,7 @@ class PanamaFunctionReferenceTest {
     }
 
     @Test
-    @DisplayName("Should throw WasmException on call after close")
+    @DisplayName("Should throw IllegalStateException on call after close")
     void shouldThrowOnCallAfterClose() throws WasmException {
       final FunctionType ft =
           FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
@@ -788,11 +788,11 @@ class PanamaFunctionReferenceTest {
           (PanamaFunctionReference) store.createFunctionReference(hf, ft);
       ref.close();
 
-      final WasmException ex =
+      final IllegalStateException ex =
           assertThrows(
-              WasmException.class,
+              IllegalStateException.class,
               () -> ref.call(),
-              "Should throw WasmException on call after close");
+              "Should throw IllegalStateException on call after close");
       assertTrue(
           ex.getMessage().contains("closed"),
           "Error message should mention closed: " + ex.getMessage());

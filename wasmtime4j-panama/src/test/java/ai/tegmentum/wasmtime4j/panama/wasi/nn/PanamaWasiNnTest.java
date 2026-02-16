@@ -153,20 +153,20 @@ class PanamaWasiNnTest {
     }
 
     @Test
-    @DisplayName("PanaNnContext should have closed atomic boolean")
-    void contextShouldHaveClosedFlag() throws ClassNotFoundException {
+    @DisplayName("PanaNnContext should have NativeResourceHandle for lifecycle management")
+    void contextShouldHaveResourceHandle() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(NN_CONTEXT_CLASS);
 
-      boolean hasClosed = false;
+      boolean hasResourceHandle = false;
       for (final Field field : clazz.getDeclaredFields()) {
-        if (field.getName().equals("closed")
-            && field.getType().getName().contains("AtomicBoolean")) {
-          hasClosed = true;
+        if (field.getName().equals("resourceHandle")
+            && field.getType().getSimpleName().equals("NativeResourceHandle")) {
+          hasResourceHandle = true;
           break;
         }
       }
-      assertTrue(hasClosed, "Should have closed AtomicBoolean field");
-      LOGGER.info("PanaNnContext has closed AtomicBoolean field");
+      assertTrue(hasResourceHandle, "Should have resourceHandle field of type NativeResourceHandle");
+      LOGGER.info("PanaNnContext has NativeResourceHandle for lifecycle management");
     }
 
     @Test
@@ -523,24 +523,26 @@ class PanamaWasiNnTest {
   class PanamaFfiPatternTests {
 
     @Test
-    @DisplayName("NN classes should have closed atomic boolean for thread-safe closure")
-    void nnClassesShouldHaveClosedFlag() throws ClassNotFoundException {
+    @DisplayName("NN classes should have NativeResourceHandle for thread-safe closure")
+    void nnClassesShouldHaveResourceHandle() throws ClassNotFoundException {
       final String[] classes = {NN_CONTEXT_CLASS, NN_GRAPH_CLASS, NN_GRAPH_EXEC_CONTEXT_CLASS};
 
       for (final String className : classes) {
         final Class<?> clazz = loadClassWithoutInit(className);
 
-        boolean hasClosed = false;
+        boolean hasResourceHandle = false;
         for (final Field field : clazz.getDeclaredFields()) {
-          if (field.getName().equals("closed")
-              && field.getType().getName().contains("AtomicBoolean")) {
-            hasClosed = true;
+          if (field.getName().equals("resourceHandle")
+              && field.getType().getSimpleName().equals("NativeResourceHandle")) {
+            hasResourceHandle = true;
             break;
           }
         }
-        assertTrue(hasClosed, className + " should have closed AtomicBoolean field");
+        assertTrue(
+            hasResourceHandle,
+            className + " should have resourceHandle field of type NativeResourceHandle");
       }
-      LOGGER.info("NN classes have closed AtomicBoolean for thread-safe closure");
+      LOGGER.info("NN classes have NativeResourceHandle for thread-safe closure");
     }
 
     @Test
