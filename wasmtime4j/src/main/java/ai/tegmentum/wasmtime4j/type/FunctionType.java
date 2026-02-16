@@ -2,6 +2,8 @@ package ai.tegmentum.wasmtime4j.type;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Represents a WebAssembly function type.
@@ -11,7 +13,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
  *
  * @since 1.0.0
  */
-public final class FunctionType implements WasmType {
+public final class FunctionType implements FuncType {
 
   private final WasmValueType[] paramTypes;
   private final WasmValueType[] returnTypes;
@@ -68,11 +70,22 @@ public final class FunctionType implements WasmType {
     return returnTypes.clone();
   }
 
+  @Override
+  public List<WasmValueType> getParams() {
+    return Collections.unmodifiableList(List.of(paramTypes));
+  }
+
+  @Override
+  public List<WasmValueType> getResults() {
+    return Collections.unmodifiableList(List.of(returnTypes));
+  }
+
   /**
    * Gets the number of parameters.
    *
    * @return parameter count
    */
+  @Override
   public int getParamCount() {
     return paramTypes.length;
   }

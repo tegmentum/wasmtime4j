@@ -5,7 +5,7 @@ import ai.tegmentum.wasmtime4j.exception.InstantiationException;
 import ai.tegmentum.wasmtime4j.exception.LinkingException;
 import ai.tegmentum.wasmtime4j.exception.LinkingException.LinkingErrorType;
 import ai.tegmentum.wasmtime4j.exception.ResourceException;
-import ai.tegmentum.wasmtime4j.exception.SecurityException;
+import ai.tegmentum.wasmtime4j.exception.WasmSecurityException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.exception.WasmErrorCode;
@@ -42,7 +42,7 @@ public final class PanamaErrorMapper {
    *   <li>Instance errors (-6) → {@link InstantiationException}
    *   <li>Resource errors (-11) → {@link ResourceException}
    *   <li>WASI errors (-15) → {@link WasiException}
-   *   <li>Security errors (-16, -22) → {@link SecurityException}
+   *   <li>Security errors (-16, -22) → {@link WasmSecurityException}
    *   <li>All others → {@link WasmException}
    * </ul>
    *
@@ -86,7 +86,7 @@ public final class PanamaErrorMapper {
 
       case SECURITY_ERROR:
       case SECURITY_VIOLATION:
-        return new SecurityException(message);
+        return new WasmSecurityException(message);
 
       case RUNTIME_ERROR:
       case ENGINE_CONFIG_ERROR:

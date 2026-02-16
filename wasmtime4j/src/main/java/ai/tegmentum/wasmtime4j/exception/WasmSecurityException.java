@@ -8,7 +8,7 @@ package ai.tegmentum.wasmtime4j.exception;
  *
  * @since 1.0.0
  */
-public class SecurityException extends WasmException {
+public class WasmSecurityException extends WasmException {
 
   private static final long serialVersionUID = 1L;
 
@@ -17,7 +17,7 @@ public class SecurityException extends WasmException {
    *
    * @param message the error message describing the security failure
    */
-  public SecurityException(final String message) {
+  public WasmSecurityException(final String message) {
     super(message);
   }
 
@@ -27,7 +27,7 @@ public class SecurityException extends WasmException {
    * @param message the error message describing the security failure
    * @param cause the underlying cause
    */
-  public SecurityException(final String message, final Throwable cause) {
+  public WasmSecurityException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

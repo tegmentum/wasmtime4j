@@ -8,7 +8,7 @@ import ai.tegmentum.wasmtime4j.exception.CompilationException;
 import ai.tegmentum.wasmtime4j.exception.InstantiationException;
 import ai.tegmentum.wasmtime4j.exception.LinkingException;
 import ai.tegmentum.wasmtime4j.exception.ResourceException;
-import ai.tegmentum.wasmtime4j.exception.SecurityException;
+import ai.tegmentum.wasmtime4j.exception.WasmSecurityException;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.exception.WasmErrorCode;
@@ -107,21 +107,21 @@ class PanamaErrorMapperTest {
     }
 
     @Test
-    @DisplayName("Security error (-16) should map to SecurityException")
+    @DisplayName("Security error (-16) should map to WasmSecurityException")
     void shouldMapSecurityError() {
       final WasmException ex = PanamaErrorMapper.mapNativeError(-16, "access denied");
       assertTrue(
-          ex instanceof SecurityException,
-          "Error code -16 should produce SecurityException, got: " + ex.getClass().getName());
+          ex instanceof WasmSecurityException,
+          "Error code -16 should produce WasmSecurityException, got: " + ex.getClass().getName());
     }
 
     @Test
-    @DisplayName("Security violation (-22) should map to SecurityException")
+    @DisplayName("Security violation (-22) should map to WasmSecurityException")
     void shouldMapSecurityViolation() {
       final WasmException ex = PanamaErrorMapper.mapNativeError(-22, "violation");
       assertTrue(
-          ex instanceof SecurityException,
-          "Error code -22 should produce SecurityException, got: " + ex.getClass().getName());
+          ex instanceof WasmSecurityException,
+          "Error code -22 should produce WasmSecurityException, got: " + ex.getClass().getName());
     }
 
     @ParameterizedTest(name = "Error code {0} should map to WasmRuntimeException")
