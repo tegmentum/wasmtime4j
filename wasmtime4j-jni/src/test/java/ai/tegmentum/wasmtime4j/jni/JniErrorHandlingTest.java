@@ -54,9 +54,9 @@ class JniErrorHandlingTest {
     "-13, Invalid parameter",
     "-14, Concurrency error",
     "-15, WASI error",
-    "-16, Component error",
-    "-17, Interface error",
-    "-18, Internal error"
+    "-16, Security error",
+    "-17, Component error",
+    "-18, Interface error"
   })
   void testErrorCodeMessageMapping(int errorCode, String expectedMessagePrefix) {
     JniException exception = JniExceptionMapper.mapNativeError(errorCode, "test");
@@ -225,8 +225,8 @@ class JniErrorHandlingTest {
     assertNotNull(exception3);
     assertTrue(exception3.getMessage().contains("Unknown native error"));
 
-    // Test just outside valid range
-    JniException exception4 = JniExceptionMapper.mapNativeError(-19, "beyond range");
+    // Test just outside valid range (-27 is beyond the -26 maximum)
+    JniException exception4 = JniExceptionMapper.mapNativeError(-27, "beyond range");
     assertNotNull(exception4);
     assertTrue(exception4.getMessage().contains("Unknown native error"));
   }
