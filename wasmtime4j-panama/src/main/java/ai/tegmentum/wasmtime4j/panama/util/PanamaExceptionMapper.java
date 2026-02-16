@@ -93,10 +93,11 @@ public final class PanamaExceptionMapper {
 
     // Map based on message content patterns
     if (message != null) {
-      // Try to detect and map trap exceptions using native introspection
-      final WasmException trapException = tryMapTrapException(message, exception);
+      // Try to detect and map trap exceptions using native introspection.
+      // TrapException extends RuntimeException (unchecked), so throw directly.
+      final TrapException trapException = tryMapTrapException(message, exception);
       if (trapException != null) {
-        return trapException;
+        throw trapException;
       }
 
       final String lowerMessage = message.toLowerCase();
@@ -137,7 +138,7 @@ public final class PanamaExceptionMapper {
    * @param cause the underlying exception
    * @return a TrapException if the message indicates a trap, null otherwise
    */
-  private static WasmException tryMapTrapException(final String message, final Throwable cause) {
+  private static TrapException tryMapTrapException(final String message, final Throwable cause) {
     if (message == null || message.isEmpty()) {
       return null;
     }
@@ -392,7 +393,7 @@ public final class PanamaExceptionMapper {
       }
     }
 
-    // Runtime exceptions might be recoverable depending on context
-    return exception instanceof WasmException;
+    // Unrecognized exceptions default to non-recoverable (fail-safe)
+    return false;
   }
 }

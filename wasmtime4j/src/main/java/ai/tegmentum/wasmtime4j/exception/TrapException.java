@@ -22,7 +22,7 @@ package ai.tegmentum.wasmtime4j.exception;
  *
  * @since 1.0.0
  */
-public class TrapException extends WasmException {
+public class TrapException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 

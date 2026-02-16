@@ -307,14 +307,14 @@ public final class ExceptionHierarchyTest {
     }
 
     @Test
-    @DisplayName("should extend WasmException")
-    void shouldExtendWasmException() {
+    @DisplayName("should extend RuntimeException")
+    void shouldExtendRuntimeException() {
       final TrapException exception =
           new TrapException(TrapException.TrapType.UNKNOWN, TEST_MESSAGE);
-      // TrapException extends WasmException directly
+      // TrapException extends RuntimeException (traps are unrecoverable)
       assertTrue(
-          exception instanceof WasmException,
-          "TrapException should extend WasmException");
+          exception instanceof RuntimeException,
+          "TrapException should extend RuntimeException");
     }
 
     @Test
