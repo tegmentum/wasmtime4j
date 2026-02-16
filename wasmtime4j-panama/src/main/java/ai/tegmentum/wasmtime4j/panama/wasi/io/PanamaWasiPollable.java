@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import java.lang.foreign.Arena;
@@ -111,7 +112,9 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
               try {
                 final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
                 if (result != 0) {
-                  LOGGER.warning("Failed to close WASI pollable (error code: " + result + ")");
+                  LOGGER.warning(
+                      "Failed to close WASI pollable: "
+                          + PanamaErrorMapper.getErrorDescription(result));
                 }
               } catch (final Throwable e) {
                 throw new Exception("Error closing WASI pollable", e);

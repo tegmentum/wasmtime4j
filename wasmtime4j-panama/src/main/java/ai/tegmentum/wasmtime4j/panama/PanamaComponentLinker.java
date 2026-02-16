@@ -25,6 +25,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -303,8 +304,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
               nativeLinker, panamaComponent.getNativeHandle(), instanceOutPtr);
 
       if (errorCode != 0) {
-        throw new WasmException(
-            "Failed to instantiate component through linker (error code: " + errorCode + ")");
+        throw PanamaErrorMapper.mapNativeError(
+            errorCode, "Failed to instantiate component through linker");
       }
 
       // Get the instance pointer from the output
@@ -328,7 +329,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
 
     final int result = NATIVE_BINDINGS.componentLinkerEnableWasiP2(nativeLinker);
     if (result != 0) {
-      throw new WasmException("Failed to enable WASI Preview 2 (error code: " + result + ")");
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI Preview 2");
     }
 
     LOGGER.fine("Enabled WASI Preview 2 in component linker");
@@ -374,7 +375,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
         final MemorySegment argsJson = tempArena.allocateFrom(jsonBuilder.toString());
         final int result = NATIVE_BINDINGS.componentLinkerSetWasiArgs(nativeLinker, argsJson);
         if (result != 0) {
-          LOGGER.warning("Failed to set WASI args (error code: " + result + ")");
+          LOGGER.warning(
+              "Failed to set WASI args: " + PanamaErrorMapper.getErrorDescription(result));
         }
       }
     }
@@ -389,7 +391,10 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
               NATIVE_BINDINGS.componentLinkerAddWasiEnv(nativeLinker, keyPtr, valuePtr);
           if (result != 0) {
             LOGGER.warning(
-                "Failed to add WASI env var '" + entry.getKey() + "' (error code: " + result + ")");
+                "Failed to add WASI env var '"
+                    + entry.getKey()
+                    + "': "
+                    + PanamaErrorMapper.getErrorDescription(result));
           }
         }
       }
@@ -400,7 +405,9 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
         NATIVE_BINDINGS.componentLinkerSetWasiInheritEnv(
             nativeLinker, config.isInheritEnv() ? 1 : 0);
     if (inheritEnvResult != 0) {
-      LOGGER.warning("Failed to set WASI inherit env flag (error code: " + inheritEnvResult + ")");
+      LOGGER.warning(
+          "Failed to set WASI inherit env flag: "
+              + PanamaErrorMapper.getErrorDescription(inheritEnvResult));
     }
 
     // Apply inherit stdio flag
@@ -409,7 +416,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
             nativeLinker, config.isInheritStdio() ? 1 : 0);
     if (inheritStdioResult != 0) {
       LOGGER.warning(
-          "Failed to set WASI inherit stdio flag (error code: " + inheritStdioResult + ")");
+          "Failed to set WASI inherit stdio flag: "
+              + PanamaErrorMapper.getErrorDescription(inheritStdioResult));
     }
 
     // Apply preopened directories
@@ -426,9 +434,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
             LOGGER.warning(
                 "Failed to add preopened dir '"
                     + dir.getHostPath()
-                    + "' (error code: "
-                    + result
-                    + ")");
+                    + "': "
+                    + PanamaErrorMapper.getErrorDescription(result));
           }
         }
       }
@@ -440,7 +447,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
             nativeLinker, config.isAllowNetwork() ? 1 : 0);
     if (allowNetworkResult != 0) {
       LOGGER.warning(
-          "Failed to set WASI allow network flag (error code: " + allowNetworkResult + ")");
+          "Failed to set WASI allow network flag: "
+              + PanamaErrorMapper.getErrorDescription(allowNetworkResult));
     }
 
     // Apply allow clock flag
@@ -448,7 +456,9 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
         NATIVE_BINDINGS.componentLinkerSetWasiAllowClock(
             nativeLinker, config.isAllowClock() ? 1 : 0);
     if (allowClockResult != 0) {
-      LOGGER.warning("Failed to set WASI allow clock flag (error code: " + allowClockResult + ")");
+      LOGGER.warning(
+          "Failed to set WASI allow clock flag: "
+              + PanamaErrorMapper.getErrorDescription(allowClockResult));
     }
 
     // Apply allow random flag
@@ -457,7 +467,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
             nativeLinker, config.isAllowRandom() ? 1 : 0);
     if (allowRandomResult != 0) {
       LOGGER.warning(
-          "Failed to set WASI allow random flag (error code: " + allowRandomResult + ")");
+          "Failed to set WASI allow random flag: "
+              + PanamaErrorMapper.getErrorDescription(allowRandomResult));
     }
   }
 

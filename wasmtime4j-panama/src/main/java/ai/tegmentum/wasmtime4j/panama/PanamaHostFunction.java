@@ -24,6 +24,7 @@ import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -381,7 +382,9 @@ public final class PanamaHostFunction implements WasmFunction {
                   funcRefIdOut);
 
       if (result != 0) {
-        logger.warning("Failed to register host function in native registry: error code " + result);
+        logger.warning(
+            "Failed to register host function in native registry: "
+                + PanamaErrorMapper.getErrorDescription(result));
         return;
       }
 

@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.panama.NativeHttpBindings;
 import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
 import ai.tegmentum.wasmtime4j.panama.PanamaStore;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
 import java.lang.foreign.Arena;
@@ -253,7 +254,7 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
 
     final int result = bindings.wasiHttpAddToLinker(linkerPtr, storePtr, contextPtr);
     if (result != 0) {
-      throw new WasmException("Failed to add WASI HTTP to linker, error code: " + result);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to add WASI HTTP to linker");
     }
 
     LOGGER.info(

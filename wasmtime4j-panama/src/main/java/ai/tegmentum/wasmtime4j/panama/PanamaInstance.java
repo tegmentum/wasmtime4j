@@ -15,6 +15,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
@@ -1617,7 +1618,8 @@ public final class PanamaInstance implements Instance {
               nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to get memory size: error code " + result);
+        throw new RuntimeException(
+            "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
       }
 
       return sizeOut.get(ValueLayout.JAVA_LONG, 0);
@@ -1701,7 +1703,8 @@ public final class PanamaInstance implements Instance {
       final int offset,
       final byte[] dest,
       final int destOffset,
-      final int length) {
+      final int length)
+  {
     ensureNotClosed();
     try (final Arena tempArena = Arena.ofConfined()) {
       final MemorySegment nameSegment =
@@ -1713,7 +1716,8 @@ public final class PanamaInstance implements Instance {
               nativeInstance, store.getNativeStore(), nameSegment, offset, length, buffer);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to read bytes: error code " + result);
+        throw new RuntimeException(
+            "Failed to read bytes: " + PanamaErrorMapper.getErrorDescription(result));
       }
 
       // Copy from native buffer to Java array
@@ -1735,7 +1739,8 @@ public final class PanamaInstance implements Instance {
       final int offset,
       final byte[] src,
       final int srcOffset,
-      final int length) {
+      final int length)
+  {
     ensureNotClosed();
     try (final Arena tempArena = Arena.ofConfined()) {
       final MemorySegment nameSegment =
@@ -1750,7 +1755,8 @@ public final class PanamaInstance implements Instance {
               nativeInstance, store.getNativeStore(), nameSegment, offset, length, buffer);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to write bytes: error code " + result);
+        throw new RuntimeException(
+            "Failed to write bytes: " + PanamaErrorMapper.getErrorDescription(result));
       }
     }
   }
@@ -1774,7 +1780,8 @@ public final class PanamaInstance implements Instance {
               nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to get memory size: error code " + result);
+        throw new RuntimeException(
+            "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
       }
 
       final long sizeBytes = sizeOut.get(ValueLayout.JAVA_LONG, 0);

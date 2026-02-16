@@ -7,6 +7,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
@@ -180,12 +181,8 @@ final class PanamaComponentInstance implements ComponentInstance {
               resultsCountOut);
 
       if (errorCode != 0) {
-        throw new WasmException(
-            "Failed to invoke component function '"
-                + functionName
-                + "' (error code: "
-                + errorCode
-                + ")");
+        throw PanamaErrorMapper.mapNativeError(
+            errorCode, "Failed to invoke component function '" + functionName + "'");
       }
 
       // Unmarshal results

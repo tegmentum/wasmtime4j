@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -118,7 +119,8 @@ public final class PanamaMemory implements WasmMemory {
         if (result == 0) {
           return (int) Math.min(sizeOutPtr.get(ValueLayout.JAVA_LONG, 0), Integer.MAX_VALUE);
         }
-        throw new IllegalStateException("Failed to get memory size: error code " + result);
+        throw new IllegalStateException(
+            "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
       }
     }
     throw new IllegalStateException("Cannot get size: memory not associated with an instance");
@@ -176,7 +178,8 @@ public final class PanamaMemory implements WasmMemory {
           // -1 means unlimited, return Integer.MAX_VALUE for API compatibility
           return maxPages < 0 ? Integer.MAX_VALUE : (int) maxPages;
         }
-        throw new IllegalStateException("Failed to get memory max size: error code " + result);
+        throw new IllegalStateException(
+            "Failed to get memory max size: " + PanamaErrorMapper.getErrorDescription(result));
       }
     }
     throw new IllegalStateException("Cannot get max size: memory not associated with an instance");
@@ -447,7 +450,8 @@ public final class PanamaMemory implements WasmMemory {
 
     if (result != 0) {
       throw new RuntimeException(
-          "Failed to initialize memory from data segment, error code: " + result);
+          "Failed to initialize memory from data segment: "
+              + PanamaErrorMapper.getErrorDescription(result));
     }
 
     LOGGER.fine(
@@ -482,7 +486,8 @@ public final class PanamaMemory implements WasmMemory {
     final int result = NATIVE_BINDINGS.dataSegmentDrop(instancePtr, dataSegmentIndex);
 
     if (result != 0) {
-      throw new RuntimeException("Failed to drop data segment, error code: " + result);
+      throw new RuntimeException(
+          "Failed to drop data segment: " + PanamaErrorMapper.getErrorDescription(result));
     }
 
     LOGGER.fine("Dropped data segment: " + dataSegmentIndex);
@@ -499,7 +504,8 @@ public final class PanamaMemory implements WasmMemory {
       final int result = NATIVE_BINDINGS.panamaMemoryIsShared(memPtr, storePtr, isSharedOut);
       if (result != 0) {
         throw new RuntimeException(
-            "Failed to query memory shared status (native error code: " + result + ")");
+            "Failed to query memory shared status: "
+                + PanamaErrorMapper.getErrorDescription(result));
       }
       return isSharedOut.get(ValueLayout.JAVA_INT, 0) != 0;
     }
@@ -522,7 +528,8 @@ public final class PanamaMemory implements WasmMemory {
     final MemorySegment minimumOut = arena.allocate(ValueLayout.JAVA_LONG);
     final int minResult = NATIVE_BINDINGS.panamaMemoryGetMinimum(memPtr, storePtr, minimumOut);
     if (minResult != 0) {
-      throw new IllegalStateException("Failed to get memory minimum: error code " + minResult);
+      throw new IllegalStateException(
+          "Failed to get memory minimum: " + PanamaErrorMapper.getErrorDescription(minResult));
     }
     final long minimum = minimumOut.get(ValueLayout.JAVA_LONG, 0);
 
@@ -530,7 +537,8 @@ public final class PanamaMemory implements WasmMemory {
     final MemorySegment maximumOut = arena.allocate(ValueLayout.JAVA_LONG);
     final int maxResult = NATIVE_BINDINGS.panamaMemoryGetMaximum(memPtr, storePtr, maximumOut);
     if (maxResult != 0) {
-      throw new IllegalStateException("Failed to get memory maximum: error code " + maxResult);
+      throw new IllegalStateException(
+          "Failed to get memory maximum: " + PanamaErrorMapper.getErrorDescription(maxResult));
     }
     final long maxValue = maximumOut.get(ValueLayout.JAVA_LONG, 0);
     final Long maximum = maxValue == -1 ? null : maxValue;
@@ -633,7 +641,8 @@ public final class PanamaMemory implements WasmMemory {
     final int result = NATIVE_BINDINGS.panamaMemoryGetData(memPtr, storePtr, dataPtrOut, sizeOut);
 
     if (result != 0) {
-      throw new RuntimeException("Failed to get memory data pointer: error code " + result);
+      throw new RuntimeException(
+          "Failed to get memory data pointer: " + PanamaErrorMapper.getErrorDescription(result));
     }
 
     final long rawPtr = dataPtrOut.get(ValueLayout.ADDRESS, 0).address();
@@ -1009,7 +1018,8 @@ public final class PanamaMemory implements WasmMemory {
           NATIVE_BINDINGS.panamaMemoryReadBytes(memPtr, storePtr, offset, length, buffer);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to read memory bytes, error code: " + result);
+        throw new RuntimeException(
+            "Failed to read memory bytes: " + PanamaErrorMapper.getErrorDescription(result));
       }
 
       // Copy from native buffer to destination array
@@ -1069,7 +1079,8 @@ public final class PanamaMemory implements WasmMemory {
           NATIVE_BINDINGS.panamaMemoryWriteBytes(memPtr, storePtr, offset, length, buffer);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to write memory bytes, error code: " + result);
+        throw new RuntimeException(
+            "Failed to write memory bytes: " + PanamaErrorMapper.getErrorDescription(result));
       }
     }
   }
@@ -1091,7 +1102,8 @@ public final class PanamaMemory implements WasmMemory {
       final int result = NATIVE_BINDINGS.panamaMemorySizePages64(memPtr, storePtr, sizeOut);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to get memory size, error code: " + result);
+        throw new RuntimeException(
+            "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
       }
 
       return sizeOut.get(ValueLayout.JAVA_LONG, 0);
@@ -1424,7 +1436,7 @@ public final class PanamaMemory implements WasmMemory {
     if (nativeMessage != null && !nativeMessage.isEmpty()) {
       message = operation + ": " + nativeMessage;
     } else {
-      message = operation + " (native error code: " + errorCode + ")";
+      message = operation + ": " + PanamaErrorMapper.getErrorDescription(errorCode);
     }
     if (nativeMessage != null && nativeMessage.contains("shared memory")) {
       throw new UnsupportedOperationException(message);

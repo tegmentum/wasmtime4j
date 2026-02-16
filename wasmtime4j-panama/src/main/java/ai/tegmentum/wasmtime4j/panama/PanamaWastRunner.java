@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wast.WastDirectiveResult;
 import ai.tegmentum.wasmtime4j.wast.WastExecutionResult;
 import com.google.gson.Gson;
@@ -123,7 +124,7 @@ public final class PanamaWastRunner {
             0,
             0,
             0,
-            "Native WAST execution failed with error code: " + result,
+            "Native WAST execution failed: " + PanamaErrorMapper.getErrorDescription(result),
             new WastDirectiveResult[0]);
       }
 
@@ -271,7 +272,7 @@ public final class PanamaWastRunner {
             0,
             0,
             0,
-            "Native WAST execution failed with error code: " + result,
+            "Native WAST execution failed: " + PanamaErrorMapper.getErrorDescription(result),
             new WastDirectiveResult[0]);
       }
 

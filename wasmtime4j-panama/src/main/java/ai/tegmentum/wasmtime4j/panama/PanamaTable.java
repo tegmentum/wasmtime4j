@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -523,7 +524,8 @@ public final class PanamaTable implements WasmTable {
         NATIVE_BINDINGS.panamaTableCopy(nativeTable, getNativeStorePointer(), dst, src, count);
 
     if (result != 0) {
-      throw new IllegalStateException("Failed to copy table elements (error code: " + result + ")");
+      throw new IllegalStateException(
+          "Failed to copy table elements: " + PanamaErrorMapper.getErrorDescription(result));
     }
   }
 
@@ -560,7 +562,8 @@ public final class PanamaTable implements WasmTable {
 
     if (result != 0) {
       throw new IllegalStateException(
-          "Failed to copy table elements from source (error code: " + result + ")");
+          "Failed to copy table elements from source: "
+              + PanamaErrorMapper.getErrorDescription(result));
     }
   }
 
@@ -645,7 +648,8 @@ public final class PanamaTable implements WasmTable {
 
     if (result != 0) {
       throw new RuntimeException(
-          "Failed to initialize table from element segment, error code: " + result);
+          "Failed to initialize table from element segment: "
+              + PanamaErrorMapper.getErrorDescription(result));
     }
 
     LOGGER.fine(
@@ -680,7 +684,8 @@ public final class PanamaTable implements WasmTable {
     final int result = NATIVE_BINDINGS.elemDrop(instancePtr, elementSegmentIndex);
 
     if (result != 0) {
-      throw new RuntimeException("Failed to drop element segment, error code: " + result);
+      throw new RuntimeException(
+          "Failed to drop element segment: " + PanamaErrorMapper.getErrorDescription(result));
     }
 
     LOGGER.fine("Dropped element segment: " + elementSegmentIndex);

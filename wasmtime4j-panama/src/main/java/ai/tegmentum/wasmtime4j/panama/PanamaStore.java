@@ -7,6 +7,7 @@ import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -395,7 +396,7 @@ public final class PanamaStore implements Store {
 
     if (result != 0) {
       arena.close();
-      throw new WasmException("Failed to create native store with limits: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to create native store with limits");
     }
 
     this.nativeStore = storePtr.get(ValueLayout.ADDRESS, 0);
@@ -453,8 +454,8 @@ public final class PanamaStore implements Store {
 
     if (result != 0) {
       arena.close();
-      throw new WasmException(
-          "Failed to create native store with resource limits: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to create native store with resource limits");
     }
 
     this.nativeStore = storePtr.get(ValueLayout.ADDRESS, 0);
@@ -612,7 +613,7 @@ public final class PanamaStore implements Store {
     if (result != 0) {
       RESOURCE_LIMITERS.remove(newCallbackId);
       limiterCallbackId = 0;
-      throw new WasmException("Failed to configure resource limiter: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure resource limiter");
     }
   }
 
@@ -1332,7 +1333,7 @@ public final class PanamaStore implements Store {
       }
 
       if (result != 0) {
-        throw new RuntimeException("Failed to capture backtrace: error code " + result);
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to capture backtrace");
       }
 
       // Read the buffer pointer and length
@@ -1362,8 +1363,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
     final int result = NATIVE_BINDINGS.storeGc(nativeStore);
     if (result != 0) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to perform garbage collection: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to perform garbage collection");
     }
   }
 
@@ -1429,8 +1429,8 @@ public final class PanamaStore implements Store {
     final int result =
         NATIVE_BINDINGS.storeEpochDeadlineAsyncYieldAndUpdate(nativeStore, deltaTicks);
     if (result != 0) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to set epoch deadline async yield: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to set epoch deadline async yield");
     }
   }
 
@@ -1439,8 +1439,7 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
     final int result = NATIVE_BINDINGS.storeEpochDeadlineTrap(nativeStore);
     if (result != 0) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to set epoch deadline trap: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to set epoch deadline trap");
     }
   }
 
@@ -1498,8 +1497,8 @@ public final class PanamaStore implements Store {
     }
 
     if (result != 0) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to configure epoch deadline callback: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to configure epoch deadline callback");
     }
   }
 
@@ -1543,8 +1542,7 @@ public final class PanamaStore implements Store {
         CALL_HOOK_HANDLERS.remove(callHookCallbackId);
         callHookCallbackId = 0;
       }
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to configure call hook: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure call hook");
     }
   }
 
@@ -1560,8 +1558,7 @@ public final class PanamaStore implements Store {
       result = NATIVE_BINDINGS.storeSetCallHookAsync(nativeStore);
     }
     if (result != 0) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to configure async call hook: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure async call hook");
     }
   }
 

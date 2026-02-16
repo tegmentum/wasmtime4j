@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.WasiClockId;
 import java.lang.foreign.Arena;
@@ -122,8 +123,8 @@ public final class WasiTimeOperations {
       final int result = (int) clockResGetHandle.invoke(clockId, resolutionOut);
 
       if (result != 0) {
-        throw new WasiException(
-            "Failed to get clock resolution for clock " + clockId + ": error code " + result);
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to get clock resolution for clock " + clockId);
       }
 
       final long resolution = resolutionOut.get(ValueLayout.JAVA_LONG, 0);
@@ -173,8 +174,8 @@ public final class WasiTimeOperations {
       final int result = (int) clockTimeGetHandle.invoke(clockId, precision, timestampOut);
 
       if (result != 0) {
-        throw new WasiException(
-            "Failed to get current time for clock " + clockId + ": error code " + result);
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to get current time for clock " + clockId);
       }
 
       final long timestamp = timestampOut.get(ValueLayout.JAVA_LONG, 0);

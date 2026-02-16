@@ -8,6 +8,7 @@ import ai.tegmentum.wasmtime4j.ModuleImport;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
@@ -887,7 +888,7 @@ public final class PanamaModule implements Module {
     final int result = NATIVE_BINDINGS.moduleSerialize(nativeModule, dataPtrPtr, lenPtr);
 
     if (result != 0) {
-      throw new WasmException("Failed to serialize module (error code: " + result + ")");
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to serialize module");
     }
 
     // Get the data pointer and length

@@ -32,6 +32,7 @@ import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.TagType;
@@ -396,7 +397,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
                   modulePtrPtr);
 
       if (result != 0) {
-        throw new WasmException("Failed to deserialize module: error code " + result);
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to deserialize module");
       }
 
       // Get the module pointer

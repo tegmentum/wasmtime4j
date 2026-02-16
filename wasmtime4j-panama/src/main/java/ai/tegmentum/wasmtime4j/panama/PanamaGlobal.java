@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.WasmTypeException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -68,7 +69,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
     if (result != 0) {
       arena.close();
-      throw new RuntimeException("Failed to create global: error code " + result);
+      throw new RuntimeException(
+          "Failed to create global: " + PanamaErrorMapper.getErrorDescription(result));
     }
 
     this.nativeGlobal = globalPtrPtr.get(ValueLayout.ADDRESS, 0);
@@ -220,7 +222,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
               v128Bytes);
 
       if (result != 0) {
-        throw new RuntimeException("Failed to get global value: error code " + result);
+        throw new RuntimeException(
+            "Failed to get global value: " + PanamaErrorMapper.getErrorDescription(result));
       }
 
       // Convert based on type
@@ -272,7 +275,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     final int result = NATIVE_BINDINGS.panamaGlobalSet(nativeGlobal, store.getNativeStore(), value);
 
     if (result != 0) {
-      throw new RuntimeException("Failed to set global value: error code " + result);
+      throw new RuntimeException(
+          "Failed to set global value: " + PanamaErrorMapper.getErrorDescription(result));
     }
   }
 
@@ -346,7 +350,8 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
         this.mutable = mutabilityCode.get(ValueLayout.JAVA_INT, 0) != 0;
         LOGGER.fine("Global metadata: type=" + type + ", mutable=" + mutable);
       } else {
-        LOGGER.warning("Failed to query global metadata: error code " + result);
+        LOGGER.warning(
+            "Failed to query global metadata: " + PanamaErrorMapper.getErrorDescription(result));
         this.type = WasmValueType.I32; // Default fallback
         this.mutable = true;
       }

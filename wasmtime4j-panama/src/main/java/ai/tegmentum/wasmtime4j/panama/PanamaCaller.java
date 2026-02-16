@@ -25,6 +25,7 @@ import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.Caller;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -289,7 +290,7 @@ final class PanamaCaller<T> implements Caller<T> {
     try {
       final int result = bindings.callerAddFuel(callerPtr, fuel);
       if (result != 0) {
-        throw new WasmException("Failed to add fuel (error code: " + result + ")");
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to add fuel");
       }
     } catch (WasmException e) {
       throw e;
@@ -322,7 +323,7 @@ final class PanamaCaller<T> implements Caller<T> {
     try {
       final int result = bindings.callerSetEpochDeadline(callerPtr, deadline);
       if (result != 0) {
-        throw new WasmException("Failed to set epoch deadline (error code: " + result + ")");
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to set epoch deadline");
       }
     } catch (WasmException e) {
       throw e;

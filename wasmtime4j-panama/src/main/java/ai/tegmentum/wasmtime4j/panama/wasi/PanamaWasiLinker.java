@@ -29,6 +29,7 @@ import ai.tegmentum.wasmtime4j.panama.PanamaStore;
 import ai.tegmentum.wasmtime4j.panama.PanamaWasiContext;
 import ai.tegmentum.wasmtime4j.panama.PanamaWasmRuntime;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
@@ -263,8 +264,7 @@ public final class PanamaWasiLinker implements WasiLinker {
     final int addResult =
         NATIVE_BINDINGS.wasiCtxAddToStore(context.getNativeHandle(), panamaStore.getNativeStore());
     if (addResult != 0) {
-      throw new WasmException(
-          "Failed to add WASI context to store (error code: " + addResult + ")");
+      throw PanamaErrorMapper.mapNativeError(addResult, "Failed to add WASI context to store");
     }
 
     // Enable WASI on the linker

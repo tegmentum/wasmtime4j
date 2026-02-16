@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -428,7 +429,7 @@ public final class PanamaFunctionReference implements FunctionReference {
               resultOut);
 
       if (result != 0) {
-        throw new WasmException("Failed to create native function reference: error code " + result);
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to create native function reference");
       }
 
       // Store the native registry ID

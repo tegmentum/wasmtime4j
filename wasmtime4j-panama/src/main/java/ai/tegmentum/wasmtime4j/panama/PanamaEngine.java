@@ -8,6 +8,7 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -153,7 +154,7 @@ public final class PanamaEngine implements Engine {
       if (nativeError != null && !nativeError.isEmpty()) {
         throw new WasmException("Failed to compile WAT: " + nativeError);
       }
-      throw new WasmException("Failed to compile WAT (error code: " + result + ")");
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to compile WAT");
     }
 
     // Get the module pointer

@@ -15,6 +15,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
@@ -276,8 +277,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
 
     if (result != 0) {
-      throw new WasmException(
-          "Failed to define memory: " + moduleName + "::" + name + " (error code: " + result + ")");
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to define memory: " + moduleName + "::" + name);
     }
 
     LOGGER.fine("Defined memory: " + moduleName + "::" + name);
@@ -326,8 +327,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             panamaTable.getNativeTable());
 
     if (result != 0) {
-      throw new WasmException(
-          "Failed to define table: " + moduleName + "::" + name + " (error code: " + result + ")");
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to define table: " + moduleName + "::" + name);
     }
 
     LOGGER.fine("Defined table: " + moduleName + "::" + name);
@@ -385,8 +386,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, globalPtr);
 
     if (result != 0) {
-      throw new WasmException(
-          "Failed to define global: " + moduleName + "::" + name + " (error code: " + result + ")");
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to define global: " + moduleName + "::" + name);
     }
 
     LOGGER.fine("Defined global: " + moduleName + "::" + name);
@@ -429,8 +430,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             panamaInstance.getNativeInstance());
 
     if (result != 0) {
-      throw new WasmException(
-          "Failed to define instance: " + moduleName + " (error code: " + result + ")");
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to define instance: " + moduleName);
     }
 
     LOGGER.fine("Defined instance: " + moduleName);
@@ -466,7 +467,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             nativeLinker, fromModulePtr, fromNamePtr, toModulePtr, toNamePtr);
 
     if (result != 0) {
-      throw new WasmException(
+      throw PanamaErrorMapper.mapNativeError(
+          result,
           "Failed to create alias from "
               + fromModule
               + "::"
@@ -474,10 +476,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
               + " to "
               + toModule
               + "::"
-              + toName
-              + " (error code: "
-              + result
-              + ")");
+              + toName);
     }
 
     LOGGER.fine(
@@ -514,8 +513,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             NATIVE_ENGINE_BINDINGS.storeSetWasiContext(
                 panamaStore.getNativeStore(), wasiContext.getNativeContext());
         if (result != 0) {
-          throw new WasmException(
-              "Failed to attach WASI context to store (error code: " + result + ")");
+          throw PanamaErrorMapper.mapNativeError(
+              result, "Failed to attach WASI context to store");
         }
         LOGGER.fine("Attached WASI context to store before instantiation");
       }
@@ -615,7 +614,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final int result = NATIVE_INSTANCE_BINDINGS.linkerAddWasi(nativeLinker);
 
     if (result != 0) {
-      throw new WasmException("Failed to enable WASI (error code: " + result + ")");
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI");
     }
 
     wasiEnabled = true;
@@ -1257,7 +1256,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     ensureNotClosed();
     final int result = NATIVE_INSTANCE_BINDINGS.linkerAllowShadowing(nativeLinker, allow ? 1 : 0);
     if (result != 0) {
-      LOGGER.warning("Failed to set allow shadowing: error code " + result);
+      LOGGER.warning(
+          "Failed to set allow shadowing: " + PanamaErrorMapper.getErrorDescription(result));
     }
     return this;
   }
@@ -1268,7 +1268,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final int result =
         NATIVE_INSTANCE_BINDINGS.linkerAllowUnknownExports(nativeLinker, allow ? 1 : 0);
     if (result != 0) {
-      LOGGER.warning("Failed to set allow unknown exports: error code " + result);
+      LOGGER.warning(
+          "Failed to set allow unknown exports: " + PanamaErrorMapper.getErrorDescription(result));
     }
     return this;
   }
@@ -1299,7 +1300,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
 
     if (result != 0) {
-      throw new WasmException("Failed to define unknown imports as traps: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to define unknown imports as traps");
     }
 
     LOGGER.fine("Defined unknown imports as traps");
@@ -1331,8 +1332,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
 
     if (result != 0) {
-      throw new WasmException(
-          "Failed to define unknown imports as default values: error code " + result);
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to define unknown imports as default values");
     }
 
     LOGGER.fine("Defined unknown imports as default values");
@@ -1483,7 +1484,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final int result = defineExternByType(extern, storePtr, moduleNamePtr, namePtr);
 
       if (result != 0) {
-        throw new WasmException("Failed to define name: " + name + " (error code: " + result + ")");
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to define name: " + name);
       }
 
       addImportWithMetadata("", name, getExternImportKind(extern), extern.toString());

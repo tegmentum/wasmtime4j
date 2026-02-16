@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
@@ -144,7 +145,9 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
               try {
                 final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
                 if (result != 0) {
-                  LOGGER.warning("Failed to close WASI input stream (error code: " + result + ")");
+                  LOGGER.warning(
+                      "Failed to close WASI input stream: "
+                          + PanamaErrorMapper.getErrorDescription(result));
                 }
               } catch (final Throwable e) {
                 throw new Exception("Error closing WASI input stream", e);

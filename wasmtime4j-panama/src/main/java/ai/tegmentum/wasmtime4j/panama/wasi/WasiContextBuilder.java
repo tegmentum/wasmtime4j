@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
 import ai.tegmentum.wasmtime4j.panama.ArenaResourceManager;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -395,9 +396,8 @@ public final class WasiContextBuilder {
                 LOGGER.warning(
                     "Failed to set environment variable: "
                         + parts[0]
-                        + " (error code: "
-                        + result
-                        + ")");
+                        + ": "
+                        + PanamaErrorMapper.getErrorDescription(result));
               }
             }
           }
@@ -416,7 +416,9 @@ public final class WasiContextBuilder {
 
           int result = bindings.wasiContextSetArgv(contextHandle, argsArray, arguments.length);
           if (result != 0) {
-            LOGGER.warning("Failed to set command line arguments (error code: " + result + ")");
+            LOGGER.warning(
+                "Failed to set command line arguments: "
+                    + PanamaErrorMapper.getErrorDescription(result));
           }
         }
       }
@@ -441,9 +443,8 @@ public final class WasiContextBuilder {
                       + guestPath
                       + " -> "
                       + hostPath
-                      + " (error code: "
-                      + result
-                      + ")");
+                      + ": "
+                      + PanamaErrorMapper.getErrorDescription(result));
             }
           }
         }

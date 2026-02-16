@@ -11,6 +11,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
 import java.io.IOException;
@@ -156,7 +157,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
               enhancedEngineHandle, bytesSegment, wasmBytes.length, componentOut);
 
       if (errorCode != 0) {
-        throw new WasmException("Failed to compile component (error code: " + errorCode + ")");
+        throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to compile component");
       }
 
       final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
@@ -210,7 +211,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
               enhancedEngineHandle, panamaComponent.getNativeHandle(), instanceIdOut);
 
       if (errorCode != 0) {
-        throw new WasmException("Failed to instantiate component (error code: " + errorCode + ")");
+        throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to instantiate component");
       }
 
       // Read the instance ID from the output parameter

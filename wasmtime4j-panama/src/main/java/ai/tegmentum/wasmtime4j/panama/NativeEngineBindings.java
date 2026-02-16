@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -1124,8 +1125,7 @@ public final class NativeEngineBindings extends NativeBindingsBase {
               outLenPtr);
 
       if (result != 0) {
-        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-            "Failed to precompile module (error code: " + result + ")");
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to precompile module");
       }
 
       final MemorySegment dataPtr = outDataPtr.get(ValueLayout.ADDRESS, 0);

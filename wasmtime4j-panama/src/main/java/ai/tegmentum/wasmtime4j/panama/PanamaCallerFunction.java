@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaTypeConverter;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
@@ -136,8 +137,7 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
               funcHandle, storePtr, paramsSegment, paramCount, resultsSegment, resultCount);
 
       if (result != 0) {
-        throw new WasmException(
-            "Function call failed for '" + name + "' (error code: " + result + ")");
+        throw PanamaErrorMapper.mapNativeError(result, "Function call failed for '" + name + "'");
       }
 
       // Unmarshal results
