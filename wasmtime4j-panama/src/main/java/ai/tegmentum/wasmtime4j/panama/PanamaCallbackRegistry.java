@@ -363,7 +363,7 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
             throw new RuntimeException("Async callback execution failed", e);
           }
         },
-        asyncExecutor);
+        getAsyncExecutor());
   }
 
   @Override

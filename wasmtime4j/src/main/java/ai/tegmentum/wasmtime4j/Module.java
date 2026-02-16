@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.func.FunctionInfo;
 import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.FuncType;
@@ -246,7 +245,7 @@ public interface Module extends Closeable {
       // Basic structural validation - try to compile with engine
       // This delegates to the actual engine implementation for deeper validation
       try {
-        WasmRuntime runtime = WasmRuntimeFactory.create();
+        WasmRuntime runtime = engine.getRuntime();
         Module testModule = runtime.compileModule(engine, wasmBytes);
         testModule.close();
         return ModuleValidationResult.success();
@@ -444,7 +443,7 @@ public interface Module extends Closeable {
    * @throws IllegalArgumentException if engine or wasmBytes is null
    */
   static Module compile(final Engine engine, final byte[] wasmBytes) throws WasmException {
-    return WasmRuntimeFactory.create().compileModule(engine, wasmBytes);
+    return engine.getRuntime().compileModule(engine, wasmBytes);
   }
 
   /**
@@ -475,7 +474,7 @@ public interface Module extends Closeable {
    * @since 1.0.0
    */
   static Module deserialize(final Engine engine, final byte[] bytes) throws WasmException {
-    return WasmRuntimeFactory.create().deserializeModule(engine, bytes);
+    return engine.getRuntime().deserializeModule(engine, bytes);
   }
 
   /**
@@ -490,7 +489,7 @@ public interface Module extends Closeable {
    */
   static Module deserializeFile(final Engine engine, final java.nio.file.Path path)
       throws WasmException {
-    return WasmRuntimeFactory.create().deserializeModuleFile(engine, path);
+    return engine.getRuntime().deserializeModuleFile(engine, path);
   }
 
   /**
