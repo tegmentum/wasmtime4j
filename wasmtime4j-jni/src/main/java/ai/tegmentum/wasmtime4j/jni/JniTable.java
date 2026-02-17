@@ -104,7 +104,7 @@ public final class JniTable extends JniResource implements WasmTable {
     try {
       final String typeString = nativeGetElementType(getNativeHandle(), store.getNativeHandle());
       if (typeString == null) {
-        return WasmValueType.EXTERNREF;
+        throw new IllegalStateException("Native returned null element type for table");
       }
       // Convert string type to WasmValueType enum
       switch (typeString.toLowerCase()) {
@@ -112,8 +112,10 @@ public final class JniTable extends JniResource implements WasmTable {
           return WasmValueType.FUNCREF;
         case "externref":
           return WasmValueType.EXTERNREF;
+        case "anyref":
+          return WasmValueType.EXTERNREF;
         default:
-          return WasmValueType.EXTERNREF; // Default fallback
+          throw new IllegalStateException("Unknown table element type: " + typeString);
       }
     } catch (final JniResourceException e) {
       throw e;
