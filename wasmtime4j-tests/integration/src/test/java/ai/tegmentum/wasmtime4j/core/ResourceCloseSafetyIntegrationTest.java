@@ -173,6 +173,7 @@ public final class ResourceCloseSafetyIntegrationTest {
 
     @Test
     @DisplayName("operations on closed module should throw IllegalStateException")
+    @SuppressWarnings("deprecation")
     void operationsOnClosedModuleShouldThrow() throws Exception {
       final Engine engine = Engine.create();
       final Module module = engine.compileModule(ADD_WASM);

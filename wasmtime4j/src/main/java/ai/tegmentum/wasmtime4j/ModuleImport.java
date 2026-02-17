@@ -9,7 +9,10 @@ import ai.tegmentum.wasmtime4j.type.ImportType;
  * specific type information for introspection purposes.
  *
  * @since 1.0.0
+ * @deprecated Use {@link ai.tegmentum.wasmtime4j.type.ImportType} directly instead. This class
+ *     wraps ImportType without adding any information.
  */
+@Deprecated
 public final class ModuleImport {
 
   private final String moduleName;

@@ -241,21 +241,21 @@ public interface Module extends Closeable {
   /**
    * Gets the imports required by this module as ModuleImport objects.
    *
-   * <p>This method provides enhanced import information compared to {@link #getImports()},
-   * including complete type details for each import.
-   *
    * @return an immutable list of module imports with complete type information
+   * @deprecated Use {@link #getImports()} instead. ModuleImport wraps ImportType without adding
+   *     information.
    */
+  @Deprecated
   java.util.List<ModuleImport> getModuleImports();
 
   /**
    * Gets the exports defined by this module as ModuleExport objects.
    *
-   * <p>This method provides enhanced export information compared to {@link #getExports()},
-   * including complete type details for each export.
-   *
    * @return an immutable list of module exports with complete type information
+   * @deprecated Use {@link #getExports()} instead. ModuleExport wraps ExportType without adding
+   *     information.
    */
+  @Deprecated
   java.util.List<ModuleExport> getModuleExports();
 
   /**
@@ -358,8 +358,9 @@ public interface Module extends Closeable {
   /**
    * Gets an iterable over all functions in this module.
    *
-   * <p>This includes both imported functions and locally defined functions, providing metadata
-   * about each function's index, name, type, and origin.
+   * <p>This includes both imported functions and exported functions, providing metadata about each
+   * function's index, name, type, and origin. Internal functions that are neither imported nor
+   * exported are not included since module-level introspection does not expose them.
    *
    * @return an iterable of function information
    * @since 1.1.0
@@ -372,8 +373,7 @@ public interface Module extends Closeable {
     for (ImportType imp : getImports()) {
       WasmType type = imp.getType();
       if (type != null && type.getKind() == WasmTypeKind.FUNCTION) {
-        java.util.Optional<FuncType> ft = getFunctionType(imp.getName());
-        funcs.add(new FunctionInfo(index++, imp.getName(), ft.orElse(null), true));
+        funcs.add(new FunctionInfo(index++, imp.getName(), (FuncType) type, true));
       }
     }
 
@@ -381,8 +381,7 @@ public interface Module extends Closeable {
     for (ExportType exp : getExports()) {
       WasmType type = exp.getType();
       if (type != null && type.getKind() == WasmTypeKind.FUNCTION) {
-        java.util.Optional<FuncType> ft = getFunctionType(exp.getName());
-        funcs.add(new FunctionInfo(index++, exp.getName(), ft.orElse(null), false));
+        funcs.add(new FunctionInfo(index++, exp.getName(), (FuncType) type, false));
       }
     }
 

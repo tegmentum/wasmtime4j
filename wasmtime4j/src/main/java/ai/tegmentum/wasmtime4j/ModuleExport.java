@@ -9,7 +9,10 @@ import ai.tegmentum.wasmtime4j.type.ExportType;
  * for introspection purposes.
  *
  * @since 1.0.0
+ * @deprecated Use {@link ai.tegmentum.wasmtime4j.type.ExportType} directly instead. This class
+ *     wraps ExportType without adding any information.
  */
+@Deprecated
 public final class ModuleExport {
 
   private final String name;

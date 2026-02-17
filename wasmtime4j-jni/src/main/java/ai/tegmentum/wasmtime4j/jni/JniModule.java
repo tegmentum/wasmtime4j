@@ -42,6 +42,7 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public List<ImportType> getImports() {
     final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
     final List<ImportType> imports = new java.util.ArrayList<>(moduleImports.size());
@@ -103,6 +104,7 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public List<ExportType> getExports() {
     final List<ai.tegmentum.wasmtime4j.ModuleExport> moduleExports = getModuleExports();
     final List<ExportType> exports = new java.util.ArrayList<>(moduleExports.size());
@@ -190,6 +192,7 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public List<ai.tegmentum.wasmtime4j.ModuleImport> getModuleImports() {
     ensureNotClosed();
     if (!isNativeHandleReasonable()) {
@@ -206,6 +209,7 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   @SuppressFBWarnings(
       value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
       justification =
@@ -342,6 +346,7 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public boolean validateImports(final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {
       throw new IllegalArgumentException("imports cannot be null");
@@ -370,6 +375,7 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImportsDetailed(
       final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {

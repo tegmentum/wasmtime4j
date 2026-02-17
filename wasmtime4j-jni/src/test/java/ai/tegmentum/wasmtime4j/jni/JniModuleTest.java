@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
  * <p>Note: Integration tests with actual WebAssembly modules are in wasmtime4j-tests.
  */
 @DisplayName("JniModule Tests")
+@SuppressWarnings("deprecation")
 class JniModuleTest {
 
   private static final long VALID_HANDLE = 0x12345678L;

@@ -177,6 +177,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public List<ExportType> getExports() {
     final List<ai.tegmentum.wasmtime4j.ModuleExport> moduleExports = getModuleExports();
     final List<ExportType> exports = new java.util.ArrayList<>(moduleExports.size());
@@ -187,6 +188,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public List<ImportType> getImports() {
     final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
     final List<ImportType> imports = new java.util.ArrayList<>(moduleImports.size());
@@ -257,6 +259,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public boolean hasExport(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
@@ -272,6 +275,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public boolean hasImport(final String moduleName, final String fieldName) {
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
@@ -296,6 +300,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public boolean validateImports(final ImportMap imports) {
     if (imports == null) {
       throw new IllegalArgumentException("Imports cannot be null");
@@ -315,6 +320,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImportsDetailed(
       final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {
@@ -604,6 +610,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public List<ModuleImport> getModuleImports() {
     ensureNotClosed();
 
@@ -634,6 +641,7 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public List<ModuleExport> getModuleExports() {
     ensureNotClosed();
 

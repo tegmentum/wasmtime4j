@@ -59,6 +59,7 @@ public final class TableTypeFromNativeTest {
 
     @Test
     @DisplayName("should verify hasExport works for table")
+    @SuppressWarnings("deprecation")
     void shouldVerifyHasExportWorksForTable() throws Exception {
       LOGGER.info("Verifying hasExport works for table export");
 

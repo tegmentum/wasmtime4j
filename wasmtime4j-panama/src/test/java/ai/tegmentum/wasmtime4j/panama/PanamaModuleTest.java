@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
  * management.
  */
 @DisplayName("PanamaModule Tests")
+@SuppressWarnings("deprecation")
 class PanamaModuleTest {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaModuleTest.class.getName());

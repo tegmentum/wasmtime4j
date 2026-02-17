@@ -183,27 +183,14 @@ public interface Caller<T> {
   /**
    * Gets an export using a pre-computed ModuleExport reference.
    *
-   * <p>This method provides faster export lookup compared to string-based lookup because it avoids
-   * string comparison on every call. The ModuleExport can be obtained from the module's export list
-   * and cached for repeated use.
-   *
-   * <p>Example usage:
-   *
-   * <pre>{@code
-   * // Cache the export reference at initialization
-   * ModuleExport memoryExport = module.getExports().stream()
-   *     .filter(e -> e.getName().equals("memory"))
-   *     .findFirst().orElseThrow();
-   *
-   * // Use it in hot path for faster lookup
-   * Optional<Memory> memory = caller.getExportByModuleExport(memoryExport);
-   * }</pre>
-   *
    * @param moduleExport the pre-computed module export reference
    * @return the export if it exists, empty otherwise
    * @throws IllegalArgumentException if moduleExport is null
    * @since 1.0.0
+   * @deprecated Use {@link #getExport(String)} instead. This method only uses the export name
+   *     internally.
    */
+  @Deprecated
   Optional<Extern> getExportByModuleExport(ModuleExport moduleExport);
 
   /**

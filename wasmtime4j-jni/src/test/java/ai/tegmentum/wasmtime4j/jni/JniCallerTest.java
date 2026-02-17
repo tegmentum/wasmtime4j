@@ -140,6 +140,7 @@ class JniCallerTest {
 
     @Test
     @DisplayName("should have getExportByModuleExport method")
+    @SuppressWarnings("deprecation")
     void shouldHaveGetExportByModuleExportMethod() throws NoSuchMethodException {
       final Method method =
           JniCaller.class.getMethod("getExportByModuleExport", ModuleExport.class);

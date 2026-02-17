@@ -60,6 +60,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * @since 1.0.0
  */
 @DisplayName("Caller Epoch and Advanced Access Tests")
+@SuppressWarnings("deprecation")
 public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
 
   private static final Logger LOGGER =

@@ -309,6 +309,7 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public Optional<Extern> getExportByModuleExport(final ModuleExport moduleExport) {
     if (moduleExport == null) {
       throw new IllegalArgumentException("moduleExport cannot be null");
