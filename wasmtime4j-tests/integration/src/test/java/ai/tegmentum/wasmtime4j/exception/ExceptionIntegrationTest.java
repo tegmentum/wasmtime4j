@@ -336,21 +336,21 @@ public class ExceptionIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should extend RuntimeException")
-    void shouldExtendRuntimeException() {
-      LOGGER.info("Testing TrapException extends RuntimeException");
+    @DisplayName("Should extend WasmException")
+    void shouldExtendWasmException() {
+      LOGGER.info("Testing TrapException extends WasmException");
 
       Class<?> trapClass = TrapException.class;
       Class<?> superClass = trapClass.getSuperclass();
       LOGGER.info("TrapException class: " + trapClass.getName());
       LOGGER.info("TrapException superclass: " + superClass.getName());
       LOGGER.info(
-          "RuntimeException.isAssignableFrom(TrapException): "
-              + RuntimeException.class.isAssignableFrom(trapClass));
+          "WasmException.isAssignableFrom(TrapException): "
+              + WasmException.class.isAssignableFrom(trapClass));
 
       assertTrue(
-          RuntimeException.class.isAssignableFrom(trapClass),
-          "TrapException should extend RuntimeException, but superclass is "
+          WasmException.class.isAssignableFrom(trapClass),
+          "TrapException should extend WasmException, but superclass is "
               + superClass.getName());
 
       LOGGER.info("TrapException inheritance verified");

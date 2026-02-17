@@ -49,11 +49,11 @@ class TrapExceptionTest {
     }
 
     @Test
-    @DisplayName("should extend RuntimeException")
-    void shouldExtendRuntimeException() {
+    @DisplayName("should extend WasmException")
+    void shouldExtendWasmException() {
       assertTrue(
-          RuntimeException.class.isAssignableFrom(TrapException.class),
-          "TrapException should extend RuntimeException");
+          WasmException.class.isAssignableFrom(TrapException.class),
+          "TrapException should extend WasmException");
     }
 
     @Test
