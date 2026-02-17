@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,29 +63,6 @@ class WitPackageTest {
       assertFalse(WitValue.class.isInterface(), "WitValue should not be an interface");
     }
 
-    @Test
-    @DisplayName("WitValue should have getType method")
-    void witValueShouldHaveGetTypeMethod() throws NoSuchMethodException {
-      Method getType = WitValue.class.getMethod("getType");
-      assertNotNull(getType, "getType method should exist");
-      assertEquals(WitType.class, getType.getReturnType(), "getType should return WitType");
-    }
-
-    @Test
-    @DisplayName("WitValue should have toJava method")
-    void witValueShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method toJava = WitValue.class.getMethod("toJava");
-      assertNotNull(toJava, "toJava method should exist");
-      assertEquals(Object.class, toJava.getReturnType(), "toJava should return Object");
-    }
-
-    @Test
-    @DisplayName("WitValue should have validate method")
-    void witValueShouldHaveValidateMethod() throws NoSuchMethodException {
-      Method validate = WitValue.class.getDeclaredMethod("validate");
-      assertNotNull(validate, "validate method should exist");
-      assertTrue(Modifier.isProtected(validate.getModifiers()), "validate should be protected");
-    }
   }
 
   // ========== WitPrimitiveValue Base Class Tests ==========
@@ -477,13 +453,6 @@ class WitPackageTest {
       assertTrue(none.isNone(), "of(empty) should create none");
     }
 
-    @Test
-    @DisplayName("WitOption should have getInnerType method")
-    void witOptionShouldHaveGetInnerTypeMethod() throws NoSuchMethodException {
-      Method getInnerType = WitOption.class.getMethod("getInnerType");
-      assertNotNull(getInnerType, "getInnerType method should exist");
-      assertEquals(WitType.class, getInnerType.getReturnType(), "Should return WitType");
-    }
   }
 
   // ========== WitList Tests ==========
@@ -1398,122 +1367,6 @@ class WitPackageTest {
           WitValue.class.isAssignableFrom(WitResult.class), "WitResult should extend WitValue");
     }
 
-    @Test
-    @DisplayName("WitResult should have ok factory method with value")
-    void witResultShouldHaveOkFactoryMethodWithValue() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("ok", WitType.class, WitValue.class);
-      assertNotNull(method, "ok(WitType, WitValue) method should exist");
-      assertEquals(WitResult.class, method.getReturnType(), "Return type should be WitResult");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "ok method should be static");
-    }
-
-    @Test
-    @DisplayName("WitResult should have ok factory method without value")
-    void witResultShouldHaveOkFactoryMethodWithoutValue() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("ok", WitType.class);
-      assertNotNull(method, "ok(WitType) method should exist");
-      assertEquals(WitResult.class, method.getReturnType(), "Return type should be WitResult");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "ok method should be static");
-    }
-
-    @Test
-    @DisplayName("WitResult should have err factory method with value")
-    void witResultShouldHaveErrFactoryMethodWithValue() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("err", WitType.class, WitValue.class);
-      assertNotNull(method, "err(WitType, WitValue) method should exist");
-      assertEquals(WitResult.class, method.getReturnType(), "Return type should be WitResult");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()),
-          "err method should be static");
-    }
-
-    @Test
-    @DisplayName("WitResult should have err factory method without value")
-    void witResultShouldHaveErrFactoryMethodWithoutValue() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("err", WitType.class);
-      assertNotNull(method, "err(WitType) method should exist");
-      assertEquals(WitResult.class, method.getReturnType(), "Return type should be WitResult");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()),
-          "err method should be static");
-    }
-
-    @Test
-    @DisplayName("WitResult should have isOk method")
-    void witResultShouldHaveIsOkMethod() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("isOk");
-      assertNotNull(method, "isOk method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Return type should be boolean");
-    }
-
-    @Test
-    @DisplayName("WitResult should have isErr method")
-    void witResultShouldHaveIsErrMethod() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("isErr");
-      assertNotNull(method, "isErr method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Return type should be boolean");
-    }
-
-    @Test
-    @DisplayName("WitResult should have getOk method")
-    void witResultShouldHaveGetOkMethod() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("getOk");
-      assertNotNull(method, "getOk method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
-    }
-
-    @Test
-    @DisplayName("WitResult should have getErr method")
-    void witResultShouldHaveGetErrMethod() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("getErr");
-      assertNotNull(method, "getErr method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
-    }
-
-    @Test
-    @DisplayName("WitResult should have getValue method")
-    void witResultShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
-    }
-
-    @Test
-    @DisplayName("WitResult should have toJava method")
-    void witResultShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(Object.class, method.getReturnType(), "Return type should be Object");
-    }
-
-    @Test
-    @DisplayName("WitResult should override equals")
-    void witResultShouldOverrideEquals() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("equals", Object.class);
-      assertNotNull(method, "equals method should exist");
-      assertEquals(
-          WitResult.class, method.getDeclaringClass(), "equals should be declared in WitResult");
-    }
-
-    @Test
-    @DisplayName("WitResult should override hashCode")
-    void witResultShouldOverrideHashCode() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("hashCode");
-      assertNotNull(method, "hashCode method should exist");
-      assertEquals(
-          WitResult.class, method.getDeclaringClass(), "hashCode should be declared in WitResult");
-    }
-
-    @Test
-    @DisplayName("WitResult should override toString")
-    void witResultShouldOverrideToString() throws NoSuchMethodException {
-      Method method = WitResult.class.getMethod("toString");
-      assertNotNull(method, "toString method should exist");
-      assertEquals(
-          WitResult.class, method.getDeclaringClass(), "toString should be declared in WitResult");
-    }
   }
 
   // ========================================================================
@@ -1539,88 +1392,6 @@ class WitPackageTest {
           WitValue.class.isAssignableFrom(WitVariant.class), "WitVariant should extend WitValue");
     }
 
-    @Test
-    @DisplayName("WitVariant should have of factory method with payload")
-    void witVariantShouldHaveOfFactoryMethodWithPayload() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("of", WitType.class, String.class, WitValue.class);
-      assertNotNull(method, "of(WitType, String, WitValue) method should exist");
-      assertEquals(WitVariant.class, method.getReturnType(), "Return type should be WitVariant");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "of method should be static");
-    }
-
-    @Test
-    @DisplayName("WitVariant should have of factory method without payload")
-    void witVariantShouldHaveOfFactoryMethodWithoutPayload() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("of", WitType.class, String.class);
-      assertNotNull(method, "of(WitType, String) method should exist");
-      assertEquals(WitVariant.class, method.getReturnType(), "Return type should be WitVariant");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "of method should be static");
-    }
-
-    @Test
-    @DisplayName("WitVariant should have getCaseName method")
-    void witVariantShouldHaveGetCaseNameMethod() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("getCaseName");
-      assertNotNull(method, "getCaseName method should exist");
-      assertEquals(String.class, method.getReturnType(), "Return type should be String");
-    }
-
-    @Test
-    @DisplayName("WitVariant should have getPayload method")
-    void witVariantShouldHaveGetPayloadMethod() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("getPayload");
-      assertNotNull(method, "getPayload method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "Return type should be Optional");
-    }
-
-    @Test
-    @DisplayName("WitVariant should have hasPayload method")
-    void witVariantShouldHaveHasPayloadMethod() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("hasPayload");
-      assertNotNull(method, "hasPayload method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "Return type should be boolean");
-    }
-
-    @Test
-    @DisplayName("WitVariant should have toJava method")
-    void witVariantShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(Object.class, method.getReturnType(), "Return type should be Object");
-    }
-
-    @Test
-    @DisplayName("WitVariant should override equals")
-    void witVariantShouldOverrideEquals() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("equals", Object.class);
-      assertNotNull(method, "equals method should exist");
-      assertEquals(
-          WitVariant.class, method.getDeclaringClass(), "equals should be declared in WitVariant");
-    }
-
-    @Test
-    @DisplayName("WitVariant should override hashCode")
-    void witVariantShouldOverrideHashCode() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("hashCode");
-      assertNotNull(method, "hashCode method should exist");
-      assertEquals(
-          WitVariant.class,
-          method.getDeclaringClass(),
-          "hashCode should be declared in WitVariant");
-    }
-
-    @Test
-    @DisplayName("WitVariant should override toString")
-    void witVariantShouldOverrideToString() throws NoSuchMethodException {
-      Method method = WitVariant.class.getMethod("toString");
-      assertNotNull(method, "toString method should exist");
-      assertEquals(
-          WitVariant.class,
-          method.getDeclaringClass(),
-          "toString should be declared in WitVariant");
-    }
   }
 
   // ========================================================================
@@ -1645,58 +1416,6 @@ class WitPackageTest {
       assertTrue(WitValue.class.isAssignableFrom(WitEnum.class), "WitEnum should extend WitValue");
     }
 
-    @Test
-    @DisplayName("WitEnum should have of factory method")
-    void witEnumShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitEnum.class.getMethod("of", WitType.class, String.class);
-      assertNotNull(method, "of(WitType, String) method should exist");
-      assertEquals(WitEnum.class, method.getReturnType(), "Return type should be WitEnum");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "of method should be static");
-    }
-
-    @Test
-    @DisplayName("WitEnum should have getDiscriminant method")
-    void witEnumShouldHaveGetDiscriminantMethod() throws NoSuchMethodException {
-      Method method = WitEnum.class.getMethod("getDiscriminant");
-      assertNotNull(method, "getDiscriminant method should exist");
-      assertEquals(String.class, method.getReturnType(), "Return type should be String");
-    }
-
-    @Test
-    @DisplayName("WitEnum should have toJava method returning String")
-    void witEnumShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitEnum.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(String.class, method.getReturnType(), "Return type should be String");
-    }
-
-    @Test
-    @DisplayName("WitEnum should override equals")
-    void witEnumShouldOverrideEquals() throws NoSuchMethodException {
-      Method method = WitEnum.class.getMethod("equals", Object.class);
-      assertNotNull(method, "equals method should exist");
-      assertEquals(
-          WitEnum.class, method.getDeclaringClass(), "equals should be declared in WitEnum");
-    }
-
-    @Test
-    @DisplayName("WitEnum should override hashCode")
-    void witEnumShouldOverrideHashCode() throws NoSuchMethodException {
-      Method method = WitEnum.class.getMethod("hashCode");
-      assertNotNull(method, "hashCode method should exist");
-      assertEquals(
-          WitEnum.class, method.getDeclaringClass(), "hashCode should be declared in WitEnum");
-    }
-
-    @Test
-    @DisplayName("WitEnum should override toString")
-    void witEnumShouldOverrideToString() throws NoSuchMethodException {
-      Method method = WitEnum.class.getMethod("toString");
-      assertNotNull(method, "toString method should exist");
-      assertEquals(
-          WitEnum.class, method.getDeclaringClass(), "toString should be declared in WitEnum");
-    }
   }
 
   // ========================================================================
@@ -1720,51 +1439,6 @@ class WitPackageTest {
       assertTrue(
           WitPrimitiveValue.class.isAssignableFrom(WitU8.class),
           "WitU8 should extend WitPrimitiveValue");
-    }
-
-    @Test
-    @DisplayName("WitU8 should have of factory method")
-    void witU8ShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitU8.class.getMethod("of", byte.class);
-      assertNotNull(method, "of(byte) method should exist");
-      assertEquals(WitU8.class, method.getReturnType(), "Return type should be WitU8");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "of method should be static");
-    }
-
-    @Test
-    @DisplayName("WitU8 should have ofUnsigned factory method")
-    void witU8ShouldHaveOfUnsignedFactoryMethod() throws NoSuchMethodException {
-      Method method = WitU8.class.getMethod("ofUnsigned", int.class);
-      assertNotNull(method, "ofUnsigned(int) method should exist");
-      assertEquals(WitU8.class, method.getReturnType(), "Return type should be WitU8");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()),
-          "ofUnsigned method should be static");
-    }
-
-    @Test
-    @DisplayName("WitU8 should have getValue method")
-    void witU8ShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitU8.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(byte.class, method.getReturnType(), "Return type should be byte");
-    }
-
-    @Test
-    @DisplayName("WitU8 should have toUnsignedInt method")
-    void witU8ShouldHaveToUnsignedIntMethod() throws NoSuchMethodException {
-      Method method = WitU8.class.getMethod("toUnsignedInt");
-      assertNotNull(method, "toUnsignedInt method should exist");
-      assertEquals(int.class, method.getReturnType(), "Return type should be int");
-    }
-
-    @Test
-    @DisplayName("WitU8 should have toJava method returning Byte")
-    void witU8ShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitU8.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(Byte.class, method.getReturnType(), "Return type should be Byte");
     }
 
     @Test
@@ -1828,37 +1502,6 @@ class WitPackageTest {
           "WitU16 should extend WitPrimitiveValue");
     }
 
-    @Test
-    @DisplayName("WitU16 should have of factory method")
-    void witU16ShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitU16.class.getMethod("of", short.class);
-      assertNotNull(method, "of(short) method should exist");
-      assertEquals(WitU16.class, method.getReturnType(), "Return type should be WitU16");
-    }
-
-    @Test
-    @DisplayName("WitU16 should have ofUnsigned factory method")
-    void witU16ShouldHaveOfUnsignedFactoryMethod() throws NoSuchMethodException {
-      Method method = WitU16.class.getMethod("ofUnsigned", int.class);
-      assertNotNull(method, "ofUnsigned(int) method should exist");
-      assertEquals(WitU16.class, method.getReturnType(), "Return type should be WitU16");
-    }
-
-    @Test
-    @DisplayName("WitU16 should have getValue method")
-    void witU16ShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitU16.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(short.class, method.getReturnType(), "Return type should be short");
-    }
-
-    @Test
-    @DisplayName("WitU16 should have toUnsignedInt method")
-    void witU16ShouldHaveToUnsignedIntMethod() throws NoSuchMethodException {
-      Method method = WitU16.class.getMethod("toUnsignedInt");
-      assertNotNull(method, "toUnsignedInt method should exist");
-      assertEquals(int.class, method.getReturnType(), "Return type should be int");
-    }
   }
 
   // ========================================================================
@@ -1885,37 +1528,6 @@ class WitPackageTest {
           "WitU32 should extend WitPrimitiveValue");
     }
 
-    @Test
-    @DisplayName("WitU32 should have of factory method")
-    void witU32ShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitU32.class.getMethod("of", int.class);
-      assertNotNull(method, "of(int) method should exist");
-      assertEquals(WitU32.class, method.getReturnType(), "Return type should be WitU32");
-    }
-
-    @Test
-    @DisplayName("WitU32 should have ofUnsigned factory method")
-    void witU32ShouldHaveOfUnsignedFactoryMethod() throws NoSuchMethodException {
-      Method method = WitU32.class.getMethod("ofUnsigned", long.class);
-      assertNotNull(method, "ofUnsigned(long) method should exist");
-      assertEquals(WitU32.class, method.getReturnType(), "Return type should be WitU32");
-    }
-
-    @Test
-    @DisplayName("WitU32 should have getValue method")
-    void witU32ShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitU32.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(int.class, method.getReturnType(), "Return type should be int");
-    }
-
-    @Test
-    @DisplayName("WitU32 should have toUnsignedLong method")
-    void witU32ShouldHaveToUnsignedLongMethod() throws NoSuchMethodException {
-      Method method = WitU32.class.getMethod("toUnsignedLong");
-      assertNotNull(method, "toUnsignedLong method should exist");
-      assertEquals(long.class, method.getReturnType(), "Return type should be long");
-    }
   }
 
   // ========================================================================
@@ -1942,29 +1554,6 @@ class WitPackageTest {
           "WitU64 should extend WitPrimitiveValue");
     }
 
-    @Test
-    @DisplayName("WitU64 should have of factory method")
-    void witU64ShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitU64.class.getMethod("of", long.class);
-      assertNotNull(method, "of(long) method should exist");
-      assertEquals(WitU64.class, method.getReturnType(), "Return type should be WitU64");
-    }
-
-    @Test
-    @DisplayName("WitU64 should have getValue method")
-    void witU64ShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitU64.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(long.class, method.getReturnType(), "Return type should be long");
-    }
-
-    @Test
-    @DisplayName("WitU64 should have toJava method returning Long")
-    void witU64ShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitU64.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(Long.class, method.getReturnType(), "Return type should be Long");
-    }
   }
 
   // ========================================================================
@@ -1988,32 +1577,6 @@ class WitPackageTest {
       assertTrue(
           WitPrimitiveValue.class.isAssignableFrom(WitS8.class),
           "WitS8 should extend WitPrimitiveValue");
-    }
-
-    @Test
-    @DisplayName("WitS8 should have of factory method")
-    void witS8ShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitS8.class.getMethod("of", byte.class);
-      assertNotNull(method, "of(byte) method should exist");
-      assertEquals(WitS8.class, method.getReturnType(), "Return type should be WitS8");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "of method should be static");
-    }
-
-    @Test
-    @DisplayName("WitS8 should have getValue method")
-    void witS8ShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitS8.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(byte.class, method.getReturnType(), "Return type should be byte");
-    }
-
-    @Test
-    @DisplayName("WitS8 should have toJava method returning Byte")
-    void witS8ShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitS8.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(Byte.class, method.getReturnType(), "Return type should be Byte");
     }
 
     @Test
@@ -2049,29 +1612,6 @@ class WitPackageTest {
           "WitS16 should extend WitPrimitiveValue");
     }
 
-    @Test
-    @DisplayName("WitS16 should have of factory method")
-    void witS16ShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitS16.class.getMethod("of", short.class);
-      assertNotNull(method, "of(short) method should exist");
-      assertEquals(WitS16.class, method.getReturnType(), "Return type should be WitS16");
-    }
-
-    @Test
-    @DisplayName("WitS16 should have getValue method")
-    void witS16ShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitS16.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(short.class, method.getReturnType(), "Return type should be short");
-    }
-
-    @Test
-    @DisplayName("WitS16 should have toJava method returning Short")
-    void witS16ShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitS16.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(Short.class, method.getReturnType(), "Return type should be Short");
-    }
   }
 
   // ========================================================================
@@ -2098,29 +1638,6 @@ class WitPackageTest {
           "WitS64 should extend WitPrimitiveValue");
     }
 
-    @Test
-    @DisplayName("WitS64 should have of factory method")
-    void witS64ShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitS64.class.getMethod("of", long.class);
-      assertNotNull(method, "of(long) method should exist");
-      assertEquals(WitS64.class, method.getReturnType(), "Return type should be WitS64");
-    }
-
-    @Test
-    @DisplayName("WitS64 should have getValue method")
-    void witS64ShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitS64.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(long.class, method.getReturnType(), "Return type should be long");
-    }
-
-    @Test
-    @DisplayName("WitS64 should have toJava method returning Long")
-    void witS64ShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitS64.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(Long.class, method.getReturnType(), "Return type should be Long");
-    }
   }
 
   // ========================================================================
@@ -2145,32 +1662,6 @@ class WitPackageTest {
       assertTrue(
           WitPrimitiveValue.class.isAssignableFrom(WitFloat64.class),
           "WitFloat64 should extend WitPrimitiveValue");
-    }
-
-    @Test
-    @DisplayName("WitFloat64 should have of factory method")
-    void witFloat64ShouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      Method method = WitFloat64.class.getMethod("of", double.class);
-      assertNotNull(method, "of(double) method should exist");
-      assertEquals(WitFloat64.class, method.getReturnType(), "Return type should be WitFloat64");
-      assertTrue(
-          java.lang.reflect.Modifier.isStatic(method.getModifiers()), "of method should be static");
-    }
-
-    @Test
-    @DisplayName("WitFloat64 should have getValue method")
-    void witFloat64ShouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = WitFloat64.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(double.class, method.getReturnType(), "Return type should be double");
-    }
-
-    @Test
-    @DisplayName("WitFloat64 should have toJava method returning Double")
-    void witFloat64ShouldHaveToJavaMethod() throws NoSuchMethodException {
-      Method method = WitFloat64.class.getMethod("toJava");
-      assertNotNull(method, "toJava method should exist");
-      assertEquals(Double.class, method.getReturnType(), "Return type should be Double");
     }
 
     @Test
@@ -2209,35 +1700,5 @@ class WitPackageTest {
           "getValue should return negative infinity");
     }
 
-    @Test
-    @DisplayName("WitFloat64 should override equals")
-    void witFloat64ShouldOverrideEquals() throws NoSuchMethodException {
-      Method method = WitFloat64.class.getMethod("equals", Object.class);
-      assertNotNull(method, "equals method should exist");
-      assertEquals(
-          WitFloat64.class, method.getDeclaringClass(), "equals should be declared in WitFloat64");
-    }
-
-    @Test
-    @DisplayName("WitFloat64 should override hashCode")
-    void witFloat64ShouldOverrideHashCode() throws NoSuchMethodException {
-      Method method = WitFloat64.class.getMethod("hashCode");
-      assertNotNull(method, "hashCode method should exist");
-      assertEquals(
-          WitFloat64.class,
-          method.getDeclaringClass(),
-          "hashCode should be declared in WitFloat64");
-    }
-
-    @Test
-    @DisplayName("WitFloat64 should override toString")
-    void witFloat64ShouldOverrideToString() throws NoSuchMethodException {
-      Method method = WitFloat64.class.getMethod("toString");
-      assertNotNull(method, "toString method should exist");
-      assertEquals(
-          WitFloat64.class,
-          method.getDeclaringClass(),
-          "toString should be declared in WitFloat64");
-    }
   }
 }

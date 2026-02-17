@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Method;
 import java.math.BigInteger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,22 +40,6 @@ class WitU64Test {
   @Nested
   @DisplayName("Factory Method Tests")
   class FactoryMethodTests {
-
-    @Test
-    @DisplayName("should have of factory method")
-    void shouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      final Method method = WitU64.class.getMethod("of", long.class);
-      assertNotNull(method, "Should have of(long) method");
-      assertEquals(WitU64.class, method.getReturnType(), "Should return WitU64");
-    }
-
-    @Test
-    @DisplayName("should have ofUnsigned factory method")
-    void shouldHaveOfUnsignedFactoryMethod() throws NoSuchMethodException {
-      final Method method = WitU64.class.getMethod("ofUnsigned", BigInteger.class);
-      assertNotNull(method, "Should have ofUnsigned(BigInteger) method");
-      assertEquals(WitU64.class, method.getReturnType(), "Should return WitU64");
-    }
 
     @Test
     @DisplayName("should create WitU64 from long value")

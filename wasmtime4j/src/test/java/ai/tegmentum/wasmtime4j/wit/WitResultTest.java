@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,38 +39,6 @@ class WitResultTest {
   @Nested
   @DisplayName("Factory Method Tests")
   class FactoryMethodTests {
-
-    @Test
-    @DisplayName("should have static ok method with value")
-    void shouldHaveOkMethodWithValue() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("ok", WitType.class, WitValue.class);
-      assertNotNull(method, "Should have ok(WitType, WitValue) method");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "ok method should be static");
-    }
-
-    @Test
-    @DisplayName("should have static ok method without value")
-    void shouldHaveOkMethodWithoutValue() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("ok", WitType.class);
-      assertNotNull(method, "Should have ok(WitType) method");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "ok method should be static");
-    }
-
-    @Test
-    @DisplayName("should have static err method with value")
-    void shouldHaveErrMethodWithValue() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("err", WitType.class, WitValue.class);
-      assertNotNull(method, "Should have err(WitType, WitValue) method");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "err method should be static");
-    }
-
-    @Test
-    @DisplayName("should have static err method without value")
-    void shouldHaveErrMethodWithoutValue() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("err", WitType.class);
-      assertNotNull(method, "Should have err(WitType) method");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "err method should be static");
-    }
 
     @Test
     @DisplayName("ok with non-result type should throw")

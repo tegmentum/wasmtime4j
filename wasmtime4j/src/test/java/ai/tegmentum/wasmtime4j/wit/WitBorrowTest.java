@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
-import java.lang.reflect.Method;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,31 +40,6 @@ class WitBorrowTest {
   @Nested
   @DisplayName("Factory Method Tests")
   class FactoryMethodTests {
-
-    @Test
-    @DisplayName("should have of factory method")
-    void shouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      final Method method = WitBorrow.class.getMethod("of", String.class, int.class);
-      assertNotNull(method, "Should have of(String, int) method");
-      assertEquals(WitBorrow.class, method.getReturnType(), "Should return WitBorrow");
-    }
-
-    @Test
-    @DisplayName("should have ofWithHost factory method")
-    void shouldHaveOfWithHostFactoryMethod() throws NoSuchMethodException {
-      final Method method =
-          WitBorrow.class.getMethod("ofWithHost", String.class, int.class, Object.class);
-      assertNotNull(method, "Should have ofWithHost method");
-      assertEquals(WitBorrow.class, method.getReturnType(), "Should return WitBorrow");
-    }
-
-    @Test
-    @DisplayName("should have fromHandle factory method")
-    void shouldHaveFromHandleFactoryMethod() throws NoSuchMethodException {
-      final Method method = WitBorrow.class.getMethod("fromHandle", ComponentResourceHandle.class);
-      assertNotNull(method, "Should have fromHandle method");
-      assertEquals(WitBorrow.class, method.getReturnType(), "Should return WitBorrow");
-    }
 
     @Test
     @DisplayName("should create WitBorrow from resource type and index")

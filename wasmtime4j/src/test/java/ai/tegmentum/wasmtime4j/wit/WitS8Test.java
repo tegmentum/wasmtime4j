@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Method;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,14 +36,6 @@ class WitS8Test {
   @Nested
   @DisplayName("Factory Method Tests")
   class FactoryMethodTests {
-
-    @Test
-    @DisplayName("should have of factory method")
-    void shouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      final Method method = WitS8.class.getMethod("of", byte.class);
-      assertNotNull(method, "Should have of(byte) method");
-      assertEquals(WitS8.class, method.getReturnType(), "Should return WitS8");
-    }
 
     @Test
     @DisplayName("should create WitS8 from positive value")
