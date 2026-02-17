@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
  * cases for all WebAssembly value types.
  */
 @DisplayName("WasmValue Tests")
+@SuppressWarnings("deprecation")
 class WasmValueTest {
 
   @Nested

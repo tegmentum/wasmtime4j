@@ -288,14 +288,13 @@ public interface Instance extends Closeable {
   /**
    * Performs comprehensive resource cleanup for this instance.
    *
-   * <p>This method goes beyond dispose() to perform deep cleanup of all associated resources,
-   * including native memory, function references, and internal state. Unlike dispose(), this method
-   * ensures complete resource cleanup and can be safely called multiple times.
-   *
    * @return true if cleanup was performed, false if already cleaned up
    * @throws WasmException if cleanup fails
    * @since 1.0.0
+   * @deprecated Use {@link #dispose()} or {@link #close()} instead. This method provides no
+   *     additional cleanup beyond dispose().
    */
+  @Deprecated
   boolean cleanup() throws WasmException;
 
   /**

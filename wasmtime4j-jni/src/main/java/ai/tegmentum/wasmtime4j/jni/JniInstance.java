@@ -668,6 +668,7 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public boolean cleanup() throws WasmException {
     if (cleanedUp.get()) {

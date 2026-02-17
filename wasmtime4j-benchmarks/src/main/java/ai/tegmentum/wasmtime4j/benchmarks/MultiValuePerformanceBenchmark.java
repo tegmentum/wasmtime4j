@@ -28,6 +28,7 @@ import org.openjdk.jmh.infra.Blackhole;
 @Fork(
     value = 2,
     jvmArgs = {"-Xms2g", "-Xmx2g"})
+@SuppressWarnings("deprecation")
 public class MultiValuePerformanceBenchmark {
 
   // Test data sets for different scenarios

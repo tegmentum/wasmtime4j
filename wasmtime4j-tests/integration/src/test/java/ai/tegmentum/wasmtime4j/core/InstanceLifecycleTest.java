@@ -118,6 +118,7 @@ public class InstanceLifecycleTest extends DualRuntimeTest {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("cleanup returns true")

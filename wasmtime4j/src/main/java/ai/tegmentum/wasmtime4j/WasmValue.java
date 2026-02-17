@@ -603,53 +603,14 @@ public final class WasmValue {
   }
 
   /**
-   * Validates an array of WasmValues against expected types with enhanced error reporting.
-   *
-   * @param values the values to validate
-   * @param expectedTypes the expected types
-   * @param operation the operation being performed (for error context)
-   * @throws ai.tegmentum.wasmtime4j.exception.ValidationException if validation fails
-   */
-  public static void validateMultiValueWithContext(
-      final WasmValue[] values, final WasmValueType[] expectedTypes, final String operation)
-      throws ai.tegmentum.wasmtime4j.exception.ValidationException {
-    if (values == null) {
-      throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
-          String.format(
-              "Value array cannot be null for operation: %s",
-              operation != null ? operation : "validation"));
-    }
-    if (expectedTypes == null) {
-      throw new IllegalArgumentException("Expected types array cannot be null");
-    }
-    if (values.length != expectedTypes.length) {
-      throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
-          String.format(
-              "Value count mismatch: expected %d but got %d for operation: %s",
-              expectedTypes.length, values.length, operation));
-    }
-
-    for (int i = 0; i < values.length; i++) {
-      if (values[i] == null) {
-        throw new IllegalArgumentException("Value at index " + i + " is null");
-      }
-      try {
-        values[i].validateType(expectedTypes[i]);
-      } catch (IllegalArgumentException e) {
-        throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
-            String.format(
-                "Type mismatch at index %d: expected %s but got %s",
-                i, expectedTypes[i].toString(), values[i].getType().toString()));
-      }
-    }
-  }
-
-  /**
    * Checks if an array of values represents a multi-value result (more than one value).
    *
    * @param values the values to check
    * @return true if the array contains multiple values, false otherwise
+   * @deprecated Array length checks do not belong on a value class. Use {@code values.length > 1}
+   *     directly.
    */
+  @Deprecated
   public static boolean isMultiValue(final WasmValue[] values) {
     return values != null && values.length > 1;
   }
@@ -659,7 +620,10 @@ public final class WasmValue {
    *
    * @param values the values array
    * @return the first value, or null if empty
+   * @deprecated Array access utilities do not belong on a value class. Use {@code values[0]}
+   *     directly.
    */
+  @Deprecated
   public static WasmValue getFirstValue(final WasmValue[] values) {
     return (values != null && values.length > 0) ? values[0] : null;
   }
@@ -669,7 +633,10 @@ public final class WasmValue {
    *
    * @param values the values array
    * @return the last value, or null if empty
+   * @deprecated Array access utilities do not belong on a value class. Use {@code
+   *     values[values.length - 1]} directly.
    */
+  @Deprecated
   public static WasmValue getLastValue(final WasmValue[] values) {
     return (values != null && values.length > 0) ? values[values.length - 1] : null;
   }
@@ -680,7 +647,9 @@ public final class WasmValue {
    * @param values the values array
    * @param targetType the type to extract
    * @return array of values matching the target type
+   * @deprecated Array filtering utilities do not belong on a value class. Use streams directly.
    */
+  @Deprecated
   public static WasmValue[] extractByType(
       final WasmValue[] values, final WasmValueType targetType) {
     if (values == null || targetType == null) {
@@ -697,7 +666,9 @@ public final class WasmValue {
    *
    * @param values the values array
    * @return string representation of the multi-value result
+   * @deprecated Use {@link java.util.Arrays#toString(Object[])} directly.
    */
+  @Deprecated
   public static String multiValueToString(final WasmValue[] values) {
     if (values == null) {
       return "null";
@@ -725,7 +696,9 @@ public final class WasmValue {
    *
    * @param values the values to copy
    * @return deep copy of the values array
+   * @deprecated Use {@link Object#clone()} on the array directly.
    */
+  @Deprecated
   @SuppressFBWarnings(
       value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
       justification = "Null input produces null output - distinct from empty array input/output")

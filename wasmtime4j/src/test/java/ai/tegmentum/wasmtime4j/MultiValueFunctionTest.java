@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
  * value marshaling - Error handling for multi-value operations - Performance characteristics
  */
 @DisplayName("Multi-Value Function Operations")
+@SuppressWarnings("deprecation")
 class MultiValueFunctionTest {
 
   @Nested

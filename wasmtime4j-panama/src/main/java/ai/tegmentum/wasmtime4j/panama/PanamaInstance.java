@@ -947,6 +947,7 @@ public final class PanamaInstance implements Instance {
     return InstanceState.CREATED;
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public boolean cleanup() throws WasmException {
     if (disposed.get()) {
