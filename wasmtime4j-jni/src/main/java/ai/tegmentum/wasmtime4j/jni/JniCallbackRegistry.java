@@ -18,6 +18,10 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.func.AsyncCallbackHandleImpl;
+import ai.tegmentum.wasmtime4j.func.CallbackEntry;
+import ai.tegmentum.wasmtime4j.func.CallbackHandleImpl;
+import ai.tegmentum.wasmtime4j.func.CallbackMetricsImpl;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
@@ -63,29 +67,6 @@ public final class JniCallbackRegistry implements CallbackRegistry {
   private final ScheduledExecutorService asyncExecutor;
   private final CallbackMetricsImpl metrics = new CallbackMetricsImpl();
   private volatile boolean closed = false;
-
-  /** Internal callback entry for managing callback state. */
-  private static class CallbackEntry {
-    final CallbackHandle handle;
-    final HostFunction syncCallback;
-    final AsyncHostFunction asyncCallback;
-    final FunctionReference functionReference;
-
-    CallbackEntry(
-        final CallbackHandle handle,
-        final HostFunction syncCallback,
-        final AsyncHostFunction asyncCallback,
-        final FunctionReference functionReference) {
-      this.handle = handle;
-      this.syncCallback = syncCallback;
-      this.asyncCallback = asyncCallback;
-      this.functionReference = functionReference;
-    }
-
-    boolean isAsync() {
-      return asyncCallback != null;
-    }
-  }
 
   /**
    * Creates a new callback registry for the given store.
@@ -216,7 +197,7 @@ public final class JniCallbackRegistry implements CallbackRegistry {
       throw new WasmException("Callback not found: " + handle.getName());
     }
 
-    return entry.functionReference;
+    return entry.getFunctionReference();
   }
 
   @Override
@@ -232,14 +213,15 @@ public final class JniCallbackRegistry implements CallbackRegistry {
 
     try {
       // Invalidate the handle to prevent further use
-      if (entry.handle instanceof CallbackHandleImpl) {
-        final CallbackHandleImpl handleImpl = (CallbackHandleImpl) entry.handle;
+      if (entry.getHandle() instanceof CallbackHandleImpl) {
+        final CallbackHandleImpl handleImpl = (CallbackHandleImpl) entry.getHandle();
         handleImpl.invalidate();
       }
 
       // Close the function reference to clean up native resources
-      if (entry.functionReference instanceof JniFunctionReference) {
-        final JniFunctionReference jniFuncRef = (JniFunctionReference) entry.functionReference;
+      if (entry.getFunctionReference() instanceof JniFunctionReference) {
+        final JniFunctionReference jniFuncRef =
+            (JniFunctionReference) entry.getFunctionReference();
         jniFuncRef.close();
       }
 
@@ -272,7 +254,7 @@ public final class JniCallbackRegistry implements CallbackRegistry {
 
     final long startTime = System.nanoTime();
     try {
-      final WasmValue[] result = entry.syncCallback.execute(params);
+      final WasmValue[] result = entry.getSyncCallback().execute(params);
       final long executionTime = System.nanoTime() - startTime;
       metrics.recordInvocation(executionTime);
       return result;
@@ -309,7 +291,8 @@ public final class JniCallbackRegistry implements CallbackRegistry {
         () -> {
           final long startTime = System.nanoTime();
           try {
-            final CompletableFuture<WasmValue[]> future = entry.asyncCallback.executeAsync(params);
+            final CompletableFuture<WasmValue[]> future =
+                entry.getAsyncCallback().executeAsync(params);
             final WasmValue[] result = future.get(handle.getTimeoutMillis(), TimeUnit.MILLISECONDS);
             final long executionTime = System.nanoTime() - startTime;
             metrics.recordInvocation(executionTime);
@@ -343,7 +326,8 @@ public final class JniCallbackRegistry implements CallbackRegistry {
   @Override
   public boolean hasCallback(final String name) {
     Objects.requireNonNull(name, "Callback name cannot be null");
-    return callbacks.values().stream().anyMatch(entry -> name.equals(entry.handle.getName()));
+    return callbacks.values().stream()
+        .anyMatch(entry -> name.equals(entry.getHandle().getName()));
   }
 
   @Override
@@ -361,15 +345,15 @@ public final class JniCallbackRegistry implements CallbackRegistry {
         // Unregister all callbacks
         for (final CallbackEntry entry : callbacks.values()) {
           try {
-            if (entry.functionReference instanceof JniFunctionReference) {
+            if (entry.getFunctionReference() instanceof JniFunctionReference) {
               final JniFunctionReference jniFuncRef =
-                  (JniFunctionReference) entry.functionReference;
+                  (JniFunctionReference) entry.getFunctionReference();
               jniFuncRef.close();
             }
           } catch (Exception e) {
             LOGGER.log(
                 Level.WARNING,
-                "Error closing callback function reference: " + entry.handle.getName(),
+                "Error closing callback function reference: " + entry.getHandle().getName(),
                 e);
           }
         }
@@ -420,121 +404,6 @@ public final class JniCallbackRegistry implements CallbackRegistry {
   private void ensureNotClosed() {
     if (closed) {
       throw new IllegalStateException("Callback registry has been closed");
-    }
-  }
-
-  /** Implementation of CallbackHandle. */
-  private static class CallbackHandleImpl implements CallbackHandle {
-    private final long id;
-    private final String name;
-    private final FunctionType functionType;
-    private volatile boolean valid = true;
-
-    CallbackHandleImpl(final long id, final String name, final FunctionType functionType) {
-      this.id = id;
-      this.name = name;
-      this.functionType = functionType;
-    }
-
-    @Override
-    public long getId() {
-      return id;
-    }
-
-    @Override
-    public String getName() {
-      return name;
-    }
-
-    @Override
-    public FunctionType getFunctionType() {
-      return functionType;
-    }
-
-    @Override
-    public boolean isValid() {
-      return valid;
-    }
-
-    void invalidate() {
-      this.valid = false;
-    }
-  }
-
-  /** Implementation of AsyncCallbackHandle. */
-  private static class AsyncCallbackHandleImpl extends CallbackHandleImpl
-      implements AsyncCallbackHandle {
-    private volatile long timeoutMillis;
-
-    AsyncCallbackHandleImpl(
-        final long id,
-        final String name,
-        final FunctionType functionType,
-        final long timeoutMillis) {
-      super(id, name, functionType);
-      this.timeoutMillis = timeoutMillis;
-    }
-
-    @Override
-    public long getTimeoutMillis() {
-      return timeoutMillis;
-    }
-
-    @Override
-    public void setTimeoutMillis(final long timeoutMillis) {
-      if (timeoutMillis <= 0) {
-        throw new IllegalArgumentException("Timeout must be positive");
-      }
-      this.timeoutMillis = timeoutMillis;
-    }
-  }
-
-  /** Implementation of CallbackMetrics. */
-  private static class CallbackMetricsImpl implements CallbackMetrics {
-    private final AtomicLong totalInvocations = new AtomicLong(0);
-    private final AtomicLong totalExecutionTimeNanos = new AtomicLong(0);
-    private final AtomicLong failureCount = new AtomicLong(0);
-    private final AtomicLong timeoutCount = new AtomicLong(0);
-
-    void recordInvocation(final long executionTimeNanos) {
-      totalInvocations.incrementAndGet();
-      totalExecutionTimeNanos.addAndGet(executionTimeNanos);
-    }
-
-    void recordFailure(final long executionTimeNanos) {
-      totalInvocations.incrementAndGet();
-      totalExecutionTimeNanos.addAndGet(executionTimeNanos);
-      failureCount.incrementAndGet();
-    }
-
-    void recordTimeout() {
-      timeoutCount.incrementAndGet();
-    }
-
-    @Override
-    public long getTotalInvocations() {
-      return totalInvocations.get();
-    }
-
-    @Override
-    public double getAverageExecutionTimeNanos() {
-      final long invocations = totalInvocations.get();
-      return invocations > 0 ? (double) totalExecutionTimeNanos.get() / invocations : 0.0;
-    }
-
-    @Override
-    public long getTotalExecutionTimeNanos() {
-      return totalExecutionTimeNanos.get();
-    }
-
-    @Override
-    public long getFailureCount() {
-      return failureCount.get();
-    }
-
-    @Override
-    public long getTimeoutCount() {
-      return timeoutCount.get();
     }
   }
 }
