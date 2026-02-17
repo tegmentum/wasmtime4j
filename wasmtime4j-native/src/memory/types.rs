@@ -7,7 +7,6 @@
 //! - Configuration structs
 //! - Error types
 
-use std::sync::RwLock;
 use std::time::Instant;
 
 use crate::error::{WasmtimeError, WasmtimeResult};

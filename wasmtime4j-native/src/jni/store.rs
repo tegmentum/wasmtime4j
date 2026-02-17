@@ -1,7 +1,7 @@
 //! JNI bindings for Store operations
 
 use jni::objects::{JClass, JObject, JValue};
-use jni::sys::{jboolean, jint, jlong, jobject, jobjectArray};
+use jni::sys::{jboolean, jint, jlong, jobjectArray};
 use jni::JNIEnv;
 
 use crate::error::jni_utils;

@@ -26,7 +26,6 @@ use once_cell::sync::Lazy;
 use std::ffi::{c_char, c_void, CStr, CString};
 use std::mem::ManuallyDrop;
 use std::os::raw::{c_int, c_uint, c_ulong};
-use std::ptr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::runtime::{Handle, Runtime};
@@ -996,6 +995,7 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ptr;
     use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
     use std::sync::Arc;
     use std::time::Duration;

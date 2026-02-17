@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex};
 use wasmtime::{
-    Extern, Func, HeapType, Ref, RefType, Table as WasmtimeTable, TableType, Val, ValType,
+    Extern, Func, HeapType, Ref, RefType, Table as WasmtimeTable, TableType, ValType,
 };
 
 /// Thread-safe wrapper around Wasmtime table with bounds checking

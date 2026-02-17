@@ -4,7 +4,6 @@
 //! and provides consistent error reporting across JNI and Panama FFI interfaces.
 
 use std::ffi::CString;
-use std::os::raw::c_char;
 use thiserror::Error;
 use wasmtime::{Trap, WasmBacktrace};
 
@@ -17,7 +16,6 @@ mod tests;
 // Re-export commonly used types and functions for backward compatibility
 pub use ffi_utils::{
     clear_last_error, free_error_message, get_last_error_message, set_last_error, ErrorCollector,
-    ErrorContext, PerformanceLogger, ResourceHandle,
 };
 
 /// Comprehensive error types for wasmtime4j operations

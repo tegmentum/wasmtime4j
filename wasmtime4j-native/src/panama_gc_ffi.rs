@@ -12,12 +12,12 @@
 //! All FFI functions are wrapped with catch_unwind to prevent panics from crashing the JVM.
 
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::gc::{ArrayOperationResult, RefOperationResult, StructOperationResult, WasmGcRuntime};
+use crate::gc::WasmGcRuntime;
 use crate::gc_heap::ObjectId;
 use crate::gc_types::{
     ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
 };
-use crate::{ffi_boundary_i32, ffi_boundary_ptr, ffi_boundary_result};
+use crate::{ffi_boundary_i32, ffi_boundary_result};
 
 const FFI_SUCCESS: i32 = 0;
 const FFI_ERROR: i32 = 1;

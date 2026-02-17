@@ -12,12 +12,12 @@
 
 use std::collections::HashMap;
 use std::os::raw::{c_int, c_void};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
 use tokio::sync::oneshot;
 use tokio::time::timeout;
-use wasmtime::component::{Component, Instance, Linker, ResourceTable};
+use wasmtime::component::{Component, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};

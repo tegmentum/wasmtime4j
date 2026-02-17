@@ -19,9 +19,8 @@ use std::time::{Duration, Instant};
 
 use wasmtime::{
     component::{
-        types::ComponentItem, Component as WasmtimeComponent, ComponentType, Func as ComponentFunc,
-        Instance as WasmtimeComponentInstance, Linker as ComponentLinker, Resource, ResourceAny,
-        ResourceTable, Type, Val,
+        types::ComponentItem, Component as WasmtimeComponent,
+        Instance as WasmtimeComponentInstance, Linker as ComponentLinker, ResourceTable, Type, Val,
     },
     Config, Engine, Store,
 };
@@ -32,7 +31,7 @@ use wasmtime_wasi;
 use crate::component::{
     CaseType, Component, ComponentEngine, ComponentMetadata, ComponentTypeKind, ComponentValueType,
     FieldType, FunctionDefinition, InstanceInfo, InterfaceDefinition, Parameter,
-    ResourceDefinition, TypeDefinition,
+    TypeDefinition,
 };
 use crate::error::{WasmtimeError, WasmtimeResult};
 

@@ -20,10 +20,10 @@
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::gc_heap::ObjectId;
 use crate::gc_types::{
-    ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
+    ArrayTypeDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
 };
 use std::collections::HashMap;
-use std::sync::Arc;
+#[allow(unused_imports)]
 use wasmtime::*;
 
 /// Enum to hold different types of GC objects while preserving type information

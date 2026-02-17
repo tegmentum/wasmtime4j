@@ -3,7 +3,7 @@
 //! This module provides JNI bindings for creating and managing function references
 //! that can be used with WebAssembly tables and indirect calls.
 
-use jni::objects::{JByteArray, JClass};
+use jni::objects::JClass;
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::JNIEnv;
 

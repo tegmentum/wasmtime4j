@@ -13,8 +13,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 use wasmtime::{
-    Extern, ExternType, Func, FuncType, Global, Instance as WasmtimeInstance, Memory, SharedMemory,
-    Table, Val, ValType as WasmtimeValType,
+    Extern, Func, FuncType, Global, Instance as WasmtimeInstance, Memory, SharedMemory, Table, Val,
+    ValType as WasmtimeValType,
 };
 
 /// Extracts the full error chain from an anyhow::Error to capture nested error messages.
@@ -2557,9 +2557,8 @@ mod tests {
 // Native C exports for JNI and Panama FFI consumption
 //
 
-use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 use std::ffi::CStr;
-use std::os::raw::{c_char, c_int, c_void};
+use std::os::raw::{c_char, c_void};
 
 /// Create a new instance without imports
 ///

@@ -19,7 +19,6 @@
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
-use std::sync::RwLock;
 
 /// Trait for stream entry operations
 ///
@@ -297,6 +296,7 @@ pub fn stream_exists_generic<C: WasiStreamContext>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::RwLock;
 
     // Test stream entry implementation
     struct TestStream {

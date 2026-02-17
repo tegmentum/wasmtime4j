@@ -8,7 +8,7 @@ use std::sync::{Arc, RwLock};
 
 use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
 
-use super::{safe_wasmtime_config, Engine, WasmFeature};
+use super::{safe_wasmtime_config, Engine};
 use crate::error::{WasmtimeError, WasmtimeResult};
 
 /// Summary of engine configuration for debugging and introspection

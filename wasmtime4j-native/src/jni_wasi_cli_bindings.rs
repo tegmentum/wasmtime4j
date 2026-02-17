@@ -9,7 +9,6 @@ use jni::objects::{JClass, JObject, JString};
 use jni::sys::{jint, jlong, jobjectArray, jstring};
 use jni::JNIEnv;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamStatusInfo, WasiStreamTypeInfo};
 use crate::{jni_deref_ptr, jni_validate_handle};
 

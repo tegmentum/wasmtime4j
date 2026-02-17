@@ -8,7 +8,6 @@ use parking_lot::Mutex;
 use std::cell::UnsafeCell;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::thread;
 
 /// Thread-safe, reentrant lock for Rust objects exposed via FFI
 ///
@@ -161,81 +160,6 @@ fn current_thread_id() -> u64 {
     THREAD_ID.with(|id| *id)
 }
 
-/// Convert a Rust object into a raw pointer for FFI
-///
-/// The object is boxed twice: once in a regular Box, and then wrapped
-/// in a ReentrantLock for thread-safe access. This returns a raw pointer
-/// that can be passed across the FFI boundary.
-///
-/// # Safety
-///
-/// The returned pointer must be freed with `from_raw` or `dispose_inner`
-/// to avoid memory leaks.
-pub fn into_raw<T>(value: T) -> *mut std::os::raw::c_void {
-    let reentrant = ReentrantLock::new(value);
-    Box::into_raw(Box::new(reentrant)) as *mut std::os::raw::c_void
-}
-
-/// Restore a Rust object from a raw pointer
-///
-/// This takes ownership of the pointer and converts it back into a
-/// boxed ReentrantLock. The object will be dropped when the Box is dropped.
-///
-/// # Safety
-///
-/// - ptr must have been created by `into_raw`
-/// - ptr must not have been previously freed
-/// - ptr must not be used after this call
-pub unsafe fn from_raw<T>(ptr: *mut std::os::raw::c_void) -> Box<ReentrantLock<T>> {
-    Box::from_raw(ptr as *mut ReentrantLock<T>)
-}
-
-/// Get a reference to a Rust object from a raw pointer
-///
-/// This provides temporary access to the object without taking ownership.
-/// The object remains valid and owned by the FFI layer.
-///
-/// # Safety
-///
-/// - ptr must have been created by `into_raw`
-/// - ptr must still be valid (not freed)
-/// - The returned reference must not outlive the pointer
-pub unsafe fn ref_from_raw<T>(ptr: *const std::os::raw::c_void) -> &'static ReentrantLock<T> {
-    &*(ptr as *const ReentrantLock<T>)
-}
-
-/// Get a mutable reference to a Rust object from a raw pointer
-///
-/// This provides temporary mutable access to the object without taking ownership.
-/// The object remains valid and owned by the FFI layer.
-///
-/// # Safety
-///
-/// - ptr must have been created by `into_raw`
-/// - ptr must still be valid (not freed)
-/// - The returned reference must not outlive the pointer
-/// - No other references to the object may exist
-pub unsafe fn ref_from_raw_mut<T>(ptr: *mut std::os::raw::c_void) -> &'static mut ReentrantLock<T> {
-    &mut *(ptr as *mut ReentrantLock<T>)
-}
-
-/// Dispose of a Rust object by consuming the pointer
-///
-/// This is equivalent to `from_raw` but explicitly signals that the
-/// object is being destroyed. The Box is dropped immediately.
-///
-/// # Safety
-///
-/// - ptr must have been created by `into_raw`
-/// - ptr must not have been previously freed
-/// - ptr must not be used after this call
-pub unsafe fn dispose_inner<T>(ptr: *mut std::os::raw::c_void) {
-    if !ptr.is_null() {
-        let _boxed = from_raw::<T>(ptr);
-        // Box is dropped here, which drops the ReentrantLock and its contents
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,52 +192,4 @@ mod tests {
         assert_eq!(*guard2, vec![1, 2, 3]);
     }
 
-    #[test]
-    fn test_into_raw_and_back() {
-        let value = vec![1, 2, 3, 4, 5];
-        let ptr = into_raw(value.clone());
-
-        unsafe {
-            let reentrant_box = from_raw::<Vec<i32>>(ptr);
-            let guard = reentrant_box.lock();
-            assert_eq!(*guard, vec![1, 2, 3, 4, 5]);
-        }
-    }
-
-    #[test]
-    fn test_ref_from_raw() {
-        let value = String::from("hello");
-        let ptr = into_raw(value);
-
-        unsafe {
-            // Use a scope to ensure the lock guard is dropped before dispose
-            {
-                let reentrant_ref = ref_from_raw::<String>(ptr);
-                let guard = reentrant_ref.lock();
-                assert_eq!(*guard, "hello");
-            } // guard dropped here, releasing the lock before memory is freed
-
-            // Clean up - now safe since no references exist
-            dispose_inner::<String>(ptr as *mut _);
-        }
-    }
-
-    #[test]
-    fn test_dispose_inner() {
-        let value = vec![1, 2, 3];
-        let ptr = into_raw(value);
-
-        unsafe {
-            dispose_inner::<Vec<i32>>(ptr as *mut _);
-        }
-        // Should not crash - value was properly cleaned up
-    }
-
-    #[test]
-    fn test_dispose_null() {
-        unsafe {
-            dispose_inner::<String>(std::ptr::null_mut());
-        }
-        // Should not crash on null pointer
-    }
 }

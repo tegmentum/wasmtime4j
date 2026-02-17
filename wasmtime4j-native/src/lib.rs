@@ -26,7 +26,6 @@
 // Remaining suppressions have documented justifications:
 
 #![allow(missing_docs)] // Large codebase - docs added incrementally
-#![allow(unused_imports)] // Many platform/feature-gated imports across files
 // Note: dead_code warnings addressed file-by-file; removed blanket suppression
 #![allow(unused_mut)] // Required: JNI env parameters need mut for API calls
 #![allow(non_snake_case)] // Required: JNI functions follow Java naming conventions
@@ -134,10 +133,6 @@ pub mod wit_value_marshal;
 pub mod component;
 #[cfg(feature = "component-model")]
 pub mod component_core;
-#[cfg(feature = "component-model")]
-pub mod resource_dynamic;
-#[cfg(feature = "component-model")]
-pub mod version_types;
 
 // WebAssembly GC implementation
 pub mod gc;
@@ -207,9 +202,6 @@ pub use component::{
 #[cfg(feature = "component-model")]
 pub use component_core::{ComponentInstanceHandle, ComponentMetrics, EnhancedComponentEngine};
 
-#[cfg(feature = "component-model")]
-pub use version_types::{ComponentId, SemanticVersion, VersionConstraint};
-
 // Re-export WebAssembly GC types for garbage collection support
 pub use gc::{
     ArrayOperationResult, RefOperationResult, StructOperationResult, WasmGcRuntime, WasmtimeGcRef,
@@ -226,7 +218,7 @@ pub use gc_types::{
 
 // Re-export shared FFI utilities for interface implementations
 pub use shared_ffi::{
-    convert_wasm_features, error_mapping, validate_wasm_features, validation,
+    convert_wasm_features, validate_wasm_features, validation,
     BooleanReturnConverter, FfiOptLevel, FfiWasmFeature, IntegerReturnConverter,
     PointerReturnConverter, ReturnValueConverter, FFI_ERROR, FFI_SUCCESS,
 };

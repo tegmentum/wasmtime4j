@@ -5,7 +5,7 @@
 #[cfg(feature = "jni-bindings")]
 use jni::objects::{JClass, JObject, JString, JValue};
 #[cfg(feature = "jni-bindings")]
-use jni::sys::{jboolean, jint, jlong, jobject, jobjectArray, jstring};
+use jni::sys::jobject;
 #[cfg(feature = "jni-bindings")]
 use jni::JNIEnv;
 

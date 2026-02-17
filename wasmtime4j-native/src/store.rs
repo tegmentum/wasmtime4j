@@ -2252,7 +2252,7 @@ mod tests {
 //
 
 use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
-use std::os::raw::{c_char, c_int, c_void};
+use std::os::raw::{c_int, c_void};
 
 /// Create a new store with engine
 ///

@@ -15,7 +15,6 @@
 //! - `ReturnValueConverter<T>`: Consistent return value handling with error codes
 //! - `FfiOptLevel`, `FfiWasmFeature`: FFI-compatible enum representations
 //! - `validation`: Pointer and bounds validation utilities
-//! - `error_mapping`: Error code mapping for FFI boundaries
 
 use crate::engine::WasmFeature;
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -410,24 +409,6 @@ pub mod validation {
         } else {
             Ok(())
         }
-    }
-}
-
-/// Error code mapping utilities
-pub mod error_mapping {
-    use crate::error::WasmtimeError;
-
-    /// Map WasmtimeError to standardized FFI error codes
-    pub fn map_error_to_code(_error: &WasmtimeError) -> i32 {
-        // All errors map to FFI_ERROR (-1) for simplicity and consistency
-        // Detailed error information is available through error message retrieval
-        super::FFI_ERROR
-    }
-
-    /// Check if an error should be propagated to FFI boundary
-    pub fn should_propagate_error(_error: &WasmtimeError) -> bool {
-        // All errors should be propagated as return codes, never as panics
-        true
     }
 }
 
@@ -2503,97 +2484,6 @@ mod tests {
         assert!(err_msg.contains("start=2"));
         assert!(err_msg.contains("len=5"));
         assert!(err_msg.contains("slice_len=3"));
-    }
-
-    // =========================================================================
-    // Error Mapping Module Tests (5 tests)
-    // =========================================================================
-
-    #[test]
-    fn test_error_mapping_compilation_error() {
-        use error_mapping::*;
-
-        let error = WasmtimeError::Compilation {
-            message: "test".to_string(),
-        };
-        assert_eq!(map_error_to_code(&error), FFI_ERROR);
-    }
-
-    #[test]
-    fn test_error_mapping_validation_error() {
-        use error_mapping::*;
-
-        let error = WasmtimeError::Validation {
-            message: "test".to_string(),
-        };
-        assert_eq!(map_error_to_code(&error), FFI_ERROR);
-    }
-
-    #[test]
-    fn test_error_mapping_runtime_error() {
-        use error_mapping::*;
-
-        let error = WasmtimeError::Runtime {
-            message: "test".to_string(),
-            backtrace: None,
-        };
-        assert_eq!(map_error_to_code(&error), FFI_ERROR);
-    }
-
-    #[test]
-    fn test_should_propagate_all_errors() {
-        use error_mapping::*;
-
-        let errors = [
-            WasmtimeError::Compilation {
-                message: "test".to_string(),
-            },
-            WasmtimeError::Validation {
-                message: "test".to_string(),
-            },
-            WasmtimeError::Runtime {
-                message: "test".to_string(),
-                backtrace: None,
-            },
-            WasmtimeError::InvalidParameter {
-                message: "test".to_string(),
-            },
-            WasmtimeError::Internal {
-                message: "test".to_string(),
-            },
-        ];
-
-        for error in &errors {
-            assert!(should_propagate_error(error), "All errors should propagate");
-        }
-    }
-
-    #[test]
-    fn test_error_mapping_consistency() {
-        use error_mapping::*;
-
-        // All different error types should map to FFI_ERROR
-        let error_types = [
-            WasmtimeError::Store {
-                message: "test".to_string(),
-            },
-            WasmtimeError::Instance {
-                message: "test".to_string(),
-            },
-            WasmtimeError::Memory {
-                message: "test".to_string(),
-            },
-            WasmtimeError::Table {
-                message: "test".to_string(),
-            },
-            WasmtimeError::Global {
-                message: "test".to_string(),
-            },
-        ];
-
-        for error in &error_types {
-            assert_eq!(map_error_to_code(error), FFI_ERROR);
-        }
     }
 
     // =========================================================================

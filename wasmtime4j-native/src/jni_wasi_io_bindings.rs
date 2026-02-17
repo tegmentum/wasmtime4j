@@ -6,10 +6,10 @@
 //! Note: These bindings work with WasiContext (Preview 1) to provide I/O functionality.
 
 use jni::objects::{JByteArray, JClass, JObject};
-use jni::sys::{jboolean, jbyteArray, jint, jlong};
+use jni::sys::{jboolean, jbyteArray, jlong};
 use jni::JNIEnv;
 
-use crate::error::{WasmtimeError, WasmtimeResult};
+use crate::error::WasmtimeResult;
 use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamStatusInfo, WasiStreamTypeInfo};
 use crate::wasi_stream_ops::{
     check_write_capacity_generic, close_stream_generic, flush_stream_generic,

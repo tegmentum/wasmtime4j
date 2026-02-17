@@ -1,7 +1,7 @@
 //! JNI bindings for Instance operations
 
 use jni::objects::{JClass, JObject, JString, JValue};
-use jni::sys::{jboolean, jint, jintArray, jlong, jobject, jobjectArray, jstring};
+use jni::sys::{jboolean, jint, jintArray, jlong, jobject, jobjectArray};
 use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};

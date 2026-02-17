@@ -1253,9 +1253,7 @@ impl Drop for Linker {
 // Native C exports for JNI and Panama FFI consumption
 //
 
-use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
-use std::ffi::CStr;
-use std::os::raw::{c_char, c_int, c_void};
+use std::os::raw::{c_int, c_void};
 
 /// Linker core functions for interface implementations
 pub mod core {

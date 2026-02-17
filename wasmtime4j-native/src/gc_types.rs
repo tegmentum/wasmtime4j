@@ -20,6 +20,7 @@
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
 use std::sync::{Mutex, RwLock};
+#[allow(unused_imports)]
 use wasmtime::*;
 
 /// WebAssembly GC reference type enumeration

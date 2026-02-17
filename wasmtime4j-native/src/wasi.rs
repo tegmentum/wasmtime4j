@@ -17,7 +17,7 @@ use std::sync::{Arc, Mutex, RwLock};
 use wasmtime::Linker;
 use wasmtime_wasi::p1::WasiP1Ctx;
 use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
-use wasmtime_wasi::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder};
+use wasmtime_wasi::{DirPerms, FilePerms, WasiCtxBuilder};
 
 /// Thread-safe wrapper around WASI context with comprehensive configuration
 pub struct WasiContext {

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_long, c_void};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use crate::{ffi_boundary_ptr, ffi_boundary_result, ffi_boundary_void};
 

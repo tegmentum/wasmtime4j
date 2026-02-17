@@ -1,7 +1,7 @@
 //! JNI bindings for Linker operations
 
-use jni::objects::{JClass, JObject, JString};
-use jni::sys::{jboolean, jint, jintArray, jlong, jobject};
+use jni::objects::{JClass, JString};
+use jni::sys::{jboolean, jintArray, jlong, jobject};
 use jni::JNIEnv;
 use jni::JavaVM;
 

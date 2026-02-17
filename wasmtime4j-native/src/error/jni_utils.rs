@@ -53,8 +53,6 @@ pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
 #[cfg(feature = "jni-bindings")]
 /// Throw JNI exception with proper error information
 pub fn throw_jni_exception(env: &mut jni::JNIEnv, error: &WasmtimeError) {
-    use jni::objects::JValue;
-
     let class_name = error_to_exception_class(error);
     let message = error.to_string();
 
