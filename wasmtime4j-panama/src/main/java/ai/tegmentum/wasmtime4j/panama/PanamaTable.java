@@ -46,6 +46,8 @@ public final class PanamaTable implements WasmTable {
     this.store = null;
     // Query element type from native table metadata
     this.elementType = queryElementTypeFromNative(nativeTable, arena);
+    final MemorySegment capturedNativeTable = this.nativeTable;
+    final Arena capturedArena = this.arena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaTable",
@@ -59,6 +61,20 @@ public final class PanamaTable implements WasmTable {
                 LOGGER.fine("Closed Panama table");
               } catch (final Throwable e) {
                 LOGGER.warning("Error closing table: " + e.getMessage());
+              }
+            },
+            this,
+            () -> {
+              try {
+                final MethodHandle deleteHandle = NATIVE_BINDINGS.getPanamaTableDelete();
+                if (deleteHandle != null) {
+                  deleteHandle.invoke(capturedNativeTable);
+                }
+              } catch (final Throwable e) {
+                // Safety net — best effort
+              }
+              if (capturedArena != null && capturedArena.scope().isAlive()) {
+                capturedArena.close();
               }
             });
     LOGGER.fine("Wrapped native table pointer with element type: " + this.elementType);
@@ -87,6 +103,8 @@ public final class PanamaTable implements WasmTable {
     this.elementType = elementType;
     this.instance = null; // Tables created by store don't have an instance
     this.store = store;
+    final MemorySegment capturedNativeTable2 = this.nativeTable;
+    final Arena capturedArena2 = this.arena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaTable",
@@ -100,6 +118,20 @@ public final class PanamaTable implements WasmTable {
                 LOGGER.fine("Closed Panama table");
               } catch (final Throwable e) {
                 LOGGER.warning("Error closing table: " + e.getMessage());
+              }
+            },
+            this,
+            () -> {
+              try {
+                final MethodHandle deleteHandle = NATIVE_BINDINGS.getPanamaTableDelete();
+                if (deleteHandle != null) {
+                  deleteHandle.invoke(capturedNativeTable2);
+                }
+              } catch (final Throwable e) {
+                // Safety net — best effort
+              }
+              if (capturedArena2 != null && capturedArena2.scope().isAlive()) {
+                capturedArena2.close();
               }
             });
     LOGGER.fine("Created table from store with type: " + elementType);

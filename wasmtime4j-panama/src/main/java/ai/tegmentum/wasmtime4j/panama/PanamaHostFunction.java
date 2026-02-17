@@ -140,6 +140,8 @@ public final class PanamaHostFunction implements WasmFunction {
       arenaManager.registerManagedNativeResource(this, upcallStub, this::closeNative);
 
       // Initialize resource handle with cleanup logic
+      final long capturedHostFunctionId = this.hostFunctionId;
+      final long capturedFuncRefId = this.funcRefId;
       this.resourceHandle =
           new NativeResourceHandle(
               "PanamaHostFunction",
@@ -167,6 +169,21 @@ public final class PanamaHostFunction implements WasmFunction {
                 if (logger.isLoggable(Level.FINE)) {
                   logger.fine(
                       "Closed host function '" + functionName + "' with ID: " + hostFunctionId);
+                }
+              },
+              this,
+              () -> {
+                hostFunctionRegistry.remove(capturedHostFunctionId);
+                if (capturedFuncRefId != 0) {
+                  try {
+                    final MethodHandle destroyHandle =
+                        NativeInstanceBindings.getInstance().getPanamaDestroyHostFunction();
+                    if (destroyHandle != null) {
+                      destroyHandle.invoke(capturedFuncRefId);
+                    }
+                  } catch (final Throwable ignored) {
+                    // Safety net — best effort
+                  }
                 }
               });
 

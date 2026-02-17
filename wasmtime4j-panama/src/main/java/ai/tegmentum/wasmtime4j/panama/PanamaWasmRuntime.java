@@ -89,6 +89,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public PanamaWasmRuntime() throws WasmException {
     try {
       this.arena = Arena.ofShared();
+      final Arena capturedArena = this.arena;
       this.resourceHandle =
           new NativeResourceHandle(
               "PanamaWasmRuntime",
@@ -105,6 +106,12 @@ public final class PanamaWasmRuntime implements WasmRuntime {
                 }
 
                 LOGGER.fine("Closed Panama WebAssembly runtime");
+              },
+              this,
+              () -> {
+                if (capturedArena != null) {
+                  capturedArena.close();
+                }
               });
 
       LOGGER.fine("Created Panama WebAssembly runtime");

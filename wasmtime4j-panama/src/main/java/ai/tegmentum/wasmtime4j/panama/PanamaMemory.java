@@ -1351,6 +1351,10 @@ public final class PanamaMemory implements WasmMemory {
    * @return the resource handle
    */
   private NativeResourceHandle createResourceHandle() {
+    final MemorySegment capturedNativeMemory = this.nativeMemory;
+    final PanamaInstance capturedInstance = this.instance;
+    final Arena capturedArena = this.arena;
+    final Arena capturedBufferArena = this.bufferArena;
     return new NativeResourceHandle(
         "PanamaMemory",
         () -> {
@@ -1378,6 +1382,23 @@ public final class PanamaMemory implements WasmMemory {
           directByteBuffer = null;
           bufferArena.close();
           arena.close();
+        },
+        this,
+        () -> {
+          // Safety net: destroy store-created native memory and close arenas.
+          // For instance-exported memories, cachedMemoryPointer is lazily set and cannot
+          // be captured at construction time. The instance owns the underlying memory.
+          if (capturedInstance == null
+              && capturedNativeMemory != null
+              && !capturedNativeMemory.equals(MemorySegment.NULL)) {
+            NATIVE_BINDINGS.memoryDestroy(capturedNativeMemory);
+          }
+          if (capturedBufferArena != null && capturedBufferArena.scope().isAlive()) {
+            capturedBufferArena.close();
+          }
+          if (capturedArena != null && capturedArena.scope().isAlive()) {
+            capturedArena.close();
+          }
         });
   }
 

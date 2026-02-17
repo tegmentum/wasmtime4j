@@ -147,6 +147,7 @@ public final class PanamaFunctionReference implements FunctionReference {
       arenaManager.registerManagedNativeResource(this, upcallStub, this::closeNative);
 
       // Initialize resource handle with cleanup logic
+      final long capturedFuncRefId = this.functionReferenceId;
       this.resourceHandle =
           new NativeResourceHandle(
               "PanamaFunctionReference",
@@ -166,6 +167,10 @@ public final class PanamaFunctionReference implements FunctionReference {
                           + "' with ID: "
                           + functionReferenceId);
                 }
+              },
+              this,
+              () -> {
+                FUNCTION_REFERENCE_REGISTRY.remove(capturedFuncRefId);
               });
 
       if (LOGGER.isLoggable(Level.FINE)) {
@@ -227,6 +232,7 @@ public final class PanamaFunctionReference implements FunctionReference {
       this.upcallStub = null;
 
       // Initialize resource handle with cleanup logic
+      final long capturedFuncRefId2 = this.functionReferenceId;
       this.resourceHandle =
           new NativeResourceHandle(
               "PanamaFunctionReference",
@@ -241,6 +247,10 @@ public final class PanamaFunctionReference implements FunctionReference {
                           + "' with ID: "
                           + functionReferenceId);
                 }
+              },
+              this,
+              () -> {
+                FUNCTION_REFERENCE_REGISTRY.remove(capturedFuncRefId2);
               });
 
       if (LOGGER.isLoggable(Level.FINE)) {

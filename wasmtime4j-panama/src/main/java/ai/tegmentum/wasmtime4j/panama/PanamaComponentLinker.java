@@ -86,6 +86,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
       throw new WasmException("Failed to create native component linker");
     }
 
+    final MemorySegment capturedLinker = this.nativeLinker;
+    final Arena capturedArena = this.arena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaComponentLinker",
@@ -110,6 +112,15 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
                 arena.close();
               } catch (final Throwable t) {
                 throw new Exception("Error closing PanamaComponentLinker arena", t);
+              }
+            },
+            this,
+            () -> {
+              if (capturedLinker != null && !capturedLinker.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.componentLinkerDestroy(capturedLinker);
+              }
+              if (capturedArena != null && capturedArena.scope().isAlive()) {
+                capturedArena.close();
               }
             });
 

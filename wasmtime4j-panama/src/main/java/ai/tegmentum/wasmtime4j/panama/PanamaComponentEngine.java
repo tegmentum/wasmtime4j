@@ -99,6 +99,8 @@ public final class PanamaComponentEngine implements ComponentEngine {
       throw new WasmException("Failed to create enhanced component engine");
     }
 
+    final MemorySegment capturedEngineHandle = this.enhancedEngineHandle;
+    final Arena capturedArena = this.arena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaComponentEngine",
@@ -130,6 +132,16 @@ public final class PanamaComponentEngine implements ComponentEngine {
                 } catch (final Throwable t) {
                   throw new Exception("Error closing PanamaComponentEngine arena", t);
                 }
+              }
+            },
+            this,
+            () -> {
+              if (capturedEngineHandle != null
+                  && !capturedEngineHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.enhancedComponentEngineDestroy(capturedEngineHandle);
+              }
+              if (capturedArena != null && capturedArena.scope().isAlive()) {
+                capturedArena.close();
               }
             });
   }
