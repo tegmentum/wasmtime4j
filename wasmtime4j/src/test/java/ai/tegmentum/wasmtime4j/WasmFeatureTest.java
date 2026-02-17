@@ -216,26 +216,6 @@ class WasmFeatureTest {
   }
 
   // ========================================================================
-  // Extended Reference Types Feature Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Extended Reference Types Feature Tests")
-  class ExtendedReferenceTypesFeatureTests {
-
-    @Test
-    @DisplayName("should have EXTENDED_REFERENCE_TYPES feature")
-    void shouldHaveExtendedReferenceTypesFeature() {
-      WasmFeature feature = WasmFeature.EXTENDED_REFERENCE_TYPES;
-      assertNotNull(feature, "EXTENDED_REFERENCE_TYPES should exist");
-      assertEquals(
-          "EXTENDED_REFERENCE_TYPES",
-          feature.name(),
-          "EXTENDED_REFERENCE_TYPES should have correct name");
-    }
-  }
-
-  // ========================================================================
   // Unique Value Tests
   // ========================================================================
 

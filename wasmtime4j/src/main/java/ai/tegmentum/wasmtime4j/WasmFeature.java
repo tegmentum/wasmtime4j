@@ -48,28 +48,13 @@ public enum WasmFeature {
   /** WebAssembly typed function references proposal support. */
   TYPED_FUNCTION_REFERENCES,
 
-  /** WebAssembly branch hinting proposal support. */
-  BRANCH_HINTING,
-
-  /** WebAssembly extended reference types proposal support. */
-  EXTENDED_REFERENCE_TYPES,
-
-  /** WebAssembly function subtyping proposal support. */
-  FUNCTION_SUBTYPING,
-
   // Committee-stage experimental proposals (use with caution)
 
   /** WebAssembly stack switching proposal support for coroutines and fibers. */
   STACK_SWITCHING,
 
-  /** WebAssembly call/cc (call-with-current-continuation) proposal support. */
-  CALL_CC,
-
   /** WebAssembly extended constant expressions proposal support. */
   EXTENDED_CONST_EXPRESSIONS,
-
-  /** WebAssembly memory64 extended operations proposal support. */
-  MEMORY64_EXTENDED,
 
   /** WebAssembly custom page sizes proposal support. */
   CUSTOM_PAGE_SIZES,
@@ -93,20 +78,5 @@ public enum WasmFeature {
   COMPONENT_MODEL_ERROR_CONTEXT,
 
   /** WebAssembly Component Model GC support. */
-  COMPONENT_MODEL_GC,
-
-  /** WebAssembly type imports proposal support. */
-  TYPE_IMPORTS,
-
-  /** WebAssembly string imports proposal support. */
-  STRING_IMPORTS,
-
-  /** WebAssembly resource types proposal support. */
-  RESOURCE_TYPES,
-
-  /** WebAssembly interface types proposal support. */
-  INTERFACE_TYPES,
-
-  /** WebAssembly flexible vectors proposal support. */
-  FLEXIBLE_VECTORS
+  COMPONENT_MODEL_GC
 }

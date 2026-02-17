@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.util;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 /**
  * Utility class providing defensive programming validation methods.
@@ -226,30 +225,6 @@ public final class Validation {
     if (!condition) {
       throw new IllegalArgumentException(message);
     }
-  }
-
-  /**
-   * Validates that a port number is valid (1-65535).
-   *
-   * @param port the port number to validate
-   * @throws IllegalArgumentException if the port is invalid
-   */
-  public static void requireValidPort(final int port) {
-    requireInRange(port, 1, 65535, "port");
-  }
-
-  /**
-   * Validates that a connection ID is valid and exists in the provided map.
-   *
-   * @param connectionId the connection ID to validate
-   * @param activeConnections the map of active connections
-   * @throws IllegalArgumentException if the connection ID is invalid or not found
-   */
-  public static void requireValidConnectionId(
-      final long connectionId, final Map<Long, ?> activeConnections) {
-    requireNonNull(activeConnections, "activeConnections");
-    require(connectionId > 0, "Connection ID must be positive");
-    require(activeConnections.containsKey(connectionId), "Connection not found: " + connectionId);
   }
 
   /**
