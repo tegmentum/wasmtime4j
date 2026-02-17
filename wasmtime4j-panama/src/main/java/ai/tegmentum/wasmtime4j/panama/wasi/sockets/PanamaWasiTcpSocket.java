@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiInputStream;
@@ -89,7 +90,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
 
   static {
     try {
-      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeLibraryLoader.getInstance().getSymbolLookup();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_tcp_socket_create(context_handle, is_ipv6, out_handle)

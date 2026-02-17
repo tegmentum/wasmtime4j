@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
 import ai.tegmentum.wasmtime4j.util.Validation;
-import java.lang.foreign.SymbolLookup;
 import java.lang.ref.Cleaner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -35,7 +34,6 @@ import java.util.logging.Logger;
  *   <li>Thread-safe close via {@link AtomicBoolean#compareAndSet} (no double-free)
  *   <li>Optional {@link Cleaner} safety net for native resources not explicitly closed
  *   <li>Idempotent {@link #close()} — safe to call multiple times
- *   <li>Centralized native library lookup via {@link #getNativeLibrary()}
  * </ul>
  *
  * <p><b>Safety net pattern:</b> When using the Cleaner safety net, the {@code safetyNetAction} must
@@ -54,9 +52,6 @@ public final class NativeResourceHandle implements AutoCloseable {
   private final String resourceType;
   private final CleanupAction closeAction;
   private final Cleaner.Cleanable cleanable;
-
-  /** Cached native library for all Panama implementations. */
-  private static volatile SymbolLookup nativeLibrary;
 
   /**
    * Functional interface for resource cleanup operations.
@@ -178,22 +173,4 @@ public final class NativeResourceHandle implements AutoCloseable {
     }
   }
 
-  /**
-   * Gets the shared native library for all Panama implementations.
-   *
-   * @return the native library symbol lookup
-   */
-  public static SymbolLookup getNativeLibrary() {
-    SymbolLookup result = nativeLibrary;
-    if (result == null) {
-      synchronized (NativeResourceHandle.class) {
-        result = nativeLibrary;
-        if (result == null) {
-          result = SymbolLookup.loaderLookup();
-          nativeLibrary = result;
-        }
-      }
-    }
-    return result;
-  }
 }

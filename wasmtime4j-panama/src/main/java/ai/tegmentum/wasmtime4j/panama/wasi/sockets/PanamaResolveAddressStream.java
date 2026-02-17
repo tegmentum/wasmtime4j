@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddress;
@@ -56,7 +57,7 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
 
   static {
     try {
-      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeLibraryLoader.getInstance().getSymbolLookup();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_resolve_stream_next(context_handle, stream_handle, out_result)

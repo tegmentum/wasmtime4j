@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.util.Validation;
@@ -53,7 +54,7 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
 
   static {
     try {
-      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeLibraryLoader.getInstance().getSymbolLookup();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_pollable_block(context_handle, pollable_handle)

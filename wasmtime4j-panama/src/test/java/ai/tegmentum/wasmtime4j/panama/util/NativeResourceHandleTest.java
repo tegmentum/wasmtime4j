@@ -19,11 +19,9 @@ package ai.tegmentum.wasmtime4j.panama.util;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.foreign.SymbolLookup;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -339,30 +337,6 @@ class NativeResourceHandleTest {
 
       assertTrue(handle.isClosed(), "Should be closed after try block");
       assertTrue(cleanupExecuted.get(), "Cleanup should have executed");
-    }
-  }
-
-  @Nested
-  @DisplayName("getNativeLibrary Tests")
-  class GetNativeLibraryTests {
-
-    @Test
-    @DisplayName("Should return non-null SymbolLookup")
-    void shouldReturnNonNull() {
-      final SymbolLookup library = NativeResourceHandle.getNativeLibrary();
-      assertNotNull(library, "Native library should not be null");
-    }
-
-    @Test
-    @DisplayName("Should return same instance on repeated calls (cached)")
-    void shouldReturnSameInstance() {
-      final SymbolLookup library1 = NativeResourceHandle.getNativeLibrary();
-      final SymbolLookup library2 = NativeResourceHandle.getNativeLibrary();
-
-      assertNotNull(library1, "First call should return non-null");
-      assertNotNull(library2, "Second call should return non-null");
-      // Both should be the same cached instance
-      assertEquals(library1, library2, "Should return the same cached instance");
     }
   }
 

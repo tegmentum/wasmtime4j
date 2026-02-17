@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.clocks;
 
-import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
 import ai.tegmentum.wasmtime4j.wasi.clocks.TimezoneDisplay;
@@ -61,7 +61,7 @@ public final class PanamaWasiTimezone implements WasiTimezone {
 
   static {
     try {
-      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeLibraryLoader.getInstance().getSymbolLookup();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_timezone_display(context_handle, seconds, nanoseconds,

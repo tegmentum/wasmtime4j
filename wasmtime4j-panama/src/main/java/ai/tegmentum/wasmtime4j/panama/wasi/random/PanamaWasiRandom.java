@@ -16,7 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.random;
 
-import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.random.WasiRandom;
 import java.lang.foreign.Arena;
@@ -56,7 +56,7 @@ public final class PanamaWasiRandom implements WasiRandom {
 
   static {
     try {
-      final SymbolLookup nativeLib = NativeResourceHandle.getNativeLibrary();
+      final SymbolLookup nativeLib = NativeLibraryLoader.getInstance().getSymbolLookup();
       final Linker linker = Linker.nativeLinker();
 
       // int wasmtime4j_panama_wasi_random_get_bytes(context_handle, len, out_bytes,
