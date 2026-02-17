@@ -212,55 +212,6 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  /**
-   * Sets the fuel limit for this store.
-   *
-   * <p>Fuel is a mechanism for limiting WebAssembly execution time. When fuel is enabled,
-   * WebAssembly execution will be interrupted when the fuel limit is reached. This can be used to
-   * prevent runaway computations.
-   *
-   * @param fuel the fuel limit (must be positive)
-   * @throws WasmException if the fuel limit cannot be set
-   * @throws JniResourceException if this store has been closed
-   */
-  public void setFuelLimit(final long fuel) throws WasmException {
-    JniValidation.requirePositive(fuel, "fuel");
-    ensureNotClosed();
-
-    try {
-      // Use addFuel to set the fuel amount - this replaces the current fuel
-      final boolean success = nativeAddFuel(getNativeHandle(), fuel);
-      if (!success) {
-        throw new JniException("Failed to set fuel to " + fuel);
-      }
-      LOGGER.fine("Set fuel to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
-    } catch (final Exception e) {
-      if (e instanceof JniException) {
-        throw e;
-      }
-      throw new JniException("Unexpected error setting fuel", e);
-    }
-  }
-
-  /**
-   * Gets the remaining fuel for this store.
-   *
-   * <p>Returns the amount of fuel remaining for WebAssembly execution in this store. If fuel is not
-   * enabled, this method returns -1.
-   *
-   * @return the remaining fuel, or -1 if fuel is not enabled
-   * @throws WasmException if the fuel amount cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  public long getFuelRemaining() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeGetFuelRemaining(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get remaining fuel", e);
-    }
-  }
 
   /**
    * Adds fuel to this store.
@@ -715,25 +666,6 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  /**
-   * Gets the total execution time for this store.
-   *
-   * <p>This method returns the cumulative time spent executing WebAssembly code within this store
-   * context, measured in microseconds for high precision timing.
-   *
-   * @return the total execution time in microseconds
-   * @throws WasmException if the execution time cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  public long getExecutionTime() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeGetExecutionTime(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get execution time", e);
-    }
-  }
 
   /**
    * Gets the total execution time in microseconds for this store.
@@ -880,31 +812,6 @@ public final class JniStore extends JniResource implements Store {
       return nativeGetExecutionTimeout(getNativeHandle());
     } catch (final Exception e) {
       throw new JniException("Failed to get execution timeout", e);
-    }
-  }
-
-  // Validation and Diagnostics
-
-  /**
-   * Validates the store and checks its current state.
-   *
-   * <p>This method performs comprehensive validation of the store's internal state and verifies
-   * that all associated resources are in a consistent, valid state. This is useful for debugging
-   * and ensuring store integrity.
-   *
-   * @return true if the store is valid and all checks pass, false otherwise
-   * @throws JniResourceException if this store has been closed
-   */
-  public boolean validate() {
-    if (isClosed() || getNativeHandle() == 0) {
-      return false;
-    }
-
-    try {
-      return nativeValidate(getNativeHandle());
-    } catch (final Exception e) {
-      LOGGER.warning("Error validating store: " + e.getMessage());
-      return false;
     }
   }
 

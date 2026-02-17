@@ -361,16 +361,6 @@ public final class PanamaTable implements WasmTable {
       // Handle null value (set to empty reference)
       final int refIdPresent;
       final long refId;
-      // Debug logging to trace instanceof issue
-      LOGGER.warning(
-          "PanamaTable.set debug: value class="
-              + (value != null ? value.getClass().getName() : "null")
-              + ", isPanamaHostFunction="
-              + (value instanceof PanamaHostFunction)
-              + ", value class loader="
-              + (value != null ? value.getClass().getClassLoader() : "null")
-              + ", PanamaHostFunction class loader="
-              + PanamaHostFunction.class.getClassLoader());
       if (value == null) {
         refIdPresent = 0;
         refId = 0L;

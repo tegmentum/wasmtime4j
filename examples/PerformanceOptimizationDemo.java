@@ -117,7 +117,7 @@ public class PerformanceOptimizationDemo {
         try (Store store = optimizedEngine.createStore()) {
             // Configure store for memory efficiency
             store.setMemoryLimit(100 * 1024 * 1024); // 100MB limit
-            store.setFuelLimit(10_000_000); // Computation limit
+            store.addFuel(10_000_000); // Computation limit
 
             byte[] moduleBytes = createMemoryTestModule();
             Module module = Module.fromBytes(optimizedEngine, moduleBytes);
