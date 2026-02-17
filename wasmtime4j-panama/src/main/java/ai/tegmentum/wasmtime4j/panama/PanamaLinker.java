@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
-import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
@@ -12,7 +11,6 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
@@ -1009,7 +1007,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       // Unmarshal parameters from native memory
       final WasmValue[] params = new WasmValue[paramsLen];
       for (int i = 0; i < paramsLen; i++) {
-        params[i] = unmarshalWasmValue(paramsSegment, i);
+        params[i] = WasmValueMarshaller.unmarshalWasmValue(paramsSegment, i, null);
       }
 
       // Call the host function
@@ -1034,7 +1032,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
       // Marshal results to native memory
       for (int i = 0; i < results.length; i++) {
-        marshalWasmValue(results[i], resultsSegment, i);
+        WasmValueMarshaller.marshalWasmValue(results[i], resultsSegment, i, null);
       }
 
       LOGGER.fine(
@@ -1052,154 +1050,6 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
   }
 
-
-  /**
-   * Unmarshals a WasmValue from native memory.
-   *
-   * @param ptr pointer to the WasmValue array
-   * @param index index in the array
-   * @return the unmarshaled WasmValue
-   */
-  // Unaligned value layouts for reading/writing WasmValue data at non-aligned offsets
-  private static final ValueLayout.OfLong UNALIGNED_JAVA_LONG =
-      ValueLayout.JAVA_LONG.withByteAlignment(1);
-
-  private static final ValueLayout.OfDouble UNALIGNED_JAVA_DOUBLE =
-      ValueLayout.JAVA_DOUBLE.withByteAlignment(1);
-
-  private static WasmValue unmarshalWasmValue(final MemorySegment ptr, final int index) {
-    // WasmValue native layout (from Rust):
-    // - tag (int): 0=I32, 1=I64, 2=F32, 3=F64, 4=V128
-    // - value (union of i32, i64, f32, f64, or 16 bytes for v128)
-    // Total size: 4 (tag) + 16 (largest value) = 20 bytes per WasmValue
-    // Note: value at offset+4 may not be naturally aligned, so we use unaligned layouts
-
-    final long offset = index * 20L;
-    final int tag = ptr.get(ValueLayout.JAVA_INT, offset);
-
-    switch (tag) {
-      case 0: // I32
-        final int i32Val = ptr.get(ValueLayout.JAVA_INT, offset + 4);
-        return WasmValue.i32(i32Val);
-
-      case 1: // I64
-        final long i64Val = ptr.get(UNALIGNED_JAVA_LONG, offset + 4);
-        return WasmValue.i64(i64Val);
-
-      case 2: // F32
-        final float f32Val = ptr.get(ValueLayout.JAVA_FLOAT, offset + 4);
-        return WasmValue.f32(f32Val);
-
-      case 3: // F64
-        final double f64Val = ptr.get(UNALIGNED_JAVA_DOUBLE, offset + 4);
-        return WasmValue.f64(f64Val);
-
-      case 4: // V128
-        final byte[] v128Bytes = new byte[16];
-        for (int i = 0; i < 16; i++) {
-          v128Bytes[i] = ptr.get(ValueLayout.JAVA_BYTE, offset + 4 + i);
-        }
-        return WasmValue.v128(v128Bytes);
-
-      case 5: // FUNCREF
-        final long funcId = ptr.get(UNALIGNED_JAVA_LONG, offset + 4);
-        if (funcId == 0L) {
-          return WasmValue.funcref((Object) null);
-        }
-        // Look up in function reference registry
-        final FunctionReference funcRef = PanamaFunctionReference.getFunctionReferenceById(funcId);
-        if (funcRef != null) {
-          return WasmValue.funcref(funcRef);
-        }
-        return WasmValue.funcref(funcId);
-
-      case 6: // EXTERNREF
-        final long externId = ptr.get(UNALIGNED_JAVA_LONG, offset + 4);
-        if (externId == 0L) {
-          return WasmValue.externref((Object) null);
-        }
-        return WasmValue.externref(externId);
-
-      default:
-        throw new IllegalArgumentException("Unknown WasmValue tag: " + tag);
-    }
-  }
-
-  /**
-   * Marshals a WasmValue to native memory.
-   *
-   * @param value the WasmValue to marshal
-   * @param ptr pointer to the results array
-   * @param index index in the array
-   */
-  private static void marshalWasmValue(
-      final WasmValue value, final MemorySegment ptr, final int index) {
-    final long offset = index * 20L;
-
-    switch (value.getType()) {
-      case I32:
-        ptr.set(ValueLayout.JAVA_INT, offset, 0); // tag
-        ptr.set(ValueLayout.JAVA_INT, offset + 4, value.asI32());
-        break;
-
-      case I64:
-        ptr.set(ValueLayout.JAVA_INT, offset, 1); // tag
-        ptr.set(UNALIGNED_JAVA_LONG, offset + 4, value.asI64());
-        break;
-
-      case F32:
-        ptr.set(ValueLayout.JAVA_INT, offset, 2); // tag
-        ptr.set(ValueLayout.JAVA_FLOAT, offset + 4, value.asF32());
-        break;
-
-      case F64:
-        ptr.set(ValueLayout.JAVA_INT, offset, 3); // tag
-        ptr.set(UNALIGNED_JAVA_DOUBLE, offset + 4, value.asF64());
-        break;
-
-      case V128:
-        ptr.set(ValueLayout.JAVA_INT, offset, 4); // tag
-        final byte[] v128Bytes = value.asV128();
-        for (int i = 0; i < 16; i++) {
-          ptr.set(ValueLayout.JAVA_BYTE, offset + 4 + i, v128Bytes[i]);
-        }
-        break;
-
-      case FUNCREF:
-        ptr.set(ValueLayout.JAVA_INT, offset, 5); // tag - FuncRef uses tag 5
-        final Object funcVal = value.getValue();
-        if (funcVal == null) {
-          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, 0L);
-        } else if (funcVal instanceof FunctionReference) {
-          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, ((FunctionReference) funcVal).getId());
-        } else if (funcVal instanceof Long) {
-          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, (Long) funcVal);
-        } else {
-          throw new IllegalArgumentException(
-              "FUNCREF value must be FunctionReference or Long, got: " + funcVal.getClass());
-        }
-        break;
-
-      case EXTERNREF:
-        ptr.set(ValueLayout.JAVA_INT, offset, 6); // tag - ExternRef uses tag 6
-        final Object externVal = value.getValue();
-        if (externVal == null) {
-          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, 0L);
-        } else if (externVal instanceof Long) {
-          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, (Long) externVal);
-        } else if (externVal instanceof ExternRef) {
-          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, ((ExternRef<?>) externVal).getId());
-        } else {
-          // Wrap raw object in ExternRef and use its ID
-          final ExternRef<Object> newRef = ExternRef.of(externVal);
-          ptr.set(UNALIGNED_JAVA_LONG, offset + 4, newRef.getId());
-        }
-        break;
-
-      default:
-        throw new IllegalArgumentException("Unsupported WasmValue type: " + value.getType());
-    }
-  }
 
   @Override
   public ai.tegmentum.wasmtime4j.Linker<T> allowShadowing(final boolean allow) {

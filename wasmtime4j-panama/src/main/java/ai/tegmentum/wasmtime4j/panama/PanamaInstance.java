@@ -13,7 +13,6 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FuncType;
@@ -690,7 +689,8 @@ public final class PanamaInstance implements Instance {
     if (paramCount > 0) {
       paramsSegment = ctx.getParamsBuffer(paramCount);
       for (int i = 0; i < paramCount; i++) {
-        marshalWasmValue(params[i], paramsSegment, i);
+        WasmValueMarshaller.marshalWasmValue(
+            params[i], paramsSegment, i, this::registerExternRef);
       }
     } else {
       paramsSegment = MemorySegment.NULL;
@@ -721,7 +721,7 @@ public final class PanamaInstance implements Instance {
     final int count = (int) resultCount;
     final WasmValue[] results = new WasmValue[count];
     for (int i = 0; i < count; i++) {
-      results[i] = unmarshalWasmValue(resultsSegment, i);
+      results[i] = WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, EXTERN_REF_REGISTRY::get);
     }
 
     return results;
@@ -1341,159 +1341,14 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
-   * Marshals a WasmValue to native memory.
+   * Registers an ExternRef in the global registry and tracks it for cleanup.
    *
-   * @param value the WasmValue to marshal
-   * @param ptr pointer to the array
-   * @param index index in the array
+   * @param id the ExternRef identifier
+   * @param ref the ExternRef to register
    */
-  private void marshalWasmValue(
-      final WasmValue value, final MemorySegment ptr, final int index) {
-    final long offset = index * 20L;
-
-    switch (value.getType()) {
-      case I32:
-        ptr.set(ValueLayout.JAVA_INT, offset, 0); // tag
-        ptr.set(ValueLayout.JAVA_INT, offset + 4, value.asI32());
-        break;
-
-      case I64:
-        ptr.set(ValueLayout.JAVA_INT, offset, 1); // tag
-        ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, value.asI64());
-        break;
-
-      case F32:
-        ptr.set(ValueLayout.JAVA_INT, offset, 2); // tag
-        ptr.set(ValueLayout.JAVA_FLOAT, offset + 4, value.asF32());
-        break;
-
-      case F64:
-        ptr.set(ValueLayout.JAVA_INT, offset, 3); // tag
-        ptr.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, offset + 4, value.asF64());
-        break;
-
-      case V128:
-        ptr.set(ValueLayout.JAVA_INT, offset, 4); // tag
-        final byte[] v128Bytes = value.asV128();
-        for (int i = 0; i < 16; i++) {
-          ptr.set(ValueLayout.JAVA_BYTE, offset + 4 + i, v128Bytes[i]);
-        }
-        break;
-
-      case FUNCREF:
-        ptr.set(ValueLayout.JAVA_INT, offset, 5); // tag - FuncRef uses tag 5
-        final Object funcValue = value.getValue();
-        if (funcValue == null) {
-          // Null funcref - use 0 as null sentinel
-          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, 0L);
-        } else if (funcValue instanceof FunctionReference) {
-          final FunctionReference funcRef = (FunctionReference) funcValue;
-          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, funcRef.getId());
-        } else if (funcValue instanceof Long) {
-          // Already an ID
-          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, (Long) funcValue);
-        } else {
-          throw new IllegalArgumentException(
-              "FUNCREF value must be FunctionReference or Long, got: " + funcValue.getClass());
-        }
-        break;
-
-      case EXTERNREF:
-        ptr.set(ValueLayout.JAVA_INT, offset, 6); // tag - ExternRef uses tag 6
-        final Object externValue = value.getValue();
-        if (externValue == null) {
-          // Null externref - use 0 as null sentinel
-          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, 0L);
-        } else if (externValue instanceof ExternRef) {
-          final ExternRef<?> externRef = (ExternRef<?>) externValue;
-          final long externId = externRef.getId();
-          // Register in global registry for later lookup
-          EXTERN_REF_REGISTRY.put(externId, externRef);
-          registeredExternRefIds.add(externId);
-          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, externId);
-        } else {
-          // Wrap raw object in ExternRef
-          final ExternRef<Object> newRef = ExternRef.of(externValue);
-          final long externId = newRef.getId();
-          EXTERN_REF_REGISTRY.put(externId, newRef);
-          registeredExternRefIds.add(externId);
-          ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4, externId);
-        }
-        break;
-
-      default:
-        throw new IllegalArgumentException("Unsupported WasmValue type: " + value.getType());
-    }
-  }
-
-  /**
-   * Unmarshals a WasmValue from native memory.
-   *
-   * @param ptr pointer to the array
-   * @param index index in the array
-   * @return the unmarshaled WasmValue
-   */
-  private static WasmValue unmarshalWasmValue(final MemorySegment ptr, final int index) {
-    final long offset = index * 20L;
-    final int tag = ptr.get(ValueLayout.JAVA_INT, offset);
-
-    switch (tag) {
-      case 0: // I32
-        final int i32Val = ptr.get(ValueLayout.JAVA_INT, offset + 4);
-        return WasmValue.i32(i32Val);
-
-      case 1: // I64
-        final long i64Val = ptr.get(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4);
-        return WasmValue.i64(i64Val);
-
-      case 2: // F32
-        final float f32Val = ptr.get(ValueLayout.JAVA_FLOAT, offset + 4);
-        return WasmValue.f32(f32Val);
-
-      case 3: // F64
-        final double f64Val = ptr.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, offset + 4);
-        return WasmValue.f64(f64Val);
-
-      case 4: // V128
-        final byte[] v128Bytes = new byte[16];
-        for (int i = 0; i < 16; i++) {
-          v128Bytes[i] = ptr.get(ValueLayout.JAVA_BYTE, offset + 4 + i);
-        }
-        return WasmValue.v128(v128Bytes);
-
-      case 5: // FUNCREF
-        final long funcId = ptr.get(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4);
-        if (funcId == 0L) {
-          // Null funcref
-          return WasmValue.funcref((Object) null);
-        }
-        // Look up in PanamaFunctionReference registry
-        final FunctionReference funcRef = PanamaFunctionReference.getFunctionReferenceById(funcId);
-        if (funcRef != null) {
-          return WasmValue.funcref(funcRef);
-        }
-        // Return ID if not found in registry (may be a table index from native)
-        return WasmValue.funcref(funcId);
-
-      case 6: // EXTERNREF
-        final long externId = ptr.get(ValueLayout.JAVA_LONG_UNALIGNED, offset + 4);
-        if (externId == 0L) {
-          // Null externref
-          return WasmValue.externref((Object) null);
-        }
-        // Look up in registry
-        final ExternRef<?> externRef = EXTERN_REF_REGISTRY.get(externId);
-        if (externRef != null) {
-          // Return the wrapped value, not the ExternRef wrapper itself
-          // This ensures round-trip consistency for comparison
-          return WasmValue.externref(externRef.get());
-        }
-        // Return ID if not found in registry (may be from native side)
-        return WasmValue.externref(externId);
-
-      default:
-        throw new IllegalArgumentException("Unknown WasmValue tag: " + tag);
-    }
+  private void registerExternRef(final Long id, final ExternRef<?> ref) {
+    EXTERN_REF_REGISTRY.put(id, ref);
+    registeredExternRefIds.add(id);
   }
 
   /**
