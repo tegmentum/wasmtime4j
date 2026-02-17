@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.type.WasmTypeException;
+import ai.tegmentum.wasmtime4j.exception.WasmTypeException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;

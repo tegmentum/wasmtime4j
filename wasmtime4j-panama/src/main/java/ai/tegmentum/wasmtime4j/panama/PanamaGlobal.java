@@ -5,7 +5,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.type.WasmTypeException;
+import ai.tegmentum.wasmtime4j.exception.WasmTypeException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;

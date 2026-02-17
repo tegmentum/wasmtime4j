@@ -5,7 +5,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.type.WasmTypeException;
+import ai.tegmentum.wasmtime4j.exception.WasmTypeException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -67,6 +67,7 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
     this.type = type;
     this.mutable = mutable;
     this.arena = Arena.ofShared();
+    final Arena capturedArena = this.arena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaInstanceGlobal",
@@ -76,6 +77,12 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
               }
 
               LOGGER.fine("Closed instance global: " + name);
+            },
+            this,
+            () -> {
+              if (capturedArena != null && capturedArena.scope().isAlive()) {
+                capturedArena.close();
+              }
             });
 
     LOGGER.fine(

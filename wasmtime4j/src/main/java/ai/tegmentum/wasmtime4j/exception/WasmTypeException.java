@@ -1,4 +1,4 @@
-package ai.tegmentum.wasmtime4j.type;
+package ai.tegmentum.wasmtime4j.exception;
 
 /**
  * Exception thrown when a WebAssembly type error occurs.
