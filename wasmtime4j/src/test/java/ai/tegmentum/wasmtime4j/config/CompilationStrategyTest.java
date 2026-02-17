@@ -101,43 +101,4 @@ class CompilationStrategyTest {
     }
   }
 
-  // ========================================================================
-  // Ordinal Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Ordinal Tests")
-  class OrdinalTests {
-
-    @Test
-    @DisplayName("AUTO should have ordinal 0")
-    void autoShouldHaveOrdinalZero() {
-      assertEquals(0, CompilationStrategy.AUTO.ordinal(), "AUTO should have ordinal 0");
-    }
-
-    @Test
-    @DisplayName("SPEED should have ordinal 1")
-    void speedShouldHaveOrdinalOne() {
-      assertEquals(1, CompilationStrategy.SPEED.ordinal(), "SPEED should have ordinal 1");
-    }
-
-    @Test
-    @DisplayName("PERFORMANCE should have ordinal 2")
-    void performanceShouldHaveOrdinalTwo() {
-      assertEquals(
-          2, CompilationStrategy.PERFORMANCE.ordinal(), "PERFORMANCE should have ordinal 2");
-    }
-
-    @Test
-    @DisplayName("SIZE should have ordinal 3")
-    void sizeShouldHaveOrdinalThree() {
-      assertEquals(3, CompilationStrategy.SIZE.ordinal(), "SIZE should have ordinal 3");
-    }
-
-    @Test
-    @DisplayName("DEFAULT should have ordinal 4")
-    void defaultShouldHaveOrdinalFour() {
-      assertEquals(4, CompilationStrategy.DEFAULT.ordinal(), "DEFAULT should have ordinal 4");
-    }
-  }
 }

@@ -234,16 +234,6 @@ class WasmFeatureTest {
           "All WasmFeature values should have unique names");
     }
 
-    @Test
-    @DisplayName("all values should have unique ordinals")
-    void allValuesShouldHaveUniqueOrdinals() {
-      Set<Integer> ordinals =
-          Arrays.stream(WasmFeature.values()).map(Enum::ordinal).collect(Collectors.toSet());
-      assertEquals(
-          WasmFeature.values().length,
-          ordinals.size(),
-          "All WasmFeature values should have unique ordinals");
-    }
   }
 
   // ========================================================================
@@ -285,14 +275,6 @@ class WasmFeatureTest {
       }
     }
 
-    @Test
-    @DisplayName("values should return all features in ordinal order")
-    void valuesShouldReturnAllFeaturesInOrdinalOrder() {
-      WasmFeature[] values = WasmFeature.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Feature at index " + i + " should have ordinal " + i);
-      }
-    }
   }
 
   // ========================================================================
@@ -381,29 +363,4 @@ class WasmFeatureTest {
     }
   }
 
-  // ========================================================================
-  // Ordinal Stability Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Ordinal Stability Tests")
-  class OrdinalStabilityTests {
-
-    @Test
-    @DisplayName("ordinals should be sequential starting from 0")
-    void ordinalsShouldBeSequentialStartingFromZero() {
-      WasmFeature[] values = WasmFeature.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal for " + values[i].name() + " should be " + i);
-      }
-    }
-
-    @Test
-    @DisplayName("max ordinal should be values length minus 1")
-    void maxOrdinalShouldBeValuesLengthMinusOne() {
-      WasmFeature[] values = WasmFeature.values();
-      int maxOrdinal = Arrays.stream(values).mapToInt(Enum::ordinal).max().orElse(-1);
-      assertEquals(values.length - 1, maxOrdinal, "Max ordinal should be " + (values.length - 1));
-    }
-  }
 }

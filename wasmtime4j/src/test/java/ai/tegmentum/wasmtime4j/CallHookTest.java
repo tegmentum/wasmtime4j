@@ -214,20 +214,6 @@ class CallHookTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("should have sequential ordinals starting from 0")
-    void shouldHaveSequentialOrdinals() {
-      final CallHook[] values = CallHook.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("Integration Tests")
   class IntegrationTests {
 

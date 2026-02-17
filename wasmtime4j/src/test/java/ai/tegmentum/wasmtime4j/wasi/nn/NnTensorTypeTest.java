@@ -110,29 +110,6 @@ class NnTensorTypeTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("ordinals should be unique")
-    void ordinalsShouldBeUnique() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (final NnTensorType type : NnTensorType.values()) {
-        assertTrue(ordinals.add(type.ordinal()), "Ordinal should be unique: " + type.ordinal());
-      }
-    }
-
-    @Test
-    @DisplayName("ordinals should be sequential starting at 0")
-    void ordinalsShouldBeSequential() {
-      final NnTensorType[] values = NnTensorType.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal should match index for " + values[i]);
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("valueOf Tests")
   class ValueOfTests {
 

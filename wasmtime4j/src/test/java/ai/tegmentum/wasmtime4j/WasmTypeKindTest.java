@@ -87,29 +87,6 @@ class WasmTypeKindTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("Ordinals should be unique")
-    void ordinalsShouldBeUnique() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (WasmTypeKind kind : WasmTypeKind.values()) {
-        assertTrue(ordinals.add(kind.ordinal()), "Ordinal should be unique: " + kind.ordinal());
-      }
-    }
-
-    @Test
-    @DisplayName("Ordinals should be in order 0-3")
-    void ordinalsShouldBeInOrder() {
-      final WasmTypeKind[] values = WasmTypeKind.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal should match index");
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("valueOf Tests")
   class ValueOfTests {
 

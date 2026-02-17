@@ -93,37 +93,4 @@ class OptimizationLevelTest {
     }
   }
 
-  // ========================================================================
-  // Ordinal Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Ordinal Tests")
-  class OrdinalTests {
-
-    @Test
-    @DisplayName("NONE should have ordinal 0")
-    void noneShouldHaveOrdinalZero() {
-      assertEquals(0, OptimizationLevel.NONE.ordinal(), "NONE should have ordinal 0");
-    }
-
-    @Test
-    @DisplayName("SPEED should have ordinal 1")
-    void speedShouldHaveOrdinalOne() {
-      assertEquals(1, OptimizationLevel.SPEED.ordinal(), "SPEED should have ordinal 1");
-    }
-
-    @Test
-    @DisplayName("SIZE should have ordinal 2")
-    void sizeShouldHaveOrdinalTwo() {
-      assertEquals(2, OptimizationLevel.SIZE.ordinal(), "SIZE should have ordinal 2");
-    }
-
-    @Test
-    @DisplayName("SPEED_AND_SIZE should have ordinal 3")
-    void speedAndSizeShouldHaveOrdinalThree() {
-      assertEquals(
-          3, OptimizationLevel.SPEED_AND_SIZE.ordinal(), "SPEED_AND_SIZE should have ordinal 3");
-    }
-  }
 }

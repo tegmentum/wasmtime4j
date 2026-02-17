@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -75,33 +73,6 @@ class InstanceAllocationStrategyTest {
       assertNotNull(InstanceAllocationStrategy.POOLING, "POOLING constant should exist");
       assertEquals(
           "POOLING", InstanceAllocationStrategy.POOLING.name(), "POOLING name should match");
-    }
-  }
-
-  @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("should have unique ordinals")
-    void shouldHaveUniqueOrdinals() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (final InstanceAllocationStrategy value : InstanceAllocationStrategy.values()) {
-        ordinals.add(value.ordinal());
-      }
-      assertEquals(
-          InstanceAllocationStrategy.values().length,
-          ordinals.size(),
-          "All ordinals should be unique");
-    }
-
-    @Test
-    @DisplayName("should have sequential ordinals starting from 0")
-    void shouldHaveSequentialOrdinals() {
-      final InstanceAllocationStrategy[] values = InstanceAllocationStrategy.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
-      }
     }
   }
 

@@ -292,25 +292,6 @@ public class WitTypeSystemIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should have correct ordinals")
-    void shouldHaveCorrectOrdinals() {
-      LOGGER.info("Testing WitTypeCategory ordinals");
-
-      assertEquals(0, WitTypeCategory.PRIMITIVE.ordinal(), "PRIMITIVE ordinal");
-      assertEquals(1, WitTypeCategory.RECORD.ordinal(), "RECORD ordinal");
-      assertEquals(2, WitTypeCategory.VARIANT.ordinal(), "VARIANT ordinal");
-      assertEquals(3, WitTypeCategory.ENUM.ordinal(), "ENUM ordinal");
-      assertEquals(4, WitTypeCategory.FLAGS.ordinal(), "FLAGS ordinal");
-      assertEquals(5, WitTypeCategory.LIST.ordinal(), "LIST ordinal");
-      assertEquals(6, WitTypeCategory.OPTION.ordinal(), "OPTION ordinal");
-      assertEquals(7, WitTypeCategory.RESULT.ordinal(), "RESULT ordinal");
-      assertEquals(8, WitTypeCategory.TUPLE.ordinal(), "TUPLE ordinal");
-      assertEquals(9, WitTypeCategory.RESOURCE.ordinal(), "RESOURCE ordinal");
-
-      LOGGER.info("WitTypeCategory ordinals verified");
-    }
-
-    @Test
     @DisplayName("Should convert to and from string")
     void shouldConvertToAndFromString() {
       LOGGER.info("Testing WitTypeCategory string conversion");

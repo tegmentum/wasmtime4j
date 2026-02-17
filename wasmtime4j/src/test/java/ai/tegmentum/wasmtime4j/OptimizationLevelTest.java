@@ -92,29 +92,6 @@ class OptimizationLevelTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("should have sequential ordinals starting from 0")
-    void shouldHaveSequentialOrdinals() {
-      final OptimizationLevel[] values = OptimizationLevel.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
-      }
-    }
-
-    @Test
-    @DisplayName("ordinals should be unique")
-    void ordinalsShouldBeUnique() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (final OptimizationLevel level : OptimizationLevel.values()) {
-        assertTrue(ordinals.add(level.ordinal()), "Ordinal should be unique: " + level.ordinal());
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("ValueOf Tests")
   class ValueOfTests {
 

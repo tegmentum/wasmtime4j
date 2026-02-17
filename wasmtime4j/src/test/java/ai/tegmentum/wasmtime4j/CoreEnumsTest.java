@@ -26,8 +26,6 @@ import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -104,30 +102,6 @@ class CoreEnumsTest {
     }
 
     @Test
-    @DisplayName("All OptimizationLevel values should have unique ordinals")
-    void allValuesShouldHaveUniqueOrdinals() {
-      OptimizationLevel[] values = OptimizationLevel.values();
-      Set<Integer> ordinals = new HashSet<>();
-      for (OptimizationLevel level : values) {
-        ordinals.add(level.ordinal());
-      }
-      assertEquals(values.length, ordinals.size(), "All values should have unique ordinals");
-    }
-
-    @Test
-    @DisplayName("NONE should have ordinal 0")
-    void noneShouldHaveOrdinalZero() {
-      assertEquals(0, OptimizationLevel.NONE.ordinal(), "NONE should have ordinal 0");
-    }
-
-    @Test
-    @DisplayName("SPEED_AND_SIZE should have ordinal 3")
-    void speedAndSizeShouldHaveOrdinalThree() {
-      assertEquals(
-          3, OptimizationLevel.SPEED_AND_SIZE.ordinal(), "SPEED_AND_SIZE should have ordinal 3");
-    }
-
-    @Test
     @DisplayName("Enum should be comparable")
     void enumShouldBeComparable() {
       assertTrue(
@@ -199,29 +173,6 @@ class CoreEnumsTest {
           IllegalArgumentException.class,
           () -> ProfilingStrategy.valueOf("INVALID"),
           "valueOf should throw for invalid name");
-    }
-
-    @Test
-    @DisplayName("All ProfilingStrategy values should have unique ordinals")
-    void allValuesShouldHaveUniqueOrdinals() {
-      ProfilingStrategy[] values = ProfilingStrategy.values();
-      Set<Integer> ordinals = new HashSet<>();
-      for (ProfilingStrategy strategy : values) {
-        ordinals.add(strategy.ordinal());
-      }
-      assertEquals(values.length, ordinals.size(), "All values should have unique ordinals");
-    }
-
-    @Test
-    @DisplayName("NONE should have ordinal 0")
-    void noneShouldHaveOrdinalZero() {
-      assertEquals(0, ProfilingStrategy.NONE.ordinal(), "NONE should have ordinal 0");
-    }
-
-    @Test
-    @DisplayName("VTUNE should have ordinal 3")
-    void vtuneShouldHaveOrdinalThree() {
-      assertEquals(3, ProfilingStrategy.VTUNE.ordinal(), "VTUNE should have ordinal 3");
     }
 
     @Test

@@ -83,29 +83,6 @@ class NnExecutionTargetTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("ordinals should be unique")
-    void ordinalsShouldBeUnique() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (final NnExecutionTarget target : NnExecutionTarget.values()) {
-        assertTrue(ordinals.add(target.ordinal()), "Ordinal should be unique: " + target.ordinal());
-      }
-    }
-
-    @Test
-    @DisplayName("ordinals should be sequential starting at 0")
-    void ordinalsShouldBeSequential() {
-      final NnExecutionTarget[] values = NnExecutionTarget.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal should match index for " + values[i]);
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("valueOf Tests")
   class ValueOfTests {
 

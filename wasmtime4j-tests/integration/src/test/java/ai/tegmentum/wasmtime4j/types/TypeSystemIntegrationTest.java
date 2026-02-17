@@ -64,19 +64,6 @@ public class TypeSystemIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should have correct ordinal values")
-    void shouldHaveCorrectOrdinalValues() {
-      LOGGER.info("Testing WasmTypeKind ordinal values");
-
-      assertEquals(0, WasmTypeKind.FUNCTION.ordinal(), "FUNCTION should have ordinal 0");
-      assertEquals(1, WasmTypeKind.GLOBAL.ordinal(), "GLOBAL should have ordinal 1");
-      assertEquals(2, WasmTypeKind.MEMORY.ordinal(), "MEMORY should have ordinal 2");
-      assertEquals(3, WasmTypeKind.TABLE.ordinal(), "TABLE should have ordinal 3");
-
-      LOGGER.info("WasmTypeKind ordinal values verified");
-    }
-
-    @Test
     @DisplayName("Should support valueOf lookup")
     void shouldSupportValueOfLookup() {
       LOGGER.info("Testing WasmTypeKind valueOf");

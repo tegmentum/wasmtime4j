@@ -187,8 +187,8 @@ class CodeStyleTest {
   }
 
   @Nested
-  @DisplayName("Name and Ordinal Tests")
-  class NameAndOrdinalTests {
+  @DisplayName("Name Tests")
+  class NameTests {
 
     @Test
     @DisplayName("MODERN should have correct name")
@@ -200,16 +200,6 @@ class CodeStyleTest {
     @DisplayName("LEGACY should have correct name")
     void legacyShouldHaveCorrectName() {
       assertThat(CodeStyle.LEGACY.name()).isEqualTo("LEGACY");
-    }
-
-    @Test
-    @DisplayName("ordinals should be sequential starting from 0")
-    void ordinalsShouldBeSequential() {
-      CodeStyle[] styles = CodeStyle.values();
-
-      for (int i = 0; i < styles.length; i++) {
-        assertThat(styles[i].ordinal()).isEqualTo(i);
-      }
     }
   }
 }

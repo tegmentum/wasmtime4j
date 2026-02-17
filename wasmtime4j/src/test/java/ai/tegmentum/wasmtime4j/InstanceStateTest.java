@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -96,30 +94,6 @@ class InstanceStateTest {
     @DisplayName("should contain DESTROYING")
     void shouldContainDestroying() {
       assertNotNull(InstanceState.DESTROYING, "DESTROYING constant should exist");
-    }
-  }
-
-  @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("should have unique ordinals")
-    void shouldHaveUniqueOrdinals() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (final InstanceState value : InstanceState.values()) {
-        ordinals.add(value.ordinal());
-      }
-      assertEquals(InstanceState.values().length, ordinals.size(), "All ordinals should be unique");
-    }
-
-    @Test
-    @DisplayName("should have sequential ordinals starting from 0")
-    void shouldHaveSequentialOrdinals() {
-      final InstanceState[] values = InstanceState.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
-      }
     }
   }
 

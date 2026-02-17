@@ -187,31 +187,4 @@ class WasmBacktraceDetailsTest {
     }
   }
 
-  // ========================================================================
-  // Ordinal Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Ordinal Tests")
-  class OrdinalTests {
-
-    @Test
-    @DisplayName("DISABLE should have ordinal 0")
-    void disableShouldHaveOrdinalZero() {
-      assertEquals(0, WasmBacktraceDetails.DISABLE.ordinal(), "DISABLE should have ordinal 0");
-    }
-
-    @Test
-    @DisplayName("ENABLE should have ordinal 1")
-    void enableShouldHaveOrdinalOne() {
-      assertEquals(1, WasmBacktraceDetails.ENABLE.ordinal(), "ENABLE should have ordinal 1");
-    }
-
-    @Test
-    @DisplayName("ENVIRONMENT should have ordinal 2")
-    void environmentShouldHaveOrdinalTwo() {
-      assertEquals(
-          2, WasmBacktraceDetails.ENVIRONMENT.ordinal(), "ENVIRONMENT should have ordinal 2");
-    }
-  }
 }

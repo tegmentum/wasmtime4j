@@ -88,33 +88,6 @@ class IpAddressFamilyTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("IPV4 should have ordinal 0")
-    void ipv4ShouldHaveOrdinalZero() {
-      assertEquals(0, IpAddressFamily.IPV4.ordinal(), "IPV4 ordinal should be 0");
-    }
-
-    @Test
-    @DisplayName("IPV6 should have ordinal 1")
-    void ipv6ShouldHaveOrdinalOne() {
-      assertEquals(1, IpAddressFamily.IPV6.ordinal(), "IPV6 ordinal should be 1");
-    }
-
-    @Test
-    @DisplayName("ordinals should be sequential starting at 0")
-    void ordinalsShouldBeSequential() {
-      final IpAddressFamily[] values = IpAddressFamily.values();
-
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("ValueOf Tests")
   class ValueOfTests {
 

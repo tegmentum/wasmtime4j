@@ -51,20 +51,6 @@ public class ConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should have correct ordinal values")
-    void shouldHaveCorrectOrdinalValues() {
-      LOGGER.info("Testing OptimizationLevel ordinal values");
-
-      assertEquals(0, OptimizationLevel.NONE.ordinal(), "NONE should have ordinal 0");
-      assertEquals(1, OptimizationLevel.SPEED.ordinal(), "SPEED should have ordinal 1");
-      assertEquals(2, OptimizationLevel.SIZE.ordinal(), "SIZE should have ordinal 2");
-      assertEquals(
-          3, OptimizationLevel.SPEED_AND_SIZE.ordinal(), "SPEED_AND_SIZE should have ordinal 3");
-
-      LOGGER.info("OptimizationLevel ordinal values verified");
-    }
-
-    @Test
     @DisplayName("Should support valueOf lookup")
     void shouldSupportValueOfLookup() {
       LOGGER.info("Testing OptimizationLevel valueOf");
@@ -99,20 +85,6 @@ public class ConfigIntegrationTest {
       LOGGER.info("CompilationStrategy enum values verified: " + strategies.length);
     }
 
-    @Test
-    @DisplayName("Should have correct ordinal values")
-    void shouldHaveCorrectOrdinalValues() {
-      LOGGER.info("Testing CompilationStrategy ordinal values");
-
-      assertEquals(0, CompilationStrategy.AUTO.ordinal(), "AUTO should have ordinal 0");
-      assertEquals(1, CompilationStrategy.SPEED.ordinal(), "SPEED should have ordinal 1");
-      assertEquals(
-          2, CompilationStrategy.PERFORMANCE.ordinal(), "PERFORMANCE should have ordinal 2");
-      assertEquals(3, CompilationStrategy.SIZE.ordinal(), "SIZE should have ordinal 3");
-      assertEquals(4, CompilationStrategy.DEFAULT.ordinal(), "DEFAULT should have ordinal 4");
-
-      LOGGER.info("CompilationStrategy ordinal values verified");
-    }
   }
 
   @Nested

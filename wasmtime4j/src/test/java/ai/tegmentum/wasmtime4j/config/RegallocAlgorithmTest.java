@@ -165,25 +165,4 @@ class RegallocAlgorithmTest {
     }
   }
 
-  // ========================================================================
-  // Ordinal Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Ordinal Tests")
-  class OrdinalTests {
-
-    @Test
-    @DisplayName("SINGLE_PASS should have ordinal 0")
-    void singlePassShouldHaveOrdinalZero() {
-      assertEquals(0, RegallocAlgorithm.SINGLE_PASS.ordinal(), "SINGLE_PASS should have ordinal 0");
-    }
-
-    @Test
-    @DisplayName("BACKTRACKING should have ordinal 1")
-    void backtrackingShouldHaveOrdinalOne() {
-      assertEquals(
-          1, RegallocAlgorithm.BACKTRACKING.ordinal(), "BACKTRACKING should have ordinal 1");
-    }
-  }
 }

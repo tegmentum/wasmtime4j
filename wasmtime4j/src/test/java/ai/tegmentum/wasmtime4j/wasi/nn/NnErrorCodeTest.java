@@ -134,29 +134,6 @@ class NnErrorCodeTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("ordinals should be unique")
-    void ordinalsShouldBeUnique() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (final NnErrorCode code : NnErrorCode.values()) {
-        assertTrue(ordinals.add(code.ordinal()), "Ordinal should be unique: " + code.ordinal());
-      }
-    }
-
-    @Test
-    @DisplayName("ordinals should be sequential starting at 0")
-    void ordinalsShouldBeSequential() {
-      final NnErrorCode[] values = NnErrorCode.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal should match index for " + values[i]);
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("valueOf Tests")
   class ValueOfTests {
 

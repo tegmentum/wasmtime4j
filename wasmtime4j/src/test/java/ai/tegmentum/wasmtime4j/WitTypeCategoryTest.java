@@ -22,8 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wit.WitTypeCategory;
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -71,31 +69,6 @@ class WitTypeCategoryTest {
       assertNotNull(WitTypeCategory.RESULT, "RESULT constant should exist");
       assertNotNull(WitTypeCategory.TUPLE, "TUPLE constant should exist");
       assertNotNull(WitTypeCategory.RESOURCE, "RESOURCE constant should exist");
-    }
-  }
-
-  @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("should have unique ordinals")
-    void shouldHaveUniqueOrdinals() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (final WitTypeCategory value : WitTypeCategory.values()) {
-        ordinals.add(value.ordinal());
-      }
-      assertEquals(
-          WitTypeCategory.values().length, ordinals.size(), "All ordinals should be unique");
-    }
-
-    @Test
-    @DisplayName("should have sequential ordinals starting from 0")
-    void shouldHaveSequentialOrdinals() {
-      final WitTypeCategory[] values = WitTypeCategory.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
-      }
     }
   }
 

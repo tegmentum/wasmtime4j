@@ -89,30 +89,6 @@ class ProfilingStrategyTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("should have sequential ordinals starting from 0")
-    void shouldHaveSequentialOrdinals() {
-      final ProfilingStrategy[] values = ProfilingStrategy.values();
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal of " + values[i].name() + " should be " + i);
-      }
-    }
-
-    @Test
-    @DisplayName("ordinals should be unique")
-    void ordinalsShouldBeUnique() {
-      final Set<Integer> ordinals = new HashSet<>();
-      for (final ProfilingStrategy strategy : ProfilingStrategy.values()) {
-        assertTrue(
-            ordinals.add(strategy.ordinal()), "Ordinal should be unique: " + strategy.ordinal());
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("ValueOf Tests")
   class ValueOfTests {
 

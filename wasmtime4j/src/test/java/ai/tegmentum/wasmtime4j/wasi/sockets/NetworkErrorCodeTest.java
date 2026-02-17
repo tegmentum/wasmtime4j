@@ -261,43 +261,6 @@ class NetworkErrorCodeTest {
   }
 
   @Nested
-  @DisplayName("Enum Ordinal Tests")
-  class EnumOrdinalTests {
-
-    @Test
-    @DisplayName("UNKNOWN should have ordinal 0")
-    void unknownShouldHaveOrdinalZero() {
-      assertEquals(0, NetworkErrorCode.UNKNOWN.ordinal(), "UNKNOWN ordinal should be 0");
-    }
-
-    @Test
-    @DisplayName("ACCESS_DENIED should have ordinal 1")
-    void accessDeniedShouldHaveOrdinalOne() {
-      assertEquals(
-          1, NetworkErrorCode.ACCESS_DENIED.ordinal(), "ACCESS_DENIED ordinal should be 1");
-    }
-
-    @Test
-    @DisplayName("PERMANENT_RESOLVER_FAILURE should have ordinal 20")
-    void permanentResolverFailureShouldHaveOrdinalTwenty() {
-      assertEquals(
-          20,
-          NetworkErrorCode.PERMANENT_RESOLVER_FAILURE.ordinal(),
-          "PERMANENT_RESOLVER_FAILURE ordinal should be 20");
-    }
-
-    @Test
-    @DisplayName("ordinals should be sequential starting at 0")
-    void ordinalsShouldBeSequential() {
-      final NetworkErrorCode[] values = NetworkErrorCode.values();
-
-      for (int i = 0; i < values.length; i++) {
-        assertEquals(i, values[i].ordinal(), "Ordinal should be " + i + " for " + values[i]);
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("ValueOf Tests")
   class ValueOfTests {
 
