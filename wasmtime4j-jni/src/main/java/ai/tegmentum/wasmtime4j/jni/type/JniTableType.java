@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.type.TableType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -31,7 +31,7 @@ public final class JniTableType implements TableType {
    * @param maximum the maximum number of elements (null if unlimited)
    */
   public JniTableType(final WasmValueType elementType, final long minimum, final Long maximum) {
-    JniValidation.requireNonNull(elementType, "elementType");
+    Validation.requireNonNull(elementType, "elementType");
     if (minimum < 0) {
       throw new IllegalArgumentException("Minimum element count cannot be negative: " + minimum);
     }
@@ -61,7 +61,7 @@ public final class JniTableType implements TableType {
    * @throws IllegalArgumentException if nativeHandle is invalid
    */
   public static JniTableType fromNative(final long nativeHandle) {
-    JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
+    Validation.requireValidHandle(nativeHandle, "nativeHandle");
 
     final long[] typeInfo = nativeGetTableTypeInfo(nativeHandle);
     if (typeInfo.length < 3) {

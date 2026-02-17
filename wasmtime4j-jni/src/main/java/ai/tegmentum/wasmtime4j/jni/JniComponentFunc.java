@@ -24,7 +24,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
 import ai.tegmentum.wasmtime4j.wit.WitFloat32;
@@ -75,9 +75,9 @@ public final class JniComponentFunc
       final String functionName,
       final JniComponentInstanceImpl instance,
       final JniComponentImpl component) {
-    JniValidation.requireNonEmpty(functionName, "functionName");
-    JniValidation.requireNonNull(instance, "instance");
-    JniValidation.requireNonNull(component, "component");
+    Validation.requireNonEmpty(functionName, "functionName");
+    Validation.requireNonNull(instance, "instance");
+    Validation.requireNonNull(component, "component");
     this.functionName = functionName;
     this.instance = instance;
     this.component = component;
@@ -105,13 +105,13 @@ public final class JniComponentFunc
 
   @Override
   public List<ComponentVal> call(final ComponentVal... args) throws WasmException {
-    JniValidation.requireNonNull(args, "args");
+    Validation.requireNonNull(args, "args");
     return call(Arrays.asList(args));
   }
 
   @Override
   public List<ComponentVal> call(final List<ComponentVal> args) throws WasmException {
-    JniValidation.requireNonNull(args, "args");
+    Validation.requireNonNull(args, "args");
     if (!isValid()) {
       throw new WasmException("Component function is not valid");
     }
@@ -194,7 +194,7 @@ public final class JniComponentFunc
 
   @Override
   public ComponentTypedFunc asTyped(final String signature) {
-    JniValidation.requireNonEmpty(signature, "signature");
+    Validation.requireNonEmpty(signature, "signature");
     return new JniComponentTypedFunc(this, signature);
   }
 

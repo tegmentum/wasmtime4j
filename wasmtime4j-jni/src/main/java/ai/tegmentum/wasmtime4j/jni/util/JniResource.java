@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
@@ -100,7 +101,7 @@ public abstract class JniResource implements AutoCloseable {
               + " constructor. The actual execution happens during phantom reference cleanup after"
               + " object is fully initialized.")
   protected JniResource(final long nativeHandle) {
-    JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
+    Validation.requireValidHandle(nativeHandle, "nativeHandle");
     this.nativeHandle = nativeHandle;
 
     // Set up phantom reference for automatic cleanup

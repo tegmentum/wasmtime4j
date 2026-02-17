@@ -10,7 +10,6 @@ import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,8 +81,8 @@ class JniStoreTest {
   void testAddFuelWithNegativeValue() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> store.addFuel(-1));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> store.addFuel(-1));
 
     assertThat(exception.getMessage()).contains("additionalFuel");
     assertThat(exception.getMessage()).containsIgnoringCase("positive");
@@ -93,8 +92,8 @@ class JniStoreTest {
   void testAddFuelWithZero() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> store.addFuel(0));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> store.addFuel(0));
 
     assertThat(exception.getMessage()).contains("additionalFuel");
   }
@@ -103,8 +102,8 @@ class JniStoreTest {
   void testSetFuelWithNegativeValue() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> store.setFuel(-1));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> store.setFuel(-1));
 
     assertThat(exception.getMessage()).contains("fuel");
     assertThat(exception.getMessage()).containsIgnoringCase("positive");
@@ -114,8 +113,8 @@ class JniStoreTest {
   void testSetFuelWithZero() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> store.setFuel(0));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> store.setFuel(0));
 
     assertThat(exception.getMessage()).contains("fuel");
   }
@@ -124,8 +123,8 @@ class JniStoreTest {
   void testConsumeFuelWithNegativeValue() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> store.consumeFuel(-1));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> store.consumeFuel(-1));
 
     assertThat(exception.getMessage()).contains("fuel");
     assertThat(exception.getMessage()).containsIgnoringCase("positive");
@@ -135,8 +134,8 @@ class JniStoreTest {
   void testConsumeFuelWithZero() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> store.consumeFuel(0));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> store.consumeFuel(0));
 
     assertThat(exception.getMessage()).contains("fuel");
   }
@@ -178,8 +177,8 @@ class JniStoreTest {
   void testCreateTableWithNullElementType() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> store.createTable(null, 10, 20));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> store.createTable(null, 10, 20));
 
     assertThat(exception.getMessage()).contains("elementType");
     assertThat(exception.getMessage()).containsIgnoringCase("must not be null");
@@ -238,8 +237,8 @@ class JniStoreTest {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
     final WasmValue value = WasmValue.i32(42);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> store.createGlobal(null, false, value));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> store.createGlobal(null, false, value));
 
     assertThat(exception.getMessage()).contains("valueType");
     assertThat(exception.getMessage()).containsIgnoringCase("must not be null");
@@ -249,9 +248,9 @@ class JniStoreTest {
   void testCreateGlobalWithNullInitialValue() {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
-    final JniValidationException exception =
+    final IllegalArgumentException exception =
         assertThrows(
-            JniValidationException.class, () -> store.createGlobal(WasmValueType.I32, false, null));
+            IllegalArgumentException.class, () -> store.createGlobal(WasmValueType.I32, false, null));
 
     assertThat(exception.getMessage()).contains("initialValue");
     assertThat(exception.getMessage()).containsIgnoringCase("must not be null");
@@ -403,9 +402,9 @@ class JniStoreTest {
     final JniStore store = new JniStore(VALID_HANDLE, testEngine);
 
     // All these should throw exceptions with negative values, not crash the JVM
-    assertThrows(JniValidationException.class, () -> store.addFuel(-1));
-    assertThrows(JniValidationException.class, () -> store.setFuel(-1));
-    assertThrows(JniValidationException.class, () -> store.consumeFuel(-1));
+    assertThrows(IllegalArgumentException.class, () -> store.addFuel(-1));
+    assertThrows(IllegalArgumentException.class, () -> store.setFuel(-1));
+    assertThrows(IllegalArgumentException.class, () -> store.consumeFuel(-1));
     assertThrows(IllegalArgumentException.class, () -> store.createMemory(-1, 10));
     assertThrows(
         IllegalArgumentException.class, () -> store.createTable(WasmValueType.FUNCREF, -1, 10));
@@ -418,11 +417,11 @@ class JniStoreTest {
     final HostFunction impl = params -> null;
 
     // All these should throw exceptions with null values, not crash the JVM
-    assertThrows(JniValidationException.class, () -> store.createTable(null, 10, 20));
+    assertThrows(IllegalArgumentException.class, () -> store.createTable(null, 10, 20));
     assertThrows(
-        JniValidationException.class, () -> store.createGlobal(null, false, WasmValue.i32(0)));
+        IllegalArgumentException.class, () -> store.createGlobal(null, false, WasmValue.i32(0)));
     assertThrows(
-        JniValidationException.class, () -> store.createGlobal(WasmValueType.I32, false, null));
+        IllegalArgumentException.class, () -> store.createGlobal(WasmValueType.I32, false, null));
     assertThrows(NullPointerException.class, () -> store.createHostFunction(null, funcType, impl));
     assertThrows(NullPointerException.class, () -> store.createHostFunction("test", null, impl));
     assertThrows(

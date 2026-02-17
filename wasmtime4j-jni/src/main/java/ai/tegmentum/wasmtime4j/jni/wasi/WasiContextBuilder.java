@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -71,8 +71,8 @@ public final class WasiContextBuilder {
    * @throws IllegalArgumentException if name or value is null/empty
    */
   public WasiContextBuilder withEnvironment(final String name, final String value) {
-    JniValidation.requireNonEmpty(name, "name");
-    JniValidation.requireNonNull(value, "value");
+    Validation.requireNonEmpty(name, "name");
+    Validation.requireNonNull(value, "value");
 
     environment.put(name, value);
     LOGGER.fine(String.format("Added environment variable: %s", name));
@@ -88,7 +88,7 @@ public final class WasiContextBuilder {
    * @throws IllegalArgumentException if environmentVars is null
    */
   public WasiContextBuilder withEnvironment(final Map<String, String> environmentVars) {
-    JniValidation.requireNonNull(environmentVars, "environmentVars");
+    Validation.requireNonNull(environmentVars, "environmentVars");
 
     for (final Map.Entry<String, String> entry : environmentVars.entrySet()) {
       withEnvironment(entry.getKey(), entry.getValue());
@@ -117,7 +117,7 @@ public final class WasiContextBuilder {
    * @throws IllegalArgumentException if argument is null
    */
   public WasiContextBuilder withArgument(final String argument) {
-    JniValidation.requireNonNull(argument, "argument");
+    Validation.requireNonNull(argument, "argument");
 
     arguments.add(argument);
     LOGGER.fine(String.format("Added argument: %s", argument));
@@ -133,7 +133,7 @@ public final class WasiContextBuilder {
    * @throws IllegalArgumentException if args is null
    */
   public WasiContextBuilder withArguments(final String... args) {
-    JniValidation.requireNonNull(args, "args");
+    Validation.requireNonNull(args, "args");
 
     for (final String arg : args) {
       withArgument(arg);
@@ -154,8 +154,8 @@ public final class WasiContextBuilder {
    * @throws IllegalArgumentException if either directory path is invalid
    */
   public WasiContextBuilder withPreopenDirectory(final String guestDir, final String hostDir) {
-    JniValidation.requireNonEmpty(guestDir, "guestDir");
-    JniValidation.requireNonEmpty(hostDir, "hostDir");
+    Validation.requireNonEmpty(guestDir, "guestDir");
+    Validation.requireNonEmpty(hostDir, "hostDir");
 
     final Path hostPath = Paths.get(hostDir).toAbsolutePath().normalize();
 
@@ -195,7 +195,7 @@ public final class WasiContextBuilder {
    * @throws IllegalArgumentException if workingDir is null/empty
    */
   public WasiContextBuilder withWorkingDirectory(final String workingDir) {
-    JniValidation.requireNonEmpty(workingDir, "workingDir");
+    Validation.requireNonEmpty(workingDir, "workingDir");
 
     this.workingDirectory = Paths.get(workingDir).normalize();
     LOGGER.fine(String.format("Set working directory: %s", this.workingDirectory));
@@ -327,7 +327,7 @@ public final class WasiContextBuilder {
    * @throws IllegalArgumentException if hostPath is null
    */
   public WasiContextBuilder addPreopenedDirectory(final Path hostPath, final String guestPath) {
-    JniValidation.requireNonNull(hostPath, "hostPath");
+    Validation.requireNonNull(hostPath, "hostPath");
     return withPreopenDirectory(guestPath, hostPath.toString());
   }
 

@@ -4,7 +4,7 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.logging.Logger;
 
 /**
@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * library. Tables store references to functions or other objects that can be called indirectly.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive bounds checking for table access using JniValidation and the JniResource base
+ * comprehensive bounds checking for table access using Validation and the JniResource base
  * class.
  */
 public final class JniTable extends JniResource implements WasmTable {
@@ -42,7 +42,7 @@ public final class JniTable extends JniResource implements WasmTable {
    */
   JniTable(final long nativeHandle, final JniStore store) {
     super(nativeHandle);
-    JniValidation.requireNonNull(store, "store");
+    Validation.requireNonNull(store, "store");
     this.store = store;
     LOGGER.fine("Created JNI table with handle: 0x" + Long.toHexString(nativeHandle));
   }
@@ -161,7 +161,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the element cannot be retrieved
    */
   public Object get(final int index) {
-    JniValidation.requireNonNegative(index, "index");
+    Validation.requireNonNegative(index, "index");
 
     if (store.isClosed()) {
       throw new JniResourceException("Store is closed");
@@ -190,7 +190,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the element cannot be set
    */
   public void set(final int index, final Object value) {
-    JniValidation.requireNonNegative(index, "index");
+    Validation.requireNonNegative(index, "index");
 
     if (store.isClosed()) {
       throw new JniResourceException("Store is closed");
@@ -222,7 +222,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the growth operation fails
    */
   public int grow(final int delta, final Object init) {
-    JniValidation.requireNonNegative(delta, "delta");
+    Validation.requireNonNegative(delta, "delta");
 
     if (store.isClosed()) {
       throw new JniResourceException("Store is closed");
@@ -252,8 +252,8 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the fill operation fails
    */
   public void fill(final int start, final int count, final Object value) {
-    JniValidation.requireNonNegative(start, "start");
-    JniValidation.requireNonNegative(count, "count");
+    Validation.requireNonNegative(start, "start");
+    Validation.requireNonNegative(count, "count");
 
     if (store.isClosed()) {
       throw new JniResourceException("Store is closed");
@@ -289,9 +289,9 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the copy operation fails
    */
   public void copy(final int dst, final int src, final int count) {
-    JniValidation.requireNonNegative(dst, "dst");
-    JniValidation.requireNonNegative(src, "src");
-    JniValidation.requireNonNegative(count, "count");
+    Validation.requireNonNegative(dst, "dst");
+    Validation.requireNonNegative(src, "src");
+    Validation.requireNonNegative(count, "count");
 
     final long handle = getNativeHandle(); // This validates not closed
     validateRange(dst, count);
@@ -322,10 +322,10 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the copy operation fails
    */
   public void copy(final int dst, final WasmTable src, final int srcIndex, final int count) {
-    JniValidation.requireNonNull(src, "src");
-    JniValidation.requireNonNegative(dst, "dst");
-    JniValidation.requireNonNegative(srcIndex, "srcIndex");
-    JniValidation.requireNonNegative(count, "count");
+    Validation.requireNonNull(src, "src");
+    Validation.requireNonNegative(dst, "dst");
+    Validation.requireNonNegative(srcIndex, "srcIndex");
+    Validation.requireNonNegative(count, "count");
 
     if (!(src instanceof JniTable)) {
       throw new IllegalArgumentException(

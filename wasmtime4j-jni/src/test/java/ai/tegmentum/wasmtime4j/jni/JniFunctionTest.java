@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -40,9 +39,9 @@ class JniFunctionTest {
 
   @Test
   void testConstructorWithInvalidHandle() {
-    final JniValidationException exception =
+    final IllegalArgumentException exception =
         assertThrows(
-            JniValidationException.class,
+            IllegalArgumentException.class,
             () -> new JniFunction(0L, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
@@ -51,9 +50,9 @@ class JniFunctionTest {
 
   @Test
   void testConstructorWithNullName() {
-    final JniValidationException exception =
+    final IllegalArgumentException exception =
         assertThrows(
-            JniValidationException.class,
+            IllegalArgumentException.class,
             () -> new JniFunction(VALID_HANDLE, null, VALID_MODULE_HANDLE, MOCK_STORE));
 
     assertThat(exception.getMessage()).contains("name");
@@ -62,9 +61,9 @@ class JniFunctionTest {
 
   @Test
   void testConstructorWithNullStore() {
-    final JniValidationException exception =
+    final IllegalArgumentException exception =
         assertThrows(
-            JniValidationException.class,
+            IllegalArgumentException.class,
             () -> new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, null));
 
     assertThat(exception.getMessage()).contains("store");
@@ -90,8 +89,8 @@ class JniFunctionTest {
     final JniFunction function =
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> function.call((WasmValue[]) null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> function.call((WasmValue[]) null));
 
     assertThat(exception.getMessage()).contains("parameters");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -102,8 +101,8 @@ class JniFunctionTest {
     final JniFunction function =
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> function.call((WasmValue[]) null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> function.call((WasmValue[]) null));
 
     assertThat(exception.getMessage()).contains("parameters");
     assertThat(exception.getMessage()).contains("must not be null");

@@ -20,7 +20,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -48,8 +48,8 @@ public final class JniComponentTypedFunc implements ComponentTypedFunc {
    * @param signature the type signature (e.g., "s32,s32->s32")
    */
   public JniComponentTypedFunc(final JniComponentFunc function, final String signature) {
-    JniValidation.requireNonNull(function, "function");
-    JniValidation.requireNonEmpty(signature, "signature");
+    Validation.requireNonNull(function, "function");
+    Validation.requireNonEmpty(signature, "signature");
     this.function = function;
     this.signature = signature;
     LOGGER.fine("Created JniComponentTypedFunc with signature: " + signature);

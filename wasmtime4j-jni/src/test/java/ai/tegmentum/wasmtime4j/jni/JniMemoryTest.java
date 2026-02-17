@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -46,8 +45,8 @@ class JniMemoryTest {
   @Test
   void testConstructorWithInvalidHandle() {
     final JniStore mockStore = createMockStore();
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniMemory(0L, mockStore));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> new JniMemory(0L, mockStore));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -68,8 +67,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.grow(-1L));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.grow(-1L));
 
     assertThat(exception.getMessage()).contains("pages");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -81,8 +80,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.grow(-1));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.grow(-1));
 
     assertThat(exception.getMessage()).contains("pages");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -94,8 +93,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.readByte(-1L));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.readByte(-1L));
 
     assertThat(exception.getMessage()).contains("offset");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -107,8 +106,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.readByte(-1));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.readByte(-1));
 
     assertThat(exception.getMessage()).contains("offset");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -120,8 +119,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.writeByte(-1L, (byte) 0));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.writeByte(-1L, (byte) 0));
 
     assertThat(exception.getMessage()).contains("offset");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -133,8 +132,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.writeByte(-1, (byte) 0));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.writeByte(-1, (byte) 0));
 
     assertThat(exception.getMessage()).contains("offset");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -146,8 +145,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.readBytes(0L, null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.readBytes(0L, null));
 
     assertThat(exception.getMessage()).contains("buffer");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -160,8 +159,8 @@ class JniMemoryTest {
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
     final byte[] buffer = new byte[10];
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.readBytes(-1L, buffer));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.readBytes(-1L, buffer));
 
     assertThat(exception.getMessage()).contains("offset");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -173,8 +172,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.writeBytes(0L, null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.writeBytes(0L, null));
 
     assertThat(exception.getMessage()).contains("buffer");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -187,8 +186,8 @@ class JniMemoryTest {
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
     final byte[] buffer = new byte[10];
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.writeBytes(-1L, buffer));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.writeBytes(-1L, buffer));
 
     assertThat(exception.getMessage()).contains("offset");
     assertThat(exception.getMessage()).contains("must be non-negative");
@@ -200,8 +199,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.readBytes(0, null, 0, 10));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.readBytes(0, null, 0, 10));
 
     assertThat(exception.getMessage()).contains("dest");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -213,8 +212,8 @@ class JniMemoryTest {
     final JniStore mockStore = createMockStore();
     final JniMemory memory = new JniMemory(VALID_HANDLE, mockStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> memory.writeBytes(0, null, 0, 10));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> memory.writeBytes(0, null, 0, 10));
 
     assertThat(exception.getMessage()).contains("src");
     assertThat(exception.getMessage()).contains("must not be null");

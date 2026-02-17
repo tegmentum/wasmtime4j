@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.type;
 
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -60,7 +60,7 @@ public final class JniMemoryType implements MemoryType {
    * @throws IllegalArgumentException if nativeHandle is invalid
    */
   public static JniMemoryType fromNative(final long nativeHandle) {
-    JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
+    Validation.requireValidHandle(nativeHandle, "nativeHandle");
 
     final long[] typeInfo = nativeGetMemoryTypeInfo(nativeHandle);
     if (typeInfo.length < 4) {

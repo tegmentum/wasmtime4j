@@ -18,8 +18,8 @@ import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -225,7 +225,7 @@ public final class JniStore extends JniResource implements Store {
    */
   @Override
   public void addFuel(final long additionalFuel) throws WasmException {
-    JniValidation.requirePositive(additionalFuel, "additionalFuel");
+    Validation.requirePositive(additionalFuel, "additionalFuel");
     ensureNotClosed();
 
     try {
@@ -274,7 +274,7 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public void setFuel(final long fuel) throws WasmException {
-    JniValidation.requirePositive(fuel, "fuel");
+    Validation.requirePositive(fuel, "fuel");
     ensureNotClosed();
 
     try {
@@ -320,7 +320,7 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public long consumeFuel(final long fuel) throws WasmException {
-    JniValidation.requirePositive(fuel, "fuel");
+    Validation.requirePositive(fuel, "fuel");
     ensureNotClosed();
 
     try {
@@ -366,8 +366,8 @@ public final class JniStore extends JniResource implements Store {
   public WasmGlobal createGlobal(
       final WasmValueType valueType, final boolean isMutable, final WasmValue initialValue)
       throws WasmException {
-    JniValidation.requireNonNull(valueType, "valueType");
-    JniValidation.requireNonNull(initialValue, "initialValue");
+    Validation.requireNonNull(valueType, "valueType");
+    Validation.requireNonNull(initialValue, "initialValue");
     ensureNotClosed();
 
     // Validate that the initial value matches the specified type
@@ -415,7 +415,7 @@ public final class JniStore extends JniResource implements Store {
   public ai.tegmentum.wasmtime4j.WasmTable createTable(
       final WasmValueType elementType, final int initialSize, final int maxSize)
       throws WasmException {
-    JniValidation.requireNonNull(elementType, "elementType");
+    Validation.requireNonNull(elementType, "elementType");
     if (initialSize < 0) {
       throw new IllegalArgumentException("Initial size cannot be negative: " + initialSize);
     }

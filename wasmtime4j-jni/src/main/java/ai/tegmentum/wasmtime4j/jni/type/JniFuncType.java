@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.type.FuncType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,8 +32,8 @@ public final class JniFuncType implements FuncType {
    * @param results the result types
    */
   public JniFuncType(final List<WasmValueType> params, final List<WasmValueType> results) {
-    JniValidation.requireNonNull(params, "params");
-    JniValidation.requireNonNull(results, "results");
+    Validation.requireNonNull(params, "params");
+    Validation.requireNonNull(results, "results");
 
     // Validate that all parameter and result types are non-null
     for (int i = 0; i < params.size(); i++) {
@@ -71,7 +71,7 @@ public final class JniFuncType implements FuncType {
    * @throws IllegalArgumentException if nativeHandle is invalid
    */
   public static JniFuncType fromNative(final long nativeHandle) {
-    JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
+    Validation.requireValidHandle(nativeHandle, "nativeHandle");
 
     final long[] typeInfo = nativeGetFuncTypeInfo(nativeHandle);
     if (typeInfo.length < 2) {

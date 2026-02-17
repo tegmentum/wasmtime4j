@@ -13,8 +13,8 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
@@ -93,7 +93,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Engine createEngine() throws WasmException {
-    JniValidation.requireNonNull(this, "runtime");
+    Validation.requireNonNull(this, "runtime");
 
     try {
       final long engineHandle = nativeCreateEngine(nativeHandle);
@@ -114,7 +114,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Engine createEngine(final EngineConfig config) throws WasmException {
-    JniValidation.requireNonNull(config, "config");
+    Validation.requireNonNull(config, "config");
 
     LOGGER.fine("Creating engine with custom config");
     return JniEngine.createWithConfig(config, this);
@@ -122,7 +122,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Store createStore(final Engine engine) throws WasmException {
-    JniValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(engine, "engine");
     if (!isValid()) {
       throw new IllegalStateException("JNI runtime is not valid or has been closed");
     }
@@ -143,8 +143,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public Store createStore(
       final Engine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
       throws WasmException {
-    JniValidation.requireNonNull(engine, "engine");
-    JniValidation.requireNonNull(limits, "limits");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(limits, "limits");
     if (!isValid()) {
       throw new IllegalStateException("JNI runtime is not valid or has been closed");
     }
@@ -252,8 +252,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Tag createTag(final Store store, final TagType tagType) throws WasmException {
-    JniValidation.requireNonNull(store, "store");
-    JniValidation.requireNonNull(tagType, "tagType");
+    Validation.requireNonNull(store, "store");
+    Validation.requireNonNull(tagType, "tagType");
     if (!isValid()) {
       throw new IllegalStateException("JNI runtime is not valid or has been closed");
     }
@@ -307,7 +307,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    */
   public ai.tegmentum.wasmtime4j.gc.GcRuntime createGcRuntime(final Engine engine)
       throws WasmException {
-    JniValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(engine, "engine");
     if (!isValid()) {
       throw new IllegalStateException("JNI runtime is not valid or has been closed");
     }
@@ -355,8 +355,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Module compileModuleWat(final Engine engine, final String watText) throws WasmException {
-    JniValidation.requireNonNull(engine, "engine");
-    JniValidation.requireNonNull(watText, "watText");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(watText, "watText");
 
     if (watText.trim().isEmpty()) {
       throw new WasmException("WAT text cannot be empty");
@@ -386,8 +386,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException {
-    JniValidation.requireNonNull(engine, "engine");
-    JniValidation.requireNonNull(wasmBytes, "wasmBytes");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(wasmBytes, "wasmBytes");
 
     if (wasmBytes.length == 0) {
       throw new WasmException("WebAssembly bytecode cannot be empty");
@@ -412,7 +412,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Instance instantiate(final Module module, final ImportMap imports) throws WasmException {
-    JniValidation.requireNonNull(module, "module");
+    Validation.requireNonNull(module, "module");
 
     try {
       // For now, we'll create a basic instance without imports

@@ -6,10 +6,9 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniTypeConverter;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
@@ -74,8 +73,8 @@ public final class JniFunction extends JniResource
   JniFunction(
       final long nativeHandle, final String name, final long moduleHandle, final JniStore store) {
     super(nativeHandle);
-    JniValidation.requireNonNull(name, "name");
-    JniValidation.requireNonNull(store, "store");
+    Validation.requireNonNull(name, "name");
+    Validation.requireNonNull(store, "store");
     this.name = name;
     this.moduleHandle = moduleHandle;
     this.store = store;
@@ -137,7 +136,7 @@ public final class JniFunction extends JniResource
 
       cachedFunctionType = new FunctionType(paramTypes, returnTypes);
       return cachedFunctionType;
-    } catch (final JniValidationException e) {
+    } catch (final IllegalArgumentException e) {
       throw new RuntimeException("Invalid function signature for '" + name + "'", e);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting function type for '" + name + "'", e);
@@ -154,7 +153,7 @@ public final class JniFunction extends JniResource
    */
   @Override
   public WasmValue[] call(final WasmValue... params) throws WasmException {
-    JniValidation.requireNonNull(params, "parameters");
+    Validation.requireNonNull(params, "parameters");
     ensureNotClosed();
 
     try {
@@ -176,7 +175,7 @@ public final class JniFunction extends JniResource
       // Convert native results back to WasmValue array
       return JniTypeConverter.nativeResultsToWasmValues(
           nativeResults, functionType.getReturnTypes());
-    } catch (final JniValidationException e) {
+    } catch (final IllegalArgumentException e) {
       throw new WasmException("Parameter validation failed for function '" + name + "'", e);
     } catch (final RuntimeException e) {
       throw new WasmException("Native function call failed for '" + name + "'", e);
@@ -206,7 +205,7 @@ public final class JniFunction extends JniResource
    */
   @Deprecated
   public Object call(final Object... parameters) {
-    JniValidation.requireNonNull(parameters, "parameters");
+    Validation.requireNonNull(parameters, "parameters");
     ensureNotClosed();
 
     try {
@@ -244,7 +243,7 @@ public final class JniFunction extends JniResource
    * @throws RuntimeException if the call fails or types don't match
    */
   public int callInt(final int... parameters) {
-    JniValidation.requireNonNull(parameters, "parameters");
+    Validation.requireNonNull(parameters, "parameters");
     ensureNotClosed();
 
     try {
@@ -265,7 +264,7 @@ public final class JniFunction extends JniResource
    * @throws RuntimeException if the call fails or types don't match
    */
   public long callLong(final long... parameters) {
-    JniValidation.requireNonNull(parameters, "parameters");
+    Validation.requireNonNull(parameters, "parameters");
     ensureNotClosed();
 
     try {
@@ -286,7 +285,7 @@ public final class JniFunction extends JniResource
    * @throws RuntimeException if the call fails or types don't match
    */
   public float callFloat(final float... parameters) {
-    JniValidation.requireNonNull(parameters, "parameters");
+    Validation.requireNonNull(parameters, "parameters");
     ensureNotClosed();
 
     try {
@@ -307,7 +306,7 @@ public final class JniFunction extends JniResource
    * @throws RuntimeException if the call fails or types don't match
    */
   public double callDouble(final double... parameters) {
-    JniValidation.requireNonNull(parameters, "parameters");
+    Validation.requireNonNull(parameters, "parameters");
     ensureNotClosed();
 
     try {

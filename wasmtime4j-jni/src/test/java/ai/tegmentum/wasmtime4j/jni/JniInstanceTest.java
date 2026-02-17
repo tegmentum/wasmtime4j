@@ -11,7 +11,6 @@ import ai.tegmentum.wasmtime4j.InstanceStatistics;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,9 +53,9 @@ class JniInstanceTest {
 
   @Test
   void testConstructorWithInvalidHandle() {
-    final JniValidationException exception =
+    final IllegalArgumentException exception =
         assertThrows(
-            JniValidationException.class, () -> new JniInstance(0L, testModule, testStore));
+            IllegalArgumentException.class, () -> new JniInstance(0L, testModule, testStore));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -64,9 +63,9 @@ class JniInstanceTest {
 
   @Test
   void testConstructorWithNullModule() {
-    final JniValidationException exception =
+    final IllegalArgumentException exception =
         assertThrows(
-            JniValidationException.class, () -> new JniInstance(VALID_HANDLE, null, testStore));
+            IllegalArgumentException.class, () -> new JniInstance(VALID_HANDLE, null, testStore));
 
     assertThat(exception.getMessage()).contains("module");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -74,9 +73,9 @@ class JniInstanceTest {
 
   @Test
   void testConstructorWithNullStore() {
-    final JniValidationException exception =
+    final IllegalArgumentException exception =
         assertThrows(
-            JniValidationException.class, () -> new JniInstance(VALID_HANDLE, testModule, null));
+            IllegalArgumentException.class, () -> new JniInstance(VALID_HANDLE, testModule, null));
 
     assertThat(exception.getMessage()).contains("store");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -86,8 +85,8 @@ class JniInstanceTest {
   void testGetFunctionWithNullName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getFunction(null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getFunction(null));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -98,8 +97,8 @@ class JniInstanceTest {
   void testGetFunctionWithEmptyName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getFunction(""));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getFunction(""));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be empty");
@@ -110,8 +109,8 @@ class JniInstanceTest {
   void testGetFunctionWithWhitespaceOnlyName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getFunction("   "));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getFunction("   "));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be empty or whitespace-only");
@@ -122,8 +121,8 @@ class JniInstanceTest {
   void testGetMemoryWithNullName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getMemory(null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getMemory(null));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -134,8 +133,8 @@ class JniInstanceTest {
   void testGetMemoryWithEmptyName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getMemory(""));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getMemory(""));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be empty");
@@ -146,8 +145,8 @@ class JniInstanceTest {
   void testGetTableWithNullName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getTable(null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getTable(null));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -158,8 +157,8 @@ class JniInstanceTest {
   void testGetTableWithEmptyName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getTable(""));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getTable(""));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be empty");
@@ -170,8 +169,8 @@ class JniInstanceTest {
   void testGetGlobalWithNullName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getGlobal(null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getGlobal(null));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -182,8 +181,8 @@ class JniInstanceTest {
   void testGetGlobalWithEmptyName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.getGlobal(""));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.getGlobal(""));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be empty");
@@ -194,8 +193,8 @@ class JniInstanceTest {
   void testHasExportWithNullName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.hasExport(null));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.hasExport(null));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be null");
@@ -206,8 +205,8 @@ class JniInstanceTest {
   void testHasExportWithEmptyName() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> instance.hasExport(""));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> instance.hasExport(""));
 
     assertThat(exception.getMessage()).contains("name");
     assertThat(exception.getMessage()).contains("must not be empty");
@@ -321,9 +320,9 @@ class JniInstanceTest {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
     // Test validation for hasExport method calls
-    assertThrows(JniValidationException.class, () -> instance.hasExport(null));
-    assertThrows(JniValidationException.class, () -> instance.hasExport(""));
-    assertThrows(JniValidationException.class, () -> instance.hasExport("   "));
+    assertThrows(IllegalArgumentException.class, () -> instance.hasExport(null));
+    assertThrows(IllegalArgumentException.class, () -> instance.hasExport(""));
+    assertThrows(IllegalArgumentException.class, () -> instance.hasExport("   "));
   }
 
   @Test
@@ -372,8 +371,8 @@ class JniInstanceTest {
   void testI32FunctionCallValidation() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    // Test null function name validation - should throw JniValidationException
-    assertThrows(JniValidationException.class, () -> instance.callI32Function(null));
+    // Test null function name validation - should throw IllegalArgumentException
+    assertThrows(IllegalArgumentException.class, () -> instance.callI32Function(null));
 
     // Note: Actual function calling requires native methods and is tested in integration tests
   }

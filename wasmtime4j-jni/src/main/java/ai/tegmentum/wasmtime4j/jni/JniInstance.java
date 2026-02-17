@@ -12,8 +12,8 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.type.FuncType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.TableType;
@@ -62,12 +62,12 @@ public final class JniInstance extends JniResource implements Instance {
    * @param module the module used to create this instance
    * @param store the store this instance belongs to
    * @throws IllegalArgumentException if nativeHandle is 0
-   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if module or store is null
+   * @throws IllegalArgumentException if module or store is null
    */
   JniInstance(final long nativeHandle, final Module module, final Store store) {
     super(nativeHandle);
-    JniValidation.requireNonNull(module, "module");
-    JniValidation.requireNonNull(store, "store");
+    Validation.requireNonNull(module, "module");
+    Validation.requireNonNull(store, "store");
     this.module = module;
     this.store = store;
     LOGGER.fine("Created JNI instance with handle: " + nativeHandle);
@@ -78,12 +78,12 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the name of the exported function
    * @return the function wrapper, or empty if not found
-   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
+   * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   @Override
   public Optional<WasmFunction> getFunction(final String name) {
-    JniValidation.requireNonBlank(name, "name");
+    Validation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     if (!(store instanceof JniStore)) {
@@ -146,12 +146,12 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the name of the exported memory
    * @return the memory wrapper, or empty if not found
-   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
+   * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   @Override
   public Optional<WasmMemory> getMemory(final String name) {
-    JniValidation.requireNonBlank(name, "name");
+    Validation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {
@@ -208,12 +208,12 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the name of the exported table
    * @return the table wrapper, or empty if not found
-   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
+   * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   @Override
   public Optional<WasmTable> getTable(final String name) {
-    JniValidation.requireNonBlank(name, "name");
+    Validation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {
@@ -265,7 +265,7 @@ public final class JniInstance extends JniResource implements Instance {
 
   @Override
   public Optional<TableType> getTableType(final String tableName) {
-    JniValidation.requireNonBlank(tableName, "tableName");
+    Validation.requireNonBlank(tableName, "tableName");
     ensureNotClosed();
 
     try {
@@ -280,7 +280,7 @@ public final class JniInstance extends JniResource implements Instance {
 
   @Override
   public Optional<MemoryType> getMemoryType(final String memoryName) {
-    JniValidation.requireNonBlank(memoryName, "memoryName");
+    Validation.requireNonBlank(memoryName, "memoryName");
     ensureNotClosed();
 
     try {
@@ -295,7 +295,7 @@ public final class JniInstance extends JniResource implements Instance {
 
   @Override
   public Optional<GlobalType> getGlobalType(final String globalName) {
-    JniValidation.requireNonBlank(globalName, "globalName");
+    Validation.requireNonBlank(globalName, "globalName");
     ensureNotClosed();
 
     try {
@@ -310,7 +310,7 @@ public final class JniInstance extends JniResource implements Instance {
 
   @Override
   public Optional<FuncType> getFunctionType(final String functionName) {
-    JniValidation.requireNonBlank(functionName, "functionName");
+    Validation.requireNonBlank(functionName, "functionName");
     ensureNotClosed();
 
     try {
@@ -328,12 +328,12 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the name of the exported global
    * @return the global wrapper, or empty if not found
-   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
+   * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   @Override
   public Optional<WasmGlobal> getGlobal(final String name) {
-    JniValidation.requireNonBlank(name, "name");
+    Validation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {
@@ -399,11 +399,11 @@ public final class JniInstance extends JniResource implements Instance {
    *
    * @param name the export name to check
    * @return true if the export exists
-   * @throws ai.tegmentum.wasmtime4j.jni.exception.JniValidationException if name is null or empty
+   * @throws IllegalArgumentException if name is null or empty
    * @throws IllegalStateException if this instance is closed
    */
   public boolean hasExport(final String name) {
-    JniValidation.requireNonBlank(name, "name");
+    Validation.requireNonBlank(name, "name");
     ensureNotClosed();
 
     try {
@@ -469,8 +469,8 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public WasmValue[] callFunction(final String functionName, final WasmValue... params)
       throws WasmException {
-    JniValidation.requireNonBlank(functionName, "functionName");
-    JniValidation.requireNonNull(params, "params");
+    Validation.requireNonBlank(functionName, "functionName");
+    Validation.requireNonNull(params, "params");
     ensureNotClosed();
 
     if (!(store instanceof JniStore)) {
@@ -609,8 +609,8 @@ public final class JniInstance extends JniResource implements Instance {
    */
   @Override
   public int callI32Function(final String functionName, final int... params) throws WasmException {
-    JniValidation.requireNonEmpty(functionName, "functionName");
-    JniValidation.requireNonNull(params, "params");
+    Validation.requireNonEmpty(functionName, "functionName");
+    Validation.requireNonNull(params, "params");
     ensureNotClosed();
 
     if (!(store instanceof JniStore)) {
@@ -640,7 +640,7 @@ public final class JniInstance extends JniResource implements Instance {
    */
   @Override
   public int callI32Function(final String functionName) throws WasmException {
-    JniValidation.requireNonEmpty(functionName, "functionName");
+    Validation.requireNonEmpty(functionName, "functionName");
     ensureNotClosed();
 
     if (!(store instanceof JniStore)) {

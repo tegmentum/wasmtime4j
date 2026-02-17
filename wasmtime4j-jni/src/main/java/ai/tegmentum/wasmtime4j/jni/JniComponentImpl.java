@@ -5,7 +5,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.util.HashSet;
@@ -37,8 +37,8 @@ public final class JniComponentImpl implements Component {
    */
   public JniComponentImpl(
       final JniComponent.JniComponentHandle nativeComponent, final JniComponentEngine engine) {
-    JniValidation.requireNonNull(nativeComponent, "nativeComponent");
-    JniValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(nativeComponent, "nativeComponent");
+    Validation.requireNonNull(engine, "engine");
     this.nativeComponent = nativeComponent;
     this.engine = engine;
     this.componentId = "jni-component-" + System.nanoTime();
@@ -71,7 +71,7 @@ public final class JniComponentImpl implements Component {
 
   @Override
   public boolean exportsInterface(final String interfaceName) throws WasmException {
-    JniValidation.requireNonEmpty(interfaceName, "interfaceName");
+    Validation.requireNonEmpty(interfaceName, "interfaceName");
     ensureValid();
 
     try {
@@ -83,7 +83,7 @@ public final class JniComponentImpl implements Component {
 
   @Override
   public boolean importsInterface(final String interfaceName) throws WasmException {
-    JniValidation.requireNonEmpty(interfaceName, "interfaceName");
+    Validation.requireNonEmpty(interfaceName, "interfaceName");
     ensureValid();
 
     try {
@@ -142,7 +142,7 @@ public final class JniComponentImpl implements Component {
 
   @Override
   public ComponentInstance instantiate(final ComponentInstanceConfig config) throws WasmException {
-    JniValidation.requireNonNull(config, "config");
+    Validation.requireNonNull(config, "config");
     ensureValid();
 
     try {
@@ -174,7 +174,7 @@ public final class JniComponentImpl implements Component {
 
   @Override
   public WitCompatibilityResult checkWitCompatibility(final Component other) throws WasmException {
-    JniValidation.requireNonNull(other, "other");
+    Validation.requireNonNull(other, "other");
     ensureValid();
 
     return WitCompatibilityResult.compatible(

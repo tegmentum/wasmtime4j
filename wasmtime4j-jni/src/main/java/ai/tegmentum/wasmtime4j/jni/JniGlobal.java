@@ -5,8 +5,8 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.exception.WasmTypeException;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.logging.Logger;
 
 /**
@@ -16,7 +16,7 @@ import java.util.logging.Logger;
  * Wasmtime library. Globals can store various value types and may be mutable or immutable.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive type checking for global variable access using JniValidation and the JniResource
+ * comprehensive type checking for global variable access using Validation and the JniResource
  * base class.
  */
 public final class JniGlobal extends JniResource implements WasmGlobal {
@@ -46,7 +46,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   JniGlobal(final long nativeHandle, final JniStore store) {
     super(nativeHandle);
-    JniValidation.requireNonNull(store, "store");
+    Validation.requireNonNull(store, "store");
     this.store = store;
     LOGGER.fine("Created JNI global with handle: 0x" + Long.toHexString(nativeHandle));
   }
@@ -200,7 +200,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be set
    */
   public void setValue(final Object value) {
-    JniValidation.requireNonNull(value, "value");
+    Validation.requireNonNull(value, "value");
     ensureNotClosed();
     if (store.isClosed()) {
       throw new JniResourceException("Store is closed");
@@ -334,7 +334,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
 
   @Override
   public void set(final WasmValue value) {
-    JniValidation.requireNonNull(value, "value");
+    Validation.requireNonNull(value, "value");
     ensureNotClosed();
     validateMutable();
 

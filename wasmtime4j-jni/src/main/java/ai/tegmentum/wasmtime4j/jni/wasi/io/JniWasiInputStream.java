@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import java.util.logging.Logger;
@@ -69,7 +69,7 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
 
   @Override
   public byte[] read(final long length) throws WasmException {
-    JniValidation.requirePositive(length, "length");
+    Validation.requirePositive(length, "length");
     ensureNotClosed();
 
     final byte[] result = nativeRead(contextHandle, nativeHandle, length);
@@ -81,7 +81,7 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
 
   @Override
   public byte[] blockingRead(final long length) throws WasmException {
-    JniValidation.requirePositive(length, "length");
+    Validation.requirePositive(length, "length");
     ensureNotClosed();
 
     final byte[] result = nativeBlockingRead(contextHandle, nativeHandle, length);
@@ -93,7 +93,7 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
 
   @Override
   public long skip(final long length) throws WasmException {
-    JniValidation.requirePositive(length, "length");
+    Validation.requirePositive(length, "length");
     ensureNotClosed();
 
     return nativeSkip(contextHandle, nativeHandle, length);
@@ -101,7 +101,7 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
 
   @Override
   public long blockingSkip(final long length) throws WasmException {
-    JniValidation.requirePositive(length, "length");
+    Validation.requirePositive(length, "length");
     ensureNotClosed();
 
     // Note: Current native implementation doesn't have separate blocking skip

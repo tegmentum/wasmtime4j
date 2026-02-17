@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -34,8 +33,8 @@ class JniGlobalTest {
 
   @Test
   void testConstructorWithInvalidHandle() {
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new JniGlobal(0L, STUB_STORE));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> new JniGlobal(0L, STUB_STORE));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");

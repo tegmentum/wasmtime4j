@@ -6,7 +6,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitValue;
 import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller;
 import java.util.Optional;
@@ -40,8 +40,8 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
       final JniComponent.JniComponentInstanceHandle nativeInstance,
       final JniComponentImpl component,
       final ComponentInstanceConfig config) {
-    JniValidation.requireNonNull(nativeInstance, "nativeInstance");
-    JniValidation.requireNonNull(component, "component");
+    Validation.requireNonNull(nativeInstance, "nativeInstance");
+    Validation.requireNonNull(component, "component");
     this.nativeInstance = nativeInstance;
     this.component = component;
     this.config = config != null ? config : new ComponentInstanceConfig();
@@ -107,8 +107,8 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   @Override
   public void bindInterface(final String interfaceName, final Object implementation)
       throws WasmException {
-    JniValidation.requireNonEmpty(interfaceName, "interfaceName");
-    JniValidation.requireNonNull(implementation, "implementation");
+    Validation.requireNonEmpty(interfaceName, "interfaceName");
+    Validation.requireNonNull(implementation, "implementation");
     if (!isValid()) {
       throw new WasmException("Component instance is not valid");
     }
@@ -157,7 +157,7 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   @Override
   public Object invoke(final String functionName, final Object... args)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    JniValidation.requireNonEmpty(functionName, "functionName");
+    Validation.requireNonEmpty(functionName, "functionName");
     if (!isValid()) {
       throw new WasmException("Component instance is not valid");
     }

@@ -5,7 +5,7 @@ import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeMethodBindings;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.logging.Logger;
 
 /**
@@ -71,7 +71,7 @@ public final class JniComponent {
 
     try {
       final long engineHandle = nativeCreateComponentEngine();
-      JniValidation.requireValidHandle(engineHandle, "engineHandle");
+      Validation.requireValidHandle(engineHandle, "engineHandle");
       return new JniComponentEngine(engineHandle);
     } catch (final Exception e) {
       throw new JniException("Failed to create component engine", e);
@@ -334,14 +334,14 @@ public final class JniComponent {
      * @throws JniResourceException if this engine has been closed
      */
     public JniComponentHandle loadComponentFromBytes(final byte[] wasmBytes) throws WasmException {
-      JniValidation.requireNonEmpty(wasmBytes, "wasmBytes");
+      Validation.requireNonEmpty(wasmBytes, "wasmBytes");
       ensureNotClosed();
 
-      final byte[] wasmBytesCopy = JniValidation.defensiveCopy(wasmBytes);
+      final byte[] wasmBytesCopy = Validation.defensiveCopy(wasmBytes);
 
       try {
         final long componentHandle = nativeLoadComponentFromBytes(getNativeHandle(), wasmBytesCopy);
-        JniValidation.requireValidHandle(componentHandle, "componentHandle");
+        Validation.requireValidHandle(componentHandle, "componentHandle");
         return new JniComponentHandle(componentHandle);
       } catch (final Exception e) {
         if (e instanceof JniException) {
@@ -364,7 +364,7 @@ public final class JniComponent {
      */
     public JniComponentInstanceHandle instantiateComponent(final JniComponentHandle component)
         throws WasmException {
-      JniValidation.requireNonNull(component, "component");
+      Validation.requireNonNull(component, "component");
       ensureNotClosed();
       if (component.isClosed()) {
         throw new JniResourceException("Component has been closed");
@@ -374,7 +374,7 @@ public final class JniComponent {
         final long engineHandle = getNativeHandle();
         final long instanceId =
             nativeInstantiateComponent(engineHandle, component.getNativeHandle());
-        JniValidation.requireValidHandle(instanceId, "instanceId");
+        Validation.requireValidHandle(instanceId, "instanceId");
         return new JniComponentInstanceHandle(engineHandle, instanceId);
       } catch (final Exception e) {
         if (e instanceof JniException) {
@@ -484,7 +484,7 @@ public final class JniComponent {
      * @throws WasmException if operation fails
      */
     public boolean exportsInterface(final String interfaceName) throws WasmException {
-      JniValidation.requireNonEmpty(interfaceName, "interfaceName");
+      Validation.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
 
       try {
@@ -503,7 +503,7 @@ public final class JniComponent {
      * @throws WasmException if operation fails
      */
     public boolean importsInterface(final String interfaceName) throws WasmException {
-      JniValidation.requireNonEmpty(interfaceName, "interfaceName");
+      Validation.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
 
       try {

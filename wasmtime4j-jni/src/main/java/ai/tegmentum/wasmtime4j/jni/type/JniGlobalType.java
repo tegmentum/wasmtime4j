@@ -1,8 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.util.logging.Logger;
 
@@ -28,7 +28,7 @@ public final class JniGlobalType implements GlobalType {
    * @param isMutable true if the global is mutable, false if immutable
    */
   public JniGlobalType(final WasmValueType valueType, final boolean isMutable) {
-    JniValidation.requireNonNull(valueType, "valueType");
+    Validation.requireNonNull(valueType, "valueType");
 
     this.valueType = valueType;
     this.isMutable = isMutable;
@@ -45,7 +45,7 @@ public final class JniGlobalType implements GlobalType {
    * @throws IllegalArgumentException if nativeHandle is invalid
    */
   public static JniGlobalType fromNative(final long nativeHandle) {
-    JniValidation.requireValidHandle(nativeHandle, "nativeHandle");
+    Validation.requireValidHandle(nativeHandle, "nativeHandle");
 
     final long[] typeInfo = nativeGetGlobalTypeInfo(nativeHandle);
     if (typeInfo.length < 2) {

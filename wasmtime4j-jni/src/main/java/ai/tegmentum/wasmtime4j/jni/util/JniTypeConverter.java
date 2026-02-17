@@ -2,8 +2,8 @@ package ai.tegmentum.wasmtime4j.jni.util;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.logging.Logger;
 
 /**
@@ -32,11 +32,11 @@ public final class JniTypeConverter {
    *
    * @param type the WebAssembly value type
    * @return the type name string
-   * @throws JniValidationException if type is null
+   * @throws IllegalArgumentException if type is null
    */
   public static String typeToString(final WasmValueType type) {
     if (type == null) {
-      throw new JniValidationException("type must not be null");
+      throw new IllegalArgumentException("type must not be null");
     }
     return type.name().toLowerCase(java.util.Locale.ROOT);
   }
@@ -46,16 +46,16 @@ public final class JniTypeConverter {
    *
    * @param typeString the type name string
    * @return the WebAssembly value type
-   * @throws JniValidationException if typeString is null or invalid
+   * @throws IllegalArgumentException if typeString is null or invalid
    */
   public static WasmValueType stringToType(final String typeString) {
     if (typeString == null) {
-      throw new JniValidationException("typeString must not be null");
+      throw new IllegalArgumentException("typeString must not be null");
     }
     try {
       return WasmValueType.valueOf(typeString.toUpperCase(java.util.Locale.ROOT));
     } catch (final IllegalArgumentException e) {
-      throw new JniValidationException("Invalid WebAssembly type string: " + typeString, e);
+      throw new IllegalArgumentException("Invalid WebAssembly type string: " + typeString, e);
     }
   }
 
@@ -64,15 +64,15 @@ public final class JniTypeConverter {
    *
    * @param values the WebAssembly values
    * @return array of objects suitable for native function calls
-   * @throws JniValidationException if values is null or contains invalid types
+   * @throws IllegalArgumentException if values is null or contains invalid types
    */
   public static Object[] wasmValuesToNativeParams(final WasmValue[] values) {
-    JniValidation.requireNonNull(values, "values");
+    Validation.requireNonNull(values, "values");
 
     final Object[] params = new Object[values.length];
     for (int i = 0; i < values.length; i++) {
       if (values[i] == null) {
-        throw new JniValidationException("Parameter at index " + i + " is null");
+        throw new IllegalArgumentException("Parameter at index " + i + " is null");
       }
       params[i] = wasmValueToNativeParam(values[i]);
     }
@@ -84,10 +84,10 @@ public final class JniTypeConverter {
    *
    * @param value the WebAssembly value
    * @return the native parameter object
-   * @throws JniValidationException if value is null or has invalid type
+   * @throws IllegalArgumentException if value is null or has invalid type
    */
   public static Object wasmValueToNativeParam(final WasmValue value) {
-    JniValidation.requireNonNull(value, "value");
+    Validation.requireNonNull(value, "value");
 
     final WasmValueType type = value.getType();
     switch (type) {
@@ -102,7 +102,7 @@ public final class JniTypeConverter {
       case V128:
         final byte[] v128Bytes = value.asV128();
         if (v128Bytes.length != V128_SIZE_BYTES) {
-          throw new JniValidationException(
+          throw new IllegalArgumentException(
               "v128 value has invalid size: " + v128Bytes.length + ", expected " + V128_SIZE_BYTES);
         }
         return v128Bytes;
@@ -110,7 +110,7 @@ public final class JniTypeConverter {
       case EXTERNREF:
         return value.getValue(); // References are passed as-is
       default:
-        throw new JniValidationException("Unsupported WebAssembly type: " + type);
+        throw new IllegalArgumentException("Unsupported WebAssembly type: " + type);
     }
   }
 
@@ -120,15 +120,15 @@ public final class JniTypeConverter {
    * @param results the native function results
    * @param expectedTypes the expected return types
    * @return array of WebAssembly values
-   * @throws JniValidationException if results or types are invalid
+   * @throws IllegalArgumentException if results or types are invalid
    */
   public static WasmValue[] nativeResultsToWasmValues(
       final Object[] results, final WasmValueType[] expectedTypes) {
-    JniValidation.requireNonNull(results, "results");
-    JniValidation.requireNonNull(expectedTypes, "expectedTypes");
+    Validation.requireNonNull(results, "results");
+    Validation.requireNonNull(expectedTypes, "expectedTypes");
 
     if (results.length != expectedTypes.length) {
-      throw new JniValidationException(
+      throw new IllegalArgumentException(
           "Result count mismatch: got " + results.length + ", expected " + expectedTypes.length);
     }
 
@@ -145,18 +145,18 @@ public final class JniTypeConverter {
    * @param result the native result object
    * @param expectedType the expected WebAssembly type
    * @return the WebAssembly value
-   * @throws JniValidationException if result type doesn't match expected
+   * @throws IllegalArgumentException if result type doesn't match expected
    */
   public static WasmValue nativeResultToWasmValue(
       final Object result, final WasmValueType expectedType) {
-    JniValidation.requireNonNull(expectedType, "expectedType");
+    Validation.requireNonNull(expectedType, "expectedType");
 
     // If the native code already returned a WasmValue, use it directly
     if (result instanceof WasmValue) {
       final WasmValue wasmValue = (WasmValue) result;
       // Optional type validation (defensive check)
       if (wasmValue.getType() != expectedType) {
-        throw new JniValidationException(
+        throw new IllegalArgumentException(
             "WasmValue type mismatch: got " + wasmValue.getType() + ", expected " + expectedType);
       }
       return wasmValue;
@@ -165,31 +165,31 @@ public final class JniTypeConverter {
     switch (expectedType) {
       case I32:
         if (!(result instanceof Integer)) {
-          throw new JniValidationException("Expected i32 result, got: " + getTypeName(result));
+          throw new IllegalArgumentException("Expected i32 result, got: " + getTypeName(result));
         }
         return WasmValue.i32((Integer) result);
       case I64:
         if (!(result instanceof Long)) {
-          throw new JniValidationException("Expected i64 result, got: " + getTypeName(result));
+          throw new IllegalArgumentException("Expected i64 result, got: " + getTypeName(result));
         }
         return WasmValue.i64((Long) result);
       case F32:
         if (!(result instanceof Float)) {
-          throw new JniValidationException("Expected f32 result, got: " + getTypeName(result));
+          throw new IllegalArgumentException("Expected f32 result, got: " + getTypeName(result));
         }
         return WasmValue.f32((Float) result);
       case F64:
         if (!(result instanceof Double)) {
-          throw new JniValidationException("Expected f64 result, got: " + getTypeName(result));
+          throw new IllegalArgumentException("Expected f64 result, got: " + getTypeName(result));
         }
         return WasmValue.f64((Double) result);
       case V128:
         if (!(result instanceof byte[])) {
-          throw new JniValidationException("Expected v128 result, got: " + getTypeName(result));
+          throw new IllegalArgumentException("Expected v128 result, got: " + getTypeName(result));
         }
         final byte[] v128Bytes = (byte[]) result;
         if (v128Bytes.length != V128_SIZE_BYTES) {
-          throw new JniValidationException(
+          throw new IllegalArgumentException(
               "v128 result has invalid size: "
                   + v128Bytes.length
                   + ", expected "
@@ -201,7 +201,7 @@ public final class JniTypeConverter {
       case EXTERNREF:
         return WasmValue.externref(result); // May be null
       default:
-        throw new JniValidationException("Unsupported return type: " + expectedType);
+        throw new IllegalArgumentException("Unsupported return type: " + expectedType);
     }
   }
 
@@ -210,14 +210,14 @@ public final class JniTypeConverter {
    *
    * @param params the parameters to validate
    * @param expectedTypes the expected parameter types
-   * @throws JniValidationException if types don't match
+   * @throws IllegalArgumentException if types don't match
    */
   public static void validateParameterTypes(
       final WasmValue[] params, final WasmValueType[] expectedTypes) {
     try {
       TypeConversionUtilities.validateParameterTypes(params, expectedTypes);
     } catch (final IllegalArgumentException e) {
-      throw new JniValidationException(e.getMessage(), e);
+      throw new IllegalArgumentException(e.getMessage(), e);
     }
   }
 
@@ -225,13 +225,13 @@ public final class JniTypeConverter {
    * Validates that a v128 byte array has the correct size.
    *
    * @param bytes the byte array to validate
-   * @throws JniValidationException if array size is incorrect
+   * @throws IllegalArgumentException if array size is incorrect
    */
   public static void validateV128Size(final byte[] bytes) {
     try {
       TypeConversionUtilities.validateV128Size(bytes);
     } catch (final IllegalArgumentException e) {
-      throw new JniValidationException(e.getMessage(), e);
+      throw new IllegalArgumentException(e.getMessage(), e);
     }
   }
 
@@ -260,16 +260,16 @@ public final class JniTypeConverter {
    *
    * @param types the WebAssembly value types
    * @return array of type name strings
-   * @throws JniValidationException if types contains null elements
+   * @throws IllegalArgumentException if types contains null elements
    */
   public static String[] typesToStrings(final WasmValueType[] types) {
     if (types == null) {
-      throw new JniValidationException("types must not be null");
+      throw new IllegalArgumentException("types must not be null");
     }
     final String[] strings = new String[types.length];
     for (int i = 0; i < types.length; i++) {
       if (types[i] == null) {
-        throw new JniValidationException("Type at index " + i + " is null");
+        throw new IllegalArgumentException("Type at index " + i + " is null");
       }
       strings[i] = types[i].name().toLowerCase(java.util.Locale.ROOT);
     }
@@ -281,21 +281,21 @@ public final class JniTypeConverter {
    *
    * @param typeStrings the type name strings
    * @return array of WebAssembly value types
-   * @throws JniValidationException if any string is invalid
+   * @throws IllegalArgumentException if any string is invalid
    */
   public static WasmValueType[] stringsToTypes(final String[] typeStrings) {
     if (typeStrings == null) {
-      throw new JniValidationException("typeStrings must not be null");
+      throw new IllegalArgumentException("typeStrings must not be null");
     }
     final WasmValueType[] types = new WasmValueType[typeStrings.length];
     for (int i = 0; i < typeStrings.length; i++) {
       if (typeStrings[i] == null) {
-        throw new JniValidationException("Type string at index " + i + " is null");
+        throw new IllegalArgumentException("Type string at index " + i + " is null");
       }
       try {
         types[i] = WasmValueType.valueOf(typeStrings[i].toUpperCase(java.util.Locale.ROOT));
       } catch (final IllegalArgumentException e) {
-        throw new JniValidationException(
+        throw new IllegalArgumentException(
             "Invalid WebAssembly type string: " + typeStrings[i], e);
       }
     }
@@ -312,11 +312,11 @@ public final class JniTypeConverter {
    *
    * @param functionType the function type to marshal
    * @return byte array containing marshalled function type
-   * @throws JniValidationException if functionType is null
+   * @throws IllegalArgumentException if functionType is null
    */
   public static byte[] marshalFunctionType(
       final ai.tegmentum.wasmtime4j.type.FunctionType functionType) {
-    JniValidation.requireNonNull(functionType, "functionType");
+    Validation.requireNonNull(functionType, "functionType");
 
     final ai.tegmentum.wasmtime4j.WasmValueType[] paramTypes = functionType.getParamTypes();
     final ai.tegmentum.wasmtime4j.WasmValueType[] returnTypes = functionType.getReturnTypes();
@@ -352,20 +352,20 @@ public final class JniTypeConverter {
    * @param paramsData the marshalled parameter data
    * @param expectedTypes the expected parameter types for validation
    * @return array of WasmValue parameters
-   * @throws JniValidationException if unmarshalling fails or types don't match
+   * @throws IllegalArgumentException if unmarshalling fails or types don't match
    */
   public static WasmValue[] unmarshalParameters(
       final byte[] paramsData, final ai.tegmentum.wasmtime4j.WasmValueType[] expectedTypes) {
-    JniValidation.requireNonNull(paramsData, "paramsData");
-    JniValidation.requireNonNull(expectedTypes, "expectedTypes");
+    Validation.requireNonNull(paramsData, "paramsData");
+    Validation.requireNonNull(expectedTypes, "expectedTypes");
 
     if (paramsData.length < 4) {
-      throw new JniValidationException("Parameter data too short");
+      throw new IllegalArgumentException("Parameter data too short");
     }
 
     final int paramCount = readInt(paramsData, 0);
     if (paramCount != expectedTypes.length) {
-      throw new JniValidationException(
+      throw new IllegalArgumentException(
           "Parameter count mismatch: expected " + expectedTypes.length + ", got " + paramCount);
     }
 
@@ -386,15 +386,15 @@ public final class JniTypeConverter {
    *
    * @param results the result values to marshal
    * @param buffer the buffer to write results to
-   * @throws JniValidationException if marshalling fails
+   * @throws IllegalArgumentException if marshalling fails
    */
   public static void marshalResults(final WasmValue[] results, final byte[] buffer) {
-    JniValidation.requireNonNull(results, "results");
-    JniValidation.requireNonNull(buffer, "buffer");
+    Validation.requireNonNull(results, "results");
+    Validation.requireNonNull(buffer, "buffer");
 
     // Write result count
     if (buffer.length < 4) {
-      throw new JniValidationException("Result buffer too small for count");
+      throw new IllegalArgumentException("Result buffer too small for count");
     }
 
     writeInt(buffer, 0, results.length);
@@ -425,7 +425,7 @@ public final class JniTypeConverter {
     try {
       return TypeConversionUtilities.getValueSize(valueType);
     } catch (final IllegalArgumentException e) {
-      throw new JniValidationException(e.getMessage(), e);
+      throw new IllegalArgumentException(e.getMessage(), e);
     }
   }
 
@@ -457,7 +457,7 @@ public final class JniTypeConverter {
       case EXTERNREF:
         return WasmValue.externref(null);
       default:
-        throw new JniValidationException("Unsupported value type: " + valueType);
+        throw new IllegalArgumentException("Unsupported value type: " + valueType);
     }
   }
 
@@ -493,7 +493,7 @@ public final class JniTypeConverter {
         writeLong(buffer, offset, 0);
         return offset + 8;
       default:
-        throw new JniValidationException("Unsupported value type: " + value.getType());
+        throw new IllegalArgumentException("Unsupported value type: " + value.getType());
     }
   }
 
@@ -557,10 +557,10 @@ public final class JniTypeConverter {
    *
    * @param params the parameters to marshal
    * @return byte array containing marshalled parameters
-   * @throws JniValidationException if marshalling fails
+   * @throws IllegalArgumentException if marshalling fails
    */
   public static byte[] marshalParameters(final WasmValue[] params) {
-    JniValidation.requireNonNull(params, "params");
+    Validation.requireNonNull(params, "params");
 
     // Calculate total size needed
     int totalSize = 4; // 4 bytes for parameter count
@@ -589,20 +589,20 @@ public final class JniTypeConverter {
    * @param resultBuffer the marshalled result data
    * @param expectedTypes the expected result types for validation
    * @return array of WasmValue results
-   * @throws JniValidationException if unmarshalling fails or types don't match
+   * @throws IllegalArgumentException if unmarshalling fails or types don't match
    */
   public static WasmValue[] unmarshalResults(
       final byte[] resultBuffer, final ai.tegmentum.wasmtime4j.WasmValueType[] expectedTypes) {
-    JniValidation.requireNonNull(resultBuffer, "resultBuffer");
-    JniValidation.requireNonNull(expectedTypes, "expectedTypes");
+    Validation.requireNonNull(resultBuffer, "resultBuffer");
+    Validation.requireNonNull(expectedTypes, "expectedTypes");
 
     if (resultBuffer.length < 4) {
-      throw new JniValidationException("Result buffer too short");
+      throw new IllegalArgumentException("Result buffer too short");
     }
 
     final int resultCount = readInt(resultBuffer, 0);
     if (resultCount != expectedTypes.length) {
-      throw new JniValidationException(
+      throw new IllegalArgumentException(
           "Result count mismatch: got " + resultCount + ", expected " + expectedTypes.length);
     }
 

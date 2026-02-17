@@ -1,7 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import ai.tegmentum.wasmtime4j.exception.WasiException;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.AbstractWasiTimeOperations;
 import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
 import java.util.logging.Level;
@@ -29,7 +29,7 @@ public final class WasiTimeOperations extends AbstractWasiTimeOperations {
    * @throws IllegalArgumentException if the wasiContext is null
    */
   public WasiTimeOperations(final WasiContext wasiContext) {
-    JniValidation.requireNonNull(wasiContext, "wasiContext");
+    Validation.requireNonNull(wasiContext, "wasiContext");
     this.wasiContext = wasiContext;
   }
 
@@ -71,7 +71,7 @@ public final class WasiTimeOperations extends AbstractWasiTimeOperations {
   @Override
   public long getCurrentTime(final int clockId, final long precision) throws WasiException {
     validateClockId(clockId);
-    JniValidation.requireNonNegative(precision, "precision");
+    Validation.requireNonNegative(precision, "precision");
 
     try {
       LOGGER.fine(

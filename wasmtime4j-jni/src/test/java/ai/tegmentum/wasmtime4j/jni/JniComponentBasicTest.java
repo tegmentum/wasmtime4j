@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -95,7 +94,7 @@ public final class JniComponentBasicTest {
   public void testLoadComponentWithNullBytes() {
     try (final JniComponent.JniComponentEngine engine = JniComponent.createComponentEngine()) {
       assertThrows(
-          JniValidationException.class,
+          IllegalArgumentException.class,
           () -> engine.loadComponentFromBytes(null),
           "Loading component with null bytes should throw exception");
     } catch (final UnsupportedOperationException | JniException e) {
@@ -108,7 +107,7 @@ public final class JniComponentBasicTest {
   public void testLoadComponentWithEmptyBytes() {
     try (final JniComponent.JniComponentEngine engine = JniComponent.createComponentEngine()) {
       assertThrows(
-          JniValidationException.class,
+          IllegalArgumentException.class,
           () -> engine.loadComponentFromBytes(new byte[0]),
           "Loading component with empty bytes should throw exception");
     } catch (final UnsupportedOperationException | JniException e) {
@@ -213,7 +212,7 @@ public final class JniComponentBasicTest {
   public void testInstantiateNullComponent() {
     try (final JniComponent.JniComponentEngine engine = JniComponent.createComponentEngine()) {
       assertThrows(
-          JniValidationException.class,
+          IllegalArgumentException.class,
           () -> engine.instantiateComponent(null),
           "Instantiating null component should throw exception");
     } catch (final UnsupportedOperationException | JniException e) {

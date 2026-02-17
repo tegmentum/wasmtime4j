@@ -2,7 +2,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.WasiContextData;
 import java.nio.file.Path;
 import java.util.Map;
@@ -44,7 +44,7 @@ public final class WasiContext extends JniResource {
   WasiContext(final long nativeHandle, final WasiContextBuilder builder) {
     super(nativeHandle);
 
-    JniValidation.requireNonNull(builder, "builder");
+    Validation.requireNonNull(builder, "builder");
 
     this.contextData =
         new WasiContextData(
@@ -71,7 +71,7 @@ public final class WasiContext extends JniResource {
    */
   public String getEnvironmentVariable(final String name) {
     ensureNotClosed();
-    JniValidation.requireNonEmpty(name, "name");
+    Validation.requireNonEmpty(name, "name");
     return contextData.getEnvironmentVariable(name);
   }
 
@@ -131,7 +131,7 @@ public final class WasiContext extends JniResource {
    */
   public Path validatePath(final String path) {
     ensureNotClosed();
-    JniValidation.requireNonEmpty(path, "path");
+    Validation.requireNonEmpty(path, "path");
     return contextData.validatePath(path);
   }
 

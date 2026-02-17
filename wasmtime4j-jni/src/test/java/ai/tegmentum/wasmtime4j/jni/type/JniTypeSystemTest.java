@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
@@ -86,14 +85,14 @@ class JniTypeSystemTest {
     @DisplayName("should reject null params list")
     void shouldRejectNullParamsList() {
       assertThrows(
-          JniValidationException.class, () -> new JniFuncType(null, Collections.emptyList()));
+          IllegalArgumentException.class, () -> new JniFuncType(null, Collections.emptyList()));
     }
 
     @Test
     @DisplayName("should reject null results list")
     void shouldRejectNullResultsList() {
       assertThrows(
-          JniValidationException.class, () -> new JniFuncType(Collections.emptyList(), null));
+          IllegalArgumentException.class, () -> new JniFuncType(Collections.emptyList(), null));
     }
 
     @Test
@@ -209,7 +208,7 @@ class JniTypeSystemTest {
     @Test
     @DisplayName("should reject null value type")
     void shouldRejectNullValueType() {
-      assertThrows(JniValidationException.class, () -> new JniGlobalType(null, true));
+      assertThrows(IllegalArgumentException.class, () -> new JniGlobalType(null, true));
     }
 
     @Test
@@ -379,7 +378,7 @@ class JniTypeSystemTest {
     @Test
     @DisplayName("should reject null element type")
     void shouldRejectNullElementType() {
-      assertThrows(JniValidationException.class, () -> new JniTableType(null, 0, null));
+      assertThrows(IllegalArgumentException.class, () -> new JniTableType(null, 0, null));
     }
 
     @Test

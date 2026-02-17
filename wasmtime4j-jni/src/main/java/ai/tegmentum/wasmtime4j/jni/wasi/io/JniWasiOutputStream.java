@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.jni.wasi.io;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.jni.util.JniValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
@@ -107,14 +107,14 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
 
   @Override
   public void writeZeroes(final long length) throws WasmException {
-    JniValidation.requireNonNegative(length, "length");
+    Validation.requireNonNegative(length, "length");
     ensureNotClosed();
     nativeWriteZeroes(contextHandle, nativeHandle, length);
   }
 
   @Override
   public void blockingWriteZeroesAndFlush(final long length) throws WasmException {
-    JniValidation.requireNonNegative(length, "length");
+    Validation.requireNonNegative(length, "length");
     ensureNotClosed();
     nativeBlockingWriteZeroesAndFlush(contextHandle, nativeHandle, length);
   }
@@ -124,7 +124,7 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
     if (source == null) {
       throw new IllegalArgumentException("Source stream cannot be null");
     }
-    JniValidation.requireNonNegative(length, "length");
+    Validation.requireNonNegative(length, "length");
     ensureNotClosed();
 
     // Get the native handle from the source stream
@@ -141,7 +141,7 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
     if (source == null) {
       throw new IllegalArgumentException("Source stream cannot be null");
     }
-    JniValidation.requireNonNegative(length, "length");
+    Validation.requireNonNegative(length, "length");
     ensureNotClosed();
 
     // Get the native handle from the source stream

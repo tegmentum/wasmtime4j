@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniValidationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
@@ -61,8 +60,8 @@ class JniResourceTest {
 
   @Test
   void testConstructorWithInvalidHandle() {
-    final JniValidationException exception =
-        assertThrows(JniValidationException.class, () -> new TestResource(0L, "Test"));
+    final IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> new TestResource(0L, "Test"));
 
     assertThat(exception.getMessage()).contains("nativeHandle");
     assertThat(exception.getMessage()).contains("invalid native handle");
@@ -258,7 +257,7 @@ class JniResourceTest {
 
     for (long handle : invalidHandles) {
       assertThrows(
-          JniValidationException.class,
+          IllegalArgumentException.class,
           () -> new TestResource(handle, "Test"),
           "Should reject invalid handle: " + handle);
     }
