@@ -25,11 +25,11 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.JniEngine;
 import ai.tegmentum.wasmtime4j.jni.JniLinker;
 import ai.tegmentum.wasmtime4j.jni.JniWasmRuntime;
+import ai.tegmentum.wasmtime4j.util.StreamUtils;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
 import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -353,7 +353,7 @@ public final class JniWasiLinker implements WasiLinker {
         // Read all bytes from InputStream and pass to native stdin buffer
         try {
           final InputStream inputStream = config.getInputStream();
-          final byte[] data = readAllBytesFromStream(inputStream);
+          final byte[] data = StreamUtils.readAllBytes(inputStream);
           context.setStdinBytes(data);
           LOGGER.fine("Set stdin from InputStream with " + data.length + " bytes");
         } catch (IOException e) {
@@ -455,22 +455,6 @@ public final class JniWasiLinker implements WasiLinker {
     }
   }
 
-  /**
-   * Reads all bytes from an InputStream (Java 8 compatible implementation).
-   *
-   * @param inputStream the input stream to read from
-   * @return all bytes from the stream
-   * @throws IOException if an I/O error occurs
-   */
-  private static byte[] readAllBytesFromStream(final InputStream inputStream) throws IOException {
-    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    final byte[] data = new byte[8192];
-    int bytesRead;
-    while ((bytesRead = inputStream.read(data, 0, data.length)) != -1) {
-      buffer.write(data, 0, bytesRead);
-    }
-    return buffer.toByteArray();
-  }
 
   /** Internal class to hold directory mapping configuration. */
   private static final class DirectoryMapping {

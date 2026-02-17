@@ -7,7 +7,7 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import java.io.ByteArrayOutputStream;
+import ai.tegmentum.wasmtime4j.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -212,7 +212,7 @@ public class JniEngine extends JniResource implements Engine {
 
     // Read entire stream into byte array
     // Wasmtime requires complete bytecode before compilation
-    final byte[] wasmBytes = readAllBytes(stream);
+    final byte[] wasmBytes = StreamUtils.readAllBytes(stream);
 
     if (wasmBytes.length == 0) {
       throw new WasmException("Stream contained no data");
@@ -221,22 +221,6 @@ public class JniEngine extends JniResource implements Engine {
     return compileModule(wasmBytes);
   }
 
-  /**
-   * Reads all bytes from an input stream.
-   *
-   * @param stream the input stream to read
-   * @return all bytes from the stream
-   * @throws IOException if reading fails
-   */
-  private byte[] readAllBytes(final InputStream stream) throws IOException {
-    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    final byte[] data = new byte[8192];
-    int bytesRead;
-    while ((bytesRead = stream.read(data, 0, data.length)) != -1) {
-      buffer.write(data, 0, bytesRead);
-    }
-    return buffer.toByteArray();
-  }
 
   private native long nativeCompileModule(long engineHandle, byte[] wasmBytes);
 
