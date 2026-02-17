@@ -16,41 +16,20 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
-import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
-import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
+import ai.tegmentum.wasmtime4j.wasi.AbstractWasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.AbstractWasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Panama implementation of WASI configuration.
  *
- * <p>This class holds configuration options for WASI context creation. Instances are immutable once
- * created.
- *
  * @since 1.0.0
  */
-public final class PanamaWasiConfig implements WasiConfig {
-
-  private final Map<String, String> environment;
-  private final List<String> arguments;
-  private final Map<String, Path> preopenDirectories;
-  private final String workingDirectory;
-  private final boolean inheritEnvironment;
-  private final Duration executionTimeout;
-
-  private final boolean validationEnabled;
-  private final boolean strictModeEnabled;
-  private final WasiVersion wasiVersion;
-  private final boolean asyncOperations;
-  private final Integer maxAsyncOperations;
-  private final Duration asyncOperationTimeout;
+public final class PanamaWasiConfig extends AbstractWasiConfig {
 
   /**
    * Creates a new WASI configuration.
@@ -81,126 +60,23 @@ public final class PanamaWasiConfig implements WasiConfig {
       final boolean asyncOperations,
       final Integer maxAsyncOperations,
       final Duration asyncOperationTimeout) {
-    this.environment = Collections.unmodifiableMap(new HashMap<>(environment));
-    this.arguments = Collections.unmodifiableList(new ArrayList<>(arguments));
-    this.preopenDirectories = Collections.unmodifiableMap(new HashMap<>(preopenDirectories));
-    this.workingDirectory = workingDirectory;
-    this.inheritEnvironment = inheritEnvironment;
-    this.executionTimeout = executionTimeout;
-    this.validationEnabled = validationEnabled;
-    this.strictModeEnabled = strictModeEnabled;
-    this.wasiVersion = wasiVersion != null ? wasiVersion : WasiVersion.PREVIEW_1;
-    this.asyncOperations = asyncOperations;
-    this.maxAsyncOperations = maxAsyncOperations;
-    this.asyncOperationTimeout = asyncOperationTimeout;
+    super(
+        environment,
+        arguments,
+        preopenDirectories,
+        workingDirectory,
+        inheritEnvironment,
+        executionTimeout,
+        validationEnabled,
+        strictModeEnabled,
+        wasiVersion,
+        asyncOperations,
+        maxAsyncOperations,
+        asyncOperationTimeout);
   }
 
   @Override
-  public Map<String, String> getEnvironment() {
-    return environment;
-  }
-
-  @Override
-  public List<String> getArguments() {
-    return arguments;
-  }
-
-  @Override
-  public Map<String, Path> getPreopenDirectories() {
-    return preopenDirectories;
-  }
-
-  @Override
-  public Optional<String> getWorkingDirectory() {
-    return Optional.ofNullable(workingDirectory);
-  }
-
-  @Override
-  public Optional<Duration> getExecutionTimeout() {
-    return Optional.ofNullable(executionTimeout);
-  }
-
-  @Override
-  public boolean isValidationEnabled() {
-    return validationEnabled;
-  }
-
-  @Override
-  public boolean isStrictModeEnabled() {
-    return strictModeEnabled;
-  }
-
-  @Override
-  public WasiConfigBuilder toBuilder() {
-    final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
-    builder.withEnvironment(environment);
-    builder.withArguments(arguments);
-    builder.withPreopenDirectories(preopenDirectories);
-    if (workingDirectory != null) {
-      builder.withWorkingDirectory(workingDirectory);
-    }
-    if (inheritEnvironment) {
-      builder.inheritEnvironment();
-    }
-    if (executionTimeout != null) {
-      builder.withExecutionTimeout(executionTimeout);
-    }
-    builder.withValidation(validationEnabled);
-    builder.withStrictMode(strictModeEnabled);
-    builder.withWasiVersion(wasiVersion);
-    builder.withAsyncOperations(asyncOperations);
-    if (maxAsyncOperations != null) {
-      builder.withMaxAsyncOperations(maxAsyncOperations);
-    }
-    if (asyncOperationTimeout != null) {
-      builder.withAsyncOperationTimeout(asyncOperationTimeout);
-    }
-    return builder;
-  }
-
-  @Override
-  public WasiVersion getWasiVersion() {
-    return wasiVersion;
-  }
-
-  /**
-   * Returns whether async operations are enabled.
-   *
-   * @return true if async operations are enabled
-   */
-  public boolean isAsyncOperationsEnabled() {
-    return asyncOperations;
-  }
-
-  /**
-   * Returns the maximum number of concurrent async operations.
-   *
-   * @return the max async operations, or empty if not set
-   */
-  public Optional<Integer> getMaxAsyncOperations() {
-    return Optional.ofNullable(maxAsyncOperations);
-  }
-
-  /**
-   * Returns the timeout for async operations.
-   *
-   * @return the async operation timeout, or empty if not set
-   */
-  public Optional<Duration> getAsyncOperationTimeout() {
-    return Optional.ofNullable(asyncOperationTimeout);
-  }
-
-  /**
-   * Returns whether to inherit environment variables from host.
-   *
-   * @return true if host environment should be inherited
-   */
-  public boolean isInheritEnvironment() {
-    return inheritEnvironment;
-  }
-
-  @Override
-  public void validate() {
-    throw new UnsupportedOperationException("validate not yet implemented");
+  protected AbstractWasiConfigBuilder createBuilder() {
+    return new PanamaWasiConfigBuilder();
   }
 }
