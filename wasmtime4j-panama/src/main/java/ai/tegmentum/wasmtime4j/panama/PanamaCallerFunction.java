@@ -27,6 +27,7 @@ import ai.tegmentum.wasmtime4j.panama.util.PanamaTypeConverter;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -114,20 +115,25 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
       final int paramCount = params.length;
       final int resultCount = funcType.getReturnCount();
 
-      // Allocate memory for parameters and results using WASM_VAL layout
-      final long wasmValSize = MemoryLayouts.WASM_VAL.byteSize();
+      // Allocate memory using 20-byte FfiWasmValue layout (matching native Rust struct)
       final MemorySegment paramsSegment =
           paramCount > 0
-              ? arena.allocate(wasmValSize * paramCount, MemoryLayouts.WASM_VAL.byteAlignment())
+              ? arena.allocate(
+                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
+                  ValueLayout.JAVA_INT.byteAlignment())
               : MemorySegment.NULL;
       final MemorySegment resultsSegment =
           resultCount > 0
-              ? arena.allocate(wasmValSize * resultCount, MemoryLayouts.WASM_VAL.byteAlignment())
+              ? arena.allocate(
+                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * resultCount,
+                  ValueLayout.JAVA_INT.byteAlignment())
               : MemorySegment.NULL;
 
-      // Marshal parameters
+      // Marshal parameters using WasmValueMarshaller (correct 20-byte layout)
       if (paramCount > 0) {
-        PanamaTypeConverter.marshalParameters(params, paramsSegment);
+        for (int i = 0; i < paramCount; i++) {
+          WasmValueMarshaller.marshalWasmValue(params[i], paramsSegment, i, null);
+        }
       }
 
       // Call native function
@@ -140,9 +146,13 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
         throw PanamaErrorMapper.mapNativeError(result, "Function call failed for '" + name + "'");
       }
 
-      // Unmarshal results
+      // Unmarshal results using WasmValueMarshaller (correct 20-byte layout)
       if (resultCount > 0) {
-        return PanamaTypeConverter.unmarshalResults(resultsSegment, funcType.getReturnTypes());
+        final WasmValue[] results = new WasmValue[resultCount];
+        for (int i = 0; i < resultCount; i++) {
+          results[i] = WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, null);
+        }
+        return results;
       }
       return new WasmValue[0];
 
