@@ -8,7 +8,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -1109,8 +1109,8 @@ public final class PanamaStore implements Store {
       final ai.tegmentum.wasmtime4j.type.FunctionType functionType)
       throws WasmException {
     ensureNotClosed();
-    PanamaValidation.requireNonNull(implementation, "implementation");
-    PanamaValidation.requireNonNull(functionType, "functionType");
+    Validation.requireNonNull(implementation, "implementation");
+    Validation.requireNonNull(functionType, "functionType");
 
     return new PanamaFunctionReference(implementation, functionType, this, resourceManager);
   }
@@ -1119,7 +1119,7 @@ public final class PanamaStore implements Store {
   public ai.tegmentum.wasmtime4j.func.FunctionReference createFunctionReference(
       final ai.tegmentum.wasmtime4j.WasmFunction function) throws WasmException {
     ensureNotClosed();
-    PanamaValidation.requireNonNull(function, "function");
+    Validation.requireNonNull(function, "function");
 
     // Create a host function wrapper that delegates to the wasm function
     final ai.tegmentum.wasmtime4j.func.HostFunction wrapper = function::call;

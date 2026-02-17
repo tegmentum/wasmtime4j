@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.cli;
 
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.cli.WasiExit;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -73,7 +73,7 @@ public final class PanamaWasiExit implements WasiExit {
    * @throws IllegalArgumentException if context handle is null
    */
   public PanamaWasiExit(final MemorySegment contextHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.contextHandle = contextHandle;
     LOGGER.fine("Created Panama WASI exit");
   }

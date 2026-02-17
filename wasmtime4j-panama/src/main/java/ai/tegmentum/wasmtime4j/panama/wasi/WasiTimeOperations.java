@@ -3,7 +3,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi;
 import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.WasiClockId;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -83,8 +83,8 @@ public final class WasiTimeOperations {
    */
   public WasiTimeOperations(final WasiContext wasiContext, final SymbolLookup symbolLookup)
       throws PanamaException {
-    PanamaValidation.requireNonNull(wasiContext, "wasiContext");
-    PanamaValidation.requireNonNull(symbolLookup, "symbolLookup");
+    Validation.requireNonNull(wasiContext, "wasiContext");
+    Validation.requireNonNull(symbolLookup, "symbolLookup");
 
     this.wasiContext = wasiContext;
     this.symbolLookup = symbolLookup;
@@ -159,7 +159,7 @@ public final class WasiTimeOperations {
   public long getCurrentTime(final int clockId, final long precision)
       throws PanamaException, WasiException {
     validateClockId(clockId);
-    PanamaValidation.requireNonNegative(precision, "precision");
+    Validation.requireNonNegative(precision, "precision");
 
     try (final Arena arena = Arena.ofConfined()) {
       LOGGER.fine(

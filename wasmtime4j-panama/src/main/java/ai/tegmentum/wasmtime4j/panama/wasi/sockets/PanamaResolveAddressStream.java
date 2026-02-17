@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddress;
 import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address;
 import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address;
@@ -113,7 +113,7 @@ public final class PanamaResolveAddressStream implements ResolveAddressStream {
    * @throws IllegalArgumentException if context handle is null or stream handle is invalid
    */
   PanamaResolveAddressStream(final MemorySegment contextHandle, final long streamHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     if (streamHandle <= 0) {
       throw new IllegalArgumentException("Stream handle must be positive: " + streamHandle);
     }

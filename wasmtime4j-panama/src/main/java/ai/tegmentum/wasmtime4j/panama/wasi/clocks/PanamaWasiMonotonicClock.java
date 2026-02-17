@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.clocks;
 
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiMonotonicClock;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
@@ -120,7 +120,7 @@ public final class PanamaWasiMonotonicClock implements WasiMonotonicClock {
    * @throws IllegalArgumentException if context handle is null
    */
   public PanamaWasiMonotonicClock(final MemorySegment contextHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.contextHandle = contextHandle;
     LOGGER.fine("Created Panama WASI monotonic clock with context handle: " + contextHandle);
   }

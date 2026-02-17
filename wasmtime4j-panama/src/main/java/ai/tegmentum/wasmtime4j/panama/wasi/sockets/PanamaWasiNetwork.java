@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiNetwork;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -90,7 +90,7 @@ public final class PanamaWasiNetwork implements WasiNetwork {
    * @throws WasmException if network creation fails
    */
   public static PanamaWasiNetwork create(final MemorySegment contextHandle) throws WasmException {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
 
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outNetworkHandle = arena.allocate(ValueLayout.JAVA_LONG);
@@ -123,7 +123,7 @@ public final class PanamaWasiNetwork implements WasiNetwork {
    * @throws IllegalArgumentException if context handle is null or network handle is invalid
    */
   private PanamaWasiNetwork(final MemorySegment contextHandle, final long networkHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     if (networkHandle <= 0) {
       throw new IllegalArgumentException("Network handle must be positive: " + networkHandle);
     }

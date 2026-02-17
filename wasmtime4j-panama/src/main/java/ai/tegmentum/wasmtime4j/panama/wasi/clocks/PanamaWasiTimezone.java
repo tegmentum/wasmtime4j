@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.clocks;
 
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
 import ai.tegmentum.wasmtime4j.wasi.clocks.TimezoneDisplay;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiTimezone;
@@ -113,7 +113,7 @@ public final class PanamaWasiTimezone implements WasiTimezone {
    * @throws IllegalArgumentException if context handle is null
    */
   public PanamaWasiTimezone(final MemorySegment contextHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.contextHandle = contextHandle;
     LOGGER.fine("Created Panama WASI timezone with context handle: " + contextHandle);
   }

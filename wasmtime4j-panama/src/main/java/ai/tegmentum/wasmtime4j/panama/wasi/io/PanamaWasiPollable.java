@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.io;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -98,8 +98,8 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
    * @throws IllegalArgumentException if either handle is null
    */
   public PanamaWasiPollable(final MemorySegment contextHandle, final MemorySegment pollableHandle) {
-    PanamaValidation.requireNonNull(pollableHandle, "pollableHandle");
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(pollableHandle, "pollableHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.nativeHandle = pollableHandle;
     this.contextHandle = contextHandle;
 

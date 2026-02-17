@@ -19,6 +19,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.lang.foreign.MemorySegment;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -157,7 +158,7 @@ public final class PanamaComponent {
 
       // Parameter validation with defensive programming
       Objects.requireNonNull(wasmBytes, "WebAssembly bytes cannot be null");
-      PanamaValidation.requirePositive(wasmBytes.length, "wasmBytes.length");
+      Validation.requirePositive(wasmBytes.length, "wasmBytes.length");
 
       try {
         // Allocate memory segment for WASM bytes with zero-copy approach
@@ -387,7 +388,7 @@ public final class PanamaComponent {
      */
     public boolean exportsInterface(final String interfaceName) throws WasmException {
       Objects.requireNonNull(interfaceName, "Interface name cannot be null");
-      PanamaValidation.requireNonEmpty(interfaceName, "interfaceName");
+      Validation.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
 
       try {
@@ -406,7 +407,7 @@ public final class PanamaComponent {
      */
     public boolean importsInterface(final String interfaceName) throws WasmException {
       Objects.requireNonNull(interfaceName, "Interface name cannot be null");
-      PanamaValidation.requireNonEmpty(interfaceName, "interfaceName");
+      Validation.requireNonEmpty(interfaceName, "interfaceName");
       ensureNotClosed();
 
       try {

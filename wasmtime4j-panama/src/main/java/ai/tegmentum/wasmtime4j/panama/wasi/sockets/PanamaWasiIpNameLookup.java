@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddressFamily;
 import ai.tegmentum.wasmtime4j.wasi.sockets.ResolveAddressStream;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiIpNameLookup;
@@ -85,7 +85,7 @@ public final class PanamaWasiIpNameLookup implements WasiIpNameLookup {
    * @throws IllegalArgumentException if context handle is null
    */
   public PanamaWasiIpNameLookup(final MemorySegment contextHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.contextHandle = contextHandle;
     LOGGER.fine("Created Panama WASI IP name lookup with context handle: " + contextHandle);
   }

@@ -22,7 +22,7 @@ import ai.tegmentum.wasmtime4j.experimental.DefaultExceptionTag;
 import ai.tegmentum.wasmtime4j.experimental.ExceptionHandler;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -258,9 +258,9 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
   @Override
   public ExceptionTag createExceptionTag(
       final String name, final List<WasmValueType> parameterTypes) {
-    PanamaValidation.requireNonNull(name, "Exception tag name");
-    PanamaValidation.requireNonNull(parameterTypes, "Parameter types");
-    PanamaValidation.requireNonBlank(name, "Exception tag name");
+    Validation.requireNonNull(name, "Exception tag name");
+    Validation.requireNonNull(parameterTypes, "Parameter types");
+    Validation.requireNonBlank(name, "Exception tag name");
     ensureNotClosed();
 
     if (tagsByName.containsKey(name)) {

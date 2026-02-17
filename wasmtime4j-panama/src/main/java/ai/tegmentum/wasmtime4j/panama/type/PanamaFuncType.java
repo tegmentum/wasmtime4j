@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.foreign.Arena;
@@ -41,9 +42,9 @@ public final class PanamaFuncType implements FuncType {
       final List<WasmValueType> results,
       final Arena arena,
       final MemorySegment nativeHandle) {
-    PanamaValidation.requireNonNull(params, "params");
-    PanamaValidation.requireNonNull(results, "results");
-    PanamaValidation.requireNonNull(arena, "arena");
+    Validation.requireNonNull(params, "params");
+    Validation.requireNonNull(results, "results");
+    Validation.requireNonNull(arena, "arena");
     PanamaValidation.requireValidHandle(nativeHandle, "nativeHandle");
 
     // Validate that all parameter and result types are non-null
@@ -78,8 +79,8 @@ public final class PanamaFuncType implements FuncType {
    */
   public static PanamaFuncType of(
       final List<WasmValueType> params, final List<WasmValueType> results) {
-    PanamaValidation.requireNonNull(params, "params");
-    PanamaValidation.requireNonNull(results, "results");
+    Validation.requireNonNull(params, "params");
+    Validation.requireNonNull(results, "results");
 
     // Validate that all parameter and result types are non-null
     for (int i = 0; i < params.size(); i++) {
@@ -139,7 +140,7 @@ public final class PanamaFuncType implements FuncType {
    */
   public static PanamaFuncType fromNative(final MemorySegment nativeHandle, final Arena arena) {
     PanamaValidation.requireValidHandle(nativeHandle, "nativeHandle");
-    PanamaValidation.requireNonNull(arena, "arena");
+    Validation.requireNonNull(arena, "arena");
 
     // First, get the counts
     final MemorySegment countSegment = arena.allocate(16); // 2 longs * 8 bytes

@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.io;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
@@ -197,8 +197,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
    */
   public PanamaWasiOutputStream(
       final MemorySegment contextHandle, final MemorySegment streamHandle) {
-    PanamaValidation.requireNonNull(streamHandle, "streamHandle");
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(streamHandle, "streamHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.nativeHandle = streamHandle;
     this.contextHandle = contextHandle;
 
@@ -366,7 +366,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
 
   @Override
   public void writeZeroes(final long length) throws WasmException {
-    PanamaValidation.requireNonNegative(length, "length");
+    Validation.requireNonNegative(length, "length");
     try {
       ensureNotClosed();
     } catch (final IllegalStateException e) {
@@ -389,7 +389,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
 
   @Override
   public void blockingWriteZeroesAndFlush(final long length) throws WasmException {
-    PanamaValidation.requireNonNegative(length, "length");
+    Validation.requireNonNegative(length, "length");
     try {
       ensureNotClosed();
     } catch (final IllegalStateException e) {
@@ -417,7 +417,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     if (source == null) {
       throw new IllegalArgumentException("Source stream cannot be null");
     }
-    PanamaValidation.requireNonNegative(length, "length");
+    Validation.requireNonNegative(length, "length");
     try {
       ensureNotClosed();
     } catch (final IllegalStateException e) {
@@ -465,7 +465,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     if (source == null) {
       throw new IllegalArgumentException("Source stream cannot be null");
     }
-    PanamaValidation.requireNonNegative(length, "length");
+    Validation.requireNonNegative(length, "length");
     try {
       ensureNotClosed();
     } catch (final IllegalStateException e) {

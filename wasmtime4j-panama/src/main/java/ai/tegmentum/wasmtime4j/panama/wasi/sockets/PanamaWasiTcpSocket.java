@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiInputStream;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiOutputStream;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiPollable;
@@ -398,7 +398,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
    */
   public static PanamaWasiTcpSocket create(
       final MemorySegment contextHandle, final IpAddressFamily addressFamily) throws WasmException {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     if (addressFamily == null) {
       throw new IllegalArgumentException("Address family cannot be null");
     }
@@ -437,7 +437,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
    * @throws IllegalArgumentException if context handle is null or socket handle is invalid
    */
   PanamaWasiTcpSocket(final MemorySegment contextHandle, final long socketHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     if (socketHandle <= 0) {
       throw new IllegalArgumentException("Socket handle must be positive: " + socketHandle);
     }

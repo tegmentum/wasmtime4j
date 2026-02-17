@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.foreign.Arena;
@@ -42,7 +43,7 @@ public final class PanamaTableType implements TableType {
       final Long maximum,
       final Arena arena,
       final MemorySegment nativeHandle) {
-    PanamaValidation.requireNonNull(elementType, "elementType");
+    Validation.requireNonNull(elementType, "elementType");
     if (minimum < 0) {
       throw new IllegalArgumentException("Minimum element count cannot be negative: " + minimum);
     }
@@ -54,7 +55,7 @@ public final class PanamaTableType implements TableType {
       throw new IllegalArgumentException(
           "Table element type must be a reference type: " + elementType);
     }
-    PanamaValidation.requireNonNull(arena, "arena");
+    Validation.requireNonNull(arena, "arena");
     PanamaValidation.requireValidHandle(nativeHandle, "nativeHandle");
 
     this.elementType = elementType;
@@ -81,7 +82,7 @@ public final class PanamaTableType implements TableType {
    */
   public static PanamaTableType of(
       final WasmValueType elementType, final long minimum, final Long maximum) {
-    PanamaValidation.requireNonNull(elementType, "elementType");
+    Validation.requireNonNull(elementType, "elementType");
     if (minimum < 0) {
       throw new IllegalArgumentException("Minimum element count cannot be negative: " + minimum);
     }
@@ -126,7 +127,7 @@ public final class PanamaTableType implements TableType {
    */
   public static PanamaTableType fromNative(final MemorySegment nativeHandle, final Arena arena) {
     PanamaValidation.requireValidHandle(nativeHandle, "nativeHandle");
-    PanamaValidation.requireNonNull(arena, "arena");
+    Validation.requireNonNull(arena, "arena");
 
     // Allocate memory for the type info result
     final MemorySegment typeInfoSegment = arena.allocate(24); // 3 longs * 8 bytes

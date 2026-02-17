@@ -24,6 +24,7 @@ import ai.tegmentum.wasmtime4j.panama.PanamaFunctionReference;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.util.logging.Logger;
@@ -59,7 +60,7 @@ public final class PanamaTypeConverter {
    * @throws PanamaException if type is null or unsupported
    */
   public static int wasmTypeToNative(final WasmValueType type) throws PanamaException {
-    PanamaValidation.requireNonNull(type, "type");
+    Validation.requireNonNull(type, "type");
     switch (type) {
       case I32:
         return MemoryLayouts.WASM_I32;
@@ -109,8 +110,8 @@ public final class PanamaTypeConverter {
    */
   public static void marshalWasmValue(final WasmValue wasmValue, final MemorySegment valueSlot)
       throws PanamaException {
-    PanamaValidation.requireNonNull(wasmValue, "wasmValue");
-    PanamaValidation.requireNonNull(valueSlot, "valueSlot");
+    Validation.requireNonNull(wasmValue, "wasmValue");
+    Validation.requireNonNull(valueSlot, "valueSlot");
 
     final int nativeType = wasmTypeToNative(wasmValue.getType());
     MemoryLayouts.WASM_VAL_KIND.set(valueSlot, 0L, nativeType);
@@ -163,8 +164,8 @@ public final class PanamaTypeConverter {
    */
   public static WasmValue unmarshalWasmValue(
       final MemorySegment valueSlot, final WasmValueType expectedType) throws PanamaException {
-    PanamaValidation.requireNonNull(valueSlot, "valueSlot");
-    PanamaValidation.requireNonNull(expectedType, "expectedType");
+    Validation.requireNonNull(valueSlot, "valueSlot");
+    Validation.requireNonNull(expectedType, "expectedType");
 
     final int actualNativeType = (Integer) MemoryLayouts.WASM_VAL_KIND.get(valueSlot, 0L);
     final int expectedNativeType = wasmTypeToNative(expectedType);
@@ -205,8 +206,8 @@ public final class PanamaTypeConverter {
    */
   public static void marshalParameters(final WasmValue[] values, final MemorySegment paramsMemory)
       throws PanamaException {
-    PanamaValidation.requireNonNull(values, "values");
-    PanamaValidation.requireNonNull(paramsMemory, "paramsMemory");
+    Validation.requireNonNull(values, "values");
+    Validation.requireNonNull(paramsMemory, "paramsMemory");
 
     for (int i = 0; i < values.length; i++) {
       if (values[i] == null) {
@@ -230,8 +231,8 @@ public final class PanamaTypeConverter {
   public static WasmValue[] unmarshalResults(
       final MemorySegment resultsMemory, final WasmValueType[] expectedTypes)
       throws PanamaException {
-    PanamaValidation.requireNonNull(resultsMemory, "resultsMemory");
-    PanamaValidation.requireNonNull(expectedTypes, "expectedTypes");
+    Validation.requireNonNull(resultsMemory, "resultsMemory");
+    Validation.requireNonNull(expectedTypes, "expectedTypes");
 
     final WasmValue[] results = new WasmValue[expectedTypes.length];
     for (int i = 0; i < expectedTypes.length; i++) {
@@ -282,7 +283,7 @@ public final class PanamaTypeConverter {
    */
   public static int[][] functionTypeToNative(final FunctionType functionType)
       throws PanamaException {
-    PanamaValidation.requireNonNull(functionType, "functionType");
+    Validation.requireNonNull(functionType, "functionType");
 
     final WasmValueType[] paramTypes = functionType.getParamTypes();
     final WasmValueType[] returnTypes = functionType.getReturnTypes();
@@ -310,8 +311,8 @@ public final class PanamaTypeConverter {
    */
   public static FunctionType nativeToFunctionType(
       final int[] nativeParamTypes, final int[] nativeReturnTypes) throws PanamaException {
-    PanamaValidation.requireNonNull(nativeParamTypes, "nativeParamTypes");
-    PanamaValidation.requireNonNull(nativeReturnTypes, "nativeReturnTypes");
+    Validation.requireNonNull(nativeParamTypes, "nativeParamTypes");
+    Validation.requireNonNull(nativeReturnTypes, "nativeReturnTypes");
 
     final WasmValueType[] paramTypes = new WasmValueType[nativeParamTypes.length];
     for (int i = 0; i < nativeParamTypes.length; i++) {
@@ -346,7 +347,7 @@ public final class PanamaTypeConverter {
    * @throws PanamaException if any reference type is invalid
    */
   public static void validateReferenceTypes(final WasmValue[] values) throws PanamaException {
-    PanamaValidation.requireNonNull(values, "values");
+    Validation.requireNonNull(values, "values");
 
     for (int i = 0; i < values.length; i++) {
       final WasmValue value = values[i];

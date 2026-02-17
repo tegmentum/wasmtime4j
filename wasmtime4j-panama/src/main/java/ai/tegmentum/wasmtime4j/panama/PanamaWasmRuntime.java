@@ -33,7 +33,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
@@ -128,15 +128,15 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Engine createEngine(final EngineConfig config) throws WasmException {
-    PanamaValidation.requireNonNull(config, "config");
+    Validation.requireNonNull(config, "config");
     ensureNotClosed();
     return new PanamaEngine(config, this);
   }
 
   @Override
   public Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
-    PanamaValidation.requireNonNull(wasmBytes, "wasmBytes");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(wasmBytes, "wasmBytes");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -149,8 +149,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Module compileModuleWat(final Engine engine, final String watText) throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
-    PanamaValidation.requireNonNull(watText, "watText");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(watText, "watText");
 
     if (watText.trim().isEmpty()) {
       throw new WasmException("WAT text cannot be empty");
@@ -168,7 +168,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Store createStore(final Engine engine) throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(engine, "engine");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -186,7 +186,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       final long memoryLimitBytes,
       final long executionTimeoutSeconds)
       throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(engine, "engine");
 
     if (fuelLimit < 0) {
       throw new IllegalArgumentException("Fuel limit cannot be negative");
@@ -211,8 +211,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Store createStore(final Engine engine, final StoreLimits limits) throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
-    PanamaValidation.requireNonNull(limits, "limits");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(limits, "limits");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -226,8 +226,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Tag createTag(final Store store, final TagType tagType) throws WasmException {
-    PanamaValidation.requireNonNull(store, "store");
-    PanamaValidation.requireNonNull(tagType, "tagType");
+    Validation.requireNonNull(store, "store");
+    Validation.requireNonNull(tagType, "tagType");
     ensureNotClosed();
 
     if (!(store instanceof PanamaStore)) {
@@ -263,7 +263,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public <T> Linker<T> createLinker(final Engine engine) throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(engine, "engine");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -278,7 +278,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public <T> Linker<T> createLinker(
       final Engine engine, final boolean allowUnknownExports, final boolean allowShadowing)
       throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(engine, "engine");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -295,7 +295,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public <T> ai.tegmentum.wasmtime4j.component.ComponentLinker<T> createComponentLinker(
       final Engine engine) throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(engine, "engine");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -309,7 +309,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Instance instantiate(final Module module) throws WasmException {
-    PanamaValidation.requireNonNull(module, "module");
+    Validation.requireNonNull(module, "module");
     ensureNotClosed();
 
     if (!(module instanceof PanamaModule)) {
@@ -326,8 +326,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Instance instantiate(final Module module, final ImportMap imports) throws WasmException {
-    PanamaValidation.requireNonNull(module, "module");
-    PanamaValidation.requireNonNull(imports, "imports");
+    Validation.requireNonNull(module, "module");
+    Validation.requireNonNull(imports, "imports");
     ensureNotClosed();
 
     if (!(module instanceof PanamaModule)) {
@@ -350,7 +350,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public ComponentEngine createComponentEngine(final ComponentEngineConfig config)
       throws WasmException {
-    PanamaValidation.requireNonNull(config, "config");
+    Validation.requireNonNull(config, "config");
     ensureNotClosed();
 
     LOGGER.fine("Creating component engine with config: " + config);
@@ -376,8 +376,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public Module deserializeModule(final Engine engine, final byte[] serializedBytes)
       throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
-    PanamaValidation.requireNonNull(serializedBytes, "serializedBytes");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(serializedBytes, "serializedBytes");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -431,8 +431,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public void addWasiToLinker(final Linker<WasiContext> linker, final WasiContext context)
       throws WasmException {
-    PanamaValidation.requireNonNull(linker, "linker");
-    PanamaValidation.requireNonNull(context, "context");
+    Validation.requireNonNull(linker, "linker");
+    Validation.requireNonNull(context, "context");
     ensureNotClosed();
 
     // Cast to Panama implementation to access enableWasi()
@@ -469,8 +469,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public void addWasiPreview2ToLinker(final Linker<WasiContext> linker, final WasiContext context)
       throws WasmException {
-    PanamaValidation.requireNonNull(linker, "linker");
-    PanamaValidation.requireNonNull(context, "context");
+    Validation.requireNonNull(linker, "linker");
+    Validation.requireNonNull(context, "context");
     ensureNotClosed();
 
     if (!(linker instanceof PanamaLinker)) {
@@ -500,7 +500,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public void addComponentModelToLinker(final Linker<WasiContext> linker) throws WasmException {
-    PanamaValidation.requireNonNull(linker, "linker");
+    Validation.requireNonNull(linker, "linker");
     ensureNotClosed();
 
     if (!(linker instanceof PanamaLinker)) {
@@ -519,7 +519,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(final Engine engine)
       throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(engine, "engine");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -539,8 +539,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(
       final Engine engine, final ai.tegmentum.wasmtime4j.wasi.WasiConfig config)
       throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
-    PanamaValidation.requireNonNull(config, "config");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(config, "config");
     ensureNotClosed();
 
     if (!(engine instanceof PanamaEngine)) {
@@ -589,8 +589,8 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Module deserializeModuleFile(final Engine engine, final Path path) throws WasmException {
-    PanamaValidation.requireNonNull(engine, "engine");
-    PanamaValidation.requireNonNull(path, "path");
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(path, "path");
     ensureNotClosed();
 
     try {

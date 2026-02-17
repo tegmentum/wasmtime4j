@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.panama.util;
 
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.lang.foreign.SymbolLookup;
 import java.lang.ref.Cleaner;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -93,10 +94,10 @@ public final class NativeResourceHandle implements AutoCloseable {
       final CleanupAction closeAction,
       final Object safetyNetOwner,
       final Runnable safetyNetAction) {
-    PanamaValidation.requireNonNull(resourceType, "resourceType");
-    PanamaValidation.requireNonNull(closeAction, "closeAction");
-    PanamaValidation.requireNonNull(safetyNetOwner, "safetyNetOwner");
-    PanamaValidation.requireNonNull(safetyNetAction, "safetyNetAction");
+    Validation.requireNonNull(resourceType, "resourceType");
+    Validation.requireNonNull(closeAction, "closeAction");
+    Validation.requireNonNull(safetyNetOwner, "safetyNetOwner");
+    Validation.requireNonNull(safetyNetAction, "safetyNetAction");
 
     this.resourceType = resourceType;
 
@@ -129,8 +130,8 @@ public final class NativeResourceHandle implements AutoCloseable {
    * @param closeAction the cleanup action to run on explicit close
    */
   public NativeResourceHandle(final String resourceType, final CleanupAction closeAction) {
-    PanamaValidation.requireNonNull(resourceType, "resourceType");
-    PanamaValidation.requireNonNull(closeAction, "closeAction");
+    Validation.requireNonNull(resourceType, "resourceType");
+    Validation.requireNonNull(closeAction, "closeAction");
 
     this.resourceType = resourceType;
     this.closeAction = closeAction;

@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama.type;
 
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.foreign.Arena;
@@ -85,7 +86,7 @@ public final class PanamaMemoryType implements MemoryType {
       throw new IllegalArgumentException(
           "Maximum page count cannot be less than minimum: " + maximum + " < " + minimum);
     }
-    PanamaValidation.requireNonNull(arena, "arena");
+    Validation.requireNonNull(arena, "arena");
     PanamaValidation.requireValidHandle(nativeHandle, "nativeHandle");
 
     this.minimum = minimum;
@@ -111,7 +112,7 @@ public final class PanamaMemoryType implements MemoryType {
    */
   public static PanamaMemoryType fromNative(final MemorySegment nativeHandle, final Arena arena) {
     PanamaValidation.requireValidHandle(nativeHandle, "nativeHandle");
-    PanamaValidation.requireNonNull(arena, "arena");
+    Validation.requireNonNull(arena, "arena");
 
     // Allocate memory for the type info result
     final MemorySegment typeInfoSegment = arena.allocate(32); // 4 longs * 8 bytes

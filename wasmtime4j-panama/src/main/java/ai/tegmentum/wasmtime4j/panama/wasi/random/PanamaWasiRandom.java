@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.random;
 
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.random.WasiRandom;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -100,7 +100,7 @@ public final class PanamaWasiRandom implements WasiRandom {
    * @throws IllegalArgumentException if context handle is null
    */
   public PanamaWasiRandom(final MemorySegment contextHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.contextHandle = contextHandle;
     LOGGER.fine("Created Panama WASI random with context handle: " + contextHandle);
   }

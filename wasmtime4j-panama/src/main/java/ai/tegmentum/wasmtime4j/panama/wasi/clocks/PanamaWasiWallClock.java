@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.clocks;
 
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiWallClock;
 import java.lang.foreign.Arena;
@@ -100,7 +100,7 @@ public final class PanamaWasiWallClock implements WasiWallClock {
    * @throws IllegalArgumentException if context handle is null
    */
   public PanamaWasiWallClock(final MemorySegment contextHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.contextHandle = contextHandle;
     LOGGER.fine("Created Panama WASI wall clock with context handle: " + contextHandle);
   }

@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.cli;
 
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.cli.WasiEnvironment;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -121,7 +121,7 @@ public final class PanamaWasiEnvironment implements WasiEnvironment {
    * @throws IllegalArgumentException if context handle is null
    */
   public PanamaWasiEnvironment(final MemorySegment contextHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.contextHandle = contextHandle;
     LOGGER.fine("Created Panama WASI environment");
   }

@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j.panama.wasi.io;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import java.lang.foreign.Arena;
@@ -131,8 +131,8 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
    */
   public PanamaWasiInputStream(
       final MemorySegment contextHandle, final MemorySegment streamHandle) {
-    PanamaValidation.requireNonNull(streamHandle, "streamHandle");
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(streamHandle, "streamHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.nativeHandle = streamHandle;
     this.contextHandle = contextHandle;
 
@@ -167,7 +167,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
 
   @Override
   public byte[] read(final long length) throws WasmException {
-    PanamaValidation.requirePositive(length, "length");
+    Validation.requirePositive(length, "length");
     try {
       ensureNotClosed();
     } catch (final IllegalStateException e) {
@@ -203,7 +203,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
 
   @Override
   public byte[] blockingRead(final long length) throws WasmException {
-    PanamaValidation.requirePositive(length, "length");
+    Validation.requirePositive(length, "length");
     try {
       ensureNotClosed();
     } catch (final IllegalStateException e) {
@@ -239,7 +239,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
 
   @Override
   public long skip(final long length) throws WasmException {
-    PanamaValidation.requirePositive(length, "length");
+    Validation.requirePositive(length, "length");
     try {
       ensureNotClosed();
     } catch (final IllegalStateException e) {
@@ -271,7 +271,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
 
   @Override
   public long blockingSkip(final long length) throws WasmException {
-    PanamaValidation.requirePositive(length, "length");
+    Validation.requirePositive(length, "length");
     try {
       ensureNotClosed();
     } catch (final IllegalStateException e) {

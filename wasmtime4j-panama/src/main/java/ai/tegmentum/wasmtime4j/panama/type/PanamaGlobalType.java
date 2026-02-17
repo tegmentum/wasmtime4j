@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.panama.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.foreign.Arena;
@@ -38,10 +39,10 @@ public final class PanamaGlobalType implements GlobalType {
       final boolean isMutable,
       final Arena arena,
       final MemorySegment nativeHandle) {
-    PanamaValidation.requireNonNull(valueType, "valueType");
-    PanamaValidation.requireNonNull(arena, "arena");
+    Validation.requireNonNull(valueType, "valueType");
+    Validation.requireNonNull(arena, "arena");
     // Allow NULL native handle for type descriptors parsed from JSON
-    PanamaValidation.requireNonNull(nativeHandle, "nativeHandle");
+    Validation.requireNonNull(nativeHandle, "nativeHandle");
 
     this.valueType = valueType;
     this.isMutable = isMutable;
@@ -63,7 +64,7 @@ public final class PanamaGlobalType implements GlobalType {
    * @return the PanamaGlobalType instance
    */
   public static PanamaGlobalType of(final WasmValueType valueType, final boolean isMutable) {
-    PanamaValidation.requireNonNull(valueType, "valueType");
+    Validation.requireNonNull(valueType, "valueType");
     return new PanamaGlobalType(valueType, isMutable);
   }
 
@@ -95,7 +96,7 @@ public final class PanamaGlobalType implements GlobalType {
    */
   public static PanamaGlobalType fromNative(final MemorySegment nativeHandle, final Arena arena) {
     PanamaValidation.requireValidHandle(nativeHandle, "nativeHandle");
-    PanamaValidation.requireNonNull(arena, "arena");
+    Validation.requireNonNull(arena, "arena");
 
     // Allocate memory for the type info result
     final MemorySegment typeInfoSegment = arena.allocate(16); // 2 longs * 8 bytes

@@ -17,7 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.cli;
 
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiInputStream;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiOutputStream;
 import ai.tegmentum.wasmtime4j.wasi.cli.WasiStdio;
@@ -94,7 +94,7 @@ public final class PanamaWasiStdio implements WasiStdio {
    * @throws IllegalArgumentException if context handle is null
    */
   public PanamaWasiStdio(final MemorySegment contextHandle) {
-    PanamaValidation.requireNonNull(contextHandle, "contextHandle");
+    Validation.requireNonNull(contextHandle, "contextHandle");
     this.contextHandle = contextHandle;
     LOGGER.fine("Created Panama WASI stdio");
   }
