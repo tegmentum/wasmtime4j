@@ -90,8 +90,8 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have exactly 1 result");
-      assertEquals(42, results[0].asInt(), "10 + 32 should equal 42");
-      LOGGER.info("[" + runtime + "] callUnchecked i32 result: " + results[0].asInt());
+      assertEquals(42, results[0].asI32(), "10 + 32 should equal 42");
+      LOGGER.info("[" + runtime + "] callUnchecked i32 result: " + results[0].asI32());
 
       instance.close();
       module.close();
@@ -118,8 +118,8 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have exactly 1 result");
-      assertEquals(Long.MAX_VALUE, results[0].asLong(), "MAX_VALUE + 0 should equal MAX_VALUE");
-      LOGGER.info("[" + runtime + "] callUnchecked i64 result: " + results[0].asLong());
+      assertEquals(Long.MAX_VALUE, results[0].asI64(), "MAX_VALUE + 0 should equal MAX_VALUE");
+      LOGGER.info("[" + runtime + "] callUnchecked i64 result: " + results[0].asI64());
 
       instance.close();
       module.close();
@@ -146,8 +146,8 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have exactly 1 result");
-      assertEquals(21.0f, results[0].asFloat(), 0.001f, "3.0 * 7.0 should equal 21.0");
-      LOGGER.info("[" + runtime + "] callUnchecked f32 result: " + results[0].asFloat());
+      assertEquals(21.0f, results[0].asF32(), 0.001f, "3.0 * 7.0 should equal 21.0");
+      LOGGER.info("[" + runtime + "] callUnchecked f32 result: " + results[0].asF32());
 
       instance.close();
       module.close();
@@ -174,8 +174,8 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have exactly 1 result");
-      assertEquals(22.0 / 7.0, results[0].asDouble(), 1e-10, "22.0 / 7.0 should be approximately pi");
-      LOGGER.info("[" + runtime + "] callUnchecked f64 result: " + results[0].asDouble());
+      assertEquals(22.0 / 7.0, results[0].asF64(), 1e-10, "22.0 / 7.0 should be approximately pi");
+      LOGGER.info("[" + runtime + "] callUnchecked f64 result: " + results[0].asF64());
 
       instance.close();
       module.close();
@@ -202,15 +202,15 @@ public class ValRawCallUncheckedTest extends DualRuntimeTest {
 
       assertNotNull(results, "Results should not be null");
       assertEquals(2, results.length, "Should have exactly 2 results");
-      assertEquals(42, results[0].asInt(), "First result should be 42");
-      assertEquals(9999L, results[1].asLong(), "Second result should be 9999");
+      assertEquals(42, results[0].asI32(), "First result should be 42");
+      assertEquals(9999L, results[1].asI64(), "Second result should be 9999");
       LOGGER.info(
           "["
               + runtime
               + "] callUnchecked multi-return: "
-              + results[0].asInt()
+              + results[0].asI32()
               + ", "
-              + results[1].asLong());
+              + results[1].asI64());
 
       instance.close();
       module.close();
