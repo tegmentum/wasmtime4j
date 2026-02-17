@@ -22,15 +22,14 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * <p>This class provides a comprehensive solution for loading native libraries in Java applications
  * with automatic platform detection, secure resource extraction, and flexible configuration
  * options. It serves as a high-level facade over the underlying {@link NativeLibraryUtils} while
- * providing additional features like security levels, resource path conventions, and fallback
+ * providing additional features like resource path conventions and fallback
  * strategies.
  *
  * <p><strong>Key Features:</strong>
  *
  * <ul>
  *   <li>Automatic platform detection (Linux, Windows, macOS on x86_64 and ARM64)
- *   <li>Multiple security levels with comprehensive validation
- *   <li>Flexible resource path conventions (Maven, Gradle, custom patterns)
+ *   <li>Flexible resource path conventions (Maven, custom patterns)
  *   <li>Thread-safe operations with immutable configurations
  *   <li>Comprehensive error reporting and debugging information
  *   <li>Zero external dependencies (Java 8+ compatible)
@@ -42,8 +41,8 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * // Load with default configuration - tries system path first, then extracts from JAR
  * LibraryLoadInfo info = NativeLoader.loadLibrary("wasmtime4j");
  *
- * if (info.isLoadedSuccessfully()) {
- *     System.out.println("Library loaded from: " + info.getLoadedFromPath());
+ * if (info.isSuccessful()) {
+ *     System.out.println("Library loaded from: " + info.getExtractedPath());
  * } else {
  *     System.err.println("Failed to load: " + info.getErrorMessage());
  * }
@@ -55,11 +54,10 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * <p><strong>Advanced Configuration Examples:</strong>
  *
  * <pre>{@code
- * // Custom security and path configuration
+ * // Custom path configuration
  * LibraryLoadInfo info = NativeLoader.builder()
  *     .libraryName("mylib")
  *     .tempFilePrefix("mylib-native-")
- *     .securityLevel(SecurityLevel.STRICT)
  *     .pathConvention(PathConvention.MAVEN_NATIVE)
  *     .load();
  *
@@ -68,7 +66,7 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  *     .libraryName("mylib")
  *     .conventionPriority(
  *         PathConvention.MAVEN_NATIVE,
- *         PathConvention.GRADLE_NATIVE,
+ *         PathConvention.JNA,
  *         PathConvention.WASMTIME4J
  *     )
  *     .load();
@@ -77,7 +75,6 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * LibraryLoadInfo info3 = NativeLoader.builder()
  *     .libraryName("mylib")
  *     .customPathPattern("/native-libs/{platform}/{lib}{name}{ext}")
- *     .securityLevel(SecurityLevel.MODERATE)
  *     .load();
  * }</pre>
  *
@@ -90,10 +87,9 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  *     LibraryLoadInfo info = NativeLoader.builder()
  *         .libraryName("myframework-native")
  *         .tempFilePrefix("myapp-")
- *         .securityLevel(SecurityLevel.MODERATE)
  *         .load();
  *
- *     if (!info.isLoadedSuccessfully()) {
+ *     if (!info.isSuccessful()) {
  *         throw new RuntimeException("Native library initialization failed: " +
  *             info.getErrorMessage());
  *     }
@@ -103,7 +99,7 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * public void loadWithDiagnostics(String libraryName) {
  *     LibraryLoadInfo info = NativeLoader.loadLibrary(libraryName);
  *
- *     if (!info.isLoadedSuccessfully()) {
+ *     if (!info.isSuccessful()) {
  *         System.err.println("Library loading failed:");
  *         System.err.println("  Library: " + info.getLibraryName());
  *         System.err.println("  Platform: " + info.getPlatformInfo().getPlatform());
@@ -144,7 +140,6 @@ public final class NativeLoader {
    * <p>This convenience method uses default settings suitable for most applications:
    *
    * <ul>
-   *   <li>Security level: MODERATE (balanced security and compatibility)
    *   <li>Path convention: WASMTIME4J ({@code /native/{platform}/{lib}{name}{ext}})
    *   <li>Temporary file prefix: "wasmtime4j-native-"
    *   <li>Loading strategy: System path first, then JAR extraction
@@ -165,9 +160,9 @@ public final class NativeLoader {
    * <pre>{@code
    * // Simple loading with error checking
    * LibraryLoadInfo info = NativeLoader.loadLibrary("mylib");
-   * if (info.isLoadedSuccessfully()) {
+   * if (info.isSuccessful()) {
    *     // Library is ready for use
-   *     System.out.println("Loaded from: " + info.getLoadedFromPath());
+   *     System.out.println("Loaded from: " + info.getExtractedPath());
    * } else {
    *     throw new RuntimeException("Failed to load mylib: " + info.getErrorMessage());
    * }
@@ -191,7 +186,6 @@ public final class NativeLoader {
    * <p>The builder provides comprehensive configuration options for specialized loading scenarios:
    *
    * <ul>
-   *   <li>Custom security levels (STRICT, MODERATE, PERMISSIVE)
    *   <li>Multiple path conventions with fallback priority
    *   <li>Custom path patterns with placeholder substitution
    *   <li>Configurable temporary file naming and cleanup
@@ -202,7 +196,6 @@ public final class NativeLoader {
    * <ul>
    *   <li>Library name: "wasmtime4j" (must be changed via {@link
    *       NativeLoaderBuilder#libraryName(String)})
-   *   <li>Security level: {@link NativeLoaderBuilder.SecurityLevel#MODERATE MODERATE}
    *   <li>Path convention: {@link PathConvention#WASMTIME4J WASMTIME4J}
    *   <li>Temp file prefix: "wasmtime4j-native-"
    *   <li>Temp dir suffix: "-wasmtime4j"
@@ -216,19 +209,12 @@ public final class NativeLoader {
    *     .libraryName("mylib")
    *     .load();
    *
-   * // High security configuration
-   * LibraryLoadInfo info = NativeLoader.builder()
-   *     .libraryName("mylib")
-   *     .securityLevel(SecurityLevel.STRICT)
-   *     .tempFilePrefix("secure-mylib-")
-   *     .load();
-   *
    * // Multiple fallback paths
    * LibraryLoadInfo info = NativeLoader.builder()
    *     .libraryName("mylib")
    *     .conventionPriority(
    *         PathConvention.MAVEN_NATIVE,
-   *         PathConvention.GRADLE_NATIVE
+   *         PathConvention.JNA
    *     )
    *     .load();
    * }</pre>

@@ -4,7 +4,7 @@
  * <p>This package provides a comprehensive solution for loading native libraries in Java
  * applications with automatic platform detection, secure resource extraction, and flexible
  * configuration options. It handles platform detection, native library extraction from JAR files,
- * and loading of native libraries with multiple security levels and path conventions.
+ * and loading of native libraries with flexible path conventions.
  *
  * <p><strong>Key Components:</strong>
  *
@@ -34,7 +34,6 @@
  * <p><strong>Security Features:</strong>
  *
  * <ul>
- *   <li>Multiple security levels (STRICT, MODERATE, PERMISSIVE)
  *   <li>Comprehensive path traversal protection
  *   <li>Secure temporary file management with automatic cleanup
  *   <li>Input validation and sanitization
@@ -49,14 +48,13 @@
  *
  * // Simple loading
  * LibraryLoadInfo info = NativeLoader.loadLibrary("mylib");
- * if (info.isLoadedSuccessfully()) {
+ * if (info.isSuccessful()) {
  *     // Library is ready for use
  * }
  *
  * // Advanced configuration
  * LibraryLoadInfo info2 = NativeLoader.builder()
  *     .libraryName("mylib")
- *     .securityLevel(SecurityLevel.STRICT)
  *     .pathConvention(PathConvention.MAVEN_NATIVE)
  *     .load();
  * }</pre>
