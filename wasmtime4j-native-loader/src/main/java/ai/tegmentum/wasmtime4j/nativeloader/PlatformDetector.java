@@ -203,7 +203,7 @@ public final class PlatformDetector {
    * @param input the string to sanitize for logging
    * @return the sanitized string safe for logging
    */
-  private static String sanitizeForLog(final String input) {
+  static String sanitizeForLog(final String input) {
     if (input == null) {
       return "null";
     }
@@ -222,7 +222,7 @@ public final class PlatformDetector {
    * @return the sanitized library name safe for use in file paths
    */
   @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
-  private static String sanitizeLibraryName(final String libraryName) {
+  static String sanitizeLibraryName(final String libraryName) {
     if (libraryName == null) {
       return "";
     }

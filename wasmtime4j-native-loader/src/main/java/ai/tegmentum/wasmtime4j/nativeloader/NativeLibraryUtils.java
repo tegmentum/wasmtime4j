@@ -935,11 +935,7 @@ public final class NativeLibraryUtils {
    * @return the sanitized string safe for logging
    */
   private static String sanitizeForLog(final String input) {
-    if (input == null) {
-      return "null";
-    }
-    // Remove all control and format characters to prevent log injection
-    return input.replaceAll("[\\p{Cntrl}\\p{Cf}]", "_");
+    return PlatformDetector.sanitizeForLog(input);
   }
 
   /**

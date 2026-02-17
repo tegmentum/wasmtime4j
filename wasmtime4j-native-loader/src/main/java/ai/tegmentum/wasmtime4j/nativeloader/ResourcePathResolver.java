@@ -210,19 +210,6 @@ final class ResourcePathResolver {
    */
   private static String sanitizeLibraryName(final String libraryName) {
     Objects.requireNonNull(libraryName, "libraryName must not be null");
-
-    // Remove any path separators from library name
-    final String sanitized = libraryName.replace("/", "").replace("\\", "");
-
-    // Remove any control characters
-    final StringBuilder result = new StringBuilder(sanitized.length());
-    for (int i = 0; i < sanitized.length(); i++) {
-      final char c = sanitized.charAt(i);
-      if (!Character.isISOControl(c) && c != '\0') {
-        result.append(c);
-      }
-    }
-
-    return result.toString();
+    return PlatformDetector.sanitizeLibraryName(libraryName);
   }
 }
