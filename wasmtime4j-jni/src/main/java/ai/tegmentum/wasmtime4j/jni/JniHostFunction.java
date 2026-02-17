@@ -415,19 +415,6 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   }
 
   /**
-   * Marshals a FunctionType to native format for JNI.
-   *
-   * @param functionType the function type to marshal
-   * @return byte array containing marshalled function type
-   */
-  @SuppressFBWarnings(
-      value = "UPM_UNCALLED_PRIVATE_METHOD",
-      justification = "Reserved for future use in JNI callback marshalling")
-  private byte[] marshalFunctionType(final FunctionType functionType) {
-    return JniTypeConverter.marshalFunctionType(functionType);
-  }
-
-  /**
    * Gets the current registry statistics for debugging.
    *
    * @return array containing [count, nextId]
