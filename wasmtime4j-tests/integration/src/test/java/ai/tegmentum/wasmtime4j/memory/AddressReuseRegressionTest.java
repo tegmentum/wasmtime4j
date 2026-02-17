@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import ai.tegmentum.wasmtime4j.test.TestUtils;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
@@ -137,7 +138,7 @@ public final class AddressReuseRegressionTest {
 
   @AfterAll
   static void cleanup() {
-    clearHandleRegistries();
+    TestUtils.clearHandleRegistries();
   }
 
   @Test
@@ -305,31 +306,4 @@ public final class AddressReuseRegressionTest {
     LOGGER.info("All 200 shared memory cycles completed successfully");
   }
 
-  /** Clears handle registries to prevent stale handles from affecting subsequent tests. */
-  private static void clearHandleRegistries() {
-    try {
-      final Class<?> jniEngineClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniEngine");
-      final java.lang.reflect.Method method = jniEngineClass.getMethod("clearHandleRegistries");
-      method.invoke(null);
-      LOGGER.info("Cleared JNI handle registries");
-    } catch (final Exception e) {
-      LOGGER.fine("JNI clearHandleRegistries not available: " + e.getMessage());
-    }
-
-    try {
-      final Class<?> panamaBindingsClass =
-          Class.forName("ai.tegmentum.wasmtime4j.panama.NativeMemoryBindings");
-      final java.lang.reflect.Method getInstanceMethod =
-          panamaBindingsClass.getMethod("getInstance");
-      final Object instance = getInstanceMethod.invoke(null);
-      final java.lang.reflect.Method clearMethod =
-          panamaBindingsClass.getMethod("memoryClearHandleRegistries");
-      final int result = (int) clearMethod.invoke(instance);
-      if (result == 0) {
-        LOGGER.info("Cleared Panama handle registries");
-      }
-    } catch (final Exception e) {
-      LOGGER.fine("Panama clearHandleRegistries not available: " + e.getMessage());
-    }
-  }
 }
