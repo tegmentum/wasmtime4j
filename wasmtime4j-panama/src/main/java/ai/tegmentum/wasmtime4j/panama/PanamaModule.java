@@ -16,10 +16,14 @@ import ai.tegmentum.wasmtime4j.type.ImportType;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -721,49 +725,27 @@ public final class PanamaModule implements Module {
       // Convert C string to Java String
       final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
 
-      // Parse simple JSON object {"name1":"base64data1","name2":"base64data2"}
       if (jsonString == null || jsonString.equals("{}")) {
         return Collections.emptyMap();
       }
 
-      final Map<String, byte[]> result = new java.util.HashMap<>();
+      // Parse JSON object {"name1":"base64data1","name2":"base64data2"} using Gson
+      final Map<String, String> parsed =
+          new Gson().fromJson(jsonString, new TypeToken<Map<String, String>>() {}.getType());
 
-      // Simple JSON parsing for { "key": "value", ... } format
-      // Remove outer braces
-      String content = jsonString.trim();
-      if (content.startsWith("{")) {
-        content = content.substring(1);
-      }
-      if (content.endsWith("}")) {
-        content = content.substring(0, content.length() - 1);
+      if (parsed == null || parsed.isEmpty()) {
+        return Collections.emptyMap();
       }
 
-      if (!content.isEmpty()) {
-        // Split by commas that are not inside quotes
-        int start = 0;
-        boolean inString = false;
-        boolean escaped = false;
-
-        for (int i = 0; i < content.length(); i++) {
-          final char c = content.charAt(i);
-          if (escaped) {
-            escaped = false;
-            continue;
-          }
-          if (c == '\\') {
-            escaped = true;
-            continue;
-          }
-          if (c == '"') {
-            inString = !inString;
-          } else if (!inString && c == ',') {
-            parseJsonKeyValueBytes(content.substring(start, i).trim(), result);
-            start = i + 1;
-          }
-        }
-        // Parse the last key-value pair
-        if (start < content.length()) {
-          parseJsonKeyValueBytes(content.substring(start).trim(), result);
+      // Decode Base64 values to byte arrays
+      final Map<String, byte[]> result = new HashMap<>();
+      for (final Map.Entry<String, String> entry : parsed.entrySet()) {
+        try {
+          final byte[] decoded = java.util.Base64.getDecoder().decode(entry.getValue());
+          result.put(entry.getKey(), decoded);
+        } catch (final IllegalArgumentException e) {
+          // If not valid Base64, store as UTF-8 bytes
+          result.put(entry.getKey(), entry.getValue().getBytes(StandardCharsets.UTF_8));
         }
       }
 
@@ -772,86 +754,6 @@ public final class PanamaModule implements Module {
       // Free the native string
       NATIVE_BINDINGS.moduleFreeString(jsonPtr);
     }
-  }
-
-  /** Parses a JSON key-value pair and decodes Base64 value to byte[]. */
-  private void parseJsonKeyValueBytes(final String pair, final Map<String, byte[]> result) {
-    if (pair.isEmpty()) {
-      return;
-    }
-
-    // Find the colon separator
-    int colonIdx = -1;
-    boolean inString = false;
-    boolean escaped = false;
-
-    for (int i = 0; i < pair.length(); i++) {
-      final char c = pair.charAt(i);
-      if (escaped) {
-        escaped = false;
-        continue;
-      }
-      if (c == '\\') {
-        escaped = true;
-        continue;
-      }
-      if (c == '"') {
-        inString = !inString;
-      } else if (!inString && c == ':') {
-        colonIdx = i;
-        break;
-      }
-    }
-
-    if (colonIdx < 0) {
-      return;
-    }
-
-    // Extract key and value, removing quotes
-    String key = pair.substring(0, colonIdx).trim();
-    String value = pair.substring(colonIdx + 1).trim();
-
-    // Remove surrounding quotes from key and value
-    if (key.startsWith("\"") && key.endsWith("\"")) {
-      key = unescapeJsonString(key.substring(1, key.length() - 1));
-    }
-    if (value.startsWith("\"") && value.endsWith("\"")) {
-      value = unescapeJsonString(value.substring(1, value.length() - 1));
-    }
-
-    // Decode Base64 value to byte array
-    try {
-      final byte[] decoded = java.util.Base64.getDecoder().decode(value);
-      result.put(key, decoded);
-    } catch (final IllegalArgumentException e) {
-      // If not valid Base64, store as UTF-8 bytes
-      result.put(key, value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    }
-  }
-
-  /** Unescapes a JSON string value. */
-  private String unescapeJsonString(final String s) {
-    final StringBuilder sb = new StringBuilder();
-    boolean escaped = false;
-    for (int i = 0; i < s.length(); i++) {
-      final char c = s.charAt(i);
-      if (escaped) {
-        switch (c) {
-          case 'n' -> sb.append('\n');
-          case 't' -> sb.append('\t');
-          case 'r' -> sb.append('\r');
-          case '"' -> sb.append('"');
-          case '\\' -> sb.append('\\');
-          default -> sb.append(c);
-        }
-        escaped = false;
-      } else if (c == '\\') {
-        escaped = true;
-      } else {
-        sb.append(c);
-      }
-    }
-    return sb.toString();
   }
 
   @Override
