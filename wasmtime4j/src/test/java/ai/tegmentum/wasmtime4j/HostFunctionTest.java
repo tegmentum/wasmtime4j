@@ -158,7 +158,7 @@ class HostFunctionTest {
       final HostFunction hostFunc =
           HostFunction.voidFunction(
               params -> {
-                receivedValue[0] = params[0].asI32();
+                receivedValue[0] = params[0].asInt();
               });
 
       final WasmValue[] params = {WasmValue.i32(42)};
@@ -181,7 +181,7 @@ class HostFunctionTest {
 
       assertNotNull(result, "Result should not be null");
       assertEquals(1, result.length, "Result should have one element");
-      assertEquals(100, result[0].asI32(), "Result should be 100");
+      assertEquals(100, result[0].asInt(), "Result should be 100");
     }
 
     @Test
@@ -201,15 +201,15 @@ class HostFunctionTest {
       final HostFunction hostFunc =
           HostFunction.singleValue(
               params -> {
-                final int a = params[0].asI32();
-                final int b = params[1].asI32();
+                final int a = params[0].asInt();
+                final int b = params[1].asInt();
                 return WasmValue.i32(a + b);
               });
 
       final WasmValue[] params = {WasmValue.i32(10), WasmValue.i32(20)};
       final WasmValue[] result = hostFunc.execute(params);
 
-      assertEquals(30, result[0].asI32(), "Should compute sum of parameters");
+      assertEquals(30, result[0].asInt(), "Should compute sum of parameters");
     }
   }
 
@@ -228,9 +228,9 @@ class HostFunctionTest {
 
       assertNotNull(result, "Result should not be null");
       assertEquals(3, result.length, "Result should have three elements");
-      assertEquals(1, result[0].asI32(), "First value should be 1");
-      assertEquals(2, result[1].asI32(), "Second value should be 2");
-      assertEquals(3, result[2].asI32(), "Third value should be 3");
+      assertEquals(1, result[0].asInt(), "First value should be 1");
+      assertEquals(2, result[1].asInt(), "Second value should be 2");
+      assertEquals(3, result[2].asInt(), "Third value should be 3");
     }
 
     @Test
@@ -255,7 +255,7 @@ class HostFunctionTest {
 
       final WasmValue[] result = hostFunc.execute(new WasmValue[0]);
 
-      assertEquals(42L, result[0].asI64(), "Should return lambda result");
+      assertEquals(42L, result[0].asLong(), "Should return lambda result");
     }
 
     @Test
@@ -265,11 +265,11 @@ class HostFunctionTest {
 
       final WasmValue[] result = hostFunc.execute(new WasmValue[] {WasmValue.i32(5)});
 
-      assertEquals(10, result[0].asI32(), "Should return method reference result");
+      assertEquals(10, result[0].asInt(), "Should return method reference result");
     }
 
     private WasmValue[] testHostFunction(final WasmValue[] params) {
-      return new WasmValue[] {WasmValue.i32(params[0].asI32() * 2)};
+      return new WasmValue[] {WasmValue.i32(params[0].asInt() * 2)};
     }
   }
 
@@ -296,44 +296,44 @@ class HostFunctionTest {
     @DisplayName("should handle I32 parameters")
     void shouldHandleI32Parameters() throws WasmException {
       final HostFunction hostFunc =
-          HostFunction.singleValue(params -> WasmValue.i32(params[0].asI32() * 2));
+          HostFunction.singleValue(params -> WasmValue.i32(params[0].asInt() * 2));
 
       final WasmValue[] result = hostFunc.execute(new WasmValue[] {WasmValue.i32(21)});
 
-      assertEquals(42, result[0].asI32(), "Should handle I32");
+      assertEquals(42, result[0].asInt(), "Should handle I32");
     }
 
     @Test
     @DisplayName("should handle I64 parameters")
     void shouldHandleI64Parameters() throws WasmException {
       final HostFunction hostFunc =
-          HostFunction.singleValue(params -> WasmValue.i64(params[0].asI64() * 2L));
+          HostFunction.singleValue(params -> WasmValue.i64(params[0].asLong() * 2L));
 
       final WasmValue[] result = hostFunc.execute(new WasmValue[] {WasmValue.i64(100L)});
 
-      assertEquals(200L, result[0].asI64(), "Should handle I64");
+      assertEquals(200L, result[0].asLong(), "Should handle I64");
     }
 
     @Test
     @DisplayName("should handle F32 parameters")
     void shouldHandleF32Parameters() throws WasmException {
       final HostFunction hostFunc =
-          HostFunction.singleValue(params -> WasmValue.f32(params[0].asF32() * 2.0f));
+          HostFunction.singleValue(params -> WasmValue.f32(params[0].asFloat() * 2.0f));
 
       final WasmValue[] result = hostFunc.execute(new WasmValue[] {WasmValue.f32(1.5f)});
 
-      assertEquals(3.0f, result[0].asF32(), 0.001f, "Should handle F32");
+      assertEquals(3.0f, result[0].asFloat(), 0.001f, "Should handle F32");
     }
 
     @Test
     @DisplayName("should handle F64 parameters")
     void shouldHandleF64Parameters() throws WasmException {
       final HostFunction hostFunc =
-          HostFunction.singleValue(params -> WasmValue.f64(params[0].asF64() * 2.0));
+          HostFunction.singleValue(params -> WasmValue.f64(params[0].asDouble() * 2.0));
 
       final WasmValue[] result = hostFunc.execute(new WasmValue[] {WasmValue.f64(3.14)});
 
-      assertEquals(6.28, result[0].asF64(), 0.001, "Should handle F64");
+      assertEquals(6.28, result[0].asDouble(), 0.001, "Should handle F64");
     }
 
     @Test
@@ -342,9 +342,9 @@ class HostFunctionTest {
       final HostFunction hostFunc =
           HostFunction.multiValue(
               params -> {
-                final int i32Val = params[0].asI32();
-                final long i64Val = params[1].asI64();
-                final float f32Val = params[2].asF32();
+                final int i32Val = params[0].asInt();
+                final long i64Val = params[1].asLong();
+                final float f32Val = params[2].asFloat();
                 return new WasmValue[] {
                   WasmValue.i32(i32Val), WasmValue.i64(i64Val), WasmValue.f32(f32Val)
                 };
@@ -353,9 +353,9 @@ class HostFunctionTest {
       final WasmValue[] params = {WasmValue.i32(10), WasmValue.i64(20L), WasmValue.f32(3.14f)};
       final WasmValue[] result = hostFunc.execute(params);
 
-      assertEquals(10, result[0].asI32(), "I32 should match");
-      assertEquals(20L, result[1].asI64(), "I64 should match");
-      assertEquals(3.14f, result[2].asF32(), 0.001f, "F32 should match");
+      assertEquals(10, result[0].asInt(), "I32 should match");
+      assertEquals(20L, result[1].asLong(), "I64 should match");
+      assertEquals(3.14f, result[2].asFloat(), 0.001f, "F32 should match");
     }
   }
 
@@ -375,7 +375,7 @@ class HostFunctionTest {
 
       final WasmValue[] result = hostFunc.execute(new WasmValue[0]);
 
-      assertEquals(42, result[0].asI32(), "Should return value with empty params");
+      assertEquals(42, result[0].asInt(), "Should return value with empty params");
     }
 
     @Test
@@ -386,7 +386,7 @@ class HostFunctionTest {
               params -> {
                 int sum = 0;
                 for (final WasmValue param : params) {
-                  sum += param.asI32();
+                  sum += param.asInt();
                 }
                 return WasmValue.i32(sum);
               });
@@ -397,7 +397,7 @@ class HostFunctionTest {
       }
       final WasmValue[] result = hostFunc.execute(params);
 
-      assertEquals(100, result[0].asI32(), "Should sum 100 parameters");
+      assertEquals(100, result[0].asInt(), "Should sum 100 parameters");
     }
 
     @Test
@@ -417,7 +417,7 @@ class HostFunctionTest {
 
       assertEquals(50, result.length, "Should return 50 values");
       for (int i = 0; i < 50; i++) {
-        assertEquals(i, result[i].asI32(), "Value at index " + i + " should be " + i);
+        assertEquals(i, result[i].asInt(), "Value at index " + i + " should be " + i);
       }
     }
   }

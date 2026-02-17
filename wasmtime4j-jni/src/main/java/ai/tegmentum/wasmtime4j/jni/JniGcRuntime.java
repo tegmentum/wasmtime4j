@@ -1262,7 +1262,7 @@ public final class JniGcRuntime implements GcRuntime {
     @Override
     public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
       // GC objects are reference types in WebAssembly
-      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
+      return ai.tegmentum.wasmtime4j.WasmValue.externref(this);
     }
   }
 
@@ -1313,7 +1313,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
-      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
+      return ai.tegmentum.wasmtime4j.WasmValue.externref(this);
     }
 
     @Override
@@ -1389,7 +1389,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
-      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
+      return ai.tegmentum.wasmtime4j.WasmValue.externref(this);
     }
 
     @Override
@@ -1449,7 +1449,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
-      return ai.tegmentum.wasmtime4j.WasmValue.externRef(this);
+      return ai.tegmentum.wasmtime4j.WasmValue.externref(this);
     }
 
     @Override

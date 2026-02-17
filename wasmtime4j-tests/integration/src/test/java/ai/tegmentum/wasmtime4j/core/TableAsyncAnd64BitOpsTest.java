@@ -156,7 +156,7 @@ public class TableAsyncAnd64BitOpsTest extends DualRuntimeTest {
               .getTable("tab")
               .orElseThrow(() -> new AssertionError("tab table should be present"));
 
-      assert64BitOpThrows("set64", () -> table.set64(0, WasmValue.funcRefNull()), runtime);
+      assert64BitOpThrows("set64", () -> table.set64(0, WasmValue.nullFuncref()), runtime);
     }
   }
 
@@ -177,7 +177,7 @@ public class TableAsyncAnd64BitOpsTest extends DualRuntimeTest {
               .getTable("tab")
               .orElseThrow(() -> new AssertionError("tab table should be present"));
 
-      assert64BitOpThrows("grow64", () -> table.grow64(1, WasmValue.funcRefNull()), runtime);
+      assert64BitOpThrows("grow64", () -> table.grow64(1, WasmValue.nullFuncref()), runtime);
     }
   }
 
@@ -198,7 +198,7 @@ public class TableAsyncAnd64BitOpsTest extends DualRuntimeTest {
               .getTable("tab")
               .orElseThrow(() -> new AssertionError("tab table should be present"));
 
-      assert64BitOpThrows("fill64", () -> table.fill64(0, 1, WasmValue.funcRefNull()), runtime);
+      assert64BitOpThrows("fill64", () -> table.fill64(0, 1, WasmValue.nullFuncref()), runtime);
     }
   }
 

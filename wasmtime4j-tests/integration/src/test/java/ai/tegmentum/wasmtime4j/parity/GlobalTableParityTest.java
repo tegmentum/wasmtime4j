@@ -149,12 +149,12 @@ class GlobalTableParityTest {
       final WasmGlobal panamaGlobal =
           panamaStore.createGlobal(WasmValueType.I32, true, WasmValue.i32(initialValue));
 
-      LOGGER.info("Created JNI i32 global with value: " + jniGlobal.get().asI32());
-      LOGGER.info("Created Panama i32 global with value: " + panamaGlobal.get().asI32());
+      LOGGER.info("Created JNI i32 global with value: " + jniGlobal.get().asInt());
+      LOGGER.info("Created Panama i32 global with value: " + panamaGlobal.get().asInt());
 
       assertThat(jniGlobal.isMutable()).isEqualTo(panamaGlobal.isMutable());
-      assertThat(jniGlobal.get().asI32()).isEqualTo(panamaGlobal.get().asI32());
-      assertThat(jniGlobal.get().asI32()).isEqualTo(initialValue);
+      assertThat(jniGlobal.get().asInt()).isEqualTo(panamaGlobal.get().asInt());
+      assertThat(jniGlobal.get().asInt()).isEqualTo(initialValue);
     }
 
     @Test
@@ -169,12 +169,12 @@ class GlobalTableParityTest {
       final WasmGlobal panamaGlobal =
           panamaStore.createGlobal(WasmValueType.I32, false, WasmValue.i32(initialValue));
 
-      LOGGER.info("Created JNI immutable i32 global with value: " + jniGlobal.get().asI32());
-      LOGGER.info("Created Panama immutable i32 global with value: " + panamaGlobal.get().asI32());
+      LOGGER.info("Created JNI immutable i32 global with value: " + jniGlobal.get().asInt());
+      LOGGER.info("Created Panama immutable i32 global with value: " + panamaGlobal.get().asInt());
 
       assertThat(jniGlobal.isMutable()).isFalse();
       assertThat(panamaGlobal.isMutable()).isFalse();
-      assertThat(jniGlobal.get().asI32()).isEqualTo(panamaGlobal.get().asI32());
+      assertThat(jniGlobal.get().asInt()).isEqualTo(panamaGlobal.get().asInt());
     }
 
     @Test
@@ -189,11 +189,11 @@ class GlobalTableParityTest {
       final WasmGlobal panamaGlobal =
           panamaStore.createGlobal(WasmValueType.I64, true, WasmValue.i64(initialValue));
 
-      LOGGER.info("Created JNI i64 global with value: " + jniGlobal.get().asI64());
-      LOGGER.info("Created Panama i64 global with value: " + panamaGlobal.get().asI64());
+      LOGGER.info("Created JNI i64 global with value: " + jniGlobal.get().asLong());
+      LOGGER.info("Created Panama i64 global with value: " + panamaGlobal.get().asLong());
 
-      assertThat(jniGlobal.get().asI64()).isEqualTo(panamaGlobal.get().asI64());
-      assertThat(jniGlobal.get().asI64()).isEqualTo(initialValue);
+      assertThat(jniGlobal.get().asLong()).isEqualTo(panamaGlobal.get().asLong());
+      assertThat(jniGlobal.get().asLong()).isEqualTo(initialValue);
     }
 
     @Test
@@ -208,11 +208,11 @@ class GlobalTableParityTest {
       final WasmGlobal panamaGlobal =
           panamaStore.createGlobal(WasmValueType.F32, true, WasmValue.f32(initialValue));
 
-      LOGGER.info("Created JNI f32 global with value: " + jniGlobal.get().asF32());
-      LOGGER.info("Created Panama f32 global with value: " + panamaGlobal.get().asF32());
+      LOGGER.info("Created JNI f32 global with value: " + jniGlobal.get().asFloat());
+      LOGGER.info("Created Panama f32 global with value: " + panamaGlobal.get().asFloat());
 
-      assertThat(jniGlobal.get().asF32()).isEqualTo(panamaGlobal.get().asF32());
-      assertThat(jniGlobal.get().asF32()).isEqualTo(initialValue);
+      assertThat(jniGlobal.get().asFloat()).isEqualTo(panamaGlobal.get().asFloat());
+      assertThat(jniGlobal.get().asFloat()).isEqualTo(initialValue);
     }
 
     @Test
@@ -227,11 +227,11 @@ class GlobalTableParityTest {
       final WasmGlobal panamaGlobal =
           panamaStore.createGlobal(WasmValueType.F64, true, WasmValue.f64(initialValue));
 
-      LOGGER.info("Created JNI f64 global with value: " + jniGlobal.get().asF64());
-      LOGGER.info("Created Panama f64 global with value: " + panamaGlobal.get().asF64());
+      LOGGER.info("Created JNI f64 global with value: " + jniGlobal.get().asDouble());
+      LOGGER.info("Created Panama f64 global with value: " + panamaGlobal.get().asDouble());
 
-      assertThat(jniGlobal.get().asF64()).isEqualTo(panamaGlobal.get().asF64());
-      assertThat(jniGlobal.get().asF64()).isEqualTo(initialValue);
+      assertThat(jniGlobal.get().asDouble()).isEqualTo(panamaGlobal.get().asDouble());
+      assertThat(jniGlobal.get().asDouble()).isEqualTo(initialValue);
     }
   }
 
@@ -252,11 +252,11 @@ class GlobalTableParityTest {
       jniGlobal.set(WasmValue.i32(newValue));
       panamaGlobal.set(WasmValue.i32(newValue));
 
-      LOGGER.info("After mutation - JNI global: " + jniGlobal.get().asI32());
-      LOGGER.info("After mutation - Panama global: " + panamaGlobal.get().asI32());
+      LOGGER.info("After mutation - JNI global: " + jniGlobal.get().asInt());
+      LOGGER.info("After mutation - Panama global: " + panamaGlobal.get().asInt());
 
-      assertThat(jniGlobal.get().asI32()).isEqualTo(panamaGlobal.get().asI32());
-      assertThat(jniGlobal.get().asI32()).isEqualTo(newValue);
+      assertThat(jniGlobal.get().asInt()).isEqualTo(panamaGlobal.get().asInt());
+      assertThat(jniGlobal.get().asInt()).isEqualTo(newValue);
     }
 
     @Test
@@ -273,11 +273,11 @@ class GlobalTableParityTest {
       jniGlobal.set(WasmValue.i64(newValue));
       panamaGlobal.set(WasmValue.i64(newValue));
 
-      LOGGER.info("After mutation - JNI global: " + jniGlobal.get().asI64());
-      LOGGER.info("After mutation - Panama global: " + panamaGlobal.get().asI64());
+      LOGGER.info("After mutation - JNI global: " + jniGlobal.get().asLong());
+      LOGGER.info("After mutation - Panama global: " + panamaGlobal.get().asLong());
 
-      assertThat(jniGlobal.get().asI64()).isEqualTo(panamaGlobal.get().asI64());
-      assertThat(jniGlobal.get().asI64()).isEqualTo(newValue);
+      assertThat(jniGlobal.get().asLong()).isEqualTo(panamaGlobal.get().asLong());
+      assertThat(jniGlobal.get().asLong()).isEqualTo(newValue);
     }
 
     @Test
@@ -294,11 +294,11 @@ class GlobalTableParityTest {
       jniGlobal.set(WasmValue.f32(newValue));
       panamaGlobal.set(WasmValue.f32(newValue));
 
-      LOGGER.info("After mutation - JNI global: " + jniGlobal.get().asF32());
-      LOGGER.info("After mutation - Panama global: " + panamaGlobal.get().asF32());
+      LOGGER.info("After mutation - JNI global: " + jniGlobal.get().asFloat());
+      LOGGER.info("After mutation - Panama global: " + panamaGlobal.get().asFloat());
 
-      assertThat(jniGlobal.get().asF32()).isEqualTo(panamaGlobal.get().asF32());
-      assertThat(jniGlobal.get().asF32()).isEqualTo(newValue);
+      assertThat(jniGlobal.get().asFloat()).isEqualTo(panamaGlobal.get().asFloat());
+      assertThat(jniGlobal.get().asFloat()).isEqualTo(newValue);
     }
 
     @Test
@@ -315,11 +315,11 @@ class GlobalTableParityTest {
       jniGlobal.set(WasmValue.f64(newValue));
       panamaGlobal.set(WasmValue.f64(newValue));
 
-      LOGGER.info("After mutation - JNI global: " + jniGlobal.get().asF64());
-      LOGGER.info("After mutation - Panama global: " + panamaGlobal.get().asF64());
+      LOGGER.info("After mutation - JNI global: " + jniGlobal.get().asDouble());
+      LOGGER.info("After mutation - Panama global: " + panamaGlobal.get().asDouble());
 
-      assertThat(jniGlobal.get().asF64()).isEqualTo(panamaGlobal.get().asF64());
-      assertThat(jniGlobal.get().asF64()).isEqualTo(newValue);
+      assertThat(jniGlobal.get().asDouble()).isEqualTo(panamaGlobal.get().asDouble());
+      assertThat(jniGlobal.get().asDouble()).isEqualTo(newValue);
     }
 
     @Test
@@ -334,7 +334,7 @@ class GlobalTableParityTest {
       for (int i = 0; i < 100; i++) {
         jniGlobal.set(WasmValue.i32(i));
         panamaGlobal.set(WasmValue.i32(i));
-        assertThat(jniGlobal.get().asI32()).isEqualTo(panamaGlobal.get().asI32());
+        assertThat(jniGlobal.get().asInt()).isEqualTo(panamaGlobal.get().asInt());
       }
 
       LOGGER.info("Successfully performed 100 mutations with identical results");
@@ -481,10 +481,10 @@ class GlobalTableParityTest {
       final WasmGlobal panamaF64 =
           panamaStore.createGlobal(WasmValueType.F64, true, WasmValue.f64(40.0));
 
-      assertThat(jniI32.get().asI32()).isEqualTo(panamaI32.get().asI32());
-      assertThat(jniI64.get().asI64()).isEqualTo(panamaI64.get().asI64());
-      assertThat(jniF32.get().asF32()).isEqualTo(panamaF32.get().asF32());
-      assertThat(jniF64.get().asF64()).isEqualTo(panamaF64.get().asF64());
+      assertThat(jniI32.get().asInt()).isEqualTo(panamaI32.get().asInt());
+      assertThat(jniI64.get().asLong()).isEqualTo(panamaI64.get().asLong());
+      assertThat(jniF32.get().asFloat()).isEqualTo(panamaF32.get().asFloat());
+      assertThat(jniF64.get().asDouble()).isEqualTo(panamaF64.get().asDouble());
 
       LOGGER.info(
           "Successfully created and verified 4 globals of different types on both runtimes");

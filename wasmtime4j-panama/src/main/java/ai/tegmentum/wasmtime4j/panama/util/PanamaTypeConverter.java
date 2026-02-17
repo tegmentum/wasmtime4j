@@ -118,19 +118,19 @@ public final class PanamaTypeConverter {
 
     switch (wasmValue.getType()) {
       case I32:
-        MemoryLayouts.WASM_VAL_I32.set(valueSlot, 0L, wasmValue.asI32());
+        MemoryLayouts.WASM_VAL_I32.set(valueSlot, 0L, wasmValue.asInt());
         break;
 
       case I64:
-        MemoryLayouts.WASM_VAL_I64.set(valueSlot, 0L, wasmValue.asI64());
+        MemoryLayouts.WASM_VAL_I64.set(valueSlot, 0L, wasmValue.asLong());
         break;
 
       case F32:
-        MemoryLayouts.WASM_VAL_F32.set(valueSlot, 0L, wasmValue.asF32());
+        MemoryLayouts.WASM_VAL_F32.set(valueSlot, 0L, wasmValue.asFloat());
         break;
 
       case F64:
-        MemoryLayouts.WASM_VAL_F64.set(valueSlot, 0L, wasmValue.asF64());
+        MemoryLayouts.WASM_VAL_F64.set(valueSlot, 0L, wasmValue.asDouble());
         break;
 
       case V128:

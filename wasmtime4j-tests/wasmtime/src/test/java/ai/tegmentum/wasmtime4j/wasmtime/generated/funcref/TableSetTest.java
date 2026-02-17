@@ -62,10 +62,10 @@ public final class TableSetTest extends DualRuntimeTest {
 
       // Initial value is null
       runner.assertReturn(
-          "get-externref", new WasmValue[] {WasmValue.externRefNull()}, WasmValue.i32(0));
+          "get-externref", new WasmValue[] {WasmValue.nullExternref()}, WasmValue.i32(0));
 
       // Set externref to null explicitly
-      runner.invoke("set-externref", WasmValue.i32(0), WasmValue.externRefNull());
+      runner.invoke("set-externref", WasmValue.i32(0), WasmValue.nullExternref());
 
       // Value should still be null
       runner.assertReturn(

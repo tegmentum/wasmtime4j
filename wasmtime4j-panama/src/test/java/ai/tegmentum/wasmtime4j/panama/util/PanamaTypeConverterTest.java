@@ -355,7 +355,7 @@ class PanamaTypeConverterTest {
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.I32);
 
       assertEquals(WasmValueType.I32, result.getType(), "Type should be I32");
-      assertEquals(42, result.asI32(), "Value should be 42");
+      assertEquals(42, result.asInt(), "Value should be 42");
     }
 
     @Test
@@ -368,7 +368,7 @@ class PanamaTypeConverterTest {
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.I64);
 
       assertEquals(WasmValueType.I64, result.getType(), "Type should be I64");
-      assertEquals(123456789L, result.asI64(), "Value should be 123456789");
+      assertEquals(123456789L, result.asLong(), "Value should be 123456789");
     }
 
     @Test
@@ -381,7 +381,7 @@ class PanamaTypeConverterTest {
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.F32);
 
       assertEquals(WasmValueType.F32, result.getType(), "Type should be F32");
-      assertEquals(3.14f, result.asF32(), 0.001f, "Value should be 3.14");
+      assertEquals(3.14f, result.asFloat(), 0.001f, "Value should be 3.14");
     }
 
     @Test
@@ -394,7 +394,7 @@ class PanamaTypeConverterTest {
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.F64);
 
       assertEquals(WasmValueType.F64, result.getType(), "Type should be F64");
-      assertEquals(2.71828, result.asF64(), 0.00001, "Value should be 2.71828");
+      assertEquals(2.71828, result.asDouble(), 0.00001, "Value should be 2.71828");
     }
 
     @Test
@@ -532,8 +532,8 @@ class PanamaTypeConverterTest {
           PanamaTypeConverter.unmarshalResults(resultsMemory, expectedTypes);
 
       assertEquals(2, results.length, "Should return 2 results");
-      assertEquals(100, results[0].asI32(), "First result should be 100");
-      assertEquals(200L, results[1].asI64(), "Second result should be 200");
+      assertEquals(100, results[0].asInt(), "First result should be 100");
+      assertEquals(200L, results[1].asLong(), "Second result should be 200");
     }
 
     @Test
@@ -904,7 +904,7 @@ class PanamaTypeConverterTest {
       PanamaTypeConverter.marshalWasmValue(original, valueSlot);
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.I32);
 
-      assertEquals(original.asI32(), result.asI32(), "I32 value should be preserved");
+      assertEquals(original.asInt(), result.asInt(), "I32 value should be preserved");
     }
 
     @Test
@@ -916,7 +916,7 @@ class PanamaTypeConverterTest {
       PanamaTypeConverter.marshalWasmValue(original, valueSlot);
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.I64);
 
-      assertEquals(original.asI64(), result.asI64(), "I64 value should be preserved");
+      assertEquals(original.asLong(), result.asLong(), "I64 value should be preserved");
     }
 
     @Test
@@ -928,7 +928,7 @@ class PanamaTypeConverterTest {
       PanamaTypeConverter.marshalWasmValue(original, valueSlot);
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.F32);
 
-      assertEquals(original.asF32(), result.asF32(), "F32 value should be preserved");
+      assertEquals(original.asFloat(), result.asFloat(), "F32 value should be preserved");
     }
 
     @Test
@@ -940,7 +940,7 @@ class PanamaTypeConverterTest {
       PanamaTypeConverter.marshalWasmValue(original, valueSlot);
       final WasmValue result = PanamaTypeConverter.unmarshalWasmValue(valueSlot, WasmValueType.F64);
 
-      assertEquals(original.asF64(), result.asF64(), "F64 value should be preserved");
+      assertEquals(original.asDouble(), result.asDouble(), "F64 value should be preserved");
     }
 
     @Test
@@ -1025,7 +1025,7 @@ class PanamaTypeConverterTest {
       // Verify
       assertEquals(1, results.length, "Should have 1 result");
       assertEquals(WasmValueType.F64, results[0].getType(), "Result type should be F64");
-      assertEquals(3.14159, results[0].asF64(), 0.00001, "Result value should match");
+      assertEquals(3.14159, results[0].asDouble(), 0.00001, "Result value should match");
       assertArrayEquals(
           funcType.getParamTypes(),
           reconstructed.getParamTypes(),

@@ -973,7 +973,7 @@ public final class JniStore extends JniResource implements Store {
 
     switch (value.getType()) {
       case I32:
-        components[0] = value.asI32();
+        components[0] = value.asInt();
         components[1] = 0L;
         components[2] = 0.0f;
         components[3] = 0.0;
@@ -981,7 +981,7 @@ public final class JniStore extends JniResource implements Store {
         break;
       case I64:
         components[0] = 0;
-        components[1] = value.asI64();
+        components[1] = value.asLong();
         components[2] = 0.0f;
         components[3] = 0.0;
         components[4] = null;
@@ -989,7 +989,7 @@ public final class JniStore extends JniResource implements Store {
       case F32:
         components[0] = 0;
         components[1] = 0L;
-        components[2] = value.asF32();
+        components[2] = value.asFloat();
         components[3] = 0.0;
         components[4] = null;
         break;
@@ -997,7 +997,7 @@ public final class JniStore extends JniResource implements Store {
         components[0] = 0;
         components[1] = 0L;
         components[2] = 0.0f;
-        components[3] = value.asF64();
+        components[3] = value.asDouble();
         components[4] = null;
         break;
       case V128:

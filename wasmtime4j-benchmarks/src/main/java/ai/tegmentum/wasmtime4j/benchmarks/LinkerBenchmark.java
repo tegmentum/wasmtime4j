@@ -99,9 +99,9 @@ public class LinkerBenchmark {
 
     final HostFunction addFunction =
         (params) -> {
-          final int a = params[0].asI32();
-          final int b = params[1].asI32();
-          return new WasmValue[] {WasmValue.ofI32(a + b)};
+          final int a = params[0].asInt();
+          final int b = params[1].asInt();
+          return new WasmValue[] {WasmValue.i32(a + b)};
         };
 
     linker.defineHostFunction("env", "add", addType, addFunction);
@@ -148,9 +148,9 @@ public class LinkerBenchmark {
 
       final HostFunction multiplyFunction =
           (params) -> {
-            final int a = params[0].asI32();
-            final int b = params[1].asI32();
-            return new WasmValue[] {WasmValue.ofI32(a * b)};
+            final int a = params[0].asInt();
+            final int b = params[1].asInt();
+            return new WasmValue[] {WasmValue.i32(a * b)};
           };
 
       tempLinker.defineHostFunction("env", "multiply", mathType, multiplyFunction);
@@ -181,9 +181,9 @@ public class LinkerBenchmark {
 
       final HostFunction addFunction =
           (params) -> {
-            final int a = params[0].asI32();
-            final int b = params[1].asI32();
-            return new WasmValue[] {WasmValue.ofI32(a + b)};
+            final int a = params[0].asInt();
+            final int b = params[1].asInt();
+            return new WasmValue[] {WasmValue.i32(a + b)};
           };
 
       tempLinker.defineHostFunction("env", "add", addType, addFunction);
@@ -196,7 +196,7 @@ public class LinkerBenchmark {
 
   @Benchmark
   public WasmValue[] benchmarkHostFunctionCall() throws WasmException {
-    return hostBoundFunction.call(WasmValue.ofI32(10), WasmValue.ofI32(32));
+    return hostBoundFunction.call(WasmValue.i32(10), WasmValue.i32(32));
   }
 
   @Benchmark
@@ -214,9 +214,9 @@ public class LinkerBenchmark {
           "add",
           mathType,
           (params) -> {
-            final int a = params[0].asI32();
-            final int b = params[1].asI32();
-            return new WasmValue[] {WasmValue.ofI32(a + b)};
+            final int a = params[0].asInt();
+            final int b = params[1].asInt();
+            return new WasmValue[] {WasmValue.i32(a + b)};
           });
 
       tempLinker.defineHostFunction(
@@ -224,9 +224,9 @@ public class LinkerBenchmark {
           "sub",
           mathType,
           (params) -> {
-            final int a = params[0].asI32();
-            final int b = params[1].asI32();
-            return new WasmValue[] {WasmValue.ofI32(a - b)};
+            final int a = params[0].asInt();
+            final int b = params[1].asInt();
+            return new WasmValue[] {WasmValue.i32(a - b)};
           });
 
       tempLinker.defineHostFunction(
@@ -234,9 +234,9 @@ public class LinkerBenchmark {
           "mul",
           mathType,
           (params) -> {
-            final int a = params[0].asI32();
-            final int b = params[1].asI32();
-            return new WasmValue[] {WasmValue.ofI32(a * b)};
+            final int a = params[0].asInt();
+            final int b = params[1].asInt();
+            return new WasmValue[] {WasmValue.i32(a * b)};
           });
 
       tempLinker.defineHostFunction(
@@ -244,9 +244,9 @@ public class LinkerBenchmark {
           "div",
           mathType,
           (params) -> {
-            final int a = params[0].asI32();
-            final int b = params[1].asI32();
-            return new WasmValue[] {WasmValue.ofI32(a / b)};
+            final int a = params[0].asInt();
+            final int b = params[1].asInt();
+            return new WasmValue[] {WasmValue.i32(a / b)};
           });
 
       tempLinker.defineHostFunction(
@@ -254,9 +254,9 @@ public class LinkerBenchmark {
           "mod",
           mathType,
           (params) -> {
-            final int a = params[0].asI32();
-            final int b = params[1].asI32();
-            return new WasmValue[] {WasmValue.ofI32(a % b)};
+            final int a = params[0].asInt();
+            final int b = params[1].asInt();
+            return new WasmValue[] {WasmValue.i32(a % b)};
           });
     } finally {
       tempLinker.close();
@@ -278,9 +278,9 @@ public class LinkerBenchmark {
           "add",
           mathType,
           (params) -> {
-            final int a = params[0].asI32();
-            final int b = params[1].asI32();
-            return new WasmValue[] {WasmValue.ofI32(a + b)};
+            final int a = params[0].asInt();
+            final int b = params[1].asInt();
+            return new WasmValue[] {WasmValue.i32(a + b)};
           });
 
       // Create alias
@@ -301,11 +301,11 @@ public class LinkerBenchmark {
             new WasmValueType[] {WasmValueType.I32});
 
     tempLinker.defineHostFunction(
-        "env", "test1", mathType, (params) -> new WasmValue[] {WasmValue.ofI32(1)});
+        "env", "test1", mathType, (params) -> new WasmValue[] {WasmValue.i32(1)});
     tempLinker.defineHostFunction(
-        "env", "test2", mathType, (params) -> new WasmValue[] {WasmValue.ofI32(2)});
+        "env", "test2", mathType, (params) -> new WasmValue[] {WasmValue.i32(2)});
     tempLinker.defineHostFunction(
-        "env", "test3", mathType, (params) -> new WasmValue[] {WasmValue.ofI32(3)});
+        "env", "test3", mathType, (params) -> new WasmValue[] {WasmValue.i32(3)});
 
     // Measure cleanup time
     tempLinker.close();

@@ -1858,16 +1858,16 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
 
     switch (value.getType()) {
       case I32:
-        i32Value = value.asI32();
+        i32Value = value.asInt();
         break;
       case I64:
-        i64Value = value.asI64();
+        i64Value = value.asLong();
         break;
       case F32:
-        f32Value = value.asF32();
+        f32Value = value.asFloat();
         break;
       case F64:
-        f64Value = value.asF64();
+        f64Value = value.asDouble();
         break;
       case V128:
         final byte[] v128Bytes = value.asV128();
@@ -1977,16 +1977,16 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
 
     switch (value.getType()) {
       case I32:
-        i32Value = value.asI32();
+        i32Value = value.asInt();
         break;
       case I64:
-        i64Value = value.asI64();
+        i64Value = value.asLong();
         break;
       case F32:
-        f32Value = value.asF32();
+        f32Value = value.asFloat();
         break;
       case F64:
-        f64Value = value.asF64();
+        f64Value = value.asDouble();
         break;
       case V128:
         final byte[] v128Bytes = value.asV128();

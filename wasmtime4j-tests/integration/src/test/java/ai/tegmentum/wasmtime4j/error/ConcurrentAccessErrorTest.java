@@ -275,7 +275,7 @@ class ConcurrentAccessErrorTest {
                       }
 
                       final WasmValue[] result = getFunc.call();
-                      return result[0].asI32();
+                      return result[0].asInt();
                     } catch (final Exception e) {
                       errors.add(e);
                       throw e;
@@ -335,7 +335,7 @@ class ConcurrentAccessErrorTest {
 
                       for (int j = 0; j < operationsPerThread; j++) {
                         final int expected = threadId * 1000 + j;
-                        assertThat(global.get().asI32()).isEqualTo(expected);
+                        assertThat(global.get().asInt()).isEqualTo(expected);
                         global.set(WasmValue.i32(expected + 1));
                       }
 
@@ -495,7 +495,7 @@ class ConcurrentAccessErrorTest {
                   startLatch.await(); // Wait for all threads to be ready
                   for (int j = 0; j < incrementsPerThread; j++) {
                     try {
-                      final int current = global.get().asI32();
+                      final int current = global.get().asInt();
                       global.set(WasmValue.i32(current + 1));
                     } catch (final Exception e) {
                       // Store may not be thread-safe - this is acceptable
@@ -516,7 +516,7 @@ class ConcurrentAccessErrorTest {
 
         LOGGER.info("Completed threads: " + completedThreads.get());
         LOGGER.info("Error count: " + errorCount.get());
-        LOGGER.info("Final global value: " + global.get().asI32());
+        LOGGER.info("Final global value: " + global.get().asInt());
 
         // All threads should complete (whether with errors or not)
         assertThat(completedThreads.get()).isEqualTo(numThreads);

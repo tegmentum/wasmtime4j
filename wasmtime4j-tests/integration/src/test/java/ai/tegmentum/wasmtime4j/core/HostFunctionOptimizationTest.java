@@ -127,8 +127,8 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
 
     final HostFunction original =
         (params) -> {
-          final int a = params[0].asI32();
-          final int b = params[1].asI32();
+          final int a = params[0].asInt();
+          final int b = params[1].asInt();
           return new WasmValue[] {WasmValue.i32(a + b)};
         };
 
@@ -158,7 +158,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
         assertTrue(callOptFunc.isPresent(), "call_opt export must be present");
 
         final WasmValue[] results = callOptFunc.get().call(WasmValue.i32(3), WasmValue.i32(4));
-        assertEquals(7, results[0].asI32(), "3 + 4 should equal 7");
+        assertEquals(7, results[0].asInt(), "3 + 4 should equal 7");
         LOGGER.info("[" + runtime + "] Optimized function executed: 3 + 4 = 7");
       }
     }
@@ -174,8 +174,8 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     final HostFunction callerAware =
         HostFunction.multiValueWithCaller(
             (Caller<Void> caller, WasmValue[] params) -> {
-              final int a = params[0].asI32();
-              final int b = params[1].asI32();
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
               return new WasmValue[] {WasmValue.i32(a + b)};
             });
 
@@ -205,8 +205,8 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     final HostFunction optimized =
         HostFunction.optimizedWithCaller(
             (Caller<Void> caller, WasmValue[] params) -> {
-              final int a = params[0].asI32();
-              final int b = params[1].asI32();
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
               return new WasmValue[] {WasmValue.i32(a + b)};
             },
             CallerContextUsage.NONE);
@@ -241,7 +241,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
 
         try {
           final WasmValue[] results = callOptFunc.get().call(WasmValue.i32(10), WasmValue.i32(20));
-          assertEquals(30, results[0].asI32(), "10 + 20 should equal 30");
+          assertEquals(30, results[0].asInt(), "10 + 20 should equal 30");
           LOGGER.info("[" + runtime + "] OptimizedWithCaller(NONE) executed: 10 + 20 = 30");
         } catch (final WasmException e) {
           if (isCallerUnavailable(e)) {
@@ -264,8 +264,8 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     final HostFunction optimized =
         HostFunction.optimizedWithCaller(
             (Caller<Void> caller, WasmValue[] params) -> {
-              final int a = params[0].asI32();
-              final int b = params[1].asI32();
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
               return new WasmValue[] {WasmValue.i32(a + b)};
             },
             CallerContextUsage.FULL);
@@ -298,8 +298,8 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     final HostFunction optimized =
         HostFunction.optimizedWithCaller(
             (Caller<Void> caller, WasmValue[] params) -> {
-              final int a = params[0].asI32();
-              final int b = params[1].asI32();
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
               return new WasmValue[] {WasmValue.i32(a + b)};
             },
             CallerContextUsage.EXPORTS_ONLY);
@@ -335,8 +335,8 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
     final HostFunction optimized =
         HostFunction.optimized(
             (params) -> {
-              final int a = params[0].asI32();
-              final int b = params[1].asI32();
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
               final int result = a * b;
               return new WasmValue[] {WasmValue.i32(result)};
             });
@@ -357,7 +357,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
         for (final int[] tc : testCases) {
           final WasmValue[] results =
               callOptFunc.get().call(WasmValue.i32(tc[0]), WasmValue.i32(tc[1]));
-          assertEquals(tc[2], results[0].asI32(), tc[0] + " * " + tc[1] + " should equal " + tc[2]);
+          assertEquals(tc[2], results[0].asInt(), tc[0] + " * " + tc[1] + " should equal " + tc[2]);
           LOGGER.info(
               "["
                   + runtime
@@ -366,7 +366,7 @@ public class HostFunctionOptimizationTest extends DualRuntimeTest {
                   + " * "
                   + tc[1]
                   + " = "
-                  + results[0].asI32());
+                  + results[0].asInt());
         }
       }
     }

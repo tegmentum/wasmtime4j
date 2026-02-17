@@ -486,7 +486,7 @@ class InvalidInputValidationTest {
       assertThat(i32Global).isNotNull();
 
       // Try to read i64 from an i32 global - should throw when extracting wrong type
-      assertThatThrownBy(() -> i32Global.get().asI64())
+      assertThatThrownBy(() -> i32Global.get().asLong())
           .satisfies(
               e -> {
                 LOGGER.info("Exception for wrong type access: " + e.getClass().getName());

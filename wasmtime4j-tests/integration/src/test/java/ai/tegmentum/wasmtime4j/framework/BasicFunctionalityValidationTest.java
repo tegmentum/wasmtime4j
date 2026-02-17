@@ -98,7 +98,7 @@ public class BasicFunctionalityValidationTest {
     assertEquals(testObject, externRefObject.asExternref());
 
     // Test externRef (camelCase alias)
-    final WasmValue externRefAlias = WasmValue.externRef(testObject);
+    final WasmValue externRefAlias = WasmValue.externref(testObject);
     assertEquals(WasmValueType.EXTERNREF, externRefAlias.getType());
     assertEquals(testObject, externRefAlias.getValue());
 

@@ -13,8 +13,8 @@ package ai.tegmentum.wasmtime4j.gc;
  *     .setField("x", 10.0)
  *     .setField("y", 20.0);
  *
- * double x = point.getField("x").asDouble();
- * double y = point.getField(1).asDouble();
+ * double x = point.getField("x").asF64();
+ * double y = point.getField(1).asF64();
  * }</pre>
  *
  * @since 1.0.0

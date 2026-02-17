@@ -25,44 +25,44 @@ class WasmValueTest {
       final WasmValue value = WasmValue.i32(42);
       assertNotNull(value, "Value should not be null");
       assertEquals(WasmValueType.I32, value.getType(), "Type should be I32");
-      assertEquals(42, value.asI32(), "Value should be 42");
+      assertEquals(42, value.asInt(), "Value should be 42");
       assertEquals(42, value.asInt(), "asInt() should return same value");
     }
 
     @Test
     @DisplayName("should create i32 value using ofI32")
     void shouldCreateI32ValueUsingOfI32() {
-      final WasmValue value = WasmValue.ofI32(100);
+      final WasmValue value = WasmValue.i32(100);
       assertEquals(WasmValueType.I32, value.getType(), "Type should be I32");
-      assertEquals(100, value.asI32(), "Value should be 100");
+      assertEquals(100, value.asInt(), "Value should be 100");
     }
 
     @Test
     @DisplayName("should handle maximum i32 value")
     void shouldHandleMaximumI32Value() {
       final WasmValue value = WasmValue.i32(Integer.MAX_VALUE);
-      assertEquals(Integer.MAX_VALUE, value.asI32(), "Should handle MAX_VALUE");
+      assertEquals(Integer.MAX_VALUE, value.asInt(), "Should handle MAX_VALUE");
     }
 
     @Test
     @DisplayName("should handle minimum i32 value")
     void shouldHandleMinimumI32Value() {
       final WasmValue value = WasmValue.i32(Integer.MIN_VALUE);
-      assertEquals(Integer.MIN_VALUE, value.asI32(), "Should handle MIN_VALUE");
+      assertEquals(Integer.MIN_VALUE, value.asInt(), "Should handle MIN_VALUE");
     }
 
     @Test
     @DisplayName("should handle negative i32 values")
     void shouldHandleNegativeI32Values() {
       final WasmValue value = WasmValue.i32(-12345);
-      assertEquals(-12345, value.asI32(), "Should handle negative value");
+      assertEquals(-12345, value.asInt(), "Should handle negative value");
     }
 
     @Test
     @DisplayName("should handle zero i32 value")
     void shouldHandleZeroI32Value() {
       final WasmValue value = WasmValue.i32(0);
-      assertEquals(0, value.asI32(), "Should handle zero");
+      assertEquals(0, value.asInt(), "Should handle zero");
     }
 
     @Test
@@ -86,30 +86,30 @@ class WasmValueTest {
       final WasmValue value = WasmValue.i64(123456789012345L);
       assertNotNull(value, "Value should not be null");
       assertEquals(WasmValueType.I64, value.getType(), "Type should be I64");
-      assertEquals(123456789012345L, value.asI64(), "Value should match");
+      assertEquals(123456789012345L, value.asLong(), "Value should match");
       assertEquals(123456789012345L, value.asLong(), "asLong() should return same value");
     }
 
     @Test
     @DisplayName("should create i64 value using ofI64")
     void shouldCreateI64ValueUsingOfI64() {
-      final WasmValue value = WasmValue.ofI64(999999999999L);
+      final WasmValue value = WasmValue.i64(999999999999L);
       assertEquals(WasmValueType.I64, value.getType(), "Type should be I64");
-      assertEquals(999999999999L, value.asI64(), "Value should match");
+      assertEquals(999999999999L, value.asLong(), "Value should match");
     }
 
     @Test
     @DisplayName("should handle maximum i64 value")
     void shouldHandleMaximumI64Value() {
       final WasmValue value = WasmValue.i64(Long.MAX_VALUE);
-      assertEquals(Long.MAX_VALUE, value.asI64(), "Should handle MAX_VALUE");
+      assertEquals(Long.MAX_VALUE, value.asLong(), "Should handle MAX_VALUE");
     }
 
     @Test
     @DisplayName("should handle minimum i64 value")
     void shouldHandleMinimumI64Value() {
       final WasmValue value = WasmValue.i64(Long.MIN_VALUE);
-      assertEquals(Long.MIN_VALUE, value.asI64(), "Should handle MIN_VALUE");
+      assertEquals(Long.MIN_VALUE, value.asLong(), "Should handle MIN_VALUE");
     }
 
     @Test
@@ -131,36 +131,36 @@ class WasmValueTest {
       final WasmValue value = WasmValue.f32(3.14159f);
       assertNotNull(value, "Value should not be null");
       assertEquals(WasmValueType.F32, value.getType(), "Type should be F32");
-      assertEquals(3.14159f, value.asF32(), 0.00001f, "Value should match");
+      assertEquals(3.14159f, value.asFloat(), 0.00001f, "Value should match");
       assertEquals(3.14159f, value.asFloat(), 0.00001f, "asFloat() should return same value");
     }
 
     @Test
     @DisplayName("should create f32 value using ofF32")
     void shouldCreateF32ValueUsingOfF32() {
-      final WasmValue value = WasmValue.ofF32(2.71828f);
+      final WasmValue value = WasmValue.f32(2.71828f);
       assertEquals(WasmValueType.F32, value.getType(), "Type should be F32");
-      assertEquals(2.71828f, value.asF32(), 0.00001f, "Value should match");
+      assertEquals(2.71828f, value.asFloat(), 0.00001f, "Value should match");
     }
 
     @Test
     @DisplayName("should handle special f32 values")
     void shouldHandleSpecialF32Values() {
       final WasmValue nanValue = WasmValue.f32(Float.NaN);
-      assertTrue(Float.isNaN(nanValue.asF32()), "Should preserve NaN");
+      assertTrue(Float.isNaN(nanValue.asFloat()), "Should preserve NaN");
 
       final WasmValue posInf = WasmValue.f32(Float.POSITIVE_INFINITY);
-      assertEquals(Float.POSITIVE_INFINITY, posInf.asF32(), "Should preserve positive infinity");
+      assertEquals(Float.POSITIVE_INFINITY, posInf.asFloat(), "Should preserve positive infinity");
 
       final WasmValue negInf = WasmValue.f32(Float.NEGATIVE_INFINITY);
-      assertEquals(Float.NEGATIVE_INFINITY, negInf.asF32(), "Should preserve negative infinity");
+      assertEquals(Float.NEGATIVE_INFINITY, negInf.asFloat(), "Should preserve negative infinity");
     }
 
     @Test
     @DisplayName("should handle negative f32 values")
     void shouldHandleNegativeF32Values() {
       final WasmValue value = WasmValue.f32(-123.456f);
-      assertEquals(-123.456f, value.asF32(), 0.001f, "Should handle negative value");
+      assertEquals(-123.456f, value.asFloat(), 0.001f, "Should handle negative value");
     }
 
     @Test
@@ -182,7 +182,7 @@ class WasmValueTest {
       final WasmValue value = WasmValue.f64(3.141592653589793);
       assertNotNull(value, "Value should not be null");
       assertEquals(WasmValueType.F64, value.getType(), "Type should be F64");
-      assertEquals(3.141592653589793, value.asF64(), 0.000000000001, "Value should match");
+      assertEquals(3.141592653589793, value.asDouble(), 0.000000000001, "Value should match");
       assertEquals(
           3.141592653589793,
           value.asDouble(),
@@ -193,22 +193,22 @@ class WasmValueTest {
     @Test
     @DisplayName("should create f64 value using ofF64")
     void shouldCreateF64ValueUsingOfF64() {
-      final WasmValue value = WasmValue.ofF64(2.718281828459045);
+      final WasmValue value = WasmValue.f64(2.718281828459045);
       assertEquals(WasmValueType.F64, value.getType(), "Type should be F64");
-      assertEquals(2.718281828459045, value.asF64(), 0.000000000001, "Value should match");
+      assertEquals(2.718281828459045, value.asDouble(), 0.000000000001, "Value should match");
     }
 
     @Test
     @DisplayName("should handle special f64 values")
     void shouldHandleSpecialF64Values() {
       final WasmValue nanValue = WasmValue.f64(Double.NaN);
-      assertTrue(Double.isNaN(nanValue.asF64()), "Should preserve NaN");
+      assertTrue(Double.isNaN(nanValue.asDouble()), "Should preserve NaN");
 
       final WasmValue posInf = WasmValue.f64(Double.POSITIVE_INFINITY);
-      assertEquals(Double.POSITIVE_INFINITY, posInf.asF64(), "Should preserve positive infinity");
+      assertEquals(Double.POSITIVE_INFINITY, posInf.asDouble(), "Should preserve positive infinity");
 
       final WasmValue negInf = WasmValue.f64(Double.NEGATIVE_INFINITY);
-      assertEquals(Double.NEGATIVE_INFINITY, negInf.asF64(), "Should preserve negative infinity");
+      assertEquals(Double.NEGATIVE_INFINITY, negInf.asDouble(), "Should preserve negative infinity");
     }
 
     @Test
@@ -318,7 +318,7 @@ class WasmValueTest {
     @DisplayName("should create externref value using externRef alias")
     void shouldCreateExternrefValueUsingExternRefAlias() {
       final Object ref = new Object();
-      final WasmValue value = WasmValue.externRef(ref);
+      final WasmValue value = WasmValue.externref(ref);
       assertEquals(WasmValueType.EXTERNREF, value.getType(), "Type should be EXTERNREF");
       assertSame(ref, value.asExternref(), "Reference should be the same object");
     }
@@ -520,7 +520,7 @@ class WasmValueTest {
     void getFirstValueShouldReturnFirstValue() {
       final WasmValue[] values = new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)};
       final WasmValue first = WasmValue.getFirstValue(values);
-      assertEquals(1, first.asI32(), "Should return first value");
+      assertEquals(1, first.asInt(), "Should return first value");
     }
 
     @Test
@@ -535,7 +535,7 @@ class WasmValueTest {
     void getLastValueShouldReturnLastValue() {
       final WasmValue[] values = new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)};
       final WasmValue last = WasmValue.getLastValue(values);
-      assertEquals(2, last.asI32(), "Should return last value");
+      assertEquals(2, last.asInt(), "Should return last value");
     }
 
     @Test
@@ -545,8 +545,8 @@ class WasmValueTest {
           new WasmValue[] {WasmValue.i32(1), WasmValue.i64(2L), WasmValue.i32(3)};
       final WasmValue[] i32Values = WasmValue.extractByType(values, WasmValueType.I32);
       assertEquals(2, i32Values.length, "Should have 2 I32 values");
-      assertEquals(1, i32Values[0].asI32(), "First I32 should be 1");
-      assertEquals(3, i32Values[1].asI32(), "Second I32 should be 3");
+      assertEquals(1, i32Values[0].asInt(), "First I32 should be 1");
+      assertEquals(3, i32Values[1].asInt(), "Second I32 should be 3");
     }
 
     @Test

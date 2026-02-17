@@ -690,10 +690,10 @@ public final class PanamaHostFunction implements WasmFunction {
     final long valueOffset = offset + 4;
 
     switch (value.getType()) {
-      case I32 -> ptr.set(ValueLayout.JAVA_INT, valueOffset, value.asI32());
-      case I64 -> ptr.set(ValueLayout.JAVA_LONG, valueOffset, value.asI64());
-      case F32 -> ptr.set(ValueLayout.JAVA_FLOAT, valueOffset, value.asF32());
-      case F64 -> ptr.set(ValueLayout.JAVA_DOUBLE, valueOffset, value.asF64());
+      case I32 -> ptr.set(ValueLayout.JAVA_INT, valueOffset, value.asInt());
+      case I64 -> ptr.set(ValueLayout.JAVA_LONG, valueOffset, value.asLong());
+      case F32 -> ptr.set(ValueLayout.JAVA_FLOAT, valueOffset, value.asFloat());
+      case F64 -> ptr.set(ValueLayout.JAVA_DOUBLE, valueOffset, value.asDouble());
       case V128 -> {
         final byte[] v128 = value.asV128();
         for (int j = 0; j < Math.min(16, v128.length); j++) {
@@ -1235,10 +1235,10 @@ public final class PanamaHostFunction implements WasmFunction {
    */
   private Object extractNativeValue(final WasmValue wasmValue) {
     return switch (wasmValue.getType()) {
-      case I32 -> wasmValue.asI32();
-      case I64 -> wasmValue.asI64();
-      case F32 -> wasmValue.asF32();
-      case F64 -> wasmValue.asF64();
+      case I32 -> wasmValue.asInt();
+      case I64 -> wasmValue.asLong();
+      case F32 -> wasmValue.asFloat();
+      case F64 -> wasmValue.asDouble();
       case V128 -> wasmValue.asV128();
       case FUNCREF, EXTERNREF -> wasmValue.asExternref();
       default ->

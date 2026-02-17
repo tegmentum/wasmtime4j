@@ -61,14 +61,14 @@ public final class TableFillTest extends DualRuntimeTest {
       runner.compileAndInstantiate(moduleWat);
 
       // Initially all elements are null
-      runner.assertReturn("get", new WasmValue[] {WasmValue.externRefNull()}, WasmValue.i32(1));
-      runner.assertReturn("get", new WasmValue[] {WasmValue.externRefNull()}, WasmValue.i32(2));
+      runner.assertReturn("get", new WasmValue[] {WasmValue.nullExternref()}, WasmValue.i32(1));
+      runner.assertReturn("get", new WasmValue[] {WasmValue.nullExternref()}, WasmValue.i32(2));
 
       // Fill with null at position 9
-      runner.invoke("fill", WasmValue.i32(9), WasmValue.externRefNull(), WasmValue.i32(1));
+      runner.invoke("fill", WasmValue.i32(9), WasmValue.nullExternref(), WasmValue.i32(1));
 
       // Position 9 should still be null
-      runner.assertReturn("get", new WasmValue[] {WasmValue.externRefNull()}, WasmValue.i32(9));
+      runner.assertReturn("get", new WasmValue[] {WasmValue.nullExternref()}, WasmValue.i32(9));
     }
   }
 
@@ -86,7 +86,7 @@ public final class TableFillTest extends DualRuntimeTest {
 
       // Fill beyond table bounds should trap
       runner.assertTrap(
-          "fill", "out of bounds", WasmValue.i32(11), WasmValue.externRefNull(), WasmValue.i32(0));
+          "fill", "out of bounds", WasmValue.i32(11), WasmValue.nullExternref(), WasmValue.i32(0));
     }
   }
 }

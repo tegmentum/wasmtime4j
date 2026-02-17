@@ -257,10 +257,10 @@ class ResourceExhaustionTest {
         // Memory has max 10 pages, min 1. Try to grow by 20 pages - should fail
         final WasmValue[] result = growFunc.call(WasmValue.i32(20));
 
-        LOGGER.info("Memory grow result for 20 pages: " + result[0].asI32());
+        LOGGER.info("Memory grow result for 20 pages: " + result[0].asInt());
 
         // Result should be -1 indicating failure
-        assertThat(result[0].asI32()).isEqualTo(-1);
+        assertThat(result[0].asInt()).isEqualTo(-1);
       } finally {
         module.close();
       }
@@ -280,10 +280,10 @@ class ResourceExhaustionTest {
         // Grow by 5 pages - should succeed (current 1 + 5 = 6, max is 10)
         final WasmValue[] result = growFunc.call(WasmValue.i32(5));
 
-        LOGGER.info("Memory grow result for 5 pages: " + result[0].asI32());
+        LOGGER.info("Memory grow result for 5 pages: " + result[0].asInt());
 
         // Result should be old size (1) indicating success
-        assertThat(result[0].asI32()).isEqualTo(1);
+        assertThat(result[0].asInt()).isEqualTo(1);
       } finally {
         module.close();
       }

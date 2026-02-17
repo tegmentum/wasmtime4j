@@ -114,7 +114,7 @@ public final class ImportWorksTest {
       assertEquals(0, hits.get(), "No functions should be called before run()");
 
       // Call the exported run function with null references
-      runner.invoke("run", WasmValue.externRefNull(), WasmValue.funcRefNull());
+      runner.invoke("run", WasmValue.nullExternref(), WasmValue.nullFuncref());
 
       // Verify all three host functions were called
       assertEquals(3, hits.get(), "All three host functions should have been called");

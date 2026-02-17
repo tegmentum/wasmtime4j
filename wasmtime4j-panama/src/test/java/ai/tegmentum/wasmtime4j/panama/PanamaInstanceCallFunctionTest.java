@@ -30,7 +30,7 @@ public class PanamaInstanceCallFunctionTest {
 
     assertNotNull(results, "Results should not be null");
     assertEquals(1, results.length, "Should return 1 value");
-    assertEquals(42, results[0].asI32(), "Should return 42");
+    assertEquals(42, results[0].asInt(), "Should return 42");
 
     instance.close();
     store.close();
@@ -59,7 +59,7 @@ public class PanamaInstanceCallFunctionTest {
 
     assertNotNull(results, "Results should not be null");
     assertEquals(1, results.length, "Should return 1 value");
-    assertEquals(42, results[0].asI32(), "Should return 10 + 32 = 42");
+    assertEquals(42, results[0].asInt(), "Should return 10 + 32 = 42");
 
     instance.close();
     store.close();
@@ -134,7 +134,7 @@ public class PanamaInstanceCallFunctionTest {
     assertNotNull(results, "Results should not be null");
     assertEquals(1, results.length, "Should return 1 value");
     assertEquals(
-        3000000000L, results[0].asI64(), "Should return 1000000000 + 2000000000 = 3000000000");
+        3000000000L, results[0].asLong(), "Should return 1000000000 + 2000000000 = 3000000000");
 
     instance.close();
     store.close();
@@ -164,7 +164,7 @@ public class PanamaInstanceCallFunctionTest {
 
     assertNotNull(results, "Results should not be null");
     assertEquals(1, results.length, "Should return 1 value");
-    assertEquals(42.0f, results[0].asF32(), 0.001f, "Should return 10.5 + 31.5 = 42.0");
+    assertEquals(42.0f, results[0].asFloat(), 0.001f, "Should return 10.5 + 31.5 = 42.0");
 
     instance.close();
     store.close();

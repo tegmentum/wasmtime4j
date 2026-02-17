@@ -88,7 +88,7 @@ public final class RefTestTest extends DualRuntimeTest {
       runner.assertReturn(
           "non-nulls-to-nullable-tops",
           new WasmValue[] {WasmValue.i32(1)},
-          WasmValue.externRef(99));
+          WasmValue.externref(99));
     }
   }
 
@@ -143,7 +143,7 @@ public final class RefTestTest extends DualRuntimeTest {
       runner.assertReturn(
           "non-nulls-to-non-nullable-tops",
           new WasmValue[] {WasmValue.i32(1)},
-          WasmValue.externRef(1));
+          WasmValue.externref(1));
     }
   }
 
@@ -399,7 +399,7 @@ public final class RefTestTest extends DualRuntimeTest {
       runner.assertReturn(
           "non-null-to-nullable-bottom-type",
           new WasmValue[] {WasmValue.i32(0)},
-          WasmValue.externRef(1));
+          WasmValue.externref(1));
     }
   }
 
@@ -460,7 +460,7 @@ public final class RefTestTest extends DualRuntimeTest {
       runner.assertReturn(
           "non-null-to-non-nullable-bottom-type",
           new WasmValue[] {WasmValue.i32(0)},
-          WasmValue.externRef(1));
+          WasmValue.externref(1));
     }
   }
 }

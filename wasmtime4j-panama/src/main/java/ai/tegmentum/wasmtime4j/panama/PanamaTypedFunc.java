@@ -172,7 +172,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   /**
@@ -189,7 +189,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   /**
@@ -205,7 +205,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asI64();
+    return results[0].asLong();
   }
 
   /**
@@ -222,7 +222,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asI64();
+    return results[0].asLong();
   }
 
   /**
@@ -238,7 +238,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asF32();
+    return results[0].asFloat();
   }
 
   /**
@@ -254,7 +254,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asF64();
+    return results[0].asDouble();
   }
 
   /**
@@ -271,7 +271,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asF32();
+    return results[0].asFloat();
   }
 
   /**
@@ -288,7 +288,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asF64();
+    return results[0].asDouble();
   }
 
   /**
@@ -308,7 +308,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   /**
@@ -328,7 +328,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asI64();
+    return results[0].asLong();
   }
 
   @Override
@@ -358,7 +358,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asF32();
+    return results[0].asFloat();
   }
 
   /**
@@ -378,7 +378,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asF64();
+    return results[0].asDouble();
   }
 
   /**
@@ -395,7 +395,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asI64();
+    return results[0].asLong();
   }
 
   /**
@@ -411,7 +411,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   /**
@@ -428,7 +428,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asF32();
+    return results[0].asFloat();
   }
 
   /**
@@ -445,7 +445,7 @@ public final class PanamaTypedFunc implements TypedFunc {
     if (results.length != 1) {
       throw new WasmException("Expected 1 result, got " + results.length);
     }
-    return results[0].asF32();
+    return results[0].asFloat();
   }
 
   /** Closes the typed function and releases resources. */

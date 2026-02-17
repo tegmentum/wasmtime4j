@@ -57,8 +57,8 @@ import java.util.logging.Logger;
  * <pre>{@code
  * // Create a simple host function
  * HostFunction addFunction = (params) -> {
- *     int a = params[0].asI32();
- *     int b = params[1].asI32();
+ *     int a = params[0].asInt();
+ *     int b = params[1].asInt();
  *     return new WasmValue[] { WasmValue.i32(a + b) };
  * };
  *

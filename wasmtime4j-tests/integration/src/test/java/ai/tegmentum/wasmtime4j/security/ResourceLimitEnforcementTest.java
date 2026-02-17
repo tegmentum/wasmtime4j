@@ -340,13 +340,13 @@ class ResourceLimitEnforcementTest {
 
         // Try to grow by 5 pages - should succeed
         final WasmValue[] result1 = growFunc.call(WasmValue.i32(5));
-        final int growth1 = result1[0].asI32();
+        final int growth1 = result1[0].asInt();
         assertThat(growth1).isEqualTo(1); // Returns old size
         LOGGER.info("Grew by 5 pages, old size: " + growth1);
 
         // Try to grow by 10 more pages - should fail (would exceed max)
         final WasmValue[] result2 = growFunc.call(WasmValue.i32(10));
-        final int growth2 = result2[0].asI32();
+        final int growth2 = result2[0].asInt();
         assertThat(growth2).isEqualTo(-1); // -1 indicates failure
         LOGGER.info("Attempted to grow by 10 more pages, result: " + growth2);
 
@@ -447,7 +447,7 @@ class ResourceLimitEnforcementTest {
 
             // Run with small number of iterations - should succeed
             final WasmValue[] result1 = consumerFunc.call(WasmValue.i32(10));
-            LOGGER.info("Small iteration result: " + result1[0].asI32());
+            LOGGER.info("Small iteration result: " + result1[0].asInt());
             LOGGER.info("Remaining fuel: " + fuelStore.getFuel());
 
             // Set fuel again for larger test
@@ -560,7 +560,7 @@ class ResourceLimitEnforcementTest {
 
         // Try to exceed both limits
         final WasmValue[] memoryGrowResultArr = growFunc.call(WasmValue.i32(100));
-        final long memoryGrowResult = memoryGrowResultArr[0].asI32();
+        final long memoryGrowResult = memoryGrowResultArr[0].asInt();
         final long tableGrowResult = table.grow(100, null);
 
         assertThat(memoryGrowResult).isEqualTo(-1);

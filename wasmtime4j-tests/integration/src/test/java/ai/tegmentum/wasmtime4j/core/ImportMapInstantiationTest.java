@@ -105,8 +105,8 @@ public class ImportMapInstantiationTest extends DualRuntimeTest {
 
         final WasmValue[] results = callIt.call();
         assertNotNull(results, "call_it must return results");
-        assertEquals(777, results[0].asI32(), "call_it should return 777 from host function");
-        LOGGER.info("[" + runtime + "] call_it() returned " + results[0].asI32());
+        assertEquals(777, results[0].asInt(), "call_it should return 777 from host function");
+        LOGGER.info("[" + runtime + "] call_it() returned " + results[0].asInt());
       }
 
     } catch (final UnsupportedOperationException e) {

@@ -282,22 +282,22 @@ public class GlobalOperationsBenchmark {
 
   @Benchmark
   public int extractI32Value() {
-    return i32Global.get().asI32();
+    return i32Global.get().asInt();
   }
 
   @Benchmark
   public long extractI64Value() {
-    return i64Global.get().asI64();
+    return i64Global.get().asLong();
   }
 
   @Benchmark
   public float extractF32Value() {
-    return f32Global.get().asF32();
+    return f32Global.get().asFloat();
   }
 
   @Benchmark
   public double extractF64Value() {
-    return f64Global.get().asF64();
+    return f64Global.get().asDouble();
   }
 
   @Benchmark
@@ -309,7 +309,7 @@ public class GlobalOperationsBenchmark {
 
   @Benchmark
   public int incrementI32Global() {
-    final int currentValue = i32Global.get().asI32();
+    final int currentValue = i32Global.get().asInt();
     final int newValue = currentValue + 1;
     i32Global.set(WasmValue.i32(newValue));
     return newValue;
@@ -317,7 +317,7 @@ public class GlobalOperationsBenchmark {
 
   @Benchmark
   public long incrementI64Global() {
-    final long currentValue = i64Global.get().asI64();
+    final long currentValue = i64Global.get().asLong();
     final long newValue = currentValue + 1;
     i64Global.set(WasmValue.i64(newValue));
     return newValue;
@@ -325,7 +325,7 @@ public class GlobalOperationsBenchmark {
 
   @Benchmark
   public float addF32Global() {
-    final float currentValue = f32Global.get().asF32();
+    final float currentValue = f32Global.get().asFloat();
     final float newValue = currentValue + 1.0f;
     f32Global.set(WasmValue.f32(newValue));
     return newValue;
@@ -333,7 +333,7 @@ public class GlobalOperationsBenchmark {
 
   @Benchmark
   public double addF64Global() {
-    final double currentValue = f64Global.get().asF64();
+    final double currentValue = f64Global.get().asDouble();
     final double newValue = currentValue + 1.0;
     f64Global.set(WasmValue.f64(newValue));
     return newValue;
@@ -349,9 +349,9 @@ public class GlobalOperationsBenchmark {
     final WasmGlobal g3 = store.createGlobal(WasmValueType.F32, true, WasmValue.f32(3.0f));
 
     // Perform operations
-    g1.set(WasmValue.i32(g1.get().asI32() + 10));
-    g2.set(WasmValue.i64(g2.get().asI64() + 20));
-    g3.set(WasmValue.f32(g3.get().asF32() + 30.0f));
+    g1.set(WasmValue.i32(g1.get().asInt() + 10));
+    g2.set(WasmValue.i64(g2.get().asLong() + 20));
+    g3.set(WasmValue.f32(g3.get().asFloat() + 30.0f));
 
     // Read final values
     g1.get();

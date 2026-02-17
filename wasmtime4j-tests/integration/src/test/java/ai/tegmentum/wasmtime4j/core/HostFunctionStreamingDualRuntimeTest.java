@@ -98,9 +98,9 @@ public class HostFunctionStreamingDualRuntimeTest extends DualRuntimeTest {
         final WasmValue[] results = callStream.get().call();
         assertNotNull(results, "Results should not be null");
         assertEquals(1, results.length, "Should have 1 result");
-        assertEquals(42, results[0].asI32(), "Streaming function should return 42");
+        assertEquals(42, results[0].asInt(), "Streaming function should return 42");
         LOGGER.info(
-            "[" + runtime + "] Streaming function through linker returned: " + results[0].asI32());
+            "[" + runtime + "] Streaming function through linker returned: " + results[0].asInt());
       }
     }
   }
@@ -124,18 +124,18 @@ public class HostFunctionStreamingDualRuntimeTest extends DualRuntimeTest {
 
     assertNotNull(results, "Results should not be null");
     assertEquals(3, results.length, "Should have 3 results");
-    assertEquals(10, results[0].asI32(), "First result should be 10");
-    assertEquals(20, results[1].asI32(), "Second result should be 20");
-    assertEquals(30, results[2].asI32(), "Third result should be 30");
+    assertEquals(10, results[0].asInt(), "First result should be 10");
+    assertEquals(20, results[1].asInt(), "Second result should be 20");
+    assertEquals(30, results[2].asInt(), "Third result should be 30");
     LOGGER.info(
         "["
             + runtime
             + "] Streaming yielded 3 values: ["
-            + results[0].asI32()
+            + results[0].asInt()
             + ", "
-            + results[1].asI32()
+            + results[1].asInt()
             + ", "
-            + results[2].asI32()
+            + results[2].asInt()
             + "]");
   }
 
@@ -157,7 +157,7 @@ public class HostFunctionStreamingDualRuntimeTest extends DualRuntimeTest {
 
     assertNotNull(results, "Results should not be null");
     assertEquals(1, results.length, "Should have 1 result (null yield should be skipped)");
-    assertEquals(99, results[0].asI32(), "Only non-null value should be 99");
+    assertEquals(99, results[0].asInt(), "Only non-null value should be 99");
     LOGGER.info("[" + runtime + "] Streaming context correctly skipped null, kept value 99");
   }
 

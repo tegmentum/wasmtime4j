@@ -114,7 +114,7 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
         final int numCalls = 5;
         for (int i = 0; i < numCalls; i++) {
           final WasmValue[] result = addFn.get().call(WasmValue.i32(i), WasmValue.i32(i + 1));
-          LOGGER.info("[" + runtime + "] add(" + i + ", " + (i + 1) + ") = " + result[0].asI32());
+          LOGGER.info("[" + runtime + "] add(" + i + ", " + (i + 1) + ") = " + result[0].asInt());
         }
 
         final long countAfter = store.getExecutionCount();

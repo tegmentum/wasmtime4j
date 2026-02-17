@@ -38,8 +38,8 @@ public final class CallViaFuncrefTest {
               new WasmValueType[] {WasmValueType.I32}),
           (args) -> {
             hits.incrementAndGet();
-            final int a = args[0].asI32();
-            final int b = args[1].asI32();
+            final int a = args[0].asInt();
+            final int b = args[1].asInt();
             return new WasmValue[] {WasmValue.i32(a + b)};
           });
 
@@ -63,7 +63,7 @@ public final class CallViaFuncrefTest {
 
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should return 1 value");
-      assertEquals(7, results[0].asI32(), "3 + 4 should equal 7");
+      assertEquals(7, results[0].asInt(), "3 + 4 should equal 7");
 
       // Verify the host add function was called
       assertEquals(1, hits.get(), "Host add function should have been called once");

@@ -190,7 +190,7 @@ public class ConcurrentAccessStressTest {
                             "Expected 1 result at thread " + threadId + " call " + i);
                         assertEquals(
                             i + threadId,
-                            result[0].asI32(),
+                            result[0].asInt(),
                             "Wrong result at thread " + threadId + " call " + i);
                         successCount.incrementAndGet();
                       }

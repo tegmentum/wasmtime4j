@@ -80,6 +80,6 @@ class PanamaGcObject implements GcObject {
 
   @Override
   public WasmValue toWasmValue() {
-    return WasmValue.externRef(this);
+    return WasmValue.externref(this);
   }
 }

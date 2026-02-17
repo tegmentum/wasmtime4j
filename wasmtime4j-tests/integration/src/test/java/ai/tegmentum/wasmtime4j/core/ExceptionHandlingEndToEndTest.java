@@ -325,7 +325,7 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
         LOGGER.info("[" + runtime + "] catch_tag returned " + results.length + " value(s)");
 
         if (results.length > 0) {
-          final int value = results[0].asI32();
+          final int value = results[0].asInt();
           LOGGER.info("[" + runtime + "] catch_tag returned i32=" + value);
           // The caught value should be 99 (thrown by throw $t (i32.const 99))
           org.junit.jupiter.api.Assertions.assertEquals(

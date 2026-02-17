@@ -1021,7 +1021,7 @@ public final class PanamaInstance implements Instance {
           "Function " + functionName + " returned " + results[0].getType() + ", expected I32");
     }
 
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   @Override
@@ -1047,7 +1047,7 @@ public final class PanamaInstance implements Instance {
           "Function " + functionName + " returned " + results[0].getType() + ", expected I32");
     }
 
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   // ===== Optimized Typed Function Call Methods =====

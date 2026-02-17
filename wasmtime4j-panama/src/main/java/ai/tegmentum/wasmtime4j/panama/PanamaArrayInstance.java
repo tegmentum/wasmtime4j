@@ -92,6 +92,6 @@ class PanamaArrayInstance extends PanamaGcObject implements ArrayInstance {
 
   @Override
   public WasmValue toWasmValue() {
-    return WasmValue.externRef(this);
+    return WasmValue.externref(this);
   }
 }

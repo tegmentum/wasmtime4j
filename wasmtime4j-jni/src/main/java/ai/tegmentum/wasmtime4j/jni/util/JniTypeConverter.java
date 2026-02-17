@@ -35,11 +35,10 @@ public final class JniTypeConverter {
    * @throws JniValidationException if type is null
    */
   public static String typeToString(final WasmValueType type) {
-    try {
-      return TypeConversionUtilities.typeToString(type);
-    } catch (final IllegalArgumentException e) {
-      throw new JniValidationException(e.getMessage(), e);
+    if (type == null) {
+      throw new JniValidationException("type must not be null");
     }
+    return type.name().toLowerCase(java.util.Locale.ROOT);
   }
 
   /**
@@ -50,10 +49,13 @@ public final class JniTypeConverter {
    * @throws JniValidationException if typeString is null or invalid
    */
   public static WasmValueType stringToType(final String typeString) {
+    if (typeString == null) {
+      throw new JniValidationException("typeString must not be null");
+    }
     try {
-      return TypeConversionUtilities.stringToType(typeString);
+      return WasmValueType.valueOf(typeString.toUpperCase(java.util.Locale.ROOT));
     } catch (final IllegalArgumentException e) {
-      throw new JniValidationException(e.getMessage(), e);
+      throw new JniValidationException("Invalid WebAssembly type string: " + typeString, e);
     }
   }
 
@@ -261,11 +263,17 @@ public final class JniTypeConverter {
    * @throws JniValidationException if types contains null elements
    */
   public static String[] typesToStrings(final WasmValueType[] types) {
-    try {
-      return TypeConversionUtilities.typesToStrings(types);
-    } catch (final IllegalArgumentException e) {
-      throw new JniValidationException(e.getMessage(), e);
+    if (types == null) {
+      throw new JniValidationException("types must not be null");
     }
+    final String[] strings = new String[types.length];
+    for (int i = 0; i < types.length; i++) {
+      if (types[i] == null) {
+        throw new JniValidationException("Type at index " + i + " is null");
+      }
+      strings[i] = types[i].name().toLowerCase(java.util.Locale.ROOT);
+    }
+    return strings;
   }
 
   /**
@@ -276,11 +284,22 @@ public final class JniTypeConverter {
    * @throws JniValidationException if any string is invalid
    */
   public static WasmValueType[] stringsToTypes(final String[] typeStrings) {
-    try {
-      return TypeConversionUtilities.stringsToTypes(typeStrings);
-    } catch (final IllegalArgumentException e) {
-      throw new JniValidationException(e.getMessage(), e);
+    if (typeStrings == null) {
+      throw new JniValidationException("typeStrings must not be null");
     }
+    final WasmValueType[] types = new WasmValueType[typeStrings.length];
+    for (int i = 0; i < typeStrings.length; i++) {
+      if (typeStrings[i] == null) {
+        throw new JniValidationException("Type string at index " + i + " is null");
+      }
+      try {
+        types[i] = WasmValueType.valueOf(typeStrings[i].toUpperCase(java.util.Locale.ROOT));
+      } catch (final IllegalArgumentException e) {
+        throw new JniValidationException(
+            "Invalid WebAssembly type string: " + typeStrings[i], e);
+      }
+    }
+    return types;
   }
 
   /**
@@ -393,11 +412,7 @@ public final class JniTypeConverter {
    * @return byte representation of the type
    */
   private static byte encodeValueType(final ai.tegmentum.wasmtime4j.WasmValueType valueType) {
-    try {
-      return TypeConversionUtilities.encodeValueType(valueType);
-    } catch (final IllegalArgumentException e) {
-      throw new JniValidationException(e.getMessage(), e);
-    }
+    return (byte) valueType.toNativeTypeCode();
   }
 
   /**
@@ -457,16 +472,16 @@ public final class JniTypeConverter {
   private static int marshalValue(final WasmValue value, final byte[] buffer, final int offset) {
     switch (value.getType()) {
       case I32:
-        writeInt(buffer, offset, value.asI32());
+        writeInt(buffer, offset, value.asInt());
         return offset + 4;
       case I64:
-        writeLong(buffer, offset, value.asI64());
+        writeLong(buffer, offset, value.asLong());
         return offset + 8;
       case F32:
-        writeInt(buffer, offset, Float.floatToIntBits(value.asF32()));
+        writeInt(buffer, offset, Float.floatToIntBits(value.asFloat()));
         return offset + 4;
       case F64:
-        writeLong(buffer, offset, Double.doubleToLongBits(value.asF64()));
+        writeLong(buffer, offset, Double.doubleToLongBits(value.asDouble()));
         return offset + 8;
       case V128:
         final byte[] v128Data = value.asV128();

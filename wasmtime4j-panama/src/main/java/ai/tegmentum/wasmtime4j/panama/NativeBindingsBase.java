@@ -173,7 +173,7 @@ abstract class NativeBindingsBase {
 
     switch (value.getType()) {
       case I32:
-        components[0] = value.asI32();
+        components[0] = value.asInt();
         components[1] = 0L;
         components[2] = 0.0f;
         components[3] = 0.0;
@@ -181,7 +181,7 @@ abstract class NativeBindingsBase {
         break;
       case I64:
         components[0] = 0;
-        components[1] = value.asI64();
+        components[1] = value.asLong();
         components[2] = 0.0f;
         components[3] = 0.0;
         components[4] = null;
@@ -189,7 +189,7 @@ abstract class NativeBindingsBase {
       case F32:
         components[0] = 0;
         components[1] = 0L;
-        components[2] = value.asF32();
+        components[2] = value.asFloat();
         components[3] = 0.0;
         components[4] = null;
         break;
@@ -197,7 +197,7 @@ abstract class NativeBindingsBase {
         components[0] = 0;
         components[1] = 0L;
         components[2] = 0.0f;
-        components[3] = value.asF64();
+        components[3] = value.asDouble();
         components[4] = null;
         break;
       case V128:

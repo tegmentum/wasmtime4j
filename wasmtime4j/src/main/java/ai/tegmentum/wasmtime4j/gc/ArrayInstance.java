@@ -13,7 +13,7 @@ package ai.tegmentum.wasmtime4j.gc;
  * intArray.setElement(0, GcValue.i32(42));
  * intArray.setElement(1, GcValue.i32(100));
  *
- * int value = intArray.getElement(0).asI32();
+ * int value = intArray.getElement(0).asInt();
  * int length = intArray.getLength();
  * }</pre>
  *

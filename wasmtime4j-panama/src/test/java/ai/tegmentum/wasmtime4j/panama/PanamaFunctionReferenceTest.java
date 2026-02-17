@@ -278,7 +278,7 @@ class PanamaFunctionReferenceTest {
               new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
               new WasmValueType[] {WasmValueType.I32});
       final HostFunction hf =
-          (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() + params[1].asI32())};
+          (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
@@ -423,8 +423,8 @@ class PanamaFunctionReferenceTest {
       final WasmValue[] results = ref.call();
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have 1 result");
-      assertEquals(42, results[0].asI32(), "Result should be 42");
-      LOGGER.info("Call result: " + results[0].asI32());
+      assertEquals(42, results[0].asInt(), "Result should be 42");
+      LOGGER.info("Call result: " + results[0].asInt());
     }
 
     @Test
@@ -435,7 +435,7 @@ class PanamaFunctionReferenceTest {
               new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
               new WasmValueType[] {WasmValueType.I32});
       final HostFunction hf =
-          (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() + params[1].asI32())};
+          (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
@@ -443,8 +443,8 @@ class PanamaFunctionReferenceTest {
       final WasmValue[] results = ref.call(WasmValue.i32(10), WasmValue.i32(20));
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have 1 result");
-      assertEquals(30, results[0].asI32(), "Result should be 30");
-      LOGGER.info("Call result (10+20): " + results[0].asI32());
+      assertEquals(30, results[0].asInt(), "Result should be 30");
+      LOGGER.info("Call result (10+20): " + results[0].asInt());
     }
 
     @Test
@@ -550,8 +550,8 @@ class PanamaFunctionReferenceTest {
       final WasmValue[] results = ref.call(WasmValue.i32(7), WasmValue.i32(8));
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have 1 result");
-      assertEquals(15, results[0].asI32(), "7+8 should equal 15");
-      LOGGER.info("Wasm function call result (7+8): " + results[0].asI32());
+      assertEquals(15, results[0].asInt(), "7+8 should equal 15");
+      LOGGER.info("Wasm function call result (7+8): " + results[0].asInt());
     }
 
     @Test
@@ -632,8 +632,8 @@ class PanamaFunctionReferenceTest {
       final WasmValue[] results = ref.call(WasmValue.i32(100), WasmValue.i32(200));
       assertNotNull(results, "Results should not be null");
       assertEquals(1, results.length, "Should have 1 result");
-      assertEquals(300, results[0].asI32(), "100+200 should equal 300");
-      LOGGER.info("Store-created function call result (100+200): " + results[0].asI32());
+      assertEquals(300, results[0].asInt(), "100+200 should equal 300");
+      LOGGER.info("Store-created function call result (100+200): " + results[0].asInt());
     }
 
     @Test
@@ -921,7 +921,7 @@ class PanamaFunctionReferenceTest {
       final FunctionType ft =
           FunctionType.of(
               new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() * 3)};
+      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() * 3)};
 
       final PanamaFunctionReference ref =
           (PanamaFunctionReference) store.createFunctionReference(hf, ft);
@@ -932,8 +932,8 @@ class PanamaFunctionReferenceTest {
               ref.longValue(), new WasmValue[] {WasmValue.i32(10)});
       assertNotNull(results, "Callback results should not be null");
       assertEquals(1, results.length, "Should have 1 result");
-      assertEquals(30, results[0].asI32(), "10*3 should be 30");
-      LOGGER.info("Callback invocation result (10*3): " + results[0].asI32());
+      assertEquals(30, results[0].asInt(), "10*3 should be 30");
+      LOGGER.info("Callback invocation result (10*3): " + results[0].asInt());
     }
 
     @Test
@@ -1008,14 +1008,14 @@ class PanamaFunctionReferenceTest {
       final FunctionType ft =
           FunctionType.of(
               new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.I64});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i64(params[0].asI64() * 2)};
+      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i64(params[0].asLong() * 2)};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
 
       final WasmValue[] results = ref.call(WasmValue.i64(100L));
-      assertEquals(200L, results[0].asI64(), "100*2 should equal 200");
-      LOGGER.info("I64 function result: " + results[0].asI64());
+      assertEquals(200L, results[0].asLong(), "100*2 should equal 200");
+      LOGGER.info("I64 function result: " + results[0].asLong());
     }
 
     @Test
@@ -1024,14 +1024,14 @@ class PanamaFunctionReferenceTest {
       final FunctionType ft =
           FunctionType.of(
               new WasmValueType[] {WasmValueType.F32}, new WasmValueType[] {WasmValueType.F32});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.f32(params[0].asF32() + 1.0f)};
+      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.f32(params[0].asFloat() + 1.0f)};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
 
       final WasmValue[] results = ref.call(WasmValue.f32(3.14f));
-      assertEquals(4.14f, results[0].asF32(), 0.001f, "3.14+1.0 should equal 4.14");
-      LOGGER.info("F32 function result: " + results[0].asF32());
+      assertEquals(4.14f, results[0].asFloat(), 0.001f, "3.14+1.0 should equal 4.14");
+      LOGGER.info("F32 function result: " + results[0].asFloat());
     }
 
     @Test
@@ -1040,14 +1040,14 @@ class PanamaFunctionReferenceTest {
       final FunctionType ft =
           FunctionType.of(
               new WasmValueType[] {WasmValueType.F64}, new WasmValueType[] {WasmValueType.F64});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.f64(params[0].asF64() * 0.5)};
+      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.f64(params[0].asDouble() * 0.5)};
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
 
       final WasmValue[] results = ref.call(WasmValue.f64(10.0));
-      assertEquals(5.0, results[0].asF64(), 0.001, "10.0*0.5 should equal 5.0");
-      LOGGER.info("F64 function result: " + results[0].asF64());
+      assertEquals(5.0, results[0].asDouble(), 0.001, "10.0*0.5 should equal 5.0");
+      LOGGER.info("F64 function result: " + results[0].asDouble());
     }
 
     @Test
@@ -1061,15 +1061,15 @@ class PanamaFunctionReferenceTest {
           (params) ->
               new WasmValue[] {
                 WasmValue.f64(
-                    (double) params[0].asI32() + (double) params[1].asI64() + params[2].asF64())
+                    (double) params[0].asInt() + (double) params[1].asLong() + params[2].asDouble())
               };
 
       final FunctionReference ref = store.createFunctionReference(hf, ft);
       trackRef(ref);
 
       final WasmValue[] results = ref.call(WasmValue.i32(1), WasmValue.i64(2L), WasmValue.f64(3.0));
-      assertEquals(6.0, results[0].asF64(), 0.001, "1+2+3.0 should equal 6.0");
-      LOGGER.info("Multi-param function result: " + results[0].asF64());
+      assertEquals(6.0, results[0].asDouble(), 0.001, "1+2+3.0 should equal 6.0");
+      LOGGER.info("Multi-param function result: " + results[0].asDouble());
     }
   }
 
@@ -1115,9 +1115,9 @@ class PanamaFunctionReferenceTest {
       final FunctionReference ref3 = store.createFunctionReference(hf3, ft);
       trackRef(ref3);
 
-      assertEquals(1, ref1.call()[0].asI32(), "ref1 should return 1");
-      assertEquals(2, ref2.call()[0].asI32(), "ref2 should return 2");
-      assertEquals(3, ref3.call()[0].asI32(), "ref3 should return 3");
+      assertEquals(1, ref1.call()[0].asInt(), "ref1 should return 1");
+      assertEquals(2, ref2.call()[0].asInt(), "ref2 should return 2");
+      assertEquals(3, ref3.call()[0].asInt(), "ref3 should return 3");
       LOGGER.info("Three independent function references work correctly");
     }
 
@@ -1136,7 +1136,7 @@ class PanamaFunctionReferenceTest {
 
       assertFalse(ref1.isValid(), "ref1 should be invalid after close");
       assertTrue(ref2.isValid(), "ref2 should still be valid");
-      assertEquals(20, ref2.call()[0].asI32(), "ref2 should still work");
+      assertEquals(20, ref2.call()[0].asInt(), "ref2 should still work");
       LOGGER.info("Closing one reference did not affect the other");
     }
   }

@@ -40,16 +40,16 @@ class MultiValueFunctionTest {
       WasmValue[] single = WasmValue.multiValue(WasmValue.i32(42));
       assertNotNull(single);
       assertEquals(1, single.length);
-      assertEquals(42, single[0].asI32());
+      assertEquals(42, single[0].asInt());
 
       // Test multiple values
       WasmValue[] multiple =
           WasmValue.multiValue(WasmValue.i32(10), WasmValue.f64(3.14), WasmValue.i64(1000L));
       assertNotNull(multiple);
       assertEquals(3, multiple.length);
-      assertEquals(10, multiple[0].asI32());
-      assertEquals(3.14, multiple[1].asF64(), 0.001);
-      assertEquals(1000L, multiple[2].asI64());
+      assertEquals(10, multiple[0].asInt());
+      assertEquals(3.14, multiple[1].asDouble(), 0.001);
+      assertEquals(1000L, multiple[2].asLong());
     }
 
     @Test
@@ -79,13 +79,13 @@ class MultiValueFunctionTest {
 
       // Test single value
       WasmValue[] single = {WasmValue.i32(42)};
-      assertEquals(42, WasmValue.getFirstValue(single).asI32());
-      assertEquals(42, WasmValue.getLastValue(single).asI32());
+      assertEquals(42, WasmValue.getFirstValue(single).asInt());
+      assertEquals(42, WasmValue.getLastValue(single).asInt());
 
       // Test multiple values
       WasmValue[] multiple = {WasmValue.i32(10), WasmValue.f64(3.14), WasmValue.i64(1000L)};
-      assertEquals(10, WasmValue.getFirstValue(multiple).asI32());
-      assertEquals(1000L, WasmValue.getLastValue(multiple).asI64());
+      assertEquals(10, WasmValue.getFirstValue(multiple).asInt());
+      assertEquals(1000L, WasmValue.getLastValue(multiple).asLong());
     }
 
     @Test
@@ -102,14 +102,14 @@ class MultiValueFunctionTest {
       // Extract I32 values
       WasmValue[] i32Values = WasmValue.extractByType(values, WasmValueType.I32);
       assertEquals(3, i32Values.length);
-      assertEquals(10, i32Values[0].asI32());
-      assertEquals(20, i32Values[1].asI32());
-      assertEquals(30, i32Values[2].asI32());
+      assertEquals(10, i32Values[0].asInt());
+      assertEquals(20, i32Values[1].asInt());
+      assertEquals(30, i32Values[2].asInt());
 
       // Extract F64 values
       WasmValue[] f64Values = WasmValue.extractByType(values, WasmValueType.F64);
       assertEquals(1, f64Values.length);
-      assertEquals(3.14, f64Values[0].asF64(), 0.001);
+      assertEquals(3.14, f64Values[0].asDouble(), 0.001);
 
       // Extract non-existent type
       WasmValue[] f32Values = WasmValue.extractByType(values, WasmValueType.F32);
@@ -296,7 +296,7 @@ class MultiValueFunctionTest {
               (params) -> {
                 executed[0] = true;
                 assertEquals(1, params.length);
-                assertEquals(42, params[0].asI32());
+                assertEquals(42, params[0].asInt());
               });
 
       try {
@@ -316,8 +316,8 @@ class MultiValueFunctionTest {
           HostFunction.singleValue(
               (params) -> {
                 assertEquals(2, params.length);
-                int a = params[0].asI32();
-                int b = params[1].asI32();
+                int a = params[0].asInt();
+                int b = params[1].asInt();
                 return WasmValue.i32(a + b);
               });
 
@@ -326,7 +326,7 @@ class MultiValueFunctionTest {
             singleFunc.execute(new WasmValue[] {WasmValue.i32(10), WasmValue.i32(20)});
         assertNotNull(result);
         assertEquals(1, result.length);
-        assertEquals(30, result[0].asI32());
+        assertEquals(30, result[0].asInt());
       } catch (WasmException e) {
         throw new RuntimeException(e);
       }
@@ -339,8 +339,8 @@ class MultiValueFunctionTest {
           HostFunction.multiValue(
               (params) -> {
                 assertEquals(2, params.length);
-                int a = params[0].asI32();
-                int b = params[1].asI32();
+                int a = params[0].asInt();
+                int b = params[1].asInt();
                 return WasmValue.multiValue(
                     WasmValue.i32(a + b), // sum
                     WasmValue.i32(a - b), // difference
@@ -353,9 +353,9 @@ class MultiValueFunctionTest {
             multiFunc.execute(new WasmValue[] {WasmValue.i32(10), WasmValue.i32(3)});
         assertNotNull(result);
         assertEquals(3, result.length);
-        assertEquals(13, result[0].asI32()); // sum
-        assertEquals(7, result[1].asI32()); // difference
-        assertEquals(30, result[2].asI32()); // product
+        assertEquals(13, result[0].asInt()); // sum
+        assertEquals(7, result[1].asInt()); // difference
+        assertEquals(30, result[2].asInt()); // product
       } catch (WasmException e) {
         throw new RuntimeException(e);
       }
@@ -374,8 +374,8 @@ class MultiValueFunctionTest {
         WasmValue[] result = validatedFunc.execute(new WasmValue[0]);
         assertNotNull(result);
         assertEquals(2, result.length);
-        assertEquals(42, result[0].asI32());
-        assertEquals(3.14, result[1].asF64(), 0.001);
+        assertEquals(42, result[0].asInt());
+        assertEquals(3.14, result[1].asDouble(), 0.001);
       } catch (WasmException e) {
         throw new RuntimeException(e);
       }

@@ -69,7 +69,7 @@ public class PanamaGlobalTest {
 
     final WasmValue value = global.get();
     assertEquals(WasmValueType.I32, value.getType(), "Value should be I32 type");
-    assertEquals(42, value.asI32(), "Initial value should be 42");
+    assertEquals(42, value.asInt(), "Initial value should be 42");
   }
 
   @Test
@@ -85,7 +85,7 @@ public class PanamaGlobalTest {
 
     // Verify new value
     final WasmValue newValue = global.get();
-    assertEquals(123, newValue.asI32(), "Value should be updated to 123");
+    assertEquals(123, newValue.asInt(), "Value should be updated to 123");
   }
 
   @Test
@@ -100,7 +100,7 @@ public class PanamaGlobalTest {
 
     final WasmValue value = global.get();
     assertEquals(WasmValueType.I64, value.getType(), "Value should be I64 type");
-    assertEquals(100L, value.asI64(), "Initial value should be 100");
+    assertEquals(100L, value.asLong(), "Initial value should be 100");
   }
 
   @Test
@@ -116,7 +116,7 @@ public class PanamaGlobalTest {
 
     // Verify new value
     final WasmValue newValue = global.get();
-    assertEquals(999L, newValue.asI64(), "Value should be updated to 999");
+    assertEquals(999L, newValue.asLong(), "Value should be updated to 999");
   }
 
   @Test
@@ -131,7 +131,7 @@ public class PanamaGlobalTest {
 
     final WasmValue value = global.get();
     assertEquals(WasmValueType.F32, value.getType(), "Value should be F32 type");
-    assertEquals(3.14f, value.asF32(), 0.01f, "Initial value should be approximately 3.14");
+    assertEquals(3.14f, value.asFloat(), 0.01f, "Initial value should be approximately 3.14");
   }
 
   @Test
@@ -147,7 +147,7 @@ public class PanamaGlobalTest {
 
     // Verify new value
     final WasmValue newValue = global.get();
-    assertEquals(1.23f, newValue.asF32(), 0.01f, "Value should be updated to approximately 1.23");
+    assertEquals(1.23f, newValue.asFloat(), 0.01f, "Value should be updated to approximately 1.23");
   }
 
   @Test
@@ -190,13 +190,13 @@ public class PanamaGlobalTest {
 
     // Set value multiple times
     global.set(WasmValue.i32(1));
-    assertEquals(1, global.get().asI32());
+    assertEquals(1, global.get().asInt());
 
     global.set(WasmValue.i32(2));
-    assertEquals(2, global.get().asI32());
+    assertEquals(2, global.get().asInt());
 
     global.set(WasmValue.i32(3));
-    assertEquals(3, global.get().asI32());
+    assertEquals(3, global.get().asInt());
   }
 
   @Test
@@ -212,7 +212,7 @@ public class PanamaGlobalTest {
 
     // Verify negative value
     final WasmValue value = global.get();
-    assertEquals(-456, value.asI32(), "Value should be -456");
+    assertEquals(-456, value.asInt(), "Value should be -456");
   }
 
   @Test
@@ -228,7 +228,7 @@ public class PanamaGlobalTest {
 
     // Verify negative value
     final WasmValue value = global.get();
-    assertEquals(-3.14f, value.asF32(), 0.01f, "Value should be approximately -3.14");
+    assertEquals(-3.14f, value.asFloat(), 0.01f, "Value should be approximately -3.14");
   }
 
   @Test
@@ -238,19 +238,19 @@ public class PanamaGlobalTest {
     Optional<WasmGlobal> globalOpt = instance.getGlobal("g_i32");
     assertTrue(globalOpt.isPresent());
     globalOpt.get().set(WasmValue.i32(0));
-    assertEquals(0, globalOpt.get().get().asI32());
+    assertEquals(0, globalOpt.get().get().asInt());
 
     // Test I64 zero
     globalOpt = instance.getGlobal("g_i64");
     assertTrue(globalOpt.isPresent());
     globalOpt.get().set(WasmValue.i64(0L));
-    assertEquals(0L, globalOpt.get().get().asI64());
+    assertEquals(0L, globalOpt.get().get().asLong());
 
     // Test F32 zero
     globalOpt = instance.getGlobal("g_f32");
     assertTrue(globalOpt.isPresent());
     globalOpt.get().set(WasmValue.f32(0.0f));
-    assertEquals(0.0f, globalOpt.get().get().asF32(), 0.0001f);
+    assertEquals(0.0f, globalOpt.get().get().asFloat(), 0.0001f);
   }
 
   @Test
@@ -260,13 +260,13 @@ public class PanamaGlobalTest {
     Optional<WasmGlobal> globalOpt = instance.getGlobal("g_i32");
     assertTrue(globalOpt.isPresent());
     globalOpt.get().set(WasmValue.i32(Integer.MAX_VALUE));
-    assertEquals(Integer.MAX_VALUE, globalOpt.get().get().asI32());
+    assertEquals(Integer.MAX_VALUE, globalOpt.get().get().asInt());
 
     // Test I64 max
     globalOpt = instance.getGlobal("g_i64");
     assertTrue(globalOpt.isPresent());
     globalOpt.get().set(WasmValue.i64(Long.MAX_VALUE));
-    assertEquals(Long.MAX_VALUE, globalOpt.get().get().asI64());
+    assertEquals(Long.MAX_VALUE, globalOpt.get().get().asLong());
   }
 
   @Test
@@ -276,13 +276,13 @@ public class PanamaGlobalTest {
     Optional<WasmGlobal> globalOpt = instance.getGlobal("g_i32");
     assertTrue(globalOpt.isPresent());
     globalOpt.get().set(WasmValue.i32(Integer.MIN_VALUE));
-    assertEquals(Integer.MIN_VALUE, globalOpt.get().get().asI32());
+    assertEquals(Integer.MIN_VALUE, globalOpt.get().get().asInt());
 
     // Test I64 min
     globalOpt = instance.getGlobal("g_i64");
     assertTrue(globalOpt.isPresent());
     globalOpt.get().set(WasmValue.i64(Long.MIN_VALUE));
-    assertEquals(Long.MIN_VALUE, globalOpt.get().get().asI64());
+    assertEquals(Long.MIN_VALUE, globalOpt.get().get().asLong());
   }
 
   /** Close safety tests for instance globals (PanamaInstanceGlobal). */

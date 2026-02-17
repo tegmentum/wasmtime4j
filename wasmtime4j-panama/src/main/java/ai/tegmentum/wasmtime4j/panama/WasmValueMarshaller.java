@@ -112,22 +112,22 @@ final class WasmValueMarshaller {
     switch (value.getType()) {
       case I32:
         ptr.set(ValueLayout.JAVA_INT, offset, 0);
-        ptr.set(ValueLayout.JAVA_INT, offset + VALUE_OFFSET, value.asI32());
+        ptr.set(ValueLayout.JAVA_INT, offset + VALUE_OFFSET, value.asInt());
         break;
 
       case I64:
         ptr.set(ValueLayout.JAVA_INT, offset, 1);
-        ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + VALUE_OFFSET, value.asI64());
+        ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + VALUE_OFFSET, value.asLong());
         break;
 
       case F32:
         ptr.set(ValueLayout.JAVA_INT, offset, 2);
-        ptr.set(ValueLayout.JAVA_FLOAT, offset + VALUE_OFFSET, value.asF32());
+        ptr.set(ValueLayout.JAVA_FLOAT, offset + VALUE_OFFSET, value.asFloat());
         break;
 
       case F64:
         ptr.set(ValueLayout.JAVA_INT, offset, 3);
-        ptr.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, offset + VALUE_OFFSET, value.asF64());
+        ptr.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, offset + VALUE_OFFSET, value.asDouble());
         break;
 
       case V128:

@@ -102,7 +102,7 @@ class GlobalTest {
       final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(42));
       final WasmValue value = global.get();
       assertNotNull(value, "Value should not be null");
-      assertEquals(42, value.asI32(), "Initial value should be 42");
+      assertEquals(42, value.asInt(), "Initial value should be 42");
     }
 
     @Test
@@ -110,7 +110,7 @@ class GlobalTest {
     void shouldSetAndGetI32Value() throws WasmException {
       final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(0));
       global.set(WasmValue.i32(100));
-      assertEquals(100, global.get().asI32(), "Value should be updated to 100");
+      assertEquals(100, global.get().asInt(), "Value should be updated to 100");
     }
 
     @Test
@@ -118,7 +118,7 @@ class GlobalTest {
     void shouldHandleMaximumI32Value() throws WasmException {
       final WasmGlobal global =
           store.createGlobal(WasmValueType.I32, true, WasmValue.i32(Integer.MAX_VALUE));
-      assertEquals(Integer.MAX_VALUE, global.get().asI32(), "Should handle MAX_VALUE");
+      assertEquals(Integer.MAX_VALUE, global.get().asInt(), "Should handle MAX_VALUE");
     }
 
     @Test
@@ -126,17 +126,17 @@ class GlobalTest {
     void shouldHandleMinimumI32Value() throws WasmException {
       final WasmGlobal global =
           store.createGlobal(WasmValueType.I32, true, WasmValue.i32(Integer.MIN_VALUE));
-      assertEquals(Integer.MIN_VALUE, global.get().asI32(), "Should handle MIN_VALUE");
+      assertEquals(Integer.MIN_VALUE, global.get().asInt(), "Should handle MIN_VALUE");
     }
 
     @Test
     @DisplayName("should handle negative i32 values")
     void shouldHandleNegativeI32Values() throws WasmException {
       final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(-12345));
-      assertEquals(-12345, global.get().asI32(), "Should handle negative value");
+      assertEquals(-12345, global.get().asInt(), "Should handle negative value");
 
       global.set(WasmValue.i32(-99999));
-      assertEquals(-99999, global.get().asI32(), "Should update to negative value");
+      assertEquals(-99999, global.get().asInt(), "Should update to negative value");
     }
   }
 
@@ -149,7 +149,7 @@ class GlobalTest {
     void shouldGetInitialI64Value() throws WasmException {
       final WasmGlobal global =
           store.createGlobal(WasmValueType.I64, true, WasmValue.i64(123456789012345L));
-      assertEquals(123456789012345L, global.get().asI64(), "Initial value should match");
+      assertEquals(123456789012345L, global.get().asLong(), "Initial value should match");
     }
 
     @Test
@@ -157,7 +157,7 @@ class GlobalTest {
     void shouldSetAndGetI64Value() throws WasmException {
       final WasmGlobal global = store.createGlobal(WasmValueType.I64, true, WasmValue.i64(0L));
       global.set(WasmValue.i64(999999999999L));
-      assertEquals(999999999999L, global.get().asI64(), "Value should be updated");
+      assertEquals(999999999999L, global.get().asLong(), "Value should be updated");
     }
 
     @Test
@@ -165,7 +165,7 @@ class GlobalTest {
     void shouldHandleMaximumI64Value() throws WasmException {
       final WasmGlobal global =
           store.createGlobal(WasmValueType.I64, true, WasmValue.i64(Long.MAX_VALUE));
-      assertEquals(Long.MAX_VALUE, global.get().asI64(), "Should handle MAX_VALUE");
+      assertEquals(Long.MAX_VALUE, global.get().asLong(), "Should handle MAX_VALUE");
     }
 
     @Test
@@ -173,7 +173,7 @@ class GlobalTest {
     void shouldHandleMinimumI64Value() throws WasmException {
       final WasmGlobal global =
           store.createGlobal(WasmValueType.I64, true, WasmValue.i64(Long.MIN_VALUE));
-      assertEquals(Long.MIN_VALUE, global.get().asI64(), "Should handle MIN_VALUE");
+      assertEquals(Long.MIN_VALUE, global.get().asLong(), "Should handle MIN_VALUE");
     }
   }
 
@@ -186,7 +186,7 @@ class GlobalTest {
     void shouldGetInitialF32Value() throws WasmException {
       final WasmGlobal global =
           store.createGlobal(WasmValueType.F32, true, WasmValue.f32(3.14159f));
-      assertEquals(3.14159f, global.get().asF32(), 0.00001f, "Initial value should match");
+      assertEquals(3.14159f, global.get().asFloat(), 0.00001f, "Initial value should match");
     }
 
     @Test
@@ -194,7 +194,7 @@ class GlobalTest {
     void shouldSetAndGetF32Value() throws WasmException {
       final WasmGlobal global = store.createGlobal(WasmValueType.F32, true, WasmValue.f32(0.0f));
       global.set(WasmValue.f32(2.71828f));
-      assertEquals(2.71828f, global.get().asF32(), 0.00001f, "Value should be updated");
+      assertEquals(2.71828f, global.get().asFloat(), 0.00001f, "Value should be updated");
     }
 
     @Test
@@ -203,19 +203,19 @@ class GlobalTest {
       // NaN
       final WasmGlobal nanGlobal =
           store.createGlobal(WasmValueType.F32, true, WasmValue.f32(Float.NaN));
-      assertTrue(Float.isNaN(nanGlobal.get().asF32()), "Should preserve NaN");
+      assertTrue(Float.isNaN(nanGlobal.get().asFloat()), "Should preserve NaN");
 
       // Positive Infinity
       final WasmGlobal posInfGlobal =
           store.createGlobal(WasmValueType.F32, true, WasmValue.f32(Float.POSITIVE_INFINITY));
       assertEquals(
-          Float.POSITIVE_INFINITY, posInfGlobal.get().asF32(), "Should preserve positive infinity");
+          Float.POSITIVE_INFINITY, posInfGlobal.get().asFloat(), "Should preserve positive infinity");
 
       // Negative Infinity
       final WasmGlobal negInfGlobal =
           store.createGlobal(WasmValueType.F32, true, WasmValue.f32(Float.NEGATIVE_INFINITY));
       assertEquals(
-          Float.NEGATIVE_INFINITY, negInfGlobal.get().asF32(), "Should preserve negative infinity");
+          Float.NEGATIVE_INFINITY, negInfGlobal.get().asFloat(), "Should preserve negative infinity");
     }
 
     @Test
@@ -223,7 +223,7 @@ class GlobalTest {
     void shouldHandleNegativeF32Values() throws WasmException {
       final WasmGlobal global =
           store.createGlobal(WasmValueType.F32, true, WasmValue.f32(-123.456f));
-      assertEquals(-123.456f, global.get().asF32(), 0.001f, "Should handle negative value");
+      assertEquals(-123.456f, global.get().asFloat(), 0.001f, "Should handle negative value");
     }
   }
 
@@ -237,7 +237,7 @@ class GlobalTest {
       final WasmGlobal global =
           store.createGlobal(WasmValueType.F64, true, WasmValue.f64(3.141592653589793));
       assertEquals(
-          3.141592653589793, global.get().asF64(), 0.000000000001, "Initial value should match");
+          3.141592653589793, global.get().asDouble(), 0.000000000001, "Initial value should match");
     }
 
     @Test
@@ -246,7 +246,7 @@ class GlobalTest {
       final WasmGlobal global = store.createGlobal(WasmValueType.F64, true, WasmValue.f64(0.0));
       global.set(WasmValue.f64(2.718281828459045));
       assertEquals(
-          2.718281828459045, global.get().asF64(), 0.000000000001, "Value should be updated");
+          2.718281828459045, global.get().asDouble(), 0.000000000001, "Value should be updated");
     }
 
     @Test
@@ -255,14 +255,14 @@ class GlobalTest {
       // NaN
       final WasmGlobal nanGlobal =
           store.createGlobal(WasmValueType.F64, true, WasmValue.f64(Double.NaN));
-      assertTrue(Double.isNaN(nanGlobal.get().asF64()), "Should preserve NaN");
+      assertTrue(Double.isNaN(nanGlobal.get().asDouble()), "Should preserve NaN");
 
       // Positive Infinity
       final WasmGlobal posInfGlobal =
           store.createGlobal(WasmValueType.F64, true, WasmValue.f64(Double.POSITIVE_INFINITY));
       assertEquals(
           Double.POSITIVE_INFINITY,
-          posInfGlobal.get().asF64(),
+          posInfGlobal.get().asDouble(),
           "Should preserve positive infinity");
 
       // Negative Infinity
@@ -270,7 +270,7 @@ class GlobalTest {
           store.createGlobal(WasmValueType.F64, true, WasmValue.f64(Double.NEGATIVE_INFINITY));
       assertEquals(
           Double.NEGATIVE_INFINITY,
-          negInfGlobal.get().asF64(),
+          negInfGlobal.get().asDouble(),
           "Should preserve negative infinity");
     }
   }
@@ -286,7 +286,7 @@ class GlobalTest {
       assertTrue(global.isMutable(), "Global should be mutable");
       // Should not throw
       global.set(WasmValue.i32(42));
-      assertEquals(42, global.get().asI32(), "Value should be updated");
+      assertEquals(42, global.get().asInt(), "Value should be updated");
     }
 
     @Test
@@ -331,8 +331,8 @@ class GlobalTest {
     void getValueShouldReturnSameAsGet() throws WasmException {
       final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(42));
       assertEquals(
-          global.get().asI32(),
-          global.getValue().asI32(),
+          global.get().asInt(),
+          global.getValue().asInt(),
           "getValue() should return same value as get()");
     }
   }
@@ -348,14 +348,14 @@ class GlobalTest {
       final WasmGlobal global2 = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(20));
       final WasmGlobal global3 = store.createGlobal(WasmValueType.I64, true, WasmValue.i64(30L));
 
-      assertEquals(10, global1.get().asI32(), "Global1 should have value 10");
-      assertEquals(20, global2.get().asI32(), "Global2 should have value 20");
-      assertEquals(30L, global3.get().asI64(), "Global3 should have value 30");
+      assertEquals(10, global1.get().asInt(), "Global1 should have value 10");
+      assertEquals(20, global2.get().asInt(), "Global2 should have value 20");
+      assertEquals(30L, global3.get().asLong(), "Global3 should have value 30");
 
       global1.set(WasmValue.i32(100));
-      assertEquals(100, global1.get().asI32(), "Global1 should be updated to 100");
-      assertEquals(20, global2.get().asI32(), "Global2 should remain 20");
-      assertEquals(30L, global3.get().asI64(), "Global3 should remain 30");
+      assertEquals(100, global1.get().asInt(), "Global1 should be updated to 100");
+      assertEquals(20, global2.get().asInt(), "Global2 should remain 20");
+      assertEquals(30L, global3.get().asLong(), "Global3 should remain 30");
     }
 
     @Test
@@ -365,7 +365,7 @@ class GlobalTest {
 
       for (int i = 0; i < 100; i++) {
         global.set(WasmValue.i32(i));
-        assertEquals(i, global.get().asI32(), "Value should match after set at iteration " + i);
+        assertEquals(i, global.get().asInt(), "Value should match after set at iteration " + i);
       }
     }
   }

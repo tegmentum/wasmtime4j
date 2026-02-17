@@ -65,13 +65,13 @@ public final class TableGrowTest extends DualRuntimeTest {
 
       // Grow by 1, returns old size (0)
       runner.assertReturn(
-          "grow", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(1), WasmValue.externRefNull());
+          "grow", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(1), WasmValue.nullExternref());
 
       // New size is 1
       runner.assertReturn("size", new WasmValue[] {WasmValue.i32(1)});
 
       // Get element at index 0 (should be null)
-      runner.assertReturn("get", new WasmValue[] {WasmValue.externRefNull()}, WasmValue.i32(0));
+      runner.assertReturn("get", new WasmValue[] {WasmValue.nullExternref()}, WasmValue.i32(0));
     }
   }
 

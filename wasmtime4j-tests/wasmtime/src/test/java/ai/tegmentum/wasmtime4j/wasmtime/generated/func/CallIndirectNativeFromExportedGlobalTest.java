@@ -89,11 +89,11 @@ public final class CallIndirectNativeFromExportedGlobalTest extends DualRuntimeT
 
       org.junit.jupiter.api.Assertions.assertEquals(3, results.length, "Should return 3 values");
       org.junit.jupiter.api.Assertions.assertEquals(
-          10, results[0].asI32(), "First result should be 10");
+          10, results[0].asInt(), "First result should be 10");
       org.junit.jupiter.api.Assertions.assertEquals(
-          20, results[1].asI32(), "Second result should be 20");
+          20, results[1].asInt(), "Second result should be 20");
       org.junit.jupiter.api.Assertions.assertEquals(
-          30, results[2].asI32(), "Third result should be 30");
+          30, results[2].asInt(), "Third result should be 30");
     }
   }
 }

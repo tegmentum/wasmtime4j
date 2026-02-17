@@ -173,7 +173,7 @@ public class WebAssemblyCalculator {
         Value[] params = {Value.f64(a), Value.f64(b)};
         Value[] results = function.call(params);
 
-        return results[0].asF64();
+        return results[0].asDouble();
     }
 
     private long callUnaryIntOperation(Instance instance, String functionName, int input) throws WasmException {
@@ -185,7 +185,7 @@ public class WebAssemblyCalculator {
         Value[] params = {Value.i32(input)};
         Value[] results = function.call(params);
 
-        return results[0].asI64();
+        return results[0].asLong();
     }
 
     private byte[] loadCalculatorModule() throws Exception {

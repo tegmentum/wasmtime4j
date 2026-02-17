@@ -822,10 +822,10 @@ public final class PanamaFunctionReference implements FunctionReference {
    */
   private Object extractNativeValue(final WasmValue wasmValue) {
     return switch (wasmValue.getType()) {
-      case I32 -> wasmValue.asI32();
-      case I64 -> wasmValue.asI64();
-      case F32 -> wasmValue.asF32();
-      case F64 -> wasmValue.asF64();
+      case I32 -> wasmValue.asInt();
+      case I64 -> wasmValue.asLong();
+      case F32 -> wasmValue.asFloat();
+      case F64 -> wasmValue.asDouble();
       case V128 -> wasmValue.asV128();
       case FUNCREF, EXTERNREF -> wasmValue.asExternref();
       default ->
@@ -1183,16 +1183,16 @@ public final class PanamaFunctionReference implements FunctionReference {
       // Set value
       switch (result.getType()) {
         case I32:
-          resultsPtr.set(ValueLayout.JAVA_INT, offset + 4, result.asI32());
+          resultsPtr.set(ValueLayout.JAVA_INT, offset + 4, result.asInt());
           break;
         case I64:
-          resultsPtr.set(ValueLayout.JAVA_LONG, offset + 4, result.asI64());
+          resultsPtr.set(ValueLayout.JAVA_LONG, offset + 4, result.asLong());
           break;
         case F32:
-          resultsPtr.set(ValueLayout.JAVA_FLOAT, offset + 4, result.asF32());
+          resultsPtr.set(ValueLayout.JAVA_FLOAT, offset + 4, result.asFloat());
           break;
         case F64:
-          resultsPtr.set(ValueLayout.JAVA_DOUBLE, offset + 4, result.asF64());
+          resultsPtr.set(ValueLayout.JAVA_DOUBLE, offset + 4, result.asDouble());
           break;
         default:
           // For other types, store as i32

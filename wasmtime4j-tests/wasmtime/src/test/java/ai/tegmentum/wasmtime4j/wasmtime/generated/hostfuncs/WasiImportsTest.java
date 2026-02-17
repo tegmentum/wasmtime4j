@@ -50,7 +50,7 @@ public final class WasiImportsTest {
           "proc_exit",
           FunctionType.of(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {}),
           (args) -> {
-            exitCode.set(args[0].asI32());
+            exitCode.set(args[0].asInt());
             // proc_exit should terminate execution, so we throw an exception
             throw new ProcExitException(exitCode.get());
           });

@@ -629,8 +629,8 @@ class PanamaWasmRuntimeTest {
       final var func = instance.getFunction("hello");
       assertTrue(func.isPresent(), "hello function should exist");
       final var result = func.get().call();
-      assertEquals(42, result[0].asI32(), "hello should return 42");
-      LOGGER.info("Full workflow completed, function returned: " + result[0].asI32());
+      assertEquals(42, result[0].asInt(), "hello should return 42");
+      LOGGER.info("Full workflow completed, function returned: " + result[0].asInt());
     }
 
     @Test

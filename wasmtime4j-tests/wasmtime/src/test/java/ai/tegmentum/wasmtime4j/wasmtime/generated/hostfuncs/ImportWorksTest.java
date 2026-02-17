@@ -56,7 +56,7 @@ public final class ImportWorksTest {
               new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32}),
           (args) -> {
             hits.incrementAndGet();
-            lastI32[0] = args[0].asI32();
+            lastI32[0] = args[0].asInt();
             return new WasmValue[] {WasmValue.i32(lastI32[0])};
           });
 
@@ -68,8 +68,8 @@ public final class ImportWorksTest {
               new WasmValueType[] {WasmValueType.I32, WasmValueType.I64}, new WasmValueType[] {}),
           (args) -> {
             hits.incrementAndGet();
-            lastI32[0] = args[0].asI32();
-            lastI64[0] = args[1].asI64();
+            lastI32[0] = args[0].asInt();
+            lastI64[0] = args[1].asLong();
             return new WasmValue[] {};
           });
 
@@ -90,10 +90,10 @@ public final class ImportWorksTest {
               new WasmValueType[] {}),
           (args) -> {
             hits.incrementAndGet();
-            lastI32[0] = args[0].asI32();
-            lastI64[0] = args[1].asI64();
-            lastF32[0] = args[3].asF32();
-            lastF64[0] = args[4].asF64();
+            lastI32[0] = args[0].asInt();
+            lastI64[0] = args[1].asLong();
+            lastF32[0] = args[3].asFloat();
+            lastF64[0] = args[4].asDouble();
             return new WasmValue[] {};
           });
 
@@ -126,7 +126,7 @@ public final class ImportWorksTest {
       runner.compileAndInstantiate(wat);
 
       // Call the exported function with null externref and funcref
-      runner.invoke("run", WasmValue.externRefNull(), WasmValue.funcRefNull());
+      runner.invoke("run", WasmValue.nullExternref(), WasmValue.nullFuncref());
 
       // Verify all 4 host functions were called
       assertEquals(4, hits.get(), "All 4 host functions should have been called");

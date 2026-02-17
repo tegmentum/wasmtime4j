@@ -22,16 +22,16 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  * HostFunction addFunction = new HostFunction() {
  *     @Override
  *     public WasmValue[] execute(WasmValue[] params) throws WasmException {
- *         int a = params[0].asI32();
- *         int b = params[1].asI32();
+ *         int a = params[0].asInt();
+ *         int b = params[1].asInt();
  *         return new WasmValue[] { WasmValue.i32(a + b) };
  *     }
  * };
  *
  * // Create a multi-value host function that returns sum and product
  * HostFunction mathFunction = HostFunction.multiValue((params) -> {
- *     int a = params[0].asI32();
- *     int b = params[1].asI32();
+ *     int a = params[0].asInt();
+ *     int b = params[1].asInt();
  *     return WasmValue.multiValue(
  *         WasmValue.i32(a + b),    // sum
  *         WasmValue.i32(a * b)     // product

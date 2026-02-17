@@ -27,8 +27,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * WasmValue[] results = function.call(intValue, floatValue);
  *
  * // Extract results with type checking
- * int resultInt = results[0].asI32();
- * float resultFloat = results[1].asF32();
+ * int resultInt = results[0].asInt();
+ * float resultFloat = results[1].asFloat();
  * }</pre>
  *
  * <p>All value creation methods perform validation to ensure type safety and correctness according
@@ -206,46 +206,6 @@ public final class WasmValue {
               + rawValue.getClass().getName());
     }
     return ExternRef.ofNullable(targetType.cast(rawValue), targetType);
-  }
-
-  /**
-   * Gets this value as a 32-bit integer (alias for asInt()).
-   *
-   * @return the integer value
-   * @throws ClassCastException if this value is not an integer
-   */
-  public int asI32() {
-    return asInt();
-  }
-
-  /**
-   * Gets this value as a 64-bit integer (alias for asLong()).
-   *
-   * @return the long value
-   * @throws ClassCastException if this value is not a long
-   */
-  public long asI64() {
-    return asLong();
-  }
-
-  /**
-   * Gets this value as a 32-bit float (alias for asFloat()).
-   *
-   * @return the float value
-   * @throws ClassCastException if this value is not a float
-   */
-  public float asF32() {
-    return asFloat();
-  }
-
-  /**
-   * Gets this value as a 64-bit double (alias for asDouble()).
-   *
-   * @return the double value
-   * @throws ClassCastException if this value is not a double
-   */
-  public double asF64() {
-    return asDouble();
   }
 
   /**
@@ -437,16 +397,6 @@ public final class WasmValue {
   }
 
   /**
-   * Creates an external reference value (camelCase alias for externref).
-   *
-   * @param value the external reference (nullable)
-   * @return a new WasmValue
-   */
-  public static WasmValue externRef(final Object value) {
-    return externref(value);
-  }
-
-  /**
    * Creates a null funcref value.
    *
    * @return a new WasmValue representing null funcref
@@ -456,34 +406,12 @@ public final class WasmValue {
   }
 
   /**
-   * Creates a null funcref value.
-   *
-   * <p>Alias for {@link #nullFuncref()}.
-   *
-   * @return a new WasmValue representing null funcref
-   */
-  public static WasmValue funcRefNull() {
-    return nullFuncref();
-  }
-
-  /**
    * Creates a null externref value.
    *
    * @return a new WasmValue representing null externref
    */
   public static WasmValue nullExternref() {
     return new WasmValue(WasmValueType.EXTERNREF, null);
-  }
-
-  /**
-   * Creates a null externref value.
-   *
-   * <p>Alias for {@link #nullExternref()}.
-   *
-   * @return a new WasmValue representing null externref
-   */
-  public static WasmValue externRefNull() {
-    return nullExternref();
   }
 
   /**
@@ -584,46 +512,6 @@ public final class WasmValue {
    */
   public static WasmValue nullArrayRef() {
     return new WasmValue(WasmValueType.ARRAYREF, null);
-  }
-
-  /**
-   * Creates a 32-bit integer value (alias for i32).
-   *
-   * @param value the integer value
-   * @return a new WasmValue
-   */
-  public static WasmValue ofI32(final int value) {
-    return i32(value);
-  }
-
-  /**
-   * Creates a 64-bit integer value (alias for i64).
-   *
-   * @param value the long value
-   * @return a new WasmValue
-   */
-  public static WasmValue ofI64(final long value) {
-    return i64(value);
-  }
-
-  /**
-   * Creates a 32-bit floating-point value (alias for f32).
-   *
-   * @param value the float value
-   * @return a new WasmValue
-   */
-  public static WasmValue ofF32(final float value) {
-    return f32(value);
-  }
-
-  /**
-   * Creates a 64-bit floating-point value (alias for f64).
-   *
-   * @param value the double value
-   * @return a new WasmValue
-   */
-  public static WasmValue ofF64(final double value) {
-    return f64(value);
   }
 
   /**

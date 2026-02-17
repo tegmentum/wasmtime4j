@@ -423,8 +423,8 @@ public final class HostFunctionIntegrationTest {
 
         final HostFunction addImpl =
             (params) -> {
-              final int a = params[0].asI32();
-              final int b = params[1].asI32();
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
               return new WasmValue[] {WasmValue.i32(a + b)};
             };
 
@@ -453,8 +453,8 @@ public final class HostFunctionIntegrationTest {
 
         final HostFunction addImpl =
             (params) -> {
-              final int a = params[0].asI32();
-              final int b = params[1].asI32();
+              final int a = params[0].asInt();
+              final int b = params[1].asInt();
               LOGGER.info("Host add called: " + a + " + " + b);
               return new WasmValue[] {WasmValue.i32(a + b)};
             };
@@ -495,7 +495,7 @@ public final class HostFunctionIntegrationTest {
             "add",
             addType,
             (params) -> {
-              return new WasmValue[] {WasmValue.i32(params[0].asI32() + params[1].asI32())};
+              return new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())};
             });
 
         try (final Instance instance = linker.instantiate(store, module)) {
@@ -541,7 +541,7 @@ public final class HostFunctionIntegrationTest {
         final HostFunction logImpl =
             HostFunction.voidFunction(
                 (params) -> {
-                  final int value = params[0].asI32();
+                  final int value = params[0].asInt();
                   LOGGER.info("Log called with value: " + value);
                   loggedValue.set(value);
                 });
@@ -633,7 +633,7 @@ public final class HostFunctionIntegrationTest {
       LOGGER.info("Testing host function with validation");
 
       final HostFunction baseImpl =
-          (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() + params[1].asI32())};
+          (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())};
 
       final HostFunction validatedImpl = HostFunction.withValidation(baseImpl, WasmValueType.I32);
 
@@ -643,7 +643,7 @@ public final class HostFunctionIntegrationTest {
 
       assertNotNull(result, "Result should not be null");
       assertEquals(1, result.length, "Should have one result");
-      assertEquals(8, result[0].asI32(), "Result should be 8");
+      assertEquals(8, result[0].asInt(), "Result should be 8");
 
       LOGGER.info("Validation test passed");
     }
@@ -672,13 +672,13 @@ public final class HostFunctionIntegrationTest {
             "math",
             "add",
             mathType,
-            (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() + params[1].asI32())});
+            (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())});
 
         linker.defineHostFunction(
             "math",
             "mul",
             mathType,
-            (params) -> new WasmValue[] {WasmValue.i32(params[0].asI32() * params[1].asI32())});
+            (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() * params[1].asInt())});
 
         try (final Instance instance = linker.instantiate(store, module)) {
           final WasmFunction addMul = instance.getFunction("add_mul").orElseThrow();
@@ -868,9 +868,9 @@ public final class HostFunctionIntegrationTest {
 
       assertNotNull(results, "Results should not be null");
       assertEquals(3, results.length, "Should have 3 results");
-      assertEquals(1, results[0].asI32(), "First result should be 1");
-      assertEquals(2, results[1].asI32(), "Second result should be 2");
-      assertEquals(3, results[2].asI32(), "Third result should be 3");
+      assertEquals(1, results[0].asInt(), "First result should be 1");
+      assertEquals(2, results[1].asInt(), "Second result should be 2");
+      assertEquals(3, results[2].asInt(), "Third result should be 3");
 
       LOGGER.info("Streaming host function test passed");
     }

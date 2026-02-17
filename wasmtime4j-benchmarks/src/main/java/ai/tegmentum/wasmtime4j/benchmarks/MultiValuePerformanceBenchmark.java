@@ -85,19 +85,19 @@ public class MultiValuePerformanceBenchmark {
 
     // Initialize host functions
     singleValueHostFunction =
-        HostFunction.singleValue((params) -> WasmValue.i32(params[0].asI32() * 2));
+        HostFunction.singleValue((params) -> WasmValue.i32(params[0].asInt() * 2));
 
     twoValueHostFunction =
         HostFunction.multiValue(
             (params) -> {
-              int value = params[0].asI32();
+              int value = params[0].asInt();
               return WasmValue.multiValue(WasmValue.i32(value * 2), WasmValue.i32(value * 3));
             });
 
     fourValueHostFunction =
         HostFunction.multiValue(
             (params) -> {
-              int base = params[0].asI32();
+              int base = params[0].asInt();
               return WasmValue.multiValue(
                   WasmValue.i32(base * 1),
                   WasmValue.i32(base * 2),
@@ -108,7 +108,7 @@ public class MultiValuePerformanceBenchmark {
     eightValueHostFunction =
         HostFunction.multiValue(
             (params) -> {
-              int base = params[0].asI32();
+              int base = params[0].asInt();
               return WasmValue.multiValue(
                   WasmValue.i32(base * 1), WasmValue.i32(base * 2),
                   WasmValue.i32(base * 3), WasmValue.i32(base * 4),
@@ -341,9 +341,9 @@ public class MultiValuePerformanceBenchmark {
   public int singleValueOperationSimulation(Blackhole bh) {
     // Simulate single value function call overhead
     WasmValue param = WasmValue.i32(42);
-    WasmValue result = WasmValue.i32(param.asI32() * 2);
+    WasmValue result = WasmValue.i32(param.asInt() * 2);
     bh.consume(result);
-    return result.asI32();
+    return result.asInt();
   }
 
   /** Simulates multi-value function call overhead for comparison. */
@@ -351,7 +351,7 @@ public class MultiValuePerformanceBenchmark {
   public WasmValue[] multiValueOperationSimulation(Blackhole bh) {
     // Simulate multi-value function call overhead
     WasmValue param = WasmValue.i32(42);
-    int value = param.asI32();
+    int value = param.asInt();
     WasmValue[] results =
         WasmValue.multiValue(
             WasmValue.i32(value * 2), WasmValue.i32(value * 3), WasmValue.i32(value * 4));
@@ -367,13 +367,13 @@ public class MultiValuePerformanceBenchmark {
   public int accessFirstValueFromMultiple(Blackhole bh) {
     WasmValue first = WasmValue.getFirstValue(fourResults);
     bh.consume(first);
-    return first.asI32();
+    return first.asInt();
   }
 
   @Benchmark
   public int accessSingleValue(Blackhole bh) {
     WasmValue single = singleResult[0];
     bh.consume(single);
-    return single.asI32();
+    return single.asInt();
   }
 }

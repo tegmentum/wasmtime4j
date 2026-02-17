@@ -291,7 +291,7 @@ class MemoryIsolationTest {
 
         // Valid read at offset 0
         final WasmValue[] result = readFunc.call(WasmValue.i32(0));
-        LOGGER.info("Read at offset 0: " + result[0].asI32());
+        LOGGER.info("Read at offset 0: " + result[0].asInt());
 
         // Invalid read beyond memory bounds - should trap
         assertThatThrownBy(() -> readFunc.call(WasmValue.i32((int) memorySize + 1000)))

@@ -52,7 +52,7 @@ class GlobalCreationTest {
 
     final WasmValue value = global.get();
     assertThat(value.getType()).isEqualTo(WasmValueType.I32);
-    assertThat(value.asI32()).isEqualTo(42);
+    assertThat(value.asInt()).isEqualTo(42);
   }
 
   @Test
@@ -66,7 +66,7 @@ class GlobalCreationTest {
 
     final WasmValue value = global.get();
     assertThat(value.getType()).isEqualTo(WasmValueType.I64);
-    assertThat(value.asI64()).isEqualTo(123456789L);
+    assertThat(value.asLong()).isEqualTo(123456789L);
   }
 
   @Test
@@ -80,7 +80,7 @@ class GlobalCreationTest {
 
     final WasmValue value = global.get();
     assertThat(value.getType()).isEqualTo(WasmValueType.F32);
-    assertThat(value.asF32()).isEqualTo(3.14159f, offset(0.00001f));
+    assertThat(value.asFloat()).isEqualTo(3.14159f, offset(0.00001f));
   }
 
   @Test
@@ -94,7 +94,7 @@ class GlobalCreationTest {
 
     final WasmValue value = global.get();
     assertThat(value.getType()).isEqualTo(WasmValueType.F64);
-    assertThat(value.asF64()).isEqualTo(2.71828, offset(0.00001));
+    assertThat(value.asDouble()).isEqualTo(2.71828, offset(0.00001));
   }
 
   @Test
@@ -127,7 +127,7 @@ class GlobalCreationTest {
     assertThat(global.isMutable()).isFalse();
 
     final WasmValue value = global.get();
-    assertThat(value.asI32()).isEqualTo(100);
+    assertThat(value.asInt()).isEqualTo(100);
 
     // Attempting to set should throw
     assertThrows(
@@ -143,15 +143,15 @@ class GlobalCreationTest {
     final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, initialValue);
 
     // Initial value
-    assertThat(global.get().asI32()).isEqualTo(100);
+    assertThat(global.get().asInt()).isEqualTo(100);
 
     // Set new value
     global.set(WasmValue.i32(200));
-    assertThat(global.get().asI32()).isEqualTo(200);
+    assertThat(global.get().asInt()).isEqualTo(200);
 
     // Set another value
     global.set(WasmValue.i32(-42));
-    assertThat(global.get().asI32()).isEqualTo(-42);
+    assertThat(global.get().asInt()).isEqualTo(-42);
   }
 
   // Test convenience methods
@@ -164,7 +164,7 @@ class GlobalCreationTest {
     assertThat(global).isNotNull();
     assertThat(global.getType()).isEqualTo(WasmValueType.I64);
     assertThat(global.isMutable()).isFalse();
-    assertThat(global.get().asI64()).isEqualTo(999L);
+    assertThat(global.get().asLong()).isEqualTo(999L);
   }
 
   @Test
@@ -175,11 +175,11 @@ class GlobalCreationTest {
     assertThat(global).isNotNull();
     assertThat(global.getType()).isEqualTo(WasmValueType.F32);
     assertThat(global.isMutable()).isTrue();
-    assertThat(global.get().asF32()).isEqualTo(1.23f, offset(0.001f));
+    assertThat(global.get().asFloat()).isEqualTo(1.23f, offset(0.001f));
 
     // Test mutation
     global.set(WasmValue.f32(4.56f));
-    assertThat(global.get().asF32()).isEqualTo(4.56f, offset(0.001f));
+    assertThat(global.get().asFloat()).isEqualTo(4.56f, offset(0.001f));
   }
 
   // Test all value types using parameterized test
@@ -300,7 +300,7 @@ class GlobalCreationTest {
               () -> {
                 for (int j = 0; j < incrementsPerThread; j++) {
                   synchronized (global) {
-                    final int currentValue = global.get().asI32();
+                    final int currentValue = global.get().asInt();
                     global.set(WasmValue.i32(currentValue + 1));
                   }
                 }
@@ -319,7 +319,7 @@ class GlobalCreationTest {
 
     // Verify final value
     final int expectedValue = numThreads * incrementsPerThread;
-    assertThat(global.get().asI32()).isEqualTo(expectedValue);
+    assertThat(global.get().asInt()).isEqualTo(expectedValue);
   }
 
   // Test performance characteristics
@@ -333,7 +333,7 @@ class GlobalCreationTest {
 
     for (int i = 0; i < iterations; i++) {
       global.set(WasmValue.i64(i));
-      final long value = global.get().asI64();
+      final long value = global.get().asLong();
       assertThat(value).isEqualTo(i);
     }
 
@@ -380,16 +380,16 @@ class GlobalCreationTest {
 
     switch (expected.getType()) {
       case I32:
-        assertThat(actual.asI32()).isEqualTo(expected.asI32());
+        assertThat(actual.asInt()).isEqualTo(expected.asInt());
         break;
       case I64:
-        assertThat(actual.asI64()).isEqualTo(expected.asI64());
+        assertThat(actual.asLong()).isEqualTo(expected.asLong());
         break;
       case F32:
-        assertThat(actual.asF32()).isEqualTo(expected.asF32(), offset(0.001f));
+        assertThat(actual.asFloat()).isEqualTo(expected.asFloat(), offset(0.001f));
         break;
       case F64:
-        assertThat(actual.asF64()).isEqualTo(expected.asF64(), offset(0.001));
+        assertThat(actual.asDouble()).isEqualTo(expected.asDouble(), offset(0.001));
         break;
       case V128:
         assertThat(actual.asV128()).isEqualTo(expected.asV128());

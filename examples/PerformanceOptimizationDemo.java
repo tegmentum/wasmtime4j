@@ -132,7 +132,7 @@ public class PerformanceOptimizationDemo {
                 if (growMemory != null) {
                     for (int i = 0; i < 5; i++) {
                         Value[] result = growMemory.call(Value.i32(10)); // Grow by 10 pages
-                        System.out.println("Memory growth " + (i + 1) + ": " + result[0].asI32() + " pages");
+                        System.out.println("Memory growth " + (i + 1) + ": " + result[0].asInt() + " pages");
                     }
                 }
 

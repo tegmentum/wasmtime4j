@@ -75,6 +75,6 @@ class PanamaI31Instance extends PanamaGcObject implements I31Instance {
 
   @Override
   public WasmValue toWasmValue() {
-    return WasmValue.externRef(this);
+    return WasmValue.externref(this);
   }
 }

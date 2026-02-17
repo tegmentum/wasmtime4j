@@ -89,6 +89,6 @@ class PanamaStructInstance extends PanamaGcObject implements StructInstance {
 
   @Override
   public WasmValue toWasmValue() {
-    return WasmValue.externRef(this);
+    return WasmValue.externref(this);
   }
 }

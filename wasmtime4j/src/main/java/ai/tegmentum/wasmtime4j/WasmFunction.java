@@ -221,7 +221,7 @@ public interface WasmFunction {
     if (results[0].getType() != WasmValueType.I32) {
       throw new WasmException("Function returned " + results[0].getType() + ", expected I32");
     }
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   /**
@@ -244,7 +244,7 @@ public interface WasmFunction {
     if (results[0].getType() != WasmValueType.I32) {
       throw new WasmException("Function returned " + results[0].getType() + ", expected I32");
     }
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   /**
@@ -266,7 +266,7 @@ public interface WasmFunction {
     if (results[0].getType() != WasmValueType.I64) {
       throw new WasmException("Function returned " + results[0].getType() + ", expected I64");
     }
-    return results[0].asI64();
+    return results[0].asLong();
   }
 
   /**
@@ -288,7 +288,7 @@ public interface WasmFunction {
     if (results[0].getType() != WasmValueType.F64) {
       throw new WasmException("Function returned " + results[0].getType() + ", expected F64");
     }
-    return results[0].asF64();
+    return results[0].asDouble();
   }
 
   /**
@@ -309,7 +309,7 @@ public interface WasmFunction {
     if (results[0].getType() != WasmValueType.I32) {
       throw new WasmException("Function returned " + results[0].getType() + ", expected I32");
     }
-    return results[0].asI32();
+    return results[0].asInt();
   }
 
   // ===== Low-level/Unsafe Methods =====
