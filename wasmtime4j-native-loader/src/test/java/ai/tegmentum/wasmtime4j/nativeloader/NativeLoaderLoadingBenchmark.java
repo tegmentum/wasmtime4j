@@ -239,10 +239,8 @@ public class NativeLoaderLoadingBenchmark {
   @Benchmark
   public void benchmarkConfigurationCreation(final Blackhole blackhole) {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix("benchmark-")
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, "benchmark-", NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     blackhole.consume(config);
   }

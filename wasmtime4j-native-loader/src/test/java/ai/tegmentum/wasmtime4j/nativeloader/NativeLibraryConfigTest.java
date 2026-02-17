@@ -171,53 +171,6 @@ final class NativeLibraryConfigTest {
   }
 
   @Test
-  void testBuilderPattern() {
-    final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName("customlib")
-            .tempFilePrefix("custom-prefix-")
-            .tempDirSuffix("-custom-suffix")
-            .build();
-
-    assertEquals("customlib", config.getLibraryName());
-    assertEquals("custom-prefix-", config.getTempFilePrefix());
-    assertEquals("-custom-suffix", config.getTempDirSuffix());
-  }
-
-  @Test
-  void testBuilderWithDefaults() {
-    final NativeLibraryConfig config = NativeLibraryConfig.builder().build();
-
-    assertEquals(NativeLibraryConfig.DEFAULT_LIBRARY_NAME, config.getLibraryName());
-    assertEquals(NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX, config.getTempFilePrefix());
-    assertEquals(NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX, config.getTempDirSuffix());
-  }
-
-  @Test
-  void testBuilderPartialConfiguration() {
-    final NativeLibraryConfig config =
-        NativeLibraryConfig.builder().libraryName("customlib").build();
-
-    assertEquals("customlib", config.getLibraryName());
-    assertEquals(NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX, config.getTempFilePrefix());
-    assertEquals(NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX, config.getTempDirSuffix());
-  }
-
-  @Test
-  void testBuilderFluentInterface() {
-    final NativeLibraryConfig.Builder builder = NativeLibraryConfig.builder();
-
-    // Test that each method returns the builder for chaining
-    final NativeLibraryConfig.Builder result1 = builder.libraryName("test");
-    final NativeLibraryConfig.Builder result2 = result1.tempFilePrefix("prefix-");
-    final NativeLibraryConfig.Builder result3 = result2.tempDirSuffix("-suffix");
-
-    assertTrue(result1 == builder, "libraryName() should return same builder instance");
-    assertTrue(result2 == builder, "tempFilePrefix() should return same builder instance");
-    assertTrue(result3 == builder, "tempDirSuffix() should return same builder instance");
-  }
-
-  @Test
   void testEquals() {
     final NativeLibraryConfig config1 = new NativeLibraryConfig("testlib", "prefix-", "-suffix");
     final NativeLibraryConfig config2 = new NativeLibraryConfig("testlib", "prefix-", "-suffix");

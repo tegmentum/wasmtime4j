@@ -83,10 +83,8 @@ public class NativeLoaderConfigurationBenchmark {
     this.defaultConfig = NativeLibraryConfig.defaultConfig();
 
     this.customConfig =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix(TEST_PREFIX)
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, TEST_PREFIX, NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     this.builder = NativeLoader.builder();
 
@@ -110,27 +108,28 @@ public class NativeLoaderConfigurationBenchmark {
   }
 
   /**
-   * Benchmark: Builder-based configuration creation with minimal options. This tests the simplest
-   * builder usage pattern.
+   * Benchmark: Configuration creation with minimal options. This tests the simplest configuration
+   * usage pattern.
    */
   @Benchmark
   public void benchmarkMinimalBuilderConfig(final Blackhole blackhole) {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME).build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME,
+            NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX,
+            NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
     blackhole.consume(config);
   }
 
   /**
-   * Benchmark: Builder-based configuration creation with custom options. This tests the full
-   * builder configuration pattern.
+   * Benchmark: Constructor-based configuration creation with custom options. This tests the full
+   * configuration pattern.
    */
   @Benchmark
   public void benchmarkFullBuilderConfig(final Blackhole blackhole) {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix(TEST_PREFIX)
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, TEST_PREFIX, NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
     blackhole.consume(config);
   }
 
@@ -230,10 +229,10 @@ public class NativeLoaderConfigurationBenchmark {
   public void benchmarkSequentialConfigCreation(final Blackhole blackhole) {
     for (int i = 0; i < 5; i++) {
       final NativeLibraryConfig config =
-          NativeLibraryConfig.builder()
-              .libraryName(TEST_LIBRARY_NAME + i)
-              .tempFilePrefix(TEST_PREFIX + i)
-              .build();
+          new NativeLibraryConfig(
+              TEST_LIBRARY_NAME + i,
+              TEST_PREFIX + i,
+              NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
       blackhole.consume(config);
     }
   }
@@ -246,10 +245,8 @@ public class NativeLoaderConfigurationBenchmark {
   @Threads(4)
   public void benchmarkConcurrentConfigCreation4Threads(final Blackhole blackhole) {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix(TEST_PREFIX)
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, TEST_PREFIX, NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
     blackhole.consume(config);
   }
 
@@ -261,10 +258,8 @@ public class NativeLoaderConfigurationBenchmark {
   @Threads(10)
   public void benchmarkConcurrentConfigCreation10Threads(final Blackhole blackhole) {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix(TEST_PREFIX)
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, TEST_PREFIX, NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
     blackhole.consume(config);
   }
 
@@ -292,15 +287,24 @@ public class NativeLoaderConfigurationBenchmark {
   public void benchmarkVariousPathConventionConfigs(final Blackhole blackhole) {
     // Single convention
     final NativeLibraryConfig config1 =
-        NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME).build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME,
+            NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX,
+            NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     // Multiple conventions
     final NativeLibraryConfig config2 =
-        NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME).build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME,
+            NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX,
+            NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     // All conventions
     final NativeLibraryConfig config3 =
-        NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME).build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME,
+            NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX,
+            NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     blackhole.consume(config1);
     blackhole.consume(config2);

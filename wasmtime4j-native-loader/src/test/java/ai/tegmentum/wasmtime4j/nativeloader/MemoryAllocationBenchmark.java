@@ -134,10 +134,8 @@ public class MemoryAllocationBenchmark {
   @Benchmark
   public void benchmarkConfigurationAllocation(final Blackhole blackhole) {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix("benchmark-")
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, "benchmark-", NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
     blackhole.consume(config);
   }
 
@@ -179,10 +177,10 @@ public class MemoryAllocationBenchmark {
 
     for (int i = 0; i < ALLOCATION_ITERATIONS; i++) {
       final NativeLibraryConfig config =
-          NativeLibraryConfig.builder()
-              .libraryName(TEST_LIBRARY_NAME + i)
-              .tempFilePrefix("bulk-" + i + "-")
-              .build();
+          new NativeLibraryConfig(
+              TEST_LIBRARY_NAME + i,
+              "bulk-" + i + "-",
+              NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
       configs.add(config);
     }
 
@@ -197,10 +195,10 @@ public class MemoryAllocationBenchmark {
   public void benchmarkAllocationWithImmediateDeallocation(final Blackhole blackhole) {
     for (int i = 0; i < 50; i++) {
       final NativeLibraryConfig config =
-          NativeLibraryConfig.builder()
-              .libraryName(TEST_LIBRARY_NAME)
-              .tempFilePrefix("temp-" + i + "-")
-              .build();
+          new NativeLibraryConfig(
+              TEST_LIBRARY_NAME,
+              "temp-" + i + "-",
+              NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
       // Use the object briefly then let it become eligible for GC
       blackhole.consume(config.getLibraryName());
@@ -215,10 +213,8 @@ public class MemoryAllocationBenchmark {
   public void benchmarkLongLivedObjectRetention(final Blackhole blackhole) {
     // Create objects and retain references
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix("retained-")
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, "retained-", NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     final PlatformDetector.PlatformInfo platformInfo = PlatformDetector.detect();
 
@@ -258,10 +254,8 @@ public class MemoryAllocationBenchmark {
   @Threads(4)
   public void benchmarkConcurrentAllocation4Threads(final Blackhole blackhole) {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix("concurrent-")
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, "concurrent-", NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     blackhole.consume(config);
   }
@@ -274,10 +268,8 @@ public class MemoryAllocationBenchmark {
   @Threads(10)
   public void benchmarkConcurrentAllocation10Threads(final Blackhole blackhole) {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName(TEST_LIBRARY_NAME)
-            .tempFilePrefix("heavy-concurrent-")
-            .build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME, "heavy-concurrent-", NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     blackhole.consume(config);
   }
@@ -293,7 +285,10 @@ public class MemoryAllocationBenchmark {
 
     // Medium-lived configuration
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME).build();
+        new NativeLibraryConfig(
+            TEST_LIBRARY_NAME,
+            NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX,
+            NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX);
 
     // Short-lived library loading attempt
     final NativeLibraryUtils.LibraryLoadInfo loadInfo = NativeLoader.loadLibrary(TEST_LIBRARY_NAME);
@@ -332,7 +327,11 @@ public class MemoryAllocationBenchmark {
     // Allocate objects
     final List<NativeLibraryConfig> configs = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
-      configs.add(NativeLibraryConfig.builder().libraryName(TEST_LIBRARY_NAME + i).build());
+      configs.add(
+          new NativeLibraryConfig(
+              TEST_LIBRARY_NAME + i,
+              NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX,
+              NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX));
     }
 
     // Force garbage collection

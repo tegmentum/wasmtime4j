@@ -99,69 +99,6 @@ public final class NativeLibraryConfig {
     return tempDirSuffix;
   }
 
-  /** Builder for creating {@link NativeLibraryConfig} instances. */
-  public static final class Builder {
-    private String libraryName = DEFAULT_LIBRARY_NAME;
-    private String tempFilePrefix = DEFAULT_TEMP_FILE_PREFIX;
-    private String tempDirSuffix = DEFAULT_TEMP_DIR_SUFFIX;
-
-    /** Creates a new builder with default values. */
-    Builder() {
-      // Package-private constructor - use NativeLibraryConfig.builder() to create instances
-    }
-
-    /**
-     * Sets the library name.
-     *
-     * @param libraryName the library name
-     * @return this builder
-     */
-    public Builder libraryName(final String libraryName) {
-      this.libraryName = libraryName;
-      return this;
-    }
-
-    /**
-     * Sets the temporary file prefix.
-     *
-     * @param tempFilePrefix the temporary file prefix
-     * @return this builder
-     */
-    public Builder tempFilePrefix(final String tempFilePrefix) {
-      this.tempFilePrefix = tempFilePrefix;
-      return this;
-    }
-
-    /**
-     * Sets the temporary directory suffix.
-     *
-     * @param tempDirSuffix the temporary directory suffix
-     * @return this builder
-     */
-    public Builder tempDirSuffix(final String tempDirSuffix) {
-      this.tempDirSuffix = tempDirSuffix;
-      return this;
-    }
-
-    /**
-     * Builds the configuration.
-     *
-     * @return the configuration
-     */
-    public NativeLibraryConfig build() {
-      return new NativeLibraryConfig(libraryName, tempFilePrefix, tempDirSuffix);
-    }
-  }
-
-  /**
-   * Creates a new builder for building configurations.
-   *
-   * @return a new builder
-   */
-  public static Builder builder() {
-    return new Builder();
-  }
-
   /**
    * Validates the library name parameter.
    *

@@ -67,11 +67,7 @@ final class NativeLibraryUtilsTest {
   @Test
   void testLoadNativeLibraryWithConfig() {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName("customlib")
-            .tempFilePrefix("custom-prefix-")
-            .tempDirSuffix("-custom-suffix")
-            .build();
+        new NativeLibraryConfig("customlib", "custom-prefix-", "-custom-suffix");
 
     final NativeLibraryUtils.LibraryLoadInfo info = NativeLibraryUtils.loadNativeLibrary(config);
 
@@ -82,11 +78,7 @@ final class NativeLibraryUtilsTest {
   @Test
   void testLoadNativeLibraryWithConfigOverrideLibraryName() {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName("configlib")
-            .tempFilePrefix("custom-prefix-")
-            .tempDirSuffix("-custom-suffix")
-            .build();
+        new NativeLibraryConfig("configlib", "custom-prefix-", "-custom-suffix");
 
     final NativeLibraryUtils.LibraryLoadInfo info =
         NativeLibraryUtils.loadNativeLibrary("overridelib", config);
@@ -124,11 +116,7 @@ final class NativeLibraryUtilsTest {
   @Test
   void testGetDiagnosticInfoWithConfig() {
     final NativeLibraryConfig config =
-        NativeLibraryConfig.builder()
-            .libraryName("testlib")
-            .tempFilePrefix("test-prefix-")
-            .tempDirSuffix("-test-suffix")
-            .build();
+        new NativeLibraryConfig("testlib", "test-prefix-", "-test-suffix");
 
     final String diagnostics = NativeLibraryUtils.getDiagnosticInfo(config);
 
@@ -314,18 +302,10 @@ final class NativeLibraryUtilsTest {
   @Test
   void testConfigurableParametersAffectCaching() {
     final NativeLibraryConfig config1 =
-        NativeLibraryConfig.builder()
-            .libraryName("testlib")
-            .tempFilePrefix("prefix1-")
-            .tempDirSuffix("-suffix1")
-            .build();
+        new NativeLibraryConfig("testlib", "prefix1-", "-suffix1");
 
     final NativeLibraryConfig config2 =
-        NativeLibraryConfig.builder()
-            .libraryName("testlib")
-            .tempFilePrefix("prefix2-")
-            .tempDirSuffix("-suffix2")
-            .build();
+        new NativeLibraryConfig("testlib", "prefix2-", "-suffix2");
 
     // Should use different cache keys due to different configurations
     final NativeLibraryUtils.LibraryLoadInfo info1 = NativeLibraryUtils.loadNativeLibrary(config1);
