@@ -320,10 +320,12 @@ public final class PanamaStore implements Store {
   private final NativeResourceHandle resourceHandle;
 
   // Epoch callback ID for this store (0 = no callback registered)
-  private volatile long epochCallbackId = 0;
+  // AtomicLong so the safety net lambda can capture it without preventing GC of PanamaStore
+  private final AtomicLong epochCallbackId = new AtomicLong(0);
 
   // Resource limiter callback ID for this store (0 = no limiter registered)
-  private volatile long limiterCallbackId = 0;
+  // AtomicLong so the safety net lambda can capture it without preventing GC of PanamaStore
+  private final AtomicLong limiterCallbackId = new AtomicLong(0);
 
   /**
    * Creates a new Panama store.
@@ -587,9 +589,10 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     // Remove any previously registered limiter
-    if (limiterCallbackId != 0) {
-      RESOURCE_LIMITERS.remove(limiterCallbackId);
-      limiterCallbackId = 0;
+    final long oldLimiterId = limiterCallbackId.get();
+    if (oldLimiterId != 0) {
+      RESOURCE_LIMITERS.remove(oldLimiterId);
+      limiterCallbackId.set(0);
     }
 
     // Check if upcall stubs were created successfully
@@ -599,7 +602,7 @@ public final class PanamaStore implements Store {
 
     final long newCallbackId = LIMITER_CALLBACK_ID_COUNTER.getAndIncrement();
     RESOURCE_LIMITERS.put(newCallbackId, limiter);
-    limiterCallbackId = newCallbackId;
+    limiterCallbackId.set(newCallbackId);
 
     final int result =
         NATIVE_BINDINGS.storeSetResourceLimiter(
@@ -612,7 +615,7 @@ public final class PanamaStore implements Store {
 
     if (result != 0) {
       RESOURCE_LIMITERS.remove(newCallbackId);
-      limiterCallbackId = 0;
+      limiterCallbackId.set(0);
       throw PanamaErrorMapper.mapNativeError(result, "Failed to configure resource limiter");
     }
   }
@@ -1452,9 +1455,10 @@ public final class PanamaStore implements Store {
     LOGGER.fine("epochDeadlineCallback called, callback=" + callback);
 
     // Remove existing callback if any
-    if (epochCallbackId != 0) {
-      EPOCH_CALLBACKS.remove(epochCallbackId);
-      epochCallbackId = 0;
+    final long oldEpochId = epochCallbackId.get();
+    if (oldEpochId != 0) {
+      EPOCH_CALLBACKS.remove(oldEpochId);
+      epochCallbackId.set(0);
     }
 
     // Store callback reference to prevent GC
@@ -1474,7 +1478,7 @@ public final class PanamaStore implements Store {
       // Generate a unique callback ID and register the callback
       final long newCallbackId = EPOCH_CALLBACK_ID_COUNTER.getAndIncrement();
       EPOCH_CALLBACKS.put(newCallbackId, callback);
-      epochCallbackId = newCallbackId;
+      epochCallbackId.set(newCallbackId);
 
       LOGGER.fine(
           "Calling native storeSetEpochDeadlineCallbackFn: callbackId="
@@ -1492,7 +1496,7 @@ public final class PanamaStore implements Store {
       if (result != 0) {
         // Cleanup on failure
         EPOCH_CALLBACKS.remove(newCallbackId);
-        epochCallbackId = 0;
+        epochCallbackId.set(0);
       }
     }
 
@@ -1507,7 +1511,8 @@ public final class PanamaStore implements Store {
 
   // Call hook support
   private ai.tegmentum.wasmtime4j.func.CallHookHandler callHookHandler;
-  private long callHookCallbackId;
+  // AtomicLong so the safety net lambda can capture it without preventing GC of PanamaStore
+  private final AtomicLong callHookCallbackId = new AtomicLong(0);
   private ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler asyncCallHookHandler;
 
   @Override
@@ -1516,9 +1521,10 @@ public final class PanamaStore implements Store {
     ensureNotClosed();
 
     // Remove previous callback registration if any
-    if (callHookCallbackId != 0) {
-      CALL_HOOK_HANDLERS.remove(callHookCallbackId);
-      callHookCallbackId = 0;
+    final long oldHookId = callHookCallbackId.get();
+    if (oldHookId != 0) {
+      CALL_HOOK_HANDLERS.remove(oldHookId);
+      callHookCallbackId.set(0);
     }
 
     this.callHookHandler = handler;
@@ -1533,14 +1539,15 @@ public final class PanamaStore implements Store {
       // Register callback and install hook with function pointer
       final long id = CALL_HOOK_CALLBACK_ID_COUNTER.getAndIncrement();
       CALL_HOOK_HANDLERS.put(id, handler);
-      this.callHookCallbackId = id;
+      callHookCallbackId.set(id);
       result = INSTANCE_BINDINGS.storeSetCallHookFn(nativeStore, CALL_HOOK_STUB, id);
     }
     if (result != 0) {
       // Clean up on failure
-      if (callHookCallbackId != 0) {
-        CALL_HOOK_HANDLERS.remove(callHookCallbackId);
-        callHookCallbackId = 0;
+      final long failedHookId = callHookCallbackId.get();
+      if (failedHookId != 0) {
+        CALL_HOOK_HANDLERS.remove(failedHookId);
+        callHookCallbackId.set(0);
       }
       throw PanamaErrorMapper.mapNativeError(result, "Failed to configure call hook");
     }
@@ -1570,25 +1577,29 @@ public final class PanamaStore implements Store {
   private NativeResourceHandle createResourceHandle() {
     final MemorySegment storeHandle = this.nativeStore;
     final Arena storeArena = this.arena;
+    // Capture AtomicLong references for the safety net (separate objects, won't prevent GC)
+    final AtomicLong epochId = this.epochCallbackId;
+    final AtomicLong hookId = this.callHookCallbackId;
+    final AtomicLong limiterId = this.limiterCallbackId;
     return new NativeResourceHandle(
         "PanamaStore",
         () -> {
           // Clean up epoch callback from static registry
-          if (epochCallbackId != 0) {
-            EPOCH_CALLBACKS.remove(epochCallbackId);
-            epochCallbackId = 0;
+          final long epochVal = epochCallbackId.getAndSet(0);
+          if (epochVal != 0) {
+            EPOCH_CALLBACKS.remove(epochVal);
           }
 
           // Clean up call hook callback from static registry
-          if (callHookCallbackId != 0) {
-            CALL_HOOK_HANDLERS.remove(callHookCallbackId);
-            callHookCallbackId = 0;
+          final long hookVal = callHookCallbackId.getAndSet(0);
+          if (hookVal != 0) {
+            CALL_HOOK_HANDLERS.remove(hookVal);
           }
 
           // Clean up resource limiter from static registry
-          if (limiterCallbackId != 0) {
-            RESOURCE_LIMITERS.remove(limiterCallbackId);
-            limiterCallbackId = 0;
+          final long limiterVal = limiterCallbackId.getAndSet(0);
+          if (limiterVal != 0) {
+            RESOURCE_LIMITERS.remove(limiterVal);
           }
 
           // Close callback registry first (cleans up function references)
@@ -1613,7 +1624,20 @@ public final class PanamaStore implements Store {
         },
         this,
         () -> {
-          // Safety net: only destroy native store and close arena
+          // Safety net: clean up static callback maps and destroy native store
+          // Captures AtomicLong references (not 'this') to avoid preventing GC
+          final long epochVal = epochId.getAndSet(0);
+          if (epochVal != 0) {
+            EPOCH_CALLBACKS.remove(epochVal);
+          }
+          final long hookVal = hookId.getAndSet(0);
+          if (hookVal != 0) {
+            CALL_HOOK_HANDLERS.remove(hookVal);
+          }
+          final long limiterVal = limiterId.getAndSet(0);
+          if (limiterVal != 0) {
+            RESOURCE_LIMITERS.remove(limiterVal);
+          }
           if (storeHandle != null && !storeHandle.equals(MemorySegment.NULL)) {
             NATIVE_BINDINGS.storeDestroy(storeHandle);
           }

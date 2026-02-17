@@ -851,7 +851,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       justification = "Called by native code through JNI")
   private static WasmValue[] invokeHostFunctionCallback(
       final long callbackId, final WasmValue[] params) throws WasmException {
-    LOGGER.info(
+    LOGGER.fine(
         "invokeHostFunctionCallback - Called with callbackId="
             + callbackId
             + ", params.length="
@@ -866,7 +866,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     LOGGER.fine("Executing host function: " + wrapper.moduleName + "::" + wrapper.name);
     try {
       final WasmValue[] results = wrapper.getImplementation().execute(params);
-      LOGGER.info(
+      LOGGER.fine(
           "invokeHostFunctionCallback - Completed successfully with "
               + results.length
               + " results");
@@ -989,7 +989,9 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     }
     ensureNotClosed();
 
-    // For unchecked version, use defineHostFunction
+    // TODO: This delegates to defineHostFunction() which performs full type checking,
+    // making "unchecked" misleading. The store parameter is also unused. Consider
+    // implementing true unchecked semantics or updating the Linker interface.
     defineHostFunction(moduleName, name, functionType, implementation);
   }
 
