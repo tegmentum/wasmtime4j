@@ -47,24 +47,19 @@ env_logger.workspace = true
 
 # Memory management utilities
 once_cell.workspace = true
-lazy_static.workspace = true
 
 # Advanced threading and lock-free data structures
 parking_lot.workspace = true
 
-# Encoding and compression
+# Encoding
 base64.workspace = true
-flate2.workspace = true
 sha2.workspace = true
-rand.workspace = true
 
 # Unix-specific dependencies for process operations
 [target.'cfg(unix)'.dependencies]
 libc.workspace = true
 
-# Windows-specific dependencies for advanced memory management
 [target.'cfg(windows)'.dependencies]
-winapi.workspace = true
 
 [build-dependencies]
 

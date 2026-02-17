@@ -40,22 +40,16 @@ env_logger = "0.10"
 
 # Memory management utilities
 once_cell = "1.19"
-lazy_static = "1.4"
 
 # Advanced threading and lock-free data structures
 parking_lot = "0.12"
 
-# Encoding and compression
+# Encoding
 base64 = "0.22"
-flate2 = "1.0"
 sha2 = "0.10"
-rand = "0.8"
 
 # Unix-specific
 libc = "0.2"
-
-# Windows-specific
-winapi = { version = "0.3", features = ["sysinfoapi", "memoryapi", "processenv", "winnt", "handleapi"] }
 
 # Dev dependencies
 tempfile = "3.8"

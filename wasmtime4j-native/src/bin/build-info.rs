@@ -21,8 +21,7 @@ fn main() {
         env::var("CARGO_CFG_TARGET_FAMILY").unwrap_or_else(|_| "unknown".to_string())
     );
 
-    // Note: wasmtime4j_native module reference removed as it creates circular dependency
-    println!("Wasmtime Version: 37.0.2");
+    println!("Wasmtime Version: {}", env!("CARGO_PKG_VERSION"));
 
     if let Ok(profile) = env::var("PROFILE") {
         println!("Build Profile: {}", profile);
