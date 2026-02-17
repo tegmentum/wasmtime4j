@@ -148,19 +148,17 @@ impl<'a, T> DerefMut for ReentrantLockGuard<'a, T> {
     }
 }
 
-/// Get a unique ID for the current thread
+/// Counter for generating unique thread IDs (starts at 1 to avoid 0 which means "no owner")
+static NEXT_THREAD_ID: AtomicU64 = AtomicU64::new(1);
+
+thread_local! {
+    /// Per-thread unique ID assigned on first access. Guaranteed non-zero.
+    static THREAD_ID: u64 = NEXT_THREAD_ID.fetch_add(1, Ordering::Relaxed);
+}
+
+/// Get a unique non-zero ID for the current thread
 fn current_thread_id() -> u64 {
-    // Use thread ID as u64
-    // Note: ThreadId doesn't have a stable numeric representation in stable Rust,
-    // so we use a workaround via the debug representation
-    let thread_id = thread::current().id();
-    let debug_str = format!("{:?}", thread_id);
-    // Extract the number from "ThreadId(N)"
-    debug_str
-        .trim_start_matches("ThreadId(")
-        .trim_end_matches(')')
-        .parse::<u64>()
-        .unwrap_or(0)
+    THREAD_ID.with(|id| *id)
 }
 
 /// Convert a Rust object into a raw pointer for FFI
