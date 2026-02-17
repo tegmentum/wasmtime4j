@@ -17,7 +17,6 @@
 package examples.frameworkintegration;
 
 import ai.tegmentum.wasmtime4j.nativeloader.NativeLoader;
-import ai.tegmentum.wasmtime4j.nativeloader.NativeLoaderBuilder.SecurityLevel;
 import ai.tegmentum.wasmtime4j.nativeloader.PathConvention;
 import ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils.LibraryLoadInfo;
 
@@ -69,12 +68,11 @@ public final class SpringBootIntegration {
         
         final LibraryLoadInfo info = NativeLoader.builder()
             .libraryName("myapp-core")
-            .securityLevel(SecurityLevel.STRICT)
             .tempFilePrefix("myapp-core-")
             .pathConvention(PathConvention.MAVEN_NATIVE)
             .load();
             
-        if (!info.isLoadedSuccessfully()) {
+        if (!info.isSuccessful()) {
             throw new RuntimeException("Failed to load core library: " + info.getErrorMessage());
         }
         
@@ -90,14 +88,13 @@ public final class SpringBootIntegration {
         
         final LibraryLoadInfo info = NativeLoader.builder()
             .libraryName("myapp-perf")
-            .securityLevel(SecurityLevel.MODERATE)
             .conventionPriority(
                 PathConvention.MAVEN_NATIVE,
                 PathConvention.WASMTIME4J
             )
             .load();
             
-        if (info.isLoadedSuccessfully()) {
+        if (info.isSuccessful()) {
             LOGGER.info("Performance library loaded - enhanced features available");
         } else {
             LOGGER.warning("Performance library not available - using fallback implementation: " + 
@@ -115,32 +112,19 @@ public final class SpringBootIntegration {
     // @Value("${app.native.library.name:myapp}")
     private String libraryName = "myapp";
     
-    // @Value("${app.native.security.level:MODERATE}")
-    private String securityLevelName = "MODERATE";
-    
     // @Value("${app.native.temp.prefix:myapp-}")
     private String tempPrefix = "myapp-";
 
     public void configurationBasedInitialization() {
         LOGGER.info("Initializing with configuration-based settings...");
-        
-        final SecurityLevel securityLevel;
-        try {
-            securityLevel = SecurityLevel.valueOf(securityLevelName);
-        } catch (final IllegalArgumentException e) {
-            LOGGER.warning("Invalid security level '" + securityLevelName + "', using MODERATE");
-            // Use MODERATE as fallback - would be SecurityLevel.MODERATE in real code
-            return;
-        }
-        
+
         final LibraryLoadInfo info = NativeLoader.builder()
             .libraryName(libraryName)
-            .securityLevel(securityLevel)
             .tempFilePrefix(tempPrefix)
             .pathConvention(PathConvention.MAVEN_NATIVE)
             .load();
             
-        if (!info.isLoadedSuccessfully()) {
+        if (!info.isSuccessful()) {
             throw new RuntimeException("Configuration-based loading failed: " + info.getErrorMessage());
         }
         

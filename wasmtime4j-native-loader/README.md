@@ -5,7 +5,7 @@ A high-performance, secure native library loading solution for Java applications
 ## Features
 
 - **Cross-Platform Support**: Automatic platform detection for Linux, Windows, and macOS (x86_64 and ARM64)
-- **Secure Loading**: Multiple security levels with comprehensive validation and path traversal protection
+- **Secure Loading**: Comprehensive validation and path traversal protection
 - **Flexible Resource Paths**: Support for multiple path conventions including Maven native, custom patterns, and wasmtime4j conventions
 - **Performance Optimized**: Efficient resource extraction with caching and minimal overhead
 - **Thread-Safe**: All operations are thread-safe and configurations are immutable
@@ -33,8 +33,8 @@ import ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils.LibraryLoadInfo;
 // Load with default configuration
 LibraryLoadInfo info = NativeLoader.loadLibrary("mylib");
 
-if (info.isLoadedSuccessfully()) {
-    System.out.println("Library loaded from: " + info.getLoadedFromPath());
+if (info.isSuccessful()) {
+    System.out.println("Library loaded from: " + info.getExtractedPath());
 } else {
     System.err.println("Failed to load: " + info.getErrorMessage());
 }
@@ -44,13 +44,11 @@ if (info.isLoadedSuccessfully()) {
 
 ```java
 import ai.tegmentum.wasmtime4j.nativeloader.NativeLoader;
-import ai.tegmentum.wasmtime4j.nativeloader.NativeLoaderBuilder.SecurityLevel;
 import ai.tegmentum.wasmtime4j.nativeloader.PathConvention;
 
 LibraryLoadInfo info = NativeLoader.builder()
     .libraryName("mylib")
     .tempFilePrefix("mylib-native-")
-    .securityLevel(SecurityLevel.STRICT)
     .pathConvention(PathConvention.MAVEN_NATIVE)
     .load();
 ```
@@ -86,7 +84,7 @@ The library supports multiple conventions for locating native libraries within J
 
 1. **WASMTIME4J** (default): `/native/{platform}/{lib}{name}{ext}`
 2. **MAVEN_NATIVE**: `/META-INF/native/{platform}/{lib}{name}{ext}`
-3. **GRADLE_NATIVE**: `/native-libs/{platform}/{lib}{name}{ext}`
+3. **JNA**: `/{platform}/{name}{ext}`
 
 ### Custom Path Patterns
 
@@ -118,35 +116,8 @@ LibraryLoadInfo info = NativeLoader.builder()
     .conventionPriority(
         PathConvention.MAVEN_NATIVE,
         PathConvention.WASMTIME4J,
-        PathConvention.GRADLE_NATIVE
+        PathConvention.JNA
     )
-    .load();
-```
-
-## Security Levels
-
-Choose the appropriate security level for your environment:
-
-### STRICT
-- Maximum security with comprehensive validation
-- Enhanced path traversal protection
-- Conservative temporary directory permissions
-- Recommended for production environments
-
-### MODERATE (Default)
-- Balanced security and compatibility
-- Standard validation patterns
-- Suitable for most applications
-
-### PERMISSIVE
-- Minimal security restrictions
-- Maximum compatibility
-- Use only in trusted environments
-
-```java
-LibraryLoadInfo info = NativeLoader.builder()
-    .libraryName("mylib")
-    .securityLevel(SecurityLevel.STRICT)
     .load();
 ```
 
@@ -186,11 +157,10 @@ public class NativeLibraryInitializer {
     public void loadNativeLibraries() {
         LibraryLoadInfo info = NativeLoader.builder()
             .libraryName("mylib")
-            .securityLevel(SecurityLevel.MODERATE)
             .tempFilePrefix("myapp-")
             .load();
 
-        if (!info.isLoadedSuccessfully()) {
+        if (!info.isSuccessful()) {
             throw new RuntimeException("Failed to load native library: " +
                 info.getErrorMessage());
         }
@@ -211,10 +181,9 @@ public class MyFrameworkNativeLoader {
                 PathConvention.custom("/framework/native/{platform}/{lib}{name}{ext}"),
                 PathConvention.MAVEN_NATIVE
             )
-            .securityLevel(SecurityLevel.STRICT)
             .load();
 
-        if (!info.isLoadedSuccessfully()) {
+        if (!info.isSuccessful()) {
             // Handle error appropriately
             throw new RuntimeException("Framework native library not found");
         }
@@ -240,7 +209,6 @@ Fluent builder for configuring native library loading.
 - `libraryName(String name)` - Set the library name
 - `tempFilePrefix(String prefix)` - Set temporary file prefix
 - `tempDirSuffix(String suffix)` - Set temporary directory suffix
-- `securityLevel(SecurityLevel level)` - Set security validation level
 - `pathConvention(PathConvention convention)` - Set resource path convention
 - `customPathPattern(String pattern)` - Use custom path pattern
 - `conventionPriority(PathConvention... conventions)` - Set fallback order
@@ -253,11 +221,11 @@ Fluent builder for configuring native library loading.
 Result object containing information about the loading attempt.
 
 **Methods:**
-- `isLoadedSuccessfully()` - Whether loading succeeded
-- `getLoadedFromPath()` - Path where library was loaded from
-- `getLoadMethod()` - How the library was loaded (SYSTEM_PATH, EXTRACTED)
+- `isSuccessful()` - Whether loading succeeded
+- `getExtractedPath()` - Path where library was extracted to
+- `getLoadingMethod()` - How the library was loaded (SYSTEM_LIBRARY_PATH, EXTRACTED_FROM_JAR)
 - `getErrorMessage()` - Error details if loading failed
-- `getLoadTimeMillis()` - Time taken to load in milliseconds
+- `getAttemptedPaths()` - List of resource paths that were tried
 
 ## Troubleshooting
 
@@ -282,7 +250,6 @@ Solution: The platform may not be supported or detected correctly:
 **Issue: Permission denied**
 ```
 Solution: Temporary directory or extracted file lacks permissions:
-- Use SecurityLevel.PERMISSIVE for testing
 - Check java.io.tmpdir system property
 - Verify application has write permissions to temp directory
 ```
@@ -290,7 +257,6 @@ Solution: Temporary directory or extracted file lacks permissions:
 **Issue: Path traversal validation errors**
 ```
 Solution: Path validation is rejecting the library path:
-- Use SecurityLevel.MODERATE or PERMISSIVE
 - Check that resource paths don't contain ".." or other suspicious patterns
 - Verify your custom path pattern is valid
 ```
@@ -324,7 +290,7 @@ try {
 **After:**
 ```java
 LibraryLoadInfo info = NativeLoader.loadLibrary("mylib");
-if (!info.isLoadedSuccessfully()) {
+if (!info.isSuccessful()) {
     // Handle error with detailed info
     throw new RuntimeException(info.getErrorMessage());
 }

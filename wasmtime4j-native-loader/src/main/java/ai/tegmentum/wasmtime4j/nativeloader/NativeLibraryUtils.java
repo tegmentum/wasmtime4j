@@ -998,20 +998,6 @@ public final class NativeLibraryUtils {
   }
 
   /**
-   * Registers a path for cleanup on JVM shutdown.
-   *
-   * <p>This method uses default configuration for backward compatibility.
-   *
-   * <p>PMD: UnusedPrivateMethod - Reserved for future public API extension.
-   *
-   * @param path the path to clean up
-   */
-  @SuppressWarnings("PMD.UnusedPrivateMethod")
-  private static void registerForCleanup(final Path path) {
-    registerForCleanup(path, DEFAULT_CONFIG);
-  }
-
-  /**
    * Registers a path for cleanup on JVM shutdown with specified configuration.
    *
    * <p>PMD: DoNotUseThreads - Shutdown hooks require threads for cleanup. CognitiveComplexity -

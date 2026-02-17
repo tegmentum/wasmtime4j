@@ -17,7 +17,6 @@
 package examples.advancedusage;
 
 import ai.tegmentum.wasmtime4j.nativeloader.NativeLoader;
-import ai.tegmentum.wasmtime4j.nativeloader.NativeLoaderBuilder.SecurityLevel;
 import ai.tegmentum.wasmtime4j.nativeloader.PathConvention;
 import ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils.LibraryLoadInfo;
 
@@ -25,50 +24,14 @@ import ai.tegmentum.wasmtime4j.nativeloader.NativeLibraryUtils.LibraryLoadInfo;
  * Advanced example demonstrating custom configuration options.
  * 
  * This example shows how to use the builder API for specialized loading
- * scenarios with custom security levels, path conventions, and fallback strategies.
+ * scenarios with path conventions and fallback strategies.
  */
 public final class CustomConfiguration {
 
     public static void main(final String[] args) {
-        demonstrateSecurityLevels();
         demonstratePathConventions();
         demonstrateCustomPathPatterns();
         demonstrateFallbackStrategies();
-    }
-
-    /**
-     * Demonstrates different security levels and their effects.
-     */
-    private static void demonstrateSecurityLevels() {
-        System.out.println("=== Security Level Examples ===");
-        
-        // High security configuration for production environments
-        System.out.println("Loading with STRICT security level...");
-        LibraryLoadInfo strictInfo = NativeLoader.builder()
-            .libraryName("secure-lib")
-            .securityLevel(SecurityLevel.STRICT)
-            .tempFilePrefix("secure-")
-            .load();
-            
-        printResult("STRICT", strictInfo);
-        
-        // Balanced configuration (default)
-        System.out.println("Loading with MODERATE security level...");
-        LibraryLoadInfo moderateInfo = NativeLoader.builder()
-            .libraryName("standard-lib")
-            .securityLevel(SecurityLevel.MODERATE)
-            .load();
-            
-        printResult("MODERATE", moderateInfo);
-        
-        // Permissive configuration for compatibility
-        System.out.println("Loading with PERMISSIVE security level...");
-        LibraryLoadInfo permissiveInfo = NativeLoader.builder()
-            .libraryName("compat-lib")
-            .securityLevel(SecurityLevel.PERMISSIVE)
-            .load();
-            
-        printResult("PERMISSIVE", permissiveInfo);
     }
 
     /**
@@ -90,7 +53,7 @@ public final class CustomConfiguration {
         System.out.println("Loading with Gradle Native convention...");
         LibraryLoadInfo gradleInfo = NativeLoader.builder()
             .libraryName("gradle-lib")
-            .pathConvention(PathConvention.GRADLE_NATIVE)
+            .pathConvention(PathConvention.JNA)
             .load();
             
         printResult("GRADLE_NATIVE", gradleInfo);
@@ -107,7 +70,6 @@ public final class CustomConfiguration {
         LibraryLoadInfo customInfo = NativeLoader.builder()
             .libraryName("custom-lib")
             .customPathPattern("/native-libs/{platform}/{lib}{name}{ext}")
-            .securityLevel(SecurityLevel.MODERATE)
             .load();
             
         printResult("CUSTOM_PATTERN", customInfo);
@@ -134,10 +96,9 @@ public final class CustomConfiguration {
             .libraryName("multi-lib")
             .conventionPriority(
                 PathConvention.MAVEN_NATIVE,      // Try Maven first
-                PathConvention.GRADLE_NATIVE,     // Then Gradle
+                PathConvention.JNA,     // Then JNA
                 PathConvention.WASMTIME4J         // Finally default
             )
-            .securityLevel(SecurityLevel.MODERATE)
             .load();
             
         printResult("FALLBACK", fallbackInfo);
@@ -151,7 +112,7 @@ public final class CustomConfiguration {
      * Helper method to print loading results consistently.
      */
     private static void printResult(final String label, final LibraryLoadInfo info) {
-        if (info.isLoadedSuccessfully()) {
+        if (info.isSuccessful()) {
             System.out.println("  ✓ " + label + " - SUCCESS");
             System.out.println("    Method: " + info.getLoadingMethod());
             if (info.getUsedConvention() != null) {

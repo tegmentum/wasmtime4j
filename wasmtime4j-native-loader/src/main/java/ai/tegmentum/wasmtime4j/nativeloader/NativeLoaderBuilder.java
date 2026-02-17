@@ -22,8 +22,8 @@ import java.util.Objects;
  * Builder for configuring native library loading with a fluent API.
  *
  * <p>This builder provides comprehensive configuration options for native library loading,
- * including security levels, resource path conventions, and custom naming patterns. All
- * configurations are validated and result in immutable, thread-safe objects.
+ * including resource path conventions and custom naming patterns. All configurations are validated
+ * and result in immutable, thread-safe objects.
  *
  * <p><strong>Basic Usage:</strong>
  *
@@ -40,7 +40,6 @@ import java.util.Objects;
  *     .libraryName("mylib")
  *     .tempFilePrefix("mylib-native-")
  *     .tempDirSuffix("-mylib")
- *     .securityLevel(SecurityLevel.STRICT)
  *     .pathConvention(PathConvention.MAVEN_NATIVE)
  *     .load();
  * }</pre>
@@ -52,71 +51,11 @@ import java.util.Objects;
  */
 public final class NativeLoaderBuilder {
 
-  /**
-   * Security level for native library loading operations.
-   *
-   * <p>Security levels provide different trade-offs between security and compatibility:
-   *
-   * <ul>
-   *   <li><strong>STRICT</strong>: Maximum security, restrictive validation
-   *   <li><strong>MODERATE</strong>: Balanced security and compatibility (default)
-   *   <li><strong>PERMISSIVE</strong>: Minimal security, maximum compatibility
-   * </ul>
-   */
-  public enum SecurityLevel {
-    /**
-     * Strict security level with maximum validation.
-     *
-     * <p>This level enforces:
-     *
-     * <ul>
-     *   <li>Strict filename and path validation
-     *   <li>Enhanced path traversal protection
-     *   <li>Conservative temporary directory permissions
-     *   <li>Additional resource validation checks
-     * </ul>
-     */
-    STRICT,
-
-    /**
-     * Moderate security level balancing security and compatibility.
-     *
-     * <p>This is the default level that provides reasonable security while maintaining broad
-     * compatibility. It enforces standard validation patterns used throughout the system.
-     */
-    MODERATE,
-
-    /**
-     * Permissive security level with minimal restrictions.
-     *
-     * <p>This level should only be used when maximum compatibility is required and the environment
-     * is trusted. It provides basic validation but allows more flexible naming patterns.
-     */
-    PERMISSIVE
-  }
-
-  /** Default library name for backward compatibility. */
-  private static final String DEFAULT_LIBRARY_NAME = NativeLibraryConfig.DEFAULT_LIBRARY_NAME;
-
-  /** Default temporary file prefix. */
-  private static final String DEFAULT_TEMP_FILE_PREFIX =
-      NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX;
-
-  /** Default temporary directory suffix. */
-  private static final String DEFAULT_TEMP_DIR_SUFFIX = NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX;
-
-  /** Default security level. */
-  private static final SecurityLevel DEFAULT_SECURITY_LEVEL = SecurityLevel.MODERATE;
-
-  /** Default path convention. */
-  private static final PathConvention DEFAULT_PATH_CONVENTION = PathConvention.WASMTIME4J;
-
   // Configuration fields
-  private String libraryName = DEFAULT_LIBRARY_NAME;
-  private String tempFilePrefix = DEFAULT_TEMP_FILE_PREFIX;
-  private String tempDirSuffix = DEFAULT_TEMP_DIR_SUFFIX;
-  private SecurityLevel securityLevel = DEFAULT_SECURITY_LEVEL;
-  private PathConvention pathConvention = DEFAULT_PATH_CONVENTION;
+  private String libraryName = NativeLibraryConfig.DEFAULT_LIBRARY_NAME;
+  private String tempFilePrefix = NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX;
+  private String tempDirSuffix = NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX;
+  private PathConvention pathConvention = PathConvention.WASMTIME4J;
   private PathConvention.CustomPathConvention customPathConvention;
   private PathConvention[] conventionPriority;
 
@@ -170,22 +109,6 @@ public final class NativeLoaderBuilder {
   public NativeLoaderBuilder tempDirSuffix(final String tempDirSuffix) {
     Objects.requireNonNull(tempDirSuffix, "tempDirSuffix must not be null");
     this.tempDirSuffix = tempDirSuffix;
-    return this;
-  }
-
-  /**
-   * Sets the security level for library loading operations.
-   *
-   * <p>The security level affects validation strictness and security measures applied during
-   * loading. See {@link SecurityLevel} for detailed descriptions of each level.
-   *
-   * @param securityLevel the security level
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if securityLevel is null
-   */
-  public NativeLoaderBuilder securityLevel(final SecurityLevel securityLevel) {
-    Objects.requireNonNull(securityLevel, "securityLevel must not be null");
-    this.securityLevel = securityLevel;
     return this;
   }
 
@@ -262,49 +185,13 @@ public final class NativeLoaderBuilder {
    *   <li>Extract from JAR resources and load from temporary location
    * </ol>
    *
-   * <p>Security validation is applied according to the configured {@link SecurityLevel}.
-   *
    * @return information about the library loading attempt
    * @throws IllegalArgumentException if any configuration parameter is invalid
    * @throws IllegalStateException if the configuration cannot be built
    */
   public NativeLibraryUtils.LibraryLoadInfo load() {
-    // Create base configuration
-    final NativeLibraryConfig baseConfig = buildBaseConfig();
-
-    // Apply security level and path convention
-    final NativeLibraryConfig finalConfig = applyAdvancedConfiguration(baseConfig);
-
-    // Perform the actual loading using the configured conventions
-    return performLoad(finalConfig);
-  }
-
-  /**
-   * Builds the base configuration from current builder state.
-   *
-   * @return the base configuration
-   * @throws IllegalArgumentException if any parameter is invalid
-   */
-  private NativeLibraryConfig buildBaseConfig() {
-    return new NativeLibraryConfig(libraryName, tempFilePrefix, tempDirSuffix);
-  }
-
-  /**
-   * Applies advanced configuration options like security level and path convention.
-   *
-   * <p>This method uses the new convention-based loading functionality when path conventions or
-   * convention priority is specified. Otherwise, it uses the standard loading method.
-   *
-   * @param baseConfig the base configuration
-   * @return the enhanced configuration (currently returns the same config)
-   */
-  private NativeLibraryConfig applyAdvancedConfiguration(final NativeLibraryConfig baseConfig) {
-    // The advanced configuration is applied during loading, not in config building
-    // This preserves the existing NativeLibraryConfig interface
-
-    // TODO: Implement security level validation
-
-    return baseConfig;
+    final NativeLibraryConfig config = new NativeLibraryConfig(libraryName, tempFilePrefix, tempDirSuffix);
+    return performLoad(config);
   }
 
   /**
@@ -368,15 +255,6 @@ public final class NativeLoaderBuilder {
    */
   public String getTempDirSuffix() {
     return tempDirSuffix;
-  }
-
-  /**
-   * Gets the current security level.
-   *
-   * @return the security level
-   */
-  public SecurityLevel getSecurityLevel() {
-    return securityLevel;
   }
 
   /**

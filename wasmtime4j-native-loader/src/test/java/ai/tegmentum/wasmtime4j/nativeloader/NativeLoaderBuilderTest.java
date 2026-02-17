@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import ai.tegmentum.wasmtime4j.nativeloader.NativeLoaderBuilder.SecurityLevel;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -44,10 +43,6 @@ final class NativeLoaderBuilderTest {
         "Should start with default temp file prefix");
     assertEquals(
         "-wasmtime4j", builder.getTempDirSuffix(), "Should start with default temp dir suffix");
-    assertEquals(
-        SecurityLevel.MODERATE,
-        builder.getSecurityLevel(),
-        "Should start with default security level");
     assertEquals(
         PathConvention.WASMTIME4J,
         builder.getPathConvention(),
@@ -79,15 +74,6 @@ final class NativeLoaderBuilderTest {
 
     assertSame(builder, result, "Should return same builder instance for method chaining");
     assertEquals("-test-suffix", builder.getTempDirSuffix(), "Should update temp dir suffix");
-  }
-
-  @Test
-  void testSecurityLevelFluentAPI() {
-    final NativeLoaderBuilder builder = new NativeLoaderBuilder();
-    final NativeLoaderBuilder result = builder.securityLevel(SecurityLevel.STRICT);
-
-    assertSame(builder, result, "Should return same builder instance for method chaining");
-    assertEquals(SecurityLevel.STRICT, builder.getSecurityLevel(), "Should update security level");
   }
 
   @Test
@@ -131,16 +117,6 @@ final class NativeLoaderBuilderTest {
   }
 
   @Test
-  void testNullSecurityLevel() {
-    final NativeLoaderBuilder builder = new NativeLoaderBuilder();
-
-    assertThrows(
-        NullPointerException.class,
-        () -> builder.securityLevel(null),
-        "Should throw NullPointerException for null security level");
-  }
-
-  @Test
   void testNullPathConvention() {
     final NativeLoaderBuilder builder = new NativeLoaderBuilder();
 
@@ -159,14 +135,12 @@ final class NativeLoaderBuilderTest {
             .libraryName("chaintest")
             .tempFilePrefix("chain-")
             .tempDirSuffix("-chain")
-            .securityLevel(SecurityLevel.PERMISSIVE)
             .pathConvention(PathConvention.CUSTOM);
 
     assertSame(builder, result, "Should return same builder instance for method chaining");
     assertEquals("chaintest", builder.getLibraryName());
     assertEquals("chain-", builder.getTempFilePrefix());
     assertEquals("-chain", builder.getTempDirSuffix());
-    assertEquals(SecurityLevel.PERMISSIVE, builder.getSecurityLevel());
     assertEquals(PathConvention.CUSTOM, builder.getPathConvention());
   }
 
@@ -219,20 +193,6 @@ final class NativeLoaderBuilderTest {
     builder1.libraryName("modified");
     assertEquals("modified", builder1.getLibraryName(), "First builder should be modified");
     assertEquals("lib2", builder2.getLibraryName(), "Second builder should be unaffected");
-  }
-
-  @Test
-  void testAllSecurityLevels() {
-    final NativeLoaderBuilder builder = new NativeLoaderBuilder().libraryName("security-test");
-
-    // Test all security levels
-    for (final SecurityLevel level : SecurityLevel.values()) {
-      builder.securityLevel(level);
-      assertEquals(level, builder.getSecurityLevel(), "Should set security level: " + level);
-
-      // Should be able to build with any security level
-      assertDoesNotThrow(builder::load, "Should build successfully with security level: " + level);
-    }
   }
 
   @Test
