@@ -39,24 +39,24 @@ class JniErrorHandlingTest {
 
   @ParameterizedTest
   @CsvSource({
-    "-1, Compilation failed",
-    "-2, Validation failed",
-    "-3, Runtime error",
+    "-1, WebAssembly compilation failed",
+    "-2, WebAssembly module validation failed",
+    "-3, WebAssembly runtime error",
     "-4, Engine configuration error",
     "-5, Store error",
     "-6, Instance error",
-    "-7, Memory access error",
-    "-8, Function invocation failed",
-    "-9, Import/Export error",
-    "-10, Type error",
-    "-11, Resource error",
-    "-12, I/O error",
+    "-7, Memory access or allocation error",
+    "-8, Function invocation error",
+    "-9, Import or export resolution error",
+    "-10, Type conversion or validation error",
+    "-11, Resource management error",
+    "-12, I/O operation error",
     "-13, Invalid parameter",
-    "-14, Concurrency error",
+    "-14, Threading or concurrency error",
     "-15, WASI error",
-    "-16, Security error",
-    "-17, Component error",
-    "-18, Interface error"
+    "-16, Security and permission violation error",
+    "-17, Component model error",
+    "-18, Interface definition or binding error"
   })
   void testErrorCodeMessageMapping(int errorCode, String expectedMessagePrefix) {
     JniException exception = JniExceptionMapper.mapNativeError(errorCode, "test");
@@ -75,13 +75,13 @@ class JniErrorHandlingTest {
     // Memory error (-7) should return JniException with memory error message
     JniException memoryException = JniExceptionMapper.mapNativeError(-7, "memory test");
     assertTrue(
-        memoryException.getMessage().contains("Memory access error"),
+        memoryException.getMessage().contains("Memory access or allocation error"),
         "Memory errors should indicate memory access error");
 
     // Resource error (-11) should return JniException with resource error message
     JniException resourceException = JniExceptionMapper.mapNativeError(-11, "resource test");
     assertTrue(
-        resourceException.getMessage().contains("Resource error"),
+        resourceException.getMessage().contains("Resource management error"),
         "Resource errors should indicate resource error");
 
     // Compilation error (-1) should use regular JniException

@@ -687,49 +687,16 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
 
   @Override
   protected void doClose() throws Exception {
-    final boolean hadHostFunctions = !registeredCallbackIds.isEmpty();
-
     // DEFENSIVE: Only destroy native handle if it's valid
     if (nativeHandle == 0) {
       cleanupHostFunctionCallbacks();
       return;
     }
 
-    // If no host functions were registered, destroy directly (fast path)
-    if (!hadHostFunctions) {
-      nativeDestroyLinker(nativeHandle);
-      return;
-    }
-
-    // CRITICAL: Native destruction must complete BEFORE cleaning up Java callbacks.
-    // The native code may invoke callbacks during destruction. If we clean up callbacks
-    // first, native code would find null callbacks and crash the JVM.
-    // Use synchronous destruction with timeout to ensure proper ordering.
-    try {
-      Thread destroyThread =
-          new Thread(
-              () -> {
-                nativeDestroyLinker(nativeHandle);
-              },
-              "LinkerDestroyThread");
-      destroyThread.setDaemon(true); // Don't prevent JVM exit
-      destroyThread.start();
-      destroyThread.join(500); // Wait max 500ms for native destruction
-      if (destroyThread.isAlive()) {
-        LOGGER.fine("Native linker destruction deferred to GC - callbacks kept active");
-        // If native destruction is still running, DON'T clean up callbacks yet.
-        // The callbacks will be cleaned up when the linker is GC'd and
-        // the daemon thread eventually completes or times out.
-        return;
-      }
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOGGER.warning("Interrupted while destroying linker: " + e.getMessage());
-      // If interrupted, don't clean up callbacks - native may still need them
-      return;
-    }
-
-    // Only clean up Java callbacks AFTER native destruction has completed
+    // Destroy native linker first, then clean up Java callbacks.
+    // Native code may invoke callbacks during destruction, so callbacks must remain
+    // registered until nativeDestroyLinker() completes.
+    nativeDestroyLinker(nativeHandle);
     cleanupHostFunctionCallbacks();
   }
 
@@ -756,14 +723,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    * @return true if handle looks potentially valid
    */
   private boolean isNativeHandleReasonable() {
-    if (nativeHandle == 0) {
-      return false;
-    }
-    // Test handles like 0x1, 0x1111, 0x2222 are small values that can't be real heap pointers
-    // Real native pointers on 64-bit systems are typically > 0x100000000L (4GB)
-    // On macOS ARM64, they're often in the range 0x100000000 - 0x200000000
-    final long minReasonablePtr = 0x100000000L; // 4 GB - catch fake test pointers
-    return nativeHandle >= minReasonablePtr;
+    return isNativeHandleReasonable(nativeHandle);
   }
 
   /**

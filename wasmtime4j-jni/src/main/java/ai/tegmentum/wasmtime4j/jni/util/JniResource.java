@@ -130,6 +130,23 @@ public abstract class JniResource implements AutoCloseable {
   }
 
   /**
+   * Checks whether a native handle value looks like a plausible heap pointer.
+   *
+   * <p>Test handles like 0x1, 0x1111, 0x2222 are small values that cannot be real heap pointers.
+   * Real native pointers on 64-bit systems are typically above 0x100000000 (4 GB).
+   *
+   * @param handle the native handle to check
+   * @return true if the handle is nonzero and above the 4 GB threshold
+   */
+  public static boolean isNativeHandleReasonable(final long handle) {
+    if (handle == 0) {
+      return false;
+    }
+    final long minReasonablePtr = 0x100000000L;
+    return handle >= minReasonablePtr;
+  }
+
+  /**
    * Checks if this resource has been closed.
    *
    * @return true if the resource is closed, false otherwise

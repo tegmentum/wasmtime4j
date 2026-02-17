@@ -63,32 +63,32 @@ class JniExceptionMapperTest {
     @ParameterizedTest(name = "Error code {0} should produce message containing \"{1}\"")
     @CsvSource({
       "0, No error occurred",
-      "-1, Compilation failed",
-      "-2, Validation failed",
-      "-3, Runtime error",
+      "-1, WebAssembly compilation failed",
+      "-2, WebAssembly module validation failed",
+      "-3, WebAssembly runtime error",
       "-4, Engine configuration error",
       "-5, Store error",
       "-6, Instance error",
-      "-7, Memory access error",
-      "-8, Function invocation failed",
-      "-9, Import/Export error",
-      "-10, Type error",
-      "-11, Resource error",
-      "-12, I/O error",
+      "-7, Memory access or allocation error",
+      "-8, Function invocation error",
+      "-9, Import or export resolution error",
+      "-10, Type conversion or validation error",
+      "-11, Resource management error",
+      "-12, I/O operation error",
       "-13, Invalid parameter",
-      "-14, Concurrency error",
+      "-14, Threading or concurrency error",
       "-15, WASI error",
-      "-16, Security error",
-      "-17, Component error",
-      "-18, Interface error",
-      "-19, Network error",
-      "-20, Process error",
-      "-21, Internal error",
-      "-22, Security violation",
-      "-23, Invalid data",
+      "-16, Security and permission violation error",
+      "-17, Component model error",
+      "-18, Interface definition or binding error",
+      "-19, Network operation error",
+      "-20, Process execution error",
+      "-21, Internal system error",
+      "-22, Security violation error",
+      "-23, Invalid data format error",
       "-24, I/O operation error",
       "-25, Unsupported operation",
-      "-26, Would block"
+      "-26, Operation would block"
     })
     @DisplayName("Should map all 27 error codes correctly")
     void shouldMapAllErrorCodes(final int errorCode, final String expectedMessagePart) {
@@ -109,10 +109,8 @@ class JniExceptionMapperTest {
     void shouldMapMinusSixteenToSecurity() {
       final JniException ex = JniExceptionMapper.mapNativeError(-16, "access denied");
       assertTrue(
-          ex.getMessage().contains("Security error"),
-          "Error code -16 must map to 'Security error' (Rust SecurityError), "
-              + "not 'Component error'. Got: "
-              + ex.getMessage());
+          ex.getMessage().contains("Security and permission violation error"),
+          "Error code -16 must map to SecurityError. Got: " + ex.getMessage());
       assertTrue(
           ex.getMessage().contains("access denied"), "Should include the error message detail");
     }
@@ -122,10 +120,8 @@ class JniExceptionMapperTest {
     void shouldMapMinusSeventeenToComponent() {
       final JniException ex = JniExceptionMapper.mapNativeError(-17, "component failure");
       assertTrue(
-          ex.getMessage().contains("Component error"),
-          "Error code -17 must map to 'Component error' (Rust ComponentError), "
-              + "not 'Interface error'. Got: "
-              + ex.getMessage());
+          ex.getMessage().contains("Component model error"),
+          "Error code -17 must map to ComponentError. Got: " + ex.getMessage());
     }
 
     @Test
@@ -133,10 +129,8 @@ class JniExceptionMapperTest {
     void shouldMapMinusEighteenToInterface() {
       final JniException ex = JniExceptionMapper.mapNativeError(-18, "binding error");
       assertTrue(
-          ex.getMessage().contains("Interface error"),
-          "Error code -18 must map to 'Interface error' (Rust InterfaceError), "
-              + "not 'Internal error'. Got: "
-              + ex.getMessage());
+          ex.getMessage().contains("Interface definition or binding error"),
+          "Error code -18 must map to InterfaceError. Got: " + ex.getMessage());
     }
 
     @Test
@@ -144,9 +138,8 @@ class JniExceptionMapperTest {
     void shouldMapMinusTwentyOneToInternal() {
       final JniException ex = JniExceptionMapper.mapNativeError(-21, "internal failure");
       assertTrue(
-          ex.getMessage().contains("Internal error"),
-          "Error code -21 must map to 'Internal error' (Rust InternalError). Got: "
-              + ex.getMessage());
+          ex.getMessage().contains("Internal system error"),
+          "Error code -21 must map to InternalError. Got: " + ex.getMessage());
     }
 
     @Test
@@ -199,7 +192,8 @@ class JniExceptionMapperTest {
     void shouldMapErrorCodeWithoutMessage() {
       final JniException ex = JniExceptionMapper.mapNativeError(-3, null);
       assertNotNull(ex, "Exception should not be null");
-      assertTrue(ex.getMessage().contains("Runtime error"), "Should indicate runtime error");
+      assertTrue(
+          ex.getMessage().contains("WebAssembly runtime error"), "Should indicate runtime error");
     }
   }
 

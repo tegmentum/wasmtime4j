@@ -25,6 +25,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import java.util.Collections;
 import java.util.HashSet;
@@ -497,11 +498,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   }
 
   private boolean isNativeHandleReasonable() {
-    if (nativeHandle == 0) {
-      return false;
-    }
-    final long minReasonablePtr = 0x100000000L;
-    return nativeHandle >= minReasonablePtr;
+    return JniResource.isNativeHandleReasonable(nativeHandle);
   }
 
   private long registerHostFunctionCallback(final ComponentHostFunction implementation) {
