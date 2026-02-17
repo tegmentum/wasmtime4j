@@ -279,21 +279,6 @@ pub extern "C" fn wasmtime4j_panama_linker_alias(
     })
 }
 
-/// Get the number of host functions in the linker (Panama FFI version)
-///
-/// # Parameters
-/// - linker_ptr: Pointer to the Linker
-///
-/// # Returns
-/// The number of host functions registered in the linker, or 0 if the pointer is null
-#[no_mangle]
-pub extern "C" fn wasmtime4j_panama_linker_host_function_count(linker_ptr: *const c_void) -> usize {
-    if linker_ptr.is_null() {
-        return 0;
-    }
-    unsafe { crate::linker::wasmtime4j_linker_host_function_count(linker_ptr) }
-}
-
 /// Define unknown imports as traps (Panama FFI version)
 ///
 /// Implements any function imports of the module that are not already defined

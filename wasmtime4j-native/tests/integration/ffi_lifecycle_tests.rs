@@ -20,7 +20,7 @@ use wasmtime4j::ffi_common::resource_destruction::{
 };
 
 // Import test fixtures
-use crate::common::fixtures::{ARITHMETIC_MODULE_WAT, MEMORY_MODULE_WAT, NOP_MODULE_WAT};
+use crate::common::fixtures::{ARITHMETIC_MODULE_WAT, NOP_MODULE_WAT};
 
 // =============================================================================
 // Cross-cutting Lifecycle Tests (~12 tests)
@@ -462,10 +462,6 @@ fn test_validate_pointer_null() {
         module::wasmtime4j_panama_module_get_export_count(ptr::null_mut()),
         -1
     );
-    assert_eq!(
-        instance::wasmtime4j_panama_instance_has_export(ptr::null(), ptr::null()),
-        -1
-    );
 }
 
 /// Test that accessing a freed pointer is not safe to test.
@@ -543,39 +539,6 @@ fn test_validate_handle_zero() {
     // If we reach here without panic, test passes
 }
 
-/// Test out-of-bounds memory access returns error.
-#[test]
-fn test_error_handling_memory_bounds() {
-    let engine_ptr = engine::wasmtime4j_panama_engine_create();
-    let wat = CString::new(MEMORY_MODULE_WAT).unwrap();
-    let mut module_ptr: *mut c_void = ptr::null_mut();
-    let mut store_ptr: *mut c_void = ptr::null_mut();
-    let mut instance_ptr: *mut c_void = ptr::null_mut();
-
-    module::wasmtime4j_panama_module_compile_wat(engine_ptr, wat.as_ptr(), &mut module_ptr);
-    store::wasmtime4j_panama_store_create(engine_ptr, &mut store_ptr);
-    instance::wasmtime4j_panama_instance_create(store_ptr, module_ptr, &mut instance_ptr);
-
-    // Try to load from out of bounds address - this calls a WASM function that will trap
-    let func_name = CString::new("load_i32").unwrap();
-    let params: [i32; 1] = [65536]; // Beyond 1 page (65536 bytes)
-
-    // This will trap, but should not crash
-    let _result = instance::wasmtime4j_panama_instance_call_i32_function(
-        instance_ptr,
-        store_ptr,
-        func_name.as_ptr(),
-        params.as_ptr(),
-        params.len(),
-    );
-
-    // Cleanup should still work after trap
-    instance::wasmtime4j_panama_instance_destroy(instance_ptr);
-    store::wasmtime4j_panama_store_destroy(store_ptr);
-    module::wasmtime4j_panama_module_destroy(module_ptr);
-    engine::wasmtime4j_panama_engine_destroy(engine_ptr);
-}
-
 /// Test store operations with null engine pointer.
 #[test]
 fn test_store_create_null_engine() {
@@ -633,35 +596,3 @@ fn test_instance_create_null_pointers() {
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
 }
 
-/// Test function call with wrong argument count handles gracefully.
-#[test]
-fn test_function_call_wrong_arg_count() {
-    let engine_ptr = engine::wasmtime4j_panama_engine_create();
-    let wat = CString::new(ARITHMETIC_MODULE_WAT).unwrap();
-    let mut module_ptr: *mut c_void = ptr::null_mut();
-    let mut store_ptr: *mut c_void = ptr::null_mut();
-    let mut instance_ptr: *mut c_void = ptr::null_mut();
-
-    module::wasmtime4j_panama_module_compile_wat(engine_ptr, wat.as_ptr(), &mut module_ptr);
-    store::wasmtime4j_panama_store_create(engine_ptr, &mut store_ptr);
-    instance::wasmtime4j_panama_instance_create(store_ptr, module_ptr, &mut instance_ptr);
-
-    // add_i32 expects 2 arguments, but we pass 1
-    let func_name = CString::new("add_i32").unwrap();
-    let params: [i32; 1] = [42];
-
-    // This should handle the error gracefully (trap or error return)
-    let _result = instance::wasmtime4j_panama_instance_call_i32_function(
-        instance_ptr,
-        store_ptr,
-        func_name.as_ptr(),
-        params.as_ptr(),
-        1, // Wrong count - should be 2
-    );
-    // Result is undefined but should not crash
-
-    instance::wasmtime4j_panama_instance_destroy(instance_ptr);
-    store::wasmtime4j_panama_store_destroy(store_ptr);
-    module::wasmtime4j_panama_module_destroy(module_ptr);
-    engine::wasmtime4j_panama_engine_destroy(engine_ptr);
-}

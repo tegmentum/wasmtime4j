@@ -2271,53 +2271,6 @@ pub unsafe extern "C" fn wasmtime4j_store_new(engine_ptr: *const c_void) -> *mut
     }
 }
 
-/// Create a new store with configuration
-///
-/// # Safety
-///
-/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
-/// Returns pointer to store that must be freed with wasmtime4j_store_destroy
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_new_with_config(
-    engine_ptr: *const c_void,
-    fuel_limit: u64,
-    memory_limit_bytes: usize,
-    execution_timeout_seconds: u64,
-) -> *mut c_void {
-    match crate::engine::core::get_engine_ref(engine_ptr) {
-        Ok(engine) => {
-            let opt_fuel = if fuel_limit == 0 {
-                None
-            } else {
-                Some(fuel_limit)
-            };
-            let opt_memory = if memory_limit_bytes == 0 {
-                None
-            } else {
-                Some(memory_limit_bytes)
-            };
-            let opt_timeout = if execution_timeout_seconds == 0 {
-                None
-            } else {
-                Some(execution_timeout_seconds)
-            };
-
-            match core::create_store_with_config(
-                engine,
-                opt_fuel,
-                opt_memory,
-                opt_timeout,
-                None,
-                None,
-                None,
-            ) {
-                Ok(store) => Box::into_raw(store) as *mut c_void,
-                Err(_) => std::ptr::null_mut(),
-            }
-        }
-        Err(_) => std::ptr::null_mut(),
-    }
-}
 
 /// Create a new store compatible with a specific module
 ///
@@ -2409,69 +2362,6 @@ pub unsafe extern "C" fn wasmtime4j_store_consume_fuel(store_ptr: *const c_void,
     }
 }
 
-/// Get fuel remaining in store
-///
-/// # Safety
-///
-/// store_ptr must be a valid pointer from wasmtime4j_store_new
-/// Returns fuel remaining, or 0 if not enabled or on error
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_fuel_remaining(store_ptr: *const c_void) -> u64 {
-    match core::get_store_ref(store_ptr) {
-        Ok(store) => core::get_fuel_remaining(store).unwrap_or(0),
-        Err(_) => 0,
-    }
-}
-
-/// Get store execution count
-///
-/// # Safety
-///
-/// store_ptr must be a valid pointer from wasmtime4j_store_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_execution_count(store_ptr: *const c_void) -> u64 {
-    match core::get_store_ref(store_ptr) {
-        Ok(store) => match core::get_execution_stats(store) {
-            Ok(stats) => stats.execution_count,
-            Err(_) => 0,
-        },
-        Err(_) => 0,
-    }
-}
-
-/// Get store fuel consumed total
-///
-/// # Safety
-///
-/// store_ptr must be a valid pointer from wasmtime4j_store_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_fuel_consumed(store_ptr: *const c_void) -> u64 {
-    match core::get_store_ref(store_ptr) {
-        Ok(store) => match core::get_execution_stats(store) {
-            Ok(stats) => stats.fuel_consumed,
-            Err(_) => 0,
-        },
-        Err(_) => 0,
-    }
-}
-
-/// Get store total execution time in microseconds
-///
-/// # Safety
-///
-/// store_ptr must be a valid pointer from wasmtime4j_store_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_total_execution_time_micros(
-    store_ptr: *const c_void,
-) -> u64 {
-    match core::get_store_ref(store_ptr) {
-        Ok(store) => match core::get_execution_stats(store) {
-            Ok(stats) => stats.total_execution_time.as_micros() as u64,
-            Err(_) => 0,
-        },
-        Err(_) => 0,
-    }
-}
 
 /// Set WASI context on a store (Panama FFI)
 ///
@@ -2544,48 +2434,3 @@ pub unsafe extern "C" fn wasmtime4j_store_has_wasi_context(store_ptr: *const c_v
     }
 }
 
-/// Resource limiter callback type for memory grow decisions (C FFI)
-type MemoryGrowingCallbackFn = extern "C" fn(callback_id: i64, current: u64, desired: u64, maximum: u64) -> i32;
-
-/// Resource limiter callback type for table grow decisions (C FFI)
-type TableGrowingCallbackFn =
-    extern "C" fn(callback_id: i64, current: u32, desired: u32, maximum: u32) -> i32;
-
-/// Resource limiter callback type for grow failure notifications (C FFI)
-type GrowFailedCallbackFn = extern "C" fn(callback_id: i64, error: *const c_char);
-
-/// Set a dynamic resource limiter on a store (C FFI)
-///
-/// # Safety
-///
-/// - store_ptr must be a valid pointer from wasmtime4j_store_new
-/// - Callback function pointers must be valid for the lifetime of the store
-/// - memory_grow_failed_fn and table_grow_failed_fn can be null
-///
-/// # Returns
-/// - 0 on success
-/// - non-zero on error
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_store_set_resource_limiter(
-    store_ptr: *const c_void,
-    callback_id: i64,
-    memory_growing_fn: MemoryGrowingCallbackFn,
-    table_growing_fn: TableGrowingCallbackFn,
-    memory_grow_failed_fn: Option<GrowFailedCallbackFn>,
-    table_grow_failed_fn: Option<GrowFailedCallbackFn>,
-) -> c_int {
-    match core::get_store_ref(store_ptr) {
-        Ok(store) => match core::set_resource_limiter(
-            store,
-            callback_id,
-            memory_growing_fn,
-            table_growing_fn,
-            memory_grow_failed_fn,
-            table_grow_failed_fn,
-        ) {
-            Ok(_) => FFI_SUCCESS,
-            Err(_) => FFI_ERROR,
-        },
-        Err(_) => FFI_ERROR,
-    }
-}

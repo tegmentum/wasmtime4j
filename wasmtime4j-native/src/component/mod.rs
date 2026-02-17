@@ -1078,15 +1078,6 @@ use std::os::raw::{c_char, c_int, c_void};
 const FFI_SUCCESS: c_int = 0;
 const FFI_ERROR: c_int = -1;
 
-/// Create a new component engine
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_engine_new() -> *mut c_void {
-    match ComponentEngine::new() {
-        Ok(engine) => Box::into_raw(Box::new(engine)) as *mut c_void,
-        Err(_) => std::ptr::null_mut(),
-    }
-}
-
 /// Destroy a component engine and free its resources
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_engine_destroy(engine_ptr: *mut c_void) {
@@ -1119,32 +1110,6 @@ pub unsafe extern "C" fn wasmtime4j_component_compile(
     }
 }
 
-/// Compile a WebAssembly component from WAT (WebAssembly Text format)
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_compile_wat(
-    engine_ptr: *mut c_void,
-    wat_text: *const c_char,
-    component_out: *mut *mut c_void,
-) -> c_int {
-    if engine_ptr.is_null() || wat_text.is_null() || component_out.is_null() {
-        return FFI_ERROR;
-    }
-
-    let engine = &mut *(engine_ptr as *mut ComponentEngine);
-    let wat_str = match CStr::from_ptr(wat_text).to_str() {
-        Ok(s) => s,
-        Err(_) => return FFI_ERROR,
-    };
-
-    match engine.compile_component_wat(wat_str) {
-        Ok(component) => {
-            *component_out = Box::into_raw(Box::new(component)) as *mut c_void;
-            FFI_SUCCESS
-        }
-        Err(_) => FFI_ERROR,
-    }
-}
-
 /// Destroy a compiled component and free its resources
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_destroy(component_ptr: *mut c_void) {
@@ -1168,41 +1133,6 @@ pub unsafe extern "C" fn wasmtime4j_component_instantiate(
     let component = &*(component_ptr as *const Component);
 
     match engine.instantiate_component(component) {
-        Ok(instance) => {
-            *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
-            FFI_SUCCESS
-        }
-        Err(_) => FFI_ERROR,
-    }
-}
-
-/// Instantiate a compiled component asynchronously
-///
-/// This function uses the global Tokio runtime to perform async component instantiation.
-/// It blocks the calling thread until the async operation completes.
-///
-/// # Safety
-/// This function is unsafe because it dereferences raw pointers.
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_instantiate_async(
-    engine_ptr: *mut c_void,
-    component_ptr: *const c_void,
-    instance_out: *mut *mut c_void,
-) -> c_int {
-    if engine_ptr.is_null() || component_ptr.is_null() || instance_out.is_null() {
-        return FFI_ERROR;
-    }
-
-    let engine = &*(engine_ptr as *const ComponentEngine);
-    let component = &*(component_ptr as *const Component);
-
-    // Use the global Tokio runtime to execute the async operation
-    let runtime = match tokio::runtime::Runtime::new() {
-        Ok(rt) => rt,
-        Err(_) => return FFI_ERROR,
-    };
-
-    match runtime.block_on(engine.instantiate_component_async(component)) {
         Ok(instance) => {
             *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
             FFI_SUCCESS
@@ -1391,94 +1321,6 @@ pub unsafe extern "C" fn wasmtime4j_component_validate(
     }
 }
 
-/// Get the number of active component instances from the engine
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_engine_instance_count(
-    engine_ptr: *const c_void,
-) -> usize {
-    if engine_ptr.is_null() {
-        return 0;
-    }
-
-    let engine = &*(engine_ptr as *const ComponentEngine);
-    engine.get_instance_count()
-}
-
-/// Cleanup unused component instances in the engine
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_engine_cleanup_instances(
-    engine_ptr: *mut c_void,
-) -> c_int {
-    if engine_ptr.is_null() {
-        return FFI_ERROR;
-    }
-
-    let engine = &mut *(engine_ptr as *mut ComponentEngine);
-    engine.cleanup_unused_instances();
-    FFI_SUCCESS
-}
-
-/// Check if a component engine supports a specific feature
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_engine_supports_feature(
-    engine_ptr: *const c_void,
-    feature_name: *const c_char,
-) -> c_int {
-    if engine_ptr.is_null() || feature_name.is_null() {
-        return FFI_ERROR;
-    }
-
-    let engine = &*(engine_ptr as *const ComponentEngine);
-    let feature_str = match CStr::from_ptr(feature_name).to_str() {
-        Ok(s) => s,
-        Err(_) => return FFI_ERROR,
-    };
-
-    match engine.supports_feature(feature_str) {
-        Ok(supported) => {
-            if supported {
-                1
-            } else {
-                0
-            }
-        }
-        Err(_) => FFI_ERROR,
-    }
-}
-
-/// Get interface definition for a component export
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_get_export_interface(
-    component_ptr: *const c_void,
-    export_name: *const c_char,
-    interface_json_out: *mut *mut c_char,
-) -> c_int {
-    if component_ptr.is_null() || export_name.is_null() || interface_json_out.is_null() {
-        return FFI_ERROR;
-    }
-
-    let component = &*(component_ptr as *const Component);
-    let name_str = match CStr::from_ptr(export_name).to_str() {
-        Ok(s) => s,
-        Err(_) => return FFI_ERROR,
-    };
-
-    match component.get_export_interface(name_str) {
-        Ok(Some(interface)) => match interface.to_json() {
-            Ok(json_str) => match CString::new(json_str) {
-                Ok(c_string) => {
-                    *interface_json_out = c_string.into_raw();
-                    FFI_SUCCESS
-                }
-                Err(_) => FFI_ERROR,
-            },
-            Err(_) => FFI_ERROR,
-        },
-        Ok(None) => FFI_ERROR, // Export not found
-        Err(_) => FFI_ERROR,
-    }
-}
-
 /// Get exported function name by index
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_get_export_name(
@@ -1548,13 +1390,5 @@ pub unsafe extern "C" fn wasmtime4j_component_get_import_name(
 pub unsafe extern "C" fn wasmtime4j_component_free_string(str_ptr: *mut c_char) {
     if !str_ptr.is_null() {
         let _ = CString::from_raw(str_ptr);
-    }
-}
-
-/// Free a JSON string returned by interface functions
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_free_json_string(json_ptr: *mut c_char) {
-    if !json_ptr.is_null() {
-        let _ = CString::from_raw(json_ptr);
     }
 }
