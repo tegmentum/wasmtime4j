@@ -16,8 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.jni.pool;
 
+import ai.tegmentum.wasmtime4j.pool.AbstractPoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
-import java.time.Duration;
 
 /**
  * JNI implementation of {@link PoolStatistics}.
@@ -26,22 +26,7 @@ import java.time.Duration;
  *
  * @since 1.0.0
  */
-public final class JniPoolStatistics implements PoolStatistics {
-
-  private final long instancesAllocated;
-  private final long instancesReused;
-  private final long instancesCreated;
-  private final long memoryPoolsAllocated;
-  private final long memoryPoolsReused;
-  private final long stackPoolsAllocated;
-  private final long stackPoolsReused;
-  private final long tablePoolsAllocated;
-  private final long tablePoolsReused;
-  private final long peakMemoryUsage;
-  private final long currentMemoryUsage;
-  private final long allocationFailures;
-  private final Duration poolWarmingTime;
-  private final Duration averageAllocationTime;
+public final class JniPoolStatistics extends AbstractPoolStatistics {
 
   /**
    * Creates a new JniPoolStatistics instance.
@@ -76,132 +61,25 @@ public final class JniPoolStatistics implements PoolStatistics {
       final long allocationFailures,
       final long poolWarmingTimeNanos,
       final long averageAllocationTimeNanos) {
-    this.instancesAllocated = instancesAllocated;
-    this.instancesReused = instancesReused;
-    this.instancesCreated = instancesCreated;
-    this.memoryPoolsAllocated = memoryPoolsAllocated;
-    this.memoryPoolsReused = memoryPoolsReused;
-    this.stackPoolsAllocated = stackPoolsAllocated;
-    this.stackPoolsReused = stackPoolsReused;
-    this.tablePoolsAllocated = tablePoolsAllocated;
-    this.tablePoolsReused = tablePoolsReused;
-    this.peakMemoryUsage = peakMemoryUsage;
-    this.currentMemoryUsage = currentMemoryUsage;
-    this.allocationFailures = allocationFailures;
-    this.poolWarmingTime = Duration.ofNanos(poolWarmingTimeNanos);
-    this.averageAllocationTime = Duration.ofNanos(averageAllocationTimeNanos);
+    super(
+        instancesAllocated,
+        instancesReused,
+        instancesCreated,
+        memoryPoolsAllocated,
+        memoryPoolsReused,
+        stackPoolsAllocated,
+        stackPoolsReused,
+        tablePoolsAllocated,
+        tablePoolsReused,
+        peakMemoryUsage,
+        currentMemoryUsage,
+        allocationFailures,
+        poolWarmingTimeNanos,
+        averageAllocationTimeNanos);
   }
 
   /** Creates empty statistics with all values set to zero. */
   public JniPoolStatistics() {
-    this(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-  }
-
-  @Override
-  public long getInstancesAllocated() {
-    return instancesAllocated;
-  }
-
-  @Override
-  public long getInstancesReused() {
-    return instancesReused;
-  }
-
-  @Override
-  public long getInstancesCreated() {
-    return instancesCreated;
-  }
-
-  @Override
-  public long getMemoryPoolsAllocated() {
-    return memoryPoolsAllocated;
-  }
-
-  @Override
-  public long getMemoryPoolsReused() {
-    return memoryPoolsReused;
-  }
-
-  @Override
-  public long getStackPoolsAllocated() {
-    return stackPoolsAllocated;
-  }
-
-  @Override
-  public long getStackPoolsReused() {
-    return stackPoolsReused;
-  }
-
-  @Override
-  public long getTablePoolsAllocated() {
-    return tablePoolsAllocated;
-  }
-
-  @Override
-  public long getTablePoolsReused() {
-    return tablePoolsReused;
-  }
-
-  @Override
-  public long getPeakMemoryUsage() {
-    return peakMemoryUsage;
-  }
-
-  @Override
-  public long getCurrentMemoryUsage() {
-    return currentMemoryUsage;
-  }
-
-  @Override
-  public long getAllocationFailures() {
-    return allocationFailures;
-  }
-
-  @Override
-  public Duration getPoolWarmingTime() {
-    return poolWarmingTime;
-  }
-
-  @Override
-  public Duration getAverageAllocationTime() {
-    return averageAllocationTime;
-  }
-
-  @Override
-  public String toString() {
-    return "JniPoolStatistics{"
-        + "instancesAllocated="
-        + instancesAllocated
-        + ", instancesReused="
-        + instancesReused
-        + ", instancesCreated="
-        + instancesCreated
-        + ", memoryPoolsAllocated="
-        + memoryPoolsAllocated
-        + ", memoryPoolsReused="
-        + memoryPoolsReused
-        + ", stackPoolsAllocated="
-        + stackPoolsAllocated
-        + ", stackPoolsReused="
-        + stackPoolsReused
-        + ", tablePoolsAllocated="
-        + tablePoolsAllocated
-        + ", tablePoolsReused="
-        + tablePoolsReused
-        + ", peakMemoryUsage="
-        + peakMemoryUsage
-        + ", currentMemoryUsage="
-        + currentMemoryUsage
-        + ", allocationFailures="
-        + allocationFailures
-        + ", poolWarmingTime="
-        + poolWarmingTime
-        + ", averageAllocationTime="
-        + averageAllocationTime
-        + ", reuseRatio="
-        + getReuseRatio()
-        + ", memoryUtilization="
-        + getMemoryUtilization()
-        + '}';
+    super();
   }
 }
