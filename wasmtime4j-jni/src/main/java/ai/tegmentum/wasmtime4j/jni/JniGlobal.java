@@ -342,7 +342,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     final WasmValueType globalType = getType();
     final WasmValueType valueType = value.getType();
     if (globalType != valueType) {
-      throw new ai.tegmentum.wasmtime4j.type.WasmTypeException(
+      throw new WasmTypeException(
           "Type mismatch: cannot set " + valueType + " value on " + globalType + " global");
     }
 

@@ -1578,3 +1578,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryIn
         )
     });
 }
+
+/// Check if memory is shared (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeIsShared(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+) -> jboolean {
+    jni_utils::jni_try_default(&env, 0, || {
+        if memory_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Memory handle cannot be null".to_string(),
+            });
+        }
+        if store_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+        }
+
+        let memory =
+            unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store =
+            unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+
+        let is_shared = core::memory_is_shared(memory, store)?;
+
+        Ok(if is_shared { 1u8 } else { 0u8 })
+    })
+}
