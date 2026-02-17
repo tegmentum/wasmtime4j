@@ -280,46 +280,46 @@ class JniPoolingAllocatorConfigBuilderTest {
   class BuildValidationTests {
 
     @Test
-    @DisplayName("build should validate config and throw on invalid instancePoolSize")
+    @DisplayName("setter should validate and throw on invalid instancePoolSize")
     void buildShouldValidateConfigAndThrowOnInvalidInstancePoolSize() {
       final JniPoolingAllocatorConfigBuilder builder = new JniPoolingAllocatorConfigBuilder();
-      builder.instancePoolSize(0);
-
-      assertThrows(
-          IllegalArgumentException.class, builder::build, "Should throw on zero instancePoolSize");
-    }
-
-    @Test
-    @DisplayName("build should validate config and throw on invalid maxMemoryPerInstance")
-    void buildShouldValidateConfigAndThrowOnInvalidMaxMemoryPerInstance() {
-      final JniPoolingAllocatorConfigBuilder builder = new JniPoolingAllocatorConfigBuilder();
-      builder.maxMemoryPerInstance(0);
 
       assertThrows(
           IllegalArgumentException.class,
-          builder::build,
+          () -> builder.instancePoolSize(0),
+          "Should throw on zero instancePoolSize");
+    }
+
+    @Test
+    @DisplayName("setter should validate and throw on invalid maxMemoryPerInstance")
+    void buildShouldValidateConfigAndThrowOnInvalidMaxMemoryPerInstance() {
+      final JniPoolingAllocatorConfigBuilder builder = new JniPoolingAllocatorConfigBuilder();
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> builder.maxMemoryPerInstance(0),
           "Should throw on zero maxMemoryPerInstance");
     }
 
     @Test
-    @DisplayName("build should validate config and throw on invalid stackSize")
+    @DisplayName("setter should validate and throw on invalid stackSize")
     void buildShouldValidateConfigAndThrowOnInvalidStackSize() {
       final JniPoolingAllocatorConfigBuilder builder = new JniPoolingAllocatorConfigBuilder();
-      builder.stackSize(0);
-
-      assertThrows(
-          IllegalArgumentException.class, builder::build, "Should throw on zero stackSize");
-    }
-
-    @Test
-    @DisplayName("build should validate config and throw on invalid poolWarmingPercentage")
-    void buildShouldValidateConfigAndThrowOnInvalidPoolWarmingPercentage() {
-      final JniPoolingAllocatorConfigBuilder builder = new JniPoolingAllocatorConfigBuilder();
-      builder.poolWarmingPercentage(1.5f);
 
       assertThrows(
           IllegalArgumentException.class,
-          builder::build,
+          () -> builder.stackSize(0),
+          "Should throw on zero stackSize");
+    }
+
+    @Test
+    @DisplayName("setter should validate and throw on invalid poolWarmingPercentage")
+    void buildShouldValidateConfigAndThrowOnInvalidPoolWarmingPercentage() {
+      final JniPoolingAllocatorConfigBuilder builder = new JniPoolingAllocatorConfigBuilder();
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> builder.poolWarmingPercentage(1.5f),
           "Should throw on poolWarmingPercentage > 1.0");
     }
   }
