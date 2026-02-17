@@ -229,9 +229,7 @@ public final class JniTable extends JniResource implements WasmTable {
     try {
       final long tableHandle = getNativeHandle();
       final long storeHandle = store.getNativeHandle();
-      // Convert init Object to a long handle for native code
-      // For null/funcref null, pass 0
-      final long initValue = 0L; // funcref null
+      final long initValue = objectToRefHandle(init);
       return (int) nativeTableGrow(tableHandle, storeHandle, delta, initValue);
     } catch (final JniResourceException | IllegalArgumentException e) {
       throw e;
@@ -265,9 +263,7 @@ public final class JniTable extends JniResource implements WasmTable {
     try {
       final long tableHandle = handle;
       final long storeHandle = store.getNativeHandle();
-      // Convert value Object to a long handle for native code
-      // For null/funcref null, pass 0
-      final long valueHandle = 0L; // funcref null
+      final long valueHandle = objectToRefHandle(value);
       final int result = nativeTableFill(tableHandle, storeHandle, start, valueHandle, count);
       if (result != 0) {
         throw new RuntimeException("Failed to fill table range");
@@ -372,6 +368,34 @@ public final class JniTable extends JniResource implements WasmTable {
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error copying from source table", e);
     }
+  }
+
+  /**
+   * Converts an Object reference value to a native long handle for table operations.
+   *
+   * <p>The convention matches the native Rust side:
+   * <ul>
+   *   <li>{@code null} maps to {@code 0L} (null reference)</li>
+   *   <li>{@link Long} maps directly to its value (registry ID from prior {@code get()} calls)</li>
+   *   <li>{@link JniFunctionReference} maps to its native handle</li>
+   * </ul>
+   *
+   * @param value the reference value to convert
+   * @return the native handle (0L for null)
+   */
+  private long objectToRefHandle(final Object value) {
+    if (value == null) {
+      return 0L;
+    }
+    if (value instanceof Long) {
+      return (Long) value;
+    }
+    if (value instanceof JniFunctionReference) {
+      return ((JniFunctionReference) value).getNativeHandle();
+    }
+    throw new IllegalArgumentException(
+        "Table reference value must be null, Long, or JniFunctionReference, got: "
+            + value.getClass().getName());
   }
 
   /**

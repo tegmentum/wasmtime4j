@@ -6,7 +6,7 @@ use jni::JNIEnv;
 
 use crate::error::{ffi_utils, jni_utils, WasmtimeError, WasmtimeResult};
 use crate::store::Store;
-use crate::table::core;
+use crate::table::{core, TableElement};
 use wasmtime::{RefType, ValType};
 
 /// Create a new WebAssembly table (JNI version)
@@ -255,4 +255,142 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableT
             std::ptr::null_mut()
         }
     }
+}
+
+/// Grow a table by the specified number of elements (JNI version)
+///
+/// The `init_value` parameter is a registry ID:
+/// - `0` means null reference (funcref null or externref null depending on table type)
+/// - Non-zero means a registry ID for the reference
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrow(
+    mut env: JNIEnv,
+    _class: JClass,
+    table_ptr: jlong,
+    store_ptr: jlong,
+    delta: jint,
+    init_value: jlong,
+) -> jlong {
+    jni_utils::jni_try_default(&env, -1, || {
+        use std::os::raw::c_void;
+
+        let table = unsafe { core::get_table_ref(table_ptr as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+
+        // Determine element type from table metadata to create the correct TableElement variant
+        let metadata = core::get_table_metadata(table);
+        let init_element = match &metadata.element_type {
+            ValType::Ref(ref_type) => match ref_type.heap_type() {
+                wasmtime::HeapType::Func => {
+                    if init_value == 0 {
+                        TableElement::FuncRef(None)
+                    } else {
+                        TableElement::FuncRef(Some(init_value as u64))
+                    }
+                }
+                wasmtime::HeapType::Extern => {
+                    if init_value == 0 {
+                        TableElement::ExternRef(None)
+                    } else {
+                        TableElement::ExternRef(Some(init_value as u64))
+                    }
+                }
+                _ => {
+                    if init_value == 0 {
+                        TableElement::AnyRef(None)
+                    } else {
+                        TableElement::AnyRef(Some(init_value as u64))
+                    }
+                }
+            },
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Table has non-reference element type: {:?}",
+                        metadata.element_type
+                    ),
+                });
+            }
+        };
+
+        let prev_size = core::grow_table(table, store, delta as u32, init_element)?;
+        Ok(prev_size as jlong)
+    })
+}
+
+/// Fill a range of a table with the specified value (JNI version)
+///
+/// The `value` parameter is a registry ID:
+/// - `0` means null reference
+/// - Non-zero means a registry ID for the reference
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableFill(
+    mut env: JNIEnv,
+    _class: JClass,
+    table_ptr: jlong,
+    store_ptr: jlong,
+    dst: jint,
+    value: jlong,
+    len: jint,
+) -> jint {
+    jni_utils::jni_try_default(&env, -1, || {
+        use std::os::raw::c_void;
+
+        let table = unsafe { core::get_table_ref(table_ptr as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+
+        // Determine element type from table metadata to create the correct TableElement variant
+        let metadata = core::get_table_metadata(table);
+        let fill_element = match &metadata.element_type {
+            ValType::Ref(ref_type) => match ref_type.heap_type() {
+                wasmtime::HeapType::Func => {
+                    if value == 0 {
+                        TableElement::FuncRef(None)
+                    } else {
+                        TableElement::FuncRef(Some(value as u64))
+                    }
+                }
+                wasmtime::HeapType::Extern => {
+                    if value == 0 {
+                        TableElement::ExternRef(None)
+                    } else {
+                        TableElement::ExternRef(Some(value as u64))
+                    }
+                }
+                _ => {
+                    if value == 0 {
+                        TableElement::AnyRef(None)
+                    } else {
+                        TableElement::AnyRef(Some(value as u64))
+                    }
+                }
+            },
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Table has non-reference element type: {:?}",
+                        metadata.element_type
+                    ),
+                });
+            }
+        };
+
+        core::fill_table(table, store, dst as u32, fill_element, len as u32)?;
+        Ok(0 as jint)
+    })
+}
+
+/// Check if a table supports 64-bit addressing (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSupports64BitAddressing(
+    mut env: JNIEnv,
+    _class: JClass,
+    table_ptr: jlong,
+    _store_ptr: jlong,
+) -> jboolean {
+    jni_utils::jni_try_default(&env, 0, || {
+        let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
+        let metadata = core::get_table_metadata(table);
+        Ok(if metadata.is_64 { 1 } else { 0 })
+    })
 }
