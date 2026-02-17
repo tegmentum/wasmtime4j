@@ -103,7 +103,7 @@ class PanamaWasiHttpTest {
       requiredMethods.add("close");
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -187,13 +187,11 @@ class PanamaWasiHttpTest {
     @DisplayName("PanamaWasiHttpConfig should implement WasiHttpConfig interface")
     void configShouldImplementInterface() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(HTTP_CONFIG_CLASS);
-      final Class<?>[] interfaces = clazz.getInterfaces();
-
-      final Set<String> interfaceNames =
-          Arrays.stream(interfaces).map(Class::getName).collect(Collectors.toSet());
+      final Class<?> wasiHttpConfigInterface =
+          loadClassWithoutInit("ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig");
 
       assertTrue(
-          interfaceNames.contains("ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig"),
+          wasiHttpConfigInterface.isAssignableFrom(clazz),
           "Should implement WasiHttpConfig interface");
       LOGGER.info("PanamaWasiHttpConfig implements WasiHttpConfig interface");
     }
@@ -208,7 +206,7 @@ class PanamaWasiHttpTest {
       requiredMethods.add("getBlockedHosts");
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -230,7 +228,7 @@ class PanamaWasiHttpTest {
       requiredMethods.add("getWriteTimeout");
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -251,7 +249,7 @@ class PanamaWasiHttpTest {
       requiredMethods.add("getMaxConnectionsPerHost");
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -273,7 +271,7 @@ class PanamaWasiHttpTest {
       requiredMethods.add("isHttp2Enabled");
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -290,7 +288,7 @@ class PanamaWasiHttpTest {
       final Class<?> clazz = loadClassWithoutInit(HTTP_CONFIG_CLASS);
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -305,7 +303,7 @@ class PanamaWasiHttpTest {
       final Class<?> clazz = loadClassWithoutInit(HTTP_CONFIG_CLASS);
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -335,13 +333,11 @@ class PanamaWasiHttpTest {
     @DisplayName("PanamaWasiHttpConfigBuilder should implement WasiHttpConfigBuilder interface")
     void builderShouldImplementInterface() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(HTTP_CONFIG_BUILDER_CLASS);
-      final Class<?>[] interfaces = clazz.getInterfaces();
-
-      final Set<String> interfaceNames =
-          Arrays.stream(interfaces).map(Class::getName).collect(Collectors.toSet());
+      final Class<?> wasiHttpConfigBuilderInterface =
+          loadClassWithoutInit("ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfigBuilder");
 
       assertTrue(
-          interfaceNames.contains("ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfigBuilder"),
+          wasiHttpConfigBuilderInterface.isAssignableFrom(clazz),
           "Should implement WasiHttpConfigBuilder interface");
       LOGGER.info("PanamaWasiHttpConfigBuilder implements WasiHttpConfigBuilder interface");
     }
@@ -359,7 +355,7 @@ class PanamaWasiHttpTest {
       requiredMethods.add("blockHosts");
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -382,7 +378,7 @@ class PanamaWasiHttpTest {
       requiredMethods.add("withWriteTimeout");
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -400,7 +396,7 @@ class PanamaWasiHttpTest {
       final Class<?> clazz = loadClassWithoutInit(HTTP_CONFIG_BUILDER_CLASS);
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -423,7 +419,7 @@ class PanamaWasiHttpTest {
       requiredMethods.add("followRedirects");
 
       final Set<String> declaredMethods =
-          Arrays.stream(clazz.getDeclaredMethods())
+          Arrays.stream(clazz.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -469,7 +465,7 @@ class PanamaWasiHttpTest {
     }
 
     private boolean hasCloseMethod(final Class<?> clazz) {
-      for (final Method method : clazz.getDeclaredMethods()) {
+      for (final Method method : clazz.getMethods()) {
         if (method.getName().equals("close") && method.getParameterCount() == 0) {
           return true;
         }
@@ -483,7 +479,7 @@ class PanamaWasiHttpTest {
       final Class<?> configClass = loadClassWithoutInit(HTTP_CONFIG_CLASS);
 
       final Set<String> declaredMethods =
-          Arrays.stream(configClass.getDeclaredMethods())
+          Arrays.stream(configClass.getMethods())
               .map(Method::getName)
               .collect(Collectors.toSet());
 
@@ -501,7 +497,7 @@ class PanamaWasiHttpTest {
       for (final String className : classes) {
         final Class<?> clazz = loadClassWithoutInit(className);
         final Set<String> declaredMethods =
-            Arrays.stream(clazz.getDeclaredMethods())
+            Arrays.stream(clazz.getMethods())
                 .map(Method::getName)
                 .collect(Collectors.toSet());
 
@@ -596,7 +592,7 @@ class PanamaWasiHttpTest {
 
       for (final String methodName : fluentMethods) {
         boolean found = false;
-        for (final Method method : clazz.getDeclaredMethods()) {
+        for (final Method method : clazz.getMethods()) {
           if (method.getName().equals(methodName)) {
             final String returnTypeName = method.getReturnType().getName();
             assertTrue(
@@ -618,7 +614,7 @@ class PanamaWasiHttpTest {
     void buildMethodShouldReturnConfig() throws ClassNotFoundException {
       final Class<?> clazz = loadClassWithoutInit(HTTP_CONFIG_BUILDER_CLASS);
 
-      for (final Method method : clazz.getDeclaredMethods()) {
+      for (final Method method : clazz.getMethods()) {
         if (method.getName().equals("build")) {
           final String returnTypeName = method.getReturnType().getName();
           assertTrue(

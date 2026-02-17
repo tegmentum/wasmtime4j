@@ -136,8 +136,12 @@ public class JniWasiHttpTest {
                   "userAgent"));
 
       Set<String> actualFields = new HashSet<>();
-      for (Field field : JniWasiHttpConfig.class.getDeclaredFields()) {
-        actualFields.add(field.getName());
+      Class<?> current = JniWasiHttpConfig.class;
+      while (current != null && current != Object.class) {
+        for (Field field : current.getDeclaredFields()) {
+          actualFields.add(field.getName());
+        }
+        current = current.getSuperclass();
       }
 
       for (String expected : expectedFields) {
@@ -192,15 +196,13 @@ public class JniWasiHttpTest {
       assertNotNull(equals, "Should have equals method");
       assertNotNull(hashCode, "Should have hashCode method");
 
-      // Verify they are overridden (declared in this class)
-      assertEquals(
-          JniWasiHttpConfig.class,
-          equals.getDeclaringClass(),
-          "equals should be declared in JniWasiHttpConfig");
-      assertEquals(
-          JniWasiHttpConfig.class,
-          hashCode.getDeclaringClass(),
-          "hashCode should be declared in JniWasiHttpConfig");
+      // Verify they are overridden (not inherited from Object)
+      assertTrue(
+          equals.getDeclaringClass() != Object.class,
+          "equals should be overridden in the class hierarchy");
+      assertTrue(
+          hashCode.getDeclaringClass() != Object.class,
+          "hashCode should be overridden in the class hierarchy");
     }
 
     @Test
@@ -208,10 +210,9 @@ public class JniWasiHttpTest {
     void shouldHaveToStringMethod() throws NoSuchMethodException {
       Method toString = JniWasiHttpConfig.class.getMethod("toString");
       assertNotNull(toString, "Should have toString method");
-      assertEquals(
-          JniWasiHttpConfig.class,
-          toString.getDeclaringClass(),
-          "toString should be declared in JniWasiHttpConfig");
+      assertTrue(
+          toString.getDeclaringClass() != Object.class,
+          "toString should be overridden in the class hierarchy");
     }
 
     @Test
@@ -634,15 +635,16 @@ public class JniWasiHttpTest {
     @Test
     @DisplayName("JniWasiHttpConfig should have all immutable collection fields")
     void configShouldHaveImmutableCollectionFields() throws NoSuchFieldException {
-      final Field allowedHosts = JniWasiHttpConfig.class.getDeclaredField("allowedHosts");
+      final Class<?> configBaseClass = JniWasiHttpConfig.class.getSuperclass();
+      final Field allowedHosts = configBaseClass.getDeclaredField("allowedHosts");
       assertTrue(Modifier.isPrivate(allowedHosts.getModifiers()));
       assertTrue(Modifier.isFinal(allowedHosts.getModifiers()));
 
-      final Field blockedHosts = JniWasiHttpConfig.class.getDeclaredField("blockedHosts");
+      final Field blockedHosts = configBaseClass.getDeclaredField("blockedHosts");
       assertTrue(Modifier.isPrivate(blockedHosts.getModifiers()));
       assertTrue(Modifier.isFinal(blockedHosts.getModifiers()));
 
-      final Field allowedMethods = JniWasiHttpConfig.class.getDeclaredField("allowedMethods");
+      final Field allowedMethods = configBaseClass.getDeclaredField("allowedMethods");
       assertTrue(Modifier.isPrivate(allowedMethods.getModifiers()));
       assertTrue(Modifier.isFinal(allowedMethods.getModifiers()));
     }
