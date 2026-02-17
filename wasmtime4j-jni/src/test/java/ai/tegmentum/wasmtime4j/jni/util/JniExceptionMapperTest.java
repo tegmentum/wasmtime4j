@@ -197,7 +197,7 @@ class JniExceptionMapperTest {
     @Test
     @DisplayName("Should map error code without message")
     void shouldMapErrorCodeWithoutMessage() {
-      final JniException ex = JniExceptionMapper.mapNativeError(-3);
+      final JniException ex = JniExceptionMapper.mapNativeError(-3, null);
       assertNotNull(ex, "Exception should not be null");
       assertTrue(ex.getMessage().contains("Runtime error"), "Should indicate runtime error");
     }

@@ -133,16 +133,6 @@ public final class JniExceptionMapper {
   }
 
   /**
-   * Maps a native error code to an appropriate Java exception with a default message.
-   *
-   * @param errorCode the native error code
-   * @return the appropriate Java exception
-   */
-  public static JniException mapNativeError(final int errorCode) {
-    return mapNativeError(errorCode, null);
-  }
-
-  /**
    * Wraps a generic exception that occurred during native operations.
    *
    * <p>This method provides a standardized way to wrap unexpected exceptions that occur during JNI

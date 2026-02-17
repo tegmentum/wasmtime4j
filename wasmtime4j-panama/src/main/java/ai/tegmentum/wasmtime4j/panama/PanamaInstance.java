@@ -1764,27 +1764,4 @@ public final class PanamaInstance implements Instance {
     }
   }
 
-  // TODO: Global delegation methods not yet implemented
-  // These methods were used by the old PanamaGlobal implementation which delegated
-  // get/set operations to the instance. The new PanamaGlobal uses native handles directly.
-  //
-  // /**
-  //  * Gets the value of a global.
-  //  *
-  //  * @param global the global to get value from
-  //  * @return the global's value
-  //  */
-  // WasmValue getGlobalValue(final PanamaGlobal global) {
-  //   throw new UnsupportedOperationException("Global delegation not yet implemented");
-  // }
-  //
-  // /**
-  //  * Sets the value of a global.
-  //  *
-  //  * @param global the global to set value for
-  //  * @param value the value to set
-  //  */
-  // void setGlobalValue(final PanamaGlobal global, final WasmValue value) {
-  //   throw new UnsupportedOperationException("Global delegation not yet implemented");
-  // }
 }

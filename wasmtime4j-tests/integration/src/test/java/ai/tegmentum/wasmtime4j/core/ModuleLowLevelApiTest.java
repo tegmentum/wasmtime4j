@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -27,7 +26,6 @@ import ai.tegmentum.wasmtime4j.ResourcesRequired;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,8 +34,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Tests Module low-level APIs: {@link Module#getCustomSections()}, {@link
- * Module#resourcesRequired()}, {@link Module#getCompiledModule()}, {@link Module#imageRange()}, and
- * {@link Module#deserializeRaw(Engine, long, long)}.
+ * Module#resourcesRequired()}, and {@link Module#isSerializable()}.
  *
  * @since 1.0.0
  */
@@ -177,91 +174,6 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getCompiledModule returns Optional")
-  void getCompiledModuleReturnsOptional(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getCompiledModule");
-
-    try (Engine engine = Engine.create()) {
-      final Module module = engine.compileWat(RICH_WAT);
-
-      try {
-        final Optional<?> compiledOpt = module.getCompiledModule();
-        assertNotNull(compiledOpt, "getCompiledModule should not return null");
-        LOGGER.info("[" + runtime + "] getCompiledModule present: " + compiledOpt.isPresent());
-      } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info(
-            "["
-                + runtime
-                + "] getCompiledModule not supported: "
-                + e.getClass().getName()
-                + " - "
-                + e.getMessage());
-      }
-
-      module.close();
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("imageRange returns Optional")
-  void imageRangeReturnsOptional(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing imageRange");
-
-    try (Engine engine = Engine.create()) {
-      final Module module = engine.compileWat(RICH_WAT);
-
-      try {
-        final Optional<?> rangeOpt = module.imageRange();
-        assertNotNull(rangeOpt, "imageRange should not return null");
-        LOGGER.info("[" + runtime + "] imageRange present: " + rangeOpt.isPresent());
-      } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info(
-            "["
-                + runtime
-                + "] imageRange not supported: "
-                + e.getClass().getName()
-                + " - "
-                + e.getMessage());
-      }
-
-      module.close();
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("deserializeRaw throws UnsupportedOperationException")
-  void deserializeRawThrowsUnsupported(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing deserializeRaw");
-
-    try (Engine engine = Engine.create()) {
-      try {
-        Module.deserializeRaw(engine, 0L, 0L);
-        LOGGER.info("[" + runtime + "] deserializeRaw succeeded unexpectedly");
-      } catch (final UnsupportedOperationException e) {
-        LOGGER.info(
-            "["
-                + runtime
-                + "] deserializeRaw threw UnsupportedOperationException: "
-                + e.getMessage());
-      } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info(
-            "["
-                + runtime
-                + "] deserializeRaw threw: "
-                + e.getClass().getName()
-                + " - "
-                + e.getMessage());
-      }
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("resourcesRequired on empty module shows zero memories")
   void resourcesRequiredOnEmptyModule(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
@@ -386,40 +298,6 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] isSerializable: " + module.isSerializable());
 
       module.close();
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("deserializeRaw with null engine throws IllegalArgumentException")
-  void deserializeRawNullEngineThrows(final RuntimeType runtime) {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing deserializeRaw with null engine");
-
-    final IllegalArgumentException ex =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> Module.deserializeRaw(null, 1, 1),
-            "Null engine should throw IllegalArgumentException");
-
-    LOGGER.info("[" + runtime + "] Threw as expected: " + ex.getMessage());
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("deserializeRaw with negative address throws IllegalArgumentException")
-  void deserializeRawNegativeAddressThrows(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing deserializeRaw with negative address");
-
-    try (Engine engine = Engine.create()) {
-      final IllegalArgumentException ex =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> Module.deserializeRaw(engine, -1, 10),
-              "Negative address should throw IllegalArgumentException");
-
-      LOGGER.info("[" + runtime + "] Threw as expected: " + ex.getMessage());
     }
   }
 }

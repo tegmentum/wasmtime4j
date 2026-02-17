@@ -454,32 +454,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotalF
     })
 }
 
-/// Get store total memory bytes.
-///
-/// Always returns 0 — Wasmtime does not expose per-store memory aggregation.
-/// Preserved for JNI ABI compatibility with `JniStore.nativeGetTotalMemoryBytes`.
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotalMemoryBytes(
-    _env: JNIEnv,
-    _class: JClass,
-    _store_ptr: jlong,
-) -> jlong {
-    0
-}
-
-/// Get store used memory bytes.
-///
-/// Always returns 0 — Wasmtime does not expose per-store memory aggregation.
-/// Preserved for JNI ABI compatibility with `JniStore.nativeGetUsedMemoryBytes`.
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetUsedMemoryBytes(
-    _env: JNIEnv,
-    _class: JClass,
-    _store_ptr: jlong,
-) -> jlong {
-    0
-}
-
 /// Get store instance count
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetInstanceCount(

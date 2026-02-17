@@ -710,28 +710,6 @@ public final class JniStore extends JniResource implements Store {
   }
 
   /**
-   * Gets the total memory allocated by this store.
-   *
-   * <p>Always returns 0. Wasmtime does not expose per-store memory aggregation. For per-memory
-   * statistics, use the memory-level API instead. Retained for API compatibility.
-   *
-   * @return always 0
-   */
-  public long getTotalMemoryBytes() {
-    throw new UnsupportedOperationException("getTotalMemoryBytes not yet implemented");
-  }
-
-  /**
-   * Gets the currently used memory by this store.
-   *
-   * @return the used memory in bytes
-   * @throws UnsupportedOperationException always, not yet implemented
-   */
-  public long getUsedMemoryBytes() {
-    throw new UnsupportedOperationException("getUsedMemoryBytes not yet implemented");
-  }
-
-  /**
    * Gets the number of active instances in this store.
    *
    * <p>This method returns the current number of active WebAssembly module instances that are
@@ -898,22 +876,6 @@ public final class JniStore extends JniResource implements Store {
    * @return the total fuel consumed
    */
   private static native long nativeGetTotalFuelConsumed(long storeHandle);
-
-  /**
-   * Gets the total memory allocated by this store. Always returns 0.
-   *
-   * @param storeHandle the native store handle
-   * @return always 0
-   */
-  private static native long nativeGetTotalMemoryBytes(long storeHandle);
-
-  /**
-   * Gets the currently used memory by this store. Always returns 0.
-   *
-   * @param storeHandle the native store handle
-   * @return always 0
-   */
-  private static native long nativeGetUsedMemoryBytes(long storeHandle);
 
   /**
    * Gets the number of active instances in this store.

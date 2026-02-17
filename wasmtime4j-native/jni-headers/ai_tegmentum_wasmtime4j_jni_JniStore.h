@@ -81,22 +81,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotal
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeGetTotalMemoryBytes
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotalMemoryBytes
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeGetUsedMemoryBytes
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetUsedMemoryBytes
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeGetInstanceCount
  * Signature: (J)J
  */
