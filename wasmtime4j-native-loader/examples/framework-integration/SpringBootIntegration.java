@@ -88,10 +88,7 @@ public final class SpringBootIntegration {
         
         final LibraryLoadInfo info = NativeLoader.builder()
             .libraryName("myapp-perf")
-            .conventionPriority(
-                PathConvention.MAVEN_NATIVE,
-                PathConvention.WASMTIME4J
-            )
+            .pathConvention(PathConvention.MAVEN_NATIVE)
             .load();
             
         if (info.isSuccessful()) {

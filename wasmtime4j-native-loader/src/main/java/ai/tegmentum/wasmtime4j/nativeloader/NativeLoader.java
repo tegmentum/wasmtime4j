@@ -61,16 +61,6 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  *     .pathConvention(PathConvention.MAVEN_NATIVE)
  *     .load();
  *
- * // Multiple path conventions with fallback
- * LibraryLoadInfo info2 = NativeLoader.builder()
- *     .libraryName("mylib")
- *     .conventionPriority(
- *         PathConvention.MAVEN_NATIVE,
- *         PathConvention.JNA,
- *         PathConvention.WASMTIME4J
- *     )
- *     .load();
- *
  * // Custom path pattern for specialized packaging
  * LibraryLoadInfo info3 = NativeLoader.builder()
  *     .libraryName("mylib")
@@ -140,7 +130,7 @@ public final class NativeLoader {
    * <p>This convenience method uses default settings suitable for most applications:
    *
    * <ul>
-   *   <li>Path convention: WASMTIME4J ({@code /native/{platform}/{lib}{name}{ext}})
+   *   <li>Path convention: MAVEN_NATIVE ({@code /natives/{os}-{arch}/{lib}{name}{ext}})
    *   <li>Temporary file prefix: "wasmtime4j-native-"
    *   <li>Loading strategy: System path first, then JAR extraction
    * </ul>
@@ -196,7 +186,7 @@ public final class NativeLoader {
    * <ul>
    *   <li>Library name: "wasmtime4j" (must be changed via {@link
    *       NativeLoaderBuilder#libraryName(String)})
-   *   <li>Path convention: {@link PathConvention#WASMTIME4J WASMTIME4J}
+   *   <li>Path convention: {@link PathConvention#MAVEN_NATIVE MAVEN_NATIVE}
    *   <li>Temp file prefix: "wasmtime4j-native-"
    *   <li>Temp dir suffix: "-wasmtime4j"
    * </ul>
@@ -209,14 +199,6 @@ public final class NativeLoader {
    *     .libraryName("mylib")
    *     .load();
    *
-   * // Multiple fallback paths
-   * LibraryLoadInfo info = NativeLoader.builder()
-   *     .libraryName("mylib")
-   *     .conventionPriority(
-   *         PathConvention.MAVEN_NATIVE,
-   *         PathConvention.JNA
-   *     )
-   *     .load();
    * }</pre>
    *
    * <p>Builder instances are reusable and thread-safe for configuration. All configuration is

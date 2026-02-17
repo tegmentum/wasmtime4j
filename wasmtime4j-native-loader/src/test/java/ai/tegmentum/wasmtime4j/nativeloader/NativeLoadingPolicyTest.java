@@ -119,7 +119,7 @@ final class NativeLoadingPolicyTest {
               IllegalStateException.class,
               () ->
                   NativeLibraryUtils.loadNativeLibraryWithConventions(
-                      "testlib", config, PathConvention.WASMTIME4J),
+                      "testlib", config, PathConvention.MAVEN_NATIVE),
               "loadNativeLibraryWithConventions should throw IllegalStateException "
                   + "when mode=forbid");
 
@@ -141,7 +141,7 @@ final class NativeLoadingPolicyTest {
               IllegalStateException.class,
               () ->
                   NativeLibraryUtils.loadNativeLibraryWithCustomConvention(
-                      "testlib", config, customConvention, PathConvention.WASMTIME4J),
+                      "testlib", config, customConvention, PathConvention.MAVEN_NATIVE),
               "loadNativeLibraryWithCustomConvention should throw IllegalStateException "
                   + "when mode=forbid");
 
@@ -186,7 +186,7 @@ final class NativeLoadingPolicyTest {
       final NativeLibraryConfig config = NativeLibraryConfig.defaultConfig();
       final NativeLibraryUtils.LibraryLoadInfo info =
           NativeLibraryUtils.loadNativeLibraryWithConventions(
-              "nonexistent_strategy1_conv_test", config, PathConvention.WASMTIME4J);
+              "nonexistent_strategy1_conv_test", config, PathConvention.MAVEN_NATIVE);
 
       assertNotNull(info, "Load info should not be null");
       if (info.getLoadingMethod() != null) {
@@ -210,7 +210,7 @@ final class NativeLoadingPolicyTest {
               "nonexistent_strategy1_custom_test",
               config,
               customConvention,
-              PathConvention.WASMTIME4J);
+              PathConvention.MAVEN_NATIVE);
 
       assertNotNull(info, "Load info should not be null");
       if (info.getLoadingMethod() != null) {
@@ -495,7 +495,7 @@ final class NativeLoadingPolicyTest {
           IllegalStateException.class,
           () ->
               NativeLibraryUtils.loadNativeLibraryWithConventions(
-                  "nonexistent_require_conv_test", config, PathConvention.WASMTIME4J),
+                  "nonexistent_require_conv_test", config, PathConvention.MAVEN_NATIVE),
           "loadNativeLibraryWithConventions should throw IllegalStateException "
               + "when mode=require and loading fails");
     }
@@ -515,7 +515,7 @@ final class NativeLoadingPolicyTest {
                   "nonexistent_require_custom_test",
                   config,
                   customConvention,
-                  PathConvention.WASMTIME4J),
+                  PathConvention.MAVEN_NATIVE),
           "loadNativeLibraryWithCustomConvention should throw IllegalStateException "
               + "when mode=require and loading fails");
     }

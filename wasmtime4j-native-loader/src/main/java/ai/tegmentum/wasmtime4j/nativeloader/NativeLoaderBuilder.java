@@ -55,9 +55,8 @@ public final class NativeLoaderBuilder {
   private String libraryName = NativeLibraryConfig.DEFAULT_LIBRARY_NAME;
   private String tempFilePrefix = NativeLibraryConfig.DEFAULT_TEMP_FILE_PREFIX;
   private String tempDirSuffix = NativeLibraryConfig.DEFAULT_TEMP_DIR_SUFFIX;
-  private PathConvention pathConvention = PathConvention.WASMTIME4J;
+  private PathConvention pathConvention = PathConvention.MAVEN_NATIVE;
   private PathConvention.CustomPathConvention customPathConvention;
-  private PathConvention[] conventionPriority;
 
   /** Package-private constructor - use {@link NativeLoader#builder()} to create instances. */
   NativeLoaderBuilder() {
@@ -154,25 +153,6 @@ public final class NativeLoaderBuilder {
   }
 
   /**
-   * Sets the convention priority order for fallback resolution.
-   *
-   * <p>When multiple conventions are specified, they will be tried in the given order until a
-   * library resource is found. If no priority is set, only the primary convention is used.
-   *
-   * @param conventions the conventions to try in order
-   * @return this builder for method chaining
-   * @throws IllegalArgumentException if conventions is null or empty
-   */
-  public NativeLoaderBuilder conventionPriority(final PathConvention... conventions) {
-    Objects.requireNonNull(conventions, "conventions must not be null");
-    if (conventions.length == 0) {
-      throw new IllegalArgumentException("conventions must not be empty");
-    }
-    this.conventionPriority = conventions.clone();
-    return this;
-  }
-
-  /**
    * Builds the configuration and attempts to load the native library.
    *
    * <p>This method validates all configuration parameters, builds an immutable configuration
@@ -201,32 +181,11 @@ public final class NativeLoaderBuilder {
    * @return the library loading information
    */
   private NativeLibraryUtils.LibraryLoadInfo performLoad(final NativeLibraryConfig config) {
-    // Determine which conventions to use
-    final PathConvention[] conventions = getConventionsToTry();
-
     if (customPathConvention != null) {
-      // Use custom convention with fallback to standard conventions
       return NativeLibraryUtils.loadNativeLibraryWithCustomConvention(
-          libraryName, config, customPathConvention, conventions);
-    } else if (conventions.length > 1 || conventions[0] != PathConvention.WASMTIME4J) {
-      // Use standard convention-based loading
-      return NativeLibraryUtils.loadNativeLibraryWithConventions(libraryName, config, conventions);
+          libraryName, config, customPathConvention, pathConvention);
     } else {
-      // Use legacy loading method for backward compatibility
       return NativeLibraryUtils.loadNativeLibrary(libraryName, config);
-    }
-  }
-
-  /**
-   * Gets the conventions to try in priority order.
-   *
-   * @return the conventions array
-   */
-  private PathConvention[] getConventionsToTry() {
-    if (conventionPriority != null && conventionPriority.length > 0) {
-      return conventionPriority.clone();
-    } else {
-      return new PathConvention[] {pathConvention};
     }
   }
 
@@ -266,21 +225,4 @@ public final class NativeLoaderBuilder {
     return pathConvention;
   }
 
-  /**
-   * Gets the current custom path convention.
-   *
-   * @return the custom path convention, or null if not set
-   */
-  public PathConvention.CustomPathConvention getCustomPathConvention() {
-    return customPathConvention;
-  }
-
-  /**
-   * Gets the current convention priority array.
-   *
-   * @return the convention priority array, or null if not set
-   */
-  public PathConvention[] getConventionPriority() {
-    return conventionPriority != null ? conventionPriority.clone() : null;
-  }
 }

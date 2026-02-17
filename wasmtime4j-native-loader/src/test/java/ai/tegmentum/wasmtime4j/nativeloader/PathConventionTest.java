@@ -61,31 +61,6 @@ final class PathConventionTest {
   }
 
   @Test
-  void testWasmtime4jConvention() {
-    final String libraryName = "wasmtime4j";
-
-    assertEquals(
-        "/natives/linux-x86_64/libwasmtime4j.so",
-        PathConvention.WASMTIME4J.generatePath(libraryName, linuxX64Info),
-        "WASMTIME4J convention should generate correct Linux x86_64 path");
-
-    assertEquals(
-        "/natives/windows-x86_64/wasmtime4j.dll",
-        PathConvention.WASMTIME4J.generatePath(libraryName, windowsX64Info),
-        "WASMTIME4J convention should generate correct Windows x86_64 path");
-
-    assertEquals(
-        "/natives/darwin-x86_64/libwasmtime4j.dylib",
-        PathConvention.WASMTIME4J.generatePath(libraryName, darwinX64Info),
-        "WASMTIME4J convention should generate correct macOS x86_64 path");
-
-    assertEquals(
-        "/natives/linux-aarch64/libwasmtime4j.so",
-        PathConvention.WASMTIME4J.generatePath(libraryName, linuxAarch64Info),
-        "WASMTIME4J convention should generate correct Linux aarch64 path");
-  }
-
-  @Test
   void testMavenNativeConvention() {
     final String libraryName = "testlib";
 
@@ -243,11 +218,6 @@ final class PathConventionTest {
 
   @Test
   void testToStringMethods() {
-    assertEquals(
-        "PathConvention.WASMTIME4J(\"/natives/{platform}/{lib}{name}{ext}\")",
-        PathConvention.WASMTIME4J.toString(),
-        "WASMTIME4J toString should show pattern");
-
     assertEquals(
         "PathConvention.MAVEN_NATIVE(\"/natives/{os}-{arch}/{lib}{name}{ext}\")",
         PathConvention.MAVEN_NATIVE.toString(),

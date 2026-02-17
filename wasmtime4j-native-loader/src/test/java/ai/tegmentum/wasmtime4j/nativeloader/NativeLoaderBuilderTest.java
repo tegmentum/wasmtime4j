@@ -44,7 +44,7 @@ final class NativeLoaderBuilderTest {
     assertEquals(
         "-wasmtime4j", builder.getTempDirSuffix(), "Should start with default temp dir suffix");
     assertEquals(
-        PathConvention.WASMTIME4J,
+        PathConvention.MAVEN_NATIVE,
         builder.getPathConvention(),
         "Should start with default resource path convention");
   }

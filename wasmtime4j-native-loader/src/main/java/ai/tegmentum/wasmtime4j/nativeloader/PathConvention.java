@@ -54,21 +54,6 @@ import java.util.Objects;
 public enum PathConvention {
 
   /**
-   * Wasmtime4j default convention.
-   *
-   * <p>Pattern: {@code /natives/{platform}/{lib}{name}{ext}}
-   *
-   * <p>Example paths:
-   *
-   * <ul>
-   *   <li>Linux: {@code /natives/linux-x86_64/libwasmtime4j.so}
-   *   <li>Windows: {@code /natives/windows-x86_64/wasmtime4j.dll}
-   *   <li>macOS: {@code /natives/darwin-x86_64/libwasmtime4j.dylib}
-   * </ul>
-   */
-  WASMTIME4J("/natives/{platform}/{lib}{name}{ext}"),
-
-  /**
    * Maven Native Plugin convention.
    *
    * <p>Pattern: {@code /natives/{os}-{arch}/{lib}{name}{ext}}

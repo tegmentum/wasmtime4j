@@ -372,7 +372,7 @@ public final class NativeLibraryUtils {
       final String libraryName, final NativeLibraryConfig config) {
     Objects.requireNonNull(libraryName, LIBRARY_NAME_NOT_NULL_MSG);
     Objects.requireNonNull(config, CONFIG_NOT_NULL_MSG);
-    return doLoad(libraryName, config, null, PathConvention.WASMTIME4J);
+    return doLoad(libraryName, config, null, PathConvention.MAVEN_NATIVE);
   }
 
   /**

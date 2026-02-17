@@ -85,24 +85,20 @@ public final class CustomConfiguration {
     }
 
     /**
-     * Demonstrates fallback strategies with multiple conventions.
+     * Demonstrates fallback strategies with different conventions.
      */
     private static void demonstrateFallbackStrategies() {
         System.out.println("\n=== Fallback Strategy Examples ===");
-        
-        // Multiple conventions with priority order
-        System.out.println("Loading with fallback priority...");
+
+        // Using a specific convention
+        System.out.println("Loading with Maven Native convention...");
         LibraryLoadInfo fallbackInfo = NativeLoader.builder()
             .libraryName("multi-lib")
-            .conventionPriority(
-                PathConvention.MAVEN_NATIVE,      // Try Maven first
-                PathConvention.JNA,     // Then JNA
-                PathConvention.WASMTIME4J         // Finally default
-            )
+            .pathConvention(PathConvention.MAVEN_NATIVE)
             .load();
-            
-        printResult("FALLBACK", fallbackInfo);
-        
+
+        printResult("MAVEN_NATIVE", fallbackInfo);
+
         if (fallbackInfo.getUsedConvention() != null) {
             System.out.println("  Used convention: " + fallbackInfo.getUsedConvention());
         }
