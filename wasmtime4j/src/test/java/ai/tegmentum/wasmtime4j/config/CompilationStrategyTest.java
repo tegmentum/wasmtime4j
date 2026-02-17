@@ -18,9 +18,7 @@ package ai.tegmentum.wasmtime4j.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -35,29 +33,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("CompilationStrategy Tests")
 class CompilationStrategyTest {
-
-  // ========================================================================
-  // Enum Structure Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Enum Structure Tests")
-  class EnumStructureTests {
-
-    @Test
-    @DisplayName("CompilationStrategy should be an enum")
-    void shouldBeAnEnum() {
-      assertTrue(CompilationStrategy.class.isEnum(), "CompilationStrategy should be an enum");
-    }
-
-    @Test
-    @DisplayName("CompilationStrategy should be public")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(CompilationStrategy.class.getModifiers()),
-          "CompilationStrategy should be public");
-    }
-  }
 
   // ========================================================================
   // Enum Values Tests

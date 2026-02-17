@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
-import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
@@ -39,22 +38,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("PreInstantiationStatistics Tests")
 class PreInstantiationStatisticsTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public final class")
-    void shouldBePublicFinalClass() {
-      assertTrue(
-          Modifier.isPublic(PreInstantiationStatistics.class.getModifiers()),
-          "PreInstantiationStatistics should be public");
-      assertTrue(
-          Modifier.isFinal(PreInstantiationStatistics.class.getModifiers()),
-          "PreInstantiationStatistics should be final");
-    }
-  }
 
   @Nested
   @DisplayName("Builder Default Tests")

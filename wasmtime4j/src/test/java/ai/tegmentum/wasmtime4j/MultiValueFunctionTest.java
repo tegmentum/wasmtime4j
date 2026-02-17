@@ -280,7 +280,6 @@ class MultiValueFunctionTest {
       assertFalse(funcType.matchesMultiValuePattern(null, returns));
       assertFalse(funcType.matchesMultiValuePattern(params, null));
     }
-
   }
 
   @Nested

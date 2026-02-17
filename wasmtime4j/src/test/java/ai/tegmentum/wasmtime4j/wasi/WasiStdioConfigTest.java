@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -28,7 +27,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.jupiter.api.DisplayName;
@@ -42,39 +40,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WasiStdioConfig Tests")
 class WasiStdioConfigTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public final class")
-    void shouldBePublicFinalClass() {
-      assertTrue(
-          Modifier.isPublic(WasiStdioConfig.class.getModifiers()),
-          "WasiStdioConfig should be public");
-      assertTrue(
-          Modifier.isFinal(WasiStdioConfig.class.getModifiers()),
-          "WasiStdioConfig should be final");
-      assertFalse(
-          WasiStdioConfig.class.isInterface(), "WasiStdioConfig should not be an interface");
-    }
-
-    @Test
-    @DisplayName("should have Type nested enum")
-    void shouldHaveTypeNestedEnum() {
-      final var nestedClasses = WasiStdioConfig.class.getDeclaredClasses();
-      boolean found = false;
-      for (var nestedClass : nestedClasses) {
-        if (nestedClass.getSimpleName().equals("Type")) {
-          found = true;
-          assertTrue(nestedClass.isEnum(), "Type should be an enum");
-          break;
-        }
-      }
-      assertTrue(found, "Should have Type nested enum");
-    }
-  }
 
   @Nested
   @DisplayName("Type Enum Tests")

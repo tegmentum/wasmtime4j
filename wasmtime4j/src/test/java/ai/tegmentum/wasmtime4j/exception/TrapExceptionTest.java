@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,40 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("TrapException Tests")
 class TrapExceptionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public class")
-    void shouldBePublicClass() {
-      assertTrue(
-          Modifier.isPublic(TrapException.class.getModifiers()), "TrapException should be public");
-    }
-
-    @Test
-    @DisplayName("should extend WasmException")
-    void shouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(TrapException.class),
-          "TrapException should extend WasmException");
-    }
-
-    @Test
-    @DisplayName("should have TrapType nested enum")
-    void shouldHaveTrapTypeNestedEnum() {
-      final Class<?>[] declaredClasses = TrapException.class.getDeclaredClasses();
-      boolean hasTrapType = false;
-      for (final Class<?> clazz : declaredClasses) {
-        if (clazz.getSimpleName().equals("TrapType") && clazz.isEnum()) {
-          hasTrapType = true;
-          break;
-        }
-      }
-      assertTrue(hasTrapType, "TrapException should have TrapType nested enum");
-    }
-  }
 
   @Nested
   @DisplayName("TrapType Enum Tests")

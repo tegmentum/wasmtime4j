@@ -209,13 +209,17 @@ class GlobalTest {
       final WasmGlobal posInfGlobal =
           store.createGlobal(WasmValueType.F32, true, WasmValue.f32(Float.POSITIVE_INFINITY));
       assertEquals(
-          Float.POSITIVE_INFINITY, posInfGlobal.get().asFloat(), "Should preserve positive infinity");
+          Float.POSITIVE_INFINITY,
+          posInfGlobal.get().asFloat(),
+          "Should preserve positive infinity");
 
       // Negative Infinity
       final WasmGlobal negInfGlobal =
           store.createGlobal(WasmValueType.F32, true, WasmValue.f32(Float.NEGATIVE_INFINITY));
       assertEquals(
-          Float.NEGATIVE_INFINITY, negInfGlobal.get().asFloat(), "Should preserve negative infinity");
+          Float.NEGATIVE_INFINITY,
+          negInfGlobal.get().asFloat(),
+          "Should preserve negative infinity");
     }
 
     @Test

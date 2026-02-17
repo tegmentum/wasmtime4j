@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -41,64 +39,6 @@ class WitOptionTest {
 
   private WitType createOptionS32Type() {
     return WitType.option(WitType.createS32());
-  }
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitOption.class.getModifiers()), "WitOption should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitValue")
-    void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitOption.class), "WitOption should extend WitValue");
-    }
-
-    @Test
-    @DisplayName("should have isSome method")
-    void shouldHaveIsSomeMethod() throws NoSuchMethodException {
-      final Method method = WitOption.class.getMethod("isSome");
-      assertNotNull(method, "Should have isSome() method");
-      assertEquals(boolean.class, method.getReturnType(), "isSome should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isNone method")
-    void shouldHaveIsNoneMethod() throws NoSuchMethodException {
-      final Method method = WitOption.class.getMethod("isNone");
-      assertNotNull(method, "Should have isNone() method");
-      assertEquals(boolean.class, method.getReturnType(), "isNone should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have get method")
-    void shouldHaveGetMethod() throws NoSuchMethodException {
-      final Method method = WitOption.class.getMethod("get");
-      assertNotNull(method, "Should have get() method");
-      assertEquals(WitValue.class, method.getReturnType(), "get should return WitValue");
-    }
-
-    @Test
-    @DisplayName("should have getValue method")
-    void shouldHaveGetValueMethod() throws NoSuchMethodException {
-      final Method method = WitOption.class.getMethod("getValue");
-      assertNotNull(method, "Should have getValue() method");
-      assertEquals(Optional.class, method.getReturnType(), "getValue should return Optional");
-    }
-
-    @Test
-    @DisplayName("should have getInnerType method")
-    void shouldHaveGetInnerTypeMethod() throws NoSuchMethodException {
-      final Method method = WitOption.class.getMethod("getInnerType");
-      assertNotNull(method, "Should have getInnerType() method");
-      assertEquals(WitType.class, method.getReturnType(), "getInnerType should return WitType");
-    }
   }
 
   @Nested

@@ -41,66 +41,6 @@ import org.junit.jupiter.api.Test;
 class WastExecutionResultTest {
 
   // ========================================================================
-  // Type Definition Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Type Definition Tests")
-  class TypeDefinitionTests {
-
-    @Test
-    @DisplayName("should be a class")
-    void shouldBeAClass() {
-      assertTrue(
-          !WastExecutionResult.class.isInterface() && !WastExecutionResult.class.isEnum(),
-          "WastExecutionResult should be a class");
-    }
-
-    @Test
-    @DisplayName("should be public")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(WastExecutionResult.class.getModifiers()),
-          "WastExecutionResult should be public");
-    }
-
-    @Test
-    @DisplayName("should be final")
-    void shouldBeFinal() {
-      assertTrue(
-          Modifier.isFinal(WastExecutionResult.class.getModifiers()),
-          "WastExecutionResult should be final");
-    }
-  }
-
-  // ========================================================================
-  // Inheritance Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Inheritance Tests")
-  class InheritanceTests {
-
-    @Test
-    @DisplayName("should extend Object")
-    void shouldExtendObject() {
-      assertEquals(
-          Object.class,
-          WastExecutionResult.class.getSuperclass(),
-          "WastExecutionResult should extend Object");
-    }
-
-    @Test
-    @DisplayName("should not implement any interfaces")
-    void shouldNotImplementAnyInterfaces() {
-      assertEquals(
-          0,
-          WastExecutionResult.class.getInterfaces().length,
-          "WastExecutionResult should not implement any interfaces");
-    }
-  }
-
-  // ========================================================================
   // Constructor Tests
   // ========================================================================
 

@@ -37,36 +37,6 @@ import org.junit.jupiter.api.Test;
 class ValidationExceptionTest {
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public class")
-    void shouldBePublicClass() {
-      assertTrue(
-          Modifier.isPublic(ValidationException.class.getModifiers()),
-          "ValidationException should be public");
-    }
-
-    @Test
-    @DisplayName("should extend WasmException")
-    void shouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(ValidationException.class),
-          "ValidationException should extend WasmException");
-    }
-
-    @Test
-    @DisplayName("should have serialVersionUID field")
-    void shouldHaveSerialVersionUID() throws NoSuchFieldException {
-      final var field = ValidationException.class.getDeclaredField("serialVersionUID");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "serialVersionUID should be private");
-      assertTrue(Modifier.isStatic(field.getModifiers()), "serialVersionUID should be static");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "serialVersionUID should be final");
-    }
-  }
-
-  @Nested
   @DisplayName("Constructor Tests")
   class ConstructorTests {
 

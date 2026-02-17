@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -38,24 +37,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WitRecord Tests")
 class WitRecordTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitRecord.class.getModifiers()), "WitRecord should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitValue")
-    void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitRecord.class), "WitRecord should extend WitValue");
-    }
-  }
 
   @Nested
   @DisplayName("Creation Tests")

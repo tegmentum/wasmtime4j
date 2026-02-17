@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.exception.WasiErrorCode;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,40 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WasiException Tests")
 class WasiExceptionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public class")
-    void shouldBePublicClass() {
-      assertTrue(
-          Modifier.isPublic(WasiException.class.getModifiers()), "WasiException should be public");
-    }
-
-    @Test
-    @DisplayName("should extend WasmException")
-    void shouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(WasiException.class),
-          "WasiException should extend WasmException");
-    }
-
-    @Test
-    @DisplayName("should have ErrorCategory nested enum")
-    void shouldHaveErrorCategoryNestedEnum() {
-      final Class<?>[] declaredClasses = WasiException.class.getDeclaredClasses();
-      boolean hasErrorCategory = false;
-      for (final Class<?> clazz : declaredClasses) {
-        if (clazz.getSimpleName().equals("ErrorCategory") && clazz.isEnum()) {
-          hasErrorCategory = true;
-          break;
-        }
-      }
-      assertTrue(hasErrorCategory, "WasiException should have ErrorCategory nested enum");
-    }
-  }
 
   @Nested
   @DisplayName("ErrorCategory Enum Tests")

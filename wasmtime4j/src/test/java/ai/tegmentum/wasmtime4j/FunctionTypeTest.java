@@ -197,7 +197,6 @@ class FunctionTypeTest {
       assertEquals(2, funcType.getParamCount(), "Should have 2 parameters");
       assertEquals(0, funcType.getReturnCount(), "Should have 0 return values");
     }
-
   }
 
   @Nested

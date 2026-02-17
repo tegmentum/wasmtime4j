@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,19 +32,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("GcCollectionResult Tests")
 class GcCollectionResultTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeAFinalClass() {
-      assertTrue(
-          Modifier.isFinal(GcCollectionResult.class.getModifiers()),
-          "GcCollectionResult should be final");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Tests")

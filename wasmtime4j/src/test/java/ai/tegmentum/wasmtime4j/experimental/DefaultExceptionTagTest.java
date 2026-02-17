@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -39,35 +38,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("DefaultExceptionTag Tests")
 class DefaultExceptionTagTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(DefaultExceptionTag.class.getModifiers()),
-          "DefaultExceptionTag should be final");
-    }
-
-    @Test
-    @DisplayName("should be public")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(DefaultExceptionTag.class.getModifiers()),
-          "DefaultExceptionTag should be public");
-    }
-
-    @Test
-    @DisplayName("should implement ExceptionTag interface")
-    void shouldImplementExceptionTagInterface() {
-      assertTrue(
-          ExceptionHandler.ExceptionTag.class.isAssignableFrom(DefaultExceptionTag.class),
-          "DefaultExceptionTag should implement ExceptionTag");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Tests")

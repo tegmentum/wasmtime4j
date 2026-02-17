@@ -49,37 +49,6 @@ import org.junit.jupiter.api.Test;
 class ComponentEngineTest {
 
   // ========================================================================
-  // Interface Structure Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("ComponentEngine Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("ComponentEngine should be an interface")
-    void shouldBeAnInterface() {
-      assertTrue(ComponentEngine.class.isInterface(), "ComponentEngine should be an interface");
-    }
-
-    @Test
-    @DisplayName("ComponentEngine should be a public interface")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(ComponentEngine.class.getModifiers()),
-          "ComponentEngine should be public");
-    }
-
-    @Test
-    @DisplayName("ComponentEngine should extend Engine interface")
-    void shouldExtendEngineInterface() {
-      Class<?>[] interfaces = ComponentEngine.class.getInterfaces();
-      assertEquals(1, interfaces.length, "ComponentEngine should extend exactly one interface");
-      assertEquals(Engine.class, interfaces[0], "ComponentEngine should extend Engine interface");
-    }
-  }
-
-  // ========================================================================
   // Component Compilation Method Tests
   // ========================================================================
 

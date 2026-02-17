@@ -206,10 +206,12 @@ class WasmValueTest {
       assertTrue(Double.isNaN(nanValue.asDouble()), "Should preserve NaN");
 
       final WasmValue posInf = WasmValue.f64(Double.POSITIVE_INFINITY);
-      assertEquals(Double.POSITIVE_INFINITY, posInf.asDouble(), "Should preserve positive infinity");
+      assertEquals(
+          Double.POSITIVE_INFINITY, posInf.asDouble(), "Should preserve positive infinity");
 
       final WasmValue negInf = WasmValue.f64(Double.NEGATIVE_INFINITY);
-      assertEquals(Double.NEGATIVE_INFINITY, negInf.asDouble(), "Should preserve negative infinity");
+      assertEquals(
+          Double.NEGATIVE_INFINITY, negInf.asDouble(), "Should preserve negative infinity");
     }
 
     @Test

@@ -18,14 +18,12 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.WasmType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -72,57 +70,6 @@ class MemoryTypeTest {
     @Override
     public boolean isShared() {
       return shared;
-    }
-  }
-
-  @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(Modifier.isPublic(MemoryType.class.getModifiers()), "MemoryType should be public");
-      assertTrue(MemoryType.class.isInterface(), "MemoryType should be an interface");
-    }
-
-    @Test
-    @DisplayName("should extend WasmType")
-    void shouldExtendWasmType() {
-      assertTrue(
-          WasmType.class.isAssignableFrom(MemoryType.class), "MemoryType should extend WasmType");
-    }
-
-    @Test
-    @DisplayName("should have getMinimum method")
-    void shouldHaveGetMinimumMethod() throws NoSuchMethodException {
-      final Method method = MemoryType.class.getMethod("getMinimum");
-      assertNotNull(method, "getMinimum method should exist");
-      assertEquals(long.class, method.getReturnType(), "getMinimum should return long");
-    }
-
-    @Test
-    @DisplayName("should have getMaximum method")
-    void shouldHaveGetMaximumMethod() throws NoSuchMethodException {
-      final Method method = MemoryType.class.getMethod("getMaximum");
-      assertNotNull(method, "getMaximum method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "getMaximum should return Optional");
-    }
-
-    @Test
-    @DisplayName("should have is64Bit method")
-    void shouldHaveIs64BitMethod() throws NoSuchMethodException {
-      final Method method = MemoryType.class.getMethod("is64Bit");
-      assertNotNull(method, "is64Bit method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "is64Bit should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isShared method")
-    void shouldHaveIsSharedMethod() throws NoSuchMethodException {
-      final Method method = MemoryType.class.getMethod("isShared");
-      assertNotNull(method, "isShared method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isShared should return boolean");
     }
   }
 

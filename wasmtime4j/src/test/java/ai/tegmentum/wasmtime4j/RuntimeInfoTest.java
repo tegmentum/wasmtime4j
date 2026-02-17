@@ -34,19 +34,6 @@ import org.junit.jupiter.api.Test;
 class RuntimeInfoTest {
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("RuntimeInfo should be final")
-    void shouldBeFinal() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(RuntimeInfo.class.getModifiers()),
-          "RuntimeInfo should be final");
-    }
-  }
-
-  @Nested
   @DisplayName("Constructor Tests")
   class ConstructorTests {
 

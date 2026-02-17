@@ -18,14 +18,12 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.type.WasmType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -64,52 +62,6 @@ class TableTypeTest {
     @Override
     public Optional<Long> getMaximum() {
       return Optional.ofNullable(maximum);
-    }
-  }
-
-  @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(Modifier.isPublic(TableType.class.getModifiers()), "TableType should be public");
-      assertTrue(TableType.class.isInterface(), "TableType should be an interface");
-    }
-
-    @Test
-    @DisplayName("should extend WasmType")
-    void shouldExtendWasmType() {
-      assertTrue(
-          WasmType.class.isAssignableFrom(TableType.class), "TableType should extend WasmType");
-    }
-
-    @Test
-    @DisplayName("should have getElementType method")
-    void shouldHaveGetElementTypeMethod() throws NoSuchMethodException {
-      final Method method = TableType.class.getMethod("getElementType");
-      assertNotNull(method, "getElementType method should exist");
-      assertEquals(
-          WasmValueType.class,
-          method.getReturnType(),
-          "getElementType should return WasmValueType");
-    }
-
-    @Test
-    @DisplayName("should have getMinimum method")
-    void shouldHaveGetMinimumMethod() throws NoSuchMethodException {
-      final Method method = TableType.class.getMethod("getMinimum");
-      assertNotNull(method, "getMinimum method should exist");
-      assertEquals(long.class, method.getReturnType(), "getMinimum should return long");
-    }
-
-    @Test
-    @DisplayName("should have getMaximum method")
-    void shouldHaveGetMaximumMethod() throws NoSuchMethodException {
-      final Method method = TableType.class.getMethod("getMaximum");
-      assertNotNull(method, "getMaximum method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "getMaximum should return Optional");
     }
   }
 

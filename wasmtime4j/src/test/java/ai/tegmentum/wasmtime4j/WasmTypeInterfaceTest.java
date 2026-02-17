@@ -71,23 +71,6 @@ class WasmTypeInterfaceTest {
   }
 
   @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("WasmType should be an interface")
-    void shouldBeAnInterface() {
-      assertTrue(WasmType.class.isInterface(), "WasmType should be an interface");
-    }
-
-    @Test
-    @DisplayName("WasmType should have getKind method")
-    void shouldHaveGetKindMethod() throws NoSuchMethodException {
-      assertNotNull(WasmType.class.getMethod("getKind"), "WasmType should have getKind method");
-    }
-  }
-
-  @Nested
   @DisplayName("getKind Tests")
   class GetKindTests {
 

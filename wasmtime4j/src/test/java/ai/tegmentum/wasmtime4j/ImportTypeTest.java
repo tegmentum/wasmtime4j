@@ -24,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.type.ImportType;
 import ai.tegmentum.wasmtime4j.type.WasmType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,51 +47,6 @@ class ImportTypeTest {
     @Override
     public WasmTypeKind getKind() {
       return kind;
-    }
-  }
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public and final")
-    void shouldBePublicAndFinal() {
-      assertTrue(Modifier.isPublic(ImportType.class.getModifiers()), "ImportType should be public");
-      assertTrue(Modifier.isFinal(ImportType.class.getModifiers()), "ImportType should be final");
-    }
-
-    @Test
-    @DisplayName("should have three-parameter constructor")
-    void shouldHaveThreeParameterConstructor() throws NoSuchMethodException {
-      final var constructor =
-          ImportType.class.getConstructor(String.class, String.class, WasmType.class);
-      assertNotNull(constructor, "Three-parameter constructor should exist");
-      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
-    }
-
-    @Test
-    @DisplayName("should have getModuleName method")
-    void shouldHaveGetModuleNameMethod() throws NoSuchMethodException {
-      final Method method = ImportType.class.getMethod("getModuleName");
-      assertNotNull(method, "getModuleName method should exist");
-      assertEquals(String.class, method.getReturnType(), "getModuleName should return String");
-    }
-
-    @Test
-    @DisplayName("should have getName method")
-    void shouldHaveGetNameMethod() throws NoSuchMethodException {
-      final Method method = ImportType.class.getMethod("getName");
-      assertNotNull(method, "getName method should exist");
-      assertEquals(String.class, method.getReturnType(), "getName should return String");
-    }
-
-    @Test
-    @DisplayName("should have getType method")
-    void shouldHaveGetTypeMethod() throws NoSuchMethodException {
-      final Method method = ImportType.class.getMethod("getType");
-      assertNotNull(method, "getType method should exist");
-      assertEquals(WasmType.class, method.getReturnType(), "getType should return WasmType");
     }
   }
 

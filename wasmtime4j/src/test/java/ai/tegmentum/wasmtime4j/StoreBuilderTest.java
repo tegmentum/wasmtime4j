@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,28 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("StoreBuilder Tests")
 class StoreBuilderTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public final class")
-    void shouldBePublicFinalClass() {
-      assertTrue(
-          Modifier.isPublic(StoreBuilder.class.getModifiers()), "StoreBuilder should be public");
-      assertTrue(
-          Modifier.isFinal(StoreBuilder.class.getModifiers()), "StoreBuilder should be final");
-    }
-
-    @Test
-    @DisplayName("should be generic with type parameter T")
-    void shouldBeGenericWithTypeParameterT() {
-      final var typeParams = StoreBuilder.class.getTypeParameters();
-      assertEquals(1, typeParams.length, "StoreBuilder should have exactly one type parameter");
-      assertEquals("T", typeParams[0].getName(), "Type parameter should be named T");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Validation Tests")

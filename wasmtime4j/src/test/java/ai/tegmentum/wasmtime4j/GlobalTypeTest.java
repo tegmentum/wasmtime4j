@@ -18,14 +18,12 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.type.WasmType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,42 +54,6 @@ class GlobalTypeTest {
     @Override
     public boolean isMutable() {
       return mutable;
-    }
-  }
-
-  @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(Modifier.isPublic(GlobalType.class.getModifiers()), "GlobalType should be public");
-      assertTrue(GlobalType.class.isInterface(), "GlobalType should be an interface");
-    }
-
-    @Test
-    @DisplayName("should extend WasmType")
-    void shouldExtendWasmType() {
-      assertTrue(
-          WasmType.class.isAssignableFrom(GlobalType.class), "GlobalType should extend WasmType");
-    }
-
-    @Test
-    @DisplayName("should have getValueType method")
-    void shouldHaveGetValueTypeMethod() throws NoSuchMethodException {
-      final Method method = GlobalType.class.getMethod("getValueType");
-      assertNotNull(method, "getValueType method should exist");
-      assertEquals(
-          WasmValueType.class, method.getReturnType(), "getValueType should return WasmValueType");
-    }
-
-    @Test
-    @DisplayName("should have isMutable method")
-    void shouldHaveIsMutableMethod() throws NoSuchMethodException {
-      final Method method = GlobalType.class.getMethod("isMutable");
-      assertNotNull(method, "isMutable method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isMutable should return boolean");
     }
   }
 

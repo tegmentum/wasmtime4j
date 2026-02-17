@@ -24,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.WasmType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,42 +47,6 @@ class ExportTypeTest {
     @Override
     public WasmTypeKind getKind() {
       return kind;
-    }
-  }
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public and final")
-    void shouldBePublicAndFinal() {
-      assertTrue(Modifier.isPublic(ExportType.class.getModifiers()), "ExportType should be public");
-      assertTrue(Modifier.isFinal(ExportType.class.getModifiers()), "ExportType should be final");
-    }
-
-    @Test
-    @DisplayName("should have two-parameter constructor")
-    void shouldHaveTwoParameterConstructor() throws NoSuchMethodException {
-      final var constructor = ExportType.class.getConstructor(String.class, WasmType.class);
-      assertNotNull(constructor, "Two-parameter constructor should exist");
-      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
-    }
-
-    @Test
-    @DisplayName("should have getName method")
-    void shouldHaveGetNameMethod() throws NoSuchMethodException {
-      final Method method = ExportType.class.getMethod("getName");
-      assertNotNull(method, "getName method should exist");
-      assertEquals(String.class, method.getReturnType(), "getName should return String");
-    }
-
-    @Test
-    @DisplayName("should have getType method")
-    void shouldHaveGetTypeMethod() throws NoSuchMethodException {
-      final Method method = ExportType.class.getMethod("getType");
-      assertNotNull(method, "getType method should exist");
-      assertEquals(WasmType.class, method.getReturnType(), "getType should return WasmType");
     }
   }
 

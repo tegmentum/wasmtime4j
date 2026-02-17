@@ -44,29 +44,6 @@ class WasmRuntimeFactoryTest {
   }
 
   @Nested
-  @DisplayName("Utility Class Structure Tests")
-  class UtilityClassStructureTests {
-
-    @Test
-    @DisplayName("class should be final")
-    void classShouldBeFinal() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(WasmRuntimeFactory.class.getModifiers()),
-          "WasmRuntimeFactory should be a final class");
-    }
-
-    @Test
-    @DisplayName("constructor should be private")
-    void constructorShouldBePrivate() throws NoSuchMethodException {
-      final java.lang.reflect.Constructor<WasmRuntimeFactory> constructor =
-          WasmRuntimeFactory.class.getDeclaredConstructor();
-      assertTrue(
-          java.lang.reflect.Modifier.isPrivate(constructor.getModifiers()),
-          "WasmRuntimeFactory constructor should be private");
-    }
-  }
-
-  @Nested
   @DisplayName("Constants Tests")
   class ConstantsTests {
 

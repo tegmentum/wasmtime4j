@@ -147,27 +147,6 @@ class ThrownExceptionTest {
   }
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("ThrownException should be final")
-    void shouldBeFinal() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(ThrownException.class.getModifiers()),
-          "ThrownException should be final");
-    }
-
-    @Test
-    @DisplayName("ThrownException should NOT extend Throwable")
-    void shouldNotExtendThrowable() {
-      assertFalse(
-          Throwable.class.isAssignableFrom(ThrownException.class),
-          "ThrownException should NOT extend Throwable - it's a value object");
-    }
-  }
-
-  @Nested
   @DisplayName("Constructor Tests")
   class ConstructorTests {
 

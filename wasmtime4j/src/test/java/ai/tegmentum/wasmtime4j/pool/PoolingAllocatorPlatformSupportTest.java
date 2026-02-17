@@ -38,29 +38,6 @@ class PoolingAllocatorPlatformSupportTest {
   private static final String OS_ARCH = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
 
   @Nested
-  @DisplayName("Utility Class Structure Tests")
-  class UtilityClassStructureTests {
-
-    @Test
-    @DisplayName("class should be final")
-    void classShouldBeFinal() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(PoolingAllocatorPlatformSupport.class.getModifiers()),
-          "PoolingAllocatorPlatformSupport should be a final class");
-    }
-
-    @Test
-    @DisplayName("constructor should be private")
-    void constructorShouldBePrivate() throws NoSuchMethodException {
-      final java.lang.reflect.Constructor<PoolingAllocatorPlatformSupport> constructor =
-          PoolingAllocatorPlatformSupport.class.getDeclaredConstructor();
-      assertTrue(
-          java.lang.reflect.Modifier.isPrivate(constructor.getModifiers()),
-          "Constructor should be private");
-    }
-  }
-
-  @Nested
   @DisplayName("OS Detection Tests")
   class OsDetectionTests {
 

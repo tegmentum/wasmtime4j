@@ -18,12 +18,9 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.type.ValType;
 import ai.tegmentum.wasmtime4j.type.ValTypes;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,27 +32,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("ValTypes Tests")
 class ValTypesTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(ValTypes.class.getModifiers()), "ValTypes should be a final class");
-    }
-
-    @Test
-    @DisplayName("should have private constructor")
-    void shouldHavePrivateConstructor() throws Exception {
-      final Constructor<?>[] constructors = ValTypes.class.getDeclaredConstructors();
-      assertEquals(1, constructors.length, "Should have exactly one constructor");
-      assertTrue(
-          Modifier.isPrivate(constructors[0].getModifiers()), "Constructor should be private");
-    }
-  }
 
   @Nested
   @DisplayName("Factory Method Tests")

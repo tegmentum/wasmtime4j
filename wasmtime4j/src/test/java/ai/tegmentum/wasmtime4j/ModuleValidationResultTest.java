@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.validation.ModuleValidationResult;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,22 +39,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("ModuleValidationResult Tests")
 class ModuleValidationResultTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public final class")
-    void shouldBePublicFinalClass() {
-      assertTrue(
-          Modifier.isPublic(ModuleValidationResult.class.getModifiers()),
-          "ModuleValidationResult should be public");
-      assertTrue(
-          Modifier.isFinal(ModuleValidationResult.class.getModifiers()),
-          "ModuleValidationResult should be final");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Tests")

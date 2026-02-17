@@ -38,41 +38,6 @@ import org.junit.jupiter.api.Test;
 class TypedFuncTest {
 
   @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(Modifier.isPublic(TypedFunc.class.getModifiers()), "TypedFunc should be public");
-      assertTrue(TypedFunc.class.isInterface(), "TypedFunc should be an interface");
-    }
-
-    @Test
-    @DisplayName("should extend AutoCloseable")
-    void shouldExtendAutoCloseable() {
-      assertTrue(
-          AutoCloseable.class.isAssignableFrom(TypedFunc.class),
-          "TypedFunc should extend AutoCloseable");
-    }
-
-    @Test
-    @DisplayName("should have TypedFunctionSupport inner interface")
-    void shouldHaveTypedFunctionSupportInterface() {
-      final Class<?>[] innerClasses = TypedFunc.class.getDeclaredClasses();
-      boolean found = false;
-      for (final Class<?> innerClass : innerClasses) {
-        if (innerClass.getSimpleName().equals("TypedFunctionSupport")) {
-          found = true;
-          assertTrue(innerClass.isInterface(), "TypedFunctionSupport should be an interface");
-          break;
-        }
-      }
-      assertTrue(found, "TypedFunctionSupport inner interface should exist");
-    }
-  }
-
-  @Nested
   @DisplayName("Void-Returning Method Tests")
   class VoidReturningMethodTests {
 

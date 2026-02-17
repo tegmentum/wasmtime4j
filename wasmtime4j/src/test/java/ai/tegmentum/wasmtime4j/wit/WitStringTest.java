@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,25 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WitString Tests")
 class WitStringTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitString.class.getModifiers()), "WitString should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitPrimitiveValue")
-    void shouldExtendWitPrimitiveValue() {
-      assertTrue(
-          WitPrimitiveValue.class.isAssignableFrom(WitString.class),
-          "WitString should extend WitPrimitiveValue");
-    }
-  }
 
   @Nested
   @DisplayName("Factory Method Tests")

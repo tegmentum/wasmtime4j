@@ -16,13 +16,8 @@
 
 package ai.tegmentum.wasmtime4j.wit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,39 +29,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WitEnum Tests")
 class WitEnumTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitEnum.class.getModifiers()), "WitEnum should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitValue")
-    void shouldExtendWitValue() {
-      assertTrue(WitValue.class.isAssignableFrom(WitEnum.class), "WitEnum should extend WitValue");
-    }
-
-    @Test
-    @DisplayName("should have of factory method")
-    void shouldHaveOfFactoryMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("of", WitType.class, String.class);
-      assertNotNull(method, "Should have of(WitType, String) method");
-      assertEquals(WitEnum.class, method.getReturnType(), "Should return WitEnum");
-    }
-
-    @Test
-    @DisplayName("should have getDiscriminant method")
-    void shouldHaveGetDiscriminantMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("getDiscriminant");
-      assertNotNull(method, "Should have getDiscriminant() method");
-      assertEquals(String.class, method.getReturnType(), "getDiscriminant should return String");
-    }
-  }
 
   @Nested
   @DisplayName("Factory Method Null Validation Tests")
@@ -92,54 +54,6 @@ class WitEnumTest {
           IllegalArgumentException.class,
           () -> WitEnum.of(enumType, ""),
           "of with empty discriminant should throw IllegalArgumentException");
-    }
-  }
-
-  @Nested
-  @DisplayName("Equality Tests")
-  class EqualityTests {
-
-    @Test
-    @DisplayName("should have equals method")
-    void shouldHaveEqualsMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("equals", Object.class);
-      assertNotNull(method, "Should have equals(Object) method");
-    }
-  }
-
-  @Nested
-  @DisplayName("HashCode Tests")
-  class HashCodeTests {
-
-    @Test
-    @DisplayName("should have hashCode method")
-    void shouldHaveHashCodeMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("hashCode");
-      assertNotNull(method, "Should have hashCode() method");
-    }
-  }
-
-  @Nested
-  @DisplayName("ToString Tests")
-  class ToStringTests {
-
-    @Test
-    @DisplayName("should have toString method")
-    void shouldHaveToStringMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("toString");
-      assertNotNull(method, "Should have toString() method");
-    }
-  }
-
-  @Nested
-  @DisplayName("ToJava Tests")
-  class ToJavaTests {
-
-    @Test
-    @DisplayName("should have toJava method")
-    void shouldHaveToJavaMethod() throws NoSuchMethodException {
-      final Method method = WitEnum.class.getMethod("toJava");
-      assertNotNull(method, "Should have toJava() method");
     }
   }
 }

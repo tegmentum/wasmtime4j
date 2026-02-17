@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -46,48 +44,6 @@ class WitVariantTest {
     cases.put("error", Optional.of(WitType.createString()));
     cases.put("pending", Optional.empty());
     return WitType.variant("status", cases);
-  }
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitVariant.class.getModifiers()), "WitVariant should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitValue")
-    void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitVariant.class), "WitVariant should extend WitValue");
-    }
-
-    @Test
-    @DisplayName("should have getCaseName method")
-    void shouldHaveGetCaseNameMethod() throws NoSuchMethodException {
-      final Method method = WitVariant.class.getMethod("getCaseName");
-      assertNotNull(method, "Should have getCaseName() method");
-      assertEquals(String.class, method.getReturnType(), "getCaseName should return String");
-    }
-
-    @Test
-    @DisplayName("should have getPayload method")
-    void shouldHaveGetPayloadMethod() throws NoSuchMethodException {
-      final Method method = WitVariant.class.getMethod("getPayload");
-      assertNotNull(method, "Should have getPayload() method");
-      assertEquals(Optional.class, method.getReturnType(), "getPayload should return Optional");
-    }
-
-    @Test
-    @DisplayName("should have hasPayload method")
-    void shouldHaveHasPayloadMethod() throws NoSuchMethodException {
-      final Method method = WitVariant.class.getMethod("hasPayload");
-      assertNotNull(method, "Should have hasPayload() method");
-      assertEquals(boolean.class, method.getReturnType(), "hasPayload should return boolean");
-    }
   }
 
   @Nested

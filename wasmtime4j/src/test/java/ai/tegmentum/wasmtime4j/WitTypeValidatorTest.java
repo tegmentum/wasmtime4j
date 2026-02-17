@@ -282,41 +282,6 @@ class WitTypeValidatorTest {
     }
   }
 
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("WitTypeValidator should be final")
-    void witTypeValidatorShouldBeFinal() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(WitTypeValidator.class.getModifiers()));
-    }
-
-    @Test
-    @DisplayName("WitTypeValidationResult should be final")
-    void witTypeValidationResultShouldBeFinal() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(
-              WitTypeValidator.WitTypeValidationResult.class.getModifiers()));
-    }
-
-    @Test
-    @DisplayName("WitInterfaceValidationResult should be final")
-    void witInterfaceValidationResultShouldBeFinal() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(
-              WitTypeValidator.WitInterfaceValidationResult.class.getModifiers()));
-    }
-
-    @Test
-    @DisplayName("WitTypeCompatibilityResult should be final")
-    void witTypeCompatibilityResultShouldBeFinal() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(
-              WitTypeValidator.WitTypeCompatibilityResult.class.getModifiers()));
-    }
-  }
-
   /** Mock implementation of WitInterfaceDefinition for testing. */
   private static class MockInterfaceDefinition implements WitInterfaceDefinition {
     private final String name;

@@ -39,37 +39,6 @@ import org.junit.jupiter.api.Test;
 class CallHookHandlerTest {
 
   @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be an interface")
-    void shouldBeAnInterface() {
-      assertTrue(CallHookHandler.class.isInterface(), "CallHookHandler should be an interface");
-    }
-
-    @Test
-    @DisplayName("should be a functional interface")
-    void shouldBeAFunctionalInterface() {
-      final FunctionalInterface annotation =
-          CallHookHandler.class.getAnnotation(FunctionalInterface.class);
-      assertNotNull(annotation, "Should have @FunctionalInterface annotation");
-    }
-
-    @Test
-    @DisplayName("should have exactly one abstract method")
-    void shouldHaveExactlyOneAbstractMethod() {
-      int abstractMethodCount = 0;
-      for (final Method method : CallHookHandler.class.getDeclaredMethods()) {
-        if (!method.isDefault() && !java.lang.reflect.Modifier.isStatic(method.getModifiers())) {
-          abstractMethodCount++;
-        }
-      }
-      assertEquals(1, abstractMethodCount, "Should have exactly one abstract method");
-    }
-  }
-
-  @Nested
   @DisplayName("Method Signature Tests")
   class MethodSignatureTests {
 

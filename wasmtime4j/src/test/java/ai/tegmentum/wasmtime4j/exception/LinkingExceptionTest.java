@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,41 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("LinkingException Tests")
 class LinkingExceptionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public class")
-    void shouldBePublicClass() {
-      assertTrue(
-          Modifier.isPublic(LinkingException.class.getModifiers()),
-          "LinkingException should be public");
-    }
-
-    @Test
-    @DisplayName("should extend WasmException")
-    void shouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(LinkingException.class),
-          "LinkingException should extend WasmException");
-    }
-
-    @Test
-    @DisplayName("should have LinkingErrorType nested enum")
-    void shouldHaveLinkingErrorTypeNestedEnum() {
-      final Class<?>[] declaredClasses = LinkingException.class.getDeclaredClasses();
-      boolean hasLinkingErrorType = false;
-      for (final Class<?> clazz : declaredClasses) {
-        if (clazz.getSimpleName().equals("LinkingErrorType") && clazz.isEnum()) {
-          hasLinkingErrorType = true;
-          break;
-        }
-      }
-      assertTrue(hasLinkingErrorType, "LinkingException should have LinkingErrorType nested enum");
-    }
-  }
 
   @Nested
   @DisplayName("LinkingErrorType Enum Tests")

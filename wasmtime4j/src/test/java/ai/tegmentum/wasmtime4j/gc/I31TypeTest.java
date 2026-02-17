@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,24 +34,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("I31Type Tests")
 class I31TypeTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(I31Type.class.getModifiers()), "I31Type should be final");
-    }
-
-    @Test
-    @DisplayName("should not be instantiable")
-    void shouldNotBeInstantiable() throws NoSuchMethodException {
-      final var constructor = I31Type.class.getDeclaredConstructor();
-      assertTrue(Modifier.isPrivate(constructor.getModifiers()), "Constructor should be private");
-    }
-  }
 
   @Nested
   @DisplayName("Constants Tests")

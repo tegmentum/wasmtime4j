@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,19 +36,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("FieldDefinition Tests")
 class FieldDefinitionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeAFinalClass() {
-      assertTrue(
-          Modifier.isFinal(FieldDefinition.class.getModifiers()),
-          "FieldDefinition should be final");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Tests")

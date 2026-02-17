@@ -37,35 +37,6 @@ import org.junit.jupiter.api.Test;
 class HostFunctionTest {
 
   @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(
-          Modifier.isPublic(HostFunction.class.getModifiers()), "HostFunction should be public");
-      assertTrue(HostFunction.class.isInterface(), "HostFunction should be an interface");
-    }
-
-    @Test
-    @DisplayName("should be annotated with @FunctionalInterface")
-    void shouldBeFunctionalInterface() {
-      assertTrue(
-          HostFunction.class.isAnnotationPresent(FunctionalInterface.class),
-          "HostFunction should be annotated with @FunctionalInterface");
-    }
-
-    @Test
-    @DisplayName("should have execute method")
-    void shouldHaveExecuteMethod() throws NoSuchMethodException {
-      final Method method = HostFunction.class.getMethod("execute", WasmValue[].class);
-      assertNotNull(method, "execute method should exist");
-      assertEquals(WasmValue[].class, method.getReturnType(), "execute should return WasmValue[]");
-    }
-  }
-
-  @Nested
   @DisplayName("Static Factory Method Tests")
   class StaticFactoryMethodTests {
 

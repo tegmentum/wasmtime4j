@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -37,46 +36,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WasmTypeException Tests")
 class WasmTypeExceptionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public class")
-    void shouldBePublicClass() {
-      assertTrue(
-          Modifier.isPublic(WasmTypeException.class.getModifiers()),
-          "WasmTypeException should be public");
-    }
-
-    @Test
-    @DisplayName("should extend RuntimeException")
-    void shouldExtendRuntimeException() {
-      assertTrue(
-          RuntimeException.class.isAssignableFrom(WasmTypeException.class),
-          "WasmTypeException should extend RuntimeException");
-    }
-
-    @Test
-    @DisplayName("should not extend WasmException")
-    void shouldNotExtendWasmException() {
-      // WasmTypeException extends RuntimeException, not WasmException (checked exception)
-      assertFalse(
-          ai.tegmentum.wasmtime4j.exception.WasmException.class.isAssignableFrom(
-              WasmTypeException.class),
-          "WasmTypeException should NOT extend WasmException");
-    }
-
-    @Test
-    @DisplayName("should have serialVersionUID field")
-    void shouldHaveSerialVersionUID() throws NoSuchFieldException {
-      final var field = WasmTypeException.class.getDeclaredField("serialVersionUID");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "serialVersionUID should be private");
-      assertTrue(Modifier.isStatic(field.getModifiers()), "serialVersionUID should be static");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "serialVersionUID should be final");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Tests")

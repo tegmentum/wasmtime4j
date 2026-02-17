@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,24 +31,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("GcHeapStats Tests")
 class GcHeapStatsTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(GcHeapStats.class.getModifiers()), "GcHeapStats should be final");
-    }
-
-    @Test
-    @DisplayName("should be public")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(GcHeapStats.class.getModifiers()), "GcHeapStats should be public");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Tests")

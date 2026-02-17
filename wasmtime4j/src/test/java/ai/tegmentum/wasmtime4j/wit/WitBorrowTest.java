@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,24 +37,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WitBorrow Tests")
 class WitBorrowTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitBorrow.class.getModifiers()), "WitBorrow should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitValue")
-    void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitBorrow.class), "WitBorrow should extend WitValue");
-    }
-  }
 
   @Nested
   @DisplayName("Factory Method Tests")

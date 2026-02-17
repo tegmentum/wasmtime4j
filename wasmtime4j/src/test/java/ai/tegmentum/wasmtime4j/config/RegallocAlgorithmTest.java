@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -37,29 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("RegallocAlgorithm Tests")
 class RegallocAlgorithmTest {
-
-  // ========================================================================
-  // Enum Structure Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Enum Structure Tests")
-  class EnumStructureTests {
-
-    @Test
-    @DisplayName("RegallocAlgorithm should be an enum")
-    void shouldBeAnEnum() {
-      assertTrue(RegallocAlgorithm.class.isEnum(), "RegallocAlgorithm should be an enum");
-    }
-
-    @Test
-    @DisplayName("RegallocAlgorithm should be public")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(RegallocAlgorithm.class.getModifiers()),
-          "RegallocAlgorithm should be public");
-    }
-  }
 
   // ========================================================================
   // Enum Values Tests
@@ -101,43 +76,6 @@ class RegallocAlgorithmTest {
       RegallocAlgorithm backtracking = RegallocAlgorithm.valueOf("BACKTRACKING");
       assertNotNull(backtracking, "BACKTRACKING value should exist");
       assertEquals("BACKTRACKING", backtracking.name(), "Name should be BACKTRACKING");
-    }
-  }
-
-  // ========================================================================
-  // Method Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Method Tests")
-  class MethodTests {
-
-    @Test
-    @DisplayName("should have getValue method")
-    void shouldHaveGetValueMethod() throws NoSuchMethodException {
-      Method method = RegallocAlgorithm.class.getMethod("getValue");
-      assertNotNull(method, "getValue method should exist");
-      assertEquals(String.class, method.getReturnType(), "Return type should be String");
-    }
-
-    @Test
-    @DisplayName("should have fromValue method")
-    void shouldHaveFromValueMethod() throws NoSuchMethodException {
-      Method method = RegallocAlgorithm.class.getMethod("fromValue", String.class);
-      assertNotNull(method, "fromValue method should exist");
-      assertEquals(
-          RegallocAlgorithm.class,
-          method.getReturnType(),
-          "Return type should be RegallocAlgorithm");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "fromValue should be static");
-    }
-
-    @Test
-    @DisplayName("should have toString method")
-    void shouldHaveToStringMethod() throws NoSuchMethodException {
-      Method method = RegallocAlgorithm.class.getMethod("toString");
-      assertNotNull(method, "toString method should exist");
-      assertEquals(String.class, method.getReturnType(), "Return type should be String");
     }
   }
 

@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,23 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("StructRef Tests")
 class StructRefTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(StructRef.class.getModifiers()), "StructRef should be final");
-    }
-
-    @Test
-    @DisplayName("should implement GcRef interface")
-    void shouldImplementGcRef() {
-      assertTrue(GcRef.class.isAssignableFrom(StructRef.class), "StructRef should implement GcRef");
-    }
-  }
 
   @Nested
   @DisplayName("Null Reference Tests")

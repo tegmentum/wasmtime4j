@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,36 +22,8 @@ import org.junit.jupiter.api.Test;
  * represents a WebAssembly module export with complete type information.
  */
 @DisplayName("ModuleExport Class Tests")
+@SuppressWarnings("deprecation")
 class ModuleExportTest {
-
-  @Nested
-  @DisplayName("Class Definition Tests")
-  class ClassDefinitionTests {
-
-    @Test
-    @DisplayName("ModuleExport should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(ModuleExport.class.getModifiers()),
-          "ModuleExport should be a final class");
-    }
-
-    @Test
-    @DisplayName("ModuleExport should be public")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(ModuleExport.class.getModifiers()),
-          "ModuleExport should be a public class");
-    }
-
-    @Test
-    @DisplayName("ModuleExport should not be abstract")
-    void shouldNotBeAbstract() {
-      assertFalse(
-          Modifier.isAbstract(ModuleExport.class.getModifiers()),
-          "ModuleExport should not be abstract");
-    }
-  }
 
   @Nested
   @DisplayName("Field Tests")

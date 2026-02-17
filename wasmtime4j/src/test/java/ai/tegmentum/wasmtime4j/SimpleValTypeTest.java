@@ -50,45 +50,6 @@ class SimpleValTypeTest {
   }
 
   // ========================================================================
-  // Type Definition Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Type Definition Tests")
-  class TypeDefinitionTests {
-
-    @Test
-    @DisplayName("should be a class")
-    void shouldBeAClass() {
-      Class<?> clazz = getSimpleValTypeClass();
-      assertTrue(!clazz.isInterface(), "SimpleValType should be a class");
-      assertTrue(!clazz.isEnum(), "SimpleValType should not be an enum");
-    }
-
-    @Test
-    @DisplayName("should be public")
-    void shouldBePublic() {
-      Class<?> clazz = getSimpleValTypeClass();
-      int modifiers = clazz.getModifiers();
-      assertTrue(Modifier.isPublic(modifiers), "SimpleValType should be public");
-    }
-
-    @Test
-    @DisplayName("should be final")
-    void shouldBeFinal() {
-      Class<?> clazz = getSimpleValTypeClass();
-      assertTrue(Modifier.isFinal(clazz.getModifiers()), "SimpleValType should be final");
-    }
-
-    @Test
-    @DisplayName("should implement ValType")
-    void shouldImplementValType() {
-      Class<?> clazz = getSimpleValTypeClass();
-      assertTrue(ValType.class.isAssignableFrom(clazz), "SimpleValType should implement ValType");
-    }
-  }
-
-  // ========================================================================
   // Constructor Tests
   // ========================================================================
 

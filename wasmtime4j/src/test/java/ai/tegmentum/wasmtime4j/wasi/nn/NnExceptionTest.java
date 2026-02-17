@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,35 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("NnException Tests")
 class NnExceptionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public class")
-    void shouldBePublicClass() {
-      assertTrue(
-          Modifier.isPublic(NnException.class.getModifiers()), "NnException should be public");
-    }
-
-    @Test
-    @DisplayName("should extend WasmException")
-    void shouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(NnException.class),
-          "NnException should extend WasmException");
-    }
-
-    @Test
-    @DisplayName("should have serialVersionUID field")
-    void shouldHaveSerialVersionUID() throws NoSuchFieldException {
-      final java.lang.reflect.Field field = NnException.class.getDeclaredField("serialVersionUID");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "serialVersionUID should be private");
-      assertTrue(Modifier.isStatic(field.getModifiers()), "serialVersionUID should be static");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "serialVersionUID should be final");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Tests")

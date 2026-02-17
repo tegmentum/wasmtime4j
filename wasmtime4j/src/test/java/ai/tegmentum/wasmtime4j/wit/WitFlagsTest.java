@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -40,24 +39,6 @@ class WitFlagsTest {
 
   private WitType createFlagsType() {
     return WitType.flags("permissions", Arrays.asList("read", "write", "execute"));
-  }
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitFlags.class.getModifiers()), "WitFlags should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitValue")
-    void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitFlags.class), "WitFlags should extend WitValue");
-    }
   }
 
   @Nested

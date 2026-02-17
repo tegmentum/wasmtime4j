@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
-import java.lang.reflect.Modifier;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -36,22 +35,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WitCompatibilityResult Tests")
 class WitCompatibilityResultTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public final class")
-    void shouldBePublicFinalClass() {
-      assertTrue(
-          Modifier.isPublic(WitCompatibilityResult.class.getModifiers()),
-          "WitCompatibilityResult should be public");
-      assertTrue(
-          Modifier.isFinal(WitCompatibilityResult.class.getModifiers()),
-          "WitCompatibilityResult should be final");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor Tests")

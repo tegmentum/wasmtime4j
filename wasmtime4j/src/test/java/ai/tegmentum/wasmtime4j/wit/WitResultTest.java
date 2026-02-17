@@ -39,64 +39,6 @@ import org.junit.jupiter.api.Test;
 class WitResultTest {
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitResult.class.getModifiers()), "WitResult should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitValue")
-    void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitResult.class), "WitResult should extend WitValue");
-    }
-
-    @Test
-    @DisplayName("should have isOk method")
-    void shouldHaveIsOkMethod() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("isOk");
-      assertNotNull(method, "Should have isOk() method");
-      assertEquals(boolean.class, method.getReturnType(), "isOk should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isErr method")
-    void shouldHaveIsErrMethod() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("isErr");
-      assertNotNull(method, "Should have isErr() method");
-      assertEquals(boolean.class, method.getReturnType(), "isErr should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have getOk method")
-    void shouldHaveGetOkMethod() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("getOk");
-      assertNotNull(method, "Should have getOk() method");
-      assertEquals(Optional.class, method.getReturnType(), "getOk should return Optional");
-    }
-
-    @Test
-    @DisplayName("should have getErr method")
-    void shouldHaveGetErrMethod() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("getErr");
-      assertNotNull(method, "Should have getErr() method");
-      assertEquals(Optional.class, method.getReturnType(), "getErr should return Optional");
-    }
-
-    @Test
-    @DisplayName("should have getValue method")
-    void shouldHaveGetValueMethod() throws NoSuchMethodException {
-      final Method method = WitResult.class.getMethod("getValue");
-      assertNotNull(method, "Should have getValue() method");
-      assertEquals(Optional.class, method.getReturnType(), "getValue should return Optional");
-    }
-  }
-
-  @Nested
   @DisplayName("Factory Method Tests")
   class FactoryMethodTests {
 

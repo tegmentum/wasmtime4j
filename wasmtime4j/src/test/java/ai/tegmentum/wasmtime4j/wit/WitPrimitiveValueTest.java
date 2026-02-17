@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,62 +37,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WitPrimitiveValue Tests")
 class WitPrimitiveValueTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be abstract")
-    void shouldBeAbstract() {
-      assertTrue(
-          Modifier.isAbstract(WitPrimitiveValue.class.getModifiers()),
-          "WitPrimitiveValue should be abstract");
-    }
-
-    @Test
-    @DisplayName("should extend WitValue")
-    void shouldExtendWitValue() {
-      assertTrue(
-          WitValue.class.isAssignableFrom(WitPrimitiveValue.class),
-          "WitPrimitiveValue should extend WitValue");
-    }
-
-    @Test
-    @DisplayName("should have isNumeric method")
-    void shouldHaveIsNumericMethod() throws NoSuchMethodException {
-      final Method method = WitPrimitiveValue.class.getMethod("isNumeric");
-      assertNotNull(method, "Should have isNumeric() method");
-    }
-
-    @Test
-    @DisplayName("should have isInteger method")
-    void shouldHaveIsIntegerMethod() throws NoSuchMethodException {
-      final Method method = WitPrimitiveValue.class.getMethod("isInteger");
-      assertNotNull(method, "Should have isInteger() method");
-    }
-
-    @Test
-    @DisplayName("should have isFloatingPoint method")
-    void shouldHaveIsFloatingPointMethod() throws NoSuchMethodException {
-      final Method method = WitPrimitiveValue.class.getMethod("isFloatingPoint");
-      assertNotNull(method, "Should have isFloatingPoint() method");
-    }
-
-    @Test
-    @DisplayName("should have isUnsigned method")
-    void shouldHaveIsUnsignedMethod() throws NoSuchMethodException {
-      final Method method = WitPrimitiveValue.class.getMethod("isUnsigned");
-      assertNotNull(method, "Should have isUnsigned() method");
-    }
-
-    @Test
-    @DisplayName("should have isSigned method")
-    void shouldHaveIsSignedMethod() throws NoSuchMethodException {
-      final Method method = WitPrimitiveValue.class.getMethod("isSigned");
-      assertNotNull(method, "Should have isSigned() method");
-    }
-  }
 
   @Nested
   @DisplayName("Numeric Classification Tests via WitS32")

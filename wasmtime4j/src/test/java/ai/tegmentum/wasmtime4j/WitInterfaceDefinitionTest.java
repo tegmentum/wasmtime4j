@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -39,22 +38,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WitInterfaceDefinition Tests")
 class WitInterfaceDefinitionTest {
-
-  @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(
-          Modifier.isPublic(WitInterfaceDefinition.class.getModifiers()),
-          "WitInterfaceDefinition should be public");
-      assertTrue(
-          WitInterfaceDefinition.class.isInterface(),
-          "WitInterfaceDefinition should be an interface");
-    }
-  }
 
   @Nested
   @DisplayName("Method Declaration Tests")

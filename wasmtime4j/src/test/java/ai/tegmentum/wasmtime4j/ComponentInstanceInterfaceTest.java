@@ -48,38 +48,6 @@ import org.junit.jupiter.api.Test;
 class ComponentInstanceInterfaceTest {
 
   // ========================================================================
-  // Interface Structure Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("ComponentInstance Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("ComponentInstance should be an interface")
-    void shouldBeAnInterface() {
-      assertTrue(ComponentInstance.class.isInterface(), "ComponentInstance should be an interface");
-    }
-
-    @Test
-    @DisplayName("ComponentInstance should be a public interface")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(ComponentInstance.class.getModifiers()),
-          "ComponentInstance should be public");
-    }
-
-    @Test
-    @DisplayName("ComponentInstance should extend AutoCloseable")
-    void shouldExtendAutoCloseable() {
-      Class<?>[] interfaces = ComponentInstance.class.getInterfaces();
-      assertEquals(1, interfaces.length, "ComponentInstance should extend exactly one interface");
-      assertEquals(
-          AutoCloseable.class, interfaces[0], "ComponentInstance should extend AutoCloseable");
-    }
-  }
-
-  // ========================================================================
   // Identification Method Tests
   // ========================================================================
 

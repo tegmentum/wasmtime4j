@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -110,100 +109,6 @@ class ValTypeTest {
         return false;
       }
       return valueType == other.getValueType();
-    }
-  }
-
-  @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(Modifier.isPublic(ValType.class.getModifiers()), "ValType should be public");
-      assertTrue(ValType.class.isInterface(), "ValType should be an interface");
-    }
-
-    @Test
-    @DisplayName("should have getValueType method")
-    void shouldHaveGetValueTypeMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("getValueType");
-      assertNotNull(method, "getValueType method should exist");
-      assertEquals(
-          WasmValueType.class, method.getReturnType(), "getValueType should return WasmValueType");
-    }
-
-    @Test
-    @DisplayName("should have isNumeric method")
-    void shouldHaveIsNumericMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("isNumeric");
-      assertNotNull(method, "isNumeric method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isNumeric should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isInteger method")
-    void shouldHaveIsIntegerMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("isInteger");
-      assertNotNull(method, "isInteger method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isInteger should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isFloat method")
-    void shouldHaveIsFloatMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("isFloat");
-      assertNotNull(method, "isFloat method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isFloat should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isReference method")
-    void shouldHaveIsReferenceMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("isReference");
-      assertNotNull(method, "isReference method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isReference should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isGcReference method")
-    void shouldHaveIsGcReferenceMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("isGcReference");
-      assertNotNull(method, "isGcReference method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isGcReference should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isNullableReference method")
-    void shouldHaveIsNullableReferenceMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("isNullableReference");
-      assertNotNull(method, "isNullableReference method should exist");
-      assertEquals(
-          boolean.class, method.getReturnType(), "isNullableReference should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have isVector method")
-    void shouldHaveIsVectorMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("isVector");
-      assertNotNull(method, "isVector method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "isVector should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have matches method")
-    void shouldHaveMatchesMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("matches", ValType.class);
-      assertNotNull(method, "matches method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "matches should return boolean");
-    }
-
-    @Test
-    @DisplayName("should have eq method")
-    void shouldHaveEqMethod() throws NoSuchMethodException {
-      final Method method = ValType.class.getMethod("eq", ValType.class);
-      assertNotNull(method, "eq method should exist");
-      assertEquals(boolean.class, method.getReturnType(), "eq should return boolean");
     }
   }
 

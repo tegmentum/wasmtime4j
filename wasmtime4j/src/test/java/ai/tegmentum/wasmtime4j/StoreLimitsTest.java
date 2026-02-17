@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,27 +34,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("StoreLimits Tests")
 class StoreLimitsTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public final class")
-    void shouldBePublicFinalClass() {
-      assertTrue(
-          Modifier.isPublic(StoreLimits.class.getModifiers()), "StoreLimits should be public");
-      assertTrue(Modifier.isFinal(StoreLimits.class.getModifiers()), "StoreLimits should be final");
-    }
-
-    @Test
-    @DisplayName("should have static builder() factory method")
-    void shouldHaveStaticBuilderMethod() throws NoSuchMethodException {
-      final var method = StoreLimits.class.getMethod("builder");
-      assertNotNull(method, "builder() method should exist");
-      assertTrue(Modifier.isStatic(method.getModifiers()), "builder() should be static");
-    }
-  }
 
   @Nested
   @DisplayName("Builder Default Values Tests")

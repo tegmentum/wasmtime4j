@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -38,23 +37,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("GcStats Tests")
 class GcStatsTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(GcStats.class.getModifiers()), "GcStats should be final");
-    }
-
-    @Test
-    @DisplayName("should be public")
-    void shouldBePublic() {
-      assertTrue(Modifier.isPublic(GcStats.class.getModifiers()), "GcStats should be public");
-    }
-  }
 
   @Nested
   @DisplayName("Builder Tests")

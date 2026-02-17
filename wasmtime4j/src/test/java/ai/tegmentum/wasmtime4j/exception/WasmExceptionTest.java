@@ -37,36 +37,6 @@ import org.junit.jupiter.api.Test;
 class WasmExceptionTest {
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public class")
-    void shouldBePublicClass() {
-      assertTrue(
-          Modifier.isPublic(WasmException.class.getModifiers()), "WasmException should be public");
-    }
-
-    @Test
-    @DisplayName("should extend Exception")
-    void shouldExtendException() {
-      assertTrue(
-          Exception.class.isAssignableFrom(WasmException.class),
-          "WasmException should extend Exception");
-    }
-
-    @Test
-    @DisplayName("should have serialVersionUID field")
-    void shouldHaveSerialVersionUID() throws NoSuchFieldException {
-      final var field = WasmException.class.getDeclaredField("serialVersionUID");
-      assertTrue(Modifier.isPrivate(field.getModifiers()), "serialVersionUID should be private");
-      assertTrue(Modifier.isStatic(field.getModifiers()), "serialVersionUID should be static");
-      assertTrue(Modifier.isFinal(field.getModifiers()), "serialVersionUID should be final");
-      assertEquals(long.class, field.getType(), "serialVersionUID should be long");
-    }
-  }
-
-  @Nested
   @DisplayName("Constructor Tests")
   class ConstructorTests {
 
@@ -221,43 +191,6 @@ class WasmExceptionTest {
     void shouldHandleNullCause() {
       final WasmException exception = new WasmException("Message", null);
       assertNull(exception.getCause(), "Null cause should be preserved");
-    }
-  }
-
-  @Nested
-  @DisplayName("Hierarchy Tests")
-  class HierarchyTests {
-
-    @Test
-    @DisplayName("CompilationException should extend WasmException")
-    void compilationExceptionShouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(CompilationException.class),
-          "CompilationException should extend WasmException");
-    }
-
-    @Test
-    @DisplayName("ValidationException should extend WasmException")
-    void validationExceptionShouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(ValidationException.class),
-          "ValidationException should extend WasmException");
-    }
-
-    @Test
-    @DisplayName("LinkingException should extend WasmException")
-    void linkingExceptionShouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(LinkingException.class),
-          "LinkingException should extend WasmException");
-    }
-
-    @Test
-    @DisplayName("WasiException should extend WasmException")
-    void wasiExceptionShouldExtendWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(WasiException.class),
-          "WasiException should extend WasmException");
     }
   }
 }

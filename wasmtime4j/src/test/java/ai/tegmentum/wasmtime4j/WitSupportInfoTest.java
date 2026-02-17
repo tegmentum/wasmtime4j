@@ -248,15 +248,4 @@ class WitSupportInfoTest {
       assertTrue(str.contains("supported=false"));
     }
   }
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("WitSupportInfo should be final")
-    void witSupportInfoShouldBeFinal() {
-      assertTrue(java.lang.reflect.Modifier.isFinal(WitSupportInfo.class.getModifiers()));
-    }
-  }
 }

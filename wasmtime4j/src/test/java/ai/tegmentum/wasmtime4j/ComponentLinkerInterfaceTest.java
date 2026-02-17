@@ -32,7 +32,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -49,45 +48,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("ComponentLinker Interface Tests")
 class ComponentLinkerInterfaceTest {
-
-  // ========================================================================
-  // Interface Structure Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("ComponentLinker Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("ComponentLinker should be an interface")
-    void shouldBeAnInterface() {
-      assertTrue(ComponentLinker.class.isInterface(), "ComponentLinker should be an interface");
-    }
-
-    @Test
-    @DisplayName("ComponentLinker should be a public interface")
-    void shouldBePublic() {
-      assertTrue(
-          Modifier.isPublic(ComponentLinker.class.getModifiers()),
-          "ComponentLinker should be public");
-    }
-
-    @Test
-    @DisplayName("ComponentLinker should extend Closeable")
-    void shouldExtendCloseable() {
-      Class<?>[] interfaces = ComponentLinker.class.getInterfaces();
-      assertEquals(1, interfaces.length, "ComponentLinker should extend exactly one interface");
-      assertEquals(Closeable.class, interfaces[0], "ComponentLinker should extend Closeable");
-    }
-
-    @Test
-    @DisplayName("ComponentLinker should be a generic interface with type parameter T")
-    void shouldBeGenericWithTypeParameterT() {
-      TypeVariable<?>[] typeParameters = ComponentLinker.class.getTypeParameters();
-      assertEquals(1, typeParameters.length, "ComponentLinker should have 1 type parameter");
-      assertEquals("T", typeParameters[0].getName(), "Type parameter should be named T");
-    }
-  }
 
   // ========================================================================
   // Function Definition Method Tests

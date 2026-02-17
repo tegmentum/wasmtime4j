@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,21 +34,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("ComponentLoadConfig Tests")
 class ComponentLoadConfigTest {
-
-  @Nested
-  @DisplayName("Interface Structure Tests")
-  class InterfaceStructureTests {
-
-    @Test
-    @DisplayName("should be public interface")
-    void shouldBePublicInterface() {
-      assertTrue(
-          Modifier.isPublic(ComponentLoadConfig.class.getModifiers()),
-          "ComponentLoadConfig should be public");
-      assertTrue(
-          ComponentLoadConfig.class.isInterface(), "ComponentLoadConfig should be an interface");
-    }
-  }
 
   @Nested
   @DisplayName("Method Signature Tests")

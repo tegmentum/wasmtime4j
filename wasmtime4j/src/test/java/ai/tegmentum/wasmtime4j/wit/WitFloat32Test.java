@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,25 +34,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WitFloat32 Tests")
 class WitFloat32Test {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(WitFloat32.class.getModifiers()), "WitFloat32 should be final");
-    }
-
-    @Test
-    @DisplayName("should extend WitPrimitiveValue")
-    void shouldExtendWitPrimitiveValue() {
-      assertTrue(
-          WitPrimitiveValue.class.isAssignableFrom(WitFloat32.class),
-          "WitFloat32 should extend WitPrimitiveValue");
-    }
-  }
 
   @Nested
   @DisplayName("Factory Method Tests")

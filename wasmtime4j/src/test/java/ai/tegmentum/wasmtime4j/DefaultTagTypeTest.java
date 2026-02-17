@@ -24,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.type.TagType;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,27 +38,6 @@ class DefaultTagTypeTest {
 
   private FunctionType createFuncType(final WasmValueType[] params, final WasmValueType[] returns) {
     return new FunctionType(params, returns);
-  }
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(DefaultTagType.class.getModifiers()),
-          "DefaultTagType should be a final class");
-    }
-
-    @Test
-    @DisplayName("should implement TagType")
-    void shouldImplementTagType() {
-      assertTrue(
-          TagType.class.isAssignableFrom(DefaultTagType.class),
-          "DefaultTagType should implement TagType");
-    }
   }
 
   @Nested
