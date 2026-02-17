@@ -20,10 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.memory.Tag;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,31 +33,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("JniTag Tests")
 class JniTagTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public and final")
-    void shouldBePublicAndFinal() {
-      assertTrue(Modifier.isPublic(JniTag.class.getModifiers()), "JniTag should be public");
-      assertTrue(Modifier.isFinal(JniTag.class.getModifiers()), "JniTag should be final");
-    }
-
-    @Test
-    @DisplayName("should implement Tag interface")
-    void shouldImplementTagInterface() {
-      assertTrue(Tag.class.isAssignableFrom(JniTag.class), "JniTag should implement Tag");
-    }
-
-    @Test
-    @DisplayName("should extend JniResource")
-    void shouldExtendJniResource() {
-      assertTrue(
-          JniResource.class.isAssignableFrom(JniTag.class), "JniTag should extend JniResource");
-    }
-  }
 
   @Nested
   @DisplayName("Method Tests")

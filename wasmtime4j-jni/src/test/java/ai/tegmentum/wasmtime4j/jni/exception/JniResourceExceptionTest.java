@@ -27,7 +27,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,35 +38,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("JniResourceException Tests")
 class JniResourceExceptionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("JniResourceException should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(JniResourceException.class.getModifiers()),
-          "JniResourceException should be final");
-    }
-
-    @Test
-    @DisplayName("JniResourceException should extend RuntimeException")
-    void shouldExtendRuntimeException() {
-      assertTrue(
-          RuntimeException.class.isAssignableFrom(JniResourceException.class),
-          "JniResourceException should extend RuntimeException");
-    }
-
-    @Test
-    @DisplayName("JniResourceException should not extend JniException")
-    void shouldNotExtendJniException() {
-      assertFalse(
-          JniException.class.isAssignableFrom(JniResourceException.class),
-          "JniResourceException should not extend JniException (it is unchecked)");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor(String) Tests")

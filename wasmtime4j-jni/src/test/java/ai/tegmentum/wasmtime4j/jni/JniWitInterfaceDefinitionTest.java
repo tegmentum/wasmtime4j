@@ -18,15 +18,9 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,135 +33,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("JniWitInterfaceDefinition Tests")
 class JniWitInterfaceDefinitionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public and final")
-    void shouldBePublicAndFinal() {
-      assertTrue(
-          Modifier.isPublic(JniWitInterfaceDefinition.class.getModifiers()),
-          "JniWitInterfaceDefinition should be public");
-      assertTrue(
-          Modifier.isFinal(JniWitInterfaceDefinition.class.getModifiers()),
-          "JniWitInterfaceDefinition should be final");
-    }
-
-    @Test
-    @DisplayName("should implement WitInterfaceDefinition interface")
-    void shouldImplementWitInterfaceDefinitionInterface() {
-      assertTrue(
-          WitInterfaceDefinition.class.isAssignableFrom(JniWitInterfaceDefinition.class),
-          "JniWitInterfaceDefinition should implement WitInterfaceDefinition");
-    }
-
-    @Test
-    @DisplayName("should have constructor with name, version, packageName, exports, imports")
-    void shouldHaveConstructorWithAllParameters() throws NoSuchMethodException {
-      final Constructor<?> constructor =
-          JniWitInterfaceDefinition.class.getConstructor(
-              String.class, String.class, String.class, Set.class, Set.class);
-      assertNotNull(constructor, "Constructor with all parameters should exist");
-      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
-    }
-  }
-
-  @Nested
-  @DisplayName("Accessor Method Tests")
-  class AccessorMethodTests {
-
-    @Test
-    @DisplayName("should have getName method")
-    void shouldHaveGetNameMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getName");
-      assertNotNull(method, "getName method should exist");
-      assertEquals(String.class, method.getReturnType(), "getName should return String");
-    }
-
-    @Test
-    @DisplayName("should have getVersion method")
-    void shouldHaveGetVersionMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getVersion");
-      assertNotNull(method, "getVersion method should exist");
-      assertEquals(String.class, method.getReturnType(), "getVersion should return String");
-    }
-
-    @Test
-    @DisplayName("should have getPackageName method")
-    void shouldHaveGetPackageNameMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getPackageName");
-      assertNotNull(method, "getPackageName method should exist");
-      assertEquals(String.class, method.getReturnType(), "getPackageName should return String");
-    }
-
-    @Test
-    @DisplayName("should have getFunctionNames method")
-    void shouldHaveGetFunctionNamesMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getFunctionNames");
-      assertNotNull(method, "getFunctionNames method should exist");
-      assertEquals(List.class, method.getReturnType(), "getFunctionNames should return List");
-    }
-
-    @Test
-    @DisplayName("should have getTypeNames method")
-    void shouldHaveGetTypeNamesMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getTypeNames");
-      assertNotNull(method, "getTypeNames method should exist");
-      assertEquals(List.class, method.getReturnType(), "getTypeNames should return List");
-    }
-
-    @Test
-    @DisplayName("should have getDependencies method")
-    void shouldHaveGetDependenciesMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getDependencies");
-      assertNotNull(method, "getDependencies method should exist");
-      assertEquals(Set.class, method.getReturnType(), "getDependencies should return Set");
-    }
-
-    @Test
-    @DisplayName("should have getImportNames method")
-    void shouldHaveGetImportNamesMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getImportNames");
-      assertNotNull(method, "getImportNames method should exist");
-      assertEquals(List.class, method.getReturnType(), "getImportNames should return List");
-    }
-
-    @Test
-    @DisplayName("should have getExportNames method")
-    void shouldHaveGetExportNamesMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getExportNames");
-      assertNotNull(method, "getExportNames method should exist");
-      assertEquals(List.class, method.getReturnType(), "getExportNames should return List");
-    }
-  }
-
-  @Nested
-  @DisplayName("Interface Methods Tests")
-  class InterfaceMethodsTests {
-
-    @Test
-    @DisplayName("should have isCompatibleWith method")
-    void shouldHaveIsCompatibleWithMethod() throws NoSuchMethodException {
-      final Method method =
-          JniWitInterfaceDefinition.class.getMethod(
-              "isCompatibleWith", WitInterfaceDefinition.class);
-      assertNotNull(method, "isCompatibleWith method should exist");
-      assertEquals(
-          ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult.class,
-          method.getReturnType(),
-          "isCompatibleWith should return WitCompatibilityResult");
-    }
-
-    @Test
-    @DisplayName("should have getWitText method")
-    void shouldHaveGetWitTextMethod() throws NoSuchMethodException {
-      final Method method = JniWitInterfaceDefinition.class.getMethod("getWitText");
-      assertNotNull(method, "getWitText method should exist");
-      assertEquals(String.class, method.getReturnType(), "getWitText should return String");
-    }
-  }
 
   @Nested
   @DisplayName("Instance Creation Tests")

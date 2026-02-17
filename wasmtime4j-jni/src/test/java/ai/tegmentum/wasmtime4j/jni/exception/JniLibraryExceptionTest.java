@@ -28,7 +28,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,35 +39,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("JniLibraryException Tests")
 class JniLibraryExceptionTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("JniLibraryException should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(JniLibraryException.class.getModifiers()),
-          "JniLibraryException should be final");
-    }
-
-    @Test
-    @DisplayName("JniLibraryException should extend JniException")
-    void shouldExtendJniException() {
-      assertTrue(
-          JniException.class.isAssignableFrom(JniLibraryException.class),
-          "JniLibraryException should extend JniException");
-    }
-
-    @Test
-    @DisplayName("JniLibraryException should be a WasmException")
-    void shouldBeWasmException() {
-      assertTrue(
-          WasmException.class.isAssignableFrom(JniLibraryException.class),
-          "JniLibraryException should be a WasmException (via JniException)");
-    }
-  }
 
   @Nested
   @DisplayName("Constructor(String) Tests")

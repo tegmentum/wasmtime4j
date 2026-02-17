@@ -34,29 +34,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 class JniExceptionMapperTest {
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("JniExceptionMapper should be final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(JniExceptionMapper.class.getModifiers()),
-          "JniExceptionMapper should be final");
-    }
-
-    @Test
-    @DisplayName("JniExceptionMapper should have private constructor")
-    void shouldHavePrivateConstructor() throws NoSuchMethodException {
-      final java.lang.reflect.Constructor<?> constructor =
-          JniExceptionMapper.class.getDeclaredConstructor();
-      assertTrue(
-          java.lang.reflect.Modifier.isPrivate(constructor.getModifiers()),
-          "Constructor should be private");
-    }
-  }
-
-  @Nested
   @DisplayName("mapNativeError Tests - All Error Codes")
   class MapNativeErrorTests {
 

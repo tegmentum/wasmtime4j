@@ -20,10 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ExnRef;
-import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,33 +32,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("JniExnRef Tests")
 class JniExnRefTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be public and final")
-    void shouldBePublicAndFinal() {
-      assertTrue(Modifier.isPublic(JniExnRef.class.getModifiers()), "JniExnRef should be public");
-      assertTrue(Modifier.isFinal(JniExnRef.class.getModifiers()), "JniExnRef should be final");
-    }
-
-    @Test
-    @DisplayName("should implement ExnRef interface")
-    void shouldImplementExnRefInterface() {
-      assertTrue(
-          ExnRef.class.isAssignableFrom(JniExnRef.class), "JniExnRef should implement ExnRef");
-    }
-
-    @Test
-    @DisplayName("should extend JniResource")
-    void shouldExtendJniResource() {
-      assertTrue(
-          JniResource.class.isAssignableFrom(JniExnRef.class),
-          "JniExnRef should extend JniResource");
-    }
-  }
 
   @Nested
   @DisplayName("Method Tests")

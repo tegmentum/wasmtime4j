@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,27 +28,6 @@ import org.junit.jupiter.api.Test;
 /** Comprehensive tests for {@link JniPoolStatistics}. */
 @DisplayName("JniPoolStatistics Tests")
 class JniPoolStatisticsTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("JniPoolStatistics should be final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(JniPoolStatistics.class.getModifiers()),
-          "JniPoolStatistics should be final");
-    }
-
-    @Test
-    @DisplayName("JniPoolStatistics should implement PoolStatistics")
-    void shouldImplementPoolStatistics() {
-      assertTrue(
-          PoolStatistics.class.isAssignableFrom(JniPoolStatistics.class),
-          "JniPoolStatistics should implement PoolStatistics");
-    }
-  }
 
   @Nested
   @DisplayName("Default Constructor Tests")

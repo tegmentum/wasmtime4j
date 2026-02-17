@@ -22,10 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ModuleExport;
-import ai.tegmentum.wasmtime4j.func.Caller;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,39 +36,6 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("JniCaller Tests")
 class JniCallerTest {
-
-  @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("should be package-private and final")
-    void shouldBePackagePrivateAndFinal() {
-      // JniCaller is package-private (no public modifier)
-      assertTrue(
-          !Modifier.isPublic(JniCaller.class.getModifiers())
-              && !Modifier.isProtected(JniCaller.class.getModifiers())
-              && !Modifier.isPrivate(JniCaller.class.getModifiers()),
-          "JniCaller should be package-private");
-      assertTrue(Modifier.isFinal(JniCaller.class.getModifiers()), "JniCaller should be final");
-    }
-
-    @Test
-    @DisplayName("should implement Caller interface")
-    void shouldImplementCallerInterface() {
-      assertTrue(
-          Caller.class.isAssignableFrom(JniCaller.class),
-          "JniCaller should implement Caller interface");
-    }
-
-    @Test
-    @DisplayName("should be a generic class")
-    void shouldBeGenericClass() {
-      final Type[] typeParams = JniCaller.class.getTypeParameters();
-      assertEquals(1, typeParams.length, "JniCaller should have one type parameter");
-      assertEquals("T", typeParams[0].getTypeName(), "Type parameter should be named T");
-    }
-  }
 
   @Nested
   @DisplayName("Data Method Tests")

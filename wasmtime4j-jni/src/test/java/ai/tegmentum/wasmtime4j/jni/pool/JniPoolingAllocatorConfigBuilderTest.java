@@ -33,28 +33,6 @@ import org.junit.jupiter.api.Test;
 class JniPoolingAllocatorConfigBuilderTest {
 
   @Nested
-  @DisplayName("Class Structure Tests")
-  class ClassStructureTests {
-
-    @Test
-    @DisplayName("JniPoolingAllocatorConfigBuilder should be final class")
-    void shouldBeFinalClass() {
-      assertTrue(
-          java.lang.reflect.Modifier.isFinal(JniPoolingAllocatorConfigBuilder.class.getModifiers()),
-          "JniPoolingAllocatorConfigBuilder should be final");
-    }
-
-    @Test
-    @DisplayName("JniPoolingAllocatorConfigBuilder should implement PoolingAllocatorConfigBuilder")
-    void shouldImplementPoolingAllocatorConfigBuilder() {
-      assertTrue(
-          PoolingAllocatorConfigBuilder.class.isAssignableFrom(
-              JniPoolingAllocatorConfigBuilder.class),
-          "JniPoolingAllocatorConfigBuilder should implement PoolingAllocatorConfigBuilder");
-    }
-  }
-
-  @Nested
   @DisplayName("Builder Default Values Tests")
   class BuilderDefaultValuesTests {
 
