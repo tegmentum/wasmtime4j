@@ -52,6 +52,18 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   }
 
   /**
+   * Ensures this global and its owning store are still usable.
+   *
+   * @throws JniResourceException if this global or its store has been closed
+   */
+  private void ensureUsable() {
+    ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+  }
+
+  /**
    * Gets the value type of this global.
    *
    * @return the value type name (e.g., "i32", "i64", "f32", "f64")
@@ -59,7 +71,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the type cannot be retrieved
    */
   public String getValueType() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       final String type = nativeGetValueType(getNativeHandle());
       return type != null ? type : "unknown";
@@ -76,7 +88,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the mutability cannot be determined
    */
   public boolean isMutable() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       return nativeIsMutable(getNativeHandle());
     } catch (final Exception e) {
@@ -92,10 +104,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be retrieved
    */
   public WasmValue getValue() {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       final Object value = nativeGetValue(getNativeHandle(), store.getNativeHandle());
       final String typeString = getValueType();
@@ -116,10 +125,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be retrieved or is not an integer
    */
   public int getIntValue() {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       return nativeGetIntValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -137,10 +143,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be retrieved or is not a long
    */
   public long getLongValue() {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       return nativeGetLongValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -158,10 +161,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be retrieved or is not a float
    */
   public float getFloatValue() {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       return nativeGetFloatValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -179,10 +179,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be retrieved or is not a double
    */
   public double getDoubleValue() {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       return nativeGetDoubleValue(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -201,10 +198,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   public void setValue(final Object value) {
     Validation.requireNonNull(value, "value");
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     validateMutable();
 
     try {
@@ -227,10 +221,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be set or type is incompatible
    */
   public void setIntValue(final int value) {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     validateMutable();
 
     try {
@@ -253,10 +244,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be set or type is incompatible
    */
   public void setLongValue(final long value) {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     validateMutable();
 
     try {
@@ -279,10 +267,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be set or type is incompatible
    */
   public void setFloatValue(final float value) {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     validateMutable();
 
     try {
@@ -306,10 +291,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the value cannot be set or type is incompatible
    */
   public void setDoubleValue(final double value) {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     validateMutable();
 
     try {
@@ -335,7 +317,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   @Override
   public void set(final WasmValue value) {
     Validation.requireNonNull(value, "value");
-    ensureNotClosed();
+    ensureUsable();
     validateMutable();
 
     // Validate type compatibility
@@ -382,7 +364,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
 
   @Override
   public ai.tegmentum.wasmtime4j.type.GlobalType getGlobalType() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       final long[] typeInfo = nativeGetGlobalTypeInfo(getNativeHandle());
       if (typeInfo.length < 2) {

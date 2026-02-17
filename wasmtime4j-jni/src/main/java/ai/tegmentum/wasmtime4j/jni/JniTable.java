@@ -48,6 +48,18 @@ public final class JniTable extends JniResource implements WasmTable {
   }
 
   /**
+   * Ensures this table and its owning store are still usable.
+   *
+   * @throws JniResourceException if this table or its store has been closed
+   */
+  private void ensureUsable() {
+    ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+  }
+
+  /**
    * Gets the current size of the table.
    *
    * @return the number of elements in the table
@@ -55,9 +67,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the size cannot be retrieved
    */
   public int getSize() {
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       final long tableHandle = getNativeHandle();
       final long storeHandle = store.getNativeHandle();
@@ -78,9 +88,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the max size cannot be retrieved
    */
   public int getMaxSize() {
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       return nativeGetMaxSize(getNativeHandle(), store.getNativeHandle());
     } catch (final JniResourceException e) {
@@ -98,9 +106,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the type cannot be retrieved
    */
   public WasmValueType getElementType() {
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       final String typeString = nativeGetElementType(getNativeHandle(), store.getNativeHandle());
       if (typeString == null) {
@@ -131,9 +137,7 @@ public final class JniTable extends JniResource implements WasmTable {
 
   @Override
   public ai.tegmentum.wasmtime4j.type.TableType getTableType() {
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
     try {
       final long[] typeInfo = nativeGetTableTypeInfo(getNativeHandle(), store.getNativeHandle());
       if (typeInfo.length < 3) {
@@ -162,12 +166,9 @@ public final class JniTable extends JniResource implements WasmTable {
    */
   public Object get(final int index) {
     Validation.requireNonNegative(index, "index");
+    ensureUsable();
 
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
-
-    final long handle = getNativeHandle(); // This validates not closed
+    final long handle = getNativeHandle();
     validateIndex(index);
 
     try {
@@ -191,12 +192,9 @@ public final class JniTable extends JniResource implements WasmTable {
    */
   public void set(final int index, final Object value) {
     Validation.requireNonNegative(index, "index");
+    ensureUsable();
 
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
-
-    final long handle = getNativeHandle(); // This validates not closed
+    final long handle = getNativeHandle();
     validateIndex(index);
 
     try {
@@ -223,10 +221,7 @@ public final class JniTable extends JniResource implements WasmTable {
    */
   public int grow(final int delta, final Object init) {
     Validation.requireNonNegative(delta, "delta");
-
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
+    ensureUsable();
 
     try {
       final long tableHandle = getNativeHandle();
@@ -254,12 +249,9 @@ public final class JniTable extends JniResource implements WasmTable {
   public void fill(final int start, final int count, final Object value) {
     Validation.requireNonNegative(start, "start");
     Validation.requireNonNegative(count, "count");
+    ensureUsable();
 
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
-    }
-
-    final long handle = getNativeHandle(); // This validates not closed
+    final long handle = getNativeHandle();
     validateRange(start, count);
 
     try {
@@ -292,8 +284,9 @@ public final class JniTable extends JniResource implements WasmTable {
     Validation.requireNonNegative(dst, "dst");
     Validation.requireNonNegative(src, "src");
     Validation.requireNonNegative(count, "count");
+    ensureUsable();
 
-    final long handle = getNativeHandle(); // This validates not closed
+    final long handle = getNativeHandle();
     validateRange(dst, count);
     validateRange(src, count);
 
@@ -326,6 +319,7 @@ public final class JniTable extends JniResource implements WasmTable {
     Validation.requireNonNegative(dst, "dst");
     Validation.requireNonNegative(srcIndex, "srcIndex");
     Validation.requireNonNegative(count, "count");
+    ensureUsable();
 
     if (!(src instanceof JniTable)) {
       throw new IllegalArgumentException(
