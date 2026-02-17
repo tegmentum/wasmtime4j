@@ -1046,20 +1046,20 @@ public final class PanamaFunctionReference implements FunctionReference {
       final PanamaFunctionReference funcRef = FUNCTION_REFERENCE_REGISTRY.get(callbackId);
       if (funcRef == null) {
         LOGGER.severe("Function reference not found in registry: " + callbackId);
-        writeErrorMessage(errorMsgPtr, errorMsgLen, "Function reference not found: " + callbackId);
+        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Function reference not found: " + callbackId);
         return -1;
       }
 
       if (funcRef.resourceHandle.isClosed()) {
         LOGGER.warning("Attempted to call closed function reference: " + funcRef.functionName);
-        writeErrorMessage(errorMsgPtr, errorMsgLen, "Closed function: " + funcRef.functionName);
+        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Closed function: " + funcRef.functionName);
         return -2;
       }
 
       if (funcRef.hostFunction == null) {
         LOGGER.severe(
             "Function reference callback called on non-host function: " + funcRef.functionName);
-        writeErrorMessage(errorMsgPtr, errorMsgLen, "Not a host function: " + funcRef.functionName);
+        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Not a host function: " + funcRef.functionName);
         return -3;
       }
 
@@ -1085,7 +1085,7 @@ public final class PanamaFunctionReference implements FunctionReference {
         marshalResultsToFfi(results, reinterpretedResults, resultsLen);
       } catch (final Exception e) {
         LOGGER.log(Level.SEVERE, "Error marshaling results in callback: " + callbackId, e);
-        writeErrorMessage(errorMsgPtr, errorMsgLen, "Marshal error: " + e.getMessage());
+        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Marshal error: " + e.getMessage());
         return -5;
       }
 
@@ -1093,40 +1093,11 @@ public final class PanamaFunctionReference implements FunctionReference {
     } catch (final Exception e) {
       LOGGER.log(Level.SEVERE, "Error in function reference callback: " + callbackId, e);
       // Write the exception message to the error buffer for propagation back to Rust/Wasmtime
-      writeErrorMessage(errorMsgPtr, errorMsgLen, e.getMessage());
+      PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, e.getMessage());
       return -4;
     }
   }
 
-  /**
-   * Writes an error message to the native error buffer.
-   *
-   * @param errorMsgPtr pointer to the error message buffer
-   * @param errorMsgLen size of the error message buffer
-   * @param message the error message to write
-   */
-  private static void writeErrorMessage(
-      final MemorySegment errorMsgPtr, final int errorMsgLen, final String message) {
-    if (errorMsgPtr == null || errorMsgPtr.equals(MemorySegment.NULL) || errorMsgLen <= 0) {
-      return;
-    }
-    if (message == null || message.isEmpty()) {
-      return;
-    }
-
-    try {
-      // Reinterpret the error buffer with the proper size
-      final MemorySegment buffer = errorMsgPtr.reinterpret(errorMsgLen);
-      final byte[] msgBytes = message.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      // Copy as much as fits, leaving room for null terminator
-      final int copyLen = Math.min(msgBytes.length, errorMsgLen - 1);
-      MemorySegment.copy(msgBytes, 0, buffer, ValueLayout.JAVA_BYTE, 0, copyLen);
-      // Null terminate
-      buffer.set(ValueLayout.JAVA_BYTE, copyLen, (byte) 0);
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to write error message to native buffer: " + e.getMessage());
-    }
-  }
 
   /**
    * Unmarshals parameters from native FFI format to WasmValue array.

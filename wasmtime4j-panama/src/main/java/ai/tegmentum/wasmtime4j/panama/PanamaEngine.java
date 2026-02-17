@@ -25,7 +25,6 @@ import java.util.logging.Logger;
 public final class PanamaEngine implements Engine {
   private static final Logger LOGGER = Logger.getLogger(PanamaEngine.class.getName());
   private static final NativeEngineBindings NATIVE_BINDINGS = NativeEngineBindings.getInstance();
-  private static final NativeMemoryBindings MEMORY_BINDINGS = NativeMemoryBindings.getInstance();
 
   private final Arena arena;
   private final MemorySegment nativeEngine;
@@ -150,7 +149,7 @@ public final class PanamaEngine implements Engine {
     final int result = NATIVE_BINDINGS.moduleCompileWat(nativeEngine, watSegment, modulePtr);
 
     if (result != 0) {
-      final String nativeError = retrieveNativeErrorMessage();
+      final String nativeError = PanamaErrorMapper.retrieveNativeErrorMessage();
       if (nativeError != null && !nativeError.isEmpty()) {
         throw new WasmException("Failed to compile WAT: " + nativeError);
       }
@@ -307,27 +306,6 @@ public final class PanamaEngine implements Engine {
     resourceHandle.ensureNotClosed();
   }
 
-  /**
-   * Retrieves the last error message from the native library and clears it.
-   *
-   * @return the error message, or null if no error
-   */
-  private static String retrieveNativeErrorMessage() {
-    try {
-      final MemorySegment errorPtr = MEMORY_BINDINGS.getLastErrorMessage();
-      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
-        return null;
-      }
-      try {
-        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
-      } finally {
-        MEMORY_BINDINGS.freeErrorMessage(errorPtr);
-      }
-    } catch (final Exception e) {
-      LOGGER.log(java.util.logging.Level.WARNING, "Failed to retrieve native error message", e);
-      return null;
-    }
-  }
 
   @Override
   public boolean isPulley() {

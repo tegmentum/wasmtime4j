@@ -374,8 +374,8 @@ public final class PanamaModule implements Module {
 
       // Type check based on expected type kind
       final ai.tegmentum.wasmtime4j.type.WasmTypeKind expectedKind = expectedType.getKind();
-      System.err.println(
-          "[DEBUG] Checking "
+      LOGGER.fine(
+          "Checking "
               + moduleName
               + "."
               + fieldName
@@ -383,29 +383,26 @@ public final class PanamaModule implements Module {
               + expectedKind
               + ", actualImport="
               + actualImport.getClass().getName());
-      System.err.flush();
       boolean typeMatches = true;
       String expectedTypeStr = expectedKind.toString();
       String actualTypeStr = actualImport.getClass().getSimpleName();
 
       switch (expectedKind) {
         case GLOBAL:
-          System.err.println(
-              "[DEBUG]   GLOBAL case: actualImport instanceof WasmGlobal = "
+          LOGGER.fine(
+              "GLOBAL case: actualImport instanceof WasmGlobal = "
                   + (actualImport instanceof ai.tegmentum.wasmtime4j.WasmGlobal));
-          System.err.flush();
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmGlobal) {
             final ai.tegmentum.wasmtime4j.WasmGlobal global =
                 (ai.tegmentum.wasmtime4j.WasmGlobal) actualImport;
             final ai.tegmentum.wasmtime4j.type.GlobalType actualGlobalType = global.getGlobalType();
             final ai.tegmentum.wasmtime4j.type.GlobalType expectedGlobalType =
                 (ai.tegmentum.wasmtime4j.type.GlobalType) expectedType;
-            System.err.println(
-                "[DEBUG]   expected: "
+            LOGGER.fine(
+                "expected: "
                     + formatGlobalType(expectedGlobalType)
                     + ", actual: "
                     + formatGlobalType(actualGlobalType));
-            System.err.flush();
 
             if (!typesMatch(expectedGlobalType, actualGlobalType)) {
               typeMatches = false;
@@ -418,22 +415,20 @@ public final class PanamaModule implements Module {
           break;
 
         case TABLE:
-          System.err.println(
-              "[DEBUG]   TABLE case: actualImport instanceof WasmTable = "
+          LOGGER.fine(
+              "TABLE case: actualImport instanceof WasmTable = "
                   + (actualImport instanceof ai.tegmentum.wasmtime4j.WasmTable));
-          System.err.flush();
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmTable) {
             final ai.tegmentum.wasmtime4j.WasmTable table =
                 (ai.tegmentum.wasmtime4j.WasmTable) actualImport;
             final ai.tegmentum.wasmtime4j.type.TableType actualTableType = table.getTableType();
             final ai.tegmentum.wasmtime4j.type.TableType expectedTableType =
                 (ai.tegmentum.wasmtime4j.type.TableType) expectedType;
-            System.err.println(
-                "[DEBUG]   expected: "
+            LOGGER.fine(
+                "expected: "
                     + formatTableType(expectedTableType)
                     + ", actual: "
                     + formatTableType(actualTableType));
-            System.err.flush();
 
             if (!typesMatch(expectedTableType, actualTableType)) {
               typeMatches = false;
@@ -446,22 +441,20 @@ public final class PanamaModule implements Module {
           break;
 
         case MEMORY:
-          System.err.println(
-              "[DEBUG]   MEMORY case: actualImport instanceof WasmMemory = "
+          LOGGER.fine(
+              "MEMORY case: actualImport instanceof WasmMemory = "
                   + (actualImport instanceof ai.tegmentum.wasmtime4j.WasmMemory));
-          System.err.flush();
           if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmMemory) {
             final ai.tegmentum.wasmtime4j.WasmMemory memory =
                 (ai.tegmentum.wasmtime4j.WasmMemory) actualImport;
             final ai.tegmentum.wasmtime4j.type.MemoryType actualMemoryType = memory.getMemoryType();
             final ai.tegmentum.wasmtime4j.type.MemoryType expectedMemoryType =
                 (ai.tegmentum.wasmtime4j.type.MemoryType) expectedType;
-            System.err.println(
-                "[DEBUG]   expected: "
+            LOGGER.fine(
+                "expected: "
                     + formatMemoryType(expectedMemoryType)
                     + ", actual: "
                     + formatMemoryType(actualMemoryType));
-            System.err.flush();
 
             if (!typesMatch(expectedMemoryType, actualMemoryType)) {
               typeMatches = false;
@@ -534,11 +527,10 @@ public final class PanamaModule implements Module {
     final long endTime = System.nanoTime();
     final java.time.Duration validationTime = java.time.Duration.ofNanos(endTime - startTime);
 
-    System.err.println(
-        "[DEBUG] Validation complete: validCount=" + validCount + ", issues=" + issues.size());
+    LOGGER.fine("Validation complete: validCount=" + validCount + ", issues=" + issues.size());
     for (final ai.tegmentum.wasmtime4j.validation.ImportIssue issue : issues) {
-      System.err.println(
-          "[DEBUG]   Issue: "
+      LOGGER.fine(
+          "Issue: "
               + issue.getModuleName()
               + "."
               + issue.getImportName()
@@ -547,7 +539,6 @@ public final class PanamaModule implements Module {
               + " msg="
               + issue.getMessage());
     }
-    System.err.flush();
 
     return new ai.tegmentum.wasmtime4j.validation.ImportValidation(
         issues.isEmpty(),

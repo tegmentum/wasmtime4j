@@ -495,13 +495,13 @@ public final class PanamaHostFunction implements WasmFunction {
 
     final PanamaHostFunction hostFunction = hostFunctionRegistry.get(callbackId);
     if (hostFunction == null) {
-      writeErrorMessage(errorMessagePtr, errorMessageLen, "Host function not found: " + callbackId);
+      PanamaErrorMapper.writeErrorMessage(errorMessagePtr, errorMessageLen, "Host function not found: " + callbackId);
       return 1;
     }
 
     try {
       if (hostFunction.resourceHandle.isClosed()) {
-        writeErrorMessage(
+        PanamaErrorMapper.writeErrorMessage(
             errorMessagePtr, errorMessageLen, "Host function closed: " + hostFunction.functionName);
         return 2;
       }
@@ -527,7 +527,7 @@ public final class PanamaHostFunction implements WasmFunction {
       return 0; // Success
     } catch (Exception e) {
       logger.log(Level.SEVERE, "Error in FFI callback for: " + hostFunction.functionName, e);
-      writeErrorMessage(errorMessagePtr, errorMessageLen, e.getMessage());
+      PanamaErrorMapper.writeErrorMessage(errorMessagePtr, errorMessageLen, e.getMessage());
       return 3;
     }
   }
@@ -696,24 +696,6 @@ public final class PanamaHostFunction implements WasmFunction {
     }
   }
 
-  /** Writes an error message to the native error buffer. */
-  private static void writeErrorMessage(
-      final MemorySegment errorPtr, final int maxLen, final String message) {
-    if (errorPtr == null || errorPtr.equals(MemorySegment.NULL) || maxLen <= 0) {
-      return;
-    }
-
-    // Reinterpret the zero-length segment with proper bounds
-    final MemorySegment errBuf = errorPtr.reinterpret(maxLen);
-
-    final byte[] msgBytes = message.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-    final int writeLen = Math.min(msgBytes.length, maxLen - 1);
-
-    for (int i = 0; i < writeLen; i++) {
-      errBuf.set(ValueLayout.JAVA_BYTE, i, msgBytes[i]);
-    }
-    errBuf.set(ValueLayout.JAVA_BYTE, writeLen, (byte) 0); // Null terminator
-  }
 
   /**
    * Creates a method handle for the callback wrapper method.

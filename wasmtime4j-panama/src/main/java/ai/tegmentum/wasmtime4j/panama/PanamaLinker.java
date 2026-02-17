@@ -527,7 +527,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     if (instancePtr == null || instancePtr.address() == 0) {
       // Retrieve detailed error message from native side
-      final String errorMsg = retrieveNativeErrorMessage();
+      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
       throw new WasmException(
           errorMsg != null ? errorMsg : "Failed to instantiate module via linker");
     }
@@ -920,27 +920,6 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     resourceHandle.ensureNotClosed();
   }
 
-  /**
-   * Retrieves the last error message from the native library and clears it.
-   *
-   * @return the error message, or null if no error
-   */
-  private static String retrieveNativeErrorMessage() {
-    try {
-      final MemorySegment errorPtr = NATIVE_MEMORY_BINDINGS.getLastErrorMessage();
-      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
-        return null;
-      }
-      try {
-        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
-      } finally {
-        NATIVE_MEMORY_BINDINGS.freeErrorMessage(errorPtr);
-      }
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
-      return null;
-    }
-  }
 
   /**
    * Converts WasmValueTypes to native type codes.
@@ -1017,7 +996,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final HostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
       if (wrapper == null) {
         LOGGER.severe("Host function callback not found for callbackId=" + callbackId);
-        writeErrorMessage(errorMsgPtr, errorMsgLen, "Callback not found: " + callbackId);
+        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Callback not found: " + callbackId);
         return -1; // Error: callback not found
       }
 
@@ -1041,7 +1020,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       if (results.length != resultsLen) {
         LOGGER.severe(
             "Host function returned " + results.length + " values but expected " + resultsLen);
-        writeErrorMessage(
+        PanamaErrorMapper.writeErrorMessage(
             errorMsgPtr,
             errorMsgLen,
             "Wrong result count: expected " + resultsLen + ", got " + results.length);
@@ -1066,42 +1045,13 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     } catch (final Exception e) {
       LOGGER.log(java.util.logging.Level.SEVERE, "Host function execution failed", e);
       // Write the exception message to the error buffer for propagation back to Rust/Wasmtime
-      writeErrorMessage(errorMsgPtr, errorMsgLen, e.getMessage());
+      PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, e.getMessage());
       return -2; // Error: exception during execution
     } finally {
       IN_FLIGHT_CALLBACKS.decrementAndGet();
     }
   }
 
-  /**
-   * Writes an error message to the native error buffer.
-   *
-   * @param errorMsgPtr pointer to the error message buffer
-   * @param errorMsgLen size of the error message buffer
-   * @param message the error message to write
-   */
-  private static void writeErrorMessage(
-      final MemorySegment errorMsgPtr, final int errorMsgLen, final String message) {
-    if (errorMsgPtr == null || errorMsgPtr.equals(MemorySegment.NULL) || errorMsgLen <= 0) {
-      return;
-    }
-    if (message == null || message.isEmpty()) {
-      return;
-    }
-
-    try {
-      // Reinterpret the error buffer with the proper size
-      final MemorySegment buffer = errorMsgPtr.reinterpret(errorMsgLen);
-      final byte[] msgBytes = message.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      // Copy as much as fits, leaving room for null terminator
-      final int copyLen = Math.min(msgBytes.length, errorMsgLen - 1);
-      MemorySegment.copy(msgBytes, 0, buffer, ValueLayout.JAVA_BYTE, 0, copyLen);
-      // Null terminate
-      buffer.set(ValueLayout.JAVA_BYTE, copyLen, (byte) 0);
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to write error message to native buffer: " + e.getMessage());
-    }
-  }
 
   /**
    * Unmarshals a WasmValue from native memory.

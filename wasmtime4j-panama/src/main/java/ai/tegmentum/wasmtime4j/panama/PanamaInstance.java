@@ -711,7 +711,7 @@ public final class PanamaInstance implements Instance {
             maxResults);
 
     if (resultCount < 0) {
-      final String errorMsg = retrieveNativeErrorMessage();
+      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
       throw new WasmException(
           errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
@@ -1098,7 +1098,7 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      final String errorMsg = retrieveNativeErrorMessage();
+      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
       throw new WasmException(
           errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
@@ -1147,7 +1147,7 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      final String errorMsg = retrieveNativeErrorMessage();
+      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
       throw new WasmException(
           errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
@@ -1190,7 +1190,7 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      final String errorMsg = retrieveNativeErrorMessage();
+      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
       throw new WasmException(
           errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
@@ -1232,7 +1232,7 @@ public final class PanamaInstance implements Instance {
             0);
 
     if (resultCount < 0) {
-      final String errorMsg = retrieveNativeErrorMessage();
+      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
       throw new WasmException(
           errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
@@ -1275,7 +1275,7 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      final String errorMsg = retrieveNativeErrorMessage();
+      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
       throw new WasmException(
           errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
@@ -1323,7 +1323,7 @@ public final class PanamaInstance implements Instance {
             1);
 
     if (resultCount < 0) {
-      final String errorMsg = retrieveNativeErrorMessage();
+      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
       throw new WasmException(
           errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
     }
@@ -1334,27 +1334,6 @@ public final class PanamaInstance implements Instance {
     return ctx.resultsBuffer.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4);
   }
 
-  /**
-   * Retrieves the last error message from the native library and clears it.
-   *
-   * @return the error message, or null if no error
-   */
-  private static String retrieveNativeErrorMessage() {
-    try {
-      final MemorySegment errorPtr = NATIVE_MEMORY_BINDINGS.getLastErrorMessage();
-      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
-        return null;
-      }
-      try {
-        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
-      } finally {
-        NATIVE_MEMORY_BINDINGS.freeErrorMessage(errorPtr);
-      }
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
-      return null;
-    }
-  }
 
   @Override
   public void close() {

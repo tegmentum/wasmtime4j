@@ -11,6 +11,11 @@ import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.exception.WasmErrorCode;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
+import ai.tegmentum.wasmtime4j.panama.NativeMemoryBindings;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -27,6 +32,28 @@ public final class PanamaErrorMapper {
   /** Private constructor to prevent instantiation of utility class. */
   private PanamaErrorMapper() {
     throw new AssertionError("Utility class should not be instantiated");
+  }
+
+  /**
+   * Retrieves the last error message from the native library and clears it.
+   *
+   * @return the error message, or null if no error
+   */
+  public static String retrieveNativeErrorMessage() {
+    try {
+      final MemorySegment errorPtr = NativeMemoryBindings.getInstance().getLastErrorMessage();
+      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
+        return null;
+      }
+      try {
+        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
+      } finally {
+        NativeMemoryBindings.getInstance().freeErrorMessage(errorPtr);
+      }
+    } catch (final Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
+      return null;
+    }
   }
 
   /**
@@ -122,6 +149,35 @@ public final class PanamaErrorMapper {
    */
   public static WasmException mapNativeError(final int errorCode) {
     return mapNativeError(errorCode, null);
+  }
+
+  /**
+   * Writes an error message to a native error buffer.
+   *
+   * <p>Truncates the message if it exceeds the buffer size, and always null-terminates.
+   *
+   * @param errorMsgPtr pointer to the error message buffer
+   * @param errorMsgLen size of the error message buffer
+   * @param message the error message to write
+   */
+  public static void writeErrorMessage(
+      final MemorySegment errorMsgPtr, final int errorMsgLen, final String message) {
+    if (errorMsgPtr == null || errorMsgPtr.equals(MemorySegment.NULL) || errorMsgLen <= 0) {
+      return;
+    }
+    if (message == null || message.isEmpty()) {
+      return;
+    }
+
+    try {
+      final MemorySegment buffer = errorMsgPtr.reinterpret(errorMsgLen);
+      final byte[] msgBytes = message.getBytes(StandardCharsets.UTF_8);
+      final int copyLen = Math.min(msgBytes.length, errorMsgLen - 1);
+      MemorySegment.copy(msgBytes, 0, buffer, ValueLayout.JAVA_BYTE, 0, copyLen);
+      buffer.set(ValueLayout.JAVA_BYTE, copyLen, (byte) 0);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to write error message to native buffer: " + e.getMessage());
+    }
   }
 
   /**

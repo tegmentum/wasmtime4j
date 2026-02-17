@@ -1401,27 +1401,6 @@ public final class PanamaMemory implements WasmMemory {
     return ((PanamaStore) instance.getStore()).getNativeStore();
   }
 
-  /**
-   * Retrieves the last native error message from the Wasmtime runtime.
-   *
-   * @return the error message, or null if no error
-   */
-  private static String retrieveNativeErrorMessage() {
-    try {
-      final MemorySegment errorPtr = NATIVE_BINDINGS.getLastErrorMessage();
-      if (errorPtr == null || errorPtr.equals(MemorySegment.NULL)) {
-        return null;
-      }
-      try {
-        return errorPtr.reinterpret(Long.MAX_VALUE).getString(0);
-      } finally {
-        NATIVE_BINDINGS.freeErrorMessage(errorPtr);
-      }
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to retrieve native error message", e);
-      return null;
-    }
-  }
 
   /**
    * Throws an appropriate exception for a failed atomic operation based on the native error code
@@ -1431,7 +1410,7 @@ public final class PanamaMemory implements WasmMemory {
    * @param operation description of the failed operation
    */
   private static void throwAtomicOperationError(final int errorCode, final String operation) {
-    final String nativeMessage = retrieveNativeErrorMessage();
+    final String nativeMessage = PanamaErrorMapper.retrieveNativeErrorMessage();
     final String message;
     if (nativeMessage != null && !nativeMessage.isEmpty()) {
       message = operation + ": " + nativeMessage;
