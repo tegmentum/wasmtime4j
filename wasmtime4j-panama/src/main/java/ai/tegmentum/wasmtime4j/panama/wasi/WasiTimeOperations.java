@@ -4,7 +4,7 @@ import ai.tegmentum.wasmtime4j.exception.WasiException;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.util.Validation;
-import ai.tegmentum.wasmtime4j.wasi.WasiClockId;
+import ai.tegmentum.wasmtime4j.wasi.AbstractWasiTimeOperations;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -12,54 +12,20 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * Panama FFI implementation of WASI time and clock operations.
  *
- * <p>This class provides access to WASI time operations including clock resolution querying and
- * time retrieval for different clock types. It implements the WASI preview1 specification for time
- * operations using Panama Foreign Function Interface.
- *
- * <p>Supported operations:
- *
- * <ul>
- *   <li>Clock resolution querying for different clock types
- *   <li>Current time retrieval for realtime, monotonic, and CPU time clocks
- *   <li>Proper validation and error handling for all time operations
- *   <li>Thread-safe access to system time sources
- * </ul>
- *
- * <p>Security considerations:
- *
- * <ul>
- *   <li>All time operations are read-only and do not modify system state
- *   <li>Clock access is controlled by the WASI permission system
- *   <li>Time precision may be limited for security reasons
- * </ul>
+ * <p>Provides access to WASI time operations using Panama Foreign Function Interface. Constants,
+ * convenience methods, and static utilities are inherited from {@link AbstractWasiTimeOperations}.
  *
  * @since 1.0.0
  */
-public final class WasiTimeOperations {
+public final class WasiTimeOperations extends AbstractWasiTimeOperations {
 
   private static final Logger LOGGER = Logger.getLogger(WasiTimeOperations.class.getName());
-
-  /** Clock ID for wall clock time (since Unix epoch). */
-  public static final int WASI_CLOCK_REALTIME = WasiClockId.REALTIME.getValue();
-
-  /** Clock ID for monotonic time (suitable for measuring time intervals). */
-  public static final int WASI_CLOCK_MONOTONIC = WasiClockId.MONOTONIC.getValue();
-
-  /** Clock ID for process CPU time. */
-  public static final int WASI_CLOCK_PROCESS_CPUTIME_ID = WasiClockId.PROCESS_CPUTIME_ID.getValue();
-
-  /** Clock ID for thread CPU time. */
-  public static final int WASI_CLOCK_THREAD_CPUTIME_ID = WasiClockId.THREAD_CPUTIME_ID.getValue();
-
-  /** Maximum valid clock ID value. */
-  private static final int MAX_CLOCK_ID = WasiClockId.MAX_CLOCK_ID;
 
   /** The WASI context this time operations instance belongs to. */
   private final WasiContext wasiContext;
@@ -99,18 +65,8 @@ public final class WasiTimeOperations {
     }
   }
 
-  /**
-   * Gets the resolution of the specified clock.
-   *
-   * <p>This operation returns the resolution (precision) of the specified clock in nanoseconds. The
-   * resolution represents the minimum time interval that can be measured by the clock.
-   *
-   * @param clockId the clock identifier (one of the WASI_CLOCK_* constants)
-   * @return the clock resolution in nanoseconds
-   * @throws WasiException if the clock ID is invalid or the operation fails
-   * @throws PanamaException if a Panama FFI error occurs
-   */
-  public long getClockResolution(final int clockId) throws PanamaException, WasiException {
+  @Override
+  public long getClockResolution(final int clockId) throws WasiException {
     validateClockId(clockId);
 
     try (final Arena arena = Arena.ofConfined()) {
@@ -139,25 +95,13 @@ public final class WasiTimeOperations {
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;
       } else {
-        throw new PanamaException("Failed to get clock resolution: " + e.getMessage(), e);
+        throw new WasiException("Failed to get clock resolution: " + e.getMessage(), e);
       }
     }
   }
 
-  /**
-   * Gets the current time for the specified clock.
-   *
-   * <p>This operation returns the current time for the specified clock. The time is returned as
-   * nanoseconds since the clock's epoch (Unix epoch for REALTIME, system boot for MONOTONIC).
-   *
-   * @param clockId the clock identifier (one of the WASI_CLOCK_* constants)
-   * @param precision the requested time precision in nanoseconds (0 for maximum precision)
-   * @return the current time in nanoseconds since the clock's epoch
-   * @throws WasiException if the clock ID is invalid or the operation fails
-   * @throws PanamaException if a Panama FFI error occurs
-   */
-  public long getCurrentTime(final int clockId, final long precision)
-      throws PanamaException, WasiException {
+  @Override
+  public long getCurrentTime(final int clockId, final long precision) throws WasiException {
     validateClockId(clockId);
     Validation.requireNonNegative(precision, "precision");
 
@@ -190,130 +134,8 @@ public final class WasiTimeOperations {
       if (e instanceof RuntimeException) {
         throw (RuntimeException) e;
       } else {
-        throw new PanamaException("Failed to get current time: " + e.getMessage(), e);
+        throw new WasiException("Failed to get current time: " + e.getMessage(), e);
       }
-    }
-  }
-
-  /**
-   * Gets the current time for the specified clock with maximum precision.
-   *
-   * <p>This is a convenience method equivalent to calling {@link #getCurrentTime(int, long)} with
-   * precision set to 0 (maximum precision).
-   *
-   * @param clockId the clock identifier (one of the WASI_CLOCK_* constants)
-   * @return the current time in nanoseconds since the clock's epoch
-   * @throws WasiException if the clock ID is invalid or the operation fails
-   * @throws PanamaException if a Panama FFI error occurs
-   */
-  public long getCurrentTime(final int clockId) throws PanamaException, WasiException {
-    return getCurrentTime(clockId, 0);
-  }
-
-  /**
-   * Gets the current realtime (wall clock time) in nanoseconds since Unix epoch.
-   *
-   * <p>This is a convenience method for getting the current wall clock time, equivalent to calling
-   * {@link #getCurrentTime(int)} with {@link #WASI_CLOCK_REALTIME}.
-   *
-   * @return the current realtime in nanoseconds since Unix epoch
-   * @throws WasiException if the operation fails
-   * @throws PanamaException if a Panama FFI error occurs
-   */
-  public long getRealtime() throws PanamaException, WasiException {
-    return getCurrentTime(WASI_CLOCK_REALTIME);
-  }
-
-  /**
-   * Gets the current monotonic time in nanoseconds since system boot.
-   *
-   * <p>This is a convenience method for getting monotonic time suitable for measuring time
-   * intervals, equivalent to calling {@link #getCurrentTime(int)} with {@link
-   * #WASI_CLOCK_MONOTONIC}.
-   *
-   * @return the current monotonic time in nanoseconds since system boot
-   * @throws WasiException if the operation fails
-   * @throws PanamaException if a Panama FFI error occurs
-   */
-  public long getMonotonicTime() throws PanamaException, WasiException {
-    return getCurrentTime(WASI_CLOCK_MONOTONIC);
-  }
-
-  /**
-   * Gets the current process CPU time in nanoseconds.
-   *
-   * <p>This is a convenience method for getting the CPU time consumed by the current process,
-   * equivalent to calling {@link #getCurrentTime(int)} with {@link #WASI_CLOCK_PROCESS_CPUTIME_ID}.
-   *
-   * @return the current process CPU time in nanoseconds
-   * @throws WasiException if the operation fails
-   * @throws PanamaException if a Panama FFI error occurs
-   */
-  public long getProcessCpuTime() throws PanamaException, WasiException {
-    return getCurrentTime(WASI_CLOCK_PROCESS_CPUTIME_ID);
-  }
-
-  /**
-   * Gets the current thread CPU time in nanoseconds.
-   *
-   * <p>This is a convenience method for getting the CPU time consumed by the current thread,
-   * equivalent to calling {@link #getCurrentTime(int)} with {@link #WASI_CLOCK_THREAD_CPUTIME_ID}.
-   *
-   * @return the current thread CPU time in nanoseconds
-   * @throws WasiException if the operation fails
-   * @throws PanamaException if a Panama FFI error occurs
-   */
-  public long getThreadCpuTime() throws PanamaException, WasiException {
-    return getCurrentTime(WASI_CLOCK_THREAD_CPUTIME_ID);
-  }
-
-  /**
-   * Converts nanoseconds to the specified time unit.
-   *
-   * <p>This is a utility method for converting time values returned by the time operations to
-   * different time units for convenience.
-   *
-   * @param nanoseconds the time in nanoseconds
-   * @param unit the target time unit
-   * @return the time converted to the specified unit
-   */
-  public static long convertTime(final long nanoseconds, final TimeUnit unit) {
-    return WasiClockId.convertTime(nanoseconds, unit);
-  }
-
-  /**
-   * Checks if the specified clock ID is supported.
-   *
-   * <p>This method can be used to check if a clock ID is supported before attempting to use it with
-   * the time operations.
-   *
-   * @param clockId the clock identifier to check
-   * @return true if the clock ID is supported, false otherwise
-   */
-  public static boolean isClockSupported(final int clockId) {
-    return WasiClockId.isClockSupported(clockId);
-  }
-
-  /**
-   * Gets a human-readable name for the specified clock ID.
-   *
-   * @param clockId the clock identifier
-   * @return the human-readable clock name
-   */
-  public static String getClockName(final int clockId) {
-    return WasiClockId.getClockName(clockId);
-  }
-
-  /**
-   * Validates that the specified clock ID is valid.
-   *
-   * @param clockId the clock ID to validate
-   * @throws PanamaException if the clock ID is invalid
-   */
-  private void validateClockId(final int clockId) throws PanamaException {
-    if (!isClockSupported(clockId)) {
-      throw new PanamaException(
-          "Invalid clock ID: " + clockId + " (valid range: 0-" + MAX_CLOCK_ID + ")");
     }
   }
 
