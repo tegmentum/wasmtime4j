@@ -19,6 +19,8 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
+
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -63,10 +65,7 @@ class JniLinkerTest {
 
   @Test
   void testConstructorWithZeroHandle() {
-    final JniLinker<Object> linkerWithZero = new JniLinker<>(0L, testEngine);
-
-    assertThat(linkerWithZero.getNativeHandle()).isEqualTo(0L);
-    assertFalse(linkerWithZero.isValid());
+    assertThrows(RuntimeException.class, () -> new JniLinker<>(0L, testEngine));
   }
 
   // defineHostFunction validation tests
@@ -337,9 +336,7 @@ class JniLinkerTest {
 
   @Test
   void testIsValidWithZeroHandle() {
-    final JniLinker<Object> linkerWithZero = new JniLinker<>(0L, testEngine);
-
-    assertFalse(linkerWithZero.isValid());
+    assertThrows(RuntimeException.class, () -> new JniLinker<>(0L, testEngine));
   }
 
   @Test
@@ -389,25 +386,25 @@ class JniLinkerTest {
   }
 
   @Test
-  void testDefineHostFunctionAfterCloseThrowsIllegalStateException() {
+  void testDefineHostFunctionAfterCloseThrowsJniResourceException() {
     linker.close();
 
-    final IllegalStateException exception =
+    final JniResourceException exception =
         assertThrows(
-            IllegalStateException.class,
+            JniResourceException.class,
             () -> linker.defineHostFunction("env", "func", testFunctionType, testImplementation));
 
-    assertThat(exception.getMessage()).contains("Linker has been closed");
+    assertThat(exception.getMessage()).contains("closed");
   }
 
   @Test
-  void testInstantiateAfterCloseThrowsIllegalStateException() {
+  void testInstantiateAfterCloseThrowsJniResourceException() {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
     linker.close();
 
-    final IllegalStateException exception =
-        assertThrows(IllegalStateException.class, () -> linker.instantiate(testStore, module));
+    final JniResourceException exception =
+        assertThrows(JniResourceException.class, () -> linker.instantiate(testStore, module));
 
-    assertThat(exception.getMessage()).contains("Linker has been closed");
+    assertThat(exception.getMessage()).contains("closed");
   }
 }

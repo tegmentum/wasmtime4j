@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.ImportType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -11,31 +12,23 @@ import java.util.Map;
 /**
  * JNI implementation of the Module interface.
  *
+ * <p>Extends {@link JniResource} for thread-safe lifecycle management and automatic cleanup via
+ * phantom references.
+ *
  * @since 1.0.0
  */
-public class JniModule implements Module {
-  private final long nativeHandle;
+public class JniModule extends JniResource implements Module {
   private final Engine engine;
-  private volatile boolean closed = false;
 
   /**
    * Creates a new JNI module with the given native handle.
    *
-   * @param nativeHandle the native handle
+   * @param nativeHandle the native handle (must be non-zero)
    * @param engine the engine
    */
   public JniModule(final long nativeHandle, final Engine engine) {
-    this.nativeHandle = nativeHandle;
+    super(nativeHandle);
     this.engine = engine;
-  }
-
-  /**
-   * Gets the native handle.
-   *
-   * @return the native handle
-   */
-  public long getNativeHandle() {
-    return nativeHandle;
   }
 
   @Override
@@ -362,9 +355,6 @@ public class JniModule implements Module {
       throw new IllegalArgumentException("imports cannot be null");
     }
     ensureNotClosed();
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Module has invalid native handle");
-    }
 
     // Get all module imports and check if they're satisfied by the provided ImportMap
     final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
@@ -394,9 +384,6 @@ public class JniModule implements Module {
       throw new IllegalArgumentException("imports cannot be null");
     }
     ensureNotClosed();
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Module has invalid native handle");
-    }
 
     final long startTime = System.nanoTime();
     final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues =
@@ -635,7 +622,7 @@ public class JniModule implements Module {
 
   @Override
   public byte[] serialize() {
-    if (closed || !isNativeHandleReasonable()) {
+    if (isClosed() || !isNativeHandleReasonable()) {
       // Return empty array for closed module or unreasonable handle
       // Prevents crashes from test fake pointers and allows graceful handling after close
       return new byte[0];
@@ -651,13 +638,12 @@ public class JniModule implements Module {
 
   @Override
   public boolean isValid() {
-    return !closed && nativeHandle != 0;
+    return !isClosed();
   }
 
   @Override
-  public void close() {
-    if (!closed) {
-      closed = true;
+  protected void doClose() throws Exception {
+    if (nativeHandle != 0) {
       // Native cleanup is now safe with the idempotent GLOBAL_CODE registry fix.
       // The wasmtime fork at tegmentum/wasmtime (fix/global-code-registry-idempotent-v41)
       // prevents SIGABRT when virtual addresses are reused before Arc is fully released.
@@ -665,15 +651,9 @@ public class JniModule implements Module {
     }
   }
 
-  /**
-   * Ensures this module has not been closed.
-   *
-   * @throws IllegalStateException if the module is closed
-   */
-  private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Module has been closed");
-    }
+  @Override
+  protected String getResourceType() {
+    return "JniModule";
   }
 
   /**

@@ -12,6 +12,7 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashSet;
@@ -21,17 +22,18 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of the Linker interface.
  *
+ * <p>Extends {@link JniResource} for thread-safe lifecycle management and automatic cleanup via
+ * phantom references.
+ *
  * @param <T> the type of user data associated with stores
  * @since 1.0.0
  */
-public class JniLinker<T> implements Linker<T> {
+public class JniLinker<T> extends JniResource implements Linker<T> {
   private static final Logger LOGGER = Logger.getLogger(JniLinker.class.getName());
   private static final java.util.concurrent.ConcurrentHashMap<Long, HostFunctionWrapper>
       HOST_FUNCTION_CALLBACKS = new java.util.concurrent.ConcurrentHashMap<>();
 
-  private final long nativeHandle;
   private final Engine engine;
-  private volatile boolean closed = false;
   private final Set<String> imports = new HashSet<>();
   private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo>
       importRegistry = new java.util.concurrent.ConcurrentHashMap<>();
@@ -40,21 +42,12 @@ public class JniLinker<T> implements Linker<T> {
   /**
    * Creates a new JNI linker with the given native handle.
    *
-   * @param nativeHandle the native handle
+   * @param nativeHandle the native handle (must be non-zero)
    * @param engine the engine
    */
   public JniLinker(final long nativeHandle, final Engine engine) {
-    this.nativeHandle = nativeHandle;
+    super(nativeHandle);
     this.engine = engine;
-  }
-
-  /**
-   * Gets the native handle.
-   *
-   * @return the native handle
-   */
-  public long getNativeHandle() {
-    return nativeHandle;
   }
 
   /**
@@ -557,7 +550,7 @@ public class JniLinker<T> implements Linker<T> {
 
   @Override
   public boolean isValid() {
-    return !closed && nativeHandle != 0;
+    return !isClosed();
   }
 
   @Override
@@ -693,56 +686,56 @@ public class JniLinker<T> implements Linker<T> {
   }
 
   @Override
-  public void close() {
-    if (!closed) {
-      closed = true;
-      final boolean hadHostFunctions = !registeredCallbackIds.isEmpty();
+  protected void doClose() throws Exception {
+    final boolean hadHostFunctions = !registeredCallbackIds.isEmpty();
 
-      // DEFENSIVE: Only destroy native handle if it's valid
-      // Prevents crashes when closing linkers created with fake/test handles
-      if (nativeHandle == 0) {
-        // Clean up Java callbacks even if native handle is invalid
-        cleanupHostFunctionCallbacks();
-        return;
-      }
-
-      // If no host functions were registered, destroy directly (fast path)
-      if (!hadHostFunctions) {
-        nativeDestroyLinker(nativeHandle);
-        return;
-      }
-
-      // CRITICAL: Native destruction must complete BEFORE cleaning up Java callbacks.
-      // The native code may invoke callbacks during destruction. If we clean up callbacks
-      // first, native code would find null callbacks and crash the JVM.
-      // Use synchronous destruction with timeout to ensure proper ordering.
-      try {
-        Thread destroyThread =
-            new Thread(
-                () -> {
-                  nativeDestroyLinker(nativeHandle);
-                },
-                "LinkerDestroyThread");
-        destroyThread.setDaemon(true); // Don't prevent JVM exit
-        destroyThread.start();
-        destroyThread.join(500); // Wait max 500ms for native destruction
-        if (destroyThread.isAlive()) {
-          LOGGER.fine("Native linker destruction deferred to GC - callbacks kept active");
-          // If native destruction is still running, DON'T clean up callbacks yet.
-          // The callbacks will be cleaned up when the linker is GC'd and
-          // the daemon thread eventually completes or times out.
-          return;
-        }
-      } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
-        LOGGER.warning("Interrupted while destroying linker: " + e.getMessage());
-        // If interrupted, don't clean up callbacks - native may still need them
-        return;
-      }
-
-      // Only clean up Java callbacks AFTER native destruction has completed
+    // DEFENSIVE: Only destroy native handle if it's valid
+    if (nativeHandle == 0) {
       cleanupHostFunctionCallbacks();
+      return;
     }
+
+    // If no host functions were registered, destroy directly (fast path)
+    if (!hadHostFunctions) {
+      nativeDestroyLinker(nativeHandle);
+      return;
+    }
+
+    // CRITICAL: Native destruction must complete BEFORE cleaning up Java callbacks.
+    // The native code may invoke callbacks during destruction. If we clean up callbacks
+    // first, native code would find null callbacks and crash the JVM.
+    // Use synchronous destruction with timeout to ensure proper ordering.
+    try {
+      Thread destroyThread =
+          new Thread(
+              () -> {
+                nativeDestroyLinker(nativeHandle);
+              },
+              "LinkerDestroyThread");
+      destroyThread.setDaemon(true); // Don't prevent JVM exit
+      destroyThread.start();
+      destroyThread.join(500); // Wait max 500ms for native destruction
+      if (destroyThread.isAlive()) {
+        LOGGER.fine("Native linker destruction deferred to GC - callbacks kept active");
+        // If native destruction is still running, DON'T clean up callbacks yet.
+        // The callbacks will be cleaned up when the linker is GC'd and
+        // the daemon thread eventually completes or times out.
+        return;
+      }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOGGER.warning("Interrupted while destroying linker: " + e.getMessage());
+      // If interrupted, don't clean up callbacks - native may still need them
+      return;
+    }
+
+    // Only clean up Java callbacks AFTER native destruction has completed
+    cleanupHostFunctionCallbacks();
+  }
+
+  @Override
+  protected String getResourceType() {
+    return "JniLinker";
   }
 
   /** Cleans up host function callbacks registered by this linker instance. */
@@ -751,17 +744,6 @@ public class JniLinker<T> implements Linker<T> {
       HOST_FUNCTION_CALLBACKS.remove(callbackId);
     }
     registeredCallbackIds.clear();
-  }
-
-  /**
-   * Ensures the linker is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("Linker has been closed");
-    }
   }
 
   /**

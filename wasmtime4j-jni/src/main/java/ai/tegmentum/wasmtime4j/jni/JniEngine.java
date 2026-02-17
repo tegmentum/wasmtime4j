@@ -6,6 +6,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,13 +14,14 @@ import java.io.InputStream;
 /**
  * JNI implementation of the Engine interface.
  *
+ * <p>Extends {@link JniResource} for thread-safe lifecycle management and automatic cleanup via
+ * phantom references.
+ *
  * @since 1.0.0
  */
-public class JniEngine implements Engine {
-  private final long nativeHandle;
+public class JniEngine extends JniResource implements Engine {
   private final WasmRuntime runtime;
   private final EngineConfig config;
-  private volatile boolean closed = false;
 
   // Load native library when this class is first loaded
   static {
@@ -33,7 +35,7 @@ public class JniEngine implements Engine {
   /**
    * Creates a new JNI engine with the given native handle and runtime.
    *
-   * @param nativeHandle the native handle
+   * @param nativeHandle the native handle (must be non-zero)
    * @param runtime the runtime that created this engine
    */
   public JniEngine(final long nativeHandle, final WasmRuntime runtime) {
@@ -46,7 +48,7 @@ public class JniEngine implements Engine {
    * <p>This constructor is intended for unit tests that don't need a runtime reference. Production
    * code should use {@link #JniEngine(long, WasmRuntime)}.
    *
-   * @param nativeHandle the native handle
+   * @param nativeHandle the native handle (must be non-zero)
    */
   public JniEngine(final long nativeHandle) {
     this(nativeHandle, null, null);
@@ -55,23 +57,14 @@ public class JniEngine implements Engine {
   /**
    * Creates a new JNI engine with the given native handle, runtime, and configuration.
    *
-   * @param nativeHandle the native handle
+   * @param nativeHandle the native handle (must be non-zero)
    * @param runtime the runtime that created this engine
    * @param config the engine configuration used to create this engine, or null for default
    */
   JniEngine(final long nativeHandle, final WasmRuntime runtime, final EngineConfig config) {
-    this.nativeHandle = nativeHandle;
+    super(nativeHandle);
     this.runtime = runtime;
     this.config = config;
-  }
-
-  /**
-   * Gets the native handle.
-   *
-   * @return the native handle
-   */
-  public long getNativeHandle() {
-    return nativeHandle;
   }
 
   @Override
@@ -81,12 +74,7 @@ public class JniEngine implements Engine {
 
   @Override
   public Store createStore() throws WasmException {
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Engine has invalid native handle");
-    }
+    ensureNotClosed();
 
     final long storeHandle = nativeCreateStore(nativeHandle);
     if (storeHandle == 0) {
@@ -104,7 +92,7 @@ public class JniEngine implements Engine {
 
   @Override
   public boolean isEpochInterruptionEnabled() {
-    if (closed || nativeHandle == 0) {
+    if (isClosed()) {
       return false;
     }
     return nativeIsEpochInterruptionEnabled(nativeHandle);
@@ -112,7 +100,7 @@ public class JniEngine implements Engine {
 
   @Override
   public boolean isCoredumpOnTrapEnabled() {
-    if (closed || nativeHandle == 0) {
+    if (isClosed()) {
       return false;
     }
     return nativeIsCoredumpOnTrapEnabled(nativeHandle);
@@ -120,7 +108,7 @@ public class JniEngine implements Engine {
 
   @Override
   public boolean isFuelEnabled() {
-    if (closed || nativeHandle == 0) {
+    if (isClosed()) {
       return false;
     }
     return nativeIsFuelEnabled(nativeHandle);
@@ -128,7 +116,7 @@ public class JniEngine implements Engine {
 
   @Override
   public long getStackSizeLimit() {
-    if (closed || nativeHandle == 0) {
+    if (isClosed()) {
       return 0;
     }
     return nativeGetStackSizeLimit(nativeHandle);
@@ -136,7 +124,7 @@ public class JniEngine implements Engine {
 
   @Override
   public int getMemoryLimitPages() {
-    if (closed || nativeHandle == 0) {
+    if (isClosed()) {
       return 0;
     }
     return nativeGetMemoryLimitPages(nativeHandle);
@@ -147,7 +135,7 @@ public class JniEngine implements Engine {
     if (feature == null) {
       return false;
     }
-    if (closed || nativeHandle == 0) {
+    if (isClosed()) {
       return false;
     }
     return nativeSupportsFeature(nativeHandle, feature.name());
@@ -155,14 +143,12 @@ public class JniEngine implements Engine {
 
   @Override
   public boolean isValid() {
-    return !closed && nativeHandle != 0;
+    return !isClosed();
   }
 
   @Override
   public void incrementEpoch() {
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
+    ensureNotClosed();
     nativeIncrementEpoch(nativeHandle);
   }
 
@@ -174,12 +160,7 @@ public class JniEngine implements Engine {
     if (wasmBytes.length == 0) {
       throw new IllegalArgumentException("wasmBytes cannot be empty");
     }
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Engine has invalid native handle");
-    }
+    ensureNotClosed();
 
     final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
     if (moduleHandle == 0) {
@@ -196,12 +177,7 @@ public class JniEngine implements Engine {
     if (wat.isEmpty()) {
       throw new IllegalArgumentException("wat cannot be empty");
     }
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Engine has invalid native handle");
-    }
+    ensureNotClosed();
 
     final long moduleHandle = nativeCompileWat(nativeHandle, wat);
     if (moduleHandle == 0) {
@@ -218,12 +194,7 @@ public class JniEngine implements Engine {
     if (wasmBytes.length == 0) {
       throw new IllegalArgumentException("wasmBytes cannot be empty");
     }
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Engine has invalid native handle");
-    }
+    ensureNotClosed();
 
     final byte[] precompiled = nativePrecompileModule(nativeHandle, wasmBytes);
     if (precompiled == null || precompiled.length == 0) {
@@ -237,12 +208,7 @@ public class JniEngine implements Engine {
     if (stream == null) {
       throw new IllegalArgumentException("stream cannot be null");
     }
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
-    if (nativeHandle == 0) {
-      throw new IllegalStateException("Engine has invalid native handle");
-    }
+    ensureNotClosed();
 
     // Read entire stream into byte array
     // Wasmtime requires complete bytecode before compilation
@@ -284,11 +250,15 @@ public class JniEngine implements Engine {
   }
 
   @Override
-  public void close() {
-    if (!closed) {
-      closed = true;
+  protected void doClose() throws Exception {
+    if (nativeHandle != 0) {
       nativeDestroyEngine(nativeHandle);
     }
+  }
+
+  @Override
+  protected String getResourceType() {
+    return "JniEngine";
   }
 
   private native long nativeCreateStore(long engineHandle);
@@ -309,7 +279,7 @@ public class JniEngine implements Engine {
 
   @Override
   public boolean isPulley() {
-    if (closed) {
+    if (isClosed()) {
       return false;
     }
     try {
@@ -323,7 +293,7 @@ public class JniEngine implements Engine {
 
   @Override
   public byte[] precompileCompatibilityHash() {
-    if (closed) {
+    if (isClosed()) {
       return new byte[0];
     }
     try {
@@ -342,9 +312,7 @@ public class JniEngine implements Engine {
     if (bytes.length == 0) {
       return null;
     }
-    if (closed) {
-      throw new IllegalStateException("Engine has been closed");
-    }
+    ensureNotClosed();
 
     final int result = nativeDetectPrecompiled(nativeHandle, bytes);
     // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
@@ -363,22 +331,19 @@ public class JniEngine implements Engine {
     if (other == null) {
       throw new IllegalArgumentException("other cannot be null");
     }
-    if (closed) {
+    if (isClosed()) {
       return false;
     }
     if (!(other instanceof JniEngine)) {
       return false;
     }
     final JniEngine otherEngine = (JniEngine) other;
-    if (otherEngine.nativeHandle == 0 || this.nativeHandle == 0) {
-      return false;
-    }
     return nativeEngineSame(this.nativeHandle, otherEngine.nativeHandle);
   }
 
   @Override
   public boolean isAsync() {
-    if (closed || nativeHandle == 0) {
+    if (isClosed()) {
       return false;
     }
     return nativeIsAsync(nativeHandle);

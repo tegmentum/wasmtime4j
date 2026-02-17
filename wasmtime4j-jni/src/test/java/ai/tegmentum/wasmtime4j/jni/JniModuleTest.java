@@ -78,12 +78,12 @@ class JniModuleTest {
     }
 
     @Test
-    @DisplayName("should create module with zero handle")
-    void shouldCreateModuleWithZeroHandle() {
-      final JniModule module = new JniModule(ZERO_HANDLE, testEngine);
-
-      assertNotNull(module, "Module should not be null");
-      assertEquals(ZERO_HANDLE, module.getNativeHandle(), "Native handle should be zero");
+    @DisplayName("should reject zero handle")
+    void shouldRejectZeroHandle() {
+      assertThrows(
+          RuntimeException.class,
+          () -> new JniModule(ZERO_HANDLE, testEngine),
+          "Constructor should reject zero handle");
     }
   }
 

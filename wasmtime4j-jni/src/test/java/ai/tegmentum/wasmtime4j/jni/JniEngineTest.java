@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,12 +35,16 @@ import org.junit.jupiter.api.Test;
  * verify constructor behavior, resource management, and basic API functionality without requiring
  * actual native library loading.
  *
+ * <p>JniEngine extends JniResource, which rejects zero handles in the constructor and provides
+ * thread-safe lifecycle management via AtomicBoolean and phantom reference cleanup.
+ *
  * <p>Note: Integration tests with actual WebAssembly compilation are in wasmtime4j-tests.
  */
 @DisplayName("JniEngine Tests")
 class JniEngineTest {
 
   private static final long VALID_HANDLE = 0x12345678L;
+  private static final long VALID_HANDLE_2 = 0xAABBCCDDL;
   private static final long ZERO_HANDLE = 0L;
 
   @Nested
@@ -56,12 +61,12 @@ class JniEngineTest {
     }
 
     @Test
-    @DisplayName("should create engine with zero handle")
-    void shouldCreateEngineWithZeroHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
-
-      assertNotNull(engine, "Engine should not be null");
-      assertEquals(ZERO_HANDLE, engine.getNativeHandle(), "Native handle should be zero");
+    @DisplayName("should reject zero handle")
+    void shouldRejectZeroHandle() {
+      assertThrows(
+          RuntimeException.class,
+          () -> new JniEngine(ZERO_HANDLE),
+          "Constructor should reject zero handle");
     }
   }
 
@@ -80,14 +85,23 @@ class JniEngineTest {
     @Test
     @DisplayName("should return different handles for different engines")
     void shouldReturnDifferentHandles() {
-      final long handle1 = 0xAABBCCDDL;
-      final long handle2 = 0x11223344L;
+      final JniEngine engine1 = new JniEngine(VALID_HANDLE);
+      final JniEngine engine2 = new JniEngine(VALID_HANDLE_2);
 
-      final JniEngine engine1 = new JniEngine(handle1);
-      final JniEngine engine2 = new JniEngine(handle2);
+      assertEquals(VALID_HANDLE, engine1.getNativeHandle(), "Engine1 handle should match");
+      assertEquals(VALID_HANDLE_2, engine2.getNativeHandle(), "Engine2 handle should match");
+    }
 
-      assertEquals(handle1, engine1.getNativeHandle(), "Engine1 handle should match");
-      assertEquals(handle2, engine2.getNativeHandle(), "Engine2 handle should match");
+    @Test
+    @DisplayName("should throw when engine is closed")
+    void shouldThrowWhenClosed() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
+
+      assertThrows(
+          JniResourceException.class,
+          engine::getNativeHandle,
+          "Should throw when engine is closed");
     }
   }
 
@@ -104,49 +118,39 @@ class JniEngineTest {
     }
 
     @Test
-    @DisplayName("should return false for zero handle engine")
-    void shouldReturnFalseForZeroHandleEngine() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should return false for closed engine")
+    void shouldReturnFalseForClosedEngine() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
-      assertFalse(engine.isValid(), "Engine with zero handle should not be valid");
+      assertFalse(engine.isValid(), "Closed engine should not be valid");
     }
-
-    // Note: Test for closed engine state is covered by integration tests
-    // because calling close() on a fake handle crashes the JVM
   }
-
-  // Note: Close tests are covered by integration tests in wasmtime4j-tests module
-  // because calling close() on objects with fake handles triggers native destructor
-  // which crashes the JVM when trying to free memory at an invalid address
 
   @Nested
   @DisplayName("CreateStore Tests")
   class CreateStoreTests {
 
-    // Note: Test for closed engine createStore is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
-
     @Test
-    @DisplayName("should throw on invalid handle")
-    void shouldThrowOnInvalidHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should throw when engine is closed")
+    void shouldThrowWhenClosed() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
       assertThrows(
-          IllegalStateException.class, engine::createStore, "Should throw on zero handle engine");
+          JniResourceException.class, engine::createStore, "Should throw on closed engine");
     }
 
     @Test
-    @DisplayName("should throw on invalid handle when createStore with data")
-    void shouldThrowOnInvalidHandleForCreateStoreWithData() {
-      // Use ZERO_HANDLE so validation fails before reaching native code
-      // Using a fake non-zero handle would crash the JVM when native code
-      // tries to dereference the invalid pointer
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should throw when createStore with data on closed engine")
+    void shouldThrowWhenClosedForCreateStoreWithData() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
       assertThrows(
-          IllegalStateException.class,
+          JniResourceException.class,
           () -> engine.createStore("test data"),
-          "Should throw on zero handle engine");
+          "Should throw on closed engine");
     }
   }
 
@@ -176,18 +180,16 @@ class JniEngineTest {
           "Should throw on empty bytes");
     }
 
-    // Note: Test for closed engine compileModule is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
-
     @Test
-    @DisplayName("should throw on invalid handle")
-    void shouldThrowOnInvalidHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should throw when engine is closed")
+    void shouldThrowWhenClosed() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
       assertThrows(
-          IllegalStateException.class,
+          JniResourceException.class,
           () -> engine.compileModule(new byte[] {0x00, 0x61, 0x73, 0x6D}),
-          "Should throw on zero handle engine");
+          "Should throw on closed engine");
     }
   }
 
@@ -215,18 +217,16 @@ class JniEngineTest {
           IllegalArgumentException.class, () -> engine.compileWat(""), "Should throw on empty WAT");
     }
 
-    // Note: Test for closed engine compileWat is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
-
     @Test
-    @DisplayName("should throw on invalid handle")
-    void shouldThrowOnInvalidHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should throw when engine is closed")
+    void shouldThrowWhenClosed() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
       assertThrows(
-          IllegalStateException.class,
+          JniResourceException.class,
           () -> engine.compileWat("(module)"),
-          "Should throw on zero handle engine");
+          "Should throw on closed engine");
     }
   }
 
@@ -255,9 +255,6 @@ class JniEngineTest {
           () -> engine.precompileModule(new byte[0]),
           "Should throw on empty bytes");
     }
-
-    // Note: Test for closed engine precompileModule is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
   }
 
   @Nested
@@ -274,29 +271,24 @@ class JniEngineTest {
           () -> engine.compileFromStream(null),
           "Should throw on null stream");
     }
-
-    // Note: Test for closed engine compileFromStream is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
   }
 
   @Nested
   @DisplayName("Feature Detection Tests")
   class FeatureDetectionTests {
 
-    // Note: Tests for closed engine feature detection are covered by integration tests
-    // because calling close() on fake handles crashes the JVM
-
     @Test
-    @DisplayName("should return false for feature check on invalid handle")
-    void shouldReturnFalseForInvalidHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should return false for feature check on closed engine")
+    void shouldReturnFalseForClosedEngine() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
       assertFalse(
           engine.isEpochInterruptionEnabled(),
-          "Epoch interruption should be false for invalid handle");
+          "Epoch interruption should be false for closed engine");
       assertFalse(
-          engine.isCoredumpOnTrapEnabled(), "Coredump on trap should be false for invalid handle");
-      assertFalse(engine.isFuelEnabled(), "Fuel should be false for invalid handle");
+          engine.isCoredumpOnTrapEnabled(), "Coredump on trap should be false for closed engine");
+      assertFalse(engine.isFuelEnabled(), "Fuel should be false for closed engine");
     }
 
     @Test
@@ -312,26 +304,25 @@ class JniEngineTest {
   @DisplayName("Precompile Hash Tests")
   class PrecompileHashTests {
 
-    // Note: Tests for closed engine precompile hash are covered by integration tests
-    // because calling close() on fake handles crashes the JVM
-
     @Test
-    @DisplayName("should return empty array for invalid handle")
-    void shouldReturnEmptyArrayForInvalidHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should return empty array for closed engine")
+    void shouldReturnEmptyArrayForClosedEngine() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
       final byte[] hash = engine.precompileCompatibilityHash();
 
       assertNotNull(hash, "Hash should not be null");
-      assertEquals(0, hash.length, "Hash should be empty for invalid handle");
+      assertEquals(0, hash.length, "Hash should be empty for closed engine");
     }
 
     @Test
-    @DisplayName("should return false for isPulley on invalid handle")
-    void shouldReturnFalseForIsPulleyOnInvalidHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should return false for isPulley on closed engine")
+    void shouldReturnFalseForIsPulleyOnClosedEngine() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
-      assertFalse(engine.isPulley(), "isPulley should return false for invalid handle");
+      assertFalse(engine.isPulley(), "isPulley should return false for closed engine");
     }
   }
 
@@ -357,9 +348,6 @@ class JniEngineTest {
 
       assertNull(engine.detectPrecompiled(new byte[0]), "Should return null for empty bytes");
     }
-
-    // Note: Test for closed engine detectPrecompiled is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
   }
 
   @Nested
@@ -375,16 +363,14 @@ class JniEngineTest {
           IllegalArgumentException.class, () -> engine.same(null), "Should throw on null engine");
     }
 
-    // Note: Test for closed engine same() is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
-
     @Test
-    @DisplayName("should return false when comparing with zero handle")
-    void shouldReturnFalseWhenComparingWithZeroHandle() {
-      final JniEngine engine1 = new JniEngine(VALID_HANDLE);
-      final JniEngine engine2 = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should return false when closed")
+    void shouldReturnFalseWhenClosed() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      final JniEngine other = new JniEngine(VALID_HANDLE_2);
+      engine.markClosedForTesting();
 
-      assertFalse(engine1.same(engine2), "Should return false when other has zero handle");
+      assertFalse(engine.same(other), "Should return false when engine is closed");
     }
   }
 
@@ -392,15 +378,13 @@ class JniEngineTest {
   @DisplayName("Async Tests")
   class AsyncTests {
 
-    // Note: Test for closed engine isAsync is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
-
     @Test
-    @DisplayName("should return false for async on invalid handle")
-    void shouldReturnFalseForAsyncOnInvalidHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should return false for async on closed engine")
+    void shouldReturnFalseForAsyncOnClosedEngine() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
-      assertFalse(engine.isAsync(), "isAsync should return false for zero handle");
+      assertFalse(engine.isAsync(), "isAsync should return false for closed engine");
     }
   }
 
@@ -422,20 +406,16 @@ class JniEngineTest {
   @DisplayName("IncrementEpoch Tests")
   class IncrementEpochTests {
 
-    // Note: Tests that call incrementEpoch() or close() with fake handles are covered
-    // by integration tests in wasmtime4j-tests because calling these methods on
-    // objects with fake handles triggers native code that crashes the JVM.
-
     @Test
-    @DisplayName("should throw on invalid handle")
-    void shouldThrowOnInvalidHandle() {
-      final JniEngine engine = new JniEngine(ZERO_HANDLE);
+    @DisplayName("should throw when engine is closed")
+    void shouldThrowWhenClosed() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+      engine.markClosedForTesting();
 
-      // Native code throws IllegalArgumentException for null/zero pointer
       assertThrows(
-          IllegalArgumentException.class,
+          JniResourceException.class,
           engine::incrementEpoch,
-          "Should throw on zero handle engine");
+          "Should throw on closed engine");
     }
 
     @Test
@@ -448,6 +428,31 @@ class JniEngineTest {
       assertTrue(
           java.lang.reflect.Modifier.isPublic(method.getModifiers()),
           "incrementEpoch should be public");
+    }
+  }
+
+  @Nested
+  @DisplayName("JniResource Integration Tests")
+  class JniResourceIntegrationTests {
+
+    @Test
+    @DisplayName("should report correct resource type")
+    void shouldReportCorrectResourceType() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+
+      assertTrue(
+          engine.toString().contains("JniEngine"),
+          "toString should contain resource type JniEngine");
+    }
+
+    @Test
+    @DisplayName("should report closed status correctly")
+    void shouldReportClosedStatusCorrectly() {
+      final JniEngine engine = new JniEngine(VALID_HANDLE);
+
+      assertFalse(engine.isClosed(), "Should not be closed initially");
+      engine.markClosedForTesting();
+      assertTrue(engine.isClosed(), "Should be closed after marking");
     }
   }
 }
