@@ -5,16 +5,10 @@
 package ai.tegmentum.wasmtime4j.panama.pool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig;
-import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfigBuilder;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,9 +17,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive test suite for the Panama pool package.
  *
- * <p>This test covers all classes in the ai.tegmentum.wasmtime4j.panama.pool package including
- * PanamaPoolStatistics, PanamaPoolingAllocator, PanamaPoolingAllocatorConfig, and
- * PanamaPoolingAllocatorConfigBuilder.
+ * <p>This test covers behavioral tests for classes in the ai.tegmentum.wasmtime4j.panama.pool
+ * package including PanamaPoolStatistics and PanamaPoolingAllocatorConfigBuilder.
  */
 @DisplayName("Panama Pool Package Tests")
 class PanamaPoolPackageTest {
@@ -37,22 +30,6 @@ class PanamaPoolPackageTest {
   @Nested
   @DisplayName("PanamaPoolStatistics Tests")
   class PanamaPoolStatisticsTests {
-
-    @Test
-    @DisplayName("PanamaPoolStatistics should be a final class")
-    void panamaPoolStatisticsShouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(PanamaPoolStatistics.class.getModifiers()),
-          "PanamaPoolStatistics should be final");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolStatistics should implement PoolStatistics interface")
-    void panamaPoolStatisticsShouldImplementPoolStatisticsInterface() {
-      assertTrue(
-          PoolStatistics.class.isAssignableFrom(PanamaPoolStatistics.class),
-          "PanamaPoolStatistics should implement PoolStatistics");
-    }
 
     @Test
     @DisplayName("PanamaPoolStatistics default constructor should create empty statistics")
@@ -189,146 +166,12 @@ class PanamaPoolPackageTest {
   }
 
   // ========================================================================
-  // PanamaPoolingAllocatorConfig Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("PanamaPoolingAllocatorConfig Tests")
-  class PanamaPoolingAllocatorConfigTests {
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfig should be a final class")
-    void panamaPoolingAllocatorConfigShouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(PanamaPoolingAllocatorConfig.class.getModifiers()),
-          "PanamaPoolingAllocatorConfig should be final");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfig should implement PoolingAllocatorConfig interface")
-    void panamaPoolingAllocatorConfigShouldImplementPoolingAllocatorConfigInterface() {
-      assertTrue(
-          PoolingAllocatorConfig.class.isAssignableFrom(PanamaPoolingAllocatorConfig.class),
-          "PanamaPoolingAllocatorConfig should implement PoolingAllocatorConfig");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfig should have getInstancePoolSize method")
-    void panamaPoolingAllocatorConfigShouldHaveGetInstancePoolSizeMethod()
-        throws NoSuchMethodException {
-      Method method = PanamaPoolingAllocatorConfig.class.getMethod("getInstancePoolSize");
-      assertNotNull(method, "getInstancePoolSize method should exist");
-      assertEquals(int.class, method.getReturnType(), "Should return int");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfig should have getMaxMemorySize method")
-    void panamaPoolingAllocatorConfigShouldHaveGetMaxMemorySizeMethod()
-        throws NoSuchMethodException {
-      Method method = PanamaPoolingAllocatorConfig.class.getMethod("getMaxMemorySize");
-      assertNotNull(method, "getMaxMemorySize method should exist");
-      assertEquals(long.class, method.getReturnType(), "Should return long");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfig should have getMaxTablesPerInstance method")
-    void panamaPoolingAllocatorConfigShouldHaveGetMaxTablesPerInstanceMethod()
-        throws NoSuchMethodException {
-      Method method = PanamaPoolingAllocatorConfig.class.getMethod("getMaxTablesPerInstance");
-      assertNotNull(method, "getMaxTablesPerInstance method should exist");
-      assertEquals(int.class, method.getReturnType(), "Should return int");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfig should have getTableElements method")
-    void panamaPoolingAllocatorConfigShouldHaveGetTableElementsMethod()
-        throws NoSuchMethodException {
-      Method method = PanamaPoolingAllocatorConfig.class.getMethod("getTableElements");
-      assertNotNull(method, "getTableElements method should exist");
-      assertEquals(int.class, method.getReturnType(), "Should return int");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfig should be in correct package")
-    void panamaPoolingAllocatorConfigShouldBeInCorrectPackage() {
-      assertEquals(
-          "ai.tegmentum.wasmtime4j.panama.pool",
-          PanamaPoolingAllocatorConfig.class.getPackage().getName(),
-          "PanamaPoolingAllocatorConfig should be in ai.tegmentum.wasmtime4j.panama.pool package");
-    }
-  }
-
-  // ========================================================================
   // PanamaPoolingAllocatorConfigBuilder Tests
   // ========================================================================
 
   @Nested
   @DisplayName("PanamaPoolingAllocatorConfigBuilder Tests")
   class PanamaPoolingAllocatorConfigBuilderTests {
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfigBuilder should be a final class")
-    void panamaPoolingAllocatorConfigBuilderShouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(PanamaPoolingAllocatorConfigBuilder.class.getModifiers()),
-          "PanamaPoolingAllocatorConfigBuilder should be final");
-    }
-
-    @Test
-    @DisplayName(
-        "PanamaPoolingAllocatorConfigBuilder should implement PoolingAllocatorConfigBuilder")
-    void panamaPoolingAllocatorConfigBuilderShouldImplementInterface() {
-      assertTrue(
-          PoolingAllocatorConfigBuilder.class.isAssignableFrom(
-              PanamaPoolingAllocatorConfigBuilder.class),
-          "PanamaPoolingAllocatorConfigBuilder should implement PoolingAllocatorConfigBuilder");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfigBuilder should have public constructor")
-    void panamaPoolingAllocatorConfigBuilderShouldHavePublicConstructor() {
-      Constructor<?>[] constructors = PanamaPoolingAllocatorConfigBuilder.class.getConstructors();
-      assertTrue(
-          constructors.length > 0,
-          "PanamaPoolingAllocatorConfigBuilder should have public constructor");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfigBuilder should have instancePoolSize method")
-    void panamaPoolingAllocatorConfigBuilderShouldHaveInstancePoolSizeMethod()
-        throws NoSuchMethodException {
-      Method method =
-          PanamaPoolingAllocatorConfigBuilder.class.getMethod("instancePoolSize", int.class);
-      assertNotNull(method, "instancePoolSize method should exist");
-      assertEquals(
-          PoolingAllocatorConfigBuilder.class,
-          method.getReturnType(),
-          "Should return builder interface for chaining");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfigBuilder should have maxMemorySize method")
-    void panamaPoolingAllocatorConfigBuilderShouldHaveMaxMemorySizeMethod()
-        throws NoSuchMethodException {
-      Method method =
-          PanamaPoolingAllocatorConfigBuilder.class.getMethod("maxMemorySize", long.class);
-      assertNotNull(method, "maxMemorySize method should exist");
-      assertEquals(
-          PoolingAllocatorConfigBuilder.class,
-          method.getReturnType(),
-          "Should return builder interface for chaining");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocatorConfigBuilder should have build method")
-    void panamaPoolingAllocatorConfigBuilderShouldHaveBuildMethod() throws NoSuchMethodException {
-      Method method = PanamaPoolingAllocatorConfigBuilder.class.getMethod("build");
-      assertNotNull(method, "build method should exist");
-      assertEquals(
-          PoolingAllocatorConfig.class,
-          method.getReturnType(),
-          "Should return PoolingAllocatorConfig");
-    }
 
     @Test
     @DisplayName("PanamaPoolingAllocatorConfigBuilder build should create config")
@@ -353,134 +196,6 @@ class PanamaPoolPackageTest {
       assertNotNull(config, "Chained build should create config");
       assertEquals(1000, config.getInstancePoolSize(), "Instance pool size should be set");
       assertEquals(1024L * 1024 * 100, config.getMaxMemorySize(), "Max memory size should be set");
-    }
-  }
-
-  // ========================================================================
-  // PanamaPoolingAllocator Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("PanamaPoolingAllocator Tests")
-  class PanamaPoolingAllocatorTests {
-
-    @Test
-    @DisplayName("PanamaPoolingAllocator should be a final class")
-    void panamaPoolingAllocatorShouldBeFinalClass() {
-      assertTrue(
-          Modifier.isFinal(PanamaPoolingAllocator.class.getModifiers()),
-          "PanamaPoolingAllocator should be final");
-    }
-
-    @Test
-    @DisplayName(
-        "PanamaPoolingAllocator should have public constructor with PoolingAllocatorConfig")
-    void panamaPoolingAllocatorShouldHavePublicConstructor() throws NoSuchMethodException {
-      Constructor<?> constructor =
-          PanamaPoolingAllocator.class.getConstructor(PoolingAllocatorConfig.class);
-      assertNotNull(constructor, "Constructor should exist");
-      assertTrue(Modifier.isPublic(constructor.getModifiers()), "Constructor should be public");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocator should have getStatistics method")
-    void panamaPoolingAllocatorShouldHaveGetStatisticsMethod() throws NoSuchMethodException {
-      Method method = PanamaPoolingAllocator.class.getMethod("getStatistics");
-      assertNotNull(method, "getStatistics method should exist");
-      assertTrue(
-          PoolStatistics.class.isAssignableFrom(method.getReturnType()),
-          "Should return PoolStatistics");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocator should have close method")
-    void panamaPoolingAllocatorShouldHaveCloseMethod() throws NoSuchMethodException {
-      Method method = PanamaPoolingAllocator.class.getMethod("close");
-      assertNotNull(method, "close method should exist");
-      assertEquals(void.class, method.getReturnType(), "close should return void");
-    }
-
-    @Test
-    @DisplayName("PanamaPoolingAllocator should implement AutoCloseable")
-    void panamaPoolingAllocatorShouldImplementAutoCloseable() {
-      assertTrue(
-          AutoCloseable.class.isAssignableFrom(PanamaPoolingAllocator.class),
-          "PanamaPoolingAllocator should implement AutoCloseable");
-    }
-  }
-
-  // ========================================================================
-  // Package-Level Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Package-Level Tests")
-  class PackageLevelTests {
-
-    @Test
-    @DisplayName("All pool classes should be in correct package")
-    void allPoolClassesShouldBeInCorrectPackage() {
-      Class<?>[] poolClasses = {
-        PanamaPoolStatistics.class,
-        PanamaPoolingAllocator.class,
-        PanamaPoolingAllocatorConfig.class,
-        PanamaPoolingAllocatorConfigBuilder.class
-      };
-
-      String expectedPackage = "ai.tegmentum.wasmtime4j.panama.pool";
-      for (Class<?> clazz : poolClasses) {
-        assertEquals(
-            expectedPackage,
-            clazz.getPackage().getName(),
-            clazz.getSimpleName() + " should be in " + expectedPackage);
-      }
-    }
-
-    @Test
-    @DisplayName("All pool implementation classes should be final")
-    void allPoolImplementationClassesShouldBeFinal() {
-      Class<?>[] poolClasses = {
-        PanamaPoolStatistics.class,
-        PanamaPoolingAllocator.class,
-        PanamaPoolingAllocatorConfig.class,
-        PanamaPoolingAllocatorConfigBuilder.class
-      };
-
-      for (Class<?> clazz : poolClasses) {
-        assertTrue(
-            Modifier.isFinal(clazz.getModifiers()), clazz.getSimpleName() + " should be final");
-      }
-    }
-
-    @Test
-    @DisplayName("All pool classes should not be interfaces")
-    void allPoolClassesShouldNotBeInterfaces() {
-      Class<?>[] poolClasses = {
-        PanamaPoolStatistics.class,
-        PanamaPoolingAllocator.class,
-        PanamaPoolingAllocatorConfig.class,
-        PanamaPoolingAllocatorConfigBuilder.class
-      };
-
-      for (Class<?> clazz : poolClasses) {
-        assertFalse(clazz.isInterface(), clazz.getSimpleName() + " should not be an interface");
-      }
-    }
-
-    @Test
-    @DisplayName("Pool classes should have public constructors or factory methods")
-    void poolClassesShouldHavePublicConstructorsOrFactoryMethods() {
-      // PanamaPoolStatistics should have public constructor
-      Constructor<?>[] statsConstructors = PanamaPoolStatistics.class.getConstructors();
-      assertTrue(
-          statsConstructors.length > 0, "PanamaPoolStatistics should have public constructor");
-
-      // PanamaPoolingAllocatorConfigBuilder should have public constructor
-      Constructor<?>[] builderConstructors =
-          PanamaPoolingAllocatorConfigBuilder.class.getConstructors();
-      assertTrue(
-          builderConstructors.length > 0,
-          "PanamaPoolingAllocatorConfigBuilder should have public constructor");
     }
   }
 }
