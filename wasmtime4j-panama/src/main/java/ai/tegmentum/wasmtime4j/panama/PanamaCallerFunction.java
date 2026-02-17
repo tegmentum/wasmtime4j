@@ -23,7 +23,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaTypeConverter;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -191,12 +190,12 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
       // Types start at offset 8 (after two ints)
       for (int i = 0; i < paramCount; i++) {
         final int typeVal = funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 8 + i * 4L);
-        paramTypes[i] = PanamaTypeConverter.nativeToWasmType(typeVal);
+        paramTypes[i] = WasmValueType.fromNativeTypeCode(typeVal);
       }
       for (int i = 0; i < returnCount; i++) {
         final int typeVal =
             funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 8 + (paramCount + i) * 4L);
-        returnTypes[i] = PanamaTypeConverter.nativeToWasmType(typeVal);
+        returnTypes[i] = WasmValueType.fromNativeTypeCode(typeVal);
       }
 
       // Clean up the native function type

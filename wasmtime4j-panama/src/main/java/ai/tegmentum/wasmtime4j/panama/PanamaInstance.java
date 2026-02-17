@@ -301,7 +301,7 @@ public final class PanamaInstance implements Instance {
 
     final int typeCode = valueTypeOut.get(ValueLayout.JAVA_INT, 0);
     final boolean mutable = isMutableOut.get(ValueLayout.JAVA_INT, 0) != 0;
-    final WasmValueType type = mapNativeTypeToWasmValueType(typeCode);
+    final WasmValueType type = WasmValueType.fromNativeTypeCode(typeCode);
 
     // Return an instance-bound global that uses instance-specific methods
     return Optional.of(new PanamaInstanceGlobal(this, store, name, type, mutable));
@@ -1392,34 +1392,6 @@ public final class PanamaInstance implements Instance {
     resourceHandle.ensureNotClosed();
     if (disposed.get()) {
       throw new IllegalStateException("Instance has been disposed");
-    }
-  }
-
-  /**
-   * Maps native type code to WasmValueType.
-   *
-   * @param typeCode the type code from native
-   * @return the WasmValueType
-   */
-  private static WasmValueType mapNativeTypeToWasmValueType(final int typeCode) {
-    switch (typeCode) {
-      case 0:
-        return WasmValueType.I32;
-      case 1:
-        return WasmValueType.I64;
-      case 2:
-        return WasmValueType.F32;
-      case 3:
-        return WasmValueType.F64;
-      case 4:
-        return WasmValueType.V128;
-      case 5:
-        return WasmValueType.FUNCREF;
-      case 6:
-        return WasmValueType.EXTERNREF;
-      default:
-        LOGGER.warning("Unknown type code: " + typeCode);
-        return WasmValueType.I32; // Default fallback
     }
   }
 
