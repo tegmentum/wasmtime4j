@@ -406,14 +406,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
             runtime_handle
         );
 
-        // WASI Preview2 integration - stub for now
-        // In a full implementation, this would add Preview2-specific WASI imports
-
-        log::debug!(
-            "Successfully added WASI Preview2 to Linker for runtime 0x{:x}",
-            runtime_handle
-        );
-        Ok(0)
+        Err(crate::error::WasmtimeError::Runtime {
+            message: "WASI Preview2 linker integration not yet implemented".to_string(),
+            backtrace: None,
+        })
     })
 }
 
@@ -448,14 +444,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
             runtime_handle
         );
 
-        // Component Model integration - stub for now
-        // In a full implementation, this would add Component Model-specific functionality
-
-        log::debug!(
-            "Successfully added Component Model to Linker for runtime 0x{:x}",
-            runtime_handle
-        );
-        Ok(0)
+        Err(crate::error::WasmtimeError::Runtime {
+            message: "Component Model linker integration not yet implemented".to_string(),
+            backtrace: None,
+        })
     })
 }
 
