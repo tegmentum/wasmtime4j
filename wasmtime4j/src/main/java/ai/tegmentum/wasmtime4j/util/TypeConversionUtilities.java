@@ -25,6 +25,24 @@ public final class TypeConversionUtilities {
   }
 
   /**
+   * Converts a WasmValueType array to an array of native type codes.
+   *
+   * @param types the types to convert (may be null or empty)
+   * @return array of native type codes, or empty array if input is null or empty
+   */
+  public static int[] toNativeTypes(final WasmValueType[] types) {
+    if (types == null || types.length == 0) {
+      return new int[0];
+    }
+
+    final int[] nativeTypes = new int[types.length];
+    for (int i = 0; i < types.length; i++) {
+      nativeTypes[i] = types[i].toNativeTypeCode();
+    }
+    return nativeTypes;
+  }
+
+  /**
    * Creates a defensive copy of a WasmValueType array.
    *
    * @param types the types array (may be null)

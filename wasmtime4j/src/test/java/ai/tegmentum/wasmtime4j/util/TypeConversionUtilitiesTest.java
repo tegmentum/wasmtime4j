@@ -420,6 +420,56 @@ class TypeConversionUtilitiesTest {
   }
 
   @Nested
+  @DisplayName("toNativeTypes Tests")
+  class ToNativeTypesTests {
+
+    @Test
+    @DisplayName("toNativeTypes should return empty array for null input")
+    void toNativeTypesShouldReturnEmptyForNull() {
+      assertThat(TypeConversionUtilities.toNativeTypes(null)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("toNativeTypes should return empty array for empty input")
+    void toNativeTypesShouldReturnEmptyForEmpty() {
+      assertThat(TypeConversionUtilities.toNativeTypes(new WasmValueType[0])).isEmpty();
+    }
+
+    @Test
+    @DisplayName("toNativeTypes should convert single type")
+    void toNativeTypesShouldConvertSingleType() {
+      final WasmValueType[] types = {WasmValueType.I32};
+      final int[] result = TypeConversionUtilities.toNativeTypes(types);
+      assertThat(result).hasSize(1);
+      assertThat(result[0]).isEqualTo(WasmValueType.I32.toNativeTypeCode());
+    }
+
+    @Test
+    @DisplayName("toNativeTypes should convert multiple types")
+    void toNativeTypesShouldConvertMultipleTypes() {
+      final WasmValueType[] types = {WasmValueType.I32, WasmValueType.I64, WasmValueType.F64};
+      final int[] result = TypeConversionUtilities.toNativeTypes(types);
+      assertThat(result).hasSize(3);
+      assertThat(result[0]).isEqualTo(WasmValueType.I32.toNativeTypeCode());
+      assertThat(result[1]).isEqualTo(WasmValueType.I64.toNativeTypeCode());
+      assertThat(result[2]).isEqualTo(WasmValueType.F64.toNativeTypeCode());
+    }
+
+    @Test
+    @DisplayName("toNativeTypes should convert all value types")
+    void toNativeTypesShouldConvertAllTypes() {
+      final WasmValueType[] allTypes = WasmValueType.values();
+      final int[] result = TypeConversionUtilities.toNativeTypes(allTypes);
+      assertThat(result).hasSize(allTypes.length);
+      for (int i = 0; i < allTypes.length; i++) {
+        assertThat(result[i])
+            .as("type code for %s at index %d", allTypes[i], i)
+            .isEqualTo(allTypes[i].toNativeTypeCode());
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("getTypeName Tests")
   class GetTypeNameTests {
 

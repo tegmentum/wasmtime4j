@@ -14,6 +14,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.HashSet;
 import java.util.Set;
@@ -81,8 +82,8 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     ensureNotClosed();
 
     // Convert FunctionType to native representation
-    final int[] paramTypes = toNativeTypes(functionType.getParamTypes());
-    final int[] returnTypes = toNativeTypes(functionType.getReturnTypes());
+    final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
+    final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
     // Create a callback wrapper that will be invoked from native code
     final long callbackId =
@@ -724,24 +725,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    */
   private boolean isNativeHandleReasonable() {
     return isNativeHandleReasonable(nativeHandle);
-  }
-
-  /**
-   * Converts WasmValueType array to native type codes.
-   *
-   * @param types the types to convert
-   * @return array of native type codes
-   */
-  private int[] toNativeTypes(final ai.tegmentum.wasmtime4j.WasmValueType[] types) {
-    if (types == null || types.length == 0) {
-      return new int[0];
-    }
-
-    final int[] nativeTypes = new int[types.length];
-    for (int i = 0; i < types.length; i++) {
-      nativeTypes[i] = types[i].toNativeTypeCode();
-    }
-    return nativeTypes;
   }
 
   /**

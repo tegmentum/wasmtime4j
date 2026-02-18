@@ -9,12 +9,12 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 import ai.tegmentum.wasmtime4j.validation.ImportIssue;
@@ -142,8 +142,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     ensureNotClosed();
 
     // Convert FunctionType to native representation
-    final int[] paramTypes = toNativeTypes(functionType.getParamTypes());
-    final int[] returnTypes = toNativeTypes(functionType.getReturnTypes());
+    final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
+    final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
     // Register callback and get ID
     final long callbackId =
@@ -918,24 +918,6 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     resourceHandle.ensureNotClosed();
   }
 
-
-  /**
-   * Converts WasmValueTypes to native type codes.
-   *
-   * @param types the value types
-   * @return array of native type codes
-   */
-  private int[] toNativeTypes(final WasmValueType[] types) {
-    if (types == null || types.length == 0) {
-      return new int[0];
-    }
-
-    final int[] nativeTypes = new int[types.length];
-    for (int i = 0; i < types.length; i++) {
-      nativeTypes[i] = types[i].toNativeTypeCode();
-    }
-    return nativeTypes;
-  }
 
   /**
    * Registers a host function callback.
