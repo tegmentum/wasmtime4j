@@ -88,6 +88,18 @@ public final class JniFunction extends JniResource
   }
 
   /**
+   * Ensures this function and its owning store are still usable.
+   *
+   * @throws JniResourceException if this function or its store has been closed
+   */
+  private void ensureUsable() {
+    ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+  }
+
+  /**
    * Gets the name of this function.
    *
    * @return the function name
@@ -122,7 +134,7 @@ public final class JniFunction extends JniResource
       return cachedFunctionType;
     }
 
-    ensureNotClosed();
+    ensureUsable();
     try {
       final String[] paramTypeStrings = nativeGetParameterTypes(getNativeHandle());
       final String[] returnTypeStrings = nativeGetReturnTypes(getNativeHandle());
@@ -154,7 +166,7 @@ public final class JniFunction extends JniResource
   @Override
   public WasmValue[] call(final WasmValue... params) throws WasmException {
     Validation.requireNonNull(params, "parameters");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       final FunctionType functionType = getFunctionType();
@@ -206,7 +218,7 @@ public final class JniFunction extends JniResource
   @Deprecated
   public Object call(final Object... parameters) {
     Validation.requireNonNull(parameters, "parameters");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       return nativeCall(getNativeHandle(), store.getNativeHandle(), parameters);
@@ -244,7 +256,7 @@ public final class JniFunction extends JniResource
    */
   public int callInt(final int... parameters) {
     Validation.requireNonNull(parameters, "parameters");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       return nativeCallInt(getNativeHandle(), parameters);
@@ -265,7 +277,7 @@ public final class JniFunction extends JniResource
    */
   public long callLong(final long... parameters) {
     Validation.requireNonNull(parameters, "parameters");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       return nativeCallLong(getNativeHandle(), parameters);
@@ -286,7 +298,7 @@ public final class JniFunction extends JniResource
    */
   public float callFloat(final float... parameters) {
     Validation.requireNonNull(parameters, "parameters");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       return nativeCallFloat(getNativeHandle(), parameters);
@@ -307,7 +319,7 @@ public final class JniFunction extends JniResource
    */
   public double callDouble(final double... parameters) {
     Validation.requireNonNull(parameters, "parameters");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       return nativeCallDouble(getNativeHandle(), parameters);

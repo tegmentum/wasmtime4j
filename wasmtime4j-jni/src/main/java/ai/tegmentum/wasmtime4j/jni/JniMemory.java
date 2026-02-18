@@ -59,6 +59,18 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   /**
+   * Ensures this memory and its owning store are still usable.
+   *
+   * @throws JniResourceException if this memory or its store has been closed
+   */
+  private void ensureUsable() {
+    ensureNotClosed();
+    if (store.isClosed()) {
+      throw new JniResourceException("Store is closed");
+    }
+  }
+
+  /**
    * Sets the instance handle for data segment operations.
    *
    * <p>This must be called when the memory is obtained from an instance to enable memory.init and
@@ -78,7 +90,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws RuntimeException if the size cannot be retrieved
    */
   public long sizeInBytes() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       return nativeGetSize(getNativeHandle());
     } catch (final Exception e) {
@@ -118,7 +130,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   public long grow(final long pages) {
     Validation.requireNonNegative(pages, "pages");
-    ensureNotClosed();
+    ensureUsable();
 
     if (store == null) {
       throw new IllegalStateException("Memory store reference is null");
@@ -159,7 +171,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   public byte readByte(final long offset) {
     Validation.requireNonNegative(offset, "offset");
-    ensureNotClosed();
+    ensureUsable();
     validateOffset(offset, 1);
 
     if (store == null) {
@@ -191,7 +203,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   public void writeByte(final long offset, final byte value) {
     Validation.requireNonNegative(offset, "offset");
-    ensureNotClosed();
+    ensureUsable();
     validateOffset(offset, 1);
 
     if (store == null) {
@@ -225,7 +237,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public int readBytes(final long offset, final byte[] buffer) {
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNull(buffer, "buffer");
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -247,7 +259,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public void readBytes(
       final int offset, final byte[] dest, final int destOffset, final int length) {
-    ensureNotClosed();
+    ensureUsable();
     Validation.requireNonNull(dest, "dest");
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(destOffset, "destOffset");
@@ -291,7 +303,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public int writeBytes(final long offset, final byte[] buffer) {
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNull(buffer, "buffer");
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -313,7 +325,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public void writeBytes(
       final int offset, final byte[] src, final int srcOffset, final int length) {
-    ensureNotClosed();
+    ensureUsable();
     Validation.requireNonNull(src, "src");
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(srcOffset, "srcOffset");
@@ -360,7 +372,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
       value = "EI_EXPOSE_BUF",
       justification = "Returns duplicate() of buffer, not the internal reference")
   public ByteBuffer getBuffer() {
-    ensureNotClosed();
+    ensureUsable();
 
     // Use cached buffer if still valid (optimization for frequent access)
     final long currentTime = System.currentTimeMillis();
@@ -450,7 +462,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws IndexOutOfBoundsException if offset is invalid
    */
   public int readInt(final int offset) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -487,7 +499,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws IndexOutOfBoundsException if offset is invalid
    */
   public void writeInt(final int offset, final int value) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -525,7 +537,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int getMaxSize() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       long maxSize64 = nativeGetMaxSize(getNativeHandle());
       if (maxSize64 == -1 || maxSize64 > Integer.MAX_VALUE) {
@@ -539,7 +551,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public ai.tegmentum.wasmtime4j.type.MemoryType getMemoryType() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       final long[] typeInfo = nativeGetMemoryTypeInfo(getNativeHandle());
       if (typeInfo.length < 4) {
@@ -686,7 +698,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     Validation.requireNonNegative(destOffset, "destOffset");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       nativeMemoryCopy(getNativeHandle(), destOffset, srcOffset, length);
@@ -701,7 +713,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public void fill(final int offset, final byte value, final int length) {
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       nativeMemoryFill(getNativeHandle(), offset, value, length);
@@ -719,7 +731,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     Validation.requireNonNegative(dataSegmentIndex, "dataSegmentIndex");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
+    ensureUsable();
 
     if (instanceHandle == 0) {
       throw new IllegalStateException("Cannot init: memory not associated with an instance");
@@ -744,7 +756,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public void dropDataSegment(final int dataSegmentIndex) {
     Validation.requireNonNegative(dataSegmentIndex, "dataSegmentIndex");
-    ensureNotClosed();
+    ensureUsable();
 
     try {
       nativeDataDrop(getNativeHandle(), dataSegmentIndex);
@@ -809,7 +821,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public boolean isShared() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       return nativeIsShared(getNativeHandle(), store.getNativeHandle());
     } catch (final RuntimeException e) {
@@ -821,7 +833,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicCompareAndSwapInt(final int offset, final int expected, final int newValue) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -841,7 +853,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public long atomicCompareAndSwapLong(final int offset, final long expected, final long newValue) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -861,7 +873,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicLoadInt(final int offset) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -880,7 +892,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public long atomicLoadLong(final int offset) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -899,7 +911,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public void atomicStoreInt(final int offset, final int value) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -918,7 +930,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public void atomicStoreLong(final int offset, final long value) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -937,7 +949,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicAddInt(final int offset, final int value) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -956,7 +968,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public long atomicAddLong(final int offset, final long value) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -975,7 +987,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicAndInt(final int offset, final int value) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -994,7 +1006,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicOrInt(final int offset, final int value) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -1013,7 +1025,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicXorInt(final int offset, final int value) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -1032,7 +1044,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public void atomicFence() {
-    ensureNotClosed();
+    ensureUsable();
     checkSharedMemory();
 
     try {
@@ -1046,7 +1058,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicNotify(final int offset, final int count) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -1066,7 +1078,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicWait32(final int offset, final int expected, final long timeoutNanos) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -1089,7 +1101,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public int atomicWait64(final int offset, final long expected, final long timeoutNanos) {
-    ensureNotClosed();
+    ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
     }
@@ -1307,13 +1319,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public long getSize64() {
-    ensureNotClosed();
+    ensureUsable();
     return sizeInBytes() / 65536L;
   }
 
   @Override
   public long getMaxSize64() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       return nativeGetMaxSize(getNativeHandle());
     } catch (final Exception e) {
@@ -1326,7 +1338,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     if (pages < 0) {
       return -1;
     }
-    ensureNotClosed();
+    ensureUsable();
     try {
       return nativeGrow(getNativeHandle(), store.getNativeHandle(), pages);
     } catch (final Exception e) {
@@ -1337,7 +1349,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public byte readByte64(final long offset) {
     Validation.requireNonNegative(offset, "offset");
-    ensureNotClosed();
+    ensureUsable();
     validateOffset64(offset, 1);
 
     if (store == null) {
@@ -1356,7 +1368,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public void writeByte64(final long offset, final byte value) {
     Validation.requireNonNegative(offset, "offset");
-    ensureNotClosed();
+    ensureUsable();
     validateOffset64(offset, 1);
 
     if (store == null) {
@@ -1375,7 +1387,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public void readBytes64(
       final long offset, final byte[] dest, final int destOffset, final int length) {
-    ensureNotClosed();
+    ensureUsable();
     Validation.requireNonNull(dest, "dest");
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(destOffset, "destOffset");
@@ -1416,7 +1428,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   @Override
   public void writeBytes64(
       final long offset, final byte[] src, final int srcOffset, final int length) {
-    ensureNotClosed();
+    ensureUsable();
     Validation.requireNonNull(src, "src");
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(srcOffset, "srcOffset");
@@ -1459,7 +1471,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     Validation.requireNonNegative(destOffset, "destOffset");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
+    ensureUsable();
 
     validateOffset64(destOffset, length);
     validateOffset64(srcOffset, length);
@@ -1477,7 +1489,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public void fill64(final long offset, final byte value, final long length) {
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
+    ensureUsable();
 
     validateOffset64(offset, length);
 
@@ -1497,7 +1509,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     Validation.requireNonNegative(dataSegmentIndex, "dataSegmentIndex");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
+    ensureUsable();
 
     if (instanceHandle == 0) {
       throw new IllegalStateException("Cannot init: memory not associated with an instance");
@@ -1523,7 +1535,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public boolean supports64BitAddressing() {
-    ensureNotClosed();
+    ensureUsable();
     try {
       return nativeSupports64BitAddressing(getNativeHandle());
     } catch (final Exception e) {

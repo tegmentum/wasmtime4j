@@ -44,6 +44,9 @@ public final class JniTag extends JniResource implements Tag {
     }
 
     final JniStore jniStore = (JniStore) store;
+    if (jniStore.isClosed()) {
+      throw new WasmException("Store is closed");
+    }
     final long currentStoreHandle = jniStore.getNativeHandle();
 
     // Validate store matches
@@ -87,6 +90,9 @@ public final class JniTag extends JniResource implements Tag {
     }
 
     final JniStore jniStore = (JniStore) store;
+    if (jniStore.isClosed()) {
+      throw new WasmException("Store is closed");
+    }
     return nativeEquals(
         getNativeHandle(), ((JniTag) other).getNativeHandle(), jniStore.getNativeHandle());
   }

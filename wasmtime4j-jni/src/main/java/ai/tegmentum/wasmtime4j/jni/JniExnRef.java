@@ -44,6 +44,9 @@ public final class JniExnRef extends JniResource implements ExnRef {
     }
 
     final JniStore jniStore = (JniStore) store;
+    if (jniStore.isClosed()) {
+      throw new WasmException("Store is closed");
+    }
     final long currentStoreHandle = jniStore.getNativeHandle();
 
     final long tagHandle = nativeGetTag(getNativeHandle(), currentStoreHandle);
