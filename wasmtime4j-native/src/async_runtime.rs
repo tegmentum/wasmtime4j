@@ -169,6 +169,7 @@ pub struct AsyncFunctionCallContext {
     /// Timeout duration
     pub timeout_ms: u64,
     /// JavaVM for thread-safe JNI access (Send-safe)
+    #[cfg(feature = "jni-bindings")]
     pub jvm: Arc<JavaVM>,
     /// Callback for completion
     pub callback: AsyncCallback,
@@ -194,6 +195,7 @@ pub struct AsyncCompilationContext {
     /// Timeout duration
     pub timeout_ms: u64,
     /// JavaVM for thread-safe JNI access (Send-safe)
+    #[cfg(feature = "jni-bindings")]
     pub jvm: Arc<JavaVM>,
     /// Completion callback
     pub callback: AsyncCallback,
