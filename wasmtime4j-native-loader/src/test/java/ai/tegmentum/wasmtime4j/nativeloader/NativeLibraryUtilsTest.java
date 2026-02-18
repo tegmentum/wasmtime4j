@@ -43,7 +43,11 @@ final class NativeLibraryUtilsTest {
 
     if (info.getPlatformInfo() != null) {
       assertNotNull(info.getPlatformInfo().getPlatformId(), "Platform ID should not be null");
-      assertNotNull(info.getResourcePath(), "Resource path should not be null");
+      // resourcePath is only populated for successful JAR-based loads;
+      // for failed loads or system library loads, it may be null
+      assertFalse(
+          info.getAttemptedPaths().isEmpty(),
+          "Attempted paths should not be empty when platform was detected");
     }
   }
 
