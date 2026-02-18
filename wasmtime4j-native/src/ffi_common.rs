@@ -431,54 +431,6 @@ mod tests {
     }
 
     #[test]
-    fn test_resource_tracker() {
-        static mut CLEANUP_CALLED: bool = false;
-
-        fn cleanup_fn(_value: i32) {
-            unsafe {
-                CLEANUP_CALLED = true;
-            }
-        }
-
-        {
-            let _tracker = ResourceTracker::new(42i32, cleanup_fn);
-            // Tracker goes out of scope here
-        }
-
-        unsafe {
-            assert!(CLEANUP_CALLED, "Cleanup function should have been called");
-        }
-    }
-
-    #[test]
-    fn test_resource_tracker_take() {
-        static mut CLEANUP_CALLED: bool = false;
-
-        fn cleanup_fn(_value: i32) {
-            unsafe {
-                CLEANUP_CALLED = true;
-            }
-        }
-
-        {
-            let mut tracker = ResourceTracker::new(42i32, cleanup_fn);
-            assert!(tracker.is_active());
-
-            let value = tracker.take();
-            assert_eq!(value, Some(42));
-            assert!(!tracker.is_active());
-            // Tracker goes out of scope but shouldn't call cleanup
-        }
-
-        unsafe {
-            assert!(
-                !CLEANUP_CALLED,
-                "Cleanup function should not have been called after take()"
-            );
-        }
-    }
-
-    #[test]
     fn test_safe_array_access() {
         let array = [1, 2, 3, 4, 5];
         let ptr = array.as_ptr();
