@@ -76,30 +76,4 @@ final class PlatformDetectorTestUtils {
     }
   }
 
-  /**
-   * Simulates a malicious platform ID for security testing.
-   *
-   * @return a potentially dangerous platform ID string
-   */
-  static String getMaliciousPlatformId() {
-    return "../../../etc/passwd";
-  }
-
-  /**
-   * Creates test data with control characters for log injection testing.
-   *
-   * @return a string containing various control characters
-   */
-  static String getLogInjectionTestData() {
-    return "test\r\nINFO: Injected log message\n\t\0x01\0x02";
-  }
-
-  /**
-   * Creates test data with path traversal attempts.
-   *
-   * @return a string containing path traversal sequences
-   */
-  static String getPathTraversalTestData() {
-    return "../../../etc/shadow";
-  }
 }
