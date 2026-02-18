@@ -28,7 +28,6 @@
  *   <li>{@link ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream} - Non-blocking output stream for
  *       writing bytes
  *   <li>{@link ai.tegmentum.wasmtime4j.wasi.io.WasiPollable} - Event notification for I/O readiness
- *   <li>{@link ai.tegmentum.wasmtime4j.wasi.io.WasiStreamError} - Stream operation errors
  * </ul>
  *
  * <h2>Usage Example</h2>
