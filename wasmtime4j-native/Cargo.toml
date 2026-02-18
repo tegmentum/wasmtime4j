@@ -52,7 +52,6 @@ parking_lot.workspace = true
 
 # Encoding
 base64.workspace = true
-sha2.workspace = true
 
 # Unix-specific dependencies for process operations
 [target.'cfg(unix)'.dependencies]

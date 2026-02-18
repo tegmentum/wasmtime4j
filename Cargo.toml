@@ -46,7 +46,6 @@ parking_lot = "0.12"
 
 # Encoding
 base64 = "0.22"
-sha2 = "0.10"
 
 # Unix-specific
 libc = "0.2"
