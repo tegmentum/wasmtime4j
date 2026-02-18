@@ -124,7 +124,7 @@ public final class JniWasiTcpSocket implements WasiTcpSocket {
       throw new WasmException("Socket is closed");
     }
 
-    final AddressParams params = encodeAddress(localAddress);
+    final SocketAddressCodec.AddressParams params = SocketAddressCodec.encodeAddress(localAddress);
     nativeStartBind(
         contextHandle,
         socketHandle,
@@ -157,7 +157,7 @@ public final class JniWasiTcpSocket implements WasiTcpSocket {
       throw new WasmException("Socket is closed");
     }
 
-    final AddressParams params = encodeAddress(remoteAddress);
+    final SocketAddressCodec.AddressParams params = SocketAddressCodec.encodeAddress(remoteAddress);
     nativeStartConnect(
         contextHandle,
         socketHandle,
@@ -244,7 +244,7 @@ public final class JniWasiTcpSocket implements WasiTcpSocket {
       throw new WasmException("Failed to get local address");
     }
 
-    return decodeAddress(encoded);
+    return SocketAddressCodec.decodeAddress(encoded);
   }
 
   @Override
@@ -258,7 +258,7 @@ public final class JniWasiTcpSocket implements WasiTcpSocket {
       throw new WasmException("Failed to get remote address");
     }
 
-    return decodeAddress(encoded);
+    return SocketAddressCodec.decodeAddress(encoded);
   }
 
   @Override
@@ -421,94 +421,6 @@ public final class JniWasiTcpSocket implements WasiTcpSocket {
     nativeClose(contextHandle, socketHandle);
     closed = true;
     LOGGER.fine("Closed JNI WASI TCP socket with handle: " + socketHandle);
-  }
-
-  // Helper class to hold address encoding parameters
-  private static final class AddressParams {
-    final boolean isIpv4;
-    final byte[] ipv4Octets;
-    final byte[] ipv6Segments;
-    final int port;
-    final int flowInfo;
-    final int scopeId;
-
-    AddressParams(
-        final boolean isIpv4,
-        final byte[] ipv4Octets,
-        final byte[] ipv6Segments,
-        final int port,
-        final int flowInfo,
-        final int scopeId) {
-      this.isIpv4 = isIpv4;
-      this.ipv4Octets = ipv4Octets;
-      this.ipv6Segments = ipv6Segments;
-      this.port = port;
-      this.flowInfo = flowInfo;
-      this.scopeId = scopeId;
-    }
-  }
-
-  // Helper method to encode an IpSocketAddress for JNI
-  private static AddressParams encodeAddress(final IpSocketAddress address) {
-    if (address.isIpv4()) {
-      final Ipv4SocketAddress ipv4 = address.getIpv4();
-      return new AddressParams(
-          true,
-          ipv4.getAddress().getOctets(),
-          null,
-          ipv4.getPort(),
-          0, // IPv4 doesn't have flow info
-          0 // IPv4 doesn't have scope ID
-          );
-    } else {
-      final Ipv6SocketAddress ipv6 = address.getIpv6();
-      final short[] segments = ipv6.getAddress().getSegments();
-
-      // Convert shorts to bytes (big-endian)
-      final byte[] segmentBytes = new byte[16];
-      for (int i = 0; i < 8; i++) {
-        segmentBytes[i * 2] = (byte) (segments[i] >> 8);
-        segmentBytes[i * 2 + 1] = (byte) segments[i];
-      }
-
-      return new AddressParams(
-          false,
-          null,
-          segmentBytes,
-          ipv6.getPort(),
-          (int) ipv6.getFlowInfo(),
-          (int) ipv6.getScopeId());
-    }
-  }
-
-  // Helper method to decode an IpSocketAddress from JNI
-  private static IpSocketAddress decodeAddress(final long[] encoded) {
-    final boolean isIpv4 = encoded[0] != 0;
-
-    if (isIpv4) {
-      // IPv4: [is_ipv4=1, octet0, octet1, octet2, octet3, port, flow_info, scope_id]
-      final byte[] octets =
-          new byte[] {(byte) encoded[1], (byte) encoded[2], (byte) encoded[3], (byte) encoded[4]};
-      final int port = (int) encoded[5];
-
-      final ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address ipv4Address =
-          new ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address(octets);
-      return IpSocketAddress.ipv4(new Ipv4SocketAddress(port, ipv4Address));
-    } else {
-      // IPv6: [is_ipv4=0, seg0, seg1, ..., seg7, port, flow_info, scope_id]
-      final short[] segments = new short[8];
-      for (int i = 0; i < 8; i++) {
-        segments[i] = (short) encoded[i + 1];
-      }
-      final int port = (int) encoded[9];
-      final long flowInfo = encoded[10];
-      final long scopeId = encoded[11];
-
-      final ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address ipv6Address =
-          new ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address(segments);
-      return IpSocketAddress.ipv6(
-          new Ipv6SocketAddress(port, (int) flowInfo, ipv6Address, (int) scopeId));
-    }
   }
 
   // Native method declarations

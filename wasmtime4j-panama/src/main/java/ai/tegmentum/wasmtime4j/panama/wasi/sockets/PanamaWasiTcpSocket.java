@@ -493,7 +493,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
 
     try (final Arena arena = Arena.ofConfined()) {
-      final AddressParams params = encodeAddress(localAddress, arena);
+      final SocketAddressCodec.AddressParams params = SocketAddressCodec.encodeAddress(localAddress, arena);
 
       final int result =
           (int)
@@ -556,7 +556,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     }
 
     try (final Arena arena = Arena.ofConfined()) {
-      final AddressParams params = encodeAddress(remoteAddress, arena);
+      final SocketAddressCodec.AddressParams params = SocketAddressCodec.encodeAddress(remoteAddress, arena);
 
       final int result =
           (int)
@@ -726,7 +726,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
         throw new WasmException("Failed to get local address");
       }
 
-      return decodeAddress(outIsIpv4, outAddrBuf, outPort, outFlowInfo, outScopeId);
+      return SocketAddressCodec.decodeAddress(outIsIpv4, outAddrBuf, outPort, outFlowInfo, outScopeId);
 
     } catch (final WasmException e) {
       throw e;
@@ -763,7 +763,7 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
         throw new WasmException("Failed to get remote address");
       }
 
-      return decodeAddress(outIsIpv4, outAddrBuf, outPort, outFlowInfo, outScopeId);
+      return SocketAddressCodec.decodeAddress(outIsIpv4, outAddrBuf, outPort, outFlowInfo, outScopeId);
 
     } catch (final WasmException e) {
       throw e;
@@ -1087,96 +1087,4 @@ public final class PanamaWasiTcpSocket implements WasiTcpSocket {
     resourceHandle.close();
   }
 
-  // Helper class to hold address parameters for encoding
-  private static final class AddressParams {
-    final boolean isIpv4;
-    final MemorySegment ipv4Octets;
-    final MemorySegment ipv6Segments;
-    final int port;
-    final int flowInfo;
-    final int scopeId;
-
-    AddressParams(
-        final boolean isIpv4,
-        final MemorySegment ipv4Octets,
-        final MemorySegment ipv6Segments,
-        final int port,
-        final int flowInfo,
-        final int scopeId) {
-      this.isIpv4 = isIpv4;
-      this.ipv4Octets = ipv4Octets;
-      this.ipv6Segments = ipv6Segments;
-      this.port = port;
-      this.flowInfo = flowInfo;
-      this.scopeId = scopeId;
-    }
-  }
-
-  // Helper method to encode IpSocketAddress to memory segments
-  private static AddressParams encodeAddress(final IpSocketAddress address, final Arena arena) {
-    if (address.isIpv4()) {
-      final Ipv4SocketAddress ipv4 = address.getIpv4();
-      final byte[] octets = ipv4.getAddress().getOctets();
-      final MemorySegment octetsSegment = arena.allocate(4);
-      for (int i = 0; i < 4; i++) {
-        octetsSegment.set(ValueLayout.JAVA_BYTE, i, octets[i]);
-      }
-      return new AddressParams(
-          true,
-          octetsSegment,
-          MemorySegment.NULL,
-          ipv4.getPort(),
-          0, // IPv4 doesn't have flow info
-          0 // IPv4 doesn't have scope ID
-          );
-    } else {
-      final Ipv6SocketAddress ipv6 = address.getIpv6();
-      final short[] segments = ipv6.getAddress().getSegments();
-      final MemorySegment segmentsSegment = arena.allocate(ValueLayout.JAVA_SHORT, 8);
-      for (int i = 0; i < 8; i++) {
-        segmentsSegment.setAtIndex(ValueLayout.JAVA_SHORT, i, segments[i]);
-      }
-      return new AddressParams(
-          false,
-          MemorySegment.NULL,
-          segmentsSegment,
-          ipv6.getPort(),
-          ipv6.getFlowInfo(),
-          ipv6.getScopeId());
-    }
-  }
-
-  // Helper method to decode memory segments to IpSocketAddress
-  private static IpSocketAddress decodeAddress(
-      final MemorySegment outIsIpv4,
-      final MemorySegment outAddrBuf,
-      final MemorySegment outPort,
-      final MemorySegment outFlowInfo,
-      final MemorySegment outScopeId) {
-    final boolean isIpv4 = outIsIpv4.get(ValueLayout.JAVA_INT, 0) != 0;
-
-    if (isIpv4) {
-      final byte[] octets = new byte[4];
-      for (int i = 0; i < 4; i++) {
-        octets[i] = outAddrBuf.get(ValueLayout.JAVA_BYTE, i);
-      }
-      final int port = outPort.get(ValueLayout.JAVA_SHORT, 0) & 0xFFFF;
-
-      final ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address ipv4Address =
-          new ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4Address(octets);
-      return IpSocketAddress.ipv4(new Ipv4SocketAddress(port, ipv4Address));
-    } else {
-      final short[] segments = new short[8];
-      for (int i = 0; i < 8; i++) {
-        segments[i] = outAddrBuf.getAtIndex(ValueLayout.JAVA_SHORT, i);
-      }
-      final int port = outPort.get(ValueLayout.JAVA_SHORT, 0) & 0xFFFF;
-      final int flowInfo = outFlowInfo.get(ValueLayout.JAVA_INT, 0);
-      final int scopeId = outScopeId.get(ValueLayout.JAVA_INT, 0);
-
-      final ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address ipv6Address =
-          new ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6Address(segments);
-      return IpSocketAddress.ipv6(new Ipv6SocketAddress(port, flowInfo, ipv6Address, scopeId));
-    }
-  }
 }

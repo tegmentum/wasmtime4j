@@ -49,14 +49,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGe
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstancePre
- * Method:    nativeGetModule
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGetModule
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniInstancePre
  * Method:    nativeDestroy
  * Signature: (J)V
  */

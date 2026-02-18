@@ -127,14 +127,6 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetSta
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCleanupResources
   (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
- * Method:    nativeValidateThreadAccess
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeValidateThreadAccess
-  (JNIEnv *, jclass, jlong);
-
 #ifdef __cplusplus
 }
 #endif
