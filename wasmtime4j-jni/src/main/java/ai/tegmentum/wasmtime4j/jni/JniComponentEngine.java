@@ -186,8 +186,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   @Override
   public boolean supportsFeature(final WasmFeature feature) {
     Validation.requireNonNull(feature, "feature");
-    // Delegate to native engine if available
-    return nativeEngine != null && nativeEngine.isValid();
+    throw new UnsupportedOperationException(
+        "Component engine feature detection not yet implemented");
   }
 
   @Override
@@ -379,11 +379,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
     ensureNotClosed();
 
-    // TODO: Implement using Wasmtime's component composition API
-    // For now, return the first component as the "linked" component
-    LOGGER.info("Linked " + components.size() + " components");
-
-    return components.get(0);
+    throw new UnsupportedOperationException("Component linking not yet implemented");
   }
 
   @Override
