@@ -43,9 +43,8 @@ final class PanamaExternTable implements Extern {
 
   @Override
   public WasmTable asTable() {
-    // Cannot create a PanamaTable without an instance context
-    // The table handle is valid but requires an instance for operations
-    return null;
+    throw new UnsupportedOperationException(
+        "PanamaExternTable.asTable() not yet implemented");
   }
 
   MemorySegment getNativeHandle() {

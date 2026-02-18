@@ -43,9 +43,8 @@ final class PanamaExternFunc implements Extern {
 
   @Override
   public WasmFunction asFunction() {
-    // Cannot create a PanamaFunction without an instance context
-    // The function handle is valid but requires an instance for call operations
-    return null;
+    throw new UnsupportedOperationException(
+        "PanamaExternFunc.asFunction() not yet implemented");
   }
 
   MemorySegment getNativeHandle() {
