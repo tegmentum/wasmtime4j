@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.Store;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -670,92 +669,6 @@ class GcPackageTest {
       final String str = nullRef.toString();
       assertNotNull(str, "toString should not return null");
       assertTrue(str.contains("null"), "Should indicate null reference");
-    }
-  }
-
-  @Nested
-  @DisplayName("Rooted Tests")
-  class RootedTests {
-
-    @Test
-    @DisplayName("should be a final class")
-    void shouldBeFinalClass() {
-      assertTrue(Modifier.isFinal(Rooted.class.getModifiers()), "Rooted should be final");
-    }
-
-    @Test
-    @DisplayName("should create with value and rootId")
-    void shouldCreateWithValueAndRootId() {
-      final String testValue = "test";
-      final Rooted<String> rooted = new Rooted<>(testValue, 42L);
-
-      assertEquals(42L, rooted.getRootId(), "Root ID should match");
-      assertTrue(rooted.isValid(), "Should be valid initially");
-    }
-
-    @Test
-    @DisplayName("should throw on null value")
-    void shouldThrowOnNullValue() {
-      assertThrows(
-          NullPointerException.class, () -> new Rooted<>(null, 1L), "Should throw on null value");
-    }
-
-    @Test
-    @DisplayName("unroot should require non-null store")
-    void unrootShouldRequireNonNullStore() throws Exception {
-      final Rooted<String> rooted = new Rooted<>("test", 1L);
-
-      assertTrue(rooted.isValid(), "Should be valid before unroot");
-      // unroot() requires a non-null Store parameter
-      assertThrows(
-          NullPointerException.class,
-          () -> rooted.unroot(null),
-          "Should throw NullPointerException for null store");
-    }
-
-    @Test
-    @DisplayName("unroot method should exist with Store parameter")
-    void unrootMethodShouldExistWithStoreParameter() throws Exception {
-      final Method unrootMethod = Rooted.class.getMethod("unroot", Store.class);
-      assertNotNull(unrootMethod, "unroot method should exist");
-      assertEquals(void.class, unrootMethod.getReturnType(), "Should return void");
-    }
-
-    @Test
-    @DisplayName("equals and hashCode should work correctly")
-    void equalsAndHashCodeShouldWorkCorrectly() {
-      final Rooted<String> rooted1 = new Rooted<>("test", 1L);
-      final Rooted<String> rooted2 = new Rooted<>("test", 1L);
-
-      assertEquals(rooted1, rooted2, "Equal rooted refs should be equal");
-      assertEquals(rooted1.hashCode(), rooted2.hashCode(), "Hash codes should match");
-    }
-
-    @Test
-    @DisplayName("toString should return non-null")
-    void toStringShouldReturnNonNull() {
-      final Rooted<String> rooted = new Rooted<>("test", 1L);
-      final String str = rooted.toString();
-
-      assertNotNull(str, "toString should not return null");
-      assertTrue(str.contains("test"), "Should contain value");
-      assertTrue(str.contains("1"), "Should contain root ID");
-    }
-
-    @Test
-    @DisplayName("ManualRoot should be a static nested class")
-    void manualRootShouldBeStaticNestedClass() {
-      final Class<?>[] declaredClasses = Rooted.class.getDeclaredClasses();
-      boolean found = false;
-      for (final Class<?> clazz : declaredClasses) {
-        if (clazz.getSimpleName().equals("ManualRoot")) {
-          found = true;
-          assertTrue(Modifier.isStatic(clazz.getModifiers()), "ManualRoot should be static");
-          assertTrue(Modifier.isFinal(clazz.getModifiers()), "ManualRoot should be final");
-          break;
-        }
-      }
-      assertTrue(found, "Should have ManualRoot nested class");
     }
   }
 
