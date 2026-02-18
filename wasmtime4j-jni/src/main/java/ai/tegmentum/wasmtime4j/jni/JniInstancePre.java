@@ -191,7 +191,5 @@ public final class JniInstancePre implements InstancePre {
 
   private static native long nativeGetAvgInstantiationTimeNs(long instancePreHandle);
 
-  private static native long nativeGetModule(long instancePreHandle);
-
   private static native void nativeDestroy(long instancePreHandle);
 }

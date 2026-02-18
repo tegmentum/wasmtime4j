@@ -744,20 +744,6 @@ public final class JniInstance extends JniResource implements Instance {
   }
 
   /**
-   * Validates thread access for this instance.
-   *
-   * @return true if access is valid, false otherwise
-   */
-  public boolean validateThreadAccess() {
-    try {
-      return nativeValidateThreadAccess(getNativeHandle());
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Thread access validation failed: " + e.getMessage());
-      return false;
-    }
-  }
-
-  /**
    * Converts integer state value to InstanceState enum.
    *
    * @param stateValue the integer state value from native code
@@ -925,11 +911,4 @@ public final class JniInstance extends JniResource implements Instance {
    */
   private static native boolean nativeCleanupResources(long instanceHandle);
 
-  /**
-   * Validates thread access for a native instance.
-   *
-   * @param instanceHandle the native instance handle
-   * @return true if access is valid, false otherwise
-   */
-  private static native boolean nativeValidateThreadAccess(long instanceHandle);
 }

@@ -166,54 +166,6 @@ public final class JniStore extends JniResource implements Store {
   }
 
   /**
-   * Gets runtime information about this store.
-   *
-   * <p>This method provides diagnostic information about the store's current state, including
-   * memory usage, number of active instances, and other runtime metrics that can be useful for
-   * debugging and monitoring.
-   *
-   * @return a string containing store runtime information
-   * @throws WasmException if information cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  public String getRuntimeInfo() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      final StringBuilder info = new StringBuilder();
-      info.append("Store Runtime Information:\n");
-      info.append("  Handle: 0x").append(Long.toHexString(getNativeHandle())).append("\n");
-      info.append("  Valid: ").append(nativeValidate(getNativeHandle())).append("\n");
-      info.append("  Execution Count: ")
-          .append(nativeGetExecutionCount(getNativeHandle()))
-          .append("\n");
-      info.append("  Execution Time (μs): ")
-          .append(nativeGetExecutionTime(getNativeHandle()))
-          .append("\n");
-      info.append("  Fuel Remaining: ")
-          .append(nativeGetFuelRemaining(getNativeHandle()))
-          .append("\n");
-      info.append("  Fuel Consumed: ")
-          .append(nativeGetTotalFuelConsumed(getNativeHandle()))
-          .append("\n");
-      info.append("  Active Instances: ")
-          .append(nativeGetInstanceCount(getNativeHandle()))
-          .append("\n");
-      info.append("  Fuel Limit: ").append(nativeGetFuelLimit(getNativeHandle())).append("\n");
-      info.append("  Memory Limit (bytes): ")
-          .append(nativeGetMemoryLimit(getNativeHandle()))
-          .append("\n");
-      info.append("  Execution Timeout (secs): ")
-          .append(nativeGetExecutionTimeout(getNativeHandle()));
-
-      return info.toString();
-    } catch (final Exception e) {
-      throw new JniException("Failed to get store runtime information", e);
-    }
-  }
-
-
-  /**
    * Adds fuel to this store.
    *
    * <p>This method adds additional fuel to the store's fuel limit. This can be used to extend
@@ -709,91 +661,6 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-  /**
-   * Gets the number of active instances in this store.
-   *
-   * <p>This method returns the current number of active WebAssembly module instances that are
-   * associated with this store. Each instance represents a separate instantiation of a compiled
-   * module with its own state and memory.
-   *
-   * @return the number of active instances
-   * @throws WasmException if the instance count cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  public long getInstanceCount() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeGetInstanceCount(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get instance count", e);
-    }
-  }
-
-  // Configuration Getters
-
-  /**
-   * Gets the fuel limit for this store.
-   *
-   * <p>This method returns the maximum amount of fuel that can be consumed by WebAssembly execution
-   * within this store. If fuel tracking is disabled or no limit is set, this method returns -1.
-   *
-   * @return the fuel limit, or -1 if no limit is set or fuel tracking is disabled
-   * @throws WasmException if the fuel limit cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  public long getFuelLimit() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeGetFuelLimit(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get fuel limit", e);
-    }
-  }
-
-  /**
-   * Gets the memory limit for this store.
-   *
-   * <p>This method returns the maximum amount of memory (in bytes) that can be allocated for
-   * WebAssembly linear memories and runtime structures within this store. If no memory limit is
-   * set, this method returns -1.
-   *
-   * @return the memory limit in bytes, or -1 if no limit is set
-   * @throws WasmException if the memory limit cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  public long getMemoryLimit() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeGetMemoryLimit(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get memory limit", e);
-    }
-  }
-
-  /**
-   * Gets the execution timeout for this store.
-   *
-   * <p>This method returns the maximum execution time (in seconds) allowed for WebAssembly
-   * operations within this store. If no timeout is set, this method returns -1.
-   *
-   * @return the execution timeout in seconds, or -1 if no timeout is set
-   * @throws WasmException if the execution timeout cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  public long getExecutionTimeout() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeGetExecutionTimeout(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get execution timeout", e);
-    }
-  }
-
-
   // Native method declarations
 
 
@@ -876,38 +743,6 @@ public final class JniStore extends JniResource implements Store {
    * @return the total fuel consumed
    */
   private static native long nativeGetTotalFuelConsumed(long storeHandle);
-
-  /**
-   * Gets the number of active instances in this store.
-   *
-   * @param storeHandle the native store handle
-   * @return the number of active instances
-   */
-  private static native long nativeGetInstanceCount(long storeHandle);
-
-  /**
-   * Gets the fuel limit for this store.
-   *
-   * @param storeHandle the native store handle
-   * @return the fuel limit, or -1 if no limit is set
-   */
-  private static native long nativeGetFuelLimit(long storeHandle);
-
-  /**
-   * Gets the memory limit for this store.
-   *
-   * @param storeHandle the native store handle
-   * @return the memory limit in bytes, or -1 if no limit is set
-   */
-  private static native long nativeGetMemoryLimit(long storeHandle);
-
-  /**
-   * Gets the execution timeout for this store.
-   *
-   * @param storeHandle the native store handle
-   * @return the execution timeout in seconds, or -1 if no timeout is set
-   */
-  private static native long nativeGetExecutionTimeout(long storeHandle);
 
   /**
    * Consumes a specific amount of fuel from the store.

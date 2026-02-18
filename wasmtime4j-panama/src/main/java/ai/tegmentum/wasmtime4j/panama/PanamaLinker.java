@@ -147,7 +147,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Register callback and get ID
     final long callbackId =
-        registerHostFunctionCallback(moduleName, name, implementation, functionType);
+        registerHostFunctionCallback(moduleName, name, implementation);
 
     try {
       // Create upcall stub for the callback function
@@ -943,16 +943,14 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @param moduleName the module name
    * @param name the function name
    * @param implementation the implementation
-   * @param functionType the function type
    * @return callback ID for native code to invoke
    */
   private long registerHostFunctionCallback(
       final String moduleName,
       final String name,
-      final HostFunction implementation,
-      final FunctionType functionType) {
+      final HostFunction implementation) {
     final HostFunctionWrapper wrapper =
-        new HostFunctionWrapper(moduleName, name, implementation, functionType);
+        new HostFunctionWrapper(moduleName, name, implementation);
     final long id = wrapper.getId();
     HOST_FUNCTION_CALLBACKS.put(id, wrapper);
     registeredCallbackIds.add(id);
@@ -1350,18 +1348,15 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     private final String moduleName;
     private final String name;
     private final HostFunction implementation;
-    private final FunctionType functionType;
 
     HostFunctionWrapper(
         final String moduleName,
         final String name,
-        final HostFunction implementation,
-        final FunctionType functionType) {
+        final HostFunction implementation) {
       this.id = nextId.getAndIncrement();
       this.moduleName = moduleName;
       this.name = name;
       this.implementation = implementation;
-      this.functionType = functionType;
     }
 
     long getId() {
@@ -1370,10 +1365,6 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     HostFunction getImplementation() {
       return implementation;
-    }
-
-    FunctionType getFunctionType() {
-      return functionType;
     }
   }
 }
