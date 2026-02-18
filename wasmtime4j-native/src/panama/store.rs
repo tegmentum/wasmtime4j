@@ -683,6 +683,19 @@ pub extern "C" fn wasmtime4j_panama_store_set_fuel(store_ptr: *mut c_void, fuel:
     })
 }
 
+/// Set fuel async yield interval for a WebAssembly store (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_set_fuel_async_yield_interval(
+    store_ptr: *mut c_void,
+    interval: c_ulong,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
+        crate::store::core::set_fuel_async_yield_interval(store, interval as u64)?;
+        Ok(())
+    })
+}
+
 /// Helper function to serialize a backtrace into a byte buffer
 fn serialize_backtrace(
     backtrace: &wasmtime::WasmBacktrace,

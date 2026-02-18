@@ -549,6 +549,13 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // remaining_out_ptr
 
     addFunctionBinding(
+        "wasmtime4j_panama_store_set_fuel_async_yield_interval",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // interval
+
+    addFunctionBinding(
         "wasmtime4j_panama_store_set_epoch_deadline",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
@@ -2305,6 +2312,17 @@ public final class NativeEngineBindings extends NativeBindingsBase {
    */
   public MethodHandle getPanamaStoreConsumeFuel() {
     FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_consume_fuel");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  /**
+   * Gets the method handle for setting fuel async yield interval in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreSetFuelAsyncYieldInterval() {
+    FunctionBinding binding =
+        getFunctionBinding("wasmtime4j_panama_store_set_fuel_async_yield_interval");
     return binding != null ? binding.getMethodHandle().orElse(null) : null;
   }
 

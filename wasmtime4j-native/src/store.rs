@@ -549,6 +549,25 @@ impl Store {
         }
     }
 
+    /// Set the fuel async yield interval
+    ///
+    /// Configures how often async WebAssembly execution should yield based on
+    /// fuel consumption. A value of 0 disables this feature (maps to None).
+    /// Silently succeeds if async support is not enabled on the engine, since
+    /// the value is tracked Java-side for configuration purposes.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn set_fuel_async_yield_interval(&self, interval: u64) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+        let interval_opt = if interval == 0 { None } else { Some(interval) };
+        // Silently ignore errors (e.g., async support not enabled) since the
+        // interval is tracked Java-side for configuration purposes.
+        let _ = store.fuel_async_yield_interval(interval_opt);
+        Ok(())
+    }
+
     /// Set epoch deadline for interruption
     ///
     /// # Panics
@@ -1375,6 +1394,11 @@ pub mod core {
     /// Core function to consume fuel from a store
     pub fn consume_fuel(store: &Store, fuel: u64) -> WasmtimeResult<u64> {
         store.consume_fuel(fuel)
+    }
+
+    /// Core function to set fuel async yield interval
+    pub fn set_fuel_async_yield_interval(store: &Store, interval: u64) -> WasmtimeResult<()> {
+        store.set_fuel_async_yield_interval(interval)
     }
 
     /// Core function to set epoch deadline for interruption

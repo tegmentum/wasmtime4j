@@ -166,6 +166,21 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeConsumeFu
     })
 }
 
+/// Set fuel async yield interval
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetFuelAsyncYieldInterval(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+    interval: jlong,
+) {
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        core::set_fuel_async_yield_interval(store, interval as u64)?;
+        Ok(())
+    });
+}
+
 /// Set epoch deadline for interruption
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochDeadline(

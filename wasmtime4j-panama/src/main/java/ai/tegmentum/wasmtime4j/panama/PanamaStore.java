@@ -1670,14 +1670,35 @@ public final class PanamaStore implements Store {
 
   // ===== Fuel Async Methods =====
 
+  private long fuelAsyncYieldInterval = 0;
+
   @Override
-  public void setFuelAsyncYieldInterval(final long interval)
-      throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    throw new UnsupportedOperationException("setFuelAsyncYieldInterval not yet implemented");
+  public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
+    if (interval < 0) {
+      throw new IllegalArgumentException("Interval cannot be negative");
+    }
+    ensureNotClosed();
+    try {
+      final MethodHandle handle = NATIVE_BINDINGS.getPanamaStoreSetFuelAsyncYieldInterval();
+      if (handle == null) {
+        throw new WasmException(
+            "Panama store set fuel async yield interval function not available");
+      }
+      final int result = (int) handle.invoke(nativeStore, interval);
+      if (result != 0) {
+        throw new WasmException("Failed to set fuel async yield interval");
+      }
+      this.fuelAsyncYieldInterval = interval;
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error setting fuel async yield interval: " + e.getMessage(), e);
+    }
   }
 
   @Override
   public long getFuelAsyncYieldInterval() {
-    throw new UnsupportedOperationException("getFuelAsyncYieldInterval not yet implemented");
+    return fuelAsyncYieldInterval;
   }
 }
